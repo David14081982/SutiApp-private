@@ -77,7 +77,7 @@ The recovery script removes the temporary infrastructure only while no contractu
 - Google call instrumentation: OPEN `1`; ten amount changes `0`; fund `0`; term `0`; CONFIRM `1`.
 - Final controlled Edge latency after READY: median `678 ms`, max `736 ms`; Google latency removed from interactions.
 - Chrome: initial automatic quote, 320 ms amount debounce, immediate fund/term, max in-flight `1`, latest selection only, assisted impersonation, visual fidelity and four-step flow passed.
-- Adversarial Chrome: an artificial 120-second interactive quote was aborted by the next selection; the latest fund rendered in `296 ms`. A request with no successor ended in the controlled retry state at `10,035 ms`, never after the infrastructure's multi-minute timeout.
+- Adversarial Chrome: an artificial 120-second interactive quote was aborted by the next selection; the latest fund rendered in `296 ms`. If the latest selection reaches its 10-second transport timeout, the client repeats `loanSessionQuote` once against the same personalized snapshot; it does not call `loanSessionOpen` or Google. A non-timeout error or a second timeout preserves the controlled manual retry state.
 - Full Chrome session: login, Home, Finance, Loan, Admin, refresh, logout and return to login passed with zero application exceptions.
 - Odometer Chrome matrix: previous value retained during recalculation, layout shift `0`, blank gap `0`, finite one-second animation, repeated digits restart, error/retry and reduced/frozen motion passed.
 - Local checks: Deno type-check PASS; JS syntax PASS; static suite 42/42 PASS; Architecture Registry FRESH.

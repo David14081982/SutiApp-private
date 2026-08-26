@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## H-LOAN-SNAPSHOT-TIMEOUT-RETRY-010 — 2026-08-26
+
+- La validación Pages posterior a H-009 reprodujo el fallo intermitente real: varias cotizaciones `loanSessionQuote` respondieron en 0.6–3.1 s, pero una llamada idéntica quedó pendiente hasta que el cliente la abortó a los 10 s. La cotización previa seguía íntegra y no hubo respuesta financiera incorrecta; faltaba recuperación automática de transporte.
+- Por corrección expresa del propietario, el timeout repite una sola vez la misma selección mediante `requestLoanSessionQuote` y el mismo snapshot personalizado vigente. No ejecuta `loanSessionOpen`, no renueva el TTL, no relee Google, no cambia reglas y no acepta respuestas obsoletas. Un cambio posterior continúa abortando el intento anterior; un error no-timeout o segundo timeout conserva resultado, aviso y `Reintentar`.
+- La prueba Chrome instrumenta `openLoanSession` y exige `0` aperturas/`0` Google durante la recuperación. HTML/PWA avanzan a bundle v144 y cache v88.
+
+```text
+H-LOAN-SNAPSHOT-TIMEOUT-RETRY-010 RESULT
+Status: PASS
+Files changed: app/screens-loan.jsx; app/bundle.js; SutiApp.html; sw.js; scripts/test-loan-result-loading-browser.js; scripts/test-loan-simulator-ui-cutover.js; docs/PERSONALIZED_FINANCIAL_SESSION_SNAPSHOT_IMPLEMENTATION.md; docs/AGENT_CHANGELOG.md
+Source-of-truth verdict: SAFE — mismo snapshot Supabase de 15 minutos y mismo motor Edge; cero autoridad o cálculo frontend
+Invariant verdict: PASS — latest intent, máximo un request activo y descarte de respuesta obsoleta preservados
+Build: PASS — bundle reproducible desde 90 fuentes con Babel Standalone 7.29.0; HTML v144 y PWA v88
+Tests: PASS — Chrome timeout→mismo snapshot→resultado; loanSessionOpen 0; Google 0; suite estática 43/43
+Security: PASS — mismo JWT/contexto/snapshot; sin selector de identidad, secreto o cambio RLS
+Legacy impact: READ ONLY — apertura inicial existente; recuperación interactiva Google 0 y writes 0
+Unexpected files changed: ninguno; arnés temporal ignorado y eliminado al cierre
+Known limitations: tras dos timeouts consecutivos permanece el error controlado y requiere Reintentar
+Evidence: test-loan-result-loading-browser.js; test-personalized-financial-session-snapshot.js; Chrome Pages instrumentado; googleResolutionCount 0
+```
+
 ## H-LOAN-ODOMETER-RECOVERY-009 — 2026-08-26
 
 - La captura del propietario demostró una regresión real: si una cotización automática fallaba, `ResultCard` reemplazaba todos los carretes por espacios vacíos, contradiciendo ADR-055. La reproducción pública exacta con la cuenta QA, `Caja Chica`, `$5,000` y `6 quincenas` respondió correctamente (`$998.33`, sin respuestas HTTP fallidas ni excepciones), por lo que no se modificó lógica financiera.
@@ -17,7 +38,7 @@ Tests: PASS — suite estática 43/43; Chrome aislado cubrió recálculo/error/r
 Security: PASS — sin cambios Auth, RLS, grants, secretos, claves, CORS o autoridad frontend
 Legacy impact: READ ONLY — una sesión QA de simulación, cero Google writes y cero cambios Apps Script/Sheets/fórmulas
 Unexpected files changed: ninguno; arnés temporal eliminado
-Known limitations: el fallo de red de la captura fue intermitente y no reapareció; ahora su estado visual es recuperable y no borra el resultado
+Known limitations: una secuencia Pages posterior reprodujo un timeout de transporte aislado; su recuperación automática se corrige en H-LOAN-SNAPSHOT-TIMEOUT-RETRY-010
 Evidence: test-loan-result-loading-browser.js; test-static-suite.js; Chrome Pages Caja Chica/$5,000/6; diff/check; Architecture Registry check
 ```
 

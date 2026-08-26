@@ -11895,31 +11895,36 @@ Object.assign(window, {
         while (mounted.current && queued.current) {
           const request = queued.current;
           queued.current = null;
-          let snapshot;
-          const active = {
-            controller: new AbortController(),
-            reason: '',
-            key: request.key
-          };
-          activeRequest.current = active;
-          const timeoutId = setTimeout(() => {
-            active.reason = 'timeout';
-            active.controller.abort();
-          }, quoteTimeoutMs);
-          try {
-            snapshot = await window.financialLegacyStore.requestLoanSessionQuote(request.programId, request.amount, request.term, {
-              signal: active.controller.signal
-            });
-          } catch (error) {
-            if (active.controller.signal.aborted && active.reason !== 'timeout') continue;
-            snapshot = {
-              status: 'error',
-              error: active.reason === 'timeout' ? 'SIMULATION_TIMEOUT' : error && (error.code || error.message) || 'SIMULATION_UNAVAILABLE'
+          let snapshot = null;
+          for (let attempt = 0; attempt < 2 && mounted.current && latestSelection.current === request.key; attempt += 1) {
+            const active = {
+              controller: new AbortController(),
+              reason: '',
+              key: request.key
             };
-          } finally {
-            clearTimeout(timeoutId);
-            if (activeRequest.current === active) activeRequest.current = null;
+            activeRequest.current = active;
+            const timeoutId = setTimeout(() => {
+              active.reason = 'timeout';
+              active.controller.abort();
+            }, quoteTimeoutMs);
+            try {
+              snapshot = await window.financialLegacyStore.requestLoanSessionQuote(request.programId, request.amount, request.term, {
+                signal: active.controller.signal
+              });
+              break;
+            } catch (error) {
+              if (active.controller.signal.aborted && active.reason !== 'timeout') break;
+              if (active.reason === 'timeout' && attempt === 0 && latestSelection.current === request.key) continue;
+              snapshot = {
+                status: 'error',
+                error: active.reason === 'timeout' ? 'SIMULATION_TIMEOUT' : error && (error.code || error.message) || 'SIMULATION_UNAVAILABLE'
+              };
+            } finally {
+              clearTimeout(timeoutId);
+              if (activeRequest.current === active) activeRequest.current = null;
+            }
           }
+          if (!snapshot) continue;
           if (!mounted.current) break;
           if (latestSelection.current === request.key && snapshot.status === 'ready' && quoteMatchesSelection(snapshot.quote, request.program, request.amount, request.term)) {
             quoteRevision.current += 1;

@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## H-LOAN-AUTHENTICATED-SNAPSHOT-RPC-013 — 2026-08-26
+
+- La decisión explícita del propietario autorizó una RPC Auth únicamente para monto/fondo/plazo sobre el snapshot personalizado de 15 minutos. Google conserva autoridad y apertura/confirmación Edge; no existe fallback RPC→Edge→Google.
+- `SUTI_LOAN_QUOTE_V1` quedó centralizado en un resolver SQL `numeric` usado tanto por la RPC como por Edge. La matriz live cubrió 54 casos financieros y 8 inválidos sobre dos perfiles distintos con 0 diferencias financieras, de validación o redondeo.
+- Seguridad negó cross-user bidireccional, anonymous, expirado, profile mismatch, impersonation mismatch e inputs tasa/máximo; la tabla mantiene 0 lectura/escritura browser. Forward y recovery pasaron dentro de `ROLLBACK`; la migración cambió 0 filas protegidas.
+- GitHub Pages público pasó en escritorio y móvil 390×844: login/PWA/READY, monto, fondo, plazo y 10 cambios rápidos; RPC 4, Edge 0, Google 0, blank frames 0 y stale renders 0 en cada viewport.
+
+```text
+H-LOAN-AUTHENTICATED-SNAPSHOT-RPC-013 RESULT
+Status: PASS
+Files changed: migration/recovery; Edge; repository; loan retry; bundle/PWA; tests; authority/security/migration docs; Architecture Registry
+Source-of-truth verdict: PASS — Google authority preserved; snapshot/RPC remain derived
+Invariant verdict: PASS — INV-088/INV-107 updated only within owner-authorized exception
+Build: PASS — bundle reproducible from 90 sources; v147/repository v5/PWA v91
+Tests: PASS — static 44/44; 54 financial + 8 invalid live; local Chrome; public desktop/mobile
+Security: PASS — Auth-only RPC; cross-user/anonymous/expired/profile/impersonation denied; direct snapshot access 0
+Legacy impact: READ ONLY — open/confirm Google preserved; interactive Google 0; Google writes 0; Apps Script changes 0
+Unexpected files changed: none
+Known limitations: QA did not persist a successful loan; final Google fail-closed/atomic zero-persistence path was verified without contaminating history
+Evidence: docs/AUTHENTICATED_LOAN_SNAPSHOT_RPC_RESULT.md; workflow 32987656026; RPC median 142 ms/max 178 ms; public blank/stale 0
+```
+
 ## H-LOAN-EXPLICIT-TRANSPORT-RETRY-012 — 2026-08-26
 
 - La validación pública de v145 probó que el cambio de fondo podía terminar, pero el cambio de importe agotaba expiraciones o recibía `Failed to send a request to the Edge Function`. La prueba de control con QUIC desactivado reprodujo el segundo fallo, por lo que HTTP/3 no era la única causa. En ambos casos el resultado anterior permaneció visible y `googleResolutionCount` fue 0.

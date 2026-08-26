@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('fs'),path=require('path'),root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8'),ok=(v,m)=>{if(!v)throw new Error(m)};
+const sql=read('supabase/migrations/20260823000600_enforce_remaining_section_ownership.sql'),hard=read('supabase/migrations/20260823000601_protect_section_relation_history.sql'),recovery=read('supabase/recovery/20260823000600_enforce_remaining_section_ownership_recovery.sql'),repo=read('app/admin-repository.js'),panel=read('app/section-responsibility.jsx'),visual=read('app/screens-admin-visual-crud.jsx'),market=read('app/screens-admin-catalogo.jsx'),admin=read('app/screens-admin.jsx'),institutional=read('app/institutional-repositories.js'),live=read('scripts/test-section-ownership-mass-live.py');
+const sections=['education','tutorials','companies','agreements','banners','popups','documents','minutes','programs','marketplace'];
+sections.forEach(s=>{ok(sql.includes("'"+s+"'"),'missing SQL section '+s);ok(repo.includes(s),'missing repository section '+s)});
+ok(sql.includes("when 'agreements' then array['read','create','update','delete','publish','order']")&&!sql.includes('can_manage_section'),'granular action model');
+ok(sql.includes('ADMIN_ORIGIN_REQUIRED')&&sql.includes('HISTORICAL_DELETE_DENIED')&&hard.includes("record_origin text not null default 'HISTORICAL_IMPORT'"),'historical guard');
+ok(sql.includes('section_owner_storage_insert')&&sql.includes("split_part(storage_path,'/',2)=auth.uid()::text"),'asset UUID isolation');
+ok(panel.includes('data-resolved-auth-uuid')&&panel.includes('Responsable de la sección')&&panel.includes('Revocar')&&panel.includes('Ver auditoría'),'responsibility UI');
+ok(visual.includes("can('publish')")&&visual.includes("can('order')")&&visual.includes("can('delete')")&&visual.includes("can('update')")&&visual.includes("can('create')"),'exact UI controls');
+ok(market.includes('permissions.create')&&market.includes('permissions.update')&&market.includes('permissions.delete')&&market.includes('permissions.publish')&&market.includes('P.order')&&market.includes('P.publish')&&market.includes('permissions.assets'),'exact Marketplace UI controls');
+ok(repo.includes("requireAny(['companies.read','agreements.read'])")&&repo.includes("requirePermission('companies.assets')"),'shared read and company asset boundary');
+ok(admin.includes('sectionModule')&&admin.includes("minutes_admin:'minutes'")&&admin.includes("programs_admin:'programs'"),'section-only routes');
+ok((institutional.match(/query\.eq\('enabled', true\)/g)||[]).length>=3,'public reflection enabled filters');
+ok(recovery.includes('never destroys content created after rollout')&&live.includes('CROSS_DOMAIN_DENIAL')&&live.includes('REFRESH_REVOCATION'),'recovery/matrix evidence');
+ok(![sql,hard,repo,panel,visual,admin].some(x=>/SUPABASE_(SECRET|SERVICE_ROLE|ACCESS_TOKEN)|google-apps-script|Apps Script/.test(x)),'secret or Google interaction');
+console.log('SECTION OWNERSHIP MASS static verification PASS: 10 rollout domains, granular UI/backend, origin protection, recovery and no legacy interaction.');

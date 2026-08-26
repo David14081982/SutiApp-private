@@ -1,0 +1,106 @@
+{
+  "source": {
+    "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+    "spreadsheet_title": "SutiApp Final",
+    "capture_mode": "Google Sheets connector bounded READ ONLY ranges",
+    "captured_at": "2026-08-21",
+    "h007_snapshot": "data/h007-supabase-now-source.json"
+  },
+  "companies": {
+    "range": "'Empresas Suticompras'!A1:AB2",
+    "physical_rows": 1,
+    "migrable_rows": 0,
+    "status": "BLOCKED_SOURCE_QUALITY",
+    "reason": "The only row is an incomplete test record and places an image URL in the phone column; it is not promoted as a real company."
+  },
+  "home_banners": {
+    "range": "'Anuncio principal'!A1:L2",
+    "rows": [
+      {"source_row_ordinal": 2, "source_column": "A", "sort_order": 1, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/b4XKGy1dv0Y2elIwSWII.png"},
+      {"source_row_ordinal": 2, "source_column": "B", "sort_order": 2, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/j8dFaELvid9kU0A2d3XL.png"},
+      {"source_row_ordinal": 2, "source_column": "C", "sort_order": 3, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kVHSz5NHdqHnAcr7CmyT.png"},
+      {"source_row_ordinal": 2, "source_column": "D", "sort_order": 4, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/zeZ0jRn5v7NkzzjVzklQ.png"},
+      {"source_row_ordinal": 2, "source_column": "E", "sort_order": 5, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/YyqNz8Kohw8h3u415yKJ.png"},
+      {"source_row_ordinal": 2, "source_column": "F", "sort_order": 6, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/xNxt59FoNfFe9ilOBZst.png"},
+      {"source_row_ordinal": 2, "source_column": "G", "sort_order": 7, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/W53UzwU3uATgErx3RzKL.png"},
+      {"source_row_ordinal": 2, "source_column": "H", "sort_order": 8, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/N09qQXPkukerZtyL8D0B.png"},
+      {"source_row_ordinal": 2, "source_column": "I", "sort_order": 9, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kw8mqXElr5Msx9h657uK.png"},
+      {"source_row_ordinal": 2, "source_column": "J", "sort_order": 10, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/0ZMQd07lXzjaOoqnNjkk.png"}
+    ]
+  },
+  "marketplace_banners": {
+    "range": "'Banner SutiCompras'!A1:F14",
+    "status": "MIGRABLE_WITH_RAW_CATEGORIES_NO_FRONTEND_CUTOVER",
+    "rows": [
+      {"source_row_ordinal": 2, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/0IymnlRYANw8ysL9pF2n.png"},
+      {"source_row_ordinal": 3, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/MEpUn3IPbdVHDG5IluWc.png"},
+      {"source_row_ordinal": 4, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/DTdu2iE0cBhtD0ykGgVx.png"},
+      {"source_row_ordinal": 5, "company_raw": "Willys", "category_raw": "Salud y belleza", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/IzxR8g8zUFIluCJEz1nO.png"},
+      {"source_row_ordinal": 6, "company_raw": "Willys", "category_raw": "Electrónica", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/50J1OT050nlKILkDor9O.png"},
+      {"source_row_ordinal": 7, "company_raw": "Willys", "category_raw": "Salud y belleza", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/c1sUpy6nOceH9tcxcW8m.png"},
+      {"source_row_ordinal": 8, "company_raw": "Willys", "category_raw": "Electrónica", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/y2v1Xkkr93DIzQwwsih2.png"},
+      {"source_row_ordinal": 9, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/pSXqDE6WTArCjdbC444G.png"},
+      {"source_row_ordinal": 10, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kkDK8Nr71Fd4aij23ynI.png"},
+      {"source_row_ordinal": 11, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/XaBO4nGA61ikq5Npmtrj.png"},
+      {"source_row_ordinal": 12, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/8NtYU8F5AsayQDRwVJ2A.png"},
+      {"source_row_ordinal": 13, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/pSXqDE6WTArCjdbC444G.png"},
+      {"source_row_ordinal": 14, "company_raw": "Balam", "category_raw": "Moda", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/nW29noptPwZJBQP9P3qe.png"}
+    ]
+  },
+  "convenio_assets": {
+    "range": "'Convenios2'!A1:I46",
+    "status": "MIGRABLE_AS_UNLINKED_ASSETS_COMPANY_DOMAIN_BLOCKED",
+    "rows": [
+      {"source_row_ordinal": 7, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/wAaqrmrFbLWUtqc2VDWL.jpeg"},
+      {"source_row_ordinal": 11, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/6OZwPqWsdOHxJYvmFK2P.jpeg"},
+      {"source_row_ordinal": 12, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/KnDjvYS3jZCOLm52Rr4A.jpeg"},
+      {"source_row_ordinal": 13, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/mRJ6EKv6mgBeKr0NEWgU.jpeg"},
+      {"source_row_ordinal": 14, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/5ZNlEcxjo57i73xUxy9Z.jpeg"},
+      {"source_row_ordinal": 15, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/9MyL0iv8qcSpqnAjolp6.jpeg"},
+      {"source_row_ordinal": 19, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/2Ut9HvxlZwHeelgPitgn.jpg"},
+      {"source_row_ordinal": 20, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/MWR7o1J5IwMOmS9J4TE0.jpeg"},
+      {"source_row_ordinal": 21, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/vzWCV3TbpOKk8USKuGBp.jpg"},
+      {"source_row_ordinal": 22, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/fX3cBfKSppoIUtsaY4NO.jpg"},
+      {"source_row_ordinal": 23, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/7qsr6wmw4TMGKAlgHDNE.jpg"},
+      {"source_row_ordinal": 24, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/3zngJBvP2EsZkBa6C1Ld.jpg"},
+      {"source_row_ordinal": 25, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/tuIpIddRUGsMnAunFmL6.jpg"},
+      {"source_row_ordinal": 26, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/hzSdi1zJZn64zjHkWu9r.jpeg"},
+      {"source_row_ordinal": 27, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/wJ3Z72oTTI1hsZGoYbyG.jpg"},
+      {"source_row_ordinal": 28, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/IqwDHlujzNoDwFzBA93a.jpg"},
+      {"source_row_ordinal": 29, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Ncscu3FTFBqLKUWOfPIZ.jpg"},
+      {"source_row_ordinal": 30, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/ndGJGr5RflHn49TzxcnO.jpg"},
+      {"source_row_ordinal": 31, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/W1RpnPyTlTng0QHACgL2.jpg"},
+      {"source_row_ordinal": 32, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/habUcRmi3MDXpjhPS4cA.jpeg"},
+      {"source_row_ordinal": 33, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/xcYpvNyy2asNeIlXYNV5.jpeg"},
+      {"source_row_ordinal": 34, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/LmPwjZedYacZfhsD7UT4.jpeg"},
+      {"source_row_ordinal": 35, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/fDHvNeE8r9Ppj9UgPJQy.jpeg"},
+      {"source_row_ordinal": 37, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/W4PgrPbLUxEIR0nXJ5O1.jpeg"},
+      {"source_row_ordinal": 38, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/PaivvElPpLqwq7cfI3L6.jpeg"},
+      {"source_row_ordinal": 39, "source_column": "D", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/q4fKIyJvzIgpuIvomPwB.jpg"},
+      {"source_row_ordinal": 39, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/nosEdd36udCLg3uU1MdR.jpg"},
+      {"source_row_ordinal": 40, "source_column": "D", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kB3UwV163IEdMUw3nleH.jpg"},
+      {"source_row_ordinal": 40, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/DlNkDQh3H7DDSXinmCHv.jpg"},
+      {"source_row_ordinal": 41, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/XWrS40KzeXTQkbNr1sIV.jpeg"},
+      {"source_row_ordinal": 42, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/KSZ13oPeXY2nw3WMImO8.jpg"},
+      {"source_row_ordinal": 43, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/hwVG2DaMl3gEpCK1geiS.jpg"},
+      {"source_row_ordinal": 44, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/brqxgLAqwbGNtbV0tqbN.jpg"},
+      {"source_row_ordinal": 45, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/fKLR8JJ5YuddZzHcPzOR.jpeg"},
+      {"source_row_ordinal": 46, "source_column": "E", "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/HewYoEddphSg3RalI2u2.jpg"}
+    ]
+  },
+  "popup_candidates": {
+    "range": "'Promociones'!A1:E88",
+    "status": "IMPORTED_DISABLED_PENDING_SEMANTICS",
+    "rows": [
+      {"source_row_ordinal": 86, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/HhezG5ywk61HoJ3WE3sU.jpg"},
+      {"source_row_ordinal": 87, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/StWF017fw70TXkdpHNKI.jpg"},
+      {"source_row_ordinal": 88, "source_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/ys8ZoRVV0FNVz2IhnQGF.jpg"}
+    ]
+  },
+  "local_branding": [
+    {"asset_key": "brand.favicon-pwa-192", "path": "icon-192.png", "purpose": "favicon+pwa"},
+    {"asset_key": "brand.pwa.apple-touch", "path": "icon-180.png", "purpose": "apple-touch-icon"},
+    {"asset_key": "brand.pwa.512", "path": "icon-512.png", "purpose": "pwa"},
+    {"asset_key": "brand.pwa.maskable-512", "path": "icon-maskable-512.png", "purpose": "pwa-maskable"}
+  ]
+}

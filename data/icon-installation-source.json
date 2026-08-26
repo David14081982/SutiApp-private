@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "work_item": "ICON_INSTALLATION_SUPABASE",
+  "captured_on": "2026-08-21",
+  "authority": "Supabase app_settings + app_assets + Storage",
+  "settings": {
+    "app_name": "SutiApp — SUTISSSTESON",
+    "short_name": "SutiApp",
+    "description": "App de afiliados SUTISSSTESON: créditos, ahorro, convenios y servicios sindicales."
+  },
+  "existing_asset_keys": {
+    "app_icon": "brand.pwa.512",
+    "favicon": "brand.favicon-pwa-192",
+    "apple_touch": "brand.pwa.apple-touch",
+    "pwa_192": "brand.favicon-pwa-192",
+    "pwa_512": "brand.pwa.512",
+    "pwa_maskable_512": "brand.pwa.maskable-512"
+  },
+  "new_asset": {
+    "asset_key": "brand.institutional-seal",
+    "local_path": "assets/branding/institutional-seal.svg"
+  },
+  "install_screens": [
+    { "position": 1, "asset_key": null },
+    { "position": 2, "asset_key": null },
+    { "position": 3, "asset_key": null }
+  ],
+  "write_policy": "Server-side administrative process only until real Admin Auth exists."
+}

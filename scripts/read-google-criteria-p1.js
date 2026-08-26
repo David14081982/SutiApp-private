@@ -1,0 +1,7 @@
+'use strict';
+const fs=require('fs');
+const claspPath=process.argv[2];
+if(!claspPath)throw new Error('USAGE: clasprc-path');
+(async()=>{const credential=JSON.parse(fs.readFileSync(claspPath,'utf8')).tokens?.default;if(!credential?.refresh_token)throw new Error('OAUTH_UNAVAILABLE');
+const tokenResponse=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:credential.client_id,client_secret:credential.client_secret,refresh_token:credential.refresh_token,grant_type:'refresh_token'})});const token=await tokenResponse.json();if(!tokenResponse.ok||!token.access_token)throw new Error('TOKEN_FAILED');
+const response=await fetch('https://sheets.googleapis.com/v4/spreadsheets/1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80/values/'+encodeURIComponent("'Criterios de fondos'!P1:P151"),{headers:{Authorization:'Bearer '+token.access_token}});const body=await response.json();if(!response.ok)throw new Error('SHEETS_'+response.status);const values=Array.isArray(body.values)?body.values:[];console.log(JSON.stringify({status:'PASS',header:String(values[0]?.[0]||''),nonemptyDataRows:values.slice(1).filter(row=>row?.[0]!=null&&String(row[0])!=='').length,credentialLogged:false,googleWrite:false}));})().catch(error=>{console.error(JSON.stringify({status:'FAIL',error:error.message,credentialLogged:false,googleWrite:false}));process.exit(1);});

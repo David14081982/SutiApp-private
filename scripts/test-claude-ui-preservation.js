@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('assert');const fs=require('fs');const read=(p)=>fs.readFileSync(p,'utf8');
+const skill=read('.agents/skills/claude-ui-preservation-guardian/SKILL.md');
+const screen=read('app/screens-convenios.jsx');const repository=read('app/visual-repositories.js');const content=read('app/visual-content.js');
+assert(skill.startsWith('---\nname: claude-ui-preservation-guardian\n'));
+for(const text of ['migrar datos no autoriza rediseñar UI','OWNER_DECISION_REQUIRED','CLAUDE UI PRESERVATION REVIEW','UI REGRESSION'])assert(skill.includes(text));
+for(const section of ['ads','featured','all'])assert(screen.includes(`'data-convenios-section':'${section}'`));
+for(const text of ['ESPACIO PUBLICITARIO','PATROCINADO','Busca una empresa o beneficio','Destacados','Todos los convenios','DESCUENTO PENDIENTE','Beneficios disponibles','Muestra tu credencial digital','Editar textos · pendiente backend'])assert(screen.includes(text));
+for(const component of ['window.SearchBar','window.ChipBar','window.FavHeart','window.Sheet','window.TopBar'])assert(screen.includes(component));
+for(const interaction of ['onPointerDown:down','onPointerMove:move','onFilter:()=>setFilters(true)','toggleCompanyFavorite','app.push(\'convenio\'','app.setTab(\'credencial\''])assert(screen.includes(interaction));
+assert(!/window\.DATA|localStorage|adminStore|glide-prod/.test(screen));
+for(const field of ['category_raw','address_raw','phone_raw','whatsapp_raw'])assert(repository.includes(field));
+assert(content.includes("window.BannerRepository.list('marketplace')")&&content.includes('marketplaceBanners'));
+console.log('CLAUDE UI PRESERVATION static verification PASS: Convenios structural contract restored over Supabase-only repositories.');

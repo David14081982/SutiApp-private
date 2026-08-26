@@ -1,0 +1,27 @@
+/* Static Phase 3 + ADR-038 authority, RLS, UI preservation and bundle checks. */
+'use strict';
+const fs=require('fs'),path=require('path'),root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8'),must=(x,m)=>{if(!x)throw new Error(m);};
+const sql=read('supabase/migrations/20260821000900_complete_phase3_marketplace.sql');
+const recovery=read('supabase/recovery/20260821000900_complete_phase3_marketplace_recovery.sql');
+const hardening=read('supabase/migrations/20260821000902_harden_phase3_request_boundary.sql');
+const requestsSql=read('supabase/migrations/20260822000200_create_unified_program_requests.sql');
+const repo=read('app/marketplace-repository.js'),requestRepo=read('app/program-request-repository.js');
+const catalog=read('app/catalog-store.jsx'),company=read('app/company-store.jsx'),quotes=read('app/quotes-store.jsx');
+const admin=read('app/screens-admin-catalogo.jsx'),publicUi=read('app/screens-convenios.jsx'),detail=read('app/screens-catalogo.jsx'),bundle=read('app/bundle.js');
+const queue=read('docs/WORK_QUEUE.md'),orchestrator=JSON.parse(read('docs/TASK_ORCHESTRATOR.json'));
+['marketplace_categories','marketplace_products','marketplace_product_assets','marketplace_promotions','marketplace_favorites','marketplace_company_favorites','marketplace_quote_requests','marketplace_benefit_requests','marketplace_company_memberships'].forEach(t=>{must(sql.includes('alter table public.'+t+' enable row level security'),t+' RLS missing');must(sql.includes('alter table public.'+t+' force row level security'),t+' forced RLS missing');must(recovery.includes('drop table if exists public.'+t),t+' recovery missing');});
+must(sql.includes('category_raw text')&&sql.includes('subcategory_raw text'),'raw category preservation missing');
+must(!catalog.includes('localStorage')&&!company.includes('localStorage')&&!quotes.includes('localStorage'),'browser persistence remains');
+must(!catalog.includes('window.DATA')&&!company.includes('window.DATA')&&!quotes.includes('window.DATA'),'DATA fallback remains');
+must(repo.includes("from('marketplace_products')")&&repo.includes('ProgramRequestRepository.create'),'marketplace repository cutover missing');
+must(requestRepo.includes("rpc('create_program_request'")&&requestRepo.includes("from('program_requests')"),'unified repository missing');
+must(hardening.includes('revoke insert on public.marketplace_quote_requests')&&hardening.includes('SIGNATURE_AND_TERMS_REQUIRED'),'historical hardening missing');
+must(requestsSql.includes('program_requests_idempotency_unique')&&requestsSql.includes('public.get_effective_affiliate_id()')&&!/p_numero_control|p_affiliate_id/i.test(requestsSql),'unified request security missing');
+['CatalogGrid','Gallery','Lightbox','CatalogItemScreen','BenefitRequestSheet'].forEach(x=>must(detail.includes('function '+x)||detail.includes('{ '+x),'product UI contract missing '+x));
+['MarketplaceModule','CatalogEditorList','ItemEditor','CategoryEditor'].forEach(x=>must(admin.includes('function '+x),'admin UI contract missing '+x));
+must(publicUi.includes('AdCarousel')&&publicUi.includes("data-convenios-section':'featured")&&publicUi.includes('SearchBar')&&publicUi.includes('ChipBar')&&publicUi.includes('CatalogGrid'),'Convenios structure regressed');
+must(company.includes('companyContext')&&company.includes('PENDING_PLAN'),'company contract missing');
+must(bundle.includes('/* @@file program-request-repository.js */')&&bundle.includes('/* @@file marketplace-repository.js */')&&bundle.includes('NO_PRODUCTIVE_SEED_RESET'),'bundle/source mismatch');
+must(queue.includes('| PHASE 3 | DONE |')&&orchestrator.priority_source==='docs/MASTER_COMPLETION_PLAN.md','queue gate missing');
+console.log('Phase 3/ADR-038 static verification PASS.');

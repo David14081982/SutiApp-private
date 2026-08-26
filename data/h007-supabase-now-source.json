@@ -1,0 +1,643 @@
+{
+  "source": {
+    "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+    "spreadsheet_title": "SutiApp Final",
+    "spreadsheet_modified_at": "2026-08-21T17:21:04.927Z",
+    "capture_mode": "Google Sheets connector bounded READ ONLY ranges",
+    "excluded_financial_range": "'Secretaría de finanzas'!T:V"
+  },
+  "domains": {
+    "directory": {
+      "range": "'Directorio'!A1:D31",
+      "physical_source_rows": 30,
+      "meaningful_source_rows": 30,
+      "blank_source_rows": 0,
+      "rows": [
+        {
+          "source_row_ordinal": 2,
+          "name": "Manuel Ramón Castillo Molina",
+          "role": "Secretario General",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/n12ndtcZuIsaup8ev48u.jpg",
+          "legacy_row_id": "a-idbyTLuQei0wtaVGuPP1w"
+        },
+        {
+          "source_row_ordinal": 3,
+          "name": "Gemma Delfina Ceballos Lepe",
+          "role": "Secretaría de Interior",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/o9tHEx7u9Uj6mMNafPt6.jpg",
+          "legacy_row_id": "ohekWO1LRAql8R-mptFR5Q"
+        },
+        {
+          "source_row_ordinal": 4,
+          "name": "Missael Castro Cortez",
+          "role": "Secretaría de Conflictos",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/QpQZDRSmOjDFUNu46jhw.jpg",
+          "legacy_row_id": "z6dOvI6-SfOI5Ft8kkI1Mg"
+        },
+        {
+          "source_row_ordinal": 5,
+          "name": "Cristian Guadalupe Hernández Enríquez",
+          "role": "Secretario de Trabajo",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/7LhrrajfS1PSeSypaVFA.jpg",
+          "legacy_row_id": "Luxhi2D8Rd6HIjBf6IufVg"
+        },
+        {
+          "source_row_ordinal": 6,
+          "name": "Daniel Leyva Yanez",
+          "role": "Secretario de Actas y Acuerdos",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/DeLl2k3CV1t5xXIcu7tp.jpg",
+          "legacy_row_id": "HW-qKTxbSTGCKmwakIrSqw"
+        },
+        {
+          "source_row_ordinal": 7,
+          "name": "Juan Carlos Enríquez Gaytán",
+          "role": "Secretario de Finanzas",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Sf9FEuRevQsc5nd4REnn.jpg",
+          "legacy_row_id": "H4BGJurZQ0SY6eUMc.-xcg"
+        },
+        {
+          "source_row_ordinal": 8,
+          "name": "María Teresa Estrada Cárdenas",
+          "role": "Secretaría de Previsión Social",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/4rn9fiqCZPsluySXvb4s.jpg",
+          "legacy_row_id": "N0F7orXXRp2IEh1aiWjSQg"
+        },
+        {
+          "source_row_ordinal": 9,
+          "name": "Claudia Alejandra Madonia Lopéz",
+          "role": "Secretaría de Organización y Propaganda",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/QHweAQREURGR3C9kOy8s.jpg",
+          "legacy_row_id": "6NWoEc9rQFqA.n8E-6NGtA"
+        },
+        {
+          "source_row_ordinal": 10,
+          "name": "Ramón Ignacio García Pacheco",
+          "role": "Secretario del Exterior",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/0sTLHDsh0liV8orFf7p8.jpg",
+          "legacy_row_id": "LF4h6VudRxmbbJxYIg6APQ"
+        },
+        {
+          "source_row_ordinal": 11,
+          "name": "Mariana Jazmín Franco Quijada",
+          "role": "Secretaría de Asuntos Técnicos",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/E6MHNZpCiAChLVMckws8.jpg",
+          "legacy_row_id": "qds4FtjpTlKx-BfboqfL-Q"
+        },
+        {
+          "source_row_ordinal": 12,
+          "name": "",
+          "role": "Secretario de Delegaciones Foráneas",
+          "image_url": "",
+          "legacy_row_id": "PjDUUAxjTs2aOddJ4EVnaQ"
+        },
+        {
+          "source_row_ordinal": 13,
+          "name": "Karla Johanna Hernández Marrujo",
+          "role": "Secretaría de Prensa",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/zywwkLWSeeZs7nOe3wm3.jpg",
+          "legacy_row_id": "WCvxl9m-TJ-fCUCoDdfNGw"
+        },
+        {
+          "source_row_ordinal": 14,
+          "name": "Claudia Elena Luna Álvarez",
+          "role": "Secretaría de Fomento a la Vivienda",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/CdszGPqwgVtw58IGuNgq.jpg",
+          "legacy_row_id": "0izC3PAXRwSXmdZmFaQUsA"
+        },
+        {
+          "source_row_ordinal": 15,
+          "name": "Susana Guadalupe Nuñez Luna",
+          "role": "Secretaría de Admisión y Cambios",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/0FS5T9n77i9J84Jzy7b6.jpg",
+          "legacy_row_id": "rgqiPDoRTICHPOLheqdLVg"
+        },
+        {
+          "source_row_ordinal": 16,
+          "name": "Juan Manuel Valenzuela Puebla",
+          "role": "Secretario de Capacitación y Adiestramiento",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/ER5Kz6qeEeIBwN9Osdbd.jpg",
+          "legacy_row_id": "fNrYwd6yRQydwiwFFzrmYw"
+        },
+        {
+          "source_row_ordinal": 17,
+          "name": "Luis Fernando Verdugo González",
+          "role": "Secretario de Cultura, Recreación y Turísmo",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/mCOArHkW31gmdJ2CbFh3.jpg",
+          "legacy_row_id": "uWp5cAsOS4qC1FptzgLGiQ"
+        },
+        {
+          "source_row_ordinal": 18,
+          "name": "Joel Cárdenas Sepúlveda",
+          "role": "Secretario de Acción Política",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/utGylREPEjHGWRQKB0l5.jpg",
+          "legacy_row_id": "fAJYoGZTRweSHuAv4b4Afg"
+        },
+        {
+          "source_row_ordinal": 19,
+          "name": "Sagrario Alejandra León Guzaino",
+          "role": "Secretaría de Fomento Integral para el Bienestar del Pensionado y Jubilado",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/sRGZGFcehdrOwocb6ENn.jpg",
+          "legacy_row_id": "YFjjTnA.S56ARNV3cMfIHQ"
+        },
+        {
+          "source_row_ordinal": 20,
+          "name": "Jesús Gilberto Noriega Cebreros",
+          "role": "Comisión de Hacienda - Presidente",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/P1Mh5n6VExKgeWSgl4i2.jpg",
+          "legacy_row_id": "G.TlDP8TTyKMWziLMVN1gA"
+        },
+        {
+          "source_row_ordinal": 21,
+          "name": "Karla María Cruz Amparano",
+          "role": "Comisión de Hacienda - Primer Vocal",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/6eh1AqoZhzVVgBsVAss4.jpg",
+          "legacy_row_id": "GEOcQALQQqu3NWfyYVcXvA"
+        },
+        {
+          "source_row_ordinal": 22,
+          "name": "Arcelia García Puebla",
+          "role": "Comisión de Hacienda - Secretaria",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Rt2DKhUPKgs2XOqe3CPB.jpg",
+          "legacy_row_id": "CTSNyI3dTFu7ih-otX9g.w"
+        },
+        {
+          "source_row_ordinal": 23,
+          "name": "Ana Estefanía Villarreal Encinas",
+          "role": "Comisión de Hacienda - Segundo Vocal",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/K52We7lY0j76mMXjKOsd.jpg",
+          "legacy_row_id": "uNE4dQGzQjWgEPENqL0PjA"
+        },
+        {
+          "source_row_ordinal": 24,
+          "name": "Cristian Iván Duarte Valles",
+          "role": "Comisión de Honor y Justicia - Presidente",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/SSRxd7T31Cxh4hNiqTN3.jpg",
+          "legacy_row_id": "HOIPkGr2Ttq-ylmOhtvy-A"
+        },
+        {
+          "source_row_ordinal": 25,
+          "name": "Oscar Antonio Soto Hernández",
+          "role": "Comisión se Honor y Justicia - Secretario",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/7r2WMox0A7RtZnDp9Rod.jpg",
+          "legacy_row_id": "Q3t6-SdnTUOKlSCgyrg5.g"
+        },
+        {
+          "source_row_ordinal": 26,
+          "name": "Cecilio de los Reyes Aguiñaga",
+          "role": "Comisión de Honor y Justicia - Primer Vocal",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/GFQ1V7SChQdSVn3dOYH5.jpg",
+          "legacy_row_id": "JZCEF6kDTWqwMeumJj6Vhg"
+        },
+        {
+          "source_row_ordinal": 27,
+          "name": "",
+          "role": "Comisión de Honor y Justicia - Segundo Vocal",
+          "image_url": "",
+          "legacy_row_id": "DToS4T04TBG.0Yqa6eswpw"
+        },
+        {
+          "source_row_ordinal": 28,
+          "name": "Rocío Pacheco Salazar",
+          "role": "Comisión de Vigilancia - Presidente",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/0moesQ8yQkOcY8YjZe9y.jpg",
+          "legacy_row_id": "Rr7rFl9dSP28aNPYsywbRw"
+        },
+        {
+          "source_row_ordinal": 29,
+          "name": "Jesús Eduardo Rivas Álvarez",
+          "role": "Comisión de Vigilancia - Secretario",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/j2sMDFMRmFw4uBCuPnHJ.jpg",
+          "legacy_row_id": "JTLC.rnpQhuE6KeYTZEIow"
+        },
+        {
+          "source_row_ordinal": 30,
+          "name": "Elisa Sarahí Echegaray Gálvez",
+          "role": "Comisión de Vigilancia - Primer Vocal",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/n0yPxf8BEYo6Y53O8dVx.jpg",
+          "legacy_row_id": "a-v3vcFUXSbuRJvhR0H.3uw"
+        },
+        {
+          "source_row_ordinal": 31,
+          "name": "Norma Alicia Cons",
+          "role": "Comisión de Vigilancia - Segundo Vocal",
+          "image_url": "",
+          "legacy_row_id": "t7AxL.ZFQ92vVTwnWgzRdg"
+        }
+      ]
+    },
+    "minutes": {
+      "range": "'Minutas de acuerdos'!A1:E7",
+      "physical_source_rows": 6,
+      "meaningful_source_rows": 5,
+      "blank_source_rows": 1,
+      "rows": [
+        {
+          "source_row_ordinal": 3,
+          "title": "Minuta de acuerdos 17 de Abril 2023",
+          "description": "Describir de que es el archivo",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/ECZtLVNbPel1AL16juGU.pdf",
+          "image_url": null,
+          "date_serial": 45033
+        },
+        {
+          "source_row_ordinal": 4,
+          "title": "Minuta de acuerdos 20 de Feb 2023",
+          "description": "Describir de que es el archivo",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/VuuxGbqOHBK8NXftX9DC.pdf",
+          "image_url": null,
+          "date_serial": 44977
+        },
+        {
+          "source_row_ordinal": 5,
+          "title": "Minuta de acuerdos 14 de Sep 2022",
+          "description": "Describir de que es el archivo",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/1y3YDy1Lq4XrIh1BGxvf.pdf",
+          "image_url": null,
+          "date_serial": 44818
+        },
+        {
+          "source_row_ordinal": 6,
+          "title": "Minuta de acuerdos 05 de julio 2023",
+          "description": null,
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/JSNTC4j3rA6JObdOGdzG.pdf",
+          "image_url": null,
+          "date_serial": 45112
+        },
+        {
+          "source_row_ordinal": 7,
+          "title": "Minuta de acuerdos 17 de agosto 2026",
+          "description": null,
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/RPxm3DUTNQ7sqb6qEbTc.pdf",
+          "image_url": null,
+          "date_serial": 46251
+        }
+      ]
+    },
+    "institutional_documents": {
+      "ranges": [
+        "'Descargas2'!A1:D17",
+        "'Descarga de formatos'!A1:D2",
+        "'Normas y Reglamentos'!A1:D3"
+      ],
+      "physical_source_rows": 19,
+      "meaningful_source_rows": 8,
+      "blank_source_rows": 11,
+      "rows": [
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 7,
+          "kind": "download",
+          "title": "01 Formato APOYO DE GUARDERÍA",
+          "description": "",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/gsI38FK3yNbawYPvGNg2.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/YwFHeNOCCA0KiykwDuub.jpg"
+        },
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 12,
+          "kind": "download",
+          "title": "02 Formato SUSTITUCIÓN TXT",
+          "description": "",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/WP87ALB9d67MPGwm1nDY.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/8TDcEV5L3rL6H3EZM5t7.jpg"
+        },
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 13,
+          "kind": "download",
+          "title": "03 Formato DÍAS ECONOMICOS",
+          "description": "",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/8FUdlBxVpV0LzbxHH8qF.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/HYiHJs8v6zxkmLWTwhas.jpg"
+        },
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 15,
+          "kind": "download",
+          "title": "04 Formato APOYO ÚTILES ESCOLARES",
+          "description": "",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/mZi476BV2gPC5yRQgiUD.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/gRS6uqcREoec90FsKtto.jpg"
+        },
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 16,
+          "kind": "download",
+          "title": "05 Formato CARTA PODER",
+          "description": "",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/3NjHAMzdwuXXIg2L50pr.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/u6m13jRvJUpsrgALP25d.jpeg"
+        },
+        {
+          "source_sheet": "Descargas2",
+          "source_row_ordinal": 17,
+          "kind": "download",
+          "title": "Solicitud de Apoyo Útiles Escolares",
+          "description": "El formulario permite a hijos de trabajadores afiliados solicitar apoyo económico para útiles escolares en 2026-2027, presentando documentos como INE, acta de nacimiento y comprobantes escolares. La entrega debe hacerse entre el 29 de junio y el 15 de julio de 2026, con un apoyo por hijo.",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/pXT76lQmuXaOKThlhrsF.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/u6m13jRvJUpsrgALP25d.jpeg"
+        },
+        {
+          "source_sheet": "Normas y Reglamentos",
+          "source_row_ordinal": 2,
+          "kind": "regulation",
+          "title": "ESTATUTOS SUTISSSTESON 2025",
+          "description": "Normas y Reglamentos del SUTISSSTESON",
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/HHKYbf5s76TDNgM02NYJ.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/9fvwbUDeMlgjU7GRjP1i.jpeg"
+        },
+        {
+          "source_sheet": "Normas y Reglamentos",
+          "source_row_ordinal": 3,
+          "kind": "regulation",
+          "title": "REGLAMENTO DE OPERACIÓN DE LA CAJA DE AHORRO VOLUNTARIA SEMESTRAL",
+          "description": null,
+          "document_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/PoiMGKlhggV8cO9PnWNT.pdf",
+          "image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/FH7cL0wyFPQTV7YRzALG.jpeg"
+        }
+      ]
+    },
+    "institutional_programs": {
+      "ranges": [
+        "'Secretaría de finanzas'!A1:S18",
+        "'Secretaría de finanzas'!W1:W18"
+      ],
+      "physical_source_rows": 17,
+      "meaningful_source_rows": 17,
+      "blank_source_rows": 0,
+      "rows": [
+        {
+          "source_row_ordinal": 2,
+          "category": "Suti Auto",
+          "description": "Financiamiento de Automóvil",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/iSSJVUNsNEE3O9Hsm8e5.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 3,
+          "category": "Suti Renta",
+          "description": "¿Te interesa rentar un vehículo?",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/DHxGLolotliKjW95YEym.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 4,
+          "category": "Portafolio de Inversión",
+          "description": "Invierte tu Dinero y Genera Rendimiento",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/ZlpZAcjjv5WXXnqiF5zh.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 5,
+          "category": "Suti Market",
+          "description": "Venta de productos con descuento vía nómina.",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Yhtfrqo31XS2r8p2elED.gif",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 6,
+          "category": "Suti Ahorro",
+          "description": null,
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/SHtSEYBedppC8139SwMt/pub/xJlUS4ZVUX9MjoyM65uU.gif",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 7,
+          "category": "Suti Prestamo",
+          "description": null,
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/aCIqIL0pDX675BXRgF9V.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 8,
+          "category": "Suti Casa",
+          "description": "Explora propiedades exclusivas para vivir o invertir.",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/51pKBaV8qEdhcs3Zg6qR.png",
+          "gallery_image_urls": [
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/JBh1d4vKQAqx3uGHM10H.jpeg",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/mNXZBvyKhONWMtMTtX9w.jpeg",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/cg7J8szHe6EM1BCq8Zqi.jpeg",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/8U4aFNXaYSEkSIYBVzmh.jpeg"
+          ],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 9,
+          "category": "Suti Terrenos",
+          "description": "Venta de terrenos campestres con descuentos vía nómina.",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/KPlxMQsiSiuu6Qz25hPf.png",
+          "gallery_image_urls": [
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/fJiS62XMuivmWR3R3K5V.png",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/r4XjJiKFMzJGhEQi61xZ.jpeg",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kcTiyiPxdYk2KNH2dYdM.jpeg",
+            "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/oaYIJ0i04WtTsdnMC3qp.jpeg"
+          ],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": "28.830123176534137, -111.8373221110871",
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 10,
+          "category": "Suti Tours",
+          "description": "Pagos nominales para viajes Inolvidables",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Xc5f7kaPmuC2pQtNO0AY.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6624755475",
+          "whatsapp_raw": "6624755475",
+          "facebook_url": "https://www.facebook.com/reynatravelplanner",
+          "instagram_url": "https://www.instagram.com/reyna_travelplanner/",
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": "https://api.whatsapp.com/send?phone=6621670367",
+          "tiktok_url": "https://www.tiktok.com/@reyna_travelplanner?_t=zm-8sxdp6hbrnq&_r=1"
+        },
+        {
+          "source_row_ordinal": 11,
+          "category": "Suti Farma",
+          "description": "Venta de productos Farmaceuticos",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/NSvcQXGNIKuF6uVwcK4d.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 12,
+          "category": "Suti Cirugías",
+          "description": "Financiamiento de Cirugías Estéticas",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/OcN2VWUZVxqaxzCqp0WO.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6622315407",
+          "whatsapp_raw": "6622315407",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": "https://api.whatsapp.com/send?phone=5216622315407&text=Podr%C3%ADa%20darme%20informaci%C3%B3n%20sobre%20Suti%20Cirug%C3%ADas%20por%20favor",
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 13,
+          "category": "Paneles Solares",
+          "description": "Los paneles solares requieren poco mantenimiento y pueden aumentar el valor de la propiedad.",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Bii9Zwwol1XYjyQQvBz1.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6311480129",
+          "whatsapp_raw": "6311480129",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 14,
+          "category": "Suti Rifas",
+          "description": "Rifas",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/H4zg7jpab1fnWO9ecMG3.gif",
+          "gallery_image_urls": [],
+          "phone_raw": "6621670367",
+          "whatsapp_raw": "6621670367",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 15,
+          "category": "Suti Servicios",
+          "description": "Reparaciones y servicios en general",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/JyOoxz1Gf5IsQrbrRlIG.gif",
+          "gallery_image_urls": [],
+          "phone_raw": "6622315407",
+          "whatsapp_raw": "6622315407",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 16,
+          "category": "Aires Acondicionados",
+          "description": "Sistema que climatiza en ambiente frio tus espacios",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Fg0uTykGhLyrhmGEnFSE.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6622315407",
+          "whatsapp_raw": "6622315407",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 17,
+          "category": "Puertas de Seguridad",
+          "description": "Sistema de entrada reforzada para prevenir intrusiones y robos",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/0dB7XDO5IIX61rFTkuDa.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6622315407",
+          "whatsapp_raw": "6622315407",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        },
+        {
+          "source_row_ordinal": 18,
+          "category": "Equipos de Computo",
+          "description": "Dispositivo electrónico diseñado para transformar datos en información útil",
+          "primary_image_url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/uo88ocBx5bubvPYxxOb3.png",
+          "gallery_image_urls": [],
+          "phone_raw": "6622315407",
+          "whatsapp_raw": "6622315407",
+          "facebook_url": null,
+          "instagram_url": null,
+          "share_url": null,
+          "location_raw": null,
+          "whatsapp_url": null,
+          "tiktok_url": null
+        }
+      ]
+    }
+  },
+  "blocked_domains": {
+    "reference_catalogs": {
+      "status": "BLOCKED",
+      "reason": "H-DATA-001 aggregates segmentation with Choice property/material/investment config and Icons payment-state data; no partial authority cutover."
+    }
+  }
+}

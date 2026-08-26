@@ -1,0 +1,25 @@
+'use strict';
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const read=(p)=>fs.readFileSync(p,'utf8');
+const sandbox={window:{}};vm.createContext(sandbox);vm.runInContext(read('app/union-screen-registry.js'),sandbox);
+const registry=sandbox.window.UNION_SCREEN_REGISTRY;
+assert.strictEqual(registry.length,9,'canonical registry must contain nine screens');
+assert.deepStrictEqual(Array.from(registry,x=>x.screen_key),['comite','normas','minuta','finanzas','convenios','formatos','categoria','antiguedad','jubilados']);
+for(const entry of registry)for(const key of ['screen_key','title','description','icon','frontend_route','authority_type','authority_resource','admin_editor','section_permission'])assert(entry[key],`${entry.screen_key}.${key} missing`);
+
+const data=read('app/data.jsx'),home=read('app/screens-home-r2.jsx'),institutional=read('app/institutional-content.js'),admin=read('app/screens-admin-sindicato.jsx'),adminRoot=read('app/screens-admin.jsx'),store=read('app/sindicato-store.jsx'),market=read('app/screens-marketplace.jsx'),repo=read('app/admin-repository.js'),cutoverRepo=read('app/admin-cutover-repository.js'),visual=read('app/screens-admin-visual-crud.jsx'),migration=read('supabase/migrations/20260823000800_union_canonical_cutover.sql'),recovery=read('supabase/recovery/20260823000800_union_canonical_cutover_recovery.sql'),builder=read('scripts/build-bundle.js');
+assert(data.includes('const institucional = window.UNION_SCREEN_REGISTRY')&&!/const institucional = \[/.test(data),'DATA duplicate registry remains');
+assert(home.includes('const modules = window.UNION_SCREEN_REGISTRY')&&home.includes("app.setTab(m.frontend_route.target)"),'Home canonical routing missing');
+assert(institutional.includes('window.UNION_SCREEN_BY_KEY'),'institutional duplicate navigation remains');
+assert(admin.includes('window.UNION_SCREEN_REGISTRY')&&admin.includes('data-union-admin-card'),'Admin canonical cards missing');
+assert(adminRoot.includes("'directory_admin'")&&adminRoot.includes('filterKinds:viewContext&&viewContext.kinds'),'authoritative editor routing missing');
+assert(repo.includes("directory: { table:'directory_members'")&&visual.includes("directory:{title:'Comité Ejecutivo'"),'Committee CRUD missing');
+assert(cutoverRepo.includes('header_asset_id')&&cutoverRepo.includes('union_content_blocks_asset_id_fkey'),'union asset relations missing');
+for(const source of [store,admin])assert(!/localStorage|FileReader|dataUrl|image-slot/.test(source),'local productive union asset authority remains');
+assert(!/b\.file\.dataUrl/.test(market),'runtime data URL fallback remains');
+assert(!/saveCopy|managed_copy_overrides/.test(store+admin),'structured union edits use managed copy overrides');
+assert(migration.includes('directory_members_record_origin_check')&&migration.includes('HISTORICAL_DELETE_DENIED')===false&&migration.includes("record_origin='ADMIN_SECTION_ROLLOUT'"),'Committee provenance guard missing');
+assert(migration.includes('union_screen_content_header_asset_id_fkey')&&migration.includes("split_part(storage_path,'/',1)='sindicato'"),'union Storage boundary missing');
+assert(recovery.includes('Fail closed')&&!/drop column|delete from|truncate/i.test(recovery),'recovery must preserve data');
+assert(builder.includes("'union-screen-registry.js'"),'registry absent from executable bundle');
+console.log(JSON.stringify({status:'PASS',frontend_canonical_cards:9,admin_canonical_cards:9,mismatch:0,local_union_asset_authorities:0,emergencias:'OBSOLETE'}));

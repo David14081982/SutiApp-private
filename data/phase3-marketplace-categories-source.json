@@ -1,0 +1,24 @@
+{
+  "source": {
+    "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+    "spreadsheet_title": "SutiApp Final",
+    "sheet": "Categorías SutiCompras",
+    "range": "A1:C4",
+    "read_mode": "READ_ONLY",
+    "captured_at": "2026-08-21"
+  },
+  "headers": ["Categoría", "Imagen Categoría", "Imagen Subcategoría"],
+  "rows": [
+    ["Electrónica", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/uifITmOrgXJbSubwzSWj.png", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/9TRrWrQw3ivdkvZMuRYu.png"],
+    ["Moda", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/kxybBsvE9ooCLjvdOgac.png", null],
+    ["Salud y belleza", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Ry3XUcGCCX0RZjFVWpTi.jfif", null]
+  ],
+  "excluded": {
+    "Subcategorías SutiCompras": "header only",
+    "Productos SutiCompras": "header only",
+    "Empresas Suticompras": "incomplete test row; not an authority",
+    "Historial Presupuestos": "identity and semantics unresolved; infrastructure starts empty",
+    "Choice Suticompras": "orphan helper rows; not a catalog authority",
+    "Banner SutiCompras": "already preserved as disabled marketplace banners by H-007.2"
+  }
+}

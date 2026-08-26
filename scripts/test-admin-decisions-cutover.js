@@ -1,0 +1,21 @@
+'use strict';
+const fs=require('fs'),path=require('path'),root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+function ok(v,m){if(!v)throw new Error(m);}
+const migration=read('supabase/migrations/20260822000400_admin_decisions_cutover.sql'),benefits=read('supabase/migrations/20260822000410_admin_company_benefits.sql'),harden=read('supabase/migrations/20260822000411_harden_admin_cutover_visibility.sql'),recovery=read('supabase/recovery/20260822000400_admin_decisions_cutover.sql'),repo=read('app/admin-cutover-repository.js'),adapter=read('app/admin-cutover-store.jsx'),admin=read('app/screens-admin.jsx'),sind=read('app/sindicato-store.jsx'),flow=read('app/flow-store.jsx'),fincat=read('app/fincat-store.jsx'),builder=read('scripts/build-bundle.js'),bundle=read('app/bundle.js');
+['admin_roles','admin_role_permissions','segmentation_catalog_entries','affiliate_segment_tags','screen_access_policies','company_audience_rules','finance_catalog_presentation','operational_workflows','operational_workflow_stages','operational_request_tracking','union_screen_content','union_content_blocks'].forEach(t=>ok(migration.includes(t),'missing table '+t));
+ok(migration.includes("SELF_ASSIGNMENT_DENIED")&&migration.includes('LAST_PRINCIPAL_ADMIN_REQUIRED')&&migration.includes('SYSTEM_ROLE_IMMUTABLE'),'role guards');
+ok(migration.includes("catalog_type='tag'")&&migration.includes('tag_code=any(p_tags)'),'tag audience backend');
+ok(migration.includes('force row level security')&&migration.includes("segmentation.write")&&migration.includes("authorization.write"),'RLS permission guards');
+ok(recovery.includes('exact legacy permission projection')&&recovery.includes('affiliate_segment_tags')&&recovery.includes('admin_assignments_read_self'),'recovery completeness');
+ok(benefits.includes('company_benefit_profiles')&&benefits.includes('company_benefits')&&benefits.includes('force row level security'),'company benefit authority');
+ok(harden.includes('c.enabled')&&harden.includes('s.published'),'parent visibility hardening');
+ok(repo.includes('AdminCutoverRepository')&&adapter.includes('AdminCutoverStore'),'repository adapter');
+ok(adapter.includes("toCodes('union'")&&adapter.includes('deleteCompanyBenefit'),'canonical mapping/reconciliation');
+ok(!sind.includes('localStorage')&&!flow.includes('localStorage')&&!fincat.includes('localStorage'),'local authority remains');
+ok(!sind.includes('window.DATA')&&!flow.includes('window.DATA'),'mock/DATA authority remains');
+['sindicato','convenios','catalogos','roles','pantallas'].forEach(id=>ok(new RegExp("id: '"+id+"'.*PRODUCTIVE_SUPABASE").test(admin),'supabase route '+id));
+['fincat','flujos','secciones','menus','formularios'].forEach(id=>ok(new RegExp("id: '"+id+"'.*PRODUCTIVE_HYBRID").test(admin),'hybrid route '+id));
+ok(!/id: '(sindicato|fincat|flujos|convenios|catalogos|roles|pantallas|secciones|menus|formularios)'.*OWNER_DECISION_REQUIRED/.test(admin),'generic decision remains');
+ok(builder.includes('admin-cutover-repository.js')&&builder.includes('admin-cutover-store.jsx')&&bundle.includes('AdminCutoverRepository'),'bundle cutover missing');
+ok(!/service_role|SUPABASE_ACCESS_TOKEN/.test(repo+adapter+sind+flow+fincat),'frontend secret reference');
+console.log('ADMIN_DECISIONS_CUTOVER_STATIC PASS');

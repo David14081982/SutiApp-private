@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title">
+  <title id="title">Sello institucional SUTISSSTESON</title>
+  <defs>
+    <path id="top" d="M30 100a70 70 0 0 1 140 0"/>
+    <path id="bottom" d="M32 100a68 68 0 0 0 136 0"/>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="#fff" stroke="#910022" stroke-width="2"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#910022" stroke-width="5"/>
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#910022" stroke-width="1.5"/>
+  <text fill="#910022" font-family="Nunito,Arial,sans-serif" font-size="15" font-weight="800" letter-spacing="2">
+    <textPath href="#top" startOffset="50%" text-anchor="middle">JUSTICIA · TRANSPARENCIA · UNIDAD</textPath>
+  </text>
+  <text fill="#910022" font-family="Nunito,Arial,sans-serif" font-size="19" font-weight="800" letter-spacing="3">
+    <textPath href="#bottom" startOffset="50%" text-anchor="middle">SUTISSSTESON</textPath>
+  </text>
+  <circle cx="22" cy="100" r="2.5" fill="#910022"/>
+  <circle cx="178" cy="100" r="2.5" fill="#910022"/>
+  <g transform="translate(50 45)" fill="#910022" stroke="#910022" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M34 92V70q0-10 8-14h16q8 4 8 14v22z"/>
+    <path d="M34 70h32v5H34z" fill="#fff" stroke-width="1.5"/>
+    <path d="M37 58q-2-14 3-18h22q3 6 2 18z"/>
+    <path d="M40 41V30q0-4 3.5-4t3.5 4v11z"/>
+    <path d="M47 41V27q0-4 3.5-4t3.5 4v14z"/>
+    <path d="M54 41V28q0-4 3-4t3 4v13z"/>
+    <path d="M40 44q-7 0-8 6-1 5 5 6l3-4z"/>
+  </g>
+</svg>

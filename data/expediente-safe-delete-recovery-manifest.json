@@ -1,0 +1,12 @@
+{
+  "generated_for": "OWNER DECISION — EXPEDIENTE HISTÓRICO + DEPURACIÓN SEGURA",
+  "generated_on": "2026-08-25",
+  "mode": "READ_ONLY",
+  "safe_delete_asset_ids": [],
+  "safe_delete_object_paths": [],
+  "relations_to_remove": [],
+  "reason": "No candidate satisfies backup plus all zero-reference gates.",
+  "recovery_required_before_delete": true,
+  "storage_objects_deleted": 0,
+  "db_relations_removed": 0
+}

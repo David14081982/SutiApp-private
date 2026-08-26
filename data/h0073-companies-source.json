@@ -1,0 +1,428 @@
+{
+  "schema_version": 1,
+  "work_item": "H-007.3",
+  "source": {
+    "system": "Google Sheets",
+    "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+    "sheet": "Convenios2",
+    "range": "A1:I46",
+    "authority_scope": "Directorio público histórico de empresas y convenios; no constituye padrón legal ni catálogo de Marketplace.",
+    "row_order_policy": "Physical sheet order is authoritative.",
+    "captured_read_only_on": "2026-08-21"
+  },
+  "source_assessment": {
+    "meaningful_rows": 33,
+    "competing_sources": [
+      {
+        "sheet": "Convenios Suti",
+        "assessment": "Headers only; no data rows."
+      },
+      {
+        "sheet": "Empresas Suticompras",
+        "assessment": "One incomplete test row; not authoritative."
+      }
+    ],
+    "transformation_policy": "Preserve raw cells; do not parse company names, discounts, categories or benefits."
+  },
+  "rows": [
+    {
+      "source_row_ordinal": 7,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "ÓPTICA SALUD VISUAL",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 11,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "OFTAVISIÓN (OFTALMÓLOGOS, COMSULTA, ESTUDIOS, CIRUGÍAS O ARMAZONES)",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 12,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "AF FISIOTRAPIA; ORTOPÉDICA, NEUROLÓGICA, GERIÁTRICA, CARDIOPULMONAR, ATENCIÓN POST-HOSPITALARIA, ELECTROTERAPIA Y FISIOTERAPIA DEPORTIVA",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 13,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "DENTAL LIFE; ODONTOLOGÍA, ESPECIALIDADES COMO ORTODONCIA, ENDODONCIA, ODONTOPEDIATRÍA Y CIRUGÍA MAXILOFACIAL",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 14,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FUNERARIA LEÓN; 15% DE DESCUENTO AL PRECIO DE LISTA VIGENTE",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 15,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FUNERARIA SAN MARTÍN; PRECIOS PREFERENCIALES",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 19,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "ALTA VIDA; RESIDENCIA GERIÁTRICA  ",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 20,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "KYOTO STAY; ESTANCIA EJECUTIVA",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 21,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "HOTEL ARAIZA",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 22,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FYSSON; SUSPENSIÓN, FRENOS AUTOMOTRICES Y SISTEMA DE EMBRAGUE",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 23,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "PULLMAN DE SONORA; TRANSPORTE PERSONALIZADO",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 24,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "NAVER CAR RENTALS",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 25,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "KeBURROS",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 26,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "SIAN KAAN; RESTAURANT Y PASEO CAMPESTRE",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 27,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "ENVÍOEXPRESS; ENVÍOS NACIONALES E INTERNACIONALES",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 28,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FIESTA INN EXPRESS HERMOSILLO",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 29,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FIESTA INN OBREGÓN",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 30,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "FIESTA INN NOGALES",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 31,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "HOTEL MARINATERRA SAN CARLOS",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 32,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Preescolar",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 33,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Primaria",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 34,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Secundaria",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 35,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Preparatoria",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 37,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Universidad",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 38,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Convenio Educativo Post Grado",
+      "description_raw": null,
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 39,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "Linguatec",
+      "description_raw": "Escuela de Ingles",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "D",
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 40,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "universidad del valle de México",
+      "description_raw": "UVM",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "D",
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 41,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "SAN CARLOS PLAZA HOTEL",
+      "description_raw": "PRECIOS PREFERENCIALES",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 42,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "HOTEL LUCERNA EN HERMOSILLO",
+      "description_raw": "HOTEL LUCERNA",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 43,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "HOTEL SAWARI EN SAN CARLOS",
+      "description_raw": "HOTEL SAWARI EN SAN CARLOS",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 44,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "XINAPSIS... DIAGNÓSTICO/EVALUACIÓN, INTERVENCIÓN Y PSICOTERAPIA A MENORES EN EL ÁREA DE NEURODESARROLLO.",
+      "description_raw": "DIAGNÓSTICO/EVALUACIÓN, INTERVENCIÓN Y PSICOTERAPIAEN EL ÁREA DE NEURODESARROLLO \n",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 45,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "PAPELERIA DANY, ARTÍCULOS ESCOLARES Y OFICINA",
+      "description_raw": "PAPELERIA DANY",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    },
+    {
+      "source_row_ordinal": 46,
+      "title_raw": "Convenios Comerciales",
+      "category_raw": null,
+      "name_raw": "MOCHILANDIA, ARTÍCULOS ESCOLARES",
+      "description_raw": "MOCHILANDIA",
+      "discount_raw": null,
+      "phone_raw": null,
+      "asset_columns": [
+        "E"
+      ]
+    }
+  ]
+}
+

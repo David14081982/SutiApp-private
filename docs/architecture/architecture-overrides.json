@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "purpose": "Minimal semantic metadata that cannot be inferred safely from syntax alone.",
+  "domain_rules": [
+    {"domain": "identity", "patterns": ["credencial", "affiliate", "auth", "expediente", "profile photo", "private assets"]},
+    {"domain": "agreements", "patterns": ["convenios", "companies repository", "company benefits"]},
+    {"domain": "finance", "patterns": ["loan", "prestamo", "financial legacy", "payroll declaration", "loan term"]},
+    {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
+  ],
+  "nodes": [
+    {"type": "screen", "name": "CredencialScreen", "file": "app/screens-credencial.jsx", "domain": "identity", "aliases": ["Credencial", "Credencial digital", "Fotografía de credencial", "Perfil"], "source_of_truth": "SUPABASE", "properties": {"protected_boundary": "Auth affiliate identity + private Storage/RLS"}},
+    {"type": "service", "name": "AffiliateAuth", "file": "app/affiliate-auth.js", "domain": "identity", "source_of_truth": "SUPABASE"},
+    {"type": "service", "name": "createAffiliateViewModel", "file": "app/affiliate-view-model.js", "domain": "identity", "aliases": ["photoUrl", "proyección de fotografía"], "source_of_truth": "DERIVED"},
+    {"type": "component", "name": "Avatar", "file": "app/ui.jsx", "domain": "identity", "aliases": ["fotografía", "foto de perfil", "profile photo"]},
+    {"type": "test", "name": "scripts/test-profile-photo-browser.js", "file": "scripts/test-profile-photo-browser.js", "domain": "identity", "aliases": ["fotografía credencial", "profile photo test"]},
+    {"type": "screen", "name": "ConveniosScreen", "file": "app/screens-convenios.jsx", "domain": "agreements", "aliases": ["Convenios", "Acuerdos", "Directorio de empresas"], "source_of_truth": "SUPABASE"},
+    {"type": "admin_screen", "name": "ConveniosModule", "file": "app/screens-admin-convenios.jsx", "domain": "agreements", "aliases": ["Admin Convenios", "Administrar convenios"], "source_of_truth": "SUPABASE"},
+    {"type": "screen", "name": "LoanScreen", "file": "app/screens-loan.jsx", "domain": "finance", "aliases": ["Suti Préstamo", "Préstamo", "Loan", "Simula tu préstamo"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"protected_boundary": "Financial legacy read-only adapter; Supabase only for authorized supporting domains"}},
+    {"type": "table", "name": "public.affiliates", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["afiliados"]},
+    {"type": "table", "name": "public.affiliate_files", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["documentos de afiliado", "foto de perfil"]},
+    {"type": "table", "name": "public.private_assets", "domain": "identity", "source_of_truth": "SUPABASE"},
+    {"type": "storage_bucket", "name": "private-assets", "domain": "identity", "source_of_truth": "STORAGE"},
+    {"type": "table", "name": "public.companies", "domain": "agreements", "source_of_truth": "SUPABASE", "aliases": ["empresas", "convenios"]},
+    {"type": "table", "name": "public.company_benefits", "domain": "agreements", "source_of_truth": "SUPABASE"},
+    {"type": "edge_function", "name": "financial-legacy", "domain": "finance", "source_of_truth": "DERIVED", "properties": {"upstream_authority": "GOOGLE_LEGACY + authorized Supabase context"}},
+    {"type": "external_legacy_source", "name": "Google Criterios de fondos", "domain": "finance", "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED"}}
+  ],
+  "relationships": [
+    {"from_type": "screen", "from": "CredencialScreen", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
+    {"from_type": "screen", "from": "CredencialScreen", "to_type": "service", "to": "AffiliateAuth", "type": "USES"},
+    {"from_type": "service", "from": "AffiliateAuth", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
+    {"from_type": "service", "from": "AffiliateAuth", "to_type": "service", "to": "createAffiliateViewModel", "type": "USES"},
+    {"from_type": "repository", "from": "AffiliateRepository", "to_type": "table", "to": "public.affiliate_files", "type": "READS"},
+    {"from_type": "table", "from": "public.affiliate_files", "to_type": "table", "to": "public.private_assets", "type": "RELATES_TO"},
+    {"from_type": "table", "from": "public.private_assets", "to_type": "storage_bucket", "to": "private-assets", "type": "RESOLVES_TO"},
+    {"from_type": "screen", "from": "ConveniosScreen", "to_type": "repository", "to": "CompaniesRepository", "type": "USES"},
+    {"from_type": "repository", "from": "CompaniesRepository", "to_type": "table", "to": "public.companies", "type": "READS"},
+    {"from_type": "admin_screen", "from": "ConveniosModule", "to_type": "table", "to": "public.companies", "type": "ADMINISTERS"},
+    {"from_type": "admin_screen", "from": "ConveniosModule", "to_type": "screen", "to": "ConveniosScreen", "type": "REFLECTS_IN"},
+    {"from_type": "screen", "from": "LoanScreen", "to_type": "repository", "to": "FinancialLegacyRepository", "type": "USES"},
+    {"from_type": "repository", "from": "FinancialLegacyRepository", "to_type": "edge_function", "to": "financial-legacy", "type": "CALLS"},
+    {"from_type": "edge_function", "from": "financial-legacy", "to_type": "external_legacy_source", "to": "Google Criterios de fondos", "type": "READS"}
+  ]
+}

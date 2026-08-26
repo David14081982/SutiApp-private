@@ -1,0 +1,21 @@
+{
+  "name": "SutiApp — SUTISSSTESON",
+  "short_name": "SutiApp",
+  "description": "App de afiliados SUTISSSTESON: créditos, ahorro, convenios y servicios sindicales.",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "id": "./SutiApp.html",
+  "start_url": "./SutiApp.html",
+  "display_override": ["standalone", "minimal-ui"],
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f3f5",
+  "theme_color": "#910022",
+  "categories": ["finance", "lifestyle", "business"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

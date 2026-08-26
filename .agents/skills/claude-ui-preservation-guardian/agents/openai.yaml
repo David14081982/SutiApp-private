@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude UI Preservation Guardian"
+  short_description: "Protege la estructura original de cada pantalla"
+  default_prompt: "Usa $claude-ui-preservation-guardian para verificar y preservar la UI original antes de cerrar este cambio."

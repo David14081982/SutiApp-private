@@ -1,0 +1,6 @@
+begin;
+alter table public.marketplace_categories drop constraint if exists marketplace_categories_source_snapshot_hash_source_sheet_sour_key;
+alter table public.marketplace_products drop constraint if exists marketplace_products_source_snapshot_hash_source_sheet_sour_key;
+create unique index if not exists marketplace_categories_historical_source_idx on public.marketplace_categories(source_snapshot_hash,source_sheet,source_row_ordinal) where record_origin='HISTORICAL_IMPORT';
+create unique index if not exists marketplace_products_historical_source_idx on public.marketplace_products(source_snapshot_hash,source_sheet,source_row_ordinal) where record_origin='HISTORICAL_IMPORT';
+commit;

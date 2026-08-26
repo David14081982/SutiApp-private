@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supabase Security Review"
+  short_description: "Revisa Auth, RLS, roles y exposición"
+  default_prompt: "Use $supabase-security-review para auditar la seguridad de este trabajo con Supabase."

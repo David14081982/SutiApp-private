@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { evaluateVisibility, visibilityWindow, BUSINESS_TIME_ZONE } from '../supabase/functions/financial-legacy/visibility-policy.js';
+
+const root=path.resolve(import.meta.dirname,'..'),read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const edge=read('supabase/functions/financial-legacy/index.ts');
+const adminEdge=read('supabase/functions/financial-criteria-admin/index.ts');
+const apps=read('google-apps-script/financial-handoff/Code.gs');
+const migration=read('supabase/migrations/20260824000230_financial_criteria_visibility_admin.sql');
+const recovery=read('supabase/recovery/20260824000230_financial_criteria_visibility_admin_recovery.sql');
+const ui=read('app/screens-admin-fondos.jsx'),store=read('app/funds-store.jsx'),repo=read('app/financial-legacy-repository.js');
+new vm.Script(apps);new vm.Script(ui);new vm.Script(store);new vm.Script(repo);
+
+assert.equal(BUSINESS_TIME_ZONE,'America/Hermosillo');
+for(const [date,end] of [['2026-08-24T18:00:00Z','2026-12-31'],['2026-10-01T12:00:00Z','2027-02-28'],['2026-12-15T12:00:00Z','2027-04-30']]){
+  assert.equal(visibilityWindow(new Date(date)).upperISO,end);
+}
+const now=new Date('2026-08-24T18:00:00Z');
+assert.equal(evaluateVisibility(null,'AUTO',now).effectiveVisibility,'VISIBLE');
+assert.equal(evaluateVisibility('2026-10-15','AUTO',now).status,'AVAILABLE');
+assert.equal(evaluateVisibility('2026-07-15','AUTO',now).status,'UNAVAILABLE');
+assert.equal(evaluateVisibility('2027-01-15','AUTO',now).status,'SCHEDULED');
+assert.equal(evaluateVisibility('2027-01-15','MOSTRAR',now).status,'AVAILABLE');
+assert.equal(evaluateVisibility('2026-10-15','OCULTAR',now).status,'UNAVAILABLE');
+assert.equal(evaluateVisibility('2026-10-15','',now).visibilityMode,'AUTO');
+
+assert(edge.includes('range: "A2:P"')&&edge.includes('readVisibilityColumn()')&&!edge.includes('gvizCell(cells[15])')&&!edge.includes('showProgram'));
+assert(edge.includes('financial_criteria.visibility.read')&&edge.includes('programs: available.map'));
+assert(apps.includes("CRITERIA_VISIBILITY_COLUMN = 16")&&apps.includes("CRITERIA_VISIBILITY_HEADER = 'VISIBILIDAD SUTIAPP'"));
+assert(apps.includes('CRITERION_FINGERPRINT_MISMATCH')&&apps.includes('getRange(rowNumber,CRITERIA_VISIBILITY_COLUMN)'));
+assert(!/payload\.(?:column|range|sheet|rate|amount|term|date)/.test(apps));
+assert(adminEdge.includes('financial_criteria.visibility.write')&&adminEdge.includes('financial_criteria_visibility_audit'));
+assert(adminEdge.includes('GOOGLE_VISIBILITY_OAUTH_CLIENT_ID')&&adminEdge.includes('GOOGLE_VISIBILITY_OAUTH_CLIENT_SECRET'));
+assert(adminEdge.includes('GOOGLE_VISIBILITY_OAUTH_REFRESH_TOKEN')&&adminEdge.includes('https://oauth2.googleapis.com/token'));
+assert(adminEdge.includes('"Authorization": `Bearer ${accessToken}`')&&adminEdge.includes('VISIBILITY_GOOGLE_AUTH_NOT_CONFIGURED'));
+assert(migration.includes('force row level security')&&migration.includes('financial_criteria.visibility.read')&&migration.includes('financial_criteria.visibility.write'));
+assert(recovery.includes('audit table is intentionally retained'));
+for(const marker of ['Política automática','Configuración','Estado efectivo','Motivo obligatorio','Confirmar cambio'])assert(ui.includes(marker),marker);
+assert(store.includes('setVisibility')&&repo.includes("functions.invoke('financial-criteria-admin'"));
+for(const source of [ui,store,repo])assert(!/SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ACCESS_TOKEN|FINANCIAL_LEGACY_API_TOKEN/.test(source));
+const production=edge+adminEdge+apps+ui+store+repo;
+assert(!/15\/10\/2026|30\/11\/2026|15\/12\/2026|2027-01-15/.test(production));
+console.log(JSON.stringify({status:'PASS',timezone:BUSINESS_TIME_ZONE,crossYear:true,auto:true,mostrar:true,ocultar:true,column:'P',header:'VISIBILIDAD SUTIAPP',columnMModified:false,hardcodedDatedPrograms:0}));

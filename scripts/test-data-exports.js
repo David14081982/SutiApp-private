@@ -1,0 +1,52 @@
+'use strict';
+const fs=require('fs');
+const assert=require('assert');
+const read=p=>fs.readFileSync(p,'utf8');
+const edge=read('supabase/functions/data-exports/index.ts');
+const migration=read('supabase/migrations/20260823000700_create_operational_data_exports.sql');
+const recovery=read('supabase/recovery/20260823000700_create_operational_data_exports_recovery.sql');
+const repo=read('app/data-export-repository.js');
+const screen=read('app/screens-admin-data-exports.jsx');
+const admin=read('app/screens-admin.jsx');
+const html=read('SutiApp.html');
+const bundle=read('app/bundle.js');
+
+assert.match(migration,/create table public\.data_export_audit_log/);
+for(const field of ['export_id','actor_id','domain','filters','row_count','format','status','column_set','created_at'])assert.match(migration,new RegExp('\\b'+field+'\\b'));
+assert.match(migration,/data_exports\.read/);
+assert.match(migration,/action in \([^)]*'export'/s);
+assert.match(migration,/force row level security/);
+assert.match(recovery,/drop table public\.data_export_audit_log/);
+assert.match(recovery,/array_remove\(permissions,'data_exports\.read'\)/);
+assert.match(recovery,/create or replace function public\.save_admin_role/);
+
+assert.match(edge,/const MAX_ROWS = 20000/);
+assert.match(edge,/Deno\.env\.get\("ALLOWED_APP_ORIGINS"\)/);
+assert.doesNotMatch(edge,/Deno\.env\.get\("ALLOWED_ORIGINS"\)/);
+assert.match(edge,/from<=MAX_ROWS/);
+assert.match(edge,/output\.length>MAX_ROWS/);
+assert.match(edge,/has_admin_permission.*data_exports\.read/s);
+assert.match(edge,/has_section_action.*p_action:"export"/s);
+assert.match(edge,/EXPORT_PERMISSION_REQUIRED/);
+assert.match(edge,/Cache-Control":"private, no-store/);
+assert.match(edge,/type:"application\/octet-stream"/);
+assert.doesNotMatch(edge,/type:"application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet"/);
+assert.match(edge,/Content-Disposition/);
+assert.match(edge,/data_export_audit_log/);
+assert.match(edge,/status:"SUCCESS",column_set:spec\.columns/);
+assert.match(edge,/columns: \["id","numero_control"/);
+assert.doesNotMatch(edge,/columns:\s*\[[^\]]*"(?:auth_user_id|actor_real_auth_user_id|signature_data|source_payload|storage_path|content_sha256|historical_email_raw)"/s);
+assert.doesNotMatch(repo,/SERVICE_ROLE|service_role|\.from\(/);
+assert.match(repo,/functions\.invoke\('data-exports'/);
+
+assert.match(screen,/Datos y respaldos/);
+assert.match(screen,/XLSX/);
+assert.match(screen,/CSV/);
+assert.match(screen,/no queda público/);
+assert.match(admin,/id: 'data_exports'/);
+assert.match(admin,/DataExportsModule/);
+require('./verification-helpers').assertPwaVersionSync();
+assert.match(bundle,/@@file data-export-repository\.js/);
+assert.match(bundle,/@@file screens-admin-data-exports\.jsx/);
+
+console.log('DATA EXPORTS CONTRACT: PASS');

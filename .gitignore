@@ -1,0 +1,80 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+supabase.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*credentials*.json
+*credential*.json
+*service-account*.json
+*service_account*.json
+client_secret*.json
+secrets/
+
+# Generated public runtime configuration (deployment-specific)
+app/supabase-config.js
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+.cache/
+coverage/
+__pycache__/
+*.pyc
+supabase/.temp/
+
+# Temporary files, logs, and test/browser artifacts
+tmp/
+temp/
+*.tmp
+*.temp
+*.log
+test-results/
+playwright-report/
+blob-report/
+screenshots/
+suti-*-browser-*/
+**/chrome-profile/
+**/browser-profile/
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+.image-slots.state.json
+.thumbnail
+
+# OS and editor artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local source uploads and sensitive production exports/backups
+uploads/
+exports/
+backups/
+backup/
+*.bak
+*.backup
+*.dump
+*.sql.gz
+*.xlsx
+*.xls
+*.csv
+*production-export*
+*affiliate-export*
+*afiliados-export*
+Usuarios SUTIAPP.xlsx
+
+# Contains row-level affiliate PII; keep only in protected local storage
+docs/H003_AFFILIATE_RECONCILIATION.md

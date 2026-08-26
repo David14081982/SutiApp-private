@@ -1,0 +1,4 @@
+interface:
+  display_name: "Post-change Verification"
+  short_description: "Verifica evidencia y regresiones de cada H"
+  default_prompt: "Use $post-change-verification para cerrar esta H con evidencia comprobable."

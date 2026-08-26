@@ -1,0 +1,4 @@
+interface:
+  display_name: "Legacy Google Guardian"
+  short_description: "Protege Sheets, Apps Script y finanzas"
+  default_prompt: "Use $legacy-google-guardian para clasificar este cambio sobre sistemas Google legacy."

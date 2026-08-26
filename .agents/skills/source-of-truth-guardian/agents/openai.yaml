@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source of Truth Guardian"
+  short_description: "Audita autoridades y fuentes alternativas"
+  default_prompt: "Use $source-of-truth-guardian para auditar los lectores y escritores de datos de este cambio."

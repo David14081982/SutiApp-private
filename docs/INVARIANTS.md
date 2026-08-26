@@ -1,0 +1,114 @@
+# Invariantes
+
+- **INV-069:** La foto de perfil runtime se resuelve exclusivamente por `affiliate.id → affiliate_files(profile_photo, Photo/DK) → private_assets/private-assets`; la URL firmada y su caché en memoria son derivados, se aíslan por principal y nunca se sustituyen con Glide, `DATA`, mock o almacenamiento del navegador.
+- **INV-070:** Al cambiar o cerrar sesión, la proyección y caché de foto se invalidan antes de mostrar otro afiliado; un usuario normal no puede consultar ni firmar la foto privada de otro, mientras Admin requiere permiso backend `assets.read`.
+
+- **INV-001:** `numero_control` es el identificador de negocio histórico del afiliado.
+- **INV-002:** Eliminar un dato de la autoridad no puede hacerlo reaparecer desde mock, `DATA`, JSON, caché o `localStorage`.
+- **INV-003:** Un dominio productivo no puede tener dos autoridades de escritura.
+- **INV-004:** Mocks y fixtures no son fuentes productivas.
+- **INV-005:** Un usuario puede existir sin cuenta Auth.
+- **INV-006:** Email no es la identidad histórica del afiliado.
+- **INV-007:** Ahorro permanece legacy protegido hasta decisión explícita.
+- **INV-008:** Préstamos permanece legacy protegido hasta decisión explícita.
+- **INV-009:** La futura impersonación conserva la identidad real del administrador separando `actor_real` y `usuario_contexto`.
+- **INV-010:** Los datos históricos no se eliminan ni alteran automáticamente para solucionar inconsistencias.
+- **INV-011:** Toda autoridad tiene lectores y escritores identificables.
+- **INV-012:** Cuando una autoridad falla, la aplicación no la sustituye silenciosamente con otra fuente.
+- **INV-013:** Autenticación, autorización y elevación de roles no dependen exclusivamente de estado controlado por el navegador.
+- **INV-014:** Una caché offline o local declara invalidación y no puede resucitar datos borrados.
+- **INV-015:** El código fuente `.jsx` y el `bundle.js` ejecutable deben corresponder en toda entrega funcional.
+- **INV-016:** Los datos financieros mostrados como mock, semilla o cálculo no se presentan como autoridad productiva.
+- **INV-017:** `numero_control` se conserva exactamente como `TEXT / STRING`; no se convierte, normaliza ni corrige automáticamente, y no se presume único mientras las anomalías históricas sigan abiertas.
+- **INV-018:** El contenido institucional migrado en H-007 se lee solo desde sus tablas Supabase; una falla no habilita `DATA`, mocks, stores locales, JSON ni Google como fallback productivo.
+- **INV-019:** `public.institutional_programs` contiene únicamente información institucional; columnas de inversión, rendimiento, saldos o cálculos financieros permanecen fuera y Google legacy conserva su autoridad.
+- **INV-020:** Ninguna tabla catalogal genérica puede mezclar segmentación, configuración, Marketplace, programas, finanzas o helpers Glide; cada subdominio demuestra autoridad, escritor y consumidor antes de migrarse.
+- **INV-021:** Cargo sindical, categoría laboral, cargo operativo de Glide y rol/permiso técnico son conceptos distintos y no se convierten entre sí por coincidencia de nombre.
+- **INV-022:** Todo asset migrado se resuelve por `app_assets` + Storage; `source_url` es solo procedencia y nunca fallback productivo.
+- **INV-023:** `category_raw` y `company_raw` preservan texto histórico sin crear, validar ni sustituir una autoridad de catálogo.
+- **INV-024:** Los iconos técnicos accesibles de la UI permanecen en código; Storage administra contenido/branding, no obliga a rasterizar el sistema de iconos.
+- **INV-025:** El directorio público de empresas/convenios se lee sólo desde `public.companies` + `public.company_assets`; una falla no habilita `DATA`, `localStorage`, stores empresariales, Google ni URLs Glide como fallback.
+- **INV-026:** Una imagen histórica etiquetada sólo como `Imagen` no se promueve a logo, y ningún texto compuesto se parsea automáticamente como empresa legal, descuento, categoría o regla de beneficio.
+- **INV-027:** Branding e instalación se leen únicamente desde `app_settings` y sus relaciones con `app_assets`/Storage; una falla no habilita `localStorage`, `image-slot`, `.image-slots.state.json`, hardcode o sello embebido como fallback.
+- **INV-028:** Las pantallas de instalación conservan posiciones explícitas 1, 2 y 3; ausencia significa `NULL`/no configurada y nunca autoriza inventar un asset o inferir orden por nombre de archivo.
+- **INV-029:** Favicon, Apple Touch y PWA pueden existir como archivos estáticos requeridos por el navegador, pero son copias derivadas verificables de los assets Supabase y no una segunda autoridad de escritura.
+- **INV-030:** La administración técnica se autoriza exclusivamente por `auth.uid()` y una asignación backend habilitada; `cargo`, sindicato, puesto, `numero_control`, viewer, UI y estado local no elevan privilegios.
+- **INV-031:** Un principal puede ser afiliado, administrador o ambos sin duplicar su identidad Auth; la ausencia de fila `affiliate` no invalida por sí sola una asignación administrativa válida.
+- **INV-032:** Toda escritura administrativa de contenido visual se valida por grants/RLS y deja auditoría durable del actor Auth, recurso, acción, destino, tiempo y resultado exitoso; la UI nunca sustituye esa frontera.
+- **INV-033:** Una fila creada desde Admin usa `record_origin=ADMIN_H009` y no inventa `source_sheet`, `source_row_ordinal` ni `source_snapshot_hash`; las filas `HISTORICAL_IMPORT` conservan sus coordenadas inmutables.
+- **INV-034:** Desactivar contenido visual o empresarial lo oculta de lectores públicos sin borrarlo de la autoridad; un admin autorizado puede leerlo para reactivarlo y ningún repositorio público lo resucita desde otra fuente.
+- **INV-035:** Un archivo de Storage administrado tiene registro `app_assets`; un upload fallido elimina su objeto nuevo y un reemplazo de branding elimina el objeto anterior solo después de demostrar cero referencias.
+- **INV-036:** Sustituir una fuente de datos no autoriza rediseñar una pantalla Claude Design; estructura, controles, navegación, interacciones, motion y estados permanecen, y cualquier dato aún no disponible usa `LOADING`, `EMPTY`, `PENDING` o `DISABLED` sin reactivar una autoridad alternativa.
+- **INV-037:** La activación autoservicio solo vincula un principal Auth con email verificado a exactamente un afiliado `eligible` cuyo email histórico normalizado coincide; nunca usa `numero_control`, inventa email ni altera el email histórico.
+- **INV-038:** La impersonación conserva `actor_real_auth_user_id`, registra `usuario_contexto_affiliate_id` y motivo, dura como máximo 30 minutos, no se anida y no sustituye credenciales, Auth, permisos, históricos ni identidad principal.
+- **INV-039:** Noticias inicia sin registros productivos; una fila borrada de `news_articles` no reaparece desde `DATA.noticias`, `adminStore`, browser storage o código.
+- **INV-040:** Los 32 recursos educativos históricos conservan payload, hoja, ordinal y hash, permanecen despublicados hasta revisión administrativa y sus imágenes runtime resuelven solo por `app_assets` + Storage.
+- **INV-041:** Menús, rutas, bottom navigation, estructura de formularios y copy técnico Claude permanecen en código; ninguna tabla genérica reconstruye pantallas o navegación.
+- **INV-042:** Categorías, productos, galerías, promociones, favoritos, cotizaciones y solicitudes Marketplace se leen y escriben únicamente mediante sus autoridades Supabase; `DATA`, mocks, JSON y almacenamiento del navegador no son fallback.
+- **INV-043:** Un miembro empresarial solo administra el `company_id` asignado en `marketplace_company_memberships`; una membresía técnica no crea Auth, plan comercial, empresa ni permiso sobre otro tenant.
+- **INV-044:** Una solicitud Marketplace conserva afiliado, actor real, producto y empresa destino validados en backend; nunca se convierte en crédito, préstamo, ahorro, amortización o movimiento financiero.
+- **INV-045:** El catálogo de membresías se lee únicamente desde `membership_offerings` y Storage; sus seis coordenadas/procedencias históricas no pueden alterarse ni borrarse desde Admin, y una fila administrativa nunca inventa hoja, ordinal, Row ID o hash.
+- **INV-046:** “Programas” no es una tabla genérica: comercio pertenece a Phase 3, contenido institucional a Phase 2, navegación Claude permanece en código y cualquier programa con nómina, tasas, fondos, fórmulas o amortización conserva su frontera legacy protegida.
+- **INV-047:** Mi Historial y Tracking no mezclan operaciones comerciales Supabase con `DATA.solicitudes`, `financeStore`, `flowStore` o historiales Google financieros; ausencia de adaptador legacy se muestra como pendiente, nunca como mock.
+- **INV-048:** Toda columna histórica con archivos identificables conserva su nombre/semántica, coordenada, procedencia y relación explícita; una deduplicación física nunca elimina relaciones lógicas.
+- **INV-049:** Supabase Storage es la única autoridad física runtime de assets migrados; una URL Glide puede persistir solo como provenance administrativa y nunca como fallback.
+- **INV-050:** INE, talones, comprobantes, credenciales y documentos personales usan Storage privado y autorización backend/RLS; nunca `PUBLIC_READ` ni URL pública permanente.
+- **INV-051:** Un archivo de `Usuarios SUTIAPP.xlsx` se relaciona únicamente con `affiliate.id` tras resolver exactamente el `numero_control` TEXT raw; nombre aproximado y email están prohibidos como join.
+- **INV-052:** Toda descarga histórica valida respuesta HTTP, firma/MIME real, SHA-256 y tamaño; HTML o errores disfrazados se rechazan sin crear relación READY.
+- **INV-053:** `HISTORICAL_ASSET_RECOVERY_PENDING = 3` conserva exactamente `Íconos!B2:B4` como no recuperados; no se inventan, sustituyen ni convierten sus URLs históricas en runtime fallback.
+- **INV-054:** Las URLs históricas fallidas permanecen en checkpoint y no se reintentan durante ejecución normal; solo una invocación administrativa explícita con `--retry-failed` puede reabrir su recuperación.
+- **INV-055:** Google Sheets + Apps Script son la autoridad operacional de todo resultado financiero durante Phase 7; Supabase no replica ni sustituye esa autoridad.
+- **INV-056:** El navegador nunca envía ni elige `numero_control` para consultar finanzas; backend deriva `auth.uid() → affiliate efectivo → numero_control` y limita la respuesta a ese contexto.
+- **INV-057:** Tasas, periodicidad, plazos, elegibilidad, amortización, saldo, pago, descuento y total se muestran solo si provienen del contrato Google legacy; ausencia o error produce estado controlado, nunca cálculo o fallback local.
+- **INV-058:** Phase 7 es read-only: ninguna nueva escritura financiera se habilita sin evidencia del writer y trigger actuales, autorización, conciliación y prevención de doble escritura.
+- **INV-059:** `program_catalog_items` contiene únicamente filas maestras catalogales; solicitudes, compradores, nómina, tasas, plazos, enganches, pagos y amortizaciones no se convierten en atributos operativos Supabase.
+- **INV-060:** Un asset catalogal evacuado se enlaza por hoja, fila, columna y hash al objeto existente; H-DATA-CUTOVER-001 no descarga ni crea una segunda copia física.
+- **INV-061:** `source_payload` preserva todos los campos históricos pero no tiene grant de navegador; el runtime proyecta solo campos catalogales explícitos y precio de contado cuando existe.
+- **INV-062:** Los grupos y rutas de Finanzas Claude son estructura en código; productos provienen solo de `ProgramCatalogRepository`, y una falla Supabase conserva la sección con error/reintento sin `DATA`, mock, JSON, localStorage o Glide fallback.
+- **INV-063:** Toda solicitud inicial posterior al corte se crea exclusivamente en `program_requests`; las tablas anteriores conservan el histórico previo y no reciben nuevos inserts, aunque un trámite anterior puede completar su workflow ya iniciado.
+- **INV-064:** El backend deriva `affiliate_id` y `numero_control` desde el afiliado efectivo autenticado, conserva `actor_real_auth_user_id` y nunca acepta del navegador un `numero_control` o `affiliate_id` alternativo.
+- **INV-065:** Registrar o consultar una intención no escribe Google ni calcula o modifica tasas, saldos, préstamos, amortizaciones, pagos o descuentos. Solo una aprobación administrativa backend explícita puede iniciar el export autorizado.
+- **INV-066:** Repetir una misma operación de envío con igual clave idempotente devuelve el mismo trámite; doble click no crea dos filas.
+- **INV-067:** `SutiApp Financial Handoff` es únicamente un registro técnico identificado por `program_request_id`; puede registrar aprobación/export, fila legacy, timestamp y error, pero no es autoridad de la solicitud ni de saldos, tasas, préstamos, pagos, amortizaciones o conciliaciones.
+- **INV-068:** El export se autentica server-to-server, exige Admin autorizado, usa `LockService` e idempotencia por UUID y no marca `handed_off`/exportado hasta confirmar la escritura real en `Historial de solicitudes`.
+- **INV-071:** `SutiApp Final` es read-only excepto por `APPEND ONE NEW ROW AFTER ADMIN APPROVAL` en `Historial de solicitudes`; se prohíbe editar históricos, insertar columnas, cambiar encabezados/fórmulas, borrar, reordenar o tocar otra hoja.
+- **INV-072:** D Proceso, M afiliación, Y estado inicial, documentos obligatorios y semántica de plazo son campos fail-closed: si su valor no está demostrado, el writer no se activa ni escribe una fila parcial.
+- **INV-073:** Fallo, timeout o retry de Google conserva `program_requests`; doble clic, refresh y concurrencia no pueden producir una segunda fila para el mismo `program_request_id`.
+- **INV-074:** La responsabilidad automática termina después de confirmar el append. Amortización, Apps Script financiero posterior, estados, pagos, saldos y conciliación continúan manuales y fuera de alcance.
+- **INV-079:** La aprobación congela una fila Google A:AL y su SHA-256 dentro del snapshot inmutable; export y retry usan exclusivamente esa fila, nunca vuelven a completar datos desde perfil mutable.
+- **INV-080:** El registry reserva UUID/hash/fila como `processing` antes del append y pasa a `processed` solo tras read-back exacto; un timeout en cualquiera de esos puntos recupera la misma fila o falla cerrado.
+- **INV-081:** Los documentos Google se representan solo mediante referencias privadas trazables `private_asset_id + SHA-256`; nunca URL pública permanente, `source_url` histórico o bucket relajado. Proceso que requiere aval sin T:W autoritativos es rechazado.
+- **INV-075:** Tras la semilla inicial exacta por hash, `public.affiliates` es la única autoridad productiva actual de sindicato, categoría, tipo y estatus laborales usados para elegibilidad; el Excel queda sólo como procedencia y nunca como sincronización o fallback.
+- **INV-076:** Los atributos financieros del expediente son mutables sólo mediante permiso backend `affiliates.write`, RPC, versión optimista y auditoría por campo; sindicato, categoría, puesto o estatus nunca conceden roles o permisos.
+- **INV-077:** Fondo, tasa, plazo máximo, monto máximo y resultado financiero no son identidad del afiliado: se derivan de su perfil actual más `Criterios de fondos`, que permanece Google read-only.
+- **INV-078:** Toda solicitud financiera conserva un snapshot inmutable del perfil al solicitar y un contrato financiero completo al aprobar; editar después al afiliado no reescribe solicitudes históricas y ninguna aprobación financiera puede existir sin snapshot confirmado server-side.
+- **INV-082:** Home y Admin Tu Sindicato consumen un único registro estructural en código de exactamente nueve experiencias; ese registro sólo decide rutas y editores, mientras cada contenido conserva su tabla/repository autoritativo y ningún asset `union_*` puede persistirse como `image-slot`, `dataUrl`, `localStorage` o archivo lateral.
+- **INV-083:** `affiliate_payroll_declarations` contiene sólo importes quincenales declarados por el afiliado; no es talón oficial, payroll operativo ni autoridad de elegibilidad, aprobación, descuento real, export, saldo, amortización o conciliación.
+- **INV-084:** El impacto de nómina se deriva server-side usando el `paymentPerPeriod` ya resuelto por Google y la declaración Supabase vigente. El navegador no calcula pago, neto, remanente, porcentajes ni suficiencia y nunca usa `DATA`, `nominaStore`, `localStorage` o mock como fallback.
+- **INV-085:** El umbral 30% es exclusivamente informativo y visual. Superarlo o quedar debajo no puede alterar solicitudes, permisos, estados, decisiones administrativas ni escrituras Google.
+- **INV-086 (supersedido por ADR-051):** El afiliado Auth vinculado puede declarar su nómina; además, cualquier administrador activo puede hacerlo para el afiliado contexto únicamente dentro de una impersonación backend válida. Toda mutación conserva actor real, contexto, sesión, motivo, versión y auditoría.
+- **INV-087:** Supabase `loan_term_policy` es autoridad exclusiva de las sugerencias 6/12/18/24 y del mínimo personalizado de 1 pago; Google conserva el máximo de pagos por fondo. Las sugerencias son atajos de UI, no un filtro de elegibilidad: un fondo es seleccionable cuando su máximo Google alcanza el mínimo personalizado y una cotización válida puede devolver `termOptions: []` junto con un rango personalizado no vacío.
+- **INV-088:** Interés, gasto administrativo, total y pago se calculan exclusivamente en la Edge Function con reglas Google vigentes. El frontend no reconstruye valores ni usa fallback.
+- **INV-089:** Una solicitud asistida conserva actor real, afiliado contexto, sesión y motivo; la UI no decide autorización.
+- **INV-090:** Todo administrador con asignación y rol habilitados puede iniciar asistencia; validez, TTL, motivo y no anidamiento se verifican en backend.
+- **INV-091:** `Criterios de fondos!P` con encabezado exacto `VISIBILIDAD SUTIAPP` es la única autoridad del modo `AUTO|MOSTRAR|OCULTAR`; M y A:O no se reinterpretan ni modifican para administrar visibilidad.
+- **INV-092:** Elegibilidad por categoría y sindicato se aplica antes de cualquier modo. `MOSTRAR` nunca habilita un criterio para un perfil no elegible y `OCULTAR` nunca cambia reglas financieras.
+- **INV-093:** `AUTO` usa fecha de negocio `America/Hermosillo` y una ventana que termina el último día del cuarto mes calendario incluido; no usa `today + 120 días`. Los criterios sin fecha son permanentes.
+- **INV-094:** El único writer productivo de P es Admin JWT → permiso `financial_criteria.visibility.write` → Edge `financial-criteria-admin` → Sheets API con identidad técnica `drive.file`; exige identidad con fingerprint A:O, motivo para overrides, snapshot A:O, read-back, rollback ante alteración y auditoría. Ante cualquier fallo no escribe ni usa fallback.
+- **INV-095:** Ningún refresh/access token, client secret, `service_role`, cálculo financiero o escritura Google aparece en el navegador. Las credenciales OAuth mínimas viven sólo en Edge Secrets y cualquier ausencia o rechazo falla cerrado.
+- **INV-096:** `home.header.collapsed` se consume exclusivamente por su clave declarativa. Su precedencia autorizada es override Admin `app_assets`/Storage → slot de usuario → default local versionado → icono; la proyección del override vive sólo en memoria, notifica por suscripción y bloquea cualquier override homónimo de `localStorage`. Esta excepción explícita de ADR-054 supersede INV-027 únicamente para la foto del header colapsado.
+- **INV-097:** Un documento `VERIFIED` no puede ser sustituido por el afiliado; rechazo, observación y solicitud de recarga son acciones backend auditadas de un administrador con `documents.write`.
+- **INV-098:** `request_documents` fija relación, hash, estado y asset de la evidencia al enviar la solicitud; cambios posteriores del expediente no reescriben el snapshot.
+- **INV-099:** Una solicitud de préstamo o membresía no se finaliza sin versión de términos publicada y todos sus requisitos obligatorios satisfechos; no existe fallback legal ni documental.
+- **INV-100:** Los datos bancarios son visibles/escribibles sólo por su afiliado efectivo; Admin requiere `bank_accounts.read`, Anonymous queda denegado y toda mutación del afiliado usa RPC auditada.
+- **INV-101:** Un seed bancario histórico sólo relaciona `numero_control` exacto y único, conserva por campo valores demostrables, nunca reconstruye dígitos ni sobrescribe datos actuales y conserva procedencia inmutable. Excel nunca es runtime.
+- **INV-102:** Una cuenta histórica incompleta no puede ser principal. Para quedar `COMPLETE`, el afiliado captura titular, banco y cuenta válida; CLABE es TEXT opcional de 18 dígitos y jamás acepta notación científica.
+- **INV-101:** El QR no contiene PII, usa un token renovable no permanente, persiste sólo su hash y limita destino/vigencia mediante constraints y política administrativa global.
+- **INV-102:** Catálogo documental y requisitos se ordenan en backend; drag-and-drop y campo numérico accesible escriben el mismo `sort_order`, nunca dos autoridades.
+- **INV-103:** El afiliado efectivo sólo puede leer relaciones, activos privados y objetos Storage de su `CURRENT_DOCUMENT`; toda versión histórica, legacy, no clasificada o técnica queda fuera de su RLS y sólo Administración con `assets.read` puede auditarla.
+- **INV-104:** Ocultar o detectar el mismo hash nunca autoriza borrar. Toda eliminación física exige cero referencias DB, históricas, solicitudes, expediente, Admin, frontend/PWA y objetos compartidos, además de backup y recovery manifest verificables; `UNKNOWN` permanece intacto.
+- **INV-105:** `financial_session_snapshots` contiene exclusivamente reglas Google filtradas antes de persistir para un afiliado efectivo; un catálogo financiero global o reutilización entre afiliados está prohibido.
+- **INV-106:** Un snapshot financiero sólo es válido con actor real, afiliado, impersonación, `financial_profile_version`, fingerprints de perfil/fuente/política/contrato coincidentes y `expires_at` futuro dentro del TTL duro de 15 minutos. Cleanup físico nunca define validez.
+- **INV-107:** El navegador no lee ni escribe snapshots, no calcula importes y no puede elegir perfil financiero. Cada cambio interactivo usa Edge + snapshot + el mismo motor autoritativo y produce cero lecturas Google salvo regeneración explícita por invalidación.
+- **INV-108:** Confirmar préstamo relee perfil/Google/política, recalcula y crea la solicitud dentro de un único flujo backend idempotente. Si cambian condiciones devuelve `409 CONDITIONS_CHANGED`, crea cero solicitudes y exige revisión humana de los nuevos valores.
+- **INV-109:** `financial_submission_snapshot` es evidencia inmutable propia de `program_requests`; no puede reconstruirse desde ni depender de `financial_session_snapshots`, que son temporales y eliminables.

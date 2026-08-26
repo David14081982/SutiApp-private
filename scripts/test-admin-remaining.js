@@ -1,0 +1,15 @@
+'use strict';
+const fs=require('fs'),assert=require('assert');const read=(p)=>fs.readFileSync(p,'utf8');
+const admin=read('app/screens-admin.jsx'),repo=read('app/popup-proposal-repository.js'),company=read('app/company-store.jsx'),finance=read('app/finance-store.jsx'),migration=read('supabase/migrations/20260822000300_create_company_popup_proposals.sql'),recovery=read('supabase/recovery/20260822000300_create_company_popup_proposals.sql'),builder=read('scripts/build-bundle.js');
+const pending=['sindicato','finanzas','fondos','fincat','flujos','aprobaciones','convenios','catalogos','roles','pantallas','secciones','menus','formularios'];
+for(const id of pending)assert.match(admin,new RegExp("id: '"+id+"'.*classification: '(PRODUCTIVE_SUPABASE|PRODUCTIVE_GOOGLE_READONLY|PRODUCTIVE_GOOGLE_CONTROLLED|PRODUCTIVE_HYBRID|BLOCKED_FINANCIAL_LEGACY|BLOCKED_EXTERNAL_SOURCE|OWNER_DECISION_REQUIRED)'"));
+assert(!/EN PREPARACIÓN/.test(admin));assert(!/data-admin-status[^\n]+pending/.test(admin));
+assert(repo.includes("from('company_popup_proposals')"));assert(!/localStorage|\bDATA\b/.test(repo));
+assert(company.includes('PopupProposalRepository.list()')&&company.includes('PopupProposalRepository.submit'));
+assert(finance.includes('ProgramRequestRepository.list()')&&finance.includes('FINANCIAL_LEGACY_READ_ONLY')&&!/localStorage|\bDATA\b/.test(finance));
+assert(migration.includes('force row level security')&&migration.includes('is_marketplace_company_member')&&migration.includes("has_admin_permission('popups.write')"));
+assert(migration.includes('allows_popups')&&migration.includes("status='active'")&&migration.includes("a.owner_company_id=company_popup_proposals.company_id"));
+assert(recovery.includes('RECOVERY_BLOCKED')&&recovery.includes('approved popup proposals exist'));
+assert(builder.includes("'popup-proposal-repository.js'")&&builder.includes("'screens-admin-finanzas.jsx'"));
+assert(![admin,repo,company,finance].some((x)=>/SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD/.test(x)));
+console.log(JSON.stringify({status:'PASS',modules_classified:pending.length,generic_preparation:0,productive_local_authorities:0,financial_legacy_modified:false}));

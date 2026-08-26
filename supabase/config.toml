@@ -1,0 +1,10 @@
+project_id = "jsucdyothkuptosvskqf"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[auth]
+enabled = true
+

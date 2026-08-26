@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('assert').strict,fs=require('fs'),path=require('path'),vm=require('vm'),root=path.resolve(__dirname,'..'),read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const sql=read('supabase/migrations/20260825000200_user_maintained_historical_banking.sql'),seed=read('scripts/apply-banking-historical-seed.py'),repo=read('app/bank-account-repository.js'),ui=read('app/screens-credencial.jsx'),recovery=read('supabase/recovery/20260825000200_user_maintained_historical_banking_recovery.sql');
+new vm.Script(repo);new vm.Script(ui);
+['INCOMPLETE_HISTORICAL_DATA','HISTORICAL_SEED','BANK_ACCOUNT_CREATED','BANK_ACCOUNT_UPDATED','BANK_ACCOUNT_DELETED','BANK_ACCOUNT_SET_PRIMARY','bank_accounts.read','set_primary_affiliate_bank_account'].forEach((value)=>assert.ok(sql.includes(value),value));
+assert.match(sql,/account_holder drop not null/);assert.match(sql,/source_file_hash.*source_row_ordinal/s);assert.match(sql,/affiliate_bank_historical_source_idx/);assert.match(sql,/p_account,''\) !~ '\^\[0-9\]\{4,20\}\$'/);assert.match(sql,/p_clabe.*\^\[0-9\]\{18\}\$/s);
+assert.doesNotMatch(repo,/replace\(\/\\D\/g/);assert.match(repo,/setPrimary/);assert.match(repo,/data_status,incomplete_fields,source_kind/);
+assert.match(ui,/Completa tus datos bancarios/);assert.match(ui,/Hacer principal/);assert.match(ui,/notación científica/);assert.match(ui,/account_holder:''/);assert.doesNotMatch(ui,/account_holder:app\.user\.name/);
+assert.match(seed,/EXPECTED_HASH/);assert.match(seed,/controls\[row\['control'\]\]!=1/);assert.match(seed,/not any\(fields\.values\(\)\)/);assert.match(seed,/account_holder/);assert.match(recovery,/RECOVERY_BLOCKED_USER_MAINTAINED_HISTORICAL_ROWS/);
+console.log('Banking user-maintained static contract PASS');

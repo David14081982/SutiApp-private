@@ -1,0 +1,127 @@
+# Reglas de seguridad
+
+## Estado PROFILE PHOTO CUTOVER
+
+Las 487 fotos `Photo/DK` se leen exclusivamente desde `affiliate_files` y el bucket privado `private-assets`. `AffiliateRepository` solicita una URL firmada de una hora después de que RLS autoriza la relación; el caché de 50 minutos se indexa por principal Auth + `affiliate.id`, vive solo en memoria y se vacía en login/logout. H005_TEST2 y H005_TEST3 no pueden leer metadata ni firmar el objeto del otro; anónimo es denegado. H005_TEST puede hacerlo solo por su permiso Admin `assets.read`. La matriz real no detectó fuga cruzada y no expone `source_url`, Secret Key ni `service_role` al frontend.
+
+- Secretos, claves privadas y `service_role` nunca se exponen en frontend, bundle, repositorio o logs.
+- Autorización y permisos se validan en backend/RLS; ocultar controles en UI no protege datos.
+- Aplicar mínimo privilegio y denegación por defecto. Usuarios normales no elevan sus roles.
+- Separar autenticación de identidad de negocio: Auth puede faltar; `numero_control` permanece.
+- Validar acceso cruzado entre usuarios y organizaciones en backend.
+- Acciones sensibles generan auditoría íntegra, durable y no controlada solo por el cliente.
+- La futura impersonación requiere autorización específica, duración/acotación, motivo, audit log y separación de `actor_real`/`usuario_contexto`; nunca usa la contraseña del afiliado.
+- RLS, roles, funciones y APIs se revisan conjuntamente; una policy aislada no basta.
+- Errores no revelan secretos ni habilitan una autoridad alternativa.
+
+## Estado H-000
+
+El frontend tiene autenticación y roles simulados en `localStorage`; cualquier contraseña de al menos tres caracteres permite entrar a paneles. Esto es aceptable únicamente como prototipo explícito y es `FAIL` como control productivo. No hay Supabase, backend ni RLS que auditar todavía.
+
+## Estado H-004
+
+Supabase y `public.affiliates` están activos. La tabla tiene RLS habilitada y forzada; `anon` no tiene `SELECT` y `authenticated` solo puede leer la fila donde `(select auth.uid()) = auth_user_id`. No existen policies de escritura para clientes. H-004 creó 0 cuentas Auth y 0 vínculos. La Secret Key moderna se usa exclusivamente en el importador administrativo mediante `apikey`; no está en frontend, bundle, documentación ni archivos versionables.
+
+## Estado H-005
+
+El login de afiliados usa email/contraseña de Supabase Auth, persistencia y refresh del cliente oficial, y logout remoto. La identidad se resuelve por `auth.uid()` y `auth_user_id`; `numero_control`, email, `DATA.user`, viewer y estado propio del navegador no eligen al afiliado. Las pruebas reales de tres cuentas controladas confirmaron fila propia permitida, resolución exacta por sesión y logout; la cuenta base también conserva verificación de fila ajena filtrada por RLS y anónimo denegado. La activación masiva, recuperación de contraseña, administración e impersonación no fueron implementadas. Las credenciales H-005 y claves administrativas permanecen exclusivamente en `supabase.env` ignorado.
+
+## Estado H-006
+
+TopBar, Inicio, Perfil y Credencial reciben una única proyección en memoria de la fila autorizada por RLS. No consultan por `numero_control`, email ni UUID aportado por la UI y no recurren a mocks cuando Supabase falla. Se retiraron de estas áreas la foto y los datos bancarios persistidos localmente; sin foto autoritativa se muestra placeholder. El correo histórico se presenta únicamente como dato de contacto. No se cachean respuestas Supabase/PII en el service worker y no se incorporaron secretos ni nuevas cuentas Auth.
+
+## Estado H-007
+
+Las cuatro tablas de contenido público tienen RLS habilitada y forzada. `anon` y `authenticated` reciben únicamente `SELECT` mediante una policy pública por tabla; no existen grants ni policies cliente de `INSERT`, `UPDATE` o `DELETE`. Las escrituras futuras requieren otra H y un canal administrativo autorizado. Los repositorios frontend usan solo la clave publicable. El importador usa `SUPABASE_SECRET_KEY` desde `supabase.env` ignorado, con `service_role` únicamente como compatibilidad legacy; no registra secretos. La tabla informativa de Finanzas excluye datos de inversión/rendimiento y no concede acceso a sistemas financieros Google.
+
+## Estado H-007.2
+
+Los registros visuales y sus tres buckets (`app-assets`, `company-assets`, `documents`) son de lectura pública porque el alcance importado contiene exclusivamente banners, imágenes institucionales, branding y documentos públicos. Las seis tablas tienen RLS habilitada y forzada; cinco exponen solo `SELECT`, mientras `asset_sources` conserva procedencia y URL histórica sin grant al navegador. No existen grants ni policies de escritura para clientes y Storage solo permite lectura de objetos públicos. El importador administrativo valida firma/MIME, tamaño y SHA-256 antes de subir, usa `SUPABASE_SECRET_KEY` solo en proceso local y no incorpora credenciales al frontend, bundle, logs o documentación. No se importó contenido privado ni se crearon cuentas Auth.
+
+## Estado H-007.3
+
+El directorio público expone datos históricos de presentación e imágenes públicas mediante `CompaniesRepository`; la consulta runtime no solicita campos de contacto, identidad legal, Auth, planes ni permisos. `companies`, `company_assets` y `popups` conservan RLS habilitada y forzada, sin grants de escritura para `anon` o `authenticated`. Las 33 empresas se vinculan a 35 objetos existentes de `company-assets`; no se copiaron URLs Glide al runtime. Los tres popups permanecen deshabilitados y la lectura pública devuelve cero. La importación administrativa usó la Secret Key sólo desde `supabase.env` ignorado y no creó cuentas Auth; el conteo sigue en tres cuentas controladas. Ahorro, Préstamos y Google financiero no fueron leídos ni modificados.
+
+## Estado Ícono e instalación
+
+`public.app_settings` tiene RLS habilitada y forzada, policy pública exclusiva de `SELECT` y cero grants/policies de escritura para `anon` o `authenticated`. Storage conserva únicamente su policy pública de lectura H-007.2. Como el acceso Admin del prototipo acepta cualquier contraseña de tres caracteres, ningún control de esa pantalla puede escribir; ocultar o mostrar un botón no se considera autorización. Las escrituras autorizadas usan exclusivamente el sincronizador server-side y la Secret Key local ignorada. La prueba reversible confirmó upload, registro `app_assets`, lectura desde dos clientes, persistencia y restauración, y eliminó el asset temporal. Auth mantuvo tres cuentas; ningún secreto pasó a bundle, logs o documentación.
+
+## Estado H-008
+
+H-008 sustituye el estado anterior: Supabase Auth es la única autoridad de sesión administrativa. `public.admin_assignments` contiene exactamente una asignación habilitada, vinculada al `auth_user_id` de H005_TEST, con diez permisos visuales explícitos; H005_TEST2 y H005_TEST3 no tienen asignación. El cliente solo puede leer su propia asignación y no tiene grants ni policies para promoverse. Las tablas y buckets administrativos validan cada escritura mediante `has_admin_permission()` y RLS; `admin_audit_log` es escrito por triggers y no por autoridad del cliente.
+
+Pruebas reales confirmaron H005_TEST Admin/settings/Storage/instalación `PASS`; H005_TEST2, H005_TEST3 y anónimo `DENIED`; dos clientes adicionales observaron el cambio y el estado original fue restaurado. No se modificaron credenciales ni se expusieron Secret Key, `service_role`, DB password o Access Token. Los módulos sin repositorio Supabase seguro permanecen bloqueados.
+
+## Estado H-009
+
+El CRUD de branding, banners, popups, empresas, logos/portadas y documentos/PDF usa la sesión H-008 y policies backend por permiso. Los grants de `app_settings`, `companies`, `banners`, `popups` e `institutional_documents` están limitados por columna; el navegador no puede alterar coordenadas históricas ni asignaciones administrativas. Usuarios normales conservan lectura pública de filas activas y reciben denegación de tablas/Storage al escribir.
+
+Las pruebas reversibles confirmaron create/update/replace/deactivate para cuatro dominios, Storage, dos clientes, filtros de desactivados y auditoría; H005_TEST2/H005_TEST3 fueron denegados. Chrome validó los cuatro módulos, un ciclo UI real de popup y branding, refresh y logout. Secret Key se usó solo por arneses locales ignorados para schema/cleanup y no ingresó al frontend o bundle.
+
+## Estado MASTER Phase 1
+
+La activación gradual vincula únicamente un email Auth confirmado con una sola fila `eligible` por coincidencia normalizada; no usa `numero_control`, no inventa email y no borra afiliados inelegibles. La recuperación usa `resetPasswordForEmail`, evento `PASSWORD_RECOVERY` y `updateUser`; la respuesta visible no confirma si una cuenta existe.
+
+La impersonación se autoriza en backend con `affiliates.impersonate`, motivo de 8–500 caracteres, TTL máximo de 30 minutos, sin anidamiento y con cierre explícito. RLS permite leer únicamente el afiliado efectivo. Auditoría separa el principal `actor_real_auth_user_id` del `usuario_contexto_affiliate_id`; credenciales, Auth, permisos e históricos no se sustituyen. Solo H005_TEST recibió permisos; H005_TEST2/3 y anónimo permanecen denegados. La reconciliación mantuvo 947 afiliados y 3 cuentas Auth.
+
+## Estado MASTER Phase 3
+
+Las nueve tablas comerciales tienen RLS habilitada y forzada. Lectura pública expone solo catálogo habilitado/aprobado; favoritos y solicitudes personales se aíslan por `auth.uid()` y afiliado efectivo. Un miembro de `marketplace_company_memberships` puede operar únicamente su `company_id`, leer su bandeja y responder cotizaciones; no puede escribir productos o promociones de otra empresa. El cliente no puede autoasignar membresías.
+
+Las pruebas reversibles con tres usuarios confirmaron Admin CRUD, usuario normal denegado, favoritos privados, bandeja empresarial visible, respuesta de cotización, denegación cross-company y denegación de inserts/updates directos sobre solicitudes. Creación, respuesta y marca de visto usan RPC; firma y aceptación se validan en backend. Todos los fixtures y membresías se eliminaron; la reconciliación final dejó cero productos, solicitudes, cotizaciones y membresías productivas. Secret Key se utilizó solo en arneses locales de schema/cleanup y no entró al bundle.
+
+## Estado MASTER Phase 4
+
+`membership_offerings` tiene RLS habilitada y forzada. Usuarios normales solo leen ofertas activas; H005_TEST administra por `memberships.read/write`. Grants por columna impiden modificar hoja, ordinal, Row ID, hash y origen; RLS permite borrar únicamente filas `ADMIN_PHASE4`. La suite reversible confirmó lectura 6/6, seis assets Storage, writer normal denegado, desactivación oculta, CRUD administrativo y cleanup.
+
+`Solicitudes membresía` no se importó ni se escribió: PII, documentos, estados y descuento por nómina permanecen Google legacy. Ningún secreto ni documento personal ingresó al frontend, snapshot Phase 4 o Supabase.
+
+## Estado MASTER Phase 5
+
+Mi Historial consulta solo las filas que RLS Phase 3 permite al afiliado efectivo en `marketplace_benefit_requests` y `marketplace_quote_requests`. `operationsStore` es memoria descartable; no acepta IDs aportados por la UI para ampliar acceso ni conserva PII en browser storage. Chrome confirmó una solicitud real, tracking y timeline con H005_TEST2; el fixture fue eliminado y la reconciliación volvió a cero.
+
+## Estado MASTER Phase 6
+
+`company_portal_plans` y `company_portal_subscriptions` tienen RLS habilitada y forzada. H005_TEST administra mediante permisos `company_portal.read/write`; usuarios normales no escriben y un miembro empresarial solo puede leer el plan y la suscripción de su `company_id`. Las altas, cambios y bajas de `marketplace_company_memberships` requieren el mismo permiso administrativo y no habilitan autoasignación.
+
+La aplicación remota verificó dos tablas vacías, cuatro policies del portal, tres policies administrativas de membresía, cuatro triggers de timestamp/auditoría, dos índices y ocho grants autenticados. La prueba multiusuario usó tres sesiones y dejó cero registros; Chrome confirmó el módulo de Planes con 33 empresas y estado pendiente. Afiliados, Auth, empresas e históricos conservaron sus conteos.
+
+## Estado MASTER ASSET EVACUATION
+
+`historical_file_columns`, `private_assets`, `historical_asset_sources` y `affiliate_files` tienen RLS habilitada y forzada. `private-assets` es privado y solo permite lectura al afiliado propietario o admin autorizado; acceso cruzado, anónimo y escrituras normales fueron denegados con tres sesiones reales. `source_url` permanece oculto a usuarios normales y se conserva únicamente como procedencia administrativa.
+
+El importador valida HTTP, firma/MIME real, tamaño y SHA-256, rechaza HTML/error pages, deduplica por hash y no sobrescribe objetos con contenido distinto. Ningún secreto entra al repositorio o navegador. Los archivos de Ahorro/Préstamos se preservan como `PENDING_DOMAIN_LINK` sin modificar Google ni crear un runtime financiero Supabase. Los tres archivos inaccesibles no recibieron sustitutos inventados.
+
+## Writer final de préstamo aprobado
+
+`financial_request_export_audit` tiene RLS habilitada y forzada; browser solo puede leerla con `program_requests.read` y nunca ejecutar las RPC de transición, concedidas exclusivamente a `service_role`. Edge valida JWT, origen, `program_requests.write` y `workflow.write`; deriva solicitud, afiliado, perfil, documentos y snapshot sin aceptar flags financieros del frontend. Secrets de Apps Script/Supabase se configuraron en cloud y no se imprimieron ni versionaron.
+
+Los documentos permanecen en `private-assets`; Google recibe solo referencias opacas `private_asset_id + SHA-256`, sin `source_url`, signed URL persistente ni cambio de policy/bucket. Apps Script valida secreto, workbook/sheet IDs, 38 headers y payload bajo `LockService`. El registry técnico evita doble append y no contiene documento, firma, nombre o teléfono adicionales fuera de la fila legacy autorizada.
+
+## Snapshot financiero personalizado de sesión
+
+`financial_session_snapshots` usa RLS habilitada y forzada, cero policies/grants para `anon` o `authenticated` y CRUD sólo para `service_role`. La Edge deriva actor desde JWT, afiliado desde `get_effective_affiliate_id()`/contexto financiero y la impersonación desde backend. Una sesión de otro afiliado, actor o impersonación devuelve `SNAPSHOT_INVALID`; el intento cruzado no invalida la fila legítima del propietario.
+
+Cada cotización verifica TTL, `financial_profile_version`, fingerprint de perfil, política y versión de cálculo. El browser sólo envía `snapshot_id`, criterio/fondo, monto y plazo; no envía tasa, máximo, elegibilidad o perfil como autoridad. `loanSessionValidate` permite reutilización sin Google y evita reutilizar contexto viejo tras login/logout o cambio de impersonación. Confirmar exige relectura Google y usa una RPC ejecutable únicamente por service role; el trigger bloquea el alta financiera antigua por browser y hace inmutable `financial_submission_snapshot`.
+
+## Exportaciones operativas Admin
+
+La exportación no concede acceso por existir una tarjeta UI. `data-exports` exige JWT válido, origen permitido y `data_exports.read` o la acción granular exacta `export`; leer, editar o publicar una sección no implica descargarla. Afiliados, solicitudes, membresías, catálogos maestros y auditoría son dominios reservados al permiso técnico global.
+
+La consulta privilegiada ocurre sólo después del permiso y usa un registro server-side inmutable de tabla, columnas y filtros. El navegador no envía SQL, tabla, columnas, orden ni URL Storage. Se excluyen `auth_user_id`, firmas, claves de idempotencia, `source_payload`, hashes/rutas internas, tokens y credenciales. CSV/XLSX neutraliza celdas que podrían interpretarse como fórmulas. Las respuestas usan `private, no-store`, no se guardan en Storage y la auditoría persiste actor, dominio, filtros validados, conteo, formato y fecha, no las filas.
+
+## Nómina declarada para simulación de préstamo
+
+`affiliate_payroll_declarations` y su auditoría tienen RLS habilitada y forzada, sin grants directos para `anon` o `authenticated`. Las tres RPC derivan identidad desde `auth.uid()`; sólo el afiliado Auth vinculado puede escribir y la existencia del afiliado sigue sin depender de Auth. La escritura queda denegada si existe contexto de impersonación, conserva `actor_real_auth_user_id`, valida rangos y usa versión optimista.
+
+ADR-051 sustituye esa última restricción sólo para asistencia válida: cualquier asignación administrativa activa puede abrir una sesión no anidable, con motivo y TTL de 30 minutos, y solicitar préstamo/capturar nómina declarada para el afiliado contexto. RPC y triggers registran actor real, contexto, sesión y motivo; anónimo y usuario normal no pueden impersonar. Ningún secreto, `service_role` ni autorización sólo UI entra al frontend.
+
+La proyección de impacto se ejecuta server-side con el pago previamente resuelto por Google. El frontend no recibe secretos ni puede elegir otro afiliado. La matriz live confirmó lectura/escritura propia, aislamiento H005_TEST2/H005_TEST3, anónimo denegado y tabla directa denegada; la prueba restauró el estado y dejó cero declaraciones QA. El 30% no concede permiso ni decisión de negocio.
+
+## Expediente, banco, solicitudes y QR — 2026-08-25
+
+`affiliate_documents`, `request_documents`, `affiliate_bank_accounts`, `program_terms_versions`, `credential_qr_settings`, `credential_qr_tokens` y `sensitive_change_audit` usan RLS habilitada y forzada. Los writers sensibles son RPC `security definer` con `search_path=''`, identidad derivada desde Auth/contexto y permisos administrativos existentes; `credential_qr_tokens` no concede lectura directa al cliente.
+
+Los archivos siguen en `private-assets`; afiliado y Admin autorizado reciben únicamente URL firmada temporal. La bandeja de revisión firma por 300 segundos y no expone paths públicos. La matriz bancaria final confirmó: anónimo 401, cruce A↔B 0, cada afiliado ve sólo su fila y Admin ve 504 exclusivamente por `bank_accounts.read`; los CRUD de prueba fueron reversibles. El listado enmascara identificadores y la auditoría conserva acciones/booleanos, nunca números completos.
+
+La URL del QR se construye localmente desde una ruta validada y un token de 64 caracteres; no usa API externa ni introduce nombre, CURP, número de control, banco o documento. El servicio no admite redirects arbitrarios porque `destination_path` está restringido por constraint y sólo Admin `content.write` puede cambiar la política.

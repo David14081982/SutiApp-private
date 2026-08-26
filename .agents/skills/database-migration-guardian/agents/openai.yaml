@@ -1,0 +1,4 @@
+interface:
+  display_name: "Database Migration Guardian"
+  short_description: "Revisa migraciones y recuperación de datos"
+  default_prompt: "Use $database-migration-guardian para revisar esta migración antes de ejecutarla."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "SutiApp Architect Reviewer"
+  short_description: "Supervisa arquitectura y siguiente acción de SutiApp"
+  default_prompt: "Use $sutiapp-architect-reviewer para revisar la evidencia de la H terminada y generar la instrucción exacta para Codex."

@@ -1,0 +1,7 @@
+interface:
+  display_name: "SutiApp Architecture Navigator"
+  short_description: "Registry-first impact navigation for SutiApp"
+  default_prompt: "Use $sutiapp-architecture-navigator to locate the feature, validate freshness, and produce targeted architecture context."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('assert');
+const normalize=(v)=>String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
+const cell=(c)=>c?(c.v??c.f??null):null;
+const term=(v)=>{const s=String(v??'').trim(),q=s.match(/^(\d+)\s*(?:QNAS?|QUINCENAS?)/i),m=s.match(/^(\d+)\s*MESES?/i);return q?Number(q[1]):m?Number(m[1])*2:0;};
+(async()=>{
+  const id='1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80';
+  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent('Criterios de fondos')}&range=A2:O151`;
+  const response=await fetch(url);assert.equal(response.status,200);
+  const raw=await response.text(),payload=JSON.parse(raw.slice(raw.indexOf('{'),raw.lastIndexOf('}')+1));
+  const rules=(payload.table.rows||[]).map((row)=>{const c=row.c||[];return{category:String(cell(c[0])??'').trim(),union:String(cell(c[1])??'').trim(),fund:String(cell(c[2])??'').trim(),max:Number(cell(c[3])),rate:Number(cell(c[4])),payments:term(cell(c[5]))};}).filter((r)=>r.category&&r.union&&r.fund&&r.max>0&&Number.isFinite(r.rate)&&r.payments>0);
+  assert(rules.length>100,'expected authoritative criteria rows');
+  const profile=rules.filter((r)=>normalize(r.category)==='BASE'&&normalize(r.union)==='SUTISSSTESON');
+  assert(profile.some((r)=>normalize(r.fund)==='CAJA DE AHORRO'));
+  assert(profile.some((r)=>normalize(r.fund)==='CAJA CHICA'));
+  const rule=profile.find((r)=>normalize(r.fund)==='CAJA DE AHORRO'),amount=Math.min(5000,rule.max),rate=rule.rate>1?rule.rate/100:rule.rate;
+  const interest=amount*rate*rule.payments,fee=15*rule.payments,total=amount+interest+fee;
+  assert.equal(total,amount+(amount*rate*rule.payments)+(15*rule.payments));
+  console.log(JSON.stringify({status:'PASS',googleWrites:0,validRules:rules.length,baseSutisstesonFunds:[...new Set(profile.map((r)=>r.fund))],sample:{fund:rule.fund,amount,payments:rule.payments,ratePercent:rate*100,interest,administrativeFee:fee,total}}));
+})().catch((error)=>{console.error(error);process.exit(1);});

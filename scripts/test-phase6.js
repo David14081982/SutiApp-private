@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('fs'),path=require('path'),root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8'),must=(x,m)=>{if(!x)throw new Error(m);};
+const sql=read('supabase/migrations/20260821001100_create_phase6_company_portal.sql'),recovery=read('supabase/recovery/20260821001100_create_phase6_company_portal_recovery.sql'),repo=read('app/marketplace-repository.js'),store=read('app/company-store.jsx'),admin=read('app/screens-admin.jsx'),plans=read('app/screens-admin-planes.jsx'),company=read('app/screens-company.jsx'),stats=read('app/screens-company-modules.jsx'),bundle=read('app/bundle.js');
+must(sql.includes('company_portal_plans')&&sql.includes('company_portal_subscriptions'),'portal tables missing');
+must(sql.includes('force row level security')&&sql.includes("has_admin_permission('company_portal.write')"),'RLS/admin writer missing');
+must(!/insert into public\.company_portal_(plans|subscriptions)/i.test(sql),'invented productive portal records');
+must(recovery.includes('drop table if exists public.company_portal_subscriptions'),'recovery missing');
+must(repo.includes('listPortalPlans')&&repo.includes('setPortalSubscription'),'repository missing');
+must(store.includes('Supabase is the only runtime authority')&&!store.includes('localStorage'),'productive browser fallback');
+must(!store.includes('90 - i * 12')&&!stats.includes('90 - i * 12'),'fabricated statistics remain');
+must(admin.includes("planes:'company_portal.read'")&&admin.includes("view==='planes'"),'Admin Plans route missing');
+must(plans.includes("app.admin.has('company_portal.write')")&&!plans.includes('window.adminStore'),'Admin Plans permission must use backend assignment');
+['await store.savePlan','await store.removePlan','await store.duplicatePlan','await store.togglePlan','await store.setCompanyPlan'].forEach((operation)=>must(plans.includes(operation),'Admin Plans does not await '+operation));
+must(company.includes("label: 'Productos publicados'")&&stats.includes('Solicitudes por producto'),'Claude stats structure not connected');
+must(bundle.includes('company_portal_subscriptions')&&bundle.includes('PlanesModule'),'bundle stale');
+console.log('Phase 6 static verification PASS: empty Supabase plan authority, subscriptions/RLS, Admin CRUD routing and real operation metrics.');

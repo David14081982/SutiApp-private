@@ -1,0 +1,23 @@
+{
+  "source": {
+    "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+    "spreadsheet_title": "SutiApp Final",
+    "sheet": "Membresias",
+    "range": "A1:F7",
+    "read_mode": "READ_ONLY",
+    "captured_at": "2026-08-21"
+  },
+  "headers": ["Empresa", "Concepto", "Logotipos", "Monto", "Pagos", "Row ID"],
+  "rows": [
+    ["Bud Tv Ultra", "Películas y series", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/44kijromXhVdrDfNYVDZ.png", "200.00", 2, "mWWO3HYPSzSlyyrzN33YEQ"],
+    ["RiveraGas", "Vales", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/TMYDWSuu9xjOwo5ZdSYt.jpeg", "350.00", 2, "a.O67gNqgTCiA.CIdEHhDOA"],
+    ["Sams Club", "Solicitud de membresia", "https://i.pinimg.com/736x/89/48/1e/89481e106c38bd80f1a293f96fd2b2d1.jpg", "350.00", 2, "iWHgZjhmQYSUJPVmeGxniw"],
+    ["Costco", "Solicitud de membresia", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/p7jGQCFcd54b8tLNlXA2.webp", "350.00", 2, "xwNe7cFYR1-L7lBO9v8UWg"],
+    ["Casa Ley", "Vales", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Lnpn2Sjxmf8LZP2nk6ua.jpg", "1100.00", 2, "GFnehVTfSr68fV.l7-XMWg"],
+    ["Arco gasolinera", "Vale de gasolina", "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/hLQhkWuceq40yJ9KpbiD.png", "550.00", 2, "ZtQZDWERSbe3a-IzvWkRhw"]
+  ],
+  "excluded": {
+    "Solicitudes membresía": "467 historical PII/document/payroll-adjacent transactions remain Google legacy; no read/write cutover in Phase 4",
+    "program catalogs": "not a single domain; commerce is Phase 3 and financial/formula-dependent programs remain protected for Phase 7"
+  }
+}

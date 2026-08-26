@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><title>SutiApp · Motion Opportunity Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+doc-page:not(:defined){visibility:hidden}
+:root{--guinda:#910022;--guinda-700:#6a001b;--ink:#171215;--ink-2:#4a4246;--ink-3:#8b8288;--line:#e6e1e3;--gold:#a9812c;--navy:#14213d;--green:#13794A;--blue:#2456C7}
+body{font-family:'Inter Tight',system-ui,sans-serif;color:var(--ink)}
+h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:40pt;line-height:1.02;letter-spacing:-.01em;margin:0 0 6pt}
+h1 em{font-style:italic;color:var(--guinda)}
+.sub{font-size:11pt;color:var(--ink-3);font-weight:500;margin:0 0 4pt}
+h2{font-size:15pt;font-weight:800;letter-spacing:-.01em;margin:26pt 0 8pt;padding-bottom:5pt;border-bottom:1.5pt solid var(--ink);display:flex;align-items:baseline;gap:8pt}
+h2 span.n{font-family:'Instrument Serif',serif;font-size:13pt;color:var(--guinda);font-weight:400}
+h3{font-size:11.5pt;font-weight:800;margin:16pt 0 5pt;color:var(--guinda-700)}
+p,li{font-size:10pt;line-height:1.5;color:var(--ink-2)}
+li{margin-bottom:3pt}
+strong{color:var(--ink);font-weight:700}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.6pt;background:#f4f1f2;padding:1px 4px;border-radius:3px;color:var(--guinda-700)}
+table{width:100%;border-collapse:collapse;margin:8pt 0 4pt;break-inside:auto}
+th{font-size:7.8pt;text-transform:uppercase;letter-spacing:.06em;text-align:left;color:var(--ink-3);font-weight:700;border-bottom:1pt solid var(--ink);padding:4pt 5pt 4pt 0;vertical-align:bottom}
+td{font-size:8.8pt;line-height:1.38;color:var(--ink-2);border-bottom:.5pt solid var(--line);padding:5pt 5pt 5pt 0;vertical-align:top}
+td.c{font-weight:700;color:var(--ink);width:16%}
+td.k{width:9%;font-size:8pt;color:var(--ink-3)}
+tr{break-inside:avoid}
+.tag{display:inline-block;font-size:7.4pt;font-weight:800;letter-spacing:.04em;padding:1.5pt 5pt;border-radius:99px;white-space:nowrap}
+.t1{background:#eaf5ee;color:var(--green)}
+.t2{background:#e9eefb;color:var(--blue)}
+.t3{background:#f6ecf0;color:var(--guinda)}
+.meta{font-size:7.8pt;color:var(--ink-3);font-weight:600}
+.callout{background:#faf8f9;border-left:2.5pt solid var(--guinda);padding:9pt 12pt;margin:10pt 0;break-inside:avoid}
+.callout p{margin:0 0 4pt;font-size:9.4pt}
+.callout p:last-child{margin:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10pt 18pt;margin:8pt 0}
+.card{border:.75pt solid var(--line);border-radius:6pt;padding:9pt 11pt;break-inside:avoid}
+.card h4{margin:0 0 3pt;font-size:9.6pt;font-weight:800;color:var(--ink)}
+.card p{margin:0;font-size:8.8pt}
+.kv{font-size:8.6pt;color:var(--ink-3);margin-top:4pt}
+.legend{display:flex;gap:14pt;flex-wrap:wrap;margin:6pt 0 2pt}
+.legend div{font-size:8.4pt;color:var(--ink-2)}
+hr{border:0;border-top:.5pt solid var(--line);margin:14pt 0}
+.foot{font-size:8pt;color:var(--ink-3);display:flex;justify-content:space-between;border-top:.5pt solid var(--line);padding-top:5pt}
+</style></head>
+<body>
+<doc-page margin="0.7in">
+<div slot="footer" class="foot"><span>SutiApp · Motion &amp; Interaction Audit</span><span>Fase 1 de 5 — Auditoría. Sin cambios de código.</span></div>
+
+<h1>Motion <em>Opportunity Map</em></h1>
+<p class="sub">SutiApp — auditoría de movimiento e interacción · Fase 1 · agosto 2026</p>
+<p>Recorrido completo de las 13 pantallas de usuario y los 5 paneles de administración auditados en el baseline F1.0, con el inventario del motion que ya existe, el diagnóstico de lo que falla y 49 oportunidades priorizadas (18 🟢, 18 🔵, 13 🟣). <strong>No se ha modificado una sola línea de código.</strong> Al final hay tres decisiones arquitectónicas que necesitan tu aprobación antes de la Fase 2.</p>
+
+<h2><span class="n">01</span> Qué hay hoy</h2>
+<p>El motion actual no es inexistente: hay una base honesta, pequeña y consistente, definida casi toda en <code>SutiApp.html</code>. Inventario real:</p>
+<table>
+<thead><tr><th>Recurso</th><th>Dónde</th><th>Qué hace</th><th>Juicio</th></tr></thead>
+<tbody>
+<tr><td class="c"><code>.su-press</code></td><td class="k">global</td><td><code>scale(.975)</code> en <code>:active</code>, sin transición de vuelta</td><td>Correcto pero seco: no hay easing de salida ni sensación de peso.</td></tr>
+<tr><td class="c"><code>.su-route</code></td><td class="k">cada pantalla</td><td><code>su-rise</code> 340 ms — <code>translateY(14px) → 0</code></td><td>Solo <strong>entrada</strong>. Nunca hay salida: la pantalla anterior desaparece de golpe.</td></tr>
+<tr><td class="c"><code>.su-stagger</code></td><td class="k">Inicio, Finanzas</td><td>Aplica <code>su-rise</code> 420 ms a todos los hijos</td><td><strong>Falso stagger</strong>: sin <code>animation-delay</code> por hijo, los 6 bloques entran exactamente a la vez. Es el hallazgo más fácil de corregir y el de mayor ganancia percibida.</td></tr>
+<tr><td class="c"><code>su-pop</code> / <code>su-confetti</code> / <code>su-spin</code></td><td class="k">Préstamo, Marketplace</td><td>Éxito de solicitud: spinner 2.1 s → check con overshoot + confeti</td><td>El único momento con intención de celebración. Está desconectado del botón que lo originó.</td></tr>
+<tr><td class="c">Carrusel de anuncios</td><td class="k">Convenios</td><td><code>translateX</code> 550 ms, escala .94→1, autoplay 4.6 s, pausa en hover</td><td>Lo mejor construido de la app. Le falta gesto (swipe) y parallax interno.</td></tr>
+<tr><td class="c">Pop-up administrable</td><td class="k">global</td><td>Spring real <code>cubic-bezier(.34,1.56,.64,1)</code> + backdrop blur</td><td>El patrón correcto. Debería ser el patrón de <em>todos</em> los sheets.</td></tr>
+<tr><td class="c">Toggles del panel</td><td class="k">≥10 pantallas admin</td><td><code>transition: left .2s</code> sobre un thumb absoluto</td><td><strong>Anima <code>left</code></strong>: propiedad de layout, no compuesta. Diez implementaciones duplicadas del mismo control.</td></tr>
+<tr><td class="c">Mapa de Terrenos</td><td class="k">Terrenos</td><td><code>rotateX(48deg)</code> 500 ms, pan/zoom con pointer events</td><td>Ya es una interacción premium. Sirve de referencia de calidad.</td></tr>
+<tr><td class="c">Drag de bloques</td><td class="k">Contenido, Sindicato</td><td><code>scale(1.02)</code> + transición desactivada al arrastrar</td><td>El elemento arrastrado se comporta bien; los vecinos <strong>saltan</strong> sin transición.</td></tr>
+<tr><td class="c"><code>prefers-reduced-motion</code></td><td class="k">global</td><td>Anula <code>.su-route</code> y <code>.su-stagger</code></td><td>Incompleto: no cubre carrusel, autoplay, confeti, spinner ni sheets.</td></tr>
+</tbody></table>
+
+<h3>Diagnóstico en una frase</h3>
+<div class="callout">
+<p><strong>La app tiene animaciones, no un sistema.</strong> Todo entra igual (subir 14 px), nada sale, ningún elemento sobrevive a un cambio de pantalla, el scroll no participa y el feedback de las acciones importantes se resuelve reemplazando componentes en lugar de transformarlos.</p>
+<p>Los seis vacíos estructurales: <strong>1)</strong> sin transiciones de salida ni dirección de navegación; <strong>2)</strong> cero shared-element (nunca hay puente visual entre lista y detalle); <strong>3)</strong> cero scroll-linked motion — los headers gradiente ocupan 30-40 % de la pantalla y no se compactan nunca; <strong>4)</strong> cero morphing (botón→panel, tarjeta→detalle); <strong>5)</strong> coreografía plana (stagger falso); <strong>6)</strong> tokens inexistentes: 14 duraciones distintas escritas a mano y 3 curvas diferentes.</p>
+</div>
+
+<h2><span class="n">02</span> Cómo leer el mapa</h2>
+<div class="legend">
+<div><span class="tag t1">🟢 SUTIL</span> &nbsp;Pulido invisible. Bajo riesgo, se nota en el conjunto.</div>
+<div><span class="tag t2">🔵 PREMIUM</span> &nbsp;Transformación real de un componente. Riesgo medio.</div>
+<div><span class="tag t3">🟣 SIGNATURE</span> &nbsp;Momento memorable. Pocos, medidos, deliberados.</div>
+</div>
+<p class="meta">Complejidad: S = horas · M = 1 día · L = varios días o requiere infraestructura. Riesgo de performance: bajo = solo transform/opacity · medio = mide layout (FLIP / observers) · alto = trabajo continuo durante scroll o gesto.</p>
+
+<h2><span class="n">03</span> Shell: navegación, header, feedback global</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Nav inferior · indicador activo<br><span class="meta">app.jsx BottomNav</span></td><td>El contenedor del icono cambia de estilo con <code>transition: all .26s</code>. El indicador no viaja: aparece bajo el nuevo tab.</td><td>Un único indicador que <strong>se desplaza</strong> entre tabs (medición FLIP entre el tab saliente y el entrante), icono con <code>scale</code> 1→1.08→1 y peso de label interpolado.</td><td>Dice de dónde vienes y a dónde vas; convierte 6 botones en un solo objeto continuo.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Cambio de tab · contenido</td><td><code>key={tab}</code> remonta el árbol: entrada <code>su-rise</code>, cero salida, cero dirección.</td><td>Transición direccional según el índice del tab (izquierda/derecha) con salida real de la pantalla anterior: <code>translateX ±24px</code> + opacidad, 260 ms.</td><td>Modelo espacial: los tabs viven uno al lado del otro, no uno encima del otro.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Rutas apiladas · push/back<br><span class="meta">product, terreno, convenio, tracking, documentos, perfil…</span></td><td>La pantalla nueva se monta encima sin transición de la de fondo; <code>back()</code> es instantáneo. 12 rutas afectadas.</td><td>Slide-over con profundidad: la pantalla de fondo baja a <code>scale(.96)</code> y se atenúa; la nueva entra desde la derecha con spring. <strong>Swipe desde el borde para volver</strong>, con seguimiento 1:1 del dedo y decisión por velocidad.</td><td>Es el cambio que más eleva la percepción de "app nativa" y el que más reduce la sensación de salto.</td><td><span class="tag t3">🟣</span><br><span class="meta">L · medio</span></td></tr>
+<tr><td class="c">TopBar gradiente<br><span class="meta">5 variantes de tab</span></td><td>Header fijo de 30-40 % de alto: saludo, chips de balance, sello. No reacciona al scroll.</td><td><strong>Collapsing header scroll-linked</strong>: al bajar, el saludo se desvanece y el nombre migra a un título compacto; los chips de balance se contraen a una línea; el sello hace parallax al 15 %; el "labio" blanco reduce su radio. Reversible al subir.</td><td>Devuelve entre 90 y 120 px de contenido útil y da continuidad física al scroll.</td><td><span class="tag t2">🔵</span><br><span class="meta">L · medio</span></td></tr>
+<tr><td class="c">Toast</td><td>Aparece y desaparece por render, sin entrada ni salida.</td><td>Entrada spring desde abajo, barra de vida del auto-dismiss, salida hacia abajo; cola cuando hay varios avisos.</td><td>Feedback legible sin robar atención.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Avatar → Mi Perfil</td><td>El perfil abre como pantalla nueva; el avatar del header se pierde.</td><td><strong>Shared element</strong>: el avatar del TopBar crece y viaja hasta el avatar grande del perfil; el resto del contenido entra escalonado detrás.</td><td>Continuidad de identidad: "esto que tocaste es esto".</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Campana → Notificaciones</td><td>Igual: pantalla nueva sin relación con el botón.</td><td>El badge de la campana se expande al panel (morph de círculo a lista) y las notificaciones entran escalonadas 35 ms.</td><td>Origen claro del panel.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Pop-up administrable</td><td>Entrada spring correcta; la salida es abrupta.</td><td>Salida simétrica (misma curva invertida, 200 ms) y blur del backdrop interpolado en ambas direcciones.</td><td>Cierra el ciclo de la única animación ya bien hecha.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">04</span> Inicio</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Bloques de la pantalla<br><span class="meta">su-stagger, 6 hijos</span></td><td>Los 6 bloques entran simultáneamente: la coreografía existe en el código pero no en la percepción.</td><td>Stagger real de 35 ms por bloque con <code>IntersectionObserver</code>, solo la primera vez que cada bloque entra en viewport (no en cada re-render del admin).</td><td>Jerarquía de lectura; la corrección de mayor impacto por unidad de esfuerzo de todo el mapa.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Accesos rápidos (4 tiles)</td><td><code>su-press</code> y nada más. Al tocar Préstamo se abre una pantalla sin relación visual.</td><td>Press con hundimiento del icono 1 px + halo radial guinda que se disipa; al navegar, el tile <strong>morfa al header</strong> de la pantalla destino.</td><td>El acceso rápido se convierte literalmente en la pantalla que abre.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Banner de convenio</td><td>Estático; el icono <code>flame</code> no reacciona.</td><td>Parallax sutil del icono al hacer scroll (8 px) y press que empuja el chevron 3 px hacia la derecha antes de navegar (anticipación).</td><td>Insinúa la dirección del gesto.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Carrusel de noticias</td><td>Scroll horizontal nativo sin snap ni jerarquía; todas las tarjetas pesan igual.</td><td><code>scroll-snap</code> + escala y opacidad ligadas a la posición (la tarjeta centrada a 1.0, las laterales a .96/.85) con <code>scroll</code> pasivo y rAF.</td><td>Enfoca la lectura y hace tangible el desplazamiento.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Noticia → Artículo</td><td>Corte duro entre la tarjeta y el artículo.</td><td><strong>Shared element</strong>: la imagen de la tarjeta (<code>image-slot</code>) crece al hero del artículo; el título viaja e interpola su tamaño.</td><td>El caso de libro de continuidad; muy visible con imágenes reales ya cargadas.</td><td><span class="tag t3">🟣</span><br><span class="meta">L · medio</span></td></tr>
+<tr><td class="c">Ecosistema (grid 3×N)</td><td>9 tiles entran juntos.</td><td>Entrada escalonada en diagonal (fila + columna × 25 ms) al entrar en viewport.</td><td>Da orden a una retícula densa.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Comité (avatares)</td><td>Sin feedback al tocar.</td><td>Press con <code>scale(1.04)</code> y elevación de sombra; el cargo se revela con 60 ms de retardo.</td><td>Humaniza una fila hoy inerte.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Botón Instalar app</td><td>Botón estático; el estado "instalada" reemplaza el bloque completo.</td><td><strong>Botón inteligente</strong>: press → el label se contrae y aparece progreso dentro del mismo contenedor → el contenedor se transforma en la píldora verde "App instalada" (mismo nodo, sin reemplazo).</td><td>Continuidad de estado en la acción más importante de la pantalla.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Hero Wallet (credencial)</td><td>Tarjeta estática que navega a Credencial.</td><td>Press con <code>perspective</code> y inclinación de 4° hacia el dedo; al navegar, la tarjeta <strong>continúa</strong> hasta la credencial grande (shared element).</td><td>Convierte la tarjeta en un objeto físico, no en un botón con imagen.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">05</span> Mi Financiera</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Tarjeta de resumen</td><td>Ocupa ~180 px y se va con el scroll; el crédito disponible y el CTA principal desaparecen justo cuando el usuario explora productos.</td><td><strong>Collapsing UI</strong>: al pasar el umbral, la tarjeta se transforma en una barra sticky de 56 px con monto + "Solicitar", interpolando radio, sombra y tipografía. Reversible.</td><td>El dato y la acción clave siempre presentes, sin duplicar componentes.</td><td><span class="tag t3">🟣</span><br><span class="meta">L · medio</span></td></tr>
+<tr><td class="c">Buscador + filtros</td><td>El <code>SearchBar</code> no cambia al enfocarse; el badge de filtros aparece de golpe; el sheet abre sin relación con el botón.</td><td>Al enfocar, el buscador <strong>se expande</strong> desplazando los chips y revela "Cancelar"; el badge entra con spring; el sheet de filtros nace desde el botón de filtro.</td><td>Modo búsqueda como estado, no como pantalla nueva.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">FilterSheet</td><td>Chips que cambian color; sin arrastre para cerrar.</td><td>Selección con spring y conteo vivo en "Aplicar"; drag-to-dismiss con umbral por velocidad.</td><td>Gesto esperado en móvil.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Lista de 18 productos</td><td>Al buscar o filtrar, la lista se re-renderiza y los elementos saltan.</td><td><strong>FLIP</strong> al filtrar: los que permanecen se desplazan a su nueva posición (220 ms), los que salen se atenúan y colapsan. Entrada escalonada por grupo al aparecer.</td><td>El usuario ve qué se fue y qué quedó, en vez de una lista nueva.</td><td><span class="tag t2">🔵</span><br><span class="meta">L · medio</span></td></tr>
+<tr><td class="c">Producto → Detalle</td><td>Salto duro; el <code>ResTile</code> del producto se pierde.</td><td><strong>Shared element</strong> del tile + título hacia la cabecera del detalle; el resto del detalle entra escalonado detrás.</td><td>Continuidad en el flujo más usado de la app.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Recomendado (carrusel)</td><td>Sin jerarquía; la etiqueta de razón compite con el título.</td><td>Escala ligada al scroll y entrada de la etiqueta con 80 ms de retardo (follow-through).</td><td>Ordena la lectura de la tarjeta.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Membresías</td><td>Mismo patrón plano que la lista.</td><td>Reutilizar entrada escalonada y FLIP del sistema.</td><td>Consistencia.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">06</span> Convenios</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Carrusel de anuncios</td><td>Buena transición, pero <strong>no se puede arrastrar</strong>: el usuario intenta swipe y no pasa nada. Autoplay ignora <code>prefers-reduced-motion</code>.</td><td>Drag con seguimiento 1:1, decisión por velocidad e inercia; parallax de la imagen dentro del marco (8 %); dots que se estiran; autoplay desactivado con reduced-motion y al tocar.</td><td>Cumple la expectativa táctil y añade profundidad al espacio publicitario.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Favorito (corazón)<br><span class="meta">tarjeta + detalle</span></td><td>El relleno cambia instantáneamente. Cero recompensa.</td><td>Microinteracción firmada: <code>scale</code> 1→1.25→1 con spring, relleno revelado por clip desde el centro y destello radial que se disipa en 300 ms.</td><td>La recompensa más barata y más recordada de la app.</td><td><span class="tag t3">🟣</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Chips de categoría</td><td>Cambio de color; el chip activo puede quedar fuera de vista.</td><td>Indicador deslizante compartido entre chips + centrado suave del chip activo (sin <code>scrollIntoView</code>).</td><td>Orientación dentro de una fila desplazable.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Tarjeta → Detalle de convenio</td><td>El hero del detalle repite el gradiente de la tarjeta, pero se reconstruye desde cero.</td><td><strong>Shared element</strong>: el bloque de imagen crece a los 240 px del hero y el badge de descuento se mantiene fijo en su posición durante todo el viaje.</td><td>Un badge que no se mueve mientras todo crece a su alrededor es un momento "¿viste eso?".</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Barra inferior de acciones<br><span class="meta">Llamar / Mensaje</span></td><td>Siempre visible, incluso sobre el hero donde aún no es relevante.</td><td>Aparece con spring al pasar el hero (scroll-triggered) y el precio migra al header compacto cuando se sale de vista.</td><td>Las acciones llegan cuando importan.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">07</span> Historial, Credencial, Documentos</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Hero "solicitud en curso"</td><td>Barra de progreso pintada en su valor final; el reloj decorativo es inerte.</td><td>La barra se llena desde 0 al entrar en viewport (400 ms, una sola vez) y el reloj gira lentísimo ligado al scroll.</td><td>El progreso se percibe como progreso, no como gráfico.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">StatusPill</td><td>Cambia de golpe cuando el estado cambia en vivo (Finanzas aprueba desde el panel).</td><td>Transición de color + morph del icono (<code>clock</code> → <code>checkCircle</code>) con un pulso único.</td><td>Comunica "algo acaba de cambiar" sin notificación.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Solicitud → Seguimiento</td><td>Salto duro; el timeline aparece completo.</td><td><strong>Shared element</strong> del tile + folio, y timeline que se dibuja: la línea crece y cada hito entra 60 ms después del anterior.</td><td>El seguimiento se lee como una secuencia temporal.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Filtros de historial</td><td>La lista se reconstruye al filtrar.</td><td>FLIP compartido con Finanzas.</td><td>Consistencia.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · medio</span></td></tr>
+<tr><td class="c">Tarjeta de credencial</td><td>Estática. Es la pantalla que el afiliado <em>muestra a otra persona</em> y no tiene ninguna presencia.</td><td><strong>Signature</strong>: la tarjeta responde a la inclinación del dispositivo (<code>deviceorientation</code>, fallback puntero) con un brillo especular que barre la superficie; 3° máximo, amortiguado. Se apaga con reduced-motion.</td><td>El momento de orgullo de la app. Un solo efecto, en el lugar exacto.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Ver QR</td><td>El QR ya está en la tarjeta; ampliarlo cambia de vista.</td><td>Flip 3D de la propia tarjeta (180°) hacia el reverso con el QR grande.</td><td>Una tarjeta con dos caras es más comprensible que dos pantallas.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Subida de documentos / <code>image-slot</code></td><td>Al soltar, la imagen aparece de golpe.</td><td>Revelado con clip desde el centro (260 ms) + check breve. <span class="meta">Ojo: toca el componente <code>image-slot</code>, gobernado por las reglas F1 — se haría vía atributo, sin alterar su API.</span></td><td>Confirma que el archivo llegó.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Firma</td><td>El trazo aparece y ya.</td><td>Al guardar, la firma "se seca": el trazo pasa de gris a tinta en 500 ms.</td><td>Cierre de una acción legalmente relevante.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">08</span> Flujos: préstamo, cotización, terrenos</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Wizard de préstamo · pasos</td><td>El contenido del paso se reemplaza; el <code>Stepper</code> salta al siguiente punto.</td><td>Contenido que se desplaza lateralmente según la dirección (avanzar/retroceder) y barra del stepper que crece con spring.</td><td>Sentido de avance dentro de un formulario largo.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Enviar → Enviando → Éxito</td><td>El botón desaparece, aparece un spinner 2.1 s, luego un check con confeti. Tres componentes distintos para un solo hecho.</td><td><strong>Botón inteligente</strong>: el propio botón se contrae a círculo, gira mientras envía, se expande al check verde y solo entonces aparece el resumen. Confeti más corto (900 ms) y no bloqueante.</td><td>Continuidad total en el momento más importante del producto.</td><td><span class="tag t3">🟣</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Sliders de monto y plazo</td><td>El número cambia sin peso; el pago mensual se recalcula de golpe.</td><td>Al arrastrar, el monto escala un 4 % y vuelve con spring; el pago mensual hace count-up de 180 ms.</td><td>Hace tangible la relación monto↔pago.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Terrenos · 2D ↔ 3D</td><td>El plano se inclina (ya correcto), pero los lotes acompañan como una sola capa plana.</td><td>Sombra que crece con la inclinación y lotes que se elevan escalonados 20 ms por fila.</td><td>Refuerza el volumen del modelo.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Terrenos · selección de lote</td><td>Cambio de relleno.</td><td>Pulso del contorno una vez + panel inferior que sube con spring desde el borde del lote tocado.</td><td>Relaciona el panel con el lote elegido.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">09</span> Panel de administración</h2>
+<table>
+<thead><tr><th>Componente</th><th>Hoy / problema</th><th>Interacción propuesta</th><th>Aporta</th><th>Clase</th></tr></thead>
+<tbody>
+<tr><td class="c">Toggles<br><span class="meta">≥10 implementaciones duplicadas</span></td><td>Animan <code>left</code> (layout), duraciones distintas (.2s), sin estado de press.</td><td>Un <strong>Toggle único del sistema</strong>: <code>translateX</code> con spring, press que comprime el thumb, cambio de fondo interpolado. Sustitución mecánica en todos los paneles.</td><td>Consistencia + la única corrección de performance real del mapa.</td><td><span class="tag t1">🟢</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Reordenar bloques (drag)</td><td>El arrastrado escala bien; los vecinos <strong>saltan</strong> a su nueva posición.</td><td>FLIP en los vecinos: se apartan abriendo el hueco (180 ms) mientras el arrastrado se eleva con sombra.</td><td>Convierte el drag en manipulación de objetos.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · medio</span></td></tr>
+<tr><td class="c">Guardar en editores</td><td>Toast tras guardar; el botón no cambia.</td><td>Botón que se transforma en check y vuelve a su estado tras 1.2 s.</td><td>Feedback en el punto de la acción.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Sheets y editores<br><span class="meta">KindPicker, Editor, Sheet</span></td><td>Tres implementaciones con curvas distintas; algunas sin transición.</td><td>Unificar en el spring del pop-up + drag-to-dismiss.</td><td>Un solo lenguaje para todo lo que sube desde abajo.</td><td><span class="tag t1">🟢</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Acciones destructivas</td><td><code>confirm()</code> nativo del navegador.</td><td>Confirmación en línea: el botón se expande a "¿Eliminar?" con Sí/No; al cancelar, vuelve con un rebote mínimo.</td><td>Quita un diálogo del sistema del flujo del admin.</td><td><span class="tag t2">🔵</span><br><span class="meta">M · bajo</span></td></tr>
+<tr><td class="c">Skeletons y estados vacíos</td><td>El shimmer se reemplaza de golpe por el contenido.</td><td>Crossfade skeleton→contenido (180 ms); en vacíos, icono con entrada spring y texto escalonado.</td><td>Elimina el parpadeo de carga.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+<tr><td class="c">Badges y contadores</td><td>Los números cambian instantáneamente.</td><td>Count-up con spring y pulso del badge cuando el valor sube.</td><td>Hace visible el cambio de datos en vivo.</td><td><span class="tag t1">🟢</span><br><span class="meta">S · bajo</span></td></tr>
+</tbody></table>
+
+<h2><span class="n">10</span> Los tres momentos Signature que propongo priorizar</h2>
+<p>De las 13 oportunidades 🟣, estas tres son las que definirían el carácter de la app. Las demás son excelentes, pero derivadas del mismo sistema.</p>
+<div class="grid2">
+<div class="card"><h4>1 · La credencial viva</h4><p>La tarjeta responde a la inclinación del teléfono con un brillo especular que la recorre. Es la pantalla que el afiliado enseña a otra persona: el único lugar donde el efecto <em>es</em> el producto.</p><p class="kv">Impacto: muy alto · Riesgo: medio (permiso iOS, fallback puntero)</p></div>
+<div class="card"><h4>2 · El puente lista→detalle</h4><p>Un solo mecanismo de shared element que sirve a productos, convenios, noticias y solicitudes. Un elemento que sobrevive al cambio de pantalla cambia por completo la percepción de la app.</p><p class="kv">Impacto: muy alto · Riesgo: medio (requiere capa de transición)</p></div>
+<div class="card"><h4>3 · El botón que completa el trámite</h4><p>Enviar → girar → check, todo en el mismo nodo. Es el momento emocional del producto (solicitar un préstamo) y hoy está roto en tres componentes.</p><p class="kv">Impacto: alto · Riesgo: bajo</p></div>
+<div class="card"><h4>Bonus barato · el corazón</h4><p>El favorito con spring y destello cuesta unas horas y es lo que la gente enseña a un compañero. Lo incluiría en la primera tanda por relación esfuerzo/recuerdo.</p><p class="kv">Impacto: medio-alto · Riesgo: bajo</p></div>
+</div>
+
+<h2><span class="n">11</span> Tres decisiones que necesitan tu aprobación</h2>
+<p>Estas tres piezas no son "añadir una animación": tocan la arquitectura de render. Según la regla de oro, me detengo aquí y documento el impacto antes de implementar nada.</p>
+<h3>A · Capa de transición de rutas <span class="meta">(habilita push/pop con salida, dirección y shared elements)</span></h3>
+<p>Hoy <code>app.jsx</code> monta la ruta activa y desmonta la anterior en el mismo commit: no existe ningún instante en que ambas convivan, así que <strong>ninguna transición de salida es posible</strong>. Propongo un envoltorio de presencia que retenga la pantalla saliente ~320 ms y una capa de overlay para los clones FLIP del shared element. <strong>La API de navegación no cambia</strong> (<code>push</code>, <code>back</code>, <code>setTab</code> intactos), no se toca lógica de negocio, datos, permisos ni persistencia; sí se modifica el árbol de render de <code>app.jsx</code> y cada pantalla destino declara qué elemento es "compartido". Riesgo: dobles montajes si se navega muy rápido — se mitiga con cancelación por id de transición. Sin esta capa, 8 de las 13 oportunidades 🟣 son imposibles.</p>
+<h3>B · Hook de progreso de scroll compartido <span class="meta">(habilita collapsing headers y scroll-linked)</span></h3>
+<p>El scroll vive en <code>.su-app-scroll</code>, dentro del shell. Propongo un único <code>useScrollProgress</code> con listener pasivo + rAF que publique un valor 0→1 por contenedor, consumido por TopBar, tarjeta de resumen de Finanzas y barra de acciones de Convenios. Un solo listener para toda la app, cero lecturas de layout durante el scroll (todo <code>transform</code>/<code>opacity</code>). Riesgo bajo; impacto: los headers dejan de comerse un tercio de la pantalla.</p>
+<h3>C · Utilidad FLIP para listas <span class="meta">(habilita filtrado y reordenamiento sin saltos)</span></h3>
+<p>Filtrar en Finanzas, Historial y Convenios reconstruye listas. Propongo un helper de medir→invertir→animar sobre las claves estables que ya existen. Mide layout una vez por cambio de filtro (no durante scroll). Riesgo medio-bajo, contenido y reversible.</p>
+<div class="callout">
+<p><strong>Lo que NO propongo:</strong> ninguna librería de animación externa (ni Framer Motion ni GSAP). Todo con <code>transform</code>/<code>opacity</code>, <code>Web Animations API</code>, <code>IntersectionObserver</code> y springs propios en ~120 líneas. La app carga un bundle precompilado sin dependencias de runtime más allá de React y quiero que siga así.</p>
+</div>
+
+<h2><span class="n">12</span> Plan propuesto de las fases 2 a 5</h2>
+<table>
+<thead><tr><th>Fase</th><th>Contenido</th><th>Entregable</th></tr></thead>
+<tbody>
+<tr><td class="c">M1 · Motion System</td><td>Tokens de duración (90/140/220/320/480), curvas (estándar, enfatizada, spring), distancias (8/14/24), estados de escala, enter/exit, stagger (35 ms, tope 6), matriz completa de <code>prefers-reduced-motion</code>. Un solo archivo, cero consumidores.</td><td><code>motion.jsx</code> + documento de tokens</td></tr>
+<tr><td class="c">M2 · Prototipo de 3</td><td>Una 🟢 (stagger real en Inicio), una 🔵 (collapsing TopBar), una 🟣 (shared element noticia→artículo). Con medición de FPS en scroll, prueba en móvil y reduced-motion.</td><td>Prototipo verificado + veredicto go/no-go por pieza</td></tr>
+<tr><td class="c">M3 · Shell</td><td>Nav, rutas, toast, sheets unificados, Toggle del sistema.</td><td>Base sobre la que todo lo demás se apoya</td></tr>
+<tr><td class="c">M4 · Pantallas de usuario</td><td>Inicio, Financiera, Convenios, Historial, Credencial, flujos.</td><td>Pantalla por pantalla, con conteo de no-regresión como en las fases F1</td></tr>
+<tr><td class="c">M5 · Admin + QA de motion</td><td>Paneles y la batería completa: scroll rápido e inverso, doble tap, navegación encadenada, resize, listas vacías, datos tardíos, dispositivo lento, reduced-motion.</td><td>Checklist firmado de QA</td></tr>
+</tbody></table>
+<p class="meta">Cada fase se mide contra <code>docs/F1.0-baseline.json</code> (conteo de nodos por pantalla, con el pop-up administrable cerrado) para garantizar que el motion no altera la estructura del DOM ni el comportamiento funcional.</p>
+
+</doc-page>
+<script src="doc-page.js"></script>
+</body></html>

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "mode": "master_plan",
+  "priority_source": "docs/MASTER_COMPLETION_PLAN.md",
+  "operational_queue": "docs/WORK_QUEUE.md",
+  "current_phase": "PHASE 7",
+  "advance_mode": "AUTO_AFTER_APPROVED",
+  "stop_condition": "OWNER_DECISION_REQUIRED"
+}

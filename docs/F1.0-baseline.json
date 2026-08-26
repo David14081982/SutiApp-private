@@ -1,0 +1,56 @@
+{
+  "fase": "F1.0",
+  "fecha": "2026-08-09",
+  "entorno": {
+    "archivo": "SutiApp.html",
+    "bundle": "app/bundle.js",
+    "iconos_registrados": 86,
+    "localStorage_presente": [
+      "suti_admin_screen_access_v1", "suti_bank_v1", "suti_finanzas_seq_v1",
+      "suti_membresias_v1", "suti_finanzas_solicitudes_v1", "suti_admin_viewer_v1",
+      "suti_flujos_track_v2", "suti_flujos_v2", "suti_admin_auth_v1",
+      "suti_catalogo_v1", "suti_admin_audit_v1", "suti_admin_sindicato_v3"
+    ],
+    "localStorage_ausente": ["suti_admin_fincat_v1", "suti_admin_finrecs_v1"],
+    "nota_fincat": "FinCat corre sobre semilla (DATA.finanzasGroups). No hay datos de usuario que preservar en este entorno; la migracion F1.2 igualmente no reseedea."
+  },
+  "errores_consola": [],
+  "metrica": "svg = <svg> renderizados; slot = <image-slot>; img = <img>; btn = <button>. 'scoped' = medido solo dentro de la ruta apilada (z-index 40); false = medido sobre #root completo.",
+  "pantallas": {
+    "Inicio":                    { "how": "tab inferior · Inicio", "svg": 41, "slot": 9, "img": 0, "btn": 30, "scoped": false },
+    "Mi Financiera":             { "how": "tab inferior · Finanzas", "svg": 64, "slot": 2, "img": 6, "btn": 35, "scoped": false },
+    "Convenios":                 { "how": "tab inferior · Convenios", "svg": 39, "slot": 6, "img": 0, "btn": 32, "scoped": false },
+    "Mi Historial":              { "how": "tab inferior · Historial", "svg": 29, "slot": 2, "img": 0, "btn": 18, "scoped": false },
+    "Mi Credencial":             { "how": "tab inferior · Credencial", "svg": 21, "slot": 3, "img": 0, "btn": 16, "scoped": false },
+    "Notificaciones":            { "how": "Inicio → campana", "svg": 6, "slot": 0, "img": 0, "btn": 1, "scoped": true },
+    "Mi Perfil":                 { "how": "Inicio → avatar", "svg": 17, "slot": 0, "img": 0, "btn": 10, "scoped": true },
+    "Mis Documentos":            { "how": "Perfil → Mis documentos", "svg": 21, "slot": 0, "img": 0, "btn": 7, "scoped": true },
+    "Solicitud de prestamo":     { "how": "Inicio → accion rapida Prestamo", "svg": 3, "slot": 0, "img": 0, "btn": 2, "scoped": true },
+    "Detalle de producto":       { "how": "Finanzas → tarjeta Suti Auto", "svg": 17, "slot": 1, "img": 0, "btn": 6, "scoped": true },
+    "Suti Terrenos":             { "how": "Finanzas → Suti Terrenos", "svg": 22, "slot": 1, "img": 0, "btn": 13, "scoped": true },
+    "Detalle de convenio":       { "how": "Convenios → tarjeta Farmacias del Ahorro", "svg": 14, "slot": 0, "img": 0, "btn": 6, "scoped": true },
+    "Seguimiento de solicitud":  { "how": "Historial → tarjeta ID-2941", "svg": 5, "slot": 0, "img": 0, "btn": 2, "scoped": true },
+    "Panel Admin":               { "how": "tab inferior · Admin", "svg": 36, "slot": 2, "img": 0, "btn": 34, "scoped": false },
+    "Admin · Catalogo de Finanzas": { "how": "Admin → Catalogo de Finanzas", "svg": 101, "slot": 2, "img": 0, "btn": 101, "scoped": false },
+    "Admin · Acceso a pantallas":   { "how": "Admin → Acceso a pantallas", "svg": 57, "slot": 2, "img": 0, "btn": 30, "scoped": false },
+    "Admin · Icono e instalacion":  { "how": "Admin → Icono e instalacion", "svg": 30, "slot": 13, "img": 0, "btn": 16, "scoped": false },
+    "Admin · Etapas y seguimiento": { "how": "Admin → Etapas y seguimiento", "svg": 32, "slot": 1, "img": 0, "btn": 28, "scoped": false }
+  },
+  "recursos_externos_vivos": [
+    { "url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/44kijromXhVdrDfNYVDZ.png", "carga": true },
+    { "url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/TMYDWSuu9xjOwo5ZdSYt.jpeg", "carga": true },
+    { "url": "https://i.pinimg.com/736x/89/48/1e/89481e106c38bd80f1a293f96fd2b2d1.jpg", "carga": true },
+    { "url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/p7jGQCFcd54b8tLNlXA2.webp", "carga": true },
+    { "url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/Lnpn2Sjxmf8LZP2nk6ua.jpg", "carga": true },
+    { "url": "https://storage.googleapis.com/glide-prod.appspot.com/uploads-v2/XjdvEQaD3IPPppRXTIHz/pub/hLQhkWuceq40yJ9KpbiD.png", "carga": true }
+  ],
+  "anomalias_previas": [
+    { "id": "A1", "sev": "media", "desc": "membership-store.jsx: 6 URLs externas (Google Storage / Pinterest) sin fallback. Hoy cargan. Fuera de alcance en F1.1-F1.2: se registran en F1.5.", "reparar_en": "F1.5" },
+    { "id": "A2", "sev": "baja", "desc": "El pop-up administrable de Inicio ('Ver convenio' / 'Ahora no') puede seguir montado al cambiar de pestana y sumar exactamente +5 svg, +1 image-slot y +7 button al conteo global. Varias medidas del baseline se tomaron con el pop-up ABIERTO (entre ellas 'Admin · Icono e instalacion' 30/13/16, que sin pop-up es 25/12/9). No es regresion; descontar este delta al comparar.", "reparar_en": "fuera de alcance" },
+    { "id": "A3", "sev": "baja", "desc": "screens-admin.jsx conserva el modulo abierto al re-tocar la pestana Admin; hay que pasar por otra pestana para volver al menu. Comportamiento previo, no se toca.", "reparar_en": "fuera de alcance" },
+    { "id": "A4", "sev": "info", "desc": "screens-terreno.jsx mantiene un set de iconos propio (AREA_PATHS, BB_SVG, FresLogo) fuera de icons.jsx.", "reparar_en": "F1.6" },
+    { "id": "A6", "sev": "info", "desc": "Mi Historial lista DATA.solicitudes (4) MAS las solicitudes vivas de financeStore. El recorrido de baseline por 'Solicitud de prestamo' genero solicitudes nuevas (SF-2945, SF-2946); cada una suma ~2 svg SIN sumar botones (las tarjetas son div, no button). Por eso Historial puede medir +4 svg con btn/slot exactos. Es estado de datos generado por la propia prueba, no regresion de codigo. Al comparar Historial, contar tarjetas ademas de svg.", "reparar_en": "n/a" },
+    { "id": "A7", "sev": "info", "desc": "El delta del pop-up (A2) depende de que pop-ups esten activos en cada pantalla. Medido: -5 svg / -1 slot / -7 btn en Inicio, Finanzas, Convenios, Credencial y Admin. Verificar siempre el estado del pop-up antes de concluir regresion.", "reparar_en": "n/a" },
+    { "id": "A5", "sev": "info", "desc": "Ningun nombre de icono usado con window.Icon esta ausente de icons.jsx: los nombres waves/tree/leaf/court/play2/event pertenecen a AreaIcon de Terrenos, no a Icon. El fallback de F1.1 no debe activarse en ninguna pantalla.", "reparar_en": "n/a" }
+  ]
+}

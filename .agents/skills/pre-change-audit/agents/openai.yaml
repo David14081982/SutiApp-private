@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pre-change Audit"
+  short_description: "Declara alcance y riesgos antes de cambiar"
+  default_prompt: "Use $pre-change-audit para declarar el alcance verificable antes de modificar esta H."

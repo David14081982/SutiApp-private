@@ -21,7 +21,7 @@ La arquitectura híbrida es válida si cada dominio conserva una única autorida
 
 Google continúa como autoridad de elegibilidad, fondos, tasas, máximos y criterios. La única réplica permitida es `financial_session_snapshots`: subconjunto personalizado antes de persistir, generado por Edge, ligado a afiliado/actor/impersonación y con TTL duro de 15 minutos. No es catálogo general, no recibe escrituras del navegador y no modifica Sheets ni Apps Script.
 
-Después de quedar READY, cambios de monto, fondo y plazo consultan cero veces Google y reutilizan el mismo motor financiero Edge. Un error no activa fallback silencioso Google-per-quote. Confirmar vuelve a leer Google y recalcula; si el fingerprint o resultado cambió se responde `409 CONDITIONS_CHANGED` y no se crea solicitud. La única escritura Google sigue siendo el append posterior a aprobación descrito abajo.
+Después de quedar READY, cambios de monto, fondo y plazo llaman la RPC Supabase autenticada, consultan cero veces Google y cero veces Edge, y reutilizan el resolver server-side certificado que Edge usa con Google vigente. Un error no activa fallback RPC→Edge→Google; la regeneración requiere reintento explícito. Confirmar vuelve a leer Google y usa el mismo resolver; si el fingerprint o resultado cambió se responde `409 CONDITIONS_CHANGED` y no se crea solicitud. La única escritura Google sigue siendo el append posterior a aprobación descrito abajo.
 
 ## Phase 7 — export después de aprobación
 

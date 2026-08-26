@@ -9,12 +9,14 @@ const request=read('app/program-request-repository.js'),financial=read('app/fina
 const target=read('supabase/migrations/20260824000210_create_suti_loan_request_target.sql');
 const minimum=read('supabase/migrations/20260824000220_set_custom_loan_minimum_one_payment.sql');
 const minimumRecovery=read('supabase/recovery/20260824000220_set_custom_loan_minimum_one_payment_recovery.sql');
+const resolver=read('supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql');
 for(const source of [loan,admin,request,financial])new vm.Script(source.replace(/^\s*\/\*[\s\S]*?\*\//,''));
 for(const marker of ['loan_term_policy','array[6,12,18,24]','get_current_loan_term_policy','is_active_admin','capture_program_request_impersonation','usuario_contexto_affiliate_id','impersonation_session_id','impersonation_reason'])assert(sql.includes(marker),marker);
 assert(sql.includes('enable row level security')&&sql.includes('force row level security')&&sql.includes('revoke all on public.loan_term_policy'));
 assert(recovery.includes('RECOVERY_BLOCKED_ASSISTED_AUDIT_EXISTS'));
-for(const marker of ['allowedTerms','termOptions','customTerm','quoteForTerm','readTermPolicy','LOAN_TERM_POLICY_UNAVAILABLE'])assert(edge.includes(marker),marker);
-assert(edge.includes('amount * rule.rate_factor * term')&&!edge.includes('amount * rule.rate_factor * rule.payment_count'));
+for(const marker of ['allowedTerms','readTermPolicy','LOAN_TERM_POLICY_UNAVAILABLE','resolve_suti_loan_quote_contract'])assert(edge.includes(marker),marker);
+for(const marker of ["'termOptions'","'customTerm'",'round(p_amount*v_rate_factor*p_term,2)'])assert(resolver.includes(marker),marker);
+assert(!edge.includes('amount * rule.rate_factor * term'));
 for(const marker of ["'data-term-card': value","'data-term-card': 'other'",'data-custom-term-editor','a tu medida','elige quincenas','Entre '])assert(loan.includes(marker),marker);
 assert(!/function TermPicker[\s\S]{0,8000}calc\(/.test(loan),'frontend financial calculation found');
 assert(admin.includes('Solicitar préstamo a nombre del afiliado'));

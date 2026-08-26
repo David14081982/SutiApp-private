@@ -8,6 +8,7 @@ const repository=read('app/financial-legacy-repository.js');
 const loan=read('app/screens-loan.jsx');
 const requests=read('app/program-request-repository.js');
 const applyScript=read('scripts/apply-personalized-financial-session-snapshot.py');
+const rpcMigration=read('supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql');
 [repository,loan,requests].forEach((source)=>new vm.Script(source));
 
 for(const token of [
@@ -29,7 +30,9 @@ assert.match(applyScript,/rollback; select true as recovery_dry_run/);
 for(const action of ['loanSessionOpen','loanSessionValidate','loanSessionQuote','loanSessionConfirm']) assert.ok(edge.includes(action),'Edge action missing: '+action);
 assert.match(edge,/const \[rules, policy\] = await Promise\.all\(\[readCriteriaRules\(\), readTermPolicy\(userClient\)\]\)/);
 assert.match(edge,/const matched = rulesForProfile\(rules, context\.profile\)/);
-assert.match(edge,/resolveQuote\(snapshot\.eligible_rules, context\.profile, body, policy\)/);
+assert.match(edge,/await resolveQuote\(privileged, snapshot\.eligible_rules, context\.profile, body, policy\)/);
+assert.match(edge,/resolve_suti_loan_quote_contract/);
+assert.match(rpcMigration,/resolve_current_loan_snapshot_quote/);
 assert.match(edge,/googleResolutionCount: 0/);
 assert.match(edge,/currentRules = await readCriteriaRules\(\)/);
 assert.match(edge,/create_validated_financial_program_request/);
@@ -41,7 +44,9 @@ assert.match(repository,/openLoanSession/);
 assert.match(repository,/loanSessionValidate/);
 assert.match(repository,/requestLoanSessionQuote/);
 assert.match(repository,/confirmLoanSession/);
-assert.match(repository,/snapshot_id: state\.loanSession\.id/);
+assert.match(repository,/p_snapshot_id: state\.loanSession\.id/);
+assert.match(repository,/client\.rpc\('resolve_current_loan_snapshot_quote'/);
+assert.doesNotMatch(repository,/action: 'loanSessionQuote'/);
 assert.match(repository,/signal && signal\.aborted/);
 assert.match(repository,/SIMULATION_REQUEST_ABORTED/);
 assert.match(repository,/state\.status = state\.overview \? 'ready' : 'idle'/);
@@ -67,9 +72,8 @@ async function verifyAbortedQuoteRestoresReadyState(){
   const overview={status:'AVAILABLE',programs:[],loanSession:{id:'00000000-0000-4000-8000-000000000001',expires_at:new Date(Date.now()+60000).toISOString(),financial_profile_version:1}};
   const client={auth:{getSession:async()=>({data:{session:{user:{id:'00000000-0000-4000-8000-000000000002'}}}})},functions:{invoke:async(_name,options)=>{
     if(options.body.action==='loanSessionOpen')return{data:{data:overview},error:null};
-    if(options.body.action==='loanSessionQuote')return new Promise((resolve)=>{quoteSignal=options.signal;options.signal.addEventListener('abort',()=>resolve({data:null,error:new Error('aborted')}),{once:true});});
     throw new Error('UNEXPECTED_ACTION');
-  }}};
+  }},rpc:(name)=>{assert.equal(name,'resolve_current_loan_snapshot_quote');let signal;const pending=new Promise((resolve)=>setImmediate(()=>{if(signal)signal.addEventListener('abort',()=>resolve({data:null,error:new Error('aborted')}),{once:true});}));return{abortSignal(value){signal=value;quoteSignal=value;return pending;}};}};
   const context={window:{SutiSupabase:{getClient:()=>client}},React:{useState:()=>[0,()=>{}],useEffect:()=>{}},console};
   vm.createContext(context);new vm.Script(repository).runInContext(context);
   const store=context.window.financialLegacyStore;

@@ -17,6 +17,7 @@ const handoff=read('google-apps-script/financial-handoff/Code.gs');
 const adminRequests=read('app/screens-admin-requests.jsx');
 const writer=read('supabase/migrations/20260823000100_final_approved_loan_export_writer.sql');
 const recovery=read('supabase/recovery/20260823000100_final_approved_loan_export_writer.sql');
+const loanResolver=read('supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql');
 must(edge.includes('get_current_affiliate_financial_context')&&edge.includes('rulesForProfile(rules, profile)'),'backend identity and current financial-profile derivation missing');
 must(edge.includes('ACTION_KEYS')&&edge.includes('INVALID_REQUEST'),'identity-selector rejection contract missing');
 must(edge.includes('FINANCIAL_LEGACY_API_TOKEN')&&!repo.includes('FINANCIAL_LEGACY_API_TOKEN'),'legacy secret exposed to browser');
@@ -44,5 +45,5 @@ for(const text of [finance,funds,fincat]) must(text.includes('FINANCIAL_LEGACY_R
 for(const label of ['Monto','Destino','Documentos','Resumen','Simula tu préstamo','Ver desglose completo']) must(loan.includes(label),'Claude loan structure missing: '+label);
 for(const retired of ['Impacto en tu quincena','Tu talón de pago','data-payroll-impact','data-payroll-card']) must(!loan.includes(retired),'retired payroll card remains: '+retired);
 must(bundle.includes('FINANCIAL_LEGACY_READ_ONLY')&&bundle.includes('data-step-simulator-v2'),'bundle stale');
-must(edge.includes('readCriteriaRules')&&edge.includes('amount * rule.rate_factor * term')&&edge.includes('administrativeFeePerPayment = 15'),'server-side Google criteria calculation missing');
+must(edge.includes('readCriteriaRules')&&edge.includes('resolve_suti_loan_quote_contract')&&loanResolver.includes('round(p_amount*v_rate_factor*p_term,2)')&&loanResolver.includes('v_fee_per_payment numeric := 15'),'server-side Google criteria calculation missing');
 console.log('Phase 7 static verification PASS: backend-derived profile, live Google resolver, server-side calculation, no browser financial calculation/storage.');

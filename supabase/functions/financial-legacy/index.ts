@@ -338,43 +338,29 @@ function resolveOverview(rules: CriteriaRule[], profile: FinancialProfile, polic
   };
 }
 
-function quoteForTerm(rule: CriteriaRule, amount: number, term: number) {
-  const interest = roundMoney(amount * rule.rate_factor * term);
-  const administrativeFeePerPayment = 15;
-  const administrativeFeeTotal = roundMoney(administrativeFeePerPayment * term);
-  const total = roundMoney(amount + interest + administrativeFeeTotal);
-  return {
-    paymentCount: term, interest, administrativeFeePerPayment, administrativeFeeTotal, total,
-    paymentPerPeriod: roundMoney(total / term),
-  };
-}
-
-function resolveQuote(rules: CriteriaRule[], profile: FinancialProfile, body: Record<string, unknown>, policy: TermPolicy) {
+async function resolveQuote(
+  privileged: SupabaseClientLike, rules: CriteriaRule[], profile: FinancialProfile,
+  body: Record<string, unknown>, policy: TermPolicy,
+) {
   if (!profile.financial_union || !profile.financial_employee_category) throw new Error("AFFILIATE_FINANCIAL_PROFILE_INCOMPLETE");
-  const matched = rulesForProfile(rules, profile).filter((rule) => rule.status === "AVAILABLE");
-  const requestedProgram = String(body.program_id);
-  const rule = matched.find((item) => item.id === requestedProgram) ||
-    (matched.filter((item) => item.program_id === requestedProgram).length === 1
-      ? matched.find((item) => item.program_id === requestedProgram) : undefined);
-  if (!rule) throw new Error("FINANCIAL_PROGRAM_NOT_ELIGIBLE");
-  const amount = Number(body.amount);
-  const term = Number(body.term);
-  if (amount > rule.max_amount || amount <= 0 || term < policy.customMinTerm || term > rule.payment_count ||
-      (term - policy.customMinTerm) % policy.customStep !== 0) throw new Error("FINANCIAL_REQUEST_OUT_OF_RANGE");
-  const selected = quoteForTerm(rule, amount, term);
-  const termOptions = allowedTerms(rule, policy).map((optionTerm) => ({ term: optionTerm, ...quoteForTerm(rule, amount, optionTerm) }));
-  return {
-    source: "GOOGLE_LEGACY", action: "quote", amount, paymentCount: selected.paymentCount,
-    paymentPeriod: rule.payment_period, rate: rule.rate, ratePeriod: rule.payment_period,
-    interest: selected.interest, administrativeFeePerPayment: selected.administrativeFeePerPayment,
-    administrativeFeeTotal: selected.administrativeFeeTotal, total: selected.total,
-    paymentPerPeriod: selected.paymentPerPeriod, fund: rule.fund,
-    program: rule.program_id, maxAmount: rule.max_amount, maxTerm: rule.payment_count,
-    termOptions, customTerm: { min: policy.customMinTerm, max: rule.payment_count, step: policy.customStep },
-    eligibility: { status: "AVAILABLE", eligible: true },
-    administrativeFeeRule: "$15 por pago", administrativeFeeVersion: "LEGACY_EQUIVALENCE_2026-08-23",
-    criteria: { termLabel: rule.term_label }, resolved_at: new Date().toISOString(),
-  };
+  const { data, error } = await privileged.rpc("resolve_suti_loan_quote_contract", {
+    p_eligible_rules: rules,
+    p_financial_union: profile.financial_union,
+    p_financial_employee_category: profile.financial_employee_category,
+    p_program_id: String(body.program_id),
+    p_amount: Number(body.amount),
+    p_term: Number(body.term),
+    p_policy: policy,
+  });
+  if (error || !data) {
+    const message = String(error?.message || "FINANCIAL_RESOLUTION_FAILED");
+    for (const code of ["AFFILIATE_FINANCIAL_PROFILE_INCOMPLETE", "FINANCIAL_PROGRAM_NOT_ELIGIBLE",
+      "FINANCIAL_REQUEST_OUT_OF_RANGE", "LOAN_TERM_POLICY_UNAVAILABLE", "FINANCIAL_RULES_INVALID"]) {
+      if (message.includes(code)) throw new Error(code);
+    }
+    throw new Error("FINANCIAL_RESOLUTION_FAILED");
+  }
+  return data as Record<string, unknown>;
 }
 
 async function readTermPolicy(userClient: SupabaseClientLike): Promise<TermPolicy> {
@@ -569,7 +555,7 @@ async function confirmPersonalizedLoanSession(
     return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
   }
   let result: Record<string, unknown>;
-  try { result = resolveQuote(currentRules, context.profile, body, policy); }
+  try { result = await resolveQuote(privileged, currentRules, context.profile, body, policy); }
   catch {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
     return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
@@ -658,7 +644,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     if (process === "3") throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
     const rules = await readCriteriaRules();
     const termPolicy = await readTermPolicy(userClient);
-    result = resolveQuote(rules, {
+    result = await resolveQuote(privileged, rules, {
       numero_control: request.numero_control, financial_union: union,
       financial_employee_category: category, financial_profile_version: affiliate.financial_profile_version,
     }, { action: "quote", program_id: request.program_id, amount: Number(request.requested_amount), term: Number(request.requested_term) }, termPolicy);
@@ -894,7 +880,7 @@ Deno.serve(async (req) => {
       try {
         const policy = await readTermPolicy(supabase);
         const snapshot = await loadPersonalizedLoanSession(privileged, context, policy, String(body.snapshot_id));
-        const quote = resolveQuote(snapshot.eligible_rules, context.profile, body, policy);
+        const quote = await resolveQuote(privileged, snapshot.eligible_rules, context.profile, body, policy);
         return reply(200, { data: {
           ...await quoteWithPayroll(supabase, quote),
           loanSession: { id: snapshot.id, expires_at: snapshot.expires_at,
@@ -959,7 +945,7 @@ Deno.serve(async (req) => {
     return reply(200, { data: resolveOverview(rules, profile, termPolicy) }, origin || null);
   }
   try {
-    const quote = resolveQuote(rules, profile, body, termPolicy);
+    const quote = await resolveQuote(privilegedClient(supabaseUrl), rules, profile, body, termPolicy);
     const { data: payrollImpact, error: payrollImpactError } = await supabase.rpc(
       "get_current_declared_payroll_impact",
       { p_payment_per_period: quote.paymentPerPeriod },

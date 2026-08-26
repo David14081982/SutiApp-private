@@ -161,13 +161,17 @@ La proyección no persiste ni configura etapas; deriva presentación desde el es
 ## MASTER Phase 7 — adaptador financiero Google legacy
 
 ```text
-browser autenticado → FinancialLegacyRepository → Edge Function financial-legacy
+apertura/confirmación → FinancialLegacyRepository → Edge Function financial-legacy
   → auth.uid() / affiliate efectivo / numero_control derivado en backend
   → perfil financiero Supabase → Google Sheets read-only → filtro por perfil
   → financial_session_snapshots (derivado, personalizado, TTL 15m, service-only)
+
+interacción monto/fondo/plazo → RPC autenticada resolve_current_loan_snapshot_quote
+  → valida actor / afiliado efectivo / impersonación / TTL / perfil / política / contrato
+  → resolver certificado SUTI_LOAN_QUOTE_V1 → FinancialSimulationResult (0 Google, 0 Edge)
 ```
 
-`loanSessionOpen` hace la única lectura inicial Google necesaria y persiste sólo el subconjunto aplicable. `loanSessionValidate` comprueba contexto/TTL sin Google; `loanSessionQuote` recibe snapshot/fondo/monto/plazo, valida todo server-side y reutiliza `resolveQuote()`/`quoteForTerm()` con `googleResolutionCount=0`. No existe calculadora paralela ni fallback a Google-per-quote. `ensureLoanSession()` permite que Home, Finanzas y Loan compartan la misma resolución válida sin duplicarla y vuelve a validar el afiliado efectivo, incluido cambio de impersonación.
+`loanSessionOpen` hace la única lectura inicial Google necesaria y persiste sólo el subconjunto aplicable. `loanSessionValidate` comprueba contexto/TTL sin Google. La interacción llama directamente la RPC autenticada con sólo snapshot/fondo/monto/plazo; ésta no expone la tabla y usa el mismo resolver SQL que Edge emplea al confirmar y en rutas legacy. La ruta Edge `loanSessionQuote` permanece únicamente como superficie de equivalencia/compatibilidad y no es llamada por el frontend. No existe calculadora paralela ni fallback RPC→Edge→Google. `ensureLoanSession()` permite que Home, Finanzas y Loan compartan la misma sesión válida y vuelve a validar el afiliado efectivo, incluido cambio de impersonación.
 
 El browser no puede elegir afiliado, perfil ni `numero_control`, y no tiene grants sobre la tabla temporal. La Edge liga snapshot a actor real, afiliado e impersonación; `financial_profile_version`, fingerprints y expiración se verifican en cada operación. La confirmación relee Google, recalcula y llama `create_validated_financial_program_request()` como frontera transaccional service-only. `program_requests.financial_submission_snapshot` queda inmutable; el snapshot de sesión se invalida. Ninguna consulta/refresh de afiliado escribe Google.
 

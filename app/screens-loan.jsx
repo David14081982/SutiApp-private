@@ -468,7 +468,16 @@
       : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE'
       : !program ? 'UNAVAILABLE' : 'READY';
     const paymentPeriod = result ? result.paymentPeriod : textOrDash(program && program.payment_period) === dash ? 'periodo' : program.payment_period;
-    const retry = () => validSelection ? enqueueCurrent(0) : window.financialLegacyStore.openLoanSession();
+    const retry = () => {
+      if (!validSelection) return window.financialLegacyStore.openLoanSession();
+      if (requestError === 'SNAPSHOT_INVALID') {
+        setRequestError(null);
+        return window.financialLegacyStore.openLoanSession(true).then((next) => {
+          if (next.status === 'ready' && next.loanSession) enqueueCurrent(0);
+        });
+      }
+      return enqueueCurrent(0);
+    };
     const selectProgram = (value) => { immediate.current = true; setProgramId(value); };
     const selectTerm = (value) => { immediate.current = true; setTerm(value); };
     const selectAmount = (value) => { immediate.current = false; setAmount(value); };

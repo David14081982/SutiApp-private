@@ -79,6 +79,22 @@
     if (!data || !data.data) throw new Error('FINANCIAL_LEGACY_INVALID_RESPONSE');
     return data.data;
   }
+  async function invokeLoanSnapshotRpc(payload, options) {
+    const client = window.SutiSupabase && window.SutiSupabase.getClient();
+    if (!client) throw new Error('SUPABASE_NOT_CONFIGURED');
+    const signal = options && options.signal;
+    if (signal && signal.aborted) throw abortedInvocation();
+    let request = client.rpc('resolve_current_loan_snapshot_quote', payload);
+    if (signal && typeof request.abortSignal === 'function') request = request.abortSignal(signal);
+    const { data, error } = await request;
+    if (signal && signal.aborted) throw abortedInvocation();
+    if (error) {
+      const code = error.message || 'FINANCIAL_SNAPSHOT_RPC_UNAVAILABLE';
+      const failure = new Error(code); failure.code = code; throw failure;
+    }
+    if (!data || typeof data !== 'object') throw new Error('FINANCIAL_SNAPSHOT_RPC_INVALID_RESPONSE');
+    return data;
+  }
   async function currentAuthContextKey() {
     const client = window.SutiSupabase && window.SutiSupabase.getClient();
     if (!client) return null;
@@ -155,18 +171,8 @@
       const signal = options && options.signal;
       try {
         if (!state.loanSession || !state.loanSession.id) throw Object.assign(new Error('SNAPSHOT_INVALID'), { code: 'SNAPSHOT_INVALID' });
-        let result;
-        try {
-          result = await invoke({ action: 'loanSessionQuote', snapshot_id: state.loanSession.id,
-            program_id: String(programId), amount: Number(amount), term: Number(term) }, { signal });
-        } catch (error) {
-          if (signal && signal.aborted) throw abortedInvocation();
-          if ((error.code || error.message) !== 'SNAPSHOT_INVALID') throw error;
-          const refreshed = await store.openLoanSession(true);
-          if (refreshed.status !== 'ready' || !refreshed.loanSession) throw error;
-          result = await invoke({ action: 'loanSessionQuote', snapshot_id: refreshed.loanSession.id,
-            program_id: String(programId), amount: Number(amount), term: Number(term) }, { signal });
-        }
+        const result = await invokeLoanSnapshotRpc({ p_snapshot_id: state.loanSession.id,
+          p_program_id: String(programId), p_amount: Number(amount), p_term: Number(term) }, { signal });
         if (signal && signal.aborted) throw abortedInvocation();
         state.loanSession = result.loanSession || state.loanSession;
         state.quote = assertFinancialSimulationResult(result); state.status = 'ready';

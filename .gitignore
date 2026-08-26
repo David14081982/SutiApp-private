@@ -23,6 +23,7 @@ app/supabase-config.js
 node_modules/
 dist/
 build/
+_site/
 .cache/
 coverage/
 __pycache__/

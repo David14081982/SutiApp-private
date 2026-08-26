@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## H-GITHUB-PAGES-LOAN-CORS-003 — 2026-08-26
+
+- Se reprodujo el fallo del simulador publicado: el preflight desde `https://david14081982.github.io` devolvía `403 ORIGIN_NOT_ALLOWED`, mientras los orígenes locales autorizados devolvían `204`.
+- Se actualizó únicamente el Edge Secret productivo `ALLOWED_APP_ORIGINS`, conservando `http://localhost:8080` y `http://127.0.0.1:8080` y añadiendo el origen exacto de GitHub Pages. El valor no se imprimió ni se versionó.
+- Chrome real sobre la URL pública confirmó login QA, overview con cinco fondos disponibles, simulación inicial, recálculo por monto, cinco respuestas CORS/Edge `204/200`, cero fallos de red, cero excepciones y logout.
+- Un origen desconocido continúa en `403`; `financial-legacy`, `financial-criteria-admin` y `data-exports` continúan rechazando llamadas anónimas con `401`. No cambiaron frontend, Edge code, tasas, fondos, fórmulas, Google, RLS, permisos, datos ni Redirect URLs.
+
+```text
+H-GITHUB-PAGES-LOAN-CORS-003 RESULT
+Status: PASS
+Files changed: docs/AGENT_CHANGELOG.md; Supabase Edge Secret ALLOWED_APP_ORIGINS
+Source-of-truth verdict: SAFE — Google/Supabase conservan sus autoridades; solo se habilitó el transporte desde el origen público exacto
+Invariant verdict: PASS — cálculo server-side, JWT, RLS, actor/contexto, snapshot y cero fallback permanecen intactos
+Build: NOT APPLICABLE — sin cambios de código ejecutable
+Tests: PASS — CORS 204 para tres orígenes autorizados; simulación y recálculo live desde Pages; origen desconocido 403; anónimo 401
+Security: PASS — allowlist exacta sin wildcard; secretos no impresos/versionados; backend sigue autenticando y autorizando
+Legacy impact: READ ONLY — simulación QA autorizada, cero Google writes y cero cambios Apps Script/Sheets
+Unexpected files changed: ninguno; arnés temporal eliminado
+Known limitations: activación y recuperación por correo siguen fuera de esta corrección
+Evidence: preflight 403 antes/204 después; Chrome Pages login→Finanzas→Préstamo→simulación→recálculo→logout
+Recovery: restaurar ALLOWED_APP_ORIGINS a los dos orígenes locales previos revierte exclusivamente el acceso Pages
+```
+
 ## H-GITHUB-PAGES-PUBLIC-DEPLOYMENT-002 — 2026-08-26
 
 - Tras el bloqueo de GitHub Free para Pages en repositorios privados, el propietario autorizó expresamente hacer público `David14081982/SutiApp-private`.

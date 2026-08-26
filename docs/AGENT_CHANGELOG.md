@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## H-GITHUB-PAGES-PUBLIC-DEPLOYMENT-002 — 2026-08-26
+
+- Tras el bloqueo de GitHub Free para Pages en repositorios privados, el propietario autorizó expresamente hacer público `David14081982/SutiApp-private`.
+- GitHub Pages se habilitó con HTTPS y workflow desde `main`; el artefacto usa una lista blanca y genera `app/supabase-config.js` durante Actions con la URL y clave publicable, sin incluir archivos locales, secretos administrativos, PII, docs, exports o backups.
+- La URL productiva es `https://david14081982.github.io/SutiApp-private/`. No se modificaron dominio, DNS, Supabase Site URL, Auth redirect URLs, schema, RLS, Storage, Edge Functions, Google legacy ni código funcional.
+- Chrome remoto confirmó pantalla de login, manifest y service worker `activated` con scope del proyecto. Un login QA real resolvió exactamente la fila propia por RLS y cerró sesión; HTML, bundle, configuración pública, repositories, manifest, service worker, iconos y branding respondieron HTTP 200.
+
+```text
+H-GITHUB-PAGES-PUBLIC-DEPLOYMENT-002 RESULT
+Status: PASS
+Files changed: .github/workflows/deploy-pages.yml; .gitignore; scripts/build-pages-site.js; scripts/test-pages-deployment.js; README.md; docs/AGENT_CHANGELOG.md; GitHub repository visibility/Pages settings/Actions secrets
+Source-of-truth verdict: SAFE — Pages es entrega estática derivada; Supabase/Google y sus repositories conservan autoridad runtime
+Invariant verdict: PASS — sin cambios de datos, Auth, RLS, permisos, cálculos, pantallas o navegación
+Build: PASS — artefacto público reproducible mediante lista blanca
+Tests: PASS — suite estática 43/43; Chrome live login UI + service worker activated; login QA + RLS own-row + logout; recursos principales HTTP 200
+Security: PASS — cero secretos y cero PII reales versionados/desplegados; solo URL y publishable browser key de Supabase en runtime
+Legacy impact: NOT APPLICABLE — cero lecturas/escrituras Google durante deployment
+Unexpected files changed: ninguno; script temporal de Chrome eliminado
+Known limitations: activación y recuperación por correo no se ejercieron; no se cambiaron Redirect URLs de Supabase
+Evidence: gh repo view/pages/run; commit 8f88bfeb74cefdede7d71eafbad083618630bbd2; GitHub Actions run 32975307498; HTTPS resource matrix; Chrome service worker scope; Supabase QA login/RLS/logout
+```
+
 ## H-GITHUB-PRIVATE-BASELINE-001 — 2026-08-25
 
 - Se inicializó Git en `main` y se preparó el baseline privado sin modificar código funcional, datos, Supabase, Google legacy, hosting, dominio ni producción.

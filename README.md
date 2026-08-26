@@ -43,4 +43,6 @@ python -m pip install -r requirements-h004.txt
 
 - No se incluyen perfiles de navegador, cargas locales, capturas temporales, exports, backups, Excel/CSV productivos ni documentos con PII.
 - Las claves administrativas pertenecen exclusivamente a procesos server-side o secretos del proveedor.
-- Este repositorio no contiene una configuración autoritativa de Vercel, Hostinger u otro hosting. Publicar en GitHub no despliega producción ni autoriza cambios de dominio, DNS, Supabase Site URL o Auth redirect URLs.
+- GitHub Pages publica exclusivamente la lista blanca generada por `scripts/build-pages-site.js`; `supabase.env`, secretos, documentación, exports y datos locales quedan fuera del artefacto.
+- La URL pública es <https://david14081982.github.io/SutiApp-private/> y se despliega desde `main` mediante `.github/workflows/deploy-pages.yml`.
+- El deployment no modifica dominio, DNS, Supabase Site URL ni Auth redirect URLs.

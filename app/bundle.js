@@ -10879,20 +10879,13 @@ Object.assign(window, {
   }
   function LoadingReels({
     columns = 2,
-    failed = false
+    cycleKey
   }) {
-    if (failed) return React.createElement('span', {
-      'aria-hidden': 'true',
-      style: {
-        display: 'inline-block',
-        width: columns * .62 + 'em',
-        height: '1em'
-      }
-    });
     return React.createElement(OdometerText, {
       text: '8'.repeat(columns),
       previousText: '',
-      loading: true
+      loading: true,
+      cycleKey
     });
   }
   function Shell({
@@ -11114,14 +11107,14 @@ Object.assign(window, {
     result,
     periodLabel,
     initialLoading,
-    loadingActive,
     updating,
     failed,
-    animationCycle
+    animationCycle,
+    loadingCycle
   }) {
     const cells = [['Recibes', result && result.amount], ['Interés', result && Math.round(result.interest)], ['Gto. admin.', result && Math.round(result.administrativeFeeTotal)], ['Total', result && Math.round(result.total)]];
-    const pending = initialLoading || failed;
-    const loadingIdle = initialLoading && !loadingActive;
+    const loadingMotion = initialLoading || updating;
+    const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
     const resultState = initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
     return React.createElement('div', {
       style: {
@@ -11188,13 +11181,13 @@ Object.assign(window, {
         marginTop: 1,
         whiteSpace: 'nowrap'
       }
-    }, failed || loadingIdle ? React.createElement(LoadingReels, {
+    }, result ? React.createElement(SmoothMoney, {
+      value: result.paymentPerPeriod,
+      loading: loadingMotion,
+      cycleKey: loadingMotion ? loadingCycle : animationCycle
+    }) : React.createElement(LoadingReels, {
       columns: 6,
-      failed: true
-    }) : React.createElement(SmoothMoney, {
-      value: result && result.paymentPerPeriod,
-      loading: initialLoading,
-      cycleKey: animationCycle
+      cycleKey: placeholderCycle
     }))), React.createElement('div', {
       style: {
         textAlign: 'right',
@@ -11228,16 +11221,16 @@ Object.assign(window, {
       style: {
         minHeight: '1.45em'
       }
-    }, pending || !result ? React.createElement(LoadingReels, {
+    }, !result ? React.createElement(LoadingReels, {
       columns: 2,
-      failed: failed || loadingIdle
+      cycleKey: placeholderCycle
     }) : result.paymentCount + ' ' + result.paymentPeriod), React.createElement('div', {
       style: {
         minHeight: '1.45em'
       }
-    }, pending || !result ? React.createElement(LoadingReels, {
+    }, !result ? React.createElement(LoadingReels, {
       columns: 3,
-      failed: failed || loadingIdle
+      cycleKey: placeholderCycle
     }) : result.rate + '% ' + result.ratePeriod))), React.createElement('div', {
       style: {
         display: 'grid',
@@ -11271,18 +11264,18 @@ Object.assign(window, {
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
-    }, failed || loadingIdle ? React.createElement(LoadingReels, {
-      columns: 4,
-      failed: true
-    }) : React.createElement(SmoothMoney, {
+    }, result ? React.createElement(SmoothMoney, {
       value: cell[1],
-      loading: initialLoading,
+      loading: loadingMotion,
       compact: true,
-      cycleKey: animationCycle,
+      cycleKey: loadingMotion ? loadingCycle : animationCycle,
       style: {
         whiteSpace: 'nowrap',
         letterSpacing: '-.02em'
       }
+    }) : React.createElement(LoadingReels, {
+      columns: 4,
+      cycleKey: placeholderCycle
     }))))))));
   }
   function AmountField({
@@ -12041,10 +12034,10 @@ Object.assign(window, {
       result: displayedResult,
       periodLabel: paymentPeriod,
       initialLoading,
-      loadingActive: autoPending,
       updating,
       failed: state === 'ERROR' || state === 'UNAVAILABLE',
-      animationCycle: confirmed.revision
+      animationCycle: confirmed.revision,
+      loadingCycle: selectionKey
     }), state !== 'READY' && React.createElement(StatusNotice, {
       state,
       onRetry: retry

@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## H-LOAN-ODOMETER-RECOVERY-009 — 2026-08-26
+
+- La captura del propietario demostró una regresión real: si una cotización automática fallaba, `ResultCard` reemplazaba todos los carretes por espacios vacíos, contradiciendo ADR-055. La reproducción pública exacta con la cuenta QA, `Caja Chica`, `$5,000` y `6 quincenas` respondió correctamente (`$998.33`, sin respuestas HTTP fallidas ni excepciones), por lo que no se modificó lógica financiera.
+- Cada cambio válido de fondo, importe o plazo reinicia ahora los cinco odómetros inmediatamente usando el último resultado confirmado como destino visual mientras espera. La nueva cotización autoritativa conserva su ciclo propio al llegar. Un error mantiene ese resultado previo y `Reintentar`; si aún no existía resultado, los siete carretes de carga quedan visibles y detenidos después de un segundo en vez de desaparecer.
+- Se actualizó ADR-055 y la cobertura Chrome para recálculo, fallo posterior a un resultado, fallo inicial, espera larga, reintento, cambios de fondo, cancelación latest-intent, timeout, reduced motion y documento oculto. HTML/PWA avanzaron a bundle v143 y cache v87.
+
+```text
+H-LOAN-ODOMETER-RECOVERY-009 RESULT
+Status: PASS
+Files changed: app/screens-loan.jsx; app/bundle.js; SutiApp.html; sw.js; scripts/test-loan-result-loading-browser.js; scripts/test-loan-simulator-ui-cutover.js; docs/DECISIONS.md; docs/AGENT_CHANGELOG.md
+Source-of-truth verdict: SAFE — el frontend sigue presentando exclusivamente FinancialSimulationResult; no calcula ni inventa importes
+Invariant verdict: PASS — cada selección válida reinicia el odómetro, latest-intent permanece serializado y nunca hay tarjeta sin dígitos
+Build: PASS — bundle reproducible desde 90 fuentes con Babel Standalone 7.29.0; node --check; HTML v143 y PWA v87
+Tests: PASS — suite estática 43/43; Chrome aislado cubrió recálculo/error/reintento/no-gap; Pages reprodujo Caja Chica + $5,000 + 6 quincenas sin fallo HTTP
+Security: PASS — sin cambios Auth, RLS, grants, secretos, claves, CORS o autoridad frontend
+Legacy impact: READ ONLY — una sesión QA de simulación, cero Google writes y cero cambios Apps Script/Sheets/fórmulas
+Unexpected files changed: ninguno; arnés temporal eliminado
+Known limitations: el fallo de red de la captura fue intermitente y no reapareció; ahora su estado visual es recuperable y no borra el resultado
+Evidence: test-loan-result-loading-browser.js; test-static-suite.js; Chrome Pages Caja Chica/$5,000/6; diff/check; Architecture Registry check
+```
+
 ## H-GITHUB-PAGES-LOAN-CORS-003 — 2026-08-26
 
 - Se reprodujo el fallo del simulador publicado: el preflight desde `https://david14081982.github.io` devolvía `403 ORIGIN_NOT_ALLOWED`, mientras los orígenes locales autorizados devolvían `204`.

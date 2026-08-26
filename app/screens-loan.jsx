@@ -74,9 +74,8 @@
     });
   }
 
-  function LoadingReels({ columns = 2, failed = false }) {
-    if (failed) return React.createElement('span', { 'aria-hidden': 'true', style: { display: 'inline-block', width: columns * .62 + 'em', height: '1em' } });
-    return React.createElement(OdometerText, { text: '8'.repeat(columns), previousText: '', loading: true });
+  function LoadingReels({ columns = 2, cycleKey }) {
+    return React.createElement(OdometerText, { text: '8'.repeat(columns), previousText: '', loading: true, cycleKey });
   }
 
   function Shell({ app, children, onBack, title }) {
@@ -134,15 +133,15 @@
         })));
   }
 
-  function ResultCard({ result, periodLabel, initialLoading, loadingActive, updating, failed, animationCycle }) {
+  function ResultCard({ result, periodLabel, initialLoading, updating, failed, animationCycle, loadingCycle }) {
     const cells = [
       ['Recibes', result && result.amount],
       ['Interés', result && Math.round(result.interest)],
       ['Gto. admin.', result && Math.round(result.administrativeFeeTotal)],
       ['Total', result && Math.round(result.total)],
     ];
-    const pending = initialLoading || failed;
-    const loadingIdle = initialLoading && !loadingActive;
+    const loadingMotion = initialLoading || updating;
+    const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
     const resultState = initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
     return React.createElement('div', { style: { position: 'sticky', top: -8, zIndex: 3, margin: '0 -20px', padding: '0 20px 10px', background: 'linear-gradient(var(--bg) 78%, transparent)' } },
       React.createElement('div', { 'data-simulator-result': resultState, 'aria-busy': initialLoading || updating ? 'true' : 'false', 'aria-label': 'Resultado de la simulación', style: { minHeight: 159, boxSizing: 'border-box', background: 'var(--grad-guinda)', color: '#fff', borderRadius: 24, padding: '18px 18px 16px', boxShadow: 'var(--glow-guinda)', position: 'relative', overflow: 'hidden' } },
@@ -151,23 +150,23 @@
         React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 } },
           React.createElement('div', null,
             React.createElement('div', { style: { fontSize: 12, opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
-            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 40, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } }, failed || loadingIdle
-              ? React.createElement(LoadingReels, { columns: 6, failed: true })
-              : React.createElement(SmoothMoney, { value: result && result.paymentPerPeriod, loading: initialLoading, cycleKey: animationCycle }))),
+            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 40, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } }, result
+              ? React.createElement(SmoothMoney, { value: result.paymentPerPeriod, loading: loadingMotion, cycleKey: loadingMotion ? loadingCycle : animationCycle })
+              : React.createElement(LoadingReels, { columns: 6, cycleKey: placeholderCycle }))),
           React.createElement('div', { style: { textAlign: 'right', fontSize: 11.5, fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
             updating && React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 10.5 } },
               React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…'),
-            React.createElement('div', { style: { minHeight: '1.45em' } }, pending || !result
-              ? React.createElement(LoadingReels, { columns: 2, failed: failed || loadingIdle })
+            React.createElement('div', { style: { minHeight: '1.45em' } }, !result
+              ? React.createElement(LoadingReels, { columns: 2, cycleKey: placeholderCycle })
               : result.paymentCount + ' ' + result.paymentPeriod),
-            React.createElement('div', { style: { minHeight: '1.45em' } }, pending || !result
-              ? React.createElement(LoadingReels, { columns: 3, failed: failed || loadingIdle })
+            React.createElement('div', { style: { minHeight: '1.45em' } }, !result
+              ? React.createElement(LoadingReels, { columns: 3, cycleKey: placeholderCycle })
               : result.rate + '% ' + result.ratePeriod))),
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
           React.createElement('div', { style: { opacity: .72, fontWeight: 600, fontSize: 10.5, whiteSpace: 'nowrap' } }, cell[0]),
-          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 13, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, failed || loadingIdle
-            ? React.createElement(LoadingReels, { columns: 4, failed: true })
-            : React.createElement(SmoothMoney, { value: cell[1], loading: initialLoading, compact: true, cycleKey: animationCycle, style: { whiteSpace: 'nowrap', letterSpacing: '-.02em' } }))))))));
+          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 13, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, result
+            ? React.createElement(SmoothMoney, { value: cell[1], loading: loadingMotion, compact: true, cycleKey: loadingMotion ? loadingCycle : animationCycle, style: { whiteSpace: 'nowrap', letterSpacing: '-.02em' } })
+            : React.createElement(LoadingReels, { columns: 4, cycleKey: placeholderCycle }))))))));
   }
 
   function AmountField({ amount, setAmount, min, max, disabled }) {
@@ -462,7 +461,7 @@
     }, [selectionKey, result, updating, state]);
 
     return React.createElement('div', { 'data-step-simulator-v2': '', 'data-state': state, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, loadingActive: autoPending, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', animationCycle: confirmed.revision }),
+      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', animationCycle: confirmed.revision, loadingCycle: selectionKey }),
       state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
       React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading }),
       React.createElement(AmountField, { amount, setAmount: selectAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),

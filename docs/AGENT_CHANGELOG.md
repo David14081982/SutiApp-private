@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## H-LOAN-BROWSER-TRANSPORT-RECOVERY-011 — 2026-08-26
+
+- La secuencia pública posterior a H-010 confirmó que dos intentos no bastaban. La comparación controlada aisló la frontera: desde Node/HTTP 1.1, 8/8 cotizaciones alternadas respondieron 200 en 669–1,483 ms; desde Chrome/HTTP 3 algunas solicitudes se cancelaron sin aparecer en `function_edge_logs`. Las que sí alcanzaron Supabase terminaron 200 en 0.5–3.9 s. Por tanto, el bloqueo ocurre antes del gateway Edge y no en Google, snapshot, política, nómina, cálculo ni Function.
+- Sin cambiar dominio, DNS, CORS, Supabase, datos o fórmulas, cada intento de transporte queda limitado a 6 s y la última selección puede usar como máximo cinco intentos con 500 ms entre ellos. Todos repiten `loanSessionQuote` con el mismo snapshot; `loanSessionOpen` y Google permanecen en 0. Cualquier cambio de fondo/monto/plazo cancela de inmediato la secuencia anterior.
+- El odómetro sigue reiniciando en cada selección y conserva dígitos durante toda la recuperación. HTML/PWA avanzan a bundle v145 y cache v89.
+
+```text
+H-LOAN-BROWSER-TRANSPORT-RECOVERY-011 RESULT
+Status: PASS
+Files changed: app/screens-loan.jsx; app/bundle.js; SutiApp.html; sw.js; scripts/test-loan-result-loading-browser.js; scripts/test-loan-simulator-ui-cutover.js; scripts/test-personalized-financial-session-snapshot.js; docs/PERSONALIZED_FINANCIAL_SESSION_SNAPSHOT_IMPLEMENTATION.md; docs/AGENT_CHANGELOG.md
+Source-of-truth verdict: SAFE — mismo snapshot Supabase de 15 minutos, mismo endpoint y resultado Edge; sin caché o cálculo paralelo
+Invariant verdict: PASS — latest intent cancela; sólo la selección vigente puede renderizar; duración total acotada
+Build: PASS — bundle reproducible desde 90 fuentes; HTML v145 y PWA v89
+Tests: PASS — Chrome aislado timeout/recovery; suite estática 43/43; matriz directa Supabase 8/8
+Security: PASS — JWT, actor/contexto y snapshot intactos; no se agregaron headers, secretos ni selectores
+Legacy impact: READ ONLY — Google inicial 1; cotizaciones interactivas Google 0; writes 0
+Unexpected files changed: ninguno; diagnósticos temporales ignorados y eliminados al cierre
+Known limitations: si los cinco transportes fallan (~32 s), queda error controlado con resultado previo y Reintentar; resolver el origen HTTP/3 exigiría intervención de proveedor o dominio alterno
+Evidence: function_edge_logs; matriz HTTP 1.1/HTTP 3; test-loan-result-loading-browser.js; googleResolutionCount 0
+```
+
 ## H-LOAN-SNAPSHOT-TIMEOUT-RETRY-010 — 2026-08-26
 
 - La validación Pages posterior a H-009 reprodujo el fallo intermitente real: varias cotizaciones `loanSessionQuote` respondieron en 0.6–3.1 s, pero una llamada idéntica quedó pendiente hasta que el cliente la abortó a los 10 s. La cotización previa seguía íntegra y no hubo respuesta financiera incorrecta; faltaba recuperación automática de transporte.
@@ -17,7 +38,7 @@ Tests: PASS — Chrome timeout→mismo snapshot→resultado; loanSessionOpen 0; 
 Security: PASS — mismo JWT/contexto/snapshot; sin selector de identidad, secreto o cambio RLS
 Legacy impact: READ ONLY — apertura inicial existente; recuperación interactiva Google 0 y writes 0
 Unexpected files changed: ninguno; arnés temporal ignorado y eliminado al cierre
-Known limitations: tras dos timeouts consecutivos permanece el error controlado y requiere Reintentar
+Known limitations: la prueba Pages posterior mostró que dos intentos pueden no alcanzar el gateway; H-LOAN-BROWSER-TRANSPORT-RECOVERY-011 amplía la tolerancia sin abrir sesión ni leer Google
 Evidence: test-loan-result-loading-browser.js; test-personalized-financial-session-snapshot.js; Chrome Pages instrumentado; googleResolutionCount 0
 ```
 

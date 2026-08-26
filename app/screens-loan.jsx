@@ -309,7 +309,8 @@
     // immediately; later amount edits still opt back into the 320 ms debounce.
     const immediate = React.useRef(true);
     const quoteRevision = React.useRef(0);
-    const quoteTimeoutMs = 10000;
+    const quoteTimeoutMs = 6000;
+    const maxQuoteAttempts = 5;
 
     React.useEffect(() => {
       if (!program) return;
@@ -352,7 +353,7 @@
           const request = queued.current;
           queued.current = null;
           let snapshot = null;
-          for (let attempt = 0; attempt < 2 && mounted.current && latestSelection.current === request.key; attempt += 1) {
+          for (let attempt = 0; attempt < maxQuoteAttempts && mounted.current && latestSelection.current === request.key; attempt += 1) {
             const active = { controller: new AbortController(), reason: '', key: request.key };
             activeRequest.current = active;
             const timeoutId = setTimeout(() => {
@@ -365,7 +366,10 @@
               break;
             } catch (error) {
               if (active.controller.signal.aborted && active.reason !== 'timeout') break;
-              if (active.reason === 'timeout' && attempt === 0 && latestSelection.current === request.key) continue;
+              if (active.reason === 'timeout' && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
+                await new Promise((resolve) => setTimeout(resolve, 500));
+                continue;
+              }
               snapshot = { status: 'error', error: active.reason === 'timeout'
                 ? 'SIMULATION_TIMEOUT'
                 : error && (error.code || error.message) || 'SIMULATION_UNAVAILABLE' };

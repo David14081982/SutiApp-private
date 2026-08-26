@@ -7289,12 +7289,33 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false});if(r.error)throw r.error;const rows=await Promise.all((r.data||[]).map(async(row)=>{const a=row.private_asset||row.affiliate_file;let signedUrl=null;if(a&&a.storage_bucket==='private-assets'){const s=await db().storage.from(a.storage_bucket).createSignedUrl(a.storage_path,300);if(!s.error)signedUrl=s.data&&s.data.signedUrl;}return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),signedUrl,previewUnavailable:!!(a&&a.storage_bucket==='private-assets'&&!signedUrl)}));}));return Object.freeze(rows);}
   async function upload(type,file){if(!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX||!type.accepted_mime_types.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||new Error('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(file);const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;try{const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:file.type,p_file_size:file.size,p_sha256:sha});if(r.error)throw r.error;return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
-  async function reviewQueue(){const r=await db().from('affiliate_documents').select('id,affiliate_id,document_type_id,status,review_observation,created_at,document_type:document_types(label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(storage_bucket,storage_path,mime_type),private_asset:private_assets(storage_bucket,storage_path,mime_type)').in('status',['PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED']).order('created_at',{ascending:true}).limit(100);if(r.error)throw r.error;const rows=await Promise.all((r.data||[]).map(async(row)=>{const asset=row.private_asset||row.affiliate_file;let signedUrl=null;if(asset&&asset.storage_bucket==='private-assets'){const signed=await db().storage.from(asset.storage_bucket).createSignedUrl(asset.storage_path,300);if(signed.error)throw signed.error;signedUrl=signed.data&&signed.data.signedUrl;}return Object.freeze(Object.assign({},row,{signedUrl,mimeType:asset&&asset.mime_type}));}));return Object.freeze(rows);}
+  const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
+  const previewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)';
+  async function reviewPreview(id){
+    const r=await db().from('affiliate_documents').select(previewFields).eq('id',id).single();
+    if(r.error)throw r.error;
+    const row=r.data,asset=row.private_asset||row.affiliate_file;
+    let signedUrl=null,previewUnavailable=false;
+    if(asset&&asset.storage_bucket==='private-assets'){
+      const signed=await db().storage.from(asset.storage_bucket).createSignedUrl(asset.storage_path,300);
+      signedUrl=!signed.error&&signed.data&&signed.data.signedUrl||null;
+      previewUnavailable=!signedUrl;
+    }
+    return Object.freeze(Object.assign({},row,{signedUrl,mimeType:asset&&asset.mime_type,previewUnavailable}));
+  }
+  async function reviewQueue(options){
+    const settings=options||{};
+    const r=await db().from('affiliate_documents').select(reviewFields).in('status',['PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED']).order('created_at',{ascending:true}).limit(100);
+    if(r.error)throw r.error;
+    const metadata=(r.data||[]).map((row)=>Object.freeze(Object.assign({},row,{signedUrl:null,mimeType:(row.private_asset||row.affiliate_file||{}).mime_type||null})));
+    if(settings.includePreviews!==true)return Object.freeze(metadata);
+    return Object.freeze(await Promise.all(metadata.map((row)=>reviewPreview(row.id))));
+  }
   async function saveRequirement(row){const r=await db().rpc('save_program_document_requirement',{p_program_id:row.program_id,p_membership_offering_id:row.membership_offering_id||null,p_document_type_id:row.document_type_id,p_required:row.required!==false,p_allow_reuse:row.allow_verified_reuse!==false,p_sort_order:Number(row.sort_order),p_enabled:row.enabled!==false});if(r.error)throw r.error;return r.data;}
   async function saveType(row){const values={code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};let q=row.id?db().from('document_types').update(values).eq('id',row.id):db().from('document_types').insert(values);const r=await q.select().single();if(r.error)throw r.error;return r.data;}
   async function removeType(id){const r=await db().from('document_types').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('DOCUMENT_TYPE_DELETE_DENIED');}
   async function attach(requestId,ids){const r=await db().rpc('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
-  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,list,upload,review,reviewQueue,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX});
+  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,list,upload,review,reviewQueue,reviewPreview,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX});
 })();
 })();
 /* @@file bank-account-repository.js */
@@ -35099,263 +35120,867 @@ Object.assign(window, {
 (function(){
 /* Central Admin for document catalog, review, terms and QR policy. */
 (function () {
+  'use strict';
+
   const I = window.Icon;
-  function DocumentsAdminModule({
-    app,
-    onBack,
-    header
-  }) {
-    const [tab, setTab] = React.useState('review'),
-      [types, setTypes] = React.useState([]),
-      [queue, setQueue] = React.useState([]),
-      [busy, setBusy] = React.useState(''),
-      [reviewFilter, setReviewFilter] = React.useState(''),
-      [dragId, setDragId] = React.useState(''),
-      [reqTarget, setReqTarget] = React.useState({
-        program_id: 'prestamo',
-        membership_offering_id: ''
-      }),
-      [reqRows, setReqRows] = React.useState([]),
-      [terms, setTerms] = React.useState({
-        program_id: 'prestamo',
-        membership_offering_id: '',
-        title: '',
-        body: ''
-      }),
-      [qr, setQr] = React.useState({
-        destination_path: '/SutiApp.html#credencial',
-        ttl_seconds: 30
-      }),
-      [error, setError] = React.useState('');
-    const load = React.useCallback(async () => {
-      try {
-        const [t, q, s] = await Promise.all([window.DocumentWorkflowRepository.catalog({
-          includeDisabled: true
-        }), window.DocumentWorkflowRepository.reviewQueue(), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single()]);
-        setTypes(t.slice());
-        setQueue(q.slice());
-        if (!s.error) setQr(s.data);
-        setError('');
-      } catch (_) {
-        setError('No fue posible cargar la configuración documental.');
-      }
+  const h = React.createElement;
+  const DESKTOP_QUERY = '(min-width: 1024px)';
+  const DOC_STATES = Object.freeze({
+    PENDING_REVIEW: {
+      label: 'Pendiente',
+      tone: '#9A6200',
+      background: '#FFF3D8'
+    },
+    UNDER_REVIEW: {
+      label: 'En revisión',
+      tone: '#755300',
+      background: '#FFF0C2'
+    },
+    VERIFIED: {
+      label: 'Verificado',
+      tone: '#087A50',
+      background: '#E5F7EF'
+    },
+    REUPLOAD_REQUIRED: {
+      label: 'Requiere nueva carga',
+      tone: '#A00027',
+      background: '#FCE9EE'
+    },
+    REJECTED: {
+      label: 'Rechazado',
+      tone: '#A00027',
+      background: '#FCE9EE'
+    }
+  });
+  const SEEDED_LABELS = Object.freeze({
+    'Hoja de Afiliación': 'Hoja de Afiliación',
+    'INE FRENTE': 'INE Frente',
+    'INE REVERSO': 'INE Reverso',
+    'Hoja Tribunal': 'Hoja Tribunal',
+    'TALON ULTIMA QUINCENA': 'Talón Última Quincena',
+    'TALON PENULTIMA QUINCENA': 'Talón Penúltima Quincena',
+    'Photo': 'Foto de perfil',
+    'Credencial Afiliado': 'Credencial del afiliado'
+  });
+  const input = {
+    width: '100%',
+    border: 'none',
+    background: 'var(--surface-2)',
+    boxShadow: 'var(--neo-inset)',
+    borderRadius: 12,
+    padding: '11px 12px',
+    font: '600 13px var(--font)',
+    boxSizing: 'border-box',
+    color: 'var(--ink)'
+  };
+  const panel = {
+    background: '#fff',
+    border: '1px solid rgba(99,96,110,.12)',
+    borderRadius: 18,
+    boxShadow: '0 10px 28px rgba(31,35,48,.07)',
+    minWidth: 0
+  };
+  function useDocumentDesktop() {
+    const [desktop, setDesktop] = React.useState(() => Boolean(window.matchMedia && window.matchMedia(DESKTOP_QUERY).matches));
+    React.useEffect(() => {
+      if (!window.matchMedia) return;
+      const media = window.matchMedia(DESKTOP_QUERY),
+        change = () => setDesktop(media.matches);
+      change();
+      media.addEventListener ? media.addEventListener('change', change) : media.addListener(change);
+      return () => media.removeEventListener ? media.removeEventListener('change', change) : media.removeListener(change);
     }, []);
-    React.useEffect(() => {
-      load();
-      if (window.membershipStore.state().phase === 'idle') window.membershipStore.load(false);
-    }, [load]);
-    const loadRequirements = React.useCallback(async () => {
-      if (reqTarget.program_id === 'membership' && !reqTarget.membership_offering_id) {
-        setReqRows([]);
-        return;
-      }
-      try {
-        setReqRows((await window.DocumentWorkflowRepository.requirements(reqTarget.program_id, reqTarget.membership_offering_id || null)).slice());
-      } catch (_) {
-        setReqRows([]);
-      }
-    }, [reqTarget.program_id, reqTarget.membership_offering_id]);
-    React.useEffect(() => {
-      loadRequirements();
-    }, [loadRequirements]);
-    const review = async (id, status) => {
-      setBusy(id);
-      try {
-        const observation = status === 'VERIFIED' ? '' : prompt('Observación para el afiliado:') || '';
-        await window.DocumentWorkflowRepository.review(id, status, observation);
-        await load();
-      } catch (_) {
-        app.toast && app.toast('No se pudo completar la revisión');
-      } finally {
-        setBusy('');
-      }
+    return desktop;
+  }
+  function stateInfo(value) {
+    return DOC_STATES[value] || {
+      label: 'Estado no disponible',
+      tone: '#60606A',
+      background: '#EFEFF2'
     };
-    const publish = async () => {
-      setBusy('terms');
-      try {
-        await window.ProgramTermsRepository.publish(terms.program_id, terms.membership_offering_id || null, terms.title, terms.body);
-        setTerms(t => Object.assign({}, t, {
-          title: '',
-          body: ''
-        }));
-        app.toast && app.toast('Nueva versión publicada');
-      } catch (_) {
-        app.toast && app.toast('No se pudieron publicar los términos');
-      } finally {
-        setBusy('');
-      }
-    };
-    const saveQr = async () => {
-      setBusy('qr');
-      try {
-        const r = await window.SutiSupabase.getClient().from('credential_qr_settings').update({
-          destination_path: qr.destination_path,
-          ttl_seconds: Number(qr.ttl_seconds),
-          updated_by_auth_user_id: app.admin.user && app.admin.user.id,
-          updated_at: new Date().toISOString()
-        }).eq('id', true);
-        if (r.error) throw r.error;
-        app.toast && app.toast('Destino QR actualizado');
-      } catch (_) {
-        app.toast && app.toast('No se pudo actualizar el QR');
-      } finally {
-        setBusy('');
-      }
-    };
-    const input = {
-      width: '100%',
-      border: 'none',
-      background: 'var(--surface-2)',
-      boxShadow: 'var(--neo-inset)',
-      borderRadius: 12,
-      padding: '11px 12px',
-      font: '600 13px var(--font)',
-      boxSizing: 'border-box'
-    };
-    const visibleQueue = queue.filter(d => {
-      const affiliate = d.affiliate || {},
-        type = d.document_type || {};
-      return !reviewFilter || [affiliate.display_name, affiliate.full_name, affiliate.numero_control, type.label, d.status].join(' ').toLowerCase().includes(reviewFilter.toLowerCase());
-    });
-    const reorderType = async targetId => {
-      if (!dragId || dragId === targetId) return;
-      const next = types.slice(),
-        from = next.findIndex(t => t.id === dragId),
-        to = next.findIndex(t => t.id === targetId);
-      if (from < 0 || to < 0) return;
-      const moved = next.splice(from, 1)[0];
-      next.splice(to, 0, moved);
-      setTypes(next.map((t, i) => Object.assign({}, t, {
-        sort_order: i + 1
-      })));
-      setBusy('order');
-      try {
-        await Promise.all(next.map((t, i) => window.DocumentWorkflowRepository.saveType(Object.assign({}, t, {
-          sort_order: i + 1
-        }))));
-        await load();
-      } catch (_) {
-        app.toast && app.toast('No se pudo guardar el orden');
-        await load();
-      } finally {
-        setBusy('');
-        setDragId('');
-      }
-    };
-    return React.createElement('div', null, header({
-      title: 'Documentos y credencial',
-      sub: queue.length + ' revisión(es) pendiente(s)',
-      onBack
-    }), React.createElement('div', {
-      className: 'su-app-scroll',
+  }
+  function businessLabel(type) {
+    const label = String(type && type.label || 'Documento');
+    return SEEDED_LABELS[label] || label;
+  }
+  function affiliateReference(row) {
+    const raw = String(row && row.affiliate_id || '').replace(/[^a-z0-9]/gi, '');
+    return raw ? raw.slice(-6).toUpperCase() : 'SIN-REF';
+  }
+  function affiliateName(row) {
+    const a = row && row.affiliate || {};
+    return a.display_name || a.full_name || 'Afiliado · referencia ' + affiliateReference(row);
+  }
+  function maskedControl(row) {
+    const raw = String(row && row.affiliate && row.affiliate.numero_control || '').trim();
+    return raw ? 'Control ·••••' + raw.slice(-4) : 'Referencia de expediente · ' + affiliateReference(row);
+  }
+  function formatDate(value) {
+    if (!value) return 'Sin fecha';
+    try {
+      return new Intl.DateTimeFormat('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    } catch (_) {
+      return 'Sin fecha';
+    }
+  }
+  function pendingAge(value) {
+    if (!value) return 'Antigüedad no disponible';
+    const days = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
+    if (days === 0) return 'Recibido hoy';
+    if (days === 1) return 'Pendiente desde ayer';
+    return 'Pendiente hace ' + days + ' días';
+  }
+  function mimeLabel(value) {
+    const mime = String(value || '');
+    if (mime === 'application/pdf') return 'PDF';
+    if (mime.startsWith('image/')) return 'Imagen ' + mime.split('/')[1].toUpperCase();
+    return mime || 'Formato no informado';
+  }
+  function StatusBadge({
+    status
+  }) {
+    const info = stateInfo(status);
+    return h('span', {
+      'data-document-human-status': info.label,
       style: {
-        padding: 16,
-        paddingBottom: 30
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        borderRadius: 999,
+        padding: '5px 9px',
+        fontSize: 11,
+        fontWeight: 850,
+        color: info.tone,
+        background: info.background,
+        whiteSpace: 'nowrap'
       }
-    }, error && React.createElement('div', {
+    }, h('span', {
+      'aria-hidden': 'true',
+      style: {
+        width: 7,
+        height: 7,
+        borderRadius: '50%',
+        background: info.tone
+      }
+    }), info.label);
+  }
+  function DesktopPreview({
+    row,
+    preview,
+    phase,
+    error,
+    onRetry,
+    position,
+    total
+  }) {
+    const current = preview && preview.id === row.id ? preview : row;
+    const mime = String(current && current.mimeType || '');
+    let visual;
+    if (phase === 'loading') visual = h('div', {
+      style: {
+        display: 'grid',
+        placeItems: 'center',
+        height: '100%',
+        color: 'var(--ink-3)',
+        fontWeight: 800
+      }
+    }, 'Cargando documento…');else if (error) visual = h('div', {
       role: 'alert',
       style: {
-        color: '#A32921',
-        fontWeight: 700
+        display: 'grid',
+        placeItems: 'center',
+        alignContent: 'center',
+        gap: 12,
+        height: '100%',
+        padding: 24,
+        textAlign: 'center'
       }
-    }, error), React.createElement('div', {
+    }, h(I, {
+      name: 'warning',
+      size: 30
+    }), h('b', null, 'No fue posible cargar la vista previa'), h('button', {
+      type: 'button',
+      onClick: onRetry,
+      style: {
+        border: 0,
+        borderRadius: 11,
+        padding: '10px 14px',
+        fontWeight: 850,
+        color: 'var(--guinda)',
+        background: 'var(--surface-2)'
+      }
+    }, 'Reintentar'));else if (current && current.signedUrl && mime.startsWith('image/')) visual = h('img', {
+      src: current.signedUrl,
+      alt: 'Vista previa de ' + businessLabel(current.document_type),
+      style: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain'
+      }
+    });else if (current && current.signedUrl && mime === 'application/pdf') visual = h('iframe', {
+      src: current.signedUrl,
+      title: 'Vista previa de ' + businessLabel(current.document_type),
+      style: {
+        width: '100%',
+        height: '100%',
+        border: 0,
+        background: '#fff'
+      }
+    });else visual = h('div', {
+      style: {
+        display: 'grid',
+        placeItems: 'center',
+        alignContent: 'center',
+        gap: 10,
+        height: '100%',
+        padding: 24,
+        textAlign: 'center',
+        color: 'var(--ink-3)'
+      }
+    }, h(I, {
+      name: mime === 'application/pdf' ? 'doc' : 'folder',
+      size: 42
+    }), h('b', null, current && current.previewUnavailable ? 'No se pudo autorizar la vista previa' : 'Vista previa no disponible para este formato'), current && current.signedUrl && h('a', {
+      href: current.signedUrl,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      style: {
+        color: 'var(--guinda)',
+        fontWeight: 850
+      }
+    }, 'Abrir documento'));
+    return h('section', {
+      'data-document-preview-panel': 'true',
+      className: 'docwb-preview',
+      style: Object.assign({}, panel, {
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      })
+    }, h('div', {
+      style: {
+        padding: '15px 17px',
+        borderBottom: '1px solid var(--hairline)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        alignItems: 'start'
+      }
+    }, h('div', {
+      style: {
+        minWidth: 0
+      }
+    }, h('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        textTransform: 'uppercase',
+        letterSpacing: '.05em'
+      }
+    }, 'Documento seleccionado'), h('h2', {
+      style: {
+        fontSize: 17,
+        margin: '4px 0 2px'
+      }
+    }, businessLabel(row.document_type)), h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, affiliateName(row) + ' · ' + maskedControl(row))), h('b', {
+      'data-document-queue-position': 'true',
+      style: {
+        fontSize: 11,
+        color: 'var(--guinda)',
+        whiteSpace: 'nowrap'
+      }
+    }, position + ' de ' + total)), h('div', {
+      'data-document-persistent-preview': 'true',
+      style: {
+        height: 'clamp(270px,44vh,520px)',
+        background: '#E9E9ED',
+        display: 'grid',
+        placeItems: 'stretch',
+        padding: 10
+      }
+    }, visual), h('div', {
+      style: {
+        padding: '13px 17px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
+        gap: 10,
+        borderTop: '1px solid var(--hairline)'
+      }
+    }, h('div', null, h('span', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 750
+      }
+    }, 'Recibido'), h('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 800,
+        marginTop: 2
+      }
+    }, formatDate(row.created_at))), h('div', null, h('span', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 750
+      }
+    }, 'Formato'), h('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 800,
+        marginTop: 2
+      }
+    }, mimeLabel(current && current.mimeType))), h('div', null, h('span', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 750
+      }
+    }, 'Estado'), h('div', {
+      style: {
+        marginTop: 4
+      }
+    }, h(StatusBadge, {
+      status: row.status
+    }))), h('div', null, h('span', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 750
+      }
+    }, 'Historial relevante'), h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 750,
+        marginTop: 2
+      }
+    }, row.reviewed_at ? 'Última decisión · ' + formatDate(row.reviewed_at) : 'Carga recibida · sin decisión')), row.review_observation && h('div', {
+      style: {
+        gridColumn: '1 / -1',
+        fontSize: 11.5,
+        color: 'var(--ink-2)',
+        background: 'var(--surface-2)',
+        borderRadius: 10,
+        padding: 9
+      }
+    }, h('b', null, 'Observación anterior: '), row.review_observation), current && current.signedUrl && h('a', {
+      href: current.signedUrl,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      style: {
+        gridColumn: '1 / -1',
+        textAlign: 'center',
+        color: 'var(--guinda)',
+        fontSize: 11.5,
+        fontWeight: 850,
+        textDecoration: 'none'
+      }
+    }, 'Abrir original en otra pestaña')));
+  }
+  function DesktopReview(props) {
+    const {
+      app,
+      types,
+      queue,
+      visibleQueue,
+      selectedId,
+      setSelectedId,
+      preview,
+      previewPhase,
+      previewError,
+      retryPreview,
+      reviewFilter,
+      setReviewFilter,
+      statusFilter,
+      setStatusFilter,
+      typeFilter,
+      setTypeFilter,
+      affiliateFilter,
+      setAffiliateFilter,
+      sort,
+      setSort,
+      rowFeedback,
+      decision,
+      setDecision,
+      observation,
+      setObservation,
+      commitDecision,
+      go,
+      position
+    } = props;
+    const selected = visibleQueue.find(row => row.id === selectedId) || queue.find(row => row.id === selectedId) || null;
+    const canReview = app.admin.has('documents.write');
+    const affiliates = [];
+    queue.forEach(row => {
+      if (!affiliates.some(entry => entry.id === row.affiliate_id)) affiliates.push({
+        id: row.affiliate_id,
+        label: affiliateName(row)
+      });
+    });
+    affiliates.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    const onKeys = event => {
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(event.target.tagName)) return;
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        go(1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        go(-1);
+      } else if (event.key === 'Enter' && selected) {
+        event.preventDefault();
+        setSelectedId(selected.id);
+      }
+    };
+    return h('div', {
+      'data-admin-document-workbench': 'true',
+      tabIndex: 0,
+      onKeyDown: onKeys,
+      style: {
+        outline: 'none'
+      }
+    }, h('style', null, '.docwb-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:12px}.docwb-filters>:first-child{grid-column:1 / -1}.docwb-grid{display:grid;grid-template-columns:minmax(265px,.82fr) minmax(360px,1.35fr);grid-template-rows:minmax(330px,auto) auto;gap:14px;align-items:stretch}.docwb-queue{grid-column:1;grid-row:1 / span 2}.docwb-preview{grid-column:2;grid-row:1}.docwb-decision{grid-column:2;grid-row:2}.docwb-nav{grid-column:1 / -1}@media(min-width:1280px){.docwb-filters{grid-template-columns:minmax(220px,1fr) repeat(4,minmax(125px,.48fr))}.docwb-filters>:first-child{grid-column:auto}.docwb-grid{grid-template-columns:minmax(255px,.82fr) minmax(370px,1.35fr) minmax(260px,.82fr);grid-template-rows:minmax(520px,1fr) auto}.docwb-queue{grid-column:1;grid-row:1}.docwb-preview{grid-column:2;grid-row:1}.docwb-decision{grid-column:3;grid-row:1}.docwb-nav{grid-column:1 / -1;grid-row:2}}'), h('div', {
+      className: 'docwb-filters',
+      'data-document-queue-filters': 'true'
+    }, h('input', {
+      value: reviewFilter,
+      onChange: event => setReviewFilter(event.target.value),
+      placeholder: 'Buscar afiliado o documento',
+      style: input,
+      'aria-label': 'Buscar en la cola documental'
+    }), h('select', {
+      value: statusFilter,
+      onChange: event => setStatusFilter(event.target.value),
+      style: input,
+      'aria-label': 'Filtrar por estado'
+    }, h('option', {
+      value: ''
+    }, 'Todos los estados'), Object.keys(DOC_STATES).map(value => h('option', {
+      key: value,
+      value
+    }, DOC_STATES[value].label))), h('select', {
+      value: typeFilter,
+      onChange: event => setTypeFilter(event.target.value),
+      style: input,
+      'aria-label': 'Filtrar por documento'
+    }, h('option', {
+      value: ''
+    }, 'Todos los documentos'), types.map(type => h('option', {
+      key: type.id,
+      value: type.id
+    }, businessLabel(type)))), h('select', {
+      value: affiliateFilter,
+      onChange: event => setAffiliateFilter(event.target.value),
+      style: input,
+      'aria-label': 'Filtrar por afiliado'
+    }, h('option', {
+      value: ''
+    }, 'Todos los afiliados'), affiliates.map(entry => h('option', {
+      key: entry.id,
+      value: entry.id
+    }, entry.label))), h('select', {
+      value: sort,
+      onChange: event => setSort(event.target.value),
+      style: input,
+      'aria-label': 'Ordenar cola'
+    }, h('option', {
+      value: 'oldest'
+    }, 'Más antiguos primero'), h('option', {
+      value: 'newest'
+    }, 'Más recientes primero'), h('option', {
+      value: 'affiliate'
+    }, 'Afiliado A–Z'), h('option', {
+      value: 'document'
+    }, 'Documento A–Z'))), h('div', {
+      className: 'docwb-grid'
+    }, h('section', {
+      'data-document-review-queue': 'true',
+      className: 'docwb-queue',
+      style: Object.assign({}, panel, {
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      })
+    }, h('div', {
+      style: {
+        padding: '14px 15px',
+        borderBottom: '1px solid var(--hairline)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }
+    }, h('div', null, h('b', {
+      style: {
+        fontSize: 14
+      }
+    }, 'Cola documental'), h('div', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, '↑/↓ navega · Enter activa')), h('span', {
+      style: {
+        fontSize: 11,
+        fontWeight: 850,
+        color: 'var(--guinda)'
+      }
+    }, visibleQueue.length + ' casos')), h('div', {
+      style: {
+        overflowY: 'auto',
+        minHeight: 300,
+        maxHeight: 'calc(100vh - 285px)',
+        padding: 8
+      }
+    }, visibleQueue.length ? visibleQueue.map(row => {
+      const active = row.id === selectedId,
+        info = stateInfo(row.status),
+        feedback = rowFeedback[row.id];
+      return h('button', {
+        key: row.id,
+        type: 'button',
+        'data-document-queue-item': row.id,
+        'aria-current': active ? 'true' : undefined,
+        onClick: () => setSelectedId(row.id),
+        style: {
+          display: 'block',
+          width: '100%',
+          border: active ? '2px solid var(--guinda)' : '1px solid transparent',
+          borderRadius: 13,
+          padding: 11,
+          marginBottom: 7,
+          textAlign: 'left',
+          background: active ? '#FFF7F9' : '#F7F7F9',
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+          boxShadow: active ? '0 6px 16px rgba(128,0,38,.1)' : 'none'
+        }
+      }, h('div', {
+        style: {
+          display: 'flex',
+          gap: 9,
+          alignItems: 'start'
+        }
+      }, h('span', {
+        'aria-hidden': 'true',
+        style: {
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          background: '#fff',
+          display: 'grid',
+          placeItems: 'center',
+          color: 'var(--guinda)',
+          flex: '0 0 auto'
+        }
+      }, h(I, {
+        name: row.document_type && row.document_type.icon || 'doc',
+        size: 17
+      })), h('span', {
+        style: {
+          minWidth: 0,
+          flex: 1
+        }
+      }, h('b', {
+        style: {
+          display: 'block',
+          fontSize: 12.5,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }
+      }, affiliateName(row)), h('span', {
+        style: {
+          display: 'block',
+          fontSize: 11,
+          color: 'var(--ink-3)',
+          marginTop: 2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }
+      }, businessLabel(row.document_type)), h('span', {
+        style: {
+          display: 'block',
+          fontSize: 10.5,
+          color: 'var(--ink-3)',
+          marginTop: 4
+        }
+      }, pendingAge(row.created_at))), h('span', {
+        style: {
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: info.tone,
+          marginTop: 5,
+          flex: '0 0 auto'
+        },
+        title: info.label
+      })), feedback && h('span', {
+        'data-document-inline-feedback': feedback.tone,
+        style: {
+          display: 'block',
+          fontSize: 10.5,
+          fontWeight: 850,
+          color: feedback.tone === 'error' ? '#A00027' : '#087A50',
+          marginTop: 7
+        }
+      }, feedback.text));
+    }) : h('div', {
+      style: {
+        padding: 25,
+        textAlign: 'center'
+      }
+    }, h('b', null, 'Sin resultados'), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, reviewFilter || statusFilter || typeFilter || affiliateFilter ? 'Ajusta los filtros para ver otros documentos.' : 'No hay documentos pendientes de revisión.')))), selected ? h(DesktopPreview, {
+      row: selected,
+      preview,
+      phase: previewPhase,
+      error: previewError,
+      onRetry: retryPreview,
+      position,
+      total: visibleQueue.length
+    }) : h('section', {
+      className: 'docwb-preview',
+      style: Object.assign({}, panel, {
+        display: 'grid',
+        placeItems: 'center',
+        padding: 30
+      })
+    }, 'Selecciona un documento de la cola.'), selected ? h('aside', {
+      'data-document-decision-panel': 'true',
+      className: 'docwb-decision',
+      style: Object.assign({}, panel, {
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12
+      })
+    }, h('div', null, h('div', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 850,
+        textTransform: 'uppercase'
+      }
+    }, 'Decisión'), h('h2', {
+      style: {
+        fontSize: 16,
+        margin: '4px 0'
+      }
+    }, affiliateName(selected)), h('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)'
+      }
+    }, businessLabel(selected.document_type) + ' · ' + position + ' de ' + visibleQueue.length)), h('div', {
       style: {
         display: 'flex',
-        gap: 6,
-        overflowX: 'auto',
-        marginBottom: 14
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 0',
+        borderTop: '1px solid var(--hairline)',
+        borderBottom: '1px solid var(--hairline)'
       }
-    }, [['review', 'Revisión'], ['catalog', 'Catálogo'], ['requirements', 'Requisitos'], ['terms', 'Términos'], ['qr', 'QR']].map(x => React.createElement('button', {
-      key: x[0],
-      onClick: () => setTab(x[0]),
+    }, h('span', {
       style: {
-        border: 'none',
-        borderRadius: 999,
-        padding: '9px 13px',
-        fontWeight: 800,
-        background: tab === x[0] ? 'var(--guinda)' : 'var(--surface-2)',
-        color: tab === x[0] ? '#fff' : 'var(--ink-2)'
+        fontSize: 11,
+        fontWeight: 800
       }
-    }, x[1]))), tab === 'review' && React.createElement('div', {
+    }, 'Estado actual'), h(StatusBadge, {
+      status: selected.status
+    })), canReview ? h(React.Fragment, null, h('div', {
+      role: 'group',
+      'aria-label': 'Decisión documental',
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 8
+      }
+    }, h('button', {
+      type: 'button',
+      'aria-pressed': decision === 'VERIFIED',
+      onClick: () => setDecision('VERIFIED'),
+      style: {
+        border: decision === 'VERIFIED' ? '2px solid #087A50' : '1px solid var(--hairline)',
+        borderRadius: 12,
+        padding: '11px 8px',
+        background: '#E5F7EF',
+        color: '#087A50',
+        fontWeight: 850
+      }
+    }, 'Aprobar'), h('button', {
+      type: 'button',
+      'aria-pressed': decision === 'REUPLOAD_REQUIRED',
+      onClick: () => setDecision('REUPLOAD_REQUIRED'),
+      style: {
+        border: decision === 'REUPLOAD_REQUIRED' ? '2px solid #A00027' : '1px solid var(--hairline)',
+        borderRadius: 12,
+        padding: '11px 8px',
+        background: '#FCE9EE',
+        color: '#A00027',
+        fontWeight: 850
+      }
+    }, 'Pedir nueva carga')), h('label', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 800
+      }
+    }, 'Observación para el afiliado', h('textarea', {
+      value: observation,
+      onChange: event => setObservation(event.target.value),
+      rows: 5,
+      maxLength: 1000,
+      placeholder: decision === 'REUPLOAD_REQUIRED' ? 'Explica qué debe corregir…' : 'Opcional al aprobar',
+      style: Object.assign({}, input, {
+        marginTop: 6,
+        resize: 'vertical'
+      })
+    })), rowFeedback[selected.id] && h('div', {
+      role: rowFeedback[selected.id].tone === 'error' ? 'alert' : 'status',
+      'data-document-decision-feedback': rowFeedback[selected.id].tone,
+      style: {
+        borderRadius: 11,
+        padding: 10,
+        fontSize: 11.5,
+        fontWeight: 850,
+        color: rowFeedback[selected.id].tone === 'error' ? '#A00027' : '#087A50',
+        background: rowFeedback[selected.id].tone === 'error' ? '#FCE9EE' : '#E5F7EF'
+      }
+    }, rowFeedback[selected.id].text), h('button', {
+      type: 'button',
+      disabled: !decision || decision === 'REUPLOAD_REQUIRED' && !observation.trim() || props.saving,
+      onClick: () => commitDecision(false),
+      style: {
+        border: 0,
+        borderRadius: 12,
+        padding: 11,
+        background: 'var(--surface-2)',
+        color: 'var(--guinda)',
+        fontWeight: 850,
+        opacity: !decision ? .55 : 1
+      }
+    }, props.saving ? 'Guardando…' : 'Guardar decisión')) : h('div', {
+      'data-document-review-denied': 'true',
+      style: {
+        background: 'var(--surface-2)',
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, h('b', {
+      style: {
+        display: 'block',
+        color: 'var(--ink)'
+      }
+    }, 'Consulta solamente'), 'La capacidad Documentos · Editar es necesaria para decidir.'), h('div', {
+      style: {
+        marginTop: 'auto',
+        fontSize: 10.5,
+        color: 'var(--ink-3)'
+      }
+    }, 'La autorización se valida nuevamente en backend/RLS.')) : null, h('div', {
+      'data-document-queue-navigator': 'true',
+      className: 'docwb-nav',
+      style: Object.assign({}, panel, {
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        padding: '11px 14px'
+      })
+    }, h('button', {
+      type: 'button',
+      disabled: position <= 1,
+      onClick: () => go(-1),
+      style: {
+        justifySelf: 'start',
+        border: 0,
+        borderRadius: 10,
+        padding: '9px 13px',
+        fontWeight: 850,
+        background: 'var(--surface-2)',
+        color: 'var(--ink)',
+        opacity: position <= 1 ? .45 : 1
+      }
+    }, 'Anterior'), h('b', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-2)'
+      }
+    }, selected ? position + ' de ' + visibleQueue.length : '0 de ' + visibleQueue.length), h('button', {
+      type: 'button',
+      disabled: !selected || !canReview || !decision || decision === 'REUPLOAD_REQUIRED' && !observation.trim() || props.saving,
+      onClick: () => commitDecision(true),
+      style: {
+        justifySelf: 'end',
+        border: 0,
+        borderRadius: 11,
+        padding: '10px 15px',
+        fontWeight: 850,
+        background: 'var(--guinda)',
+        color: '#fff',
+        opacity: !selected || !decision ? .5 : 1
+      }
+    }, props.saving ? 'Guardando…' : 'Guardar y siguiente'))));
+  }
+  function DesktopCatalog({
+    types,
+    setTypes,
+    busy,
+    dragId,
+    setDragId,
+    reorderType,
+    load,
+    app
+  }) {
+    const canWrite = app.admin.has('documents.write');
+    return h('div', {
+      'data-document-catalog-desktop': 'true',
       style: {
         display: 'flex',
         flexDirection: 'column',
         gap: 10
       }
-    }, React.createElement('input', {
-      value: reviewFilter,
-      onChange: e => setReviewFilter(e.target.value),
-      placeholder: 'Filtrar por afiliado, control, documento o estado',
-      style: input,
-      'aria-label': 'Filtrar revisión documental'
-    }), visibleQueue.length ? visibleQueue.map(d => React.createElement('div', {
-      key: d.id,
+    }, h('div', {
       style: {
-        background: '#fff',
-        borderRadius: 16,
-        padding: 13,
-        boxShadow: 'var(--neo-sm)'
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12
       }
-    }, React.createElement('b', null, d.document_type && d.document_type.label), React.createElement('div', {
+    }, h('div', null, h('h2', {
       style: {
-        fontSize: 12,
+        fontSize: 17,
+        margin: 0
+      }
+    }, 'Catálogo documental'), h('p', {
+      style: {
+        fontSize: 11.5,
         color: 'var(--ink-3)',
-        marginTop: 3
+        margin: '4px 0 0'
       }
-    }, (d.affiliate && (d.affiliate.display_name || d.affiliate.full_name)) + ' · ' + (d.affiliate && d.affiliate.numero_control)), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 7,
-        marginTop: 11
-      }
-    }, React.createElement('button', {
-      disabled: !d.signedUrl,
-      onClick: () => window.open(d.signedUrl, '_blank', 'noopener,noreferrer'),
-      style: {
-        border: 'none',
-        borderRadius: 10,
-        padding: 9,
-        background: 'var(--surface-2)',
-        color: 'var(--ink)',
-        fontWeight: 800
-      }
-    }, 'Ver'), React.createElement('button', {
-      disabled: busy === d.id,
-      onClick: () => review(d.id, 'VERIFIED'),
-      style: {
-        flex: 1,
-        border: 'none',
-        borderRadius: 10,
-        padding: 9,
-        background: '#E5F7EF',
-        color: '#087A50',
-        fontWeight: 800
-      }
-    }, 'Aprobar'), React.createElement('button', {
-      disabled: busy === d.id,
-      onClick: () => review(d.id, 'REUPLOAD_REQUIRED'),
-      style: {
-        flex: 1,
-        border: 'none',
-        borderRadius: 10,
-        padding: 9,
-        background: '#FCE9EE',
-        color: '#A00027',
-        fontWeight: 800
-      }
-    }, 'Pedir carga')))) : React.createElement(window.EmptyState, {
-      icon: 'checkCircle',
-      title: 'Sin resultados',
-      sub: reviewFilter ? 'Ningún documento coincide con el filtro.' : 'No hay documentos pendientes de revisión.'
-    })), tab === 'catalog' && React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 9
-      }
-    }, React.createElement(window.Btn, {
-      full: true,
+    }, 'El nombre de negocio es principal; el código interno permanece en detalles.')), h(window.Btn, {
       icon: 'plus',
+      disabled: !canWrite,
       onClick: async () => {
         const label = prompt('Nombre del tipo de documento:');
         if (!label) return;
@@ -35378,103 +36003,191 @@ Object.assign(window, {
           app.toast && app.toast('No se pudo crear el tipo');
         }
       }
-    }, 'Nuevo tipo documental'), types.map(t => React.createElement('div', {
-      key: t.id,
-      draggable: busy !== 'order',
-      onDragStart: () => setDragId(t.id),
-      onDragOver: e => e.preventDefault(),
-      onDrop: () => reorderType(t.id),
+    }, 'Nuevo tipo documental')), h('div', {
       style: {
-        display: 'flex',
+        display: 'grid',
+        gap: 8
+      }
+    }, types.map(type => h('article', {
+      key: type.id,
+      'data-document-type-row': type.id,
+      draggable: canWrite && busy !== 'order',
+      onDragStart: () => setDragId(type.id),
+      onDragOver: event => event.preventDefault(),
+      onDrop: () => reorderType(type.id),
+      style: Object.assign({}, panel, {
+        display: 'grid',
+        gridTemplateColumns: '38px minmax(220px,1fr) minmax(190px,.8fr) 126px 82px 38px',
         alignItems: 'center',
-        gap: 8,
-        background: '#fff',
-        borderRadius: 14,
-        padding: 11,
-        cursor: 'grab'
-      }
-    }, React.createElement(I, {
-      name: 'menu',
-      size: 18
-    }), React.createElement(I, {
-      name: t.icon || 'doc',
-      size: 20
-    }), React.createElement('div', {
+        gap: 12,
+        padding: '12px 14px',
+        cursor: canWrite ? 'grab' : 'default'
+      })
+    }, h('span', {
+      'aria-label': 'Arrastrar para reordenar',
       style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('input', {
-      value: t.label,
-      onChange: e => setTypes(all => all.map(x => x.id === t.id ? Object.assign({}, x, {
-        label: e.target.value
-      }) : x)),
-      onBlur: async e => {
-        await window.DocumentWorkflowRepository.saveType(Object.assign({}, t, {
-          label: e.target.value.trim()
-        }));
-        await load();
-      },
-      style: {
-        border: 'none',
-        font: '800 13px var(--font)',
-        width: '100%'
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 10.5,
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'var(--surface-2)',
         color: 'var(--ink-3)'
       }
-    }, t.code), React.createElement('label', {
+    }, h(I, {
+      name: 'menu',
+      size: 18
+    })), h('div', {
       style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 5,
+        minWidth: 0
+      }
+    }, h('b', {
+      'data-document-business-label': 'true',
+      style: {
+        display: 'block',
+        fontSize: 14,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, businessLabel(type)), type.description && h('span', {
+      style: {
+        display: 'block',
         fontSize: 10.5,
-        fontWeight: 800,
-        color: t.required_by_default ? 'var(--guinda)' : 'var(--ink-3)',
+        color: 'var(--ink-3)',
+        marginTop: 3,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, type.description), h('details', {
+      style: {
         marginTop: 5
       }
-    }, React.createElement('input', {
-      'data-global-required': t.code,
-      type: 'checkbox',
-      checked: !!t.required_by_default,
-      onChange: async e => {
-        await window.DocumentWorkflowRepository.saveType(Object.assign({}, t, {
-          required_by_default: e.target.checked
-        }));
-        await load();
+    }, h('summary', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--guinda)',
+        fontWeight: 800,
+        cursor: 'pointer'
       }
-    }), 'Cuenta para el 100% del expediente')), React.createElement('input', {
-      type: 'number',
-      min: 1,
-      value: t.sort_order,
-      'aria-label': 'Orden accesible',
-      onChange: e => setTypes(all => all.map(x => x.id === t.id ? Object.assign({}, x, {
-        sort_order: e.target.value
-      }) : x)),
-      onBlur: async e => {
-        await window.DocumentWorkflowRepository.saveType(Object.assign({}, t, {
-          sort_order: Number(e.target.value)
+    }, 'Editar nombre y detalles técnicos'), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 10.5,
+        fontWeight: 750,
+        marginTop: 7
+      }
+    }, 'Nombre visible', h('input', {
+      value: type.label,
+      disabled: !canWrite,
+      onChange: event => setTypes(all => all.map(item => item.id === type.id ? Object.assign({}, item, {
+        label: event.target.value
+      }) : item)),
+      onBlur: async event => {
+        if (!canWrite) return;
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          label: event.target.value.trim()
         }));
         await load();
       },
+      style: Object.assign({}, input, {
+        marginTop: 4,
+        padding: 8
+      })
+    })), h('div', {
+      'data-document-technical-code': 'secondary',
       style: {
-        width: 42,
-        ...input
+        fontSize: 10,
+        color: 'var(--ink-3)',
+        marginTop: 6
       }
-    }), React.createElement(window.Toggle, {
-      on: t.enabled,
-      onClick: async () => {
-        await window.DocumentWorkflowRepository.saveType(Object.assign({}, t, {
-          enabled: !t.enabled
+    }, 'Código interno: ', h('code', null, type.code)))), h('label', {
+      style: {
+        fontSize: 11,
+        fontWeight: 800,
+        color: type.required_by_default ? 'var(--guinda)' : 'var(--ink-3)'
+      }
+    }, h('span', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7
+      }
+    }, h('input', {
+      'data-global-required': type.code,
+      type: 'checkbox',
+      disabled: !canWrite,
+      checked: !!type.required_by_default,
+      onChange: async event => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          required_by_default: event.target.checked
         }));
         await load();
       }
-    }), !t.system_type && React.createElement('button', {
+    }), 'Cuenta para el 100% del expediente'), h('span', {
+      'data-owner-clarification-required': 'required_by_default',
+      style: {
+        display: 'block',
+        fontSize: 9.5,
+        fontWeight: 650,
+        lineHeight: 1.35,
+        color: 'var(--ink-3)',
+        marginTop: 4
+      }
+    }, 'Incluye este tipo en el cálculo global de completitud. Nombre de negocio pendiente de definición.')), h('label', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 800,
+        color: 'var(--ink-3)'
+      }
+    }, 'Posición', h('input', {
+      type: 'number',
+      min: 1,
+      value: type.sort_order,
+      disabled: !canWrite,
+      'aria-label': 'Posición de ' + businessLabel(type),
+      onChange: event => setTypes(all => all.map(item => item.id === type.id ? Object.assign({}, item, {
+        sort_order: event.target.value
+      }) : item)),
+      onBlur: async event => {
+        if (!canWrite) return;
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          sort_order: Number(event.target.value)
+        }));
+        await load();
+      },
+      style: Object.assign({}, input, {
+        marginTop: 4,
+        padding: 8
+      })
+    })), h('div', {
+      style: {
+        textAlign: 'center'
+      }
+    }, h('span', {
+      style: {
+        display: 'block',
+        fontSize: 9.5,
+        fontWeight: 800,
+        color: 'var(--ink-3)',
+        marginBottom: 5
+      }
+    }, type.enabled ? 'Activo' : 'Inactivo'), h(window.Toggle, {
+      on: type.enabled,
+      onClick: canWrite ? async () => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          enabled: !type.enabled
+        }));
+        await load();
+      } : undefined
+    })), !type.system_type ? h('button', {
+      type: 'button',
+      disabled: !canWrite,
+      'aria-label': 'Eliminar ' + businessLabel(type),
       onClick: async () => {
         if (confirm('¿Eliminar este tipo sin uso?')) try {
-          await window.DocumentWorkflowRepository.removeType(t.id);
+          await window.DocumentWorkflowRepository.removeType(type.id);
           await load();
         } catch (_) {
           app.toast && app.toast('No puede eliminarse porque ya está relacionado. Desactívalo.');
@@ -35486,53 +36199,592 @@ Object.assign(window, {
         color: '#A00027',
         borderRadius: 9,
         width: 32,
-        height: 32
+        height: 32,
+        opacity: canWrite ? 1 : .45
       }
-    }, React.createElement(I, {
+    }, h(I, {
       name: 'trash',
       size: 15
-    }))))), tab === 'requirements' && React.createElement('div', {
+    })) : h('span', null)))));
+  }
+  function RequirementsPanel({
+    types,
+    reqTarget,
+    setReqTarget,
+    reqRows,
+    loadRequirements,
+    app
+  }) {
+    const canWrite = app.admin.has('documents.write');
+    return h('div', {
+      'data-document-requirements-desktop': 'true',
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'minmax(240px,.6fr) minmax(420px,1.4fr)',
+        gap: 14
+      }
+    }, h('section', {
+      style: Object.assign({}, panel, {
+        padding: 16
+      })
+    }, h('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        textTransform: 'uppercase'
+      }
+    }, 'Regla por programa o trámite'), h('h2', {
+      style: {
+        fontSize: 17,
+        margin: '5px 0 12px'
+      }
+    }, 'Contexto del requisito'), h('label', {
+      style: {
+        fontSize: 11,
+        fontWeight: 800
+      }
+    }, 'Programa', h('select', {
+      value: reqTarget.program_id,
+      onChange: event => setReqTarget({
+        program_id: event.target.value,
+        membership_offering_id: ''
+      }),
+      style: Object.assign({}, input, {
+        marginTop: 6
+      })
+    }, h('option', {
+      value: 'prestamo'
+    }, 'Suti Préstamo'), h('option', {
+      value: 'membership'
+    }, 'Membresía'))), reqTarget.program_id === 'membership' && h('label', {
+      style: {
+        display: 'block',
+        fontSize: 11,
+        fontWeight: 800,
+        marginTop: 11
+      }
+    }, 'Membresía', h('select', {
+      value: reqTarget.membership_offering_id,
+      onChange: event => setReqTarget(value => Object.assign({}, value, {
+        membership_offering_id: event.target.value
+      })),
+      style: Object.assign({}, input, {
+        marginTop: 6
+      })
+    }, h('option', {
+      value: ''
+    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
+      key: membership.id,
+      value: membership.id
+    }, membership.empresa)))), h('p', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        lineHeight: 1.5,
+        marginTop: 15
+      }
+    }, 'Este panel define la regla del trámite. No modifica el catálogo de tipos documentales.')), h('section', {
+      style: Object.assign({}, panel, {
+        padding: 16
+      })
+    }, h('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        textTransform: 'uppercase'
+      }
+    }, 'Tipos documentales disponibles'), h('h2', {
+      style: {
+        fontSize: 17,
+        margin: '5px 0 10px'
+      }
+    }, 'Documentos requeridos'), h('div', null, types.filter(type => type.enabled).map(type => {
+      const existing = reqRows.find(row => row.document_type_id === type.id);
+      return h('div', {
+        key: type.id,
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '11px 0',
+          borderTop: '1px solid var(--hairline)'
+        }
+      }, h('span', {
+        style: {
+          flex: 1,
+          fontSize: 12.5,
+          fontWeight: 800
+        }
+      }, businessLabel(type)), h('label', {
+        style: {
+          fontSize: 11,
+          fontWeight: 750
+        }
+      }, 'Obligatorio ', h('input', {
+        type: 'checkbox',
+        disabled: !canWrite,
+        checked: !!(existing && existing.required),
+        onChange: async event => {
+          await window.DocumentWorkflowRepository.saveRequirement({
+            program_id: reqTarget.program_id,
+            membership_offering_id: reqTarget.membership_offering_id || null,
+            document_type_id: type.id,
+            required: event.target.checked,
+            allow_verified_reuse: true,
+            sort_order: existing && existing.sort_order || type.sort_order,
+            enabled: true
+          });
+          await loadRequirements();
+        }
+      })));
+    }))));
+  }
+  function DesktopConfiguration(props) {
+    const tabs = [['catalog', 'Catálogo'], ['requirements', 'Requisitos'], ['terms', 'Términos'], ['qr', 'QR']];
+    return h('div', {
+      'data-document-configuration': 'true'
+    }, h('div', {
+      style: {
+        display: 'flex',
+        gap: 6,
+        marginBottom: 14,
+        padding: 5,
+        borderRadius: 14,
+        background: '#E8E8EC',
+        width: 'fit-content'
+      }
+    }, tabs.map(entry => h('button', {
+      key: entry[0],
+      type: 'button',
+      onClick: () => props.setTab(entry[0]),
+      style: {
+        border: 0,
+        borderRadius: 10,
+        padding: '9px 14px',
+        fontWeight: 850,
+        background: props.tab === entry[0] ? '#fff' : 'transparent',
+        color: props.tab === entry[0] ? 'var(--guinda)' : 'var(--ink-2)',
+        boxShadow: props.tab === entry[0] ? '0 3px 10px rgba(31,35,48,.08)' : 'none'
+      }
+    }, entry[1]))), props.tab === 'catalog' && h(DesktopCatalog, props), props.tab === 'requirements' && h(RequirementsPanel, props), props.tab === 'terms' && h('section', {
+      style: Object.assign({}, panel, {
+        padding: 18,
+        maxWidth: 820
+      })
+    }, h('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        textTransform: 'uppercase'
+      }
+    }, 'Configuración · términos'), h('h2', {
+      style: {
+        fontSize: 17,
+        margin: '5px 0 14px'
+      }
+    }, 'Publicar nueva versión'), h('select', {
+      value: props.terms.program_id,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        program_id: event.target.value,
+        membership_offering_id: ''
+      })),
+      style: input
+    }, h('option', {
+      value: 'prestamo'
+    }, 'Suti Préstamo'), h('option', {
+      value: 'membership'
+    }, 'Membresía')), props.terms.program_id === 'membership' && h('select', {
+      value: props.terms.membership_offering_id,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        membership_offering_id: event.target.value
+      })),
+      style: Object.assign({}, input, {
+        marginTop: 9
+      })
+    }, h('option', {
+      value: ''
+    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
+      key: membership.id,
+      value: membership.id
+    }, membership.empresa))), h('input', {
+      value: props.terms.title,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        title: event.target.value
+      })),
+      placeholder: 'Título de la versión',
+      style: Object.assign({}, input, {
+        marginTop: 9
+      })
+    }), h('textarea', {
+      value: props.terms.body,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        body: event.target.value
+      })),
+      placeholder: 'Texto completo de términos y condiciones',
+      rows: 10,
+      style: Object.assign({}, input, {
+        marginTop: 9,
+        resize: 'vertical'
+      })
+    }), h(window.Btn, {
+      full: true,
+      disabled: props.busy === 'terms' || props.terms.title.trim().length < 3 || props.terms.body.trim().length < 20 || props.terms.program_id === 'membership' && !props.terms.membership_offering_id || !props.app.admin.has('documents.write'),
+      onClick: props.publish,
+      style: {
+        marginTop: 12
+      }
+    }, 'Publicar nueva versión')), props.tab === 'qr' && h('section', {
+      style: Object.assign({}, panel, {
+        padding: 18,
+        maxWidth: 720
+      })
+    }, h('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        textTransform: 'uppercase'
+      }
+    }, 'Configuración secundaria'), h('h2', {
+      style: {
+        fontSize: 17,
+        margin: '5px 0 4px'
+      }
+    }, 'Credencial QR'), h('p', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        margin: '0 0 14px'
+      }
+    }, 'Destino actual: Credencial del afiliado'), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 12,
+        fontWeight: 800
+      }
+    }, 'Vigencia en segundos', h('input', {
+      type: 'number',
+      min: 15,
+      max: 120,
+      value: props.qr.ttl_seconds,
+      onChange: event => props.setQr(value => Object.assign({}, value, {
+        ttl_seconds: event.target.value
+      })),
+      style: Object.assign({}, input, {
+        marginTop: 6
+      })
+    })), h('details', {
+      style: {
+        marginTop: 13
+      }
+    }, h('summary', {
+      style: {
+        fontSize: 11,
+        color: 'var(--guinda)',
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, 'Detalles técnicos del destino'), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 11,
+        fontWeight: 800,
+        marginTop: 9
+      }
+    }, 'Ruta permitida', h('input', {
+      value: props.qr.destination_path,
+      onChange: event => props.setQr(value => Object.assign({}, value, {
+        destination_path: event.target.value
+      })),
+      style: Object.assign({}, input, {
+        marginTop: 6
+      })
+    }))), h(window.Btn, {
+      full: true,
+      disabled: props.busy === 'qr' || !props.app.admin.has('content.write'),
+      onClick: props.saveQr,
+      style: {
+        marginTop: 14
+      }
+    }, 'Guardar política QR')));
+  }
+  function MobileDocuments(props) {
+    const visibleQueue = props.queue.filter(d => {
+      const affiliate = d.affiliate || {},
+        type = d.document_type || {};
+      return !props.reviewFilter || [affiliate.display_name, affiliate.full_name, affiliate.numero_control, type.label, d.status].join(' ').toLowerCase().includes(props.reviewFilter.toLowerCase());
+    });
+    return h('div', null, props.header({
+      title: 'Documentos y credencial',
+      sub: props.queue.length + ' revisión(es) pendiente(s)',
+      onBack: props.onBack
+    }), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 16,
+        paddingBottom: 30
+      }
+    }, props.error && h('div', {
+      role: 'alert',
+      style: {
+        color: '#A32921',
+        fontWeight: 700
+      }
+    }, props.error), h('div', {
+      style: {
+        display: 'flex',
+        gap: 6,
+        overflowX: 'auto',
+        marginBottom: 14
+      }
+    }, [['review', 'Revisión'], ['catalog', 'Catálogo'], ['requirements', 'Requisitos'], ['terms', 'Términos'], ['qr', 'QR']].map(entry => h('button', {
+      key: entry[0],
+      onClick: () => props.setTab(entry[0]),
+      style: {
+        border: 'none',
+        borderRadius: 999,
+        padding: '9px 13px',
+        fontWeight: 800,
+        background: props.tab === entry[0] ? 'var(--guinda)' : 'var(--surface-2)',
+        color: props.tab === entry[0] ? '#fff' : 'var(--ink-2)'
+      }
+    }, entry[1]))), props.tab === 'review' && h('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, h('input', {
+      value: props.reviewFilter,
+      onChange: event => props.setReviewFilter(event.target.value),
+      placeholder: 'Filtrar por afiliado, control, documento o estado',
+      style: input,
+      'aria-label': 'Filtrar revisión documental'
+    }), visibleQueue.length ? visibleQueue.map(d => h('div', {
+      key: d.id,
+      style: {
+        background: '#fff',
+        borderRadius: 16,
+        padding: 13,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('b', null, d.document_type && d.document_type.label), h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, (d.affiliate && (d.affiliate.display_name || d.affiliate.full_name)) + ' · ' + (d.affiliate && d.affiliate.numero_control)), h('div', {
+      style: {
+        display: 'flex',
+        gap: 7,
+        marginTop: 11
+      }
+    }, h('button', {
+      disabled: !d.signedUrl,
+      onClick: () => window.open(d.signedUrl, '_blank', 'noopener,noreferrer'),
+      style: {
+        border: 'none',
+        borderRadius: 10,
+        padding: 9,
+        background: 'var(--surface-2)',
+        color: 'var(--ink)',
+        fontWeight: 800
+      }
+    }, 'Ver'), h('button', {
+      disabled: props.busy === d.id,
+      onClick: () => props.mobileReview(d.id, 'VERIFIED'),
+      style: {
+        flex: 1,
+        border: 'none',
+        borderRadius: 10,
+        padding: 9,
+        background: '#E5F7EF',
+        color: '#087A50',
+        fontWeight: 800
+      }
+    }, 'Aprobar'), h('button', {
+      disabled: props.busy === d.id,
+      onClick: () => props.mobileReview(d.id, 'REUPLOAD_REQUIRED'),
+      style: {
+        flex: 1,
+        border: 'none',
+        borderRadius: 10,
+        padding: 9,
+        background: '#FCE9EE',
+        color: '#A00027',
+        fontWeight: 800
+      }
+    }, 'Pedir carga')))) : h(window.EmptyState, {
+      icon: 'checkCircle',
+      title: 'Sin resultados',
+      sub: props.reviewFilter ? 'Ningún documento coincide con el filtro.' : 'No hay documentos pendientes de revisión.'
+    })), props.tab === 'catalog' && h('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 9
+      }
+    }, h(window.Btn, {
+      full: true,
+      icon: 'plus',
+      onClick: props.createType
+    }, 'Nuevo tipo documental'), props.types.map(type => h('div', {
+      key: type.id,
+      draggable: props.busy !== 'order',
+      onDragStart: () => props.setDragId(type.id),
+      onDragOver: event => event.preventDefault(),
+      onDrop: () => props.reorderType(type.id),
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: '#fff',
+        borderRadius: 14,
+        padding: 11,
+        cursor: 'grab'
+      }
+    }, h(I, {
+      name: 'menu',
+      size: 18
+    }), h(I, {
+      name: type.icon || 'doc',
+      size: 20
+    }), h('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, h('input', {
+      value: type.label,
+      onChange: event => props.setTypes(all => all.map(item => item.id === type.id ? Object.assign({}, item, {
+        label: event.target.value
+      }) : item)),
+      onBlur: async event => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          label: event.target.value.trim()
+        }));
+        await props.load();
+      },
+      style: {
+        border: 'none',
+        font: '800 13px var(--font)',
+        width: '100%'
+      }
+    }), h('div', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)'
+      }
+    }, type.code), h('label', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 5,
+        fontSize: 10.5,
+        fontWeight: 800,
+        color: type.required_by_default ? 'var(--guinda)' : 'var(--ink-3)',
+        marginTop: 5
+      }
+    }, h('input', {
+      'data-global-required': type.code,
+      type: 'checkbox',
+      checked: !!type.required_by_default,
+      onChange: async event => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          required_by_default: event.target.checked
+        }));
+        await props.load();
+      }
+    }), 'Cuenta para el 100% del expediente')), h('input', {
+      type: 'number',
+      min: 1,
+      value: type.sort_order,
+      'aria-label': 'Orden accesible',
+      onChange: event => props.setTypes(all => all.map(item => item.id === type.id ? Object.assign({}, item, {
+        sort_order: event.target.value
+      }) : item)),
+      onBlur: async event => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          sort_order: Number(event.target.value)
+        }));
+        await props.load();
+      },
+      style: Object.assign({}, input, {
+        width: 42
+      })
+    }), h(window.Toggle, {
+      on: type.enabled,
+      onClick: async () => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          enabled: !type.enabled
+        }));
+        await props.load();
+      }
+    }), !type.system_type && h('button', {
+      onClick: async () => {
+        if (confirm('¿Eliminar este tipo sin uso?')) try {
+          await window.DocumentWorkflowRepository.removeType(type.id);
+          await props.load();
+        } catch (_) {
+          props.app.toast && props.app.toast('No puede eliminarse porque ya está relacionado. Desactívalo.');
+        }
+      },
+      style: {
+        border: 'none',
+        background: '#FCE9EE',
+        color: '#A00027',
+        borderRadius: 9,
+        width: 32,
+        height: 32
+      }
+    }, h(I, {
+      name: 'trash',
+      size: 15
+    }))))), props.tab === 'requirements' && h('div', {
       style: {
         background: '#fff',
         borderRadius: 16,
         padding: 14
       }
-    }, React.createElement('select', {
-      value: reqTarget.program_id,
-      onChange: e => setReqTarget({
-        program_id: e.target.value,
+    }, h('select', {
+      value: props.reqTarget.program_id,
+      onChange: event => props.setReqTarget({
+        program_id: event.target.value,
         membership_offering_id: ''
       }),
       style: input
-    }, React.createElement('option', {
+    }, h('option', {
       value: 'prestamo'
-    }, 'Suti Préstamo'), React.createElement('option', {
+    }, 'Suti Préstamo'), h('option', {
       value: 'membership'
-    }, 'Membresía')), reqTarget.program_id === 'membership' && React.createElement('select', {
-      value: reqTarget.membership_offering_id,
-      onChange: e => setReqTarget(r => Object.assign({}, r, {
-        membership_offering_id: e.target.value
+    }, 'Membresía')), props.reqTarget.program_id === 'membership' && h('select', {
+      value: props.reqTarget.membership_offering_id,
+      onChange: event => props.setReqTarget(value => Object.assign({}, value, {
+        membership_offering_id: event.target.value
       })),
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 9
-      }
-    }, React.createElement('option', {
+      })
+    }, h('option', {
       value: ''
-    }, 'Selecciona membresía'), window.membershipStore.all().map(m => React.createElement('option', {
-      key: m.id,
-      value: m.id
-    }, m.empresa))), React.createElement('div', {
+    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
+      key: membership.id,
+      value: membership.id
+    }, membership.empresa))), h('div', {
       style: {
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
         marginTop: 12
       }
-    }, types.filter(t => t.enabled).map(t => {
-      const existing = reqRows.find(r => r.document_type_id === t.id);
-      return React.createElement('div', {
-        key: t.id,
+    }, props.types.filter(type => type.enabled).map(type => {
+      const existing = props.reqRows.find(row => row.document_type_id === type.id);
+      return h('div', {
+        key: type.id,
         style: {
           display: 'flex',
           alignItems: 'center',
@@ -35540,140 +36792,524 @@ Object.assign(window, {
           padding: '9px 0',
           borderTop: '1px solid var(--hairline)'
         }
-      }, React.createElement('div', {
+      }, h('div', {
         style: {
           flex: 1,
           fontSize: 12.5,
           fontWeight: 800
         }
-      }, t.label), React.createElement('label', {
+      }, type.label), h('label', {
         style: {
           fontSize: 11,
           fontWeight: 700
         }
-      }, 'Obligatorio ', React.createElement('input', {
+      }, 'Obligatorio ', h('input', {
         type: 'checkbox',
         checked: !!(existing && existing.required),
-        onChange: async e => {
+        onChange: async event => {
           await window.DocumentWorkflowRepository.saveRequirement({
-            program_id: reqTarget.program_id,
-            membership_offering_id: reqTarget.membership_offering_id || null,
-            document_type_id: t.id,
-            required: e.target.checked,
+            program_id: props.reqTarget.program_id,
+            membership_offering_id: props.reqTarget.membership_offering_id || null,
+            document_type_id: type.id,
+            required: event.target.checked,
             allow_verified_reuse: true,
-            sort_order: existing && existing.sort_order || t.sort_order,
+            sort_order: existing && existing.sort_order || type.sort_order,
             enabled: true
           });
-          await loadRequirements();
+          await props.loadRequirements();
         }
       })));
-    }))), tab === 'terms' && React.createElement('div', {
+    }))), props.tab === 'terms' && h('div', {
       style: {
         background: '#fff',
         borderRadius: 16,
         padding: 14
       }
-    }, React.createElement('select', {
-      value: terms.program_id,
-      onChange: e => setTerms(t => Object.assign({}, t, {
-        program_id: e.target.value,
+    }, h('select', {
+      value: props.terms.program_id,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        program_id: event.target.value,
         membership_offering_id: ''
       })),
       style: input
-    }, React.createElement('option', {
+    }, h('option', {
       value: 'prestamo'
-    }, 'Suti Préstamo'), React.createElement('option', {
+    }, 'Suti Préstamo'), h('option', {
       value: 'membership'
-    }, 'Membresía')), terms.program_id === 'membership' && React.createElement('select', {
-      value: terms.membership_offering_id,
-      onChange: e => setTerms(t => Object.assign({}, t, {
-        membership_offering_id: e.target.value
+    }, 'Membresía')), props.terms.program_id === 'membership' && h('select', {
+      value: props.terms.membership_offering_id,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        membership_offering_id: event.target.value
       })),
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 9
-      }
-    }, React.createElement('option', {
+      })
+    }, h('option', {
       value: ''
-    }, 'Selecciona membresía'), window.membershipStore.all().map(m => React.createElement('option', {
-      key: m.id,
-      value: m.id
-    }, m.empresa))), React.createElement('input', {
-      value: terms.title,
-      onChange: e => setTerms(t => Object.assign({}, t, {
-        title: e.target.value
+    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
+      key: membership.id,
+      value: membership.id
+    }, membership.empresa))), h('input', {
+      value: props.terms.title,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        title: event.target.value
       })),
       placeholder: 'Título de la versión',
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 9
-      }
-    }), React.createElement('textarea', {
-      value: terms.body,
-      onChange: e => setTerms(t => Object.assign({}, t, {
-        body: e.target.value
+      })
+    }), h('textarea', {
+      value: props.terms.body,
+      onChange: event => props.setTerms(value => Object.assign({}, value, {
+        body: event.target.value
       })),
       placeholder: 'Texto completo de términos y condiciones',
       rows: 10,
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 9,
         resize: 'vertical'
-      }
-    }), React.createElement(window.Btn, {
+      })
+    }), h(window.Btn, {
       full: true,
-      disabled: busy === 'terms' || terms.title.trim().length < 3 || terms.body.trim().length < 20 || terms.program_id === 'membership' && !terms.membership_offering_id,
-      onClick: publish,
+      disabled: props.busy === 'terms' || props.terms.title.trim().length < 3 || props.terms.body.trim().length < 20 || props.terms.program_id === 'membership' && !props.terms.membership_offering_id,
+      onClick: props.publish,
       style: {
         marginTop: 12
       }
-    }, 'Publicar nueva versión')), tab === 'qr' && React.createElement('div', {
+    }, 'Publicar nueva versión')), props.tab === 'qr' && h('div', {
       style: {
         background: '#fff',
         borderRadius: 16,
         padding: 14
       }
-    }, React.createElement('label', {
+    }, h('label', {
       style: {
         fontSize: 12,
         fontWeight: 800
       }
-    }, 'Ruta allowlisted', React.createElement('input', {
-      value: qr.destination_path,
-      onChange: e => setQr(q => Object.assign({}, q, {
-        destination_path: e.target.value
+    }, 'Ruta allowlisted', h('input', {
+      value: props.qr.destination_path,
+      onChange: event => props.setQr(value => Object.assign({}, value, {
+        destination_path: event.target.value
       })),
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 6
-      }
-    })), React.createElement('label', {
+      })
+    })), h('label', {
       style: {
         display: 'block',
         fontSize: 12,
         fontWeight: 800,
         marginTop: 12
       }
-    }, 'Vigencia en segundos', React.createElement('input', {
+    }, 'Vigencia en segundos', h('input', {
       type: 'number',
       min: 15,
       max: 120,
-      value: qr.ttl_seconds,
-      onChange: e => setQr(q => Object.assign({}, q, {
-        ttl_seconds: e.target.value
+      value: props.qr.ttl_seconds,
+      onChange: event => props.setQr(value => Object.assign({}, value, {
+        ttl_seconds: event.target.value
       })),
-      style: {
-        ...input,
+      style: Object.assign({}, input, {
         marginTop: 6
-      }
-    })), React.createElement(window.Btn, {
+      })
+    })), h(window.Btn, {
       full: true,
-      disabled: busy === 'qr',
-      onClick: saveQr,
+      disabled: props.busy === 'qr',
+      onClick: props.saveQr,
       style: {
         marginTop: 14
       }
     }, 'Guardar política QR'))));
+  }
+  function DocumentsAdminModule({
+    app,
+    onBack,
+    header
+  }) {
+    const desktop = useDocumentDesktop();
+    const [tab, setTab] = React.useState('review');
+    const [types, setTypes] = React.useState([]),
+      [queue, setQueue] = React.useState([]),
+      [busy, setBusy] = React.useState(''),
+      [reviewFilter, setReviewFilter] = React.useState(''),
+      [dragId, setDragId] = React.useState(''),
+      [reqTarget, setReqTarget] = React.useState({
+        program_id: 'prestamo',
+        membership_offering_id: ''
+      }),
+      [reqRows, setReqRows] = React.useState([]),
+      [terms, setTerms] = React.useState({
+        program_id: 'prestamo',
+        membership_offering_id: '',
+        title: '',
+        body: ''
+      }),
+      [qr, setQr] = React.useState({
+        destination_path: '/SutiApp.html#credencial',
+        ttl_seconds: 30
+      }),
+      [error, setError] = React.useState(''),
+      [loading, setLoading] = React.useState(true);
+    const [selectedId, setSelectedId] = React.useState(''),
+      [preview, setPreview] = React.useState(null),
+      [previewPhase, setPreviewPhase] = React.useState('idle'),
+      [previewError, setPreviewError] = React.useState(''),
+      [previewNonce, setPreviewNonce] = React.useState(0),
+      [statusFilter, setStatusFilter] = React.useState(''),
+      [typeFilter, setTypeFilter] = React.useState(''),
+      [affiliateFilter, setAffiliateFilter] = React.useState(''),
+      [sort, setSort] = React.useState('oldest'),
+      [decision, setDecision] = React.useState(''),
+      [observation, setObservation] = React.useState(''),
+      [rowFeedback, setRowFeedback] = React.useState({});
+    const load = React.useCallback(async () => {
+      setLoading(true);
+      try {
+        const [t, q, s] = await Promise.all([window.DocumentWorkflowRepository.catalog({
+          includeDisabled: true
+        }), window.DocumentWorkflowRepository.reviewQueue({
+          includePreviews: !desktop
+        }), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single()]);
+        setTypes(t.slice());
+        setQueue(q.slice());
+        if (!s.error) setQr(s.data);
+        setError('');
+      } catch (_) {
+        setError('No fue posible cargar la configuración documental.');
+      } finally {
+        setLoading(false);
+      }
+    }, [desktop]);
+    React.useEffect(() => {
+      load();
+      if (window.membershipStore.state().phase === 'idle') window.membershipStore.load(false);
+    }, [load]);
+    const loadRequirements = React.useCallback(async () => {
+      if (reqTarget.program_id === 'membership' && !reqTarget.membership_offering_id) {
+        setReqRows([]);
+        return;
+      }
+      try {
+        setReqRows((await window.DocumentWorkflowRepository.requirements(reqTarget.program_id, reqTarget.membership_offering_id || null)).slice());
+      } catch (_) {
+        setReqRows([]);
+      }
+    }, [reqTarget.program_id, reqTarget.membership_offering_id]);
+    React.useEffect(() => {
+      loadRequirements();
+    }, [loadRequirements]);
+    const visibleQueue = queue.filter(row => {
+      const text = [affiliateName(row), row.affiliate && row.affiliate.numero_control, businessLabel(row.document_type), stateInfo(row.status).label].join(' ').toLowerCase();
+      return (!reviewFilter || text.includes(reviewFilter.toLowerCase())) && (!statusFilter || row.status === statusFilter) && (!typeFilter || row.document_type_id === typeFilter) && (!affiliateFilter || row.affiliate_id === affiliateFilter);
+    }).slice().sort((a, b) => {
+      if (sort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+      if (sort === 'affiliate') return affiliateName(a).localeCompare(affiliateName(b), 'es');
+      if (sort === 'document') return businessLabel(a.document_type).localeCompare(businessLabel(b.document_type), 'es');
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    React.useEffect(() => {
+      if (!desktop) return;
+      if (visibleQueue.length && !visibleQueue.some(row => row.id === selectedId)) setSelectedId(visibleQueue[0].id);else if (!visibleQueue.length && selectedId) setSelectedId('');
+    }, [desktop, queue, reviewFilter, statusFilter, typeFilter, affiliateFilter, sort, selectedId]);
+    React.useEffect(() => {
+      if (!desktop || !selectedId) {
+        setPreview(null);
+        setPreviewPhase('idle');
+        setPreviewError('');
+        return;
+      }
+      let active = true;
+      setPreviewPhase('loading');
+      setPreviewError('');
+      window.DocumentWorkflowRepository.reviewPreview(selectedId).then(row => {
+        if (active) {
+          setPreview(row);
+          setPreviewPhase('ready');
+        }
+      }).catch(() => {
+        if (active) {
+          setPreview(null);
+          setPreviewPhase('error');
+          setPreviewError('PREVIEW_UNAVAILABLE');
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [desktop, selectedId, previewNonce]);
+    React.useEffect(() => {
+      setDecision('');
+      setObservation('');
+    }, [selectedId]);
+    const position = Math.max(0, visibleQueue.findIndex(row => row.id === selectedId)) + 1;
+    const go = delta => {
+      if (!visibleQueue.length) return;
+      const current = Math.max(0, visibleQueue.findIndex(row => row.id === selectedId)),
+        next = Math.max(0, Math.min(visibleQueue.length - 1, current + delta));
+      setSelectedId(visibleQueue[next].id);
+    };
+    const commitDecision = async advance => {
+      const selected = visibleQueue.find(row => row.id === selectedId) || queue.find(row => row.id === selectedId);
+      if (!selected || !decision || !app.admin.has('documents.write')) return;
+      const currentIndex = visibleQueue.findIndex(row => row.id === selected.id),
+        nextRow = visibleQueue[currentIndex + 1] || null;
+      setBusy(selected.id);
+      setRowFeedback(all => Object.assign({}, all, {
+        [selected.id]: {
+          tone: 'saving',
+          text: 'Guardando…'
+        }
+      }));
+      try {
+        const result = await window.DocumentWorkflowRepository.review(selected.id, decision, observation);
+        const merged = Object.assign({}, selected, result, {
+          document_type: selected.document_type,
+          affiliate: selected.affiliate,
+          affiliate_file: selected.affiliate_file,
+          private_asset: selected.private_asset,
+          signedUrl: preview && preview.signedUrl || null,
+          mimeType: preview && preview.mimeType || selected.mimeType
+        });
+        setQueue(all => all.map(row => row.id === selected.id ? merged : row));
+        setPreview(merged);
+        setRowFeedback(all => Object.assign({}, all, {
+          [selected.id]: {
+            tone: 'success',
+            text: decision === 'VERIFIED' ? '✓ Verificado' : '! Requiere nueva carga'
+          }
+        }));
+        if (advance && nextRow && nextRow.id !== selected.id) setSelectedId(nextRow.id);
+        setDecision('');
+        setObservation('');
+      } catch (_) {
+        setRowFeedback(all => Object.assign({}, all, {
+          [selected.id]: {
+            tone: 'error',
+            text: 'Error al guardar · Reintentar'
+          }
+        }));
+      } finally {
+        setBusy('');
+      }
+    };
+    const mobileReview = async (id, status) => {
+      setBusy(id);
+      try {
+        const observationValue = status === 'VERIFIED' ? '' : prompt('Observación para el afiliado:') || '';
+        await window.DocumentWorkflowRepository.review(id, status, observationValue);
+        await load();
+      } catch (_) {
+        app.toast && app.toast('No se pudo completar la revisión');
+      } finally {
+        setBusy('');
+      }
+    };
+    const publish = async () => {
+      setBusy('terms');
+      try {
+        await window.ProgramTermsRepository.publish(terms.program_id, terms.membership_offering_id || null, terms.title, terms.body);
+        setTerms(value => Object.assign({}, value, {
+          title: '',
+          body: ''
+        }));
+        app.toast && app.toast('Nueva versión publicada');
+      } catch (_) {
+        app.toast && app.toast('No se pudieron publicar los términos');
+      } finally {
+        setBusy('');
+      }
+    };
+    const saveQr = async () => {
+      setBusy('qr');
+      try {
+        const result = await window.SutiSupabase.getClient().from('credential_qr_settings').update({
+          destination_path: qr.destination_path,
+          ttl_seconds: Number(qr.ttl_seconds),
+          updated_by_auth_user_id: app.admin.user && app.admin.user.id,
+          updated_at: new Date().toISOString()
+        }).eq('id', true);
+        if (result.error) throw result.error;
+        app.toast && app.toast('Destino QR actualizado');
+      } catch (_) {
+        app.toast && app.toast('No se pudo actualizar el QR');
+      } finally {
+        setBusy('');
+      }
+    };
+    const reorderType = async targetId => {
+      if (!dragId || dragId === targetId) return;
+      const next = types.slice(),
+        from = next.findIndex(type => type.id === dragId),
+        to = next.findIndex(type => type.id === targetId);
+      if (from < 0 || to < 0) return;
+      const slots = types.map(type => Number(type.sort_order)),
+        original = new Map(types.map(type => [type.id, Number(type.sort_order)])),
+        moved = next.splice(from, 1)[0];
+      next.splice(to, 0, moved);
+      const ordered = next.map((type, index) => Object.assign({}, type, {
+          sort_order: slots[index]
+        })),
+        changed = ordered.filter(type => original.get(type.id) !== type.sort_order);
+      setTypes(ordered);
+      setBusy('order');
+      try {
+        await Promise.all(changed.map(type => window.DocumentWorkflowRepository.saveType(type)));
+        await load();
+      } catch (_) {
+        app.toast && app.toast('No se pudo guardar el orden');
+        await load();
+      } finally {
+        setBusy('');
+        setDragId('');
+      }
+    };
+    const createType = async () => {
+      const label = prompt('Nombre del tipo de documento:');
+      if (!label) return;
+      const code = prompt('Código técnico (minúsculas y guiones bajos):');
+      if (!code) return;
+      try {
+        await window.DocumentWorkflowRepository.saveType({
+          code,
+          label,
+          description: '',
+          icon: 'doc',
+          required_by_default: false,
+          accepted_mime_types: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+          enabled: true,
+          sort_order: types.length + 1,
+          system_type: false
+        });
+        await load();
+      } catch (_) {
+        app.toast && app.toast('No se pudo crear el tipo');
+      }
+    };
+    const common = {
+      app,
+      onBack,
+      header,
+      tab,
+      setTab,
+      types,
+      setTypes,
+      queue,
+      busy,
+      reviewFilter,
+      setReviewFilter,
+      dragId,
+      setDragId,
+      reqTarget,
+      setReqTarget,
+      reqRows,
+      terms,
+      setTerms,
+      qr,
+      setQr,
+      error,
+      load,
+      loadRequirements,
+      reorderType,
+      publish,
+      saveQr,
+      mobileReview,
+      createType
+    };
+    if (!desktop) return h(MobileDocuments, common);
+    const configTab = tab === 'review' ? 'catalog' : tab;
+    return h('div', {
+      'data-admin-document-desktop': 'true'
+    }, header({
+      title: 'Documentos y credencial',
+      sub: queue.length + ' documentos en la cola operativa',
+      onBack
+    }), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: '16px 18px 28px'
+      }
+    }, error && h('div', {
+      role: 'alert',
+      style: {
+        color: '#A32921',
+        fontWeight: 800,
+        marginBottom: 10
+      }
+    }, error), h('nav', {
+      'aria-label': 'Área de documentos',
+      style: {
+        display: 'flex',
+        gap: 8,
+        marginBottom: 14
+      }
+    }, h('button', {
+      type: 'button',
+      'data-document-area': 'operation',
+      onClick: () => setTab('review'),
+      style: {
+        border: 0,
+        borderRadius: 12,
+        padding: '10px 15px',
+        fontWeight: 850,
+        background: tab === 'review' ? 'var(--guinda)' : '#fff',
+        color: tab === 'review' ? '#fff' : 'var(--ink-2)',
+        boxShadow: '0 5px 16px rgba(31,35,48,.07)'
+      }
+    }, 'Bandeja de revisión'), h('button', {
+      type: 'button',
+      'data-document-area': 'configuration',
+      onClick: () => setTab(configTab),
+      style: {
+        border: 0,
+        borderRadius: 12,
+        padding: '10px 15px',
+        fontWeight: 850,
+        background: tab !== 'review' ? 'var(--guinda)' : '#fff',
+        color: tab !== 'review' ? '#fff' : 'var(--ink-2)',
+        boxShadow: '0 5px 16px rgba(31,35,48,.07)'
+      }
+    }, 'Configuración documental')), loading && queue.length === 0 ? h('div', {
+      style: {
+        padding: 35,
+        textAlign: 'center',
+        fontWeight: 800,
+        color: 'var(--ink-3)'
+      }
+    }, 'Cargando documentos…') : tab === 'review' ? h(DesktopReview, {
+      app,
+      types,
+      queue,
+      visibleQueue,
+      selectedId,
+      setSelectedId,
+      preview,
+      previewPhase,
+      previewError,
+      retryPreview: () => setPreviewNonce(value => value + 1),
+      reviewFilter,
+      setReviewFilter,
+      statusFilter,
+      setStatusFilter,
+      typeFilter,
+      setTypeFilter,
+      affiliateFilter,
+      setAffiliateFilter,
+      sort,
+      setSort,
+      rowFeedback,
+      decision,
+      setDecision,
+      observation,
+      setObservation,
+      commitDecision,
+      go,
+      position,
+      saving: busy === selectedId
+    }) : h(DesktopConfiguration, Object.assign({}, common, {
+      tab,
+      setTab
+    }))));
   }
   window.DocumentsAdminModule = DocumentsAdminModule;
 })();
@@ -39881,34 +41517,154 @@ Object.assign(window, {
     desc: 'Ícono e imágenes al instalar',
     ready: true
   }];
-  function AdminMenu({
-    app,
-    onOpen
-  }) {
+  const ADMIN_DESKTOP_BREAKPOINT = 1024;
+  const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
+  const MODULE_PERMISSION = Object.freeze({
+    identity_access: 'affiliates.read',
+    data_exports: 'data_exports.read',
+    branding: 'assets.read',
+    banners: 'banners.read',
+    popups: 'popups.read',
+    companies_admin: 'companies.read',
+    documents_admin: 'documents.read',
+    minutes_admin: 'minutes.read',
+    programs_admin: 'programs.read',
+    noticias: 'news.read',
+    education: 'content.read',
+    marketplace: 'marketplace.read',
+    membresias: 'memberships.read',
+    planes: 'company_portal.read',
+    requests: 'program_requests.read',
+    finanzas: 'program_requests.read',
+    fondos: 'financial_criteria.visibility.read',
+    aprobaciones: 'popups.read',
+    sindicato: 'union_content.read',
+    fincat: 'workflow.read',
+    flujos: 'workflow.read',
+    convenios: 'companies.read',
+    catalogos: 'segmentation.read',
+    roles: 'authorization.read',
+    pantallas: 'segmentation.read',
+    secciones: 'content.read',
+    menus: 'content.read',
+    formularios: 'content.read'
+  });
+  const SECTION_MODULE = Object.freeze({
+    noticias: 'news',
+    education: ['education', 'tutorials'],
+    convenios: 'agreements',
+    companies_admin: 'companies',
+    banners: 'banners',
+    popups: 'popups',
+    documents_admin: 'documents',
+    minutes_admin: 'minutes',
+    programs_admin: 'programs',
+    marketplace: 'marketplace'
+  });
+  const ADMIN_DESKTOP_GROUPS = Object.freeze([{
+    id: 'people',
+    label: 'Personas y operación',
+    icon: 'users',
+    modules: ['identity_access', 'requests', 'documents_admin']
+  }, {
+    id: 'finance',
+    label: 'Finanzas',
+    icon: 'finance',
+    modules: ['finanzas', 'fondos', 'fincat', 'flujos', 'membresias']
+  }, {
+    id: 'commerce',
+    label: 'Empresas y convenios',
+    icon: 'handshake',
+    modules: ['marketplace', 'convenios', 'aprobaciones', 'planes', 'companies_admin']
+  }, {
+    id: 'content',
+    label: 'Contenido',
+    icon: 'news',
+    modules: ['sindicato', 'noticias', 'education', 'banners', 'popups', 'minutes_admin', 'programs_admin']
+  }, {
+    id: 'settings',
+    label: 'Acceso y configuración',
+    icon: 'settings',
+    modules: ['catalogos', 'roles', 'pantallas', 'secciones', 'menus', 'formularios', 'branding']
+  }, {
+    id: 'data',
+    label: 'Datos y respaldos',
+    icon: 'download',
+    modules: ['data_exports']
+  }]);
+  const MODULE_BADGE = Object.freeze({
+    PRODUCTIVE_SUPABASE: 'ACTIVO',
+    PRODUCTIVE_GOOGLE_CONTROLLED: 'ACTIVO',
+    PRODUCTIVE_GOOGLE_READONLY: 'SOLO LECTURA',
+    PRODUCTIVE_HYBRID: 'ACTIVO',
+    BLOCKED_FINANCIAL_LEGACY: 'NO DISPONIBLE',
+    BLOCKED_EXTERNAL_SOURCE: 'FUENTE EXTERNA',
+    OWNER_DECISION_REQUIRED: 'DECISIÓN REQUERIDA'
+  });
+  function adminModuleAccess(app) {
     const assignment = app.admin.assignment || {
       permissions: [],
       sectionActions: []
     };
-    const sectionOnly = assignment.permissions.length === 0 && assignment.sectionActions.length > 0;
-    const sectionModule = {
-      noticias: 'news',
-      education: ['education', 'tutorials'],
-      convenios: 'agreements',
-      companies_admin: 'companies',
-      banners: 'banners',
-      popups: 'popups',
-      documents_admin: 'documents',
-      minutes_admin: 'minutes',
-      programs_admin: 'programs',
-      marketplace: 'marketplace'
+    const sectionActions = assignment.sectionActions || [];
+    const sectionOnly = (assignment.permissions || []).length === 0 && sectionActions.length > 0;
+    const candidates = sectionOnly ? MODULES.filter(m => m.id === 'data_exports' ? sectionActions.some(x => x.action === 'export') : [].concat(SECTION_MODULE[m.id] || []).some(key => app.admin.has(key + '.read'))) : MODULES;
+    const stateFor = m => {
+      let permission = MODULE_PERMISSION[m.id];
+      if (m.id === 'education' && sectionOnly) permission = app.admin.has('education.read') ? 'education.read' : 'tutorials.read';
+      if (m.id === 'convenios' && sectionOnly) permission = 'agreements.read';
+      const sectionExport = m.id === 'data_exports' && sectionActions.some(x => x.action === 'export');
+      const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
+      const canView = m.id === 'identity_access' || sectionExport || (permission ? app.admin.has(permission) : productive);
+      const usable = productive && canView;
+      const desktopCanView = sectionExport || (permission ? app.admin.has(permission) : productive);
+      const desktopUsable = productive && desktopCanView;
+      return {
+        permission,
+        sectionExport,
+        productive,
+        canView,
+        usable,
+        desktopCanView,
+        desktopUsable,
+        openable: usable || Boolean(m.classification),
+        badge: MODULE_BADGE[m.classification]
+      };
     };
-    const visibleModules = sectionOnly ? MODULES.filter(m => m.id === 'data_exports' ? (assignment.sectionActions || []).some(x => x.action === 'export') : [].concat(sectionModule[m.id] || []).some(key => app.admin.has(key + '.read'))) : MODULES;
-    return React.createElement('div', null, React.createElement(AdminHeader, {
+    return {
+      assignment,
+      sectionOnly,
+      stateFor,
+      mobileModules: candidates,
+      desktopModules: candidates.filter(m => stateFor(m).desktopUsable)
+    };
+  }
+  function AdminMenu({
+    app,
+    onOpen,
+    desktop,
+    modules,
+    header
+  }) {
+    const access = adminModuleAccess(app);
+    const visibleModules = modules || access.mobileModules;
+    const heading = desktop && header ? header({
       title: 'Panel Administrativo',
       sub: 'Cuenta administrativa autorizada'
-    }), React.createElement('div', {
+    }) : React.createElement(AdminHeader, {
+      title: 'Panel Administrativo',
+      sub: 'Cuenta administrativa autorizada'
+    });
+    return React.createElement('div', {
+      'data-admin-view': 'menu',
+      style: desktop ? {
+        minHeight: '100%'
+      } : undefined
+    }, heading, React.createElement('div', {
       className: 'su-app-scroll su-stagger',
-      style: {
+      style: desktop ? {
+        padding: '26px 28px 36px'
+      } : {
         padding: 18
       }
     }, React.createElement('div', {
@@ -39933,54 +41689,15 @@ Object.assign(window, {
     }, 'MÓDULOS'), React.createElement('div', {
       style: {
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12
+        gridTemplateColumns: desktop ? 'repeat(auto-fit,minmax(220px,1fr))' : '1fr 1fr',
+        gap: desktop ? 14 : 12
       }
     }, visibleModules.map(m => {
-      const permission = {
-        identity_access: 'affiliates.read',
-        data_exports: 'data_exports.read',
-        branding: 'assets.read',
-        banners: 'banners.read',
-        popups: 'popups.read',
-        companies_admin: 'companies.read',
-        documents_admin: 'documents.read',
-        minutes_admin: 'minutes.read',
-        programs_admin: 'programs.read',
-        noticias: 'news.read',
-        education: sectionOnly ? app.admin.has('education.read') ? 'education.read' : 'tutorials.read' : 'content.read',
-        marketplace: 'marketplace.read',
-        membresias: 'memberships.read',
-        planes: 'company_portal.read',
-        requests: 'program_requests.read',
-        finanzas: 'program_requests.read',
-        fondos: 'financial_criteria.visibility.read',
-        aprobaciones: 'popups.read',
-        sindicato: 'union_content.read',
-        fincat: 'workflow.read',
-        flujos: 'workflow.read',
-        convenios: sectionOnly ? 'agreements.read' : 'companies.read',
-        catalogos: 'segmentation.read',
-        roles: 'authorization.read',
-        pantallas: 'segmentation.read',
-        secciones: 'content.read',
-        menus: 'content.read',
-        formularios: 'content.read'
-      }[m.id];
-      const sectionExport = m.id === 'data_exports' && (assignment.sectionActions || []).some(x => x.action === 'export');
-      const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
-      const canView = m.id === 'identity_access' || sectionExport || (permission ? app.admin.has(permission) : productive);
-      const usable = productive && canView;
-      const openable = usable || Boolean(m.classification);
-      const badge = {
-        PRODUCTIVE_SUPABASE: 'ACTIVO',
-        PRODUCTIVE_GOOGLE_CONTROLLED: 'ACTIVO',
-        PRODUCTIVE_GOOGLE_READONLY: 'SOLO LECTURA',
-        PRODUCTIVE_HYBRID: 'ACTIVO',
-        BLOCKED_FINANCIAL_LEGACY: 'NO DISPONIBLE',
-        BLOCKED_EXTERNAL_SOURCE: 'FUENTE EXTERNA',
-        OWNER_DECISION_REQUIRED: 'DECISIÓN REQUERIDA'
-      }[m.classification];
+      const moduleState = access.stateFor(m),
+        usable = desktop ? moduleState.desktopUsable : moduleState.usable,
+        canView = desktop ? moduleState.desktopCanView : moduleState.canView,
+        openable = desktop ? moduleState.desktopUsable : moduleState.openable,
+        badge = moduleState.badge;
       return React.createElement('button', {
         key: m.id,
         'data-admin-module': m.id,
@@ -39994,13 +41711,14 @@ Object.assign(window, {
           position: 'relative',
           textAlign: 'left',
           background: 'var(--surface)',
-          border: 'none',
+          border: desktop ? '1px solid #E5E5E9' : 'none',
           borderRadius: 18,
-          padding: 15,
-          boxShadow: 'var(--neo-sm)',
+          padding: desktop ? 18 : 15,
+          boxShadow: desktop ? '0 8px 24px -22px rgba(20,20,24,.55)' : 'var(--neo-sm)',
           cursor: openable ? 'pointer' : 'default',
           opacity: openable ? 1 : .55,
-          fontFamily: 'inherit'
+          fontFamily: 'inherit',
+          minHeight: desktop ? 142 : undefined
         }
       }, React.createElement('div', {
         style: {
@@ -40151,6 +41869,8 @@ Object.assign(window, {
       }
     }, onBack && React.createElement('button', {
       onClick: onBack,
+      'aria-label': 'Volver al panel administrativo',
+      title: 'Volver',
       style: {
         width: 40,
         height: 40,
@@ -40221,6 +41941,814 @@ Object.assign(window, {
       size: 20,
       stroke: 2
     }))));
+  }
+  function useAdminDesktop() {
+    const [desktop, setDesktop] = useState(() => Boolean(window.matchMedia && window.matchMedia(ADMIN_DESKTOP_QUERY).matches));
+    useEffect(() => {
+      if (!window.matchMedia) return;
+      const media = window.matchMedia(ADMIN_DESKTOP_QUERY),
+        change = () => setDesktop(media.matches);
+      change();
+      if (media.addEventListener) media.addEventListener('change', change);else media.addListener(change);
+      return () => {
+        if (media.removeEventListener) media.removeEventListener('change', change);else media.removeListener(change);
+      };
+    }, []);
+    return desktop;
+  }
+  function AdminDesktopHeader({
+    title,
+    sub,
+    onBack
+  }) {
+    return React.createElement('header', {
+      'data-admin-desktop-header': 'true',
+      style: {
+        position: 'sticky',
+        top: 0,
+        zIndex: 12,
+        minHeight: 82,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        padding: '14px 28px',
+        background: 'rgba(255,255,255,.96)',
+        borderBottom: '1px solid #E3E3E7',
+        backdropFilter: 'blur(14px)'
+      }
+    }, onBack && React.createElement('button', {
+      onClick: onBack,
+      'aria-label': 'Volver al panel administrativo',
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        border: '1px solid #E4E4E8',
+        background: '#F7F7F8',
+        color: '#343438',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 20,
+      stroke: 2.1
+    })), !onBack && React.createElement('div', {
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        background: '#F5E9ED',
+        color: '#8A1538',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: 'shield',
+      size: 21,
+      stroke: 2.1
+    })), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: '.08em',
+        textTransform: 'uppercase',
+        color: '#8A1538',
+        marginBottom: 3
+      }
+    }, 'Panel administrativo'), React.createElement('h1', {
+      tabIndex: -1,
+      style: {
+        fontSize: 22,
+        fontWeight: 800,
+        letterSpacing: '-.025em',
+        lineHeight: 1.12,
+        color: '#202024',
+        margin: 0,
+        outline: 'none'
+      }
+    }, title), sub && React.createElement('div', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 600,
+        color: '#73737A',
+        marginTop: 3,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, sub)), React.createElement('div', {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '8px 11px',
+        borderRadius: 999,
+        background: '#E8F5EE',
+        color: '#176B47',
+        fontSize: 11.5,
+        fontWeight: 800,
+        whiteSpace: 'nowrap'
+      }
+    }, React.createElement(I, {
+      name: 'checkCircle',
+      size: 15,
+      stroke: 2.2
+    }), 'Acceso verificado'), React.createElement('button', {
+      onClick: () => window.AffiliateAuth.signOut(),
+      'aria-label': 'Cerrar sesión',
+      title: 'Cerrar sesión',
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        border: '1px solid #E4E4E8',
+        background: '#fff',
+        color: '#57575E',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: 'logout',
+      size: 19,
+      stroke: 2
+    })));
+  }
+  function AdminDesktopSidebar({
+    app,
+    modules,
+    activeView,
+    onOpen
+  }) {
+    const byId = {};
+    modules.forEach(m => {
+      byId[m.id] = m;
+    });
+    const groups = ADMIN_DESKTOP_GROUPS.map(g => Object.assign({}, g, {
+      items: g.modules.map(id => byId[id]).filter(Boolean)
+    })).filter(g => g.items.length);
+    const initial = {};
+    groups.forEach((g, i) => {
+      initial[g.id] = g.modules.includes(activeView) || activeView === 'menu' && i === 0;
+    });
+    const [expanded, setExpanded] = useState(initial);
+    useEffect(() => {
+      const group = groups.find(g => g.modules.includes(activeView));
+      if (group) setExpanded(current => current[group.id] ? current : Object.assign({}, current, {
+        [group.id]: true
+      }));
+    }, [activeView]);
+    const assignment = app.admin.assignment || {
+      permissions: [],
+      sectionActions: []
+    };
+    const sectionOnly = (assignment.permissions || []).length === 0 && (assignment.sectionActions || []).length > 0;
+    return React.createElement('aside', {
+      'data-admin-desktop-sidebar': 'true',
+      style: {
+        width: 264,
+        minWidth: 264,
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#18181B',
+        color: '#fff',
+        borderRight: '1px solid rgba(255,255,255,.04)',
+        fontFamily: "'Manrope',var(--font)"
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: '22px 20px 18px'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        background: '#8A1538',
+        display: 'grid',
+        placeItems: 'center',
+        boxShadow: '0 10px 26px -12px rgba(138,21,56,.9)'
+      }
+    }, React.createElement(I, {
+      name: 'shield',
+      size: 21,
+      stroke: 2.2
+    })), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontSize: 15,
+        fontWeight: 800,
+        lineHeight: 1.2
+      }
+    }, 'SutiApp'), React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 600,
+        color: '#85858C',
+        marginTop: 2
+      }
+    }, 'Panel administrativo'))), React.createElement('nav', {
+      'aria-label': 'Módulos administrativos',
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: '4px 12px 18px'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: '.12em',
+        textTransform: 'uppercase',
+        color: '#66666D',
+        padding: '0 10px 9px'
+      }
+    }, 'Áreas'), React.createElement('button', {
+      onClick: () => onOpen('menu'),
+      'aria-current': activeView === 'menu' ? 'page' : undefined,
+      'data-admin-sidebar-home': 'true',
+      style: {
+        width: '100%',
+        height: 42,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        border: 'none',
+        borderRadius: 11,
+        padding: '0 11px',
+        marginBottom: 5,
+        background: activeView === 'menu' ? '#8A1538' : 'transparent',
+        color: activeView === 'menu' ? '#fff' : '#C7C7CC',
+        fontFamily: 'inherit',
+        fontSize: 12.5,
+        fontWeight: 750,
+        cursor: 'pointer',
+        textAlign: 'left'
+      }
+    }, React.createElement(I, {
+      name: 'grid',
+      size: 17,
+      stroke: 2
+    }), 'Resumen'), groups.map(group => {
+      const open = Boolean(expanded[group.id]),
+        active = group.modules.includes(activeView),
+        panelId = 'admin-desktop-group-' + group.id;
+      return React.createElement('div', {
+        key: group.id,
+        style: {
+          marginBottom: 4
+        }
+      }, React.createElement('button', {
+        'data-admin-sidebar-group': group.id,
+        onClick: () => setExpanded(current => Object.assign({}, current, {
+          [group.id]: !open
+        })),
+        'aria-expanded': open,
+        'aria-controls': panelId,
+        style: {
+          width: '100%',
+          height: 42,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          border: 'none',
+          borderRadius: 11,
+          padding: '0 10px',
+          background: active && !open ? 'rgba(138,21,56,.22)' : 'transparent',
+          color: active ? '#fff' : '#B8B8BE',
+          fontFamily: 'inherit',
+          fontSize: 12.5,
+          fontWeight: 750,
+          cursor: 'pointer',
+          textAlign: 'left'
+        }
+      }, React.createElement(I, {
+        name: group.icon,
+        size: 17,
+        stroke: 1.9
+      }), React.createElement('span', {
+        style: {
+          flex: 1
+        }
+      }, group.label), React.createElement(I, {
+        name: open ? 'chevD' : 'chevR',
+        size: 13,
+        stroke: 2.2
+      })), open && React.createElement('div', {
+        id: panelId,
+        role: 'group',
+        'aria-label': group.label,
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          padding: '2px 0 6px 12px'
+        }
+      }, group.items.map(m => {
+        const selected = activeView === m.id;
+        return React.createElement('button', {
+          key: m.id,
+          'data-admin-sidebar-module': m.id,
+          onClick: () => onOpen(m.id),
+          'aria-current': selected ? 'page' : undefined,
+          title: m.label,
+          style: {
+            width: '100%',
+            minHeight: 36,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+            border: 'none',
+            borderRadius: 9,
+            padding: '7px 10px',
+            background: selected ? 'rgba(138,21,56,.92)' : 'transparent',
+            color: selected ? '#fff' : '#9999A1',
+            fontFamily: 'inherit',
+            fontSize: 11.5,
+            fontWeight: selected ? 750 : 650,
+            cursor: 'pointer',
+            textAlign: 'left',
+            lineHeight: 1.25
+          }
+        }, React.createElement('span', {
+          'aria-hidden': 'true',
+          style: {
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: selected ? '#fff' : '#55555B',
+            flexShrink: 0
+          }
+        }), React.createElement('span', {
+          style: {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }
+        }, m.label));
+      })));
+    })), React.createElement('div', {
+      style: {
+        padding: '14px 16px 18px',
+        borderTop: '1px solid rgba(255,255,255,.07)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 36,
+        height: 36,
+        borderRadius: 11,
+        display: 'grid',
+        placeItems: 'center',
+        background: '#29292D',
+        color: '#D7D7DB'
+      }
+    }, React.createElement(I, {
+      name: 'users',
+      size: 18,
+      stroke: 2
+    })), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 800,
+        color: '#F1F1F3'
+      }
+    }, sectionOnly ? 'Responsable de sección' : 'Administrador'), React.createElement('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 600,
+        color: '#77777E',
+        marginTop: 2
+      }
+    }, 'Cuenta autorizada')), React.createElement('button', {
+      onClick: () => window.AffiliateAuth.signOut(),
+      'aria-label': 'Cerrar sesión',
+      title: 'Cerrar sesión',
+      style: {
+        width: 34,
+        height: 34,
+        border: 'none',
+        borderRadius: 10,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'transparent',
+        color: '#8D8D94',
+        cursor: 'pointer'
+      }
+    }, React.createElement(I, {
+      name: 'logout',
+      size: 17,
+      stroke: 2
+    })))));
+  }
+  function AdminDesktopContextPanel({
+    title,
+    onClose,
+    children
+  }) {
+    return React.createElement('aside', {
+      'data-admin-context-panel': 'true',
+      'aria-label': title || 'Contexto',
+      style: {
+        width: 320,
+        minWidth: 280,
+        maxWidth: '34vw',
+        height: '100%',
+        overflowY: 'auto',
+        background: '#fff',
+        borderLeft: '1px solid #E3E3E7',
+        padding: 20
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 16
+      }
+    }, React.createElement('strong', {
+      style: {
+        flex: 1,
+        fontSize: 14.5,
+        color: '#242428'
+      }
+    }, title || 'Contexto'), onClose && React.createElement('button', {
+      onClick: onClose,
+      'aria-label': 'Cerrar panel de contexto',
+      style: {
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        border: '1px solid #E5E5E9',
+        background: '#fff',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer'
+      }
+    }, React.createElement(I, {
+      name: 'close',
+      size: 17,
+      stroke: 2
+    }))), children);
+  }
+  function AdminDesktopShell({
+    app,
+    modules,
+    activeView,
+    onOpen,
+    contextPanel,
+    children
+  }) {
+    return React.createElement('div', {
+      'data-admin-desktop-shell': 'true',
+      style: {
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        background: '#EEEEF1',
+        color: '#242428',
+        fontFamily: "'Manrope',var(--font)"
+      }
+    }, React.createElement(AdminDesktopSidebar, {
+      app,
+      modules,
+      activeView,
+      onOpen
+    }), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        minHeight: 0,
+        display: 'flex',
+        position: 'relative'
+      }
+    }, React.createElement('main', {
+      id: 'admin-desktop-workspace',
+      'data-admin-desktop-workspace': 'true',
+      style: {
+        flex: 1,
+        minWidth: 0,
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        background: '#F1F1F4'
+      }
+    }, React.createElement('div', {
+      className: 'admin-desktop-module-host',
+      style: {
+        position: 'relative',
+        width: '100%',
+        maxWidth: 1440,
+        minHeight: '100%',
+        margin: '0 auto'
+      }
+    }, children)), contextPanel && React.createElement(AdminDesktopContextPanel, contextPanel)));
+  }
+  const ADMIN_FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  function useAdminOverlayFocus(open, ref, onClose) {
+    useEffect(() => {
+      if (!open || !ref.current) return;
+      const previous = document.activeElement,
+        node = ref.current;
+      const focusables = () => Array.from(node.querySelectorAll(ADMIN_FOCUSABLE)).filter(item => item.getAttribute('aria-hidden') !== 'true');
+      const timer = requestAnimationFrame(() => {
+        const target = node.querySelector('[data-autofocus]') || focusables()[0] || node;
+        target.focus();
+      });
+      const keydown = event => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose && onClose();
+          return;
+        }
+        if (event.key !== 'Tab') return;
+        const items = focusables();
+        if (!items.length) {
+          event.preventDefault();
+          node.focus();
+          return;
+        }
+        const first = items[0],
+          last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      const focusin = event => {
+        if (event.target && event.target.hasAttribute && event.target.hasAttribute('data-admin-focus-guard')) {
+          const items = focusables(),
+            edge = event.target.getAttribute('data-admin-focus-guard'),
+            target = edge === 'start' ? items[items.length - 1] : items[0];
+          if (target) target.focus();
+          return;
+        }
+        if (node.contains(event.target)) return;
+        const items = focusables(),
+          target = items[0] || node;
+        target.focus();
+      };
+      document.addEventListener('keydown', keydown, true);
+      document.addEventListener('focusin', focusin, true);
+      node.addEventListener('keydown', keydown);
+      return () => {
+        cancelAnimationFrame(timer);
+        document.removeEventListener('keydown', keydown, true);
+        document.removeEventListener('focusin', focusin, true);
+        node.removeEventListener('keydown', keydown);
+        if (previous && previous.focus) previous.focus();
+      };
+    }, [open, onClose]);
+  }
+  function AdminDesktopDrawer({
+    open,
+    title,
+    subtitle,
+    onClose,
+    children
+  }) {
+    const ref = useRef(null),
+      labelId = React.useId();
+    useAdminOverlayFocus(open, ref, onClose);
+    if (!open) return null;
+    const node = React.createElement('div', {
+      'data-admin-overlay': 'drawer',
+      'data-admin-drawer': 'true',
+      onMouseDown: event => {
+        if (event.target === event.currentTarget && onClose) onClose();
+      },
+      style: {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 300,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        background: 'rgba(17,17,20,.46)',
+        backdropFilter: 'blur(2px)'
+      }
+    }, React.createElement('section', {
+      ref,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': labelId,
+      tabIndex: -1,
+      onKeyDown: event => {
+        if (event.key === 'Escape' && onClose) {
+          event.preventDefault();
+          onClose();
+        }
+      },
+      style: {
+        width: 'min(520px,100vw)',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#fff',
+        boxShadow: '-24px 0 70px -28px rgba(0,0,0,.55)',
+        outline: 'none'
+      }
+    }, React.createElement('header', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '18px 20px',
+        borderBottom: '1px solid #E5E5E9'
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('h2', {
+      id: labelId,
+      style: {
+        margin: 0,
+        fontSize: 18,
+        fontWeight: 800,
+        color: '#242428'
+      }
+    }, title), subtitle && React.createElement('div', {
+      style: {
+        marginTop: 3,
+        fontSize: 12,
+        color: '#76767D',
+        fontWeight: 600
+      }
+    }, subtitle)), React.createElement('button', {
+      'data-autofocus': 'true',
+      onClick: onClose,
+      'aria-label': 'Cerrar panel',
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        border: '1px solid #E5E5E9',
+        background: '#fff',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer'
+      }
+    }, React.createElement(I, {
+      name: 'close',
+      size: 19,
+      stroke: 2
+    }))), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: 20
+      }
+    }, children)));
+    return ReactDOM.createPortal(node, document.body);
+  }
+  function AdminDesktopModal({
+    open,
+    title,
+    description,
+    onCancel,
+    onClose,
+    onConfirm,
+    cancelLabel,
+    confirmLabel,
+    danger,
+    busy,
+    children
+  }) {
+    const close = onCancel || onClose,
+      ref = useRef(null),
+      labelId = React.useId(),
+      descId = React.useId();
+    useAdminOverlayFocus(open, ref, close);
+    if (!open) return null;
+    const node = React.createElement('div', {
+      'data-admin-overlay': 'modal',
+      'data-admin-modal': danger ? 'danger' : 'confirm',
+      onMouseDown: event => {
+        if (event.target === event.currentTarget && close) close();
+      },
+      style: {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 320,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 20,
+        background: 'rgba(17,17,20,.5)',
+        backdropFilter: 'blur(3px)'
+      }
+    }, React.createElement('section', {
+      ref,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': labelId,
+      'aria-describedby': description ? descId : undefined,
+      tabIndex: -1,
+      onKeyDown: event => {
+        if (event.key === 'Escape' && close) {
+          event.preventDefault();
+          close();
+        }
+      },
+      style: {
+        width: 'min(480px,100%)',
+        background: '#fff',
+        borderRadius: 20,
+        boxShadow: '0 28px 90px -32px rgba(0,0,0,.65)',
+        padding: 22,
+        outline: 'none'
+      }
+    }, React.createElement('h2', {
+      id: labelId,
+      style: {
+        margin: 0,
+        fontSize: 20,
+        fontWeight: 800,
+        color: '#242428',
+        letterSpacing: '-.02em'
+      }
+    }, title), description && React.createElement('p', {
+      id: descId,
+      style: {
+        margin: '8px 0 0',
+        fontSize: 13.5,
+        fontWeight: 600,
+        lineHeight: 1.5,
+        color: '#6E6E75'
+      }
+    }, description), children && React.createElement('div', {
+      style: {
+        marginTop: 18
+      }
+    }, children), React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        gap: 10,
+        marginTop: 22
+      }
+    }, close && React.createElement('button', {
+      'data-autofocus': 'true',
+      onClick: close,
+      disabled: busy,
+      style: {
+        minWidth: 104,
+        height: 42,
+        borderRadius: 11,
+        border: '1px solid #DEDEE3',
+        background: '#fff',
+        color: '#494950',
+        fontFamily: 'inherit',
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, cancelLabel || 'Cancelar'), onConfirm && React.createElement('button', {
+      onClick: onConfirm,
+      disabled: busy,
+      style: {
+        minWidth: 112,
+        height: 42,
+        borderRadius: 11,
+        border: 'none',
+        background: danger ? '#B3261E' : '#8A1538',
+        color: '#fff',
+        fontFamily: 'inherit',
+        fontWeight: 800,
+        cursor: busy ? 'wait' : 'pointer',
+        opacity: busy ? 0.7 : 1
+      }
+    }, busy ? 'Procesando…' : confirmLabel || (danger ? 'Eliminar' : 'Confirmar')))));
+    return ReactDOM.createPortal(node, document.body);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -40928,6 +43456,15 @@ Object.assign(window, {
     const [view, setView] = useState('menu'); // 'menu' | 'popups' | 'roles' | ...
     const [viewContext, setViewContext] = useState(null);
     const company = window.useCompanyStore ? window.useCompanyStore() : null;
+    const desktop = useAdminDesktop();
+    const authorized = Boolean(app.admin && app.admin.phase === 'authorized');
+    useEffect(() => {
+      const root = document.documentElement;
+      if (desktop && authorized) root.setAttribute('data-admin-desktop', 'true');else root.removeAttribute('data-admin-desktop');
+      return () => {
+        root.removeAttribute('data-admin-desktop');
+      };
+    }, [desktop, authorized]);
     if (!app.admin || app.admin.phase !== 'authorized') {
       if (company && company.state().phase === 'loaded' && company.companies().length) return React.createElement(window.CompanyScreen, {
         app
@@ -40941,7 +43478,12 @@ Object.assign(window, {
       setView('menu');
       return null;
     }
-    const headerFn = props => React.createElement(AdminHeader, props);
+    const access = adminModuleAccess(app);
+    const headerFn = props => React.createElement(desktop ? AdminDesktopHeader : AdminHeader, props);
+    const openView = id => {
+      setViewContext(null);
+      setView(id);
+    };
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
     if (view === 'identity_access') body = React.createElement(window.IdentityAccessModule, {
@@ -41059,12 +43601,17 @@ Object.assign(window, {
       title: viewContext && viewContext.title
     });else body = React.createElement(AdminMenu, {
       app,
-      onOpen: id => {
-        setViewContext(null);
-        setView(id);
-      }
+      desktop,
+      modules: desktop ? access.desktopModules : undefined,
+      header: headerFn,
+      onOpen: openView
     });
-    return React.createElement('div', {
+    return desktop ? React.createElement(AdminDesktopShell, {
+      app,
+      modules: access.desktopModules,
+      activeView: view,
+      onOpen: openView
+    }, body) : React.createElement('div', {
       style: {
         minHeight: '100%',
         background: 'var(--bg)'
@@ -41072,6 +43619,14 @@ Object.assign(window, {
     }, body);
   }
   window.AdminScreen = AdminScreen;
+  window.AdminDesktopShell = AdminDesktopShell;
+  window.AdminDesktopDrawer = AdminDesktopDrawer;
+  window.AdminDesktopModal = AdminDesktopModal;
+  window.AdminDesktopContextPanel = AdminDesktopContextPanel;
+  window.ADMIN_DESKTOP_BREAKPOINT = ADMIN_DESKTOP_BREAKPOINT;
+  window.AdminDesktopAccess = Object.freeze({
+    visibleModules: app => adminModuleAccess(app).desktopModules.map(m => m.id)
+  });
 
   // ── Selector de acceso: Administrador o Empresa ──
   function AccessGate({
@@ -50604,6 +53159,7 @@ Object.assign(window, {
     }, [tab, tabs.length]);
     return React.createElement('div', {
       ref: wrapRef,
+      'data-app-bottom-nav': 'true',
       style: {
         flexShrink: 0,
         position: 'relative',
@@ -51495,6 +54051,7 @@ Object.assign(window, {
     React.createElement('div', {
       key: tab,
       className: 'su-app-scroll',
+      'data-app-tab-scroll': tab,
       style: {
         flex: 1,
         overflowY: 'auto',

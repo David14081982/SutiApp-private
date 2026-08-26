@@ -10,7 +10,7 @@ ok(panel.includes('data-resolved-auth-uuid')&&panel.includes('Responsable de la 
 ok(visual.includes("can('publish')")&&visual.includes("can('order')")&&visual.includes("can('delete')")&&visual.includes("can('update')")&&visual.includes("can('create')"),'exact UI controls');
 ok(market.includes('permissions.create')&&market.includes('permissions.update')&&market.includes('permissions.delete')&&market.includes('permissions.publish')&&market.includes('P.order')&&market.includes('P.publish')&&market.includes('permissions.assets'),'exact Marketplace UI controls');
 ok(repo.includes("requireAny(['companies.read','agreements.read'])")&&repo.includes("requirePermission('companies.assets')"),'shared read and company asset boundary');
-ok(admin.includes('sectionModule')&&admin.includes("minutes_admin:'minutes'")&&admin.includes("programs_admin:'programs'"),'section-only routes');
+ok(admin.includes('SECTION_MODULE')&&admin.includes("minutes_admin:'minutes'")&&admin.includes("programs_admin:'programs'"),'section-only routes');
 ok((institutional.match(/query\.eq\('enabled', true\)/g)||[]).length>=3,'public reflection enabled filters');
 ok(recovery.includes('never destroys content created after rollout')&&live.includes('CROSS_DOMAIN_DENIAL')&&live.includes('REFRESH_REVOCATION'),'recovery/matrix evidence');
 ok(![sql,hard,repo,panel,visual,admin].some(x=>/SUPABASE_(SECRET|SERVICE_ROLE|ACCESS_TOKEN)|google-apps-script|Apps Script/.test(x)),'secret or Google interaction');

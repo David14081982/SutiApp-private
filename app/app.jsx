@@ -168,7 +168,7 @@
       const icon = box.firstChild;
       if (icon) M.animate(icon, [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: M.dur.emphasized, easing: M.ease.standard, fill: 'none' });
     }, [tab, tabs.length]);
-    return React.createElement('div', { ref: wrapRef, style: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', background: 'var(--surface)', padding: '10px 8px calc(10px + env(safe-area-inset-bottom))', borderRadius: '26px 26px 0 0', boxShadow: '0 -10px 30px -12px rgba(20,33,61,.18)' } },
+    return React.createElement('div', { ref: wrapRef, 'data-app-bottom-nav':'true', style: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', background: 'var(--surface)', padding: '10px 8px calc(10px + env(safe-area-inset-bottom))', borderRadius: '26px 26px 0 0', boxShadow: '0 -10px 30px -12px rgba(20,33,61,.18)' } },
       React.createElement('div', { ref: indRef, 'aria-hidden': 'true', style: { position: 'absolute', left: 0, top: 0, width: 46, height: 46, borderRadius: 16, background: 'var(--grad-guinda-soft)', boxShadow: 'var(--glow-guinda)', border: '3px solid var(--surface)', opacity: 0, pointerEvents: 'none', zIndex: 0, willChange: 'transform' } }),
       tabs.map((t) => {
         const active = tab === t.id;
@@ -465,7 +465,7 @@
       React.createElement(ImpersonationBanner,{auth,onLoan:()=>push('loan')}),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
-        React.createElement('div', { key: tab, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },
+        React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },
           tabAllowed || !window.ScreenLocked
             ? React.createElement(tabScreen, { app, t })
             : React.createElement(window.ScreenLocked, { screen: tab })),

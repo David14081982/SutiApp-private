@@ -14,7 +14,7 @@ assert.strictEqual(ready,15,'exactly fifteen authority-backed Admin cards must b
 assert.strictEqual(pending,0,'generic pending state must not remain');
 assert.strictEqual((screen.match(/classification: 'PRODUCTIVE_/g)||[]).length,13,'thirteen classified modules have productive authority after the financial read-only cutover');
 assert.strictEqual((screen.match(/classification: '(?:BLOCKED_|OWNER_)/g)||[]).length,0,'no generic blocked Admin card remains');
-assert(screen.includes("const productive = m.ready || String(m.classification||'').startsWith('PRODUCTIVE_')"));
+assert(/const productive\s*=\s*m\.ready\s*\|\|\s*String\(m\.classification\s*\|\|\s*''\)\.startsWith\('PRODUCTIVE_'\)/.test(screen));
 assert(screen.includes("'data-admin-status': m.classification|| (usable?'PRODUCTIVE_SUPABASE':'DENIED')"));
 assert(!screen.includes('EN PREPARACIÓN'));
 assert(screen.includes("const allowedViews = ['menu'].concat(MODULES.map((m)=>m.id))"));

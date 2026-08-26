@@ -1,0 +1,141 @@
+{
+  "status": "PASS",
+  "breakpoint": 1024,
+  "viewports": {
+    "1440x1000": {
+      "root": {
+        "x": 0,
+        "width": 1440,
+        "height": 1000
+      },
+      "shell": true,
+      "sidebar": true,
+      "header": true,
+      "workspace": true,
+      "bottomNav": "none"
+    },
+    "1280x900": {
+      "root": {
+        "x": 0,
+        "width": 1280,
+        "height": 900
+      },
+      "shell": true,
+      "sidebar": true,
+      "header": true,
+      "workspace": true,
+      "bottomNav": "none"
+    },
+    "1024x768": {
+      "root": {
+        "x": 0,
+        "width": 1024,
+        "height": 768
+      },
+      "shell": true,
+      "sidebar": true,
+      "header": true,
+      "workspace": true,
+      "bottomNav": "none"
+    },
+    "768x900": {
+      "root": {
+        "x": 169,
+        "width": 430,
+        "height": 852
+      },
+      "shell": false,
+      "sidebar": false,
+      "header": false,
+      "workspace": false,
+      "bottomNav": "flex"
+    },
+    "430x932": {
+      "root": {
+        "x": 0,
+        "width": 430,
+        "height": 932
+      },
+      "shell": false,
+      "sidebar": false,
+      "header": false,
+      "workspace": false,
+      "bottomNav": "flex"
+    }
+  },
+  "desktopModules": [
+    "identity_access",
+    "data_exports",
+    "popups",
+    "sindicato",
+    "requests",
+    "finanzas",
+    "fondos",
+    "fincat",
+    "flujos",
+    "marketplace",
+    "aprobaciones",
+    "planes",
+    "membresias",
+    "noticias",
+    "education",
+    "convenios",
+    "catalogos",
+    "roles",
+    "pantallas",
+    "secciones",
+    "banners",
+    "companies_admin",
+    "documents_admin",
+    "minutes_admin",
+    "programs_admin",
+    "menus",
+    "formularios",
+    "branding"
+  ],
+  "navigatedModules": [
+    "identity_access",
+    "data_exports",
+    "popups",
+    "sindicato",
+    "requests",
+    "finanzas",
+    "fondos",
+    "fincat",
+    "flujos",
+    "marketplace",
+    "aprobaciones",
+    "planes"
+  ],
+  "mobileModules": [
+    "marketplace",
+    "documents_admin",
+    "fondos",
+    "data_exports"
+  ],
+  "overlays": {
+    "drawer": {
+      "aria": true,
+      "focusTrap": true,
+      "escape": true,
+      "focusRestore": true
+    },
+    "modal": {
+      "aria": true,
+      "danger": true,
+      "safeInitialFocus": true,
+      "escape": true,
+      "focusRestore": true
+    }
+  },
+  "permissionProjection": {
+    "technical": [
+      "noticias"
+    ],
+    "section": [
+      "noticias"
+    ]
+  },
+  "productiveWrites": [],
+  "exceptions": []
+}

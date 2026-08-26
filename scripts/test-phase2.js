@@ -33,7 +33,7 @@ must(!news.includes('PENDING BACKEND')&&news.includes('segmentación por perfil 
 must(news.includes('pendingRef.current')&&news.includes('discardAsset'),'News upload cancellation cleanup missing');
 must(copy.includes('ManagedCopyRepository.list')&&copy.includes('AdminRepository.saveCopy'),'copy is not Supabase backed');
 must(!copy.includes('localStorage')&&!copy.includes('sessionStorage'),'browser copy authority found');
-must(menu.includes("noticias:'news.read'")&&menu.includes("education:sectionOnly?")&&menu.includes("'education.read'")&&menu.includes("'tutorials.read'"),'Admin modules not permission-gated');
+must(menu.includes("noticias:'news.read'")&&menu.includes("education:'content.read'")&&menu.includes("education:['education','tutorials']")&&menu.includes("key+'.read'"),'Admin modules not permission-gated');
 must(home.includes('data-phase2-news-state')&&app.includes('useEditorialContent'),'News states missing');
 must(bundle.includes('/* @@file content-repositories.js */')&&bundle.includes('/* @@file copy-store.jsx */'),'bundle/source divergence');
 must(Number.isInteger(bundleVersion)&&bundleVersion>=95&&Number.isInteger(cacheVersion)&&cacheVersion>=40,'PWA version below Phase 2 baseline');

@@ -18,7 +18,7 @@ assert(recovery.includes("enforcement_status='DESIGN_ONLY'")&&recovery.includes(
 assert(repo.includes("rpc('get_admin_access_context')")&&repo.includes("spec.section+'.delete'")&&repo.includes("spec.section+'.publish'")&&repo.includes("spec.section+'.order'")&&repo.includes("managed[kind].section+'.assets'"),'frontend action gate incomplete');
 assert(auth.includes("rpc('get_admin_access_context')"),'responsible Admin entry missing');
 assert(root.includes("noticias:'news.read'")&&ui.includes('data-news-responsibility-admin')&&ui.includes('Guardar permisos')&&ui.includes('Revocar'),'assignment UI missing');
-assert(root.includes('sectionOnly')&&root.includes('sectionModule')&&root.includes("key+'.read'"),'section-only menu isolation missing');
+assert(root.includes('sectionOnly')&&root.includes('SECTION_MODULE')&&root.includes("key+'.read'"),'section-only menu isolation missing');
 assert(ui.includes("item.record_origin==='ADMIN_PHASE2'")&&ui.includes('P.publicar')&&ui.includes('P.assets'),'action UI/historical guard missing');
 assert(![repo,auth,ui,sql].some((x)=>/SUPABASE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD/.test(x)),'credential marker exposed');
 assert(bundle.includes('/* @@file screens-admin-news.jsx */'),'bundle marker missing');

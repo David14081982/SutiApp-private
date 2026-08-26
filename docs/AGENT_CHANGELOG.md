@@ -1,5 +1,52 @@
 # Bitácora de agentes
 
+## H-ADMIN-DOCUMENT-WORKBENCH-001 — 2026-08-26
+
+- `Admin → Documentos y credencial` incorpora exclusivamente en desktop una bandeja operativa de dos columnas a `1024px` y tres a `1280/1440`: cola filtrable, preview persistente bajo demanda, decisión contextual y navegación continua.
+- Operación quedó separada de Catálogo/Requisitos/Términos/QR. El catálogo usa labels humanos, código técnico secundario y orden drag/drop/numérico con la persistencia canónica existente.
+- La consulta inicial sólo trae metadata; la signed URL privada de 300 segundos se solicita para el documento seleccionado. Autoridades, Auth, RLS, Storage y capabilities existentes permanecen sin cambios; no hay store, mock, `DATA` ni fallback nuevo.
+- Chrome/Supabase real pasó 1024/1280/1440 y preservación móvil 430, approve/reupload, refresh, filtros, preview, orden y denegación normal/anónima/cruzada. Todos los fixtures y objetos privados se restauraron/eliminaron con verificación final limpia.
+- Bundle reproducido desde 90 fuentes; suite estática 45/45, shell regression, auditorías y Registry en `PASS`. Cache publicado como bundle `v149` y PWA `sutiapp-v93`.
+- “100% del expediente” conserva la semántica actual sin invención y queda `OWNER_CLARIFICATION_REQUIRED` para definir su significado/label definitivo.
+
+```text
+H-ADMIN-DOCUMENT-WORKBENCH-001 RESULT
+Status: PASS
+Files changed: document repository/workbench source; generated bundle/cache versions; task tests; evidence/changelog; derived Architecture Registry
+Source-of-truth verdict: PASS — same Supabase document/catalog authorities; 0 duplicate stores, caches or fallbacks
+Invariant verdict: PASS — private assets, RLS, historical integrity, mobile contract and cross-domain boundaries preserved
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — task/static suite 45/45; Registry; shell regression; real Chrome/Supabase matrix
+Security: PASS — signed selected-only preview; UI capability plus backend/RLS denials verified
+Legacy impact: NOT APPLICABLE / NO WRITE / NO CHANGE
+Unexpected files changed: 0 attributable to this H; pre-existing dirty Admin artifacts preserved
+Known limitations: OWNER_CLARIFICATION_REQUIRED for “100% del expediente”; no semantic invention
+Evidence: docs/qa/H-ADMIN-DOCUMENT-WORKBENCH-001-EVIDENCE.md; docs/qa/evidence/admin-document-workbench-20260826/
+```
+
+## H-ADMIN-DESKTOP-SHELL-001 — 2026-08-26
+
+- Se implementó un shell Admin exclusivo de desktop desde `1024px`, tomando `Panel administrativo.dc.html` sólo como referencia visual: sidebar oscuro agrupado, header, workspace fluido, panel contextual opcional y foundations accesibles de drawer/modal.
+- El Admin móvil existente se conserva en 430×932 y 768×900. Desktop elimina únicamente en Admin el marco de 430px y la bottom nav; el resto de SutiApp no cambia de layout.
+- Sidebar y menú comparten el catálogo actual de módulos y el contexto real `AdminRepository -> permissions/sectionActions`. Mobile y desktop reutilizan el mismo `view`, componentes, repositories y backend; no se copió dato o lógica demo ni se creó ruta/autoridad paralela.
+- Playwright real pasó 430/768/1024/1280/1440, 12 módulos desktop con regreso, cuatro módulos móviles, proyección técnica/section ownership, drawer/modal con ARIA/foco/ESC y `productiveWrites=0`.
+- Bundle reproducido desde 90 fuentes; suite estática canónica 44/44, Registry, auditoría y sintaxis fuente/bundle en `PASS`. HTML usa bundle `v148` y PWA `sutiapp-v92`.
+
+```text
+H-ADMIN-DESKTOP-SHELL-001 RESULT
+Status: PASS
+Files changed: SutiApp.html; app/app.jsx; app/screens-admin.jsx; app/bundle.js; sw.js; five compatible static assertions; browser harness; evidence; changelog; derived Architecture Registry
+Source-of-truth verdict: PASS — same AdminRepository/Supabase authorities; 0 duplicate authorities, fallbacks or caches
+Invariant verdict: PASS — INV-002/003/012/013/015/036/041 preserved
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — canonical static suite 44/44; Registry suite; audit; source/bundle syntax; Playwright responsive/navigation/permissions/accessibility
+Security: PASS — backend/RLS remains authoritative; desktop hides unauthorized modules; productive writes 0
+Legacy impact: NOT APPLICABLE / NO INTERACTION
+Unexpected files changed: 0 produced by this H; prior untracked Admin audit evidence preserved
+Known limitations: module-level desktop workbenches remain separate future work; context panel/drawer/modal are foundations only
+Evidence: docs/qa/H-ADMIN-DESKTOP-SHELL-001-EVIDENCE.md; docs/qa/evidence/admin-desktop-shell-20260826/
+```
+
 ## H-LOAN-AUTHENTICATED-SNAPSHOT-RPC-013 — 2026-08-26
 
 - La decisión explícita del propietario autorizó una RPC Auth únicamente para monto/fondo/plazo sobre el snapshot personalizado de 15 minutos. Google conserva autoridad y apertura/confirmación Edge; no existe fallback RPC→Edge→Google.

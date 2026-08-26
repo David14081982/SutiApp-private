@@ -55,6 +55,8 @@ assert.match(loan,/latestSelection\.current === request\.key/);
 assert.match(loan,/activeRequest\.current\.controller\.abort\(\)/);
 assert.match(loan,/quoteTimeoutMs = 6000/);
 assert.match(loan,/maxQuoteAttempts = 5/);
+assert.match(loan,/isRetryableQuoteTransportError\(snapshot\.error\)/);
+assert.match(loan,/failed to send a request to the edge function/);
 assert.match(loan,/SIMULATION_TIMEOUT/);
 assert.match(loan,/Las condiciones de tu simulación cambiaron/);
 assert.doesNotMatch(loan,/ProgramRequestRepository\.createFinancial|finalizeContext/);

@@ -11830,6 +11830,10 @@ Object.assign(window, {
     if (!result || !program || result.amount !== amount || result.paymentCount !== term) return false;
     return result.program === program.program_id || result.program === program.id || result.fund === program.fund;
   }
+  function isRetryableQuoteTransportError(error) {
+    const message = String(error || '').toLowerCase();
+    return message.includes('failed to send a request to the edge function') || message.includes('failed to fetch') || message.includes('network request failed') || message.includes('networkerror') || message.includes('load failed') || message.includes('financial_legacy_unavailable');
+  }
   function StepSimulatorV2({
     financial,
     onSimulationChange
@@ -11912,6 +11916,11 @@ Object.assign(window, {
               snapshot = await window.financialLegacyStore.requestLoanSessionQuote(request.programId, request.amount, request.term, {
                 signal: active.controller.signal
               });
+              if (snapshot && snapshot.status === 'error' && isRetryableQuoteTransportError(snapshot.error) && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
+                snapshot = null;
+                await new Promise(resolve => setTimeout(resolve, 500));
+                continue;
+              }
               break;
             } catch (error) {
               if (active.controller.signal.aborted && active.reason !== 'timeout') break;

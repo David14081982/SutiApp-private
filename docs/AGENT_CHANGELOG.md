@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## H-LOAN-EXPLICIT-TRANSPORT-RETRY-012 — 2026-08-26
+
+- La validación pública de v145 probó que el cambio de fondo podía terminar, pero el cambio de importe agotaba expiraciones o recibía `Failed to send a request to the Edge Function`. La prueba de control con QUIC desactivado reprodujo el segundo fallo, por lo que HTTP/3 no era la única causa. En ambos casos el resultado anterior permaneció visible y `googleResolutionCount` fue 0.
+- El coordinador ahora clasifica únicamente mensajes inequívocos de red/transporte como reintentables. Tanto una expiración como ese error explícito repiten `loanSessionQuote` contra el mismo `snapshot_id`, con el límite existente de cinco intentos; no abren sesión, no releen Google y no alteran fórmulas. Errores financieros, de autorización o de snapshot no se convierten en fallback.
+- HTML/PWA avanzan a bundle v146 y cache v90. La prueba Chrome aislada verifica por separado recuperación tras timeout (6.7 s) y tras error explícito (0.95 s), en ambos casos con `loanSessionOpen = 0`, Google = 0 y odómetros visibles.
+
+```text
+H-LOAN-EXPLICIT-TRANSPORT-RETRY-012 RESULT
+Status: PASS
+Files changed: app/screens-loan.jsx; app/bundle.js; SutiApp.html; sw.js; scripts/test-loan-result-loading-browser.js; scripts/test-loan-simulator-ui-cutover.js; scripts/test-personalized-financial-session-snapshot.js; docs/PERSONALIZED_FINANCIAL_SESSION_SNAPSHOT_IMPLEMENTATION.md; docs/AGENT_CHANGELOG.md
+Source-of-truth verdict: SAFE — mismo snapshot Supabase de 15 minutos y mismo motor Edge; sin cálculo, caché o autoridad frontend
+Invariant verdict: PASS — latest intent cancela; sólo la selección vigente renderiza; máximo cinco intentos acotados
+Build: PASS — bundle reproducible desde 90 fuentes con Babel Standalone 7.29.0; HTML v146 y PWA v90
+Tests: PASS — suite estática 43/43; contrato snapshot; Chrome real aislado para timeout y error explícito
+Security: PASS — JWT y snapshot intactos; sin headers, secretos, service_role, schema, RLS ni permisos nuevos
+Legacy impact: READ ONLY — Google inicial sin cambios; cotizaciones interactivas Google 0; fórmulas y writes 0
+Unexpected files changed: ninguno; auxiliares temporales ignorados y eliminados antes del commit
+Known limitations: si los cinco intentos fallan, queda error controlado con el resultado anterior y Reintentar; no se inventa un cálculo local
+Evidence: test-static-suite.js 43/43; test-personalized-financial-session-snapshot.js; test-loan-result-loading-browser.js (`loanSessionOpen: 0`, `google_calls: 0`)
+```
+
 ## H-LOAN-BROWSER-TRANSPORT-RECOVERY-011 — 2026-08-26
 
 - La secuencia pública posterior a H-010 confirmó que dos intentos no bastaban. La comparación controlada aisló la frontera: desde Node/HTTP 1.1, 8/8 cotizaciones alternadas respondieron 200 en 669–1,483 ms; desde Chrome/HTTP 3 algunas solicitudes se cancelaron sin aparecer en `function_edge_logs`. Las que sí alcanzaron Supabase terminaron 200 en 0.5–3.9 s. Por tanto, el bloqueo ocurre antes del gateway Edge y no en Google, snapshot, política, nómina, cálculo ni Function.

@@ -1,0 +1,392 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "membershipSelection": {
+    "selectedId": "b5d752fc-7849-4240-8a70-6a0cbb5ba873",
+    "offerings": [
+      {
+        "id": "b5d752fc-7849-4240-8a70-6a0cbb5ba873",
+        "company": "Bud Tv Ultra",
+        "termsPublished": false
+      },
+      {
+        "id": "ffebe743-7f1c-4657-a6ff-5b39cce13672",
+        "company": "RiveraGas",
+        "termsPublished": false
+      },
+      {
+        "id": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c",
+        "company": "Sams Club",
+        "termsPublished": false
+      },
+      {
+        "id": "fc8cc2cb-dba0-4735-8128-034557407294",
+        "company": "Costco",
+        "termsPublished": false
+      },
+      {
+        "id": "59b9bcce-cb05-41a5-bfae-b940e4eb3db5",
+        "company": "Casa Ley",
+        "termsPublished": false
+      },
+      {
+        "id": "410b6881-c622-4d79-a78e-37aa6891e9a3",
+        "company": "Arco gasolinera",
+        "termsPublished": false
+      }
+    ]
+  },
+  "authority": {
+    "company": "Bud Tv Ultra",
+    "concept": "Películas y series",
+    "total": 200,
+    "installments": 2,
+    "fortnight": 100,
+    "requirementCount": 4,
+    "requiredCount": 4,
+    "satisfiedRequired": 4,
+    "termsPublished": false
+  },
+  "current": {
+    "viewport": [
+      390,
+      844
+    ],
+    "screen": true,
+    "phase": "ready",
+    "company": "Bud Tv Ultra",
+    "concept": "Películas y series",
+    "total": 200,
+    "installments": 2,
+    "fortnight": 100,
+    "trackerTotal": 7,
+    "trackerMissing": 0,
+    "trackerText": "7 de 7",
+    "chips": [],
+    "documents": [
+      {
+        "code": "profile_photo",
+        "status": "VERIFIED",
+        "required": "true",
+        "action": "preview"
+      },
+      {
+        "code": "ine_front",
+        "status": "VERIFIED",
+        "required": "true",
+        "action": "preview"
+      },
+      {
+        "code": "ine_back",
+        "status": "VERIFIED",
+        "required": "true",
+        "action": "preview"
+      },
+      {
+        "code": "payroll_latest",
+        "status": "VERIFIED",
+        "required": "true",
+        "action": "preview"
+      }
+    ],
+    "thumbnailCount": 4,
+    "fields": [
+      {
+        "id": "phone",
+        "filled": true,
+        "valid": true,
+        "invalidVisible": false
+      },
+      {
+        "id": "rfc",
+        "filled": true,
+        "valid": true,
+        "invalidVisible": false
+      },
+      {
+        "id": "curp",
+        "filled": true,
+        "valid": true,
+        "invalidVisible": false
+      }
+    ],
+    "sections": [
+      "Documentos",
+      "Tus datos"
+    ],
+    "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
+    "termsMissing": true,
+    "submitReady": false,
+    "submitDisabled": true,
+    "submitText": "Solicitar",
+    "gridColumns": 2,
+    "horizontal": true,
+    "scrollable": true,
+    "footerFixed": true,
+    "trackerOverlap": true,
+    "sealPresent": true,
+    "logoSource": "admin",
+    "oldLayoutRemaining": false
+  },
+  "responsive": {
+    "390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "screen": true,
+      "phase": "ready",
+      "company": "Bud Tv Ultra",
+      "concept": "Películas y series",
+      "total": 200,
+      "installments": 2,
+      "fortnight": 100,
+      "trackerTotal": 7,
+      "trackerMissing": 0,
+      "trackerText": "7 de 7",
+      "chips": [],
+      "documents": [
+        {
+          "code": "profile_photo",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_front",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_back",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "payroll_latest",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        }
+      ],
+      "thumbnailCount": 4,
+      "fields": [
+        {
+          "id": "phone",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "rfc",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "curp",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        }
+      ],
+      "sections": [
+        "Documentos",
+        "Tus datos"
+      ],
+      "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
+      "termsMissing": true,
+      "submitReady": false,
+      "submitDisabled": true,
+      "submitText": "Solicitar",
+      "gridColumns": 2,
+      "horizontal": true,
+      "scrollable": true,
+      "footerFixed": true,
+      "trackerOverlap": true,
+      "sealPresent": true,
+      "logoSource": "admin",
+      "oldLayoutRemaining": false
+    },
+    "430x932": {
+      "viewport": [
+        430,
+        932
+      ],
+      "screen": true,
+      "phase": "ready",
+      "company": "Bud Tv Ultra",
+      "concept": "Películas y series",
+      "total": 200,
+      "installments": 2,
+      "fortnight": 100,
+      "trackerTotal": 7,
+      "trackerMissing": 0,
+      "trackerText": "7 de 7",
+      "chips": [],
+      "documents": [
+        {
+          "code": "profile_photo",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_front",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_back",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "payroll_latest",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        }
+      ],
+      "thumbnailCount": 4,
+      "fields": [
+        {
+          "id": "phone",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "rfc",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "curp",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        }
+      ],
+      "sections": [
+        "Documentos",
+        "Tus datos"
+      ],
+      "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
+      "termsMissing": true,
+      "submitReady": false,
+      "submitDisabled": true,
+      "submitText": "Solicitar",
+      "gridColumns": 2,
+      "horizontal": true,
+      "scrollable": true,
+      "footerFixed": true,
+      "trackerOverlap": true,
+      "sealPresent": true,
+      "logoSource": "admin",
+      "oldLayoutRemaining": false
+    },
+    "768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "screen": true,
+      "phase": "ready",
+      "company": "Bud Tv Ultra",
+      "concept": "Películas y series",
+      "total": 200,
+      "installments": 2,
+      "fortnight": 100,
+      "trackerTotal": 7,
+      "trackerMissing": 0,
+      "trackerText": "7 de 7",
+      "chips": [],
+      "documents": [
+        {
+          "code": "profile_photo",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_front",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "ine_back",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        },
+        {
+          "code": "payroll_latest",
+          "status": "VERIFIED",
+          "required": "true",
+          "action": "preview"
+        }
+      ],
+      "thumbnailCount": 4,
+      "fields": [
+        {
+          "id": "phone",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "rfc",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        },
+        {
+          "id": "curp",
+          "filled": true,
+          "valid": true,
+          "invalidVisible": false
+        }
+      ],
+      "sections": [
+        "Documentos",
+        "Tus datos"
+      ],
+      "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
+      "termsMissing": true,
+      "submitReady": false,
+      "submitDisabled": true,
+      "submitText": "Solicitar",
+      "gridColumns": 2,
+      "horizontal": true,
+      "scrollable": true,
+      "footerFixed": true,
+      "trackerOverlap": true,
+      "sealPresent": true,
+      "logoSource": "admin",
+      "oldLayoutRemaining": false
+    }
+  },
+  "chipFocus": {
+    "skipped": true
+  },
+  "generatedChipFocus": {
+    "activeField": "phone",
+    "activeAction": "",
+    "highlighted": true
+  },
+  "validation": {
+    "invalidVisible": true,
+    "ariaInvalid": "true"
+  },
+  "navigationBack": true,
+  "supabaseWritesExecuted": 0,
+  "realSubmitExecuted": false,
+  "evidenceRedaction": "Document previews hidden; personal fields masked before every screenshot."
+}

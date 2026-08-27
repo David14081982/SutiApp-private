@@ -187,7 +187,7 @@ async function main() {
           rows: rows.length,
           error: document.body.innerText.includes('No fue posible consultar los requisitos'),
           missingActionable: rows.filter((row) => ['MISSING', 'REUPLOAD_REQUIRED', 'REJECTED'].includes(row.dataset.documentStatus))
-            .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir')),
+            .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir' || button.dataset.documentAction === 'upload')),
         };
       })()`);
       if (loan.rows !== loanExpected || loan.error || !loan.missingActionable) {
@@ -213,7 +213,7 @@ async function main() {
         rows: rows.length,
         error: document.body.innerText.includes('No fue posible consultar los requisitos autorizados.'),
         missingActionable: rows.filter((row) => ['MISSING', 'REUPLOAD_REQUIRED', 'REJECTED'].includes(row.dataset.documentStatus))
-          .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir')),
+          .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir' || button.dataset.documentAction === 'upload')),
       };
     })()`);
 
@@ -249,7 +249,7 @@ async function main() {
         rows: rows.length,
         error: document.body.innerText.includes('No fue posible consultar los requisitos'),
         missingActionable: rows.filter((row) => ['MISSING', 'REUPLOAD_REQUIRED', 'REJECTED'].includes(row.dataset.documentStatus))
-          .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir')),
+          .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir' || button.dataset.documentAction === 'upload')),
       };
     })()`);
 

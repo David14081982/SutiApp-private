@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-MEMBERSHIP-REQUEST-UI-CUTOVER-001
+
+- `Solicitud de membresía` adoptó el HTML aprobado: héroe guinda compacto, sello y logo administrados, cifras reales, tracker sobrepuesto, segmentos/chips dinámicos, documentos en cuadrícula 2×N, datos del afiliado, privacidad y CTA inferior fijo. La variante visual de teselas es opt-in; Mis Documentos y Suti Préstamo conservan su lista anterior.
+- La funcionalidad productiva no cambió: `membership_offerings`, requisitos configurables, expediente/Storage privado, URLs firmadas, estados/reemplazo autorizado, términos, RPC idempotente `create_membership_request`, snapshot documental, Admin e Historial permanecen en sus repositorios y RLS actuales. El tracker cuenta solo requisitos `required` y cada campo realmente válido; CURP se precarga desde `affiliates.curp_raw`.
+- Chrome real con H005_TEST2/H005_TEST3 verificó datos Admin exactos, 4 requisitos dinámicos, 4 previews privados existentes, estados 7/7 y 6/7, chip CURP y chip Teléfono generado, validación visible, Atrás, footer fijo, grid de dos columnas y cero overflow en 390×844, 430×932 y 768×1024. Las 12 capturas versionadas ocultan por completo previews y valores personales.
+- Las seis membresías productivas tienen cero versiones de términos publicadas. El CTA permanece correctamente cerrado y el arnés ejecutó cero escrituras; no se inventó contenido legal ni una solicitud de prueba. Por esa configuración preexistente no fue posible certificar un submit live, aunque la RPC, idempotencia, documentos y navegación a Historial quedaron preservados por contrato y regresión estática.
+- Google Sheets, Apps Script, solicitudes históricas, nómina, fórmulas, cálculos y conciliaciones: `NO READ / NO WRITE / NO CHANGE`.
+
+```text
+H-MEMBERSHIP-REQUEST-UI-CUTOVER-001 RESULT
+Status: PASS
+Files changed: Membership application UI; opt-in document tiles; generated bundle; focused static/browser tests; redacted QA evidence; Architecture Registry; changelog
+Source-of-truth verdict: SAFE — membership, requirements, expediente, profile snapshot, terms and request authorities unchanged; no demo/local persistence
+Invariant verdict: PASS — INV-015, INV-045, INV-050, INV-063–066 and INV-097–099 preserved
+Build: PASS — bundle reproducible from 91 source files
+Tests: PASS — focused/static regressions; Chrome real with two controlled users at 390/430/768
+Security: PASS — private previews remain signed; RLS/RPC/identity unchanged; evidence contains no PII; Supabase writes 0
+Legacy impact: READ ONLY BOUNDARY / NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: 0 attributable to this H; two pre-existing admin-financial evidence modifications excluded
+Known limitations: all 6 membership offerings lack published terms, so live submit/Admin/History creation remains fail-closed and was not executed
+Evidence: scripts/test-membership-request-ui-cutover*.js; scripts/test-required-document-uploads-browser.js; docs/qa/evidence/membership-request-ui-cutover-20260827/*
+```
+
 ## 2026-08-27 — H-SUTI-INVERSION-SCREEN-001
 
 - `Mi Financiera → Invertir` abre la nueva ruta full-screen `investment` y Atrás usa el stack vigente para volver a Mi Financiera. El HTML aprobado se convirtió a `InvestmentScreen` conservando hero guinda, sello institucional, tarjeta de tasa, facts, calculadora, monto editable, slider, seis presets, cuatro plazos, resultado navy, barras variables, secciones informativas, disclaimer y footer fijo.

@@ -99,7 +99,7 @@ contaminar el alta.
   vencimiento se abre un snapshot nuevo antes de cotizar. Es la alternativa más simple
   y la única compatible con INV-107 y con `check (expires_at<=created_at+interval '15
   minutes')`, que prohíben que la RPC escriba esa tabla.
-- **Lock:** `for share` → `for key share` (migración preparada, ver más abajo).
+- **Lock:** `for share` → `for key share`, **aplicado y verificado** (ver más abajo).
 
 ## F · Continuar
 
@@ -133,23 +133,49 @@ esquema. **No se añadió código defensivo redundante.**
   garantizan denominadores estrictamente positivos, y ambos operandos son
   `numeric(14,2)`, por lo que su diferencia mínima positiva es 0.01.
 
-## PENDIENTE DE AUTORIZACIÓN
+## Lock del snapshot — APLICADO Y VERIFICADO
 
 `supabase/migrations/20260827001000_loan_snapshot_quote_key_share_lock.sql`
-(+ recovery + `scripts/apply-loan-snapshot-key-share-lock.py`) está escrita y su
-**dry-run transaccional pasó contra la base productiva** sin alterar nada
-(146 reglas / 35 fondos / 3 programas intactos antes y después).
+aplicada a la base productiva el 2026-08-27 bajo autorización explícita del
+propietario. Reversible en cualquier momento con
+`python scripts/apply-loan-snapshot-key-share-lock.py --recover`.
 
-La aplicación quedó **bloqueada por el clasificador de permisos del entorno**, no por
-una decisión técnica. Para aplicarla:
+`key_share_lock: true` · `legacy_share_lock: false`.
 
-```
-python scripts/apply-loan-snapshot-key-share-lock.py --apply
-```
+**Evidencia de no-impacto.** Se capturó el estado completo antes y después con
+dos instrumentos nuevos y se diferenciaron:
 
-Reversible en cualquier momento con `--recover`. La remediación de frontend **no
-depende** de esta migración: la deduplicación de `ensureLoanSession` ya elimina la
-mayor parte de la contención en el origen.
+- `scripts/capture-financial-security-surface.py` — conteos, digest de las 146
+  reglas, fuente de 8 funciones financieras, grants de tabla, ACL de ejecución,
+  RLS (`relrowsecurity`/`relforcerowsecurity`), políticas y constraints.
+  **Única diferencia en toda la superficie:** el `md5(prosrc)` de
+  `resolve_current_loan_snapshot_quote`, la función declarada. Todo lo demás
+  byte-idéntico.
+- Diff del cuerpo de esa función contra la migración original (historia
+  inmutable): **exactamente 2 líneas**, `for share` → `for key share`.
+- `scripts/capture-loan-quote-equivalence.js` — matriz determinista de **51
+  cotizaciones** (5 fondos × montos fijos × todos los plazos permitidos y el
+  mínimo personalizado) a través de la RPC autenticada en navegador real.
+  SHA-256 de la matriz **idéntico** antes y después:
+  `e35edd06d7a651803384df35e05475b36e2446a47ebb5675ea1b2abe81305cfe`.
+  0 errores, 0 excepciones en ambas capturas.
+
+| Verificación | Antes | Después |
+|---|---|---|
+| Reglas / fondos / programas | 146 / 35 / 3 | **146 / 35 / 3** |
+| Reglas `PUBLISHED` · políticas de plazo activas | 146 · 1 | **146 · 1** |
+| Digest de las 146 reglas | igual | **igual** |
+| RLS y `FORCE RLS` | sin cambio | **sin cambio** |
+| Políticas y constraints | sin cambio | **sin cambio** |
+| Grants de tabla y ACL de ejecución | sin cambio | **sin cambio** |
+| `authenticated` ejecuta la RPC | sí | **sí** |
+| `anon` denegado · acceso directo al snapshot denegado | sí | **sí** |
+| Fuente del resolver certificado `SUTI_LOAN_QUOTE_V1` | igual | **igual** |
+| Matriz de 51 cotizaciones (SHA-256) | igual | **igual** |
+
+Suite estática 51/51 y navegador real (performance, auto-recalc, stale-quote,
+result-loading, finance-credit, contratos de snapshot/RPC) PASS después de
+aplicar.
 
 ---
 

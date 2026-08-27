@@ -51,8 +51,14 @@ assert.strictEqual(manifest.short_name, source.settings.short_name);
 assert.strictEqual(manifest.description, source.settings.description);
 assert(html.includes(`<title>${source.settings.app_name}</title>`));
 require('./verification-helpers').assertPwaVersionSync();
-for (const path of ['icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png']) {
-  assert(fs.statSync(path).size > 0);
+const expectedDimensions = {
+  'icon-180.png': [180, 180], 'icon-192.png': [192, 192],
+  'icon-512.png': [512, 512], 'icon-maskable-512.png': [512, 512],
+};
+for (const [path, dimensions] of Object.entries(expectedDimensions)) {
+  const bytes = fs.readFileSync(path);
+  assert(bytes.length > 24 && bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')));
+  assert.deepStrictEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], dimensions, `${path} dimensions`);
 }
 
 console.log('Icon/installation static verification PASS: Supabase-only runtime, RLS admin writer, ordered install slots, reproducible PWA copies.');

@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+import struct
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -34,6 +35,14 @@ STATIC_ASSETS = {
     "favicon": "icon-192.png", "apple_touch": "icon-180.png",
     "pwa_192": "icon-192.png", "pwa_512": "icon-512.png",
     "pwa_maskable_512": "icon-maskable-512.png",
+}
+REQUIRED_ASSET_COLUMNS = (
+    "app_icon_asset_id", "favicon_asset_id", "apple_touch_asset_id",
+    "pwa_icon_192_asset_id", "pwa_icon_512_asset_id", "pwa_maskable_512_asset_id",
+)
+STATIC_DIMENSIONS = {
+    "icon-180.png": (180, 180), "icon-192.png": (192, 192),
+    "icon-512.png": (512, 512), "icon-maskable-512.png": (512, 512),
 }
 
 
@@ -172,6 +181,12 @@ def settings(base: str, key: str) -> dict[str, object]:
     return rows[0]
 
 
+def png_dimensions(data: bytes) -> tuple[int, int] | None:
+    if len(data) < 24 or not data.startswith(b"\x89PNG\r\n\x1a\n") or data[12:16] != b"IHDR":
+        return None
+    return struct.unpack(">II", data[16:24])
+
+
 def verify(env: dict[str, str]) -> dict[str, object]:
     base = env["SUPABASE_URL"].rstrip("/")
     secret = env.get("SUPABASE_SECRET_KEY", "") or env.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -180,8 +195,7 @@ def verify(env: dict[str, str]) -> dict[str, object]:
     public_row = settings(base, public)
     if admin != public_row:
         raise SyncFailure("Public settings projection differs from administrative read")
-    required = [column for column, _ in ASSET_FIELDS.values() if not column.startswith("install_screen_")]
-    if any(not admin.get(column) for column in required):
+    if any(not admin.get(column) for column in REQUIRED_ASSET_COLUMNS):
         raise SyncFailure("Required branding asset relationship is missing")
     ids = {str(value) for name, value in admin.items() if name.endswith("_asset_id") and value}
     encoded = ",".join(ids)
@@ -205,13 +219,16 @@ def sync_static(env: dict[str, str], apply: bool) -> dict[str, object]:
     changed: list[str] = []
     for logical, filename in STATIC_ASSETS.items():
         column, _ = ASSET_FIELDS[logical]
-        asset_rows = rest(base, key, f"app_assets?select=storage_bucket,storage_path,content_sha256&id=eq.{row[column]}&limit=1")
+        asset_rows = rest(base, key, f"app_assets?select=storage_bucket,storage_path,content_sha256,mime_type&id=eq.{row[column]}&limit=1")
         asset = asset_rows[0]
         encoded = "/".join(urllib.parse.quote(part, safe="") for part in asset["storage_path"].split("/"))
         data = call(f"{base}/storage/v1/object/{asset['storage_bucket']}/{encoded}", key)
+        if asset.get("mime_type") != "image/png" or png_dimensions(data) != STATIC_DIMENSIONS[filename]:
+            raise SyncFailure(f"Static PWA source must be an exact PNG {STATIC_DIMENSIONS[filename][0]}x{STATIC_DIMENSIONS[filename][1]}: {logical}")
         target = ROOT / filename
         if not target.exists() or hashlib.sha256(target.read_bytes()).hexdigest().upper() != asset["content_sha256"]:
-            changed.append(filename)
+            if filename not in changed:
+                changed.append(filename)
             if apply:
                 target.write_bytes(data)
     manifest_path = ROOT / "manifest.webmanifest"

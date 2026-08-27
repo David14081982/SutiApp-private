@@ -1,0 +1,70 @@
+{
+  "captured_at": "2026-08-27T16:50:00-07:00",
+  "authority": "public.app_assets + app-assets",
+  "recovery_order": "Run scripts/restore-pwa-icon-variants.py before dropping register_branding_assets(jsonb).",
+  "previous_storage_objects_retained": true,
+  "assets": [
+    {
+      "asset_key": "brand.pwa.512",
+      "storage_bucket": "app-assets",
+      "storage_path": "branding/admin/brand.pwa.512/14da501bf2e5a8cb06846e28b17702ffe4ce8f349b03c4a88404477b883e1d76.png",
+      "mime_type": "image/png",
+      "file_size": 1194146,
+      "content_sha256": "14DA501BF2E5A8CB06846E28B17702FFE4CE8F349B03C4A88404477B883E1D76",
+      "status": "READY"
+    },
+    {
+      "asset_key": "brand.favicon-pwa-192",
+      "storage_bucket": "app-assets",
+      "storage_path": "branding/admin/brand.favicon-pwa-192/bac739f13617e3fd2e95a77e06d96f09b3fe3ff22d2b4b310eb5688935afc40c.png",
+      "mime_type": "image/png",
+      "file_size": 1590234,
+      "content_sha256": "BAC739F13617E3FD2E95A77E06D96F09B3FE3FF22D2B4B310EB5688935AFC40C",
+      "status": "READY"
+    },
+    {
+      "asset_key": "brand.pwa.apple-touch",
+      "storage_bucket": "app-assets",
+      "storage_path": "branding/admin/brand.pwa.apple-touch/bac739f13617e3fd2e95a77e06d96f09b3fe3ff22d2b4b310eb5688935afc40c.png",
+      "mime_type": "image/png",
+      "file_size": 1590234,
+      "content_sha256": "BAC739F13617E3FD2E95A77E06D96F09B3FE3FF22D2B4B310EB5688935AFC40C",
+      "status": "READY"
+    },
+    {
+      "asset_key": "brand.pwa.maskable-512",
+      "storage_bucket": "app-assets",
+      "storage_path": "branding/admin/brand.pwa.maskable-512/14da501bf2e5a8cb06846e28b17702ffe4ce8f349b03c4a88404477b883e1d76.png",
+      "mime_type": "image/png",
+      "file_size": 1194146,
+      "content_sha256": "14DA501BF2E5A8CB06846E28B17702FFE4CE8F349B03C4A88404477B883E1D76",
+      "status": "READY"
+    }
+  ],
+  "replacement_assets": [
+    {
+      "asset_key": "brand.pwa.512",
+      "storage_path": "branding/admin/brand.pwa.512/b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b.png",
+      "file_size": 354489,
+      "content_sha256": "B0EF0F7125A283BA9380153D2D39F01570B48DB404CD12707645A5244923F99B"
+    },
+    {
+      "asset_key": "brand.favicon-pwa-192",
+      "storage_path": "branding/admin/brand.favicon-pwa-192/87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc.png",
+      "file_size": 51510,
+      "content_sha256": "87C15DD6D55B7CE3A10C30EC282F67DE25D1D976F54BD6A9A7EE2F449410EFDC"
+    },
+    {
+      "asset_key": "brand.pwa.apple-touch",
+      "storage_path": "branding/admin/brand.pwa.apple-touch/cefbf47013168085566668153e4031bedc2994ae5a5e00d17c7ce2ac599d050e.png",
+      "file_size": 45569,
+      "content_sha256": "CEFBF47013168085566668153E4031BEDC2994AE5A5E00D17C7CE2AC599D050E"
+    },
+    {
+      "asset_key": "brand.pwa.maskable-512",
+      "storage_path": "branding/admin/brand.pwa.maskable-512/b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b.png",
+      "file_size": 354489,
+      "content_sha256": "B0EF0F7125A283BA9380153D2D39F01570B48DB404CD12707645A5244923F99B"
+    }
+  ]
+}

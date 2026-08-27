@@ -11,15 +11,24 @@
       sub && React.createElement('div',{style:{fontSize:11.5,fontWeight:600,color:'var(--ink-3)',margin:'3px 0 13px'}},sub),children);
   }
   function Preview({url,alt,ratio='1 / 1',fit='contain',position='50% 50%'}) { return React.createElement('div',{style:{aspectRatio:ratio,borderRadius:14,overflow:'hidden',background:'var(--surface-2)',display:'grid',placeItems:'center',boxShadow:'var(--neo-inset)'}},url?React.createElement('img',{src:url,alt,style:{width:'100%',height:'100%',objectFit:fit,objectPosition:position}}):React.createElement('span',{style:{fontSize:11,fontWeight:700,color:'var(--ink-3)'}},'No configurada')); }
+  function assetError(error) {
+    const code=String(error&&((error.code||'')+' '+(error.message||error))||'').toUpperCase();
+    if(code.includes('INVALID_APP_ICON'))return 'El ícono debe ser cuadrado, de al menos 512 × 512 px.';
+    if(code.includes('INVALID_PWA_ICON'))return 'La variante debe ser cuadrada y alcanzar el tamaño indicado (180, 192 o 512 px).';
+    if(code.includes('INVALID_ASSET'))return 'Usa PNG, JPG, GIF, WebP, SVG o ICO; máximo 10 MB.';
+    if(code.includes('ADMIN_DENIED')||code.includes('42501')||code.includes('401')||code.includes('JWT'))return 'Tu sesión no tiene permiso o expiró. Vuelve a iniciar sesión.';
+    return 'No fue posible guardar el archivo. Reintenta; el archivo anterior se conserva.';
+  }
   function Upload({ title,url,assetKey,field,canEdit,onDone,nullable,ratio }) {
-    const [busy,setBusy]=React.useState(false); const input=React.useRef(null);
-    const change=async(e)=>{const file=e.target.files&&e.target.files[0]; if(!file)return; setBusy(true); try{await window.AdminRepository.uploadBrandingAsset(file,assetKey,field); await onDone();}catch(_){alert('No fue posible guardar el archivo.');}finally{setBusy(false);e.target.value='';}};
-    const clear=async()=>{setBusy(true);try{await window.AdminRepository.clearAsset(field);await onDone();}catch(_){alert('No fue posible quitar el archivo.');}finally{setBusy(false);}};
+    const [busy,setBusy]=React.useState(false); const [error,setError]=React.useState(''); const input=React.useRef(null);
+    const change=async(e)=>{const file=e.target.files&&e.target.files[0]; if(!file)return; setBusy(true);setError('');try{await window.AdminRepository.uploadBrandingAsset(file,assetKey,field);await onDone();}catch(problem){setError(assetError(problem));}finally{setBusy(false);e.target.value='';}};
+    const clear=async()=>{setBusy(true);setError('');try{await window.AdminRepository.clearAsset(field);await onDone();}catch(problem){setError(assetError(problem));}finally{setBusy(false);}};
     return React.createElement('div',{'data-h008-asset-control':field},React.createElement('div',{style:label},title),React.createElement(Preview,{url,alt:title,ratio}),
       React.createElement('input',{ref:input,type:'file',accept:'image/png,image/jpeg,image/gif,image/webp,image/svg+xml,image/x-icon',onChange:change,style:{display:'none'},disabled:!canEdit||busy}),
       React.createElement('div',{style:{display:'flex',gap:6,marginTop:7}},
         React.createElement('button',{disabled:!canEdit||busy,onClick:()=>input.current.click(),style:{flex:1,border:'none',borderRadius:10,padding:8,background:'var(--guinda)',color:'#fff',fontWeight:800}},busy?'Guardando…':url?'Reemplazar':'Subir'),
-        nullable&&url&&React.createElement('button',{disabled:!canEdit||busy,onClick:clear,style:{border:'none',borderRadius:10,padding:8,background:'var(--surface-2)',color:'var(--ink-2)',fontWeight:800}},'Quitar')));
+        nullable&&url&&React.createElement('button',{disabled:!canEdit||busy,onClick:clear,style:{border:'none',borderRadius:10,padding:8,background:'var(--surface-2)',color:'var(--ink-2)',fontWeight:800}},'Quitar')),
+      error&&React.createElement('div',{'data-branding-asset-error':field,role:'alert',style:{fontSize:11.5,lineHeight:1.4,color:'#A32921',fontWeight:750,marginTop:7}},error));
   }
   function HomeHeaderPhoto({canEdit,onDone}) {
     const resource=window.useAsset('home.header.collapsed');const [busy,setBusy]=React.useState(false);const input=React.useRef(null);
@@ -57,7 +66,7 @@
         React.createElement(Card,{title:'Nombre y descripción',sub:'Estos textos se muestran en la aplicación y durante su instalación.'},
           [['app_name','Nombre de la aplicación'],['short_name','Nombre corto'],['description','Descripción']].map(([name,title])=>React.createElement('label',{key:name,style:Object.assign({},label,{marginBottom:10})},title,React.createElement('input',{'data-branding-field':name,value:form[name],onChange:set(name),disabled:!canEdit||busy,maxLength:name==='app_name'?80:name==='short_name'?30:240,style:Object.assign({},box,{marginTop:6})}))),
           React.createElement('button',{'data-h008-save-settings':'',disabled:!canEdit||busy,onClick:save,style:{width:'100%',border:'none',borderRadius:12,padding:12,background:'var(--guinda)',color:'#fff',fontWeight:900}},busy?'Guardando…':'Guardar textos')),
-        React.createElement(Card,{title:'Íconos e identidad visual',sub:'Formatos de imagen permitidos; tamaño máximo de 10 MB.'},
+        React.createElement(Card,{title:'Íconos e identidad visual',sub:'Formatos permitidos; máximo 10 MB. El Ícono de la app genera las variantes 512, PWA 192, Apple Touch y maskable.'},
           React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},assetControls&&assetControls.map((x)=>React.createElement(Upload,{key:x[3],title:x[0],url:x[1],assetKey:x[2],field:x[3],nullable:x[4],canEdit,onDone:reload})))),
         React.createElement(HomeHeaderPhoto,{canEdit,onDone:reload}),
         React.createElement(Card,{title:'Imágenes de instalación',sub:'Orden explícito 1, 2 y 3.'},

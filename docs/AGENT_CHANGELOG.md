@@ -1478,3 +1478,26 @@ Unexpected files changed: 0
 Known limitations: 7 source headers require owner clarification and remain excluded
 Evidence: docs/qa/H-ADMIN-PROGRAM-CRITERIA-MATRIX-001-EVIDENCE.md
 ```
+
+## 2026-08-27 — H-BRANDING-UPLOAD-001
+
+- Se corrigió el fallo parcial de Admin → Ícono e instalación: el navegador ya no intenta `UPSERT` sobre `asset_sources`, cuyo `UPDATE` está correctamente revocado. La nueva RPC `register_branding_assets(jsonb)` registra asset, procedencia y vínculo de `app_settings` en una sola transacción, con allowlist, validación de ruta/tipo/tamaño/hash, permiso backend `assets.write` y ejecución denegada a anónimo.
+- El Ícono de la app genera PNG exactos de 512, PWA 192, Apple Touch 180 y maskable 512; las cuatro relaciones Supabase y sus copias estáticas reproducibles quedaron sincronizadas por hash y dimensiones. Los objetos anteriores se conservaron en el manifest de recuperación.
+- Los errores de los ocho campos de imágenes se presentan ahora dentro del control con `role=alert`; se retiró el alert genérico de esos controles. Se preservaron Sello institucional, cinco controles de identidad, tres imágenes de instalación, preview, navegación y estructura visual Claude.
+- Migración/recovery dry run: `PASS`, escrituras persistentes 0. Prueba live reversible: enlace/procedencia/cross-client `PASS`, usuario normal/anónimo `DENIED`, fixture restaurado. Chrome 1440×900: ocho controles, tres posiciones, sin overflow, mensaje inline y cero alerts/escrituras ante archivo inválido.
+- Google Sheets, Apps Script, Ahorro, Préstamos, fórmulas y cálculos financieros: `NO READ / NO WRITE / NO CHANGE`.
+
+```text
+H-BRANDING-UPLOAD-001 RESULT
+Status: PASS
+Files changed: AdminRepository; pantalla Ícono e instalación; bundle; migración/recovery y pruebas de branding; sincronizador/prueba PWA; cuatro PNG PWA; DATA_MAPPING; Architecture Registry derivado; este changelog
+Source-of-truth verdict: PASS — app_settings + app_assets + app-assets permanecen como autoridad única; sin fallback
+Invariant verdict: PASS — INV-015, INV-027–030, INV-032, INV-035 e INV-036 preservadas
+Build: PASS — bundle reproducible desde 90 fuentes; artefactos PWA válidos
+Tests: PASS — estáticas H-008/H-009/branding/PWA/pages; dry run forward/recovery; live reversible; Chrome real
+Security: PASS — assets.write backend; SECURITY DEFINER con search_path vacío; authenticated-only; normal/anónimo denegados
+Legacy impact: NOT APPLICABLE / NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: ninguno atribuible a esta H; se preservaron modificaciones preexistentes del árbol
+Known limitations: las tres imágenes de instalación siguen sin configurar; assets parciales no vinculados se preservan hasta que el propietario cargue los archivos correctos
+Evidence: salidas de scripts/test-branding-upload-*.{js,py}; scripts/sync-icon-installation.py --verify --verify-static; scripts/test-icon-installation.js
+```

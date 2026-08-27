@@ -260,14 +260,14 @@ Frontend: Admin BrandingModule; Home InstallButton; SutiSeal; HTML/manifest/serv
 Previous sources: suti.branding.v1/localStorage, image-slot, .image-slots.state.json and hardcoded manifest/HTML
 Current authority: public.app_settings + public.app_assets + Supabase Storage
 Reads: BrandingRepository.get() and shared AssetRepository URL boundary; one in-memory VisualContent projection
-Writes: scripts/sync-icon-installation.py with local administrative Secret Key only; browser writes disabled
+Writes: AdminRepository uploads to `app-assets` under H-008 Storage policy and calls authenticated-only `register_branding_assets(jsonb)`; the RPC requires backend `assets.write` and atomically updates `app_assets`, `asset_sources` and the allowlisted `app_settings` relationship. `scripts/sync-icon-installation.py` only verifies/synchronizes reproducible static PWA copies.
 Text fields: app_name, short_name, description
 Asset relationships: app_icon, institutional_seal, favicon, apple_touch, pwa_192, pwa_512, pwa_maskable_512, install_screen_1/2/3
-Transforms: public Storage URL projection; reproducible static synchronization for pre-React/PWA files
-Error behavior: visible loading/error state; no fallback to local or hardcoded branding
-Migration recommendation: SUPABASE_ACTIVE for reads/server administration; browser editing BLOCKED until Admin Auth
+Transforms: public Storage URL projection; uploading `brand.pwa.512` derives exact PNG variants 512, PWA 192, Apple Touch 180 and maskable 512; reproducible static synchronization for pre-React/PWA files
+Error behavior: visible loading/error state and per-field upload error with the previous asset preserved; no fallback to local or hardcoded branding
+Migration recommendation: SUPABASE_ACTIVE for reads and H-008/H-009 authenticated administration
 Confidence: HIGH
-Open questions: provision authorized install-screen files; implement real administrative principal/permissions before enabling UI upload/replace/remove
+Open questions: provision the three authorized install-screen files
 ```
 
 ### H-008 — Administración técnica y escritura visual

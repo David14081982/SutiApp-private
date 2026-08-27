@@ -54,7 +54,8 @@ assert.doesNotMatch(repository,/administrativeFeeTotal\s*=|paymentPerPeriod\s*=/
 assert.match(loan,/requestLoanSessionQuote/);
 assert.match(loan,/financialLegacyStore\.confirmLoanSession/);
 assert.match(loan,/finally \{\s*running\.current = false/);
-assert.match(loan,/displayedResult = result \|\|/);
+assert.match(loan,/const displayedResult = result;/);
+assert.match(loan,/setRequestError\('SIMULATION_RESPONSE_MISMATCH'\)/);
 assert.match(loan,/const delay = immediate\.current \? 0 : 320/);
 assert.match(loan,/latestSelection\.current === request\.key/);
 assert.match(loan,/activeRequest\.current\.controller\.abort\(\)/);

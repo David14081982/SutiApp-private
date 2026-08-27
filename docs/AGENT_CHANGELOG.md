@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-LOAN-QUOTE-STATE-GUARD-001
+
+- Se reprodujo en Suti Préstamo la mezcla semántica de la captura: al cambiar el monto de `$5,000` a `$3,300`, la tarjeta conservaba importes exactos del quote anterior mientras mostraba `Actualizando…`.
+- `StepSimulatorV2` ahora proyecta exclusivamente un resultado que coincide con fondo, monto y plazo actuales. Durante recálculo/error mantiene la estructura y feedback, pero no expone importes anteriores; el CTA permanece no vigente hasta confirmar el nuevo quote.
+- Una respuesta `READY` cuyo monto, plazo o programa no coincide ya no cae entre ramas ni deja un spinner huérfano: falla cerrado como `SIMULATION_RESPONSE_MISMATCH` y ofrece reintento. No cambiaron Repository, RPC, Supabase, resolver, tasas, reglas, Google ni Apps Script.
+- Chrome real 390×844 certificó `$5,000 → $3,300`, labels stale 0, latest quote only y mismatch `ERROR + Reintentar`; el flujo real Supabase pasó con máximo una petición concurrente y llamadas Google 0. Suite estática 49/49.
+
+```text
+H-LOAN-QUOTE-STATE-GUARD-001 RESULT
+Status: PASS
+Files changed: LoanScreen state projection; bundle/cache; focused browser/static tests; changelog/Registry
+Source-of-truth verdict: PASS — Supabase criteria/snapshot/RPC preserved; no fallback or calculation frontend
+Invariant verdict: PASS — only the exact current server quote is actionable or visible as a result
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — static 49/49; focused Chrome mobile; live Supabase auto-recalculation flow
+Security: NOT APPLICABLE — no auth, permission, RLS or backend change
+Legacy impact: READ ONLY / GOOGLE CALLS 0 / GOOGLE WRITES 0 / APPS SCRIPT CHANGES 0
+Unexpected files changed: 0
+Known limitations: the broad loading harness retains a pre-existing host-sensitive 200 ms scheduling gate; focused and live browser contracts pass
+Evidence: scripts/test-loan-stale-quote-browser.js; scripts/test-loan-auto-recalc-browser.js; scripts/test-static-suite.js
+```
+
 ## 2026-08-27 — H-FINANCIAL-SUPABASE-CUTOVER-AUTONOMOUS-001
 
 - Se resolvió el FAIL previo mediante un canary shadow que ejercitó el bundle Edge exacto antes de cambiar autoridad, con diagnóstico sanitizado y gate de readiness. El canary A/B pasó para 146 reglas, dos perfiles distintos y cuatro cotizaciones, sin diferencias de elegibilidad, programa, fondo, tasa, monto, plazo, fecha o visibilidad.

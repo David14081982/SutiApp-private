@@ -306,7 +306,6 @@
     const [amount, setAmount] = React.useState(() => program ? Number(program.suggested_amount || program.min_amount) : 0);
     const [term, setTerm] = React.useState(() => program ? (terms[0] || Number(program.custom_term && program.custom_term.min) || 0) : 0);
     const [confirmed, setConfirmed] = React.useState({ key: '', quote: null, revision: 0 });
-    const [autoPending, setAutoPending] = React.useState(false);
     const [requestError, setRequestError] = React.useState(null);
     const timer = React.useRef(null);
     const queued = React.useRef(null);
@@ -401,10 +400,10 @@
             quoteRevision.current += 1;
             setConfirmed({ key: request.key, quote: snapshot.quote, revision: quoteRevision.current });
             setRequestError(null);
-            setAutoPending(false);
+          } else if (latestSelection.current === request.key && snapshot.status === 'ready') {
+            setRequestError('SIMULATION_RESPONSE_MISMATCH');
           } else if (latestSelection.current === request.key && snapshot.status === 'error') {
             setRequestError(snapshot.error || 'SIMULATION_UNAVAILABLE');
-            setAutoPending(false);
           }
         }
       } finally {
@@ -419,9 +418,8 @@
         activeRequest.current.reason = 'superseded';
         activeRequest.current.controller.abort();
       }
-      if (!validSelection) { setAutoPending(false); return; }
+      if (!validSelection) return;
       setRequestError(null);
-      setAutoPending(true);
       const request = { key: selectionKey, programId: program.id, program, amount, term };
       if (delay === 0) {
         queued.current = request;
@@ -435,9 +433,8 @@
     };
 
     React.useEffect(() => {
-      if (!validSelection) { clearTimeout(timer.current); setAutoPending(false); return undefined; }
+      if (!validSelection) { clearTimeout(timer.current); return undefined; }
       if (confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)) {
-        setAutoPending(false);
         return undefined;
       }
       const delay = immediate.current ? 0 : 320;
@@ -458,7 +455,7 @@
     const unavailableError = /NOT_CONFIGURED|UNAVAILABLE|REJECTED|INVALID_RESPONSE|CONTRACT_MISMATCH/.test(effectiveError || '');
     const initialLoading = !result && !confirmed.quote && !effectiveError && (overviewLoading || !!program);
     const updating = validSelection && !!confirmed.quote && !result && !effectiveError && !overviewLoading;
-    const displayedResult = result || (confirmed.quote && !initialLoading ? confirmed.quote : null);
+    const displayedResult = result;
     const state = initialLoading ? 'LOADING'
       : requestError ? 'ERROR'
       : effectiveError ? (unavailableError ? 'UNAVAILABLE' : 'ERROR')

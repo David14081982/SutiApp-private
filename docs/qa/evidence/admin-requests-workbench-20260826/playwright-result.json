@@ -1,0 +1,171 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "realBrowser": true,
+  "viewports": {
+    "1024x768": {
+      "columns": 2,
+      "filterColumns": 3,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    },
+    "1280x900": {
+      "columns": 2,
+      "filterColumns": 5,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    },
+    "1440x1000": {
+      "columns": 2,
+      "filterColumns": 5,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    }
+  },
+  "queue": {
+    "initialRows": 2,
+    "statusFilter": true,
+    "typeFilter": true,
+    "ageFilter": true,
+    "responsibleFilter": "N/A_NO_REQUEST_OWNER_AUTHORITY",
+    "dateFilter": true,
+    "search": true,
+    "emptyState": true,
+    "previousNext": true,
+    "keyboard": true
+  },
+  "detail": {
+    "persistent": true,
+    "timeline": true,
+    "documents": true,
+    "authoritativeTracking": "N/A_NO_TRACKING_FIXTURE",
+    "technicalIdsPrimary": 0
+  },
+  "actions": {
+    "saveAndNext": true,
+    "inlineFeedback": true,
+    "databaseReadback": true,
+    "notesPreserved": true,
+    "refreshPersistence": true,
+    "duplicateRequests": 0
+  },
+  "history": {
+    "folioVisible": true,
+    "reviewVisible": true,
+    "matchingOperations": 1,
+    "state": "revision"
+  },
+  "security": {
+    "superAdmin": true,
+    "authorizedResponsible": "N/A_NO_REQUEST_OWNER_AUTHORITY",
+    "unauthorizedResponsible": "DENIED",
+    "normalUser": "DENIED",
+    "anonymous": "DENIED",
+    "crossUserRows": 0,
+    "rls": true,
+    "rpc": true
+  },
+  "mobile": {
+    "desktopWorkbench": false,
+    "bottomNav": "flex",
+    "rootWidth": 430,
+    "horizontalOverflow": false,
+    "fixtureMentions": 2,
+    "cards": 5
+  },
+  "performance": {
+    "metadataQueue": true,
+    "lazyDetail": true,
+    "lazyDocuments": true,
+    "initialDetailCalls": 3
+  },
+  "fixtures": {
+    "marker": "REQWB-QA-MTATFLCO-51572C",
+    "requests": 2,
+    "documentAttached": false,
+    "termsAttached": false,
+    "trackingAttached": false,
+    "cleanup": {
+      "clean": true,
+      "residue": [
+        {
+          "status": 200,
+          "count": 0
+        },
+        {
+          "status": 200,
+          "count": 0
+        },
+        {
+          "status": 200,
+          "count": 0
+        },
+        {
+          "status": 200,
+          "count": 0
+        }
+      ]
+    }
+  },
+  "contracts": {
+    "safeBulk": "NOT_AUTHORIZED",
+    "assignment": "N/A",
+    "observation": "N/A"
+  },
+  "allowedWrites": [
+    {
+      "method": "POST",
+      "url": "https://jsucdyothkuptosvskqf.supabase.co/rest/v1/rpc/update_program_request"
+    }
+  ],
+  "unexpectedWrites": [],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Workflow authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.operational_request_tracking TO anon;, message: permission denied for table operational_request_tracking}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "{code: 42501, details: null, hint: Grant the required privileges to the current role …NT SELECT ON public.union_content_blocks TO anon;, message: permission denied for table union_content_blocks}",
+    "Admin cutover authority error [roles] {code: 42501, details: null, hint: Grant the required privileges to the current role with: GRANT SELECT ON public.admin_roles TO anon;, message: permission denied for table admin_roles}",
+    "Admin cutover authority error [segments] {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.segmentation_catalog_entries TO anon;, message: permission denied for table segmentation_catalog_entries}",
+    "Admin cutover authority error [access] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.screen_access_policies TO anon;, message: permission denied for table screen_access_policies}",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:64411/app/bundle.js?v=151:6954:68)\n    at Object.listManaged (http://127.0.0.1:64411/app/bundle.js?v=151:7063:172)\n    at Array.<anonymous> (http://127.0.0.1:64411/app/bundle.js?v=151:20918:181)\n    at http://127.0.0.1:64411/app/bundle.js?v=151:20920:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:64411/app/bundle.js?v=151:20920:53)",
+    "Admin cutover authority error [profiles] {code: 42501, details: null, hint: null, message: permission denied for function has_admin_permission}",
+    "Admin cutover authority error [rules] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.company_audience_rules TO anon;, message: permission denied for table company_audience_rules}",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:64411/app/bundle.js?v=151:6953:72)\n    at Object.listManaged (http://127.0.0.1:64411/app/bundle.js?v=151:7063:226)\n    at Array.jobs (http://127.0.0.1:64411/app/bundle.js?v=151:20918:339)\n    at http://127.0.0.1:64411/app/bundle.js?v=151:20920:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:64411/app/bundle.js?v=151:20920:53)",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Finance presentation authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.finance_catalog_presentation TO anon;, message: permission denied for table finance_catalog_presentation}",
+    "Access to fetch at 'https://jsucdyothkuptosvskqf.supabase.co/functions/v1/financial-legacy' from origin 'http://127.0.0.1:64411' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:64411/app/bundle.js?v=151:6954:68)\n    at Object.listManaged (http://127.0.0.1:64411/app/bundle.js?v=151:7063:172)\n    at Array.<anonymous> (http://127.0.0.1:64411/app/bundle.js?v=151:20918:181)\n    at http://127.0.0.1:64411/app/bundle.js?v=151:20920:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:64411/app/bundle.js?v=151:20920:53)",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:64411/app/bundle.js?v=151:6953:72)\n    at Object.listManaged (http://127.0.0.1:64411/app/bundle.js?v=151:7063:226)\n    at Array.jobs (http://127.0.0.1:64411/app/bundle.js?v=151:20918:339)\n    at http://127.0.0.1:64411/app/bundle.js?v=151:20920:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:64411/app/bundle.js?v=151:20920:53)",
+    "Access to fetch at 'https://jsucdyothkuptosvskqf.supabase.co/functions/v1/financial-legacy' from origin 'http://127.0.0.1:64411' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()"
+  ]
+}

@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## H-ADMIN-REQUESTS-WORKBENCH-001 — 2026-08-26
+
+- `Admin → Solicitudes` incorpora sólo en desktop una bandeja operativa de tabla + detalle persistente: búsqueda/filtros reales, tracking autoritativo lazy con fallback factual, documentos lazy, feedback inline, navegación continua y teclado seguro.
+- `program_requests` y `ProgramRequestRepository` siguen siendo la única autoridad. La actualización usa la RPC existente, exige readback antes del éxito y se refleja en el Historial desde la misma fila; `DATA_MAPPING.md` quedó alineado con ADR-038 y no hay store, mock, `DATA`, localStorage, fallback ni solicitudes duplicadas.
+- El modelo no ofrece responsable/asignación por solicitud, observación administrativa separada ni batch atómico; se reportan respectivamente `N/A`, `N/A` y `BULK_NOT_AUTHORIZED`, sin inventar UI o estados.
+- Chrome/Supabase real pasó 430/1024/1280/1440, filtros, selección, detalle/timeline, Guardar y siguiente, refresh, Historial y denegaciones normal/anónima/cruzada. El entorno no tenía workflow `request` enlazable (`N/A_NO_TRACKING_FIXTURE`), por lo que no se inventó una etapa. La única write browser observada fue `update_program_request` sobre fixture reversible y el cleanup final quedó en cero.
+- Móvil conserva cards, acciones y bottom navigation. Finanzas, Google, Apps Script, cálculos, snapshot, Document Workbench y shell Admin permanecen sin cambios funcionales.
+
+```text
+H-ADMIN-REQUESTS-WORKBENCH-001 RESULT
+Status: PASS
+Files changed: request repository/workbench; History consumer/mapping; generated bundle/cache; task/static/browser tests; evidence/changelog; derived Architecture Registry
+Source-of-truth verdict: PASS — program_requests remains the single authority; no duplicated authority or fallback
+Invariant verdict: PASS — authorization, identity, historical integrity, mobile contract and cross-domain boundaries preserved
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — task/static suite; Registry; real Chrome/Supabase responsive/action/security matrix
+Security: PASS — program_requests.write UI projection plus backend RPC/RLS; normal, anonymous and cross-user denied
+Legacy impact: NOT APPLICABLE / NO WRITE / NO CHANGE
+Unexpected files changed: 0 attributable to this H
+Known limitations: responsible/assignment and independent admin observation are N/A; safe bulk NOT_AUTHORIZED; unavailable browser projections are explicit
+Evidence: docs/qa/H-ADMIN-REQUESTS-WORKBENCH-001-EVIDENCE.md; docs/qa/evidence/admin-requests-workbench-20260826/
+```
+
 ## H-ADMIN-DOCUMENT-WORKBENCH-001 — 2026-08-26
 
 - `Admin → Documentos y credencial` incorpora exclusivamente en desktop una bandeja operativa de dos columnas a `1024px` y tres a `1280/1440`: cola filtrable, preview persistente bajo demanda, decisión contextual y navegación continua.

@@ -1344,3 +1344,27 @@ Unexpected files changed: ninguno detectable; metadata Git ausente
 Known limitations: términos publicados 0; confirmación real permanece fail-closed hasta contenido legal del propietario
 Evidence: docs/PERSONALIZED_FINANCIAL_SESSION_SNAPSHOT_IMPLEMENTATION.md
 ```
+
+## 2026-08-26 — H-ADMIN-PROGRAM-CRITERIA-MATRIX-001
+
+- `Admin → Fondos y reglas` usa en Desktop una matriz profesional de solo lectura con búsqueda, siete filtros de negocio, orden, agrupación por programa, detalle persistente, señales conservadoras y comparación de 2–4 reglas; móvil conserva íntegro su flujo anterior.
+- Google `Criterios de fondos` sigue como autoridad mediante el read model `financial-legacy`; backend, writers, RLS, Apps Script, fórmulas, tasas, montos, plazos, fechas, elegibilidad y visibilidad no cambiaron.
+- Lectura viva: 146 criterios, 3 programas, 35 fondos, 4 sindicatos, 6 categorías; 57 disponibles, 42 programados y 47 no disponibles; 2 grupos potencialmente duplicados y 1 potencial conflicto.
+- Siete encabezados no expuestos por el read model quedan `OWNER_CLARIFICATION_REQUIRED`; no fueron interpretados ni mostrados.
+- Chrome real 430/1024/1280/1440, error/reintento, refresh y cero escrituras PASS; shell Admin PASS; suite estática 48/48; Registry actualizado y FRESH.
+- Evidencia: `docs/qa/H-ADMIN-PROGRAM-CRITERIA-MATRIX-001-EVIDENCE.md`.
+
+```text
+H-ADMIN-PROGRAM-CRITERIA-MATRIX-001 RESULT
+Status: PASS_WITH_CLARIFICATIONS
+Files changed: Desktop criteria UI/projection; bundle/cache; tests/evidence; derived Architecture Registry
+Source-of-truth verdict: PASS — Google preserved; no fallback or duplicate authority
+Invariant verdict: PASS — eligibility, visibility and financial values unchanged
+Build: PASS — bundle reproducible from 90 sources
+Tests: PASS — static 48/48; live read/security; Chrome matrix and Admin shell
+Security: PASS — capability enforced at backend; unauthorized/normal/anonymous denied; writers 0
+Legacy impact: READ ONLY / GOOGLE WRITES 0 / APPS SCRIPT WRITES 0
+Unexpected files changed: 0
+Known limitations: 7 source headers require owner clarification and remain excluded
+Evidence: docs/qa/H-ADMIN-PROGRAM-CRITERIA-MATRIX-001-EVIDENCE.md
+```

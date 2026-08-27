@@ -10,11 +10,11 @@
   function project(rule) {
     return Object.freeze({
       id: rule.criterion_identity,
-      sourceId: rule.id, fondo: rule.fund, categoria: rule.category, sindicato: rule.union,
+      sourceId: rule.id, programId: rule.program_id, fondo: rule.fund, categoria: rule.category, sindicato: rule.union,
       tipoEmpleado: 'Todos', tipo: rule.available_on ? 'evento' : 'revolvente', fecha: rule.available_on,
-      montoMax: Number(rule.max_amount), tasaQuincenal: Number(rule.rate), tasaMensual: Number(rule.rate),
-      plazoQuincenas: Number(rule.payment_count), plazoLabel: rule.term_label,
-      status: rule.status, activo: rule.effective_visibility === 'VISIBLE', readOnly: false,
+      montoMax: Number(rule.max_amount), tasaQuincenal: Number(rule.rate),
+      plazoQuincenas: Number(rule.payment_count), plazoLabel: rule.term_label, periodoPago: rule.payment_period,
+      status: rule.status, activo: rule.effective_visibility === 'VISIBLE', readOnly: true,
       sheetRow: Number(rule.sheet_row), visibilityMode: rule.visibility_mode,
       automaticVisibility: rule.automatic_visibility, effectiveVisibility: rule.effective_visibility,
       visibilityWindowStart: rule.visibility_window_start, visibilityWindowEnd: rule.visibility_window_end,
@@ -33,7 +33,7 @@
   const store = {
     load, status: () => phase, error: () => error,
     all: () => rows.slice(), get: (id) => rows.find((row) => row.id === id) || null,
-    fondos: () => uniq(rows.map((row) => row.fondo)), sindicatos: () => uniq(rows.map((row) => row.sindicato)), categorias: () => uniq(rows.map((row) => row.categoria)),
+    programas: () => uniq(rows.map((row) => row.programId)), fondos: () => uniq(rows.map((row) => row.fondo)), sindicatos: () => uniq(rows.map((row) => row.sindicato)), categorias: () => uniq(rows.map((row) => row.categoria)),
     query: (filters) => rows.filter((row) => (!filters || filters.fondo === 'all' || row.fondo === filters.fondo) &&
       (!filters || filters.sindicato === 'all' || row.sindicato === filters.sindicato) &&
       (!filters || filters.categoria === 'all' || row.categoria === filters.categoria) &&

@@ -1,0 +1,118 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "realBrowser": true,
+  "mode": "READ_ONLY_LIVE",
+  "viewports": {
+    "1024x768": {
+      "columns": 2,
+      "pageOverflow": false,
+      "internalHorizontalScroll": true,
+      "stickyFund": true,
+      "stickyHeader": true,
+      "detail": true,
+      "matrix": true
+    },
+    "1280x900": {
+      "columns": 2,
+      "pageOverflow": false,
+      "internalHorizontalScroll": true,
+      "stickyFund": true,
+      "stickyHeader": true,
+      "detail": true,
+      "matrix": true
+    },
+    "1440x1000": {
+      "columns": 2,
+      "pageOverflow": false,
+      "internalHorizontalScroll": true,
+      "stickyFund": true,
+      "stickyHeader": true,
+      "detail": true,
+      "matrix": true
+    }
+  },
+  "interactions": {
+    "search": true,
+    "programFilter": true,
+    "fundFilter": true,
+    "unionFilter": true,
+    "categoryFilter": true,
+    "validityFilter": true,
+    "visibilityFilter": true,
+    "statusFilter": true,
+    "sort": true,
+    "group": true,
+    "selectionDetail": true,
+    "comparison": true,
+    "keyboard": true,
+    "humanLabels": true,
+    "technicalIdsPrimary": 0,
+    "refresh": true
+  },
+  "mobile": {
+    "matrix": false,
+    "cards": 146,
+    "writerControls": 146,
+    "pageOverflow": false,
+    "title": true
+  },
+  "performance": {
+    "metadataRows": 146,
+    "catalogCalls": 4,
+    "directGoogleRequests": 0,
+    "fullDocumentDownloads": 0
+  },
+  "writes": {
+    "google": 0,
+    "supabaseFinancial": 0,
+    "appsScript": 0,
+    "businessRows": 0,
+    "browser": 0,
+    "criteriaWriterCalls": 0
+  },
+  "errors": {
+    "failClosed": true,
+    "retry": true
+  },
+  "screenshots": [
+    "docs/qa/evidence/admin-program-criteria-matrix-20260826/criteria-matrix-1024x768.png",
+    "docs/qa/evidence/admin-program-criteria-matrix-20260826/criteria-matrix-1280x900.png",
+    "docs/qa/evidence/admin-program-criteria-matrix-20260826/criteria-matrix-1440x1000.png",
+    "docs/qa/evidence/admin-program-criteria-matrix-20260826/criteria-mobile-preserved-430x932.png"
+  ],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Finance presentation authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.finance_catalog_presentation TO anon;, message: permission denied for table finance_catalog_presentation}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "{code: 42501, details: null, hint: Grant the required privileges to the current role …NT SELECT ON public.union_content_blocks TO anon;, message: permission denied for table union_content_blocks}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Admin cutover authority error [roles] {code: 42501, details: null, hint: Grant the required privileges to the current role with: GRANT SELECT ON public.admin_roles TO anon;, message: permission denied for table admin_roles}",
+    "Admin cutover authority error [segments] {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.segmentation_catalog_entries TO anon;, message: permission denied for table segmentation_catalog_entries}",
+    "Admin cutover authority error [access] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.screen_access_policies TO anon;, message: permission denied for table screen_access_policies}",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://localhost:8080/app/bundle.js?v=153:6954:68)\n    at Object.listManaged (http://localhost:8080/app/bundle.js?v=153:7063:172)\n    at Array.<anonymous> (http://localhost:8080/app/bundle.js?v=153:20940:181)\n    at http://localhost:8080/app/bundle.js?v=153:20942:66\n    at Array.map (<anonymous>)\n    at load (http://localhost:8080/app/bundle.js?v=153:20942:53)",
+    "Admin cutover authority error [profiles] {code: 42501, details: null, hint: null, message: permission denied for function has_admin_permission}",
+    "Admin cutover authority error [rules] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.company_audience_rules TO anon;, message: permission denied for table company_audience_rules}",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://localhost:8080/app/bundle.js?v=153:6953:72)\n    at Object.listManaged (http://localhost:8080/app/bundle.js?v=153:7063:226)\n    at Array.jobs (http://localhost:8080/app/bundle.js?v=153:20940:339)\n    at http://localhost:8080/app/bundle.js?v=153:20942:66\n    at Array.map (<anonymous>)\n    at load (http://localhost:8080/app/bundle.js?v=153:20942:53)",
+    "Workflow authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T SELECT ON public.operational_workflows TO anon;, message: permission denied for table operational_workflows}",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: net::ERR_FAILED",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://localhost:8080/app/bundle.js?v=153:6954:68)\n    at Object.listManaged (http://localhost:8080/app/bundle.js?v=153:7063:172)\n    at Array.<anonymous> (http://localhost:8080/app/bundle.js?v=153:20940:181)\n    at http://localhost:8080/app/bundle.js?v=153:20942:66\n    at Array.map (<anonymous>)\n    at load (http://localhost:8080/app/bundle.js?v=153:20942:53)",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://localhost:8080/app/bundle.js?v=153:6953:72)\n    at Object.listManaged (http://localhost:8080/app/bundle.js?v=153:7063:226)\n    at Array.jobs (http://localhost:8080/app/bundle.js?v=153:20940:339)\n    at http://localhost:8080/app/bundle.js?v=153:20942:66\n    at Array.map (<anonymous>)\n    at load (http://localhost:8080/app/bundle.js?v=153:20942:53)",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()"
+  ]
+}

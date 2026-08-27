@@ -7014,44 +7014,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     return allowed[file.type];
   }
   async function digestOf(file){const bytes=await file.arrayBuffer();return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map((x)=>x.toString(16).padStart(2,'0')).join('');}
-  async function normalizedPng(file,size,errorCode='INVALID_PWA_ICON'){
-    if(!file||!file.type.startsWith('image/'))throw new Error(errorCode);
-    const bitmap=await createImageBitmap(file);
-    try{
-      if(bitmap.width!==bitmap.height||bitmap.width<size)throw new Error(errorCode);
-      const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
-      const context=canvas.getContext('2d',{alpha:true});if(!context)throw new Error('ICON_NORMALIZATION_FAILED');
-      context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.clearRect(0,0,size,size);context.drawImage(bitmap,0,0,size,size);
-      const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/png'));
-      if(!blob)throw new Error('ICON_NORMALIZATION_FAILED');
-      return new File([blob],`sutiapp-icon-${size}.png`,{type:'image/png',lastModified:Date.now()});
-    }finally{if(bitmap.close)bitmap.close();}
-  }
-  async function removeUnlinkedObject(db,bucket,path){
-    const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket',bucket).eq('storage_path',path);
-    if(!refs.error&&refs.count===0)await db.storage.from(bucket).remove([path]);
-  }
-  async function registerBrandingFiles(entries){
-    const db=client();const uploaded=[];
-    try{
-      for(const entry of entries){
-        const ext=fileContract(entry.file,'app-assets');const digest=await digestOf(entry.file);const safeKey=entry.assetKey.replace(/[^a-zA-Z0-9._-]/g,'-');const path=`branding/admin/${safeKey}/${digest}.${ext}`;
-        const stored=await db.storage.from('app-assets').upload(path,entry.file,{upsert:true,contentType:entry.file.type});if(stored.error)throw stored.error;
-        uploaded.push({asset_key:entry.assetKey,storage_path:path,mime_type:entry.file.type,file_size:entry.file.size,content_sha256:digest.toUpperCase()});
-      }
-      const registered=await db.rpc('register_branding_assets',{p_assets:uploaded});if(registered.error)throw registered.error;
-      for(const previous of registered.data||[]){
-        const current=uploaded.find((entry)=>entry.asset_key===previous.asset_key);
-        if(previous.previous_storage_bucket&&previous.previous_storage_path&&current&&previous.previous_storage_path!==current.storage_path){
-          await removeUnlinkedObject(db,previous.previous_storage_bucket,previous.previous_storage_path);
-        }
-      }
-      return Object.freeze(registered.data||[]);
-    }catch(error){
-      for(const entry of uploaded)await removeUnlinkedObject(db,'app-assets',entry.storage_path);
-      throw error;
-    }
-  }
   async function uploadManagedAsset(file,bucket,assetType,purpose){
     const section=String(purpose||'').split('.')[0];const sectionAsset=/^(news|education|tutorials|companies|banners|popups|documents|minutes|programs|marketplace|directory|sindicato)$/.test(section);
     const permission=bucket==='company-assets'?'companies.write':bucket==='documents'?'documents.write':'assets.write';
@@ -7090,30 +7052,19 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const object=await db.storage.from(asset.bucket).remove([asset.path]);if(object.error)throw object.error;
   }
   async function uploadBrandingAsset(file,assetKey,settingsField){
-    requirePermission('assets.write');
-    const expected={
-      'brand.pwa.512':'app_icon_asset_id','brand.institutional-seal':'institutional_seal_asset_id',
-      'brand.favicon-pwa-192':'favicon_asset_id','brand.pwa.apple-touch':'apple_touch_asset_id',
-      'brand.pwa.maskable-512':'pwa_maskable_512_asset_id','pwa.install-screen-1':'install_screen_1_asset_id',
-      'pwa.install-screen-2':'install_screen_2_asset_id','pwa.install-screen-3':'install_screen_3_asset_id',
-      'home.header.collapsed':null
-    };
-    if(!Object.prototype.hasOwnProperty.call(expected,assetKey)||expected[assetKey]!==settingsField)throw new Error('INVALID_BRANDING_TARGET');
-    let entries=[{assetKey,file}];
-    if(assetKey==='brand.pwa.512'){
-      const variants=await Promise.all([normalizedPng(file,512,'INVALID_APP_ICON'),normalizedPng(file,192,'INVALID_APP_ICON'),normalizedPng(file,180,'INVALID_APP_ICON')]);
-      entries=[
-        {assetKey:'brand.pwa.512',file:variants[0]},
-        {assetKey:'brand.favicon-pwa-192',file:variants[1]},
-        {assetKey:'brand.pwa.apple-touch',file:variants[2]},
-        {assetKey:'brand.pwa.maskable-512',file:variants[0]}
-      ];
-    }else{
-      const technicalSize={'brand.favicon-pwa-192':192,'brand.pwa.apple-touch':180,'brand.pwa.maskable-512':512}[assetKey];
-      if(technicalSize)entries=[{assetKey,file:await normalizedPng(file,technicalSize)}];
-    }
-    const registered=await registerBrandingFiles(entries);const primary=registered.find((row)=>row.asset_key===assetKey);
-    return primary&&primary.asset_id;
+    requirePermission('assets.write'); const ext=fileContract(file,'app-assets'); const digest=await digestOf(file); const safeKey=assetKey.replace(/[^a-zA-Z0-9._-]/g,'-'); const path=`branding/admin/${safeKey}/${digest}.${ext}`; const db=client();
+    const oldResult=await db.from('app_assets').select('id,storage_bucket,storage_path').eq('asset_key',assetKey).maybeSingle();if(oldResult.error)throw oldResult.error;
+    const upload=await db.storage.from('app-assets').upload(path,file,{upsert:true,contentType:file.type});if(upload.error)throw upload.error;
+    let assetId=oldResult.data&&oldResult.data.id;
+    try{
+      const row={asset_key:assetKey,asset_type:'BRANDING',title:assetKey,alt_text:assetKey.replaceAll('.',' '),storage_bucket:'app-assets',storage_path:path,mime_type:file.type,file_size:file.size,content_sha256:digest.toUpperCase(),status:'READY'};
+      const saved=assetId?await db.from('app_assets').update(row).eq('id',assetId).select('id').single():await db.from('app_assets').insert(row).select('id').single();
+      if(saved.error)throw saved.error;assetId=saved.data.id;
+      const source=await db.from('asset_sources').upsert({asset_id:assetId,source_sheet:'ADMIN_H009',source_column:settingsField||assetKey,source_snapshot_hash:digest.toUpperCase()},{onConflict:'asset_id,source_sheet,source_row_ordinal,source_column,source_url,source_snapshot_hash',ignoreDuplicates:true});
+      if(source.error)throw source.error;if(settingsField)await updateSettings({[settingsField]:assetId});
+      const old=oldResult.data;if(old&&old.storage_path&&old.storage_path!==path){const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket',old.storage_bucket).eq('storage_path',old.storage_path);if(!refs.error&&refs.count===0)await db.storage.from(old.storage_bucket).remove([old.storage_path]);}
+      return assetId;
+    }catch(error){const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket','app-assets').eq('storage_path',path);if(!refs.error&&refs.count===0)await db.storage.from('app-assets').remove([path]);throw error;}
   }
   async function clearAsset(settingsField){return updateSettings({[settingsField]:null});}
 
@@ -39601,14 +39552,6 @@ Object.assign(window, {
       }
     }, 'No configurada'));
   }
-  function assetError(error) {
-    const code = String(error && (error.code || '') + ' ' + (error.message || error) || '').toUpperCase();
-    if (code.includes('INVALID_APP_ICON')) return 'El ícono debe ser cuadrado, de al menos 512 × 512 px.';
-    if (code.includes('INVALID_PWA_ICON')) return 'La variante debe ser cuadrada y alcanzar el tamaño indicado (180, 192 o 512 px).';
-    if (code.includes('INVALID_ASSET')) return 'Usa PNG, JPG, GIF, WebP, SVG o ICO; máximo 10 MB.';
-    if (code.includes('ADMIN_DENIED') || code.includes('42501') || code.includes('401') || code.includes('JWT')) return 'Tu sesión no tiene permiso o expiró. Vuelve a iniciar sesión.';
-    return 'No fue posible guardar el archivo. Reintenta; el archivo anterior se conserva.';
-  }
   function Upload({
     title,
     url,
@@ -39620,18 +39563,16 @@ Object.assign(window, {
     ratio
   }) {
     const [busy, setBusy] = React.useState(false);
-    const [error, setError] = React.useState('');
     const input = React.useRef(null);
     const change = async e => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       setBusy(true);
-      setError('');
       try {
         await window.AdminRepository.uploadBrandingAsset(file, assetKey, field);
         await onDone();
-      } catch (problem) {
-        setError(assetError(problem));
+      } catch (_) {
+        alert('No fue posible guardar el archivo.');
       } finally {
         setBusy(false);
         e.target.value = '';
@@ -39639,12 +39580,11 @@ Object.assign(window, {
     };
     const clear = async () => {
       setBusy(true);
-      setError('');
       try {
         await window.AdminRepository.clearAsset(field);
         await onDone();
-      } catch (problem) {
-        setError(assetError(problem));
+      } catch (_) {
+        alert('No fue posible quitar el archivo.');
       } finally {
         setBusy(false);
       }
@@ -39695,17 +39635,7 @@ Object.assign(window, {
         color: 'var(--ink-2)',
         fontWeight: 800
       }
-    }, 'Quitar')), error && React.createElement('div', {
-      'data-branding-asset-error': field,
-      role: 'alert',
-      style: {
-        fontSize: 11.5,
-        lineHeight: 1.4,
-        color: '#A32921',
-        fontWeight: 750,
-        marginTop: 7
-      }
-    }, error));
+    }, 'Quitar')));
   }
   function HomeHeaderPhoto({
     canEdit,
@@ -39896,7 +39826,7 @@ Object.assign(window, {
       }
     }, busy ? 'Guardando…' : 'Guardar textos')), React.createElement(Card, {
       title: 'Íconos e identidad visual',
-      sub: 'Formatos permitidos; máximo 10 MB. El Ícono de la app genera las variantes 512, PWA 192, Apple Touch y maskable.'
+      sub: 'Formatos de imagen permitidos; tamaño máximo de 10 MB.'
     }, React.createElement('div', {
       style: {
         display: 'grid',

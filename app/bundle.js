@@ -3001,9 +3001,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     step: 35,
     max: 6
   });
+  // Odómetro: pista MODULAR de `cycle + 1` glifos (el último repite el primero),
+  // así `turns` vueltas se recorren con 11 nodos en vez de `turns * 10 + delta`.
+  // El blur es ESTÁTICO mientras gira (una rasterización, no una por frame).
   const slot = Object.freeze({
-    duration: 1000,
+    duration: 480,
     turns: 6,
+    cycle: 10,
     blur: 2.8
   });
 
@@ -3075,20 +3079,34 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }
   }
 
-  // Odometer / slot-machine. Un solo escritor WAAPI por track de glifos:
-  // compone transform + el blur autorizado por ADR-055 y no toca layout.
+  // Odometer / slot-machine. Un solo escritor WAAPI por track de glifos: solo
+  // compone `transform` y no toca layout.
+  //
+  // La pista es MODULAR: `slot.cycle + 1` glifos donde el último repite el
+  // primero. Trasladarla a -cycle em muestra exactamente el mismo glifo que a
+  // 0 em, así que un par de keyframes con el MISMO offset (-cycle em → 0 em)
+  // reinicia la vuelta sin salto visible. Con eso `turns` vueltas se animan
+  // sobre 11 nodos en vez de `turns * 10 + delta` nodos.
+  //
+  // El blur ya NO se interpola (ADR-055 pedía la sensación de giro, no una
+  // animación de filtro): se aplica estático mientras gira y se retira al
+  // asentar. Un filtro estático se rasteriza una vez; uno animado, cada frame.
   function spinSlot(el, opts) {
     if (!el) return null;
+    const cycle = slot.cycle;
     const o = Object.assign({
-      steps: slot.turns * 10,
+      turns: slot.turns,
+      delta: 0,
       index: 0,
       loading: false,
       immediate: false
     }, opts || {});
-    const end = 'translateY(-' + o.steps + 'em)';
+    const turns = Math.max(1, Math.round(o.turns));
+    const delta = o.loading ? 0 : Math.min(cycle - 1, Math.max(0, Math.round(o.delta)));
+    const end = 'translateY(-' + delta + 'em)';
     const finish = () => {
       el.style.transform = end;
-      el.style.filter = 'blur(0px)';
+      el.style.filter = '';
       el.style.visibility = 'visible';
     };
     if (o.immediate || reduced() || frozen() || !el.animate) {
@@ -3098,41 +3116,41 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     el.style.visibility = 'visible';
     el.style.transform = 'translateY(0)';
     el.style.filter = 'blur(' + slot.blur + 'px)';
-    const frames = o.loading ? [{
+    // Distancia total recorrida: `turns` vueltas completas + el asentamiento.
+    const span = turns * cycle + delta;
+    const frames = [];
+    let offset = 0;
+    for (let turn = 0; turn < turns; turn += 1) {
+      frames.push({
+        transform: 'translateY(0)',
+        offset: offset
+      });
+      offset = Math.min(1, offset + cycle / span);
+      frames.push({
+        transform: 'translateY(-' + cycle + 'em)',
+        offset: offset
+      });
+    }
+    frames.push({
       transform: 'translateY(0)',
-      filter: 'blur(' + slot.blur + 'px)'
-    }, {
+      offset: offset
+    });
+    frames.push({
       transform: end,
-      filter: 'blur(' + slot.blur + 'px)'
-    }] : [{
-      transform: 'translateY(0)',
-      filter: 'blur(' + slot.blur + 'px)',
-      offset: 0
-    }, {
-      transform: 'translateY(-' + o.steps * .72 + 'em)',
-      filter: 'blur(' + slot.blur * .78 + 'px)',
-      offset: .72
-    }, {
-      transform: 'translateY(-' + o.steps * .91 + 'em)',
-      filter: 'blur(' + slot.blur * .34 + 'px)',
-      offset: .91
-    }, {
-      transform: end,
-      filter: 'blur(0px)',
       offset: 1
-    }];
+    });
     const animation = animate(el, frames, {
       duration: slot.duration,
       easing: o.loading ? 'linear' : ease.enter,
       iterations: 1,
       fill: 'both'
     });
-    if (animation && o.loading) animation.addEventListener('finish', () => {
-      animation.cancel();
+    // El blur estático se retira en cuanto la pista se asienta.
+    if (animation) animation.addEventListener('finish', () => {
       finish();
     }, {
       once: true
-    });
+    });else finish();
     return animation;
   }
 
@@ -6996,6 +7014,44 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     return allowed[file.type];
   }
   async function digestOf(file){const bytes=await file.arrayBuffer();return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map((x)=>x.toString(16).padStart(2,'0')).join('');}
+  async function normalizedPng(file,size,errorCode='INVALID_PWA_ICON'){
+    if(!file||!file.type.startsWith('image/'))throw new Error(errorCode);
+    const bitmap=await createImageBitmap(file);
+    try{
+      if(bitmap.width!==bitmap.height||bitmap.width<size)throw new Error(errorCode);
+      const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
+      const context=canvas.getContext('2d',{alpha:true});if(!context)throw new Error('ICON_NORMALIZATION_FAILED');
+      context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.clearRect(0,0,size,size);context.drawImage(bitmap,0,0,size,size);
+      const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/png'));
+      if(!blob)throw new Error('ICON_NORMALIZATION_FAILED');
+      return new File([blob],`sutiapp-icon-${size}.png`,{type:'image/png',lastModified:Date.now()});
+    }finally{if(bitmap.close)bitmap.close();}
+  }
+  async function removeUnlinkedObject(db,bucket,path){
+    const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket',bucket).eq('storage_path',path);
+    if(!refs.error&&refs.count===0)await db.storage.from(bucket).remove([path]);
+  }
+  async function registerBrandingFiles(entries){
+    const db=client();const uploaded=[];
+    try{
+      for(const entry of entries){
+        const ext=fileContract(entry.file,'app-assets');const digest=await digestOf(entry.file);const safeKey=entry.assetKey.replace(/[^a-zA-Z0-9._-]/g,'-');const path=`branding/admin/${safeKey}/${digest}.${ext}`;
+        const stored=await db.storage.from('app-assets').upload(path,entry.file,{upsert:true,contentType:entry.file.type});if(stored.error)throw stored.error;
+        uploaded.push({asset_key:entry.assetKey,storage_path:path,mime_type:entry.file.type,file_size:entry.file.size,content_sha256:digest.toUpperCase()});
+      }
+      const registered=await db.rpc('register_branding_assets',{p_assets:uploaded});if(registered.error)throw registered.error;
+      for(const previous of registered.data||[]){
+        const current=uploaded.find((entry)=>entry.asset_key===previous.asset_key);
+        if(previous.previous_storage_bucket&&previous.previous_storage_path&&current&&previous.previous_storage_path!==current.storage_path){
+          await removeUnlinkedObject(db,previous.previous_storage_bucket,previous.previous_storage_path);
+        }
+      }
+      return Object.freeze(registered.data||[]);
+    }catch(error){
+      for(const entry of uploaded)await removeUnlinkedObject(db,'app-assets',entry.storage_path);
+      throw error;
+    }
+  }
   async function uploadManagedAsset(file,bucket,assetType,purpose){
     const section=String(purpose||'').split('.')[0];const sectionAsset=/^(news|education|tutorials|companies|banners|popups|documents|minutes|programs|marketplace|directory|sindicato)$/.test(section);
     const permission=bucket==='company-assets'?'companies.write':bucket==='documents'?'documents.write':'assets.write';
@@ -7034,19 +7090,30 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const object=await db.storage.from(asset.bucket).remove([asset.path]);if(object.error)throw object.error;
   }
   async function uploadBrandingAsset(file,assetKey,settingsField){
-    requirePermission('assets.write'); const ext=fileContract(file,'app-assets'); const digest=await digestOf(file); const safeKey=assetKey.replace(/[^a-zA-Z0-9._-]/g,'-'); const path=`branding/admin/${safeKey}/${digest}.${ext}`; const db=client();
-    const oldResult=await db.from('app_assets').select('id,storage_bucket,storage_path').eq('asset_key',assetKey).maybeSingle();if(oldResult.error)throw oldResult.error;
-    const upload=await db.storage.from('app-assets').upload(path,file,{upsert:true,contentType:file.type});if(upload.error)throw upload.error;
-    let assetId=oldResult.data&&oldResult.data.id;
-    try{
-      const row={asset_key:assetKey,asset_type:'BRANDING',title:assetKey,alt_text:assetKey.replaceAll('.',' '),storage_bucket:'app-assets',storage_path:path,mime_type:file.type,file_size:file.size,content_sha256:digest.toUpperCase(),status:'READY'};
-      const saved=assetId?await db.from('app_assets').update(row).eq('id',assetId).select('id').single():await db.from('app_assets').insert(row).select('id').single();
-      if(saved.error)throw saved.error;assetId=saved.data.id;
-      const source=await db.from('asset_sources').upsert({asset_id:assetId,source_sheet:'ADMIN_H009',source_column:settingsField||assetKey,source_snapshot_hash:digest.toUpperCase()},{onConflict:'asset_id,source_sheet,source_row_ordinal,source_column,source_url,source_snapshot_hash',ignoreDuplicates:true});
-      if(source.error)throw source.error;if(settingsField)await updateSettings({[settingsField]:assetId});
-      const old=oldResult.data;if(old&&old.storage_path&&old.storage_path!==path){const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket',old.storage_bucket).eq('storage_path',old.storage_path);if(!refs.error&&refs.count===0)await db.storage.from(old.storage_bucket).remove([old.storage_path]);}
-      return assetId;
-    }catch(error){const refs=await db.from('app_assets').select('id',{count:'exact',head:true}).eq('storage_bucket','app-assets').eq('storage_path',path);if(!refs.error&&refs.count===0)await db.storage.from('app-assets').remove([path]);throw error;}
+    requirePermission('assets.write');
+    const expected={
+      'brand.pwa.512':'app_icon_asset_id','brand.institutional-seal':'institutional_seal_asset_id',
+      'brand.favicon-pwa-192':'favicon_asset_id','brand.pwa.apple-touch':'apple_touch_asset_id',
+      'brand.pwa.maskable-512':'pwa_maskable_512_asset_id','pwa.install-screen-1':'install_screen_1_asset_id',
+      'pwa.install-screen-2':'install_screen_2_asset_id','pwa.install-screen-3':'install_screen_3_asset_id',
+      'home.header.collapsed':null
+    };
+    if(!Object.prototype.hasOwnProperty.call(expected,assetKey)||expected[assetKey]!==settingsField)throw new Error('INVALID_BRANDING_TARGET');
+    let entries=[{assetKey,file}];
+    if(assetKey==='brand.pwa.512'){
+      const variants=await Promise.all([normalizedPng(file,512,'INVALID_APP_ICON'),normalizedPng(file,192,'INVALID_APP_ICON'),normalizedPng(file,180,'INVALID_APP_ICON')]);
+      entries=[
+        {assetKey:'brand.pwa.512',file:variants[0]},
+        {assetKey:'brand.favicon-pwa-192',file:variants[1]},
+        {assetKey:'brand.pwa.apple-touch',file:variants[2]},
+        {assetKey:'brand.pwa.maskable-512',file:variants[0]}
+      ];
+    }else{
+      const technicalSize={'brand.favicon-pwa-192':192,'brand.pwa.apple-touch':180,'brand.pwa.maskable-512':512}[assetKey];
+      if(technicalSize)entries=[{assetKey,file:await normalizedPng(file,technicalSize)}];
+    }
+    const registered=await registerBrandingFiles(entries);const primary=registered.find((row)=>row.asset_key===assetKey);
+    return primary&&primary.asset_id;
   }
   async function clearAsset(settingsField){return updateSettings({[settingsField]:null});}
 
@@ -10047,10 +10114,16 @@ Object.assign(window, {
 /* screens-financiera.jsx — SutiApp Financiera super-app dashboard */
 (function () {
   const I = window.Icon;
+  // Porción del store financiero que consume esta pantalla. Estable por
+  // identidad: `status` y `overview` no cambian al recotizar.
+  const overviewSlice = snapshot => ({
+    status: snapshot.status,
+    overview: snapshot.overview
+  });
   function SummaryCard({
     app
   }) {
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : {
       status: 'error',
       overview: null
     };
@@ -10553,7 +10626,7 @@ Object.assign(window, {
     if (window.useFinCatStore) window.useFinCatStore(); // re-render si el admin edita el catálogo
     if (window.useAdminStore) window.useAdminStore(); // re-render si cambia el espectador (segmentación)
     if (window.useMembershipStore) window.useMembershipStore(); // re-render si el admin edita membresías
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : {
       status: 'error',
       overview: null
     };
@@ -10722,7 +10795,57 @@ Object.assign(window, {
     dec: 2
   }) : dash;
   const textOrDash = value => typeof value === 'string' && value.trim() ? value.trim() : dash;
-  function OdometerDigit({
+
+  // Pista MODULAR: `cycle + 1` glifos donde el último repite el primero. Las
+  // vueltas las produce `MOTION.spinSlot` reiniciando el traslado sobre esa
+  // repetición, así que un dígito cuesta 11 nodos y no ~65. Los estilos son
+  // constantes hoisted: cero objetos nuevos por render.
+  const ODOMETER_CYCLE = 10;
+  const digitBoxStyle = {
+    position: 'relative',
+    display: 'inline-block',
+    width: '.62em',
+    height: '1em',
+    overflow: 'hidden',
+    verticalAlign: '-.08em'
+  };
+  const digitTrackStyle = {
+    position: 'absolute',
+    inset: '0 auto auto 0',
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    lineHeight: '1em',
+    willChange: 'transform',
+    transform: 'translateY(0)'
+  };
+  const digitGlyphStyle = {
+    display: 'block',
+    flex: '0 0 1em',
+    height: '1em',
+    lineHeight: '1em',
+    textAlign: 'center'
+  };
+  const currencyGlyphStyle = {
+    display: 'inline-block',
+    transform: 'translateY(-.20em)'
+  };
+  const odometerBaseStyle = {
+    display: 'inline-flex',
+    alignItems: 'baseline',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap'
+  };
+  const cellMoneyStyle = {
+    whiteSpace: 'nowrap',
+    letterSpacing: '-.02em'
+  };
+  const trackGlyphs = start => {
+    const glyphs = [];
+    for (let offset = 0; offset <= ODOMETER_CYCLE; offset += 1) glyphs.push(String((start + offset) % 10));
+    return glyphs;
+  };
+  const OdometerDigit = React.memo(function OdometerDigit({
     target,
     previous,
     index,
@@ -10734,14 +10857,12 @@ Object.assign(window, {
     const completedFor = React.useRef(null);
     const start = /^[0-9]$/.test(previous || '') ? Number(previous) : (index * 3 + 7) % 10;
     const end = /^[0-9]$/.test(target || '') ? Number(target) : start;
-    const steps = (window.MOTION && window.MOTION.slot ? window.MOTION.slot.turns : 6) * 10 + (loading ? 0 : (end - start + 10) % 10);
-    const digits = Array.from({
-      length: steps + 1
-    }, (_, offset) => String((start + offset) % 10));
+    const delta = (end - start + ODOMETER_CYCLE) % ODOMETER_CYCLE;
+    const glyphs = trackGlyphs(start);
     React.useLayoutEffect(() => {
       const completionKey = String(cycleKey || '') + ':' + target;
       const animation = window.MOTION && window.MOTION.spinSlot ? window.MOTION.spinSlot(track.current, {
-        steps,
+        delta,
         index,
         loading,
         immediate: !loading && completedFor.current === completionKey
@@ -10758,44 +10879,21 @@ Object.assign(window, {
           animation.cancel();
         }
       };
-    }, [target, previous, index, loading, motionEpoch, cycleKey, steps]);
+    }, [target, previous, index, loading, motionEpoch, cycleKey, delta]);
     return React.createElement('span', {
       className: 'su-odometer-digit',
       'data-odometer-digit': '',
-      style: {
-        position: 'relative',
-        display: 'inline-block',
-        width: '.62em',
-        height: '1em',
-        overflow: 'hidden',
-        verticalAlign: '-.08em'
-      }
+      style: digitBoxStyle
     }, React.createElement('span', {
       ref: track,
       className: 'su-odometer-track',
       'data-odometer-track': loading ? 'loading' : 'settling',
-      style: {
-        position: 'absolute',
-        inset: '0 auto auto 0',
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-        lineHeight: '1em',
-        willChange: 'transform, filter',
-        transform: 'translateY(0)',
-        filter: 'blur(2.8px)'
-      }
-    }, digits.map((digit, offset) => React.createElement('span', {
+      style: digitTrackStyle
+    }, glyphs.map((digit, offset) => React.createElement('span', {
       key: offset,
-      style: {
-        display: 'block',
-        flex: '0 0 1em',
-        height: '1em',
-        lineHeight: '1em',
-        textAlign: 'center'
-      }
+      style: digitGlyphStyle
     }, digit))));
-  }
+  });
   function OdometerText({
     text,
     previousText,
@@ -10815,35 +10913,39 @@ Object.assign(window, {
       };
     }, []);
     let digitIndex = -1;
+    const previousDigits = String(previousText || '').replace(/[^0-9]/g, '');
+    // Las ruedas se identifican por POSICIÓN DECIMAL (desde la derecha), no por
+    // posición en la cadena. Si el importe gana o pierde un dígito, las unidades
+    // siguen siendo las unidades: sólo se agrega o quita una rueda en el extremo
+    // y ninguna de las existentes se re-monta ni gira de más.
+    const digitCount = String(text).replace(/[^0-9]/g, '').length;
     return React.createElement('span', {
       className: 'su-odometer',
       'data-odometer-state': loading ? 'spinning' : 'settling',
+      // Importes en movimiento: no son copy editable ni tarjeta revelable. Sin
+      // esto los observers globales recorren cada glifo en cada commit.
+      'data-notext': '',
+      'data-noreveal': '',
       role: loading ? undefined : 'img',
       'aria-label': loading ? undefined : ariaLabel,
       'aria-hidden': loading ? 'true' : undefined,
-      style: {
-        display: 'inline-flex',
-        alignItems: 'baseline',
-        fontVariantNumeric: 'tabular-nums',
-        whiteSpace: 'nowrap',
+      style: style ? {
+        ...odometerBaseStyle,
         ...style
-      }
+      } : odometerBaseStyle
     }, Array.from(text).map((char, characterIndex) => {
       if (!/^[0-9]$/.test(char)) return React.createElement('span', {
         key: characterIndex,
         'aria-hidden': 'true',
         'data-odometer-currency': char === '$' ? '' : undefined,
-        style: char === '$' ? {
-          display: 'inline-block',
-          transform: 'translateY(-.20em)'
-        } : undefined
+        style: char === '$' ? currencyGlyphStyle : undefined
       }, char);
       digitIndex += 1;
-      const previousDigits = String(previousText || '').replace(/[^0-9]/g, '');
+      const place = digitCount - 1 - digitIndex;
       return React.createElement(OdometerDigit, {
-        key: characterIndex + ':' + digitIndex,
+        key: 'p' + place,
         target: char,
-        previous: previousDigits[digitIndex],
+        previous: previousDigits[previousDigits.length - 1 - place],
         index: digitIndex,
         loading,
         motionEpoch,
@@ -10851,6 +10953,13 @@ Object.assign(window, {
       });
     }));
   }
+
+  // NO REMOUNT: mientras se recotiza, el motor del odómetro se queda montado y
+  // conserva la FORMA del último importe válido (mismo número de glifos), así
+  // que las ruedas giran sobre la misma pista en vez de destruirse y volver a
+  // crearse. El valor anterior nunca se presenta como vigente: mientras
+  // `loading` está activo el nodo va `aria-hidden` y sin `aria-label`, y los
+  // dígitos están girando — no hay importe legible hasta que asienta.
   function SmoothMoney({
     value,
     loading = false,
@@ -10867,7 +10976,7 @@ Object.assign(window, {
     }, [label]);
     const placeholder = compact ? '$8888' : '$8,888.88';
     return React.createElement(OdometerText, {
-      text: valid ? label : placeholder,
+      text: valid ? label : previousLabel || placeholder,
       previousText: previousLabel,
       loading: loading || !valid,
       ariaLabel: label,
@@ -11179,13 +11288,10 @@ Object.assign(window, {
         marginTop: 1,
         whiteSpace: 'nowrap'
       }
-    }, result ? React.createElement(SmoothMoney, {
-      value: result.paymentPerPeriod,
-      loading: loadingMotion,
-      cycleKey: loadingMotion ? loadingCycle : animationCycle
-    }) : React.createElement(LoadingReels, {
-      columns: 6,
-      cycleKey: placeholderCycle
+    }, React.createElement(SmoothMoney, {
+      value: result ? result.paymentPerPeriod : null,
+      loading: loadingMotion || !result,
+      cycleKey: loadingMotion || !result ? placeholderCycle : animationCycle
     }))), React.createElement('div', {
       style: {
         textAlign: 'right',
@@ -11262,35 +11368,33 @@ Object.assign(window, {
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
-    }, result ? React.createElement(SmoothMoney, {
-      value: cell[1],
-      loading: loadingMotion,
+    }, React.createElement(SmoothMoney, {
+      value: result ? cell[1] : null,
+      loading: loadingMotion || !result,
       compact: true,
-      cycleKey: loadingMotion ? loadingCycle : animationCycle,
-      style: {
-        whiteSpace: 'nowrap',
-        letterSpacing: '-.02em'
-      }
-    }) : React.createElement(LoadingReels, {
-      columns: 4,
-      cycleKey: placeholderCycle
+      cycleKey: loadingMotion || !result ? placeholderCycle : animationCycle,
+      style: cellMoneyStyle
     }))))))));
   }
   function AmountField({
     amount,
     setAmount,
+    commitAmount,
     min,
     max,
     disabled
   }) {
     const bounded = typeof min === 'number' && typeof max === 'number' && max >= min;
+    const settle = commitAmount || setAmount;
+    // Arrastre y tecleo: valor continuo, entra al debounce.
     const change = value => {
       setAmount(Number(value));
     };
+    // Fin de gesto o de edición: intención discreta, cotiza de inmediato.
     const commit = value => {
       const next = Number(value);
       if (!Number.isFinite(next) || !bounded) return;
-      setAmount(Math.min(max, Math.max(min, next)));
+      settle(Math.min(max, Math.max(min, next)));
     };
     const showNumericMinimum = bounded && min !== 1;
     const quickValues = bounded ? Array.from(new Set([showNumericMinimum ? min : null, Math.round((min + (max - min) * .33) / 100) * 100, Math.round((min + (max - min) * .66) / 100) * 100, max].filter(value => value != null).map(value => Math.min(max, Math.max(min, value))))) : [];
@@ -11371,6 +11475,8 @@ Object.assign(window, {
       value: Math.min(max, Math.max(min, amount || min)),
       disabled,
       onChange: event => change(event.target.value),
+      onPointerUp: event => commit(event.target.value),
+      onKeyUp: event => commit(event.target.value),
       style: {
         position: 'absolute',
         width: '100%',
@@ -11407,7 +11513,7 @@ Object.assign(window, {
         key: value,
         type: 'button',
         disabled,
-        onClick: () => setAmount(value),
+        onClick: () => settle(value),
         'data-loan-quick-amount': value,
         'data-press': 'subtle',
         style: {
@@ -11828,9 +11934,75 @@ Object.assign(window, {
     if (!result || !program || result.amount !== amount || result.paymentCount !== term) return false;
     return result.program === program.program_id || result.program === program.id || result.fund === program.fund;
   }
+
+  // La cotización interactiva viaja por `client.rpc` (PostgREST), no por Edge
+  // Function: se clasifican fallos de transporte del navegador y códigos
+  // transitorios reales de PostgREST/PostgreSQL. SNAPSHOT_INVALID queda fuera a
+  // propósito — tiene su propia recuperación silenciosa en el repositorio.
+  const RETRYABLE_TRANSPORT = ['failed to fetch', 'network request failed', 'networkerror', 'load failed', 'connection closed', 'socket hang up', 'err_network', 'err_connection'];
+  // 57014 statement_timeout · 40001 serialization_failure · 40p01 deadlock
+  // 55p03 lock_not_available · 08006 connection_failure · 53300 too_many_connections
+  const RETRYABLE_POSTGRES = ['57014', '40001', '40p01', '55p03', '08006', '53300'];
+  const RETRYABLE_GATEWAY = ['502', '503', '504', 'bad gateway', 'service unavailable', 'gateway timeout'];
   function isRetryableQuoteTransportError(error) {
     const message = String(error || '').toLowerCase();
-    return message.includes('failed to send a request to the edge function') || message.includes('failed to fetch') || message.includes('network request failed') || message.includes('networkerror') || message.includes('load failed') || message.includes('financial_legacy_unavailable');
+    if (!message || message.includes('snapshot_invalid')) return false;
+    return RETRYABLE_TRANSPORT.some(token => message.includes(token)) || RETRYABLE_POSTGRES.some(code => message.includes(code)) || RETRYABLE_GATEWAY.some(token => message.includes(token));
+  }
+  const allowedTermsOf = program => program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter(value => typeof value === 'number' && value > 0) : [];
+  function customTermAccepts(program, term) {
+    const custom = program && program.custom_term || {};
+    const min = Number(custom.min),
+      max = Number(custom.max),
+      step = Number(custom.step);
+    return Number.isInteger(term) && Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(step) && step > 0 && term >= min && term <= max && (term - min) % step === 0;
+  }
+
+  // SELECCIÓN ATÓMICA: fondo, monto y plazo se derivan juntos, así `selectionKey`
+  // cambia UNA sola vez al tocar una card. Antes el fondo se aplicaba en un
+  // render y el ajuste de monto/plazo en el siguiente: ese estado intermedio
+  // disparaba una cotización que se desechaba y empujaba la real al debounce.
+  function deriveSelection(program, previous) {
+    if (!program) return {
+      programId: '',
+      amount: 0,
+      term: 0
+    };
+    const terms = allowedTermsOf(program);
+    const min = Number(program.min_amount),
+      max = Number(program.max_amount);
+    const suggested = Number(program.suggested_amount || program.min_amount);
+    const previousAmount = previous && Number(previous.amount);
+    const amount = Number.isFinite(previousAmount) && previousAmount > 0 && Number.isFinite(min) && Number.isFinite(max) ? Math.min(max, Math.max(min, previousAmount)) : suggested;
+    const previousTerm = previous && previous.term;
+    // Un plazo personalizado válido para el fondo nuevo se conserva: reiniciarlo
+    // a `terms[0]` cambiaba la selección a espaldas del afiliado.
+    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm) ? previousTerm : terms[0] || Number(program.custom_term && program.custom_term.min) || 0;
+    return {
+      programId: program.id,
+      amount,
+      term
+    };
+  }
+  const sameSelection = (a, b) => !!a && !!b && a.programId === b.programId && a.amount === b.amount && a.term === b.term;
+
+  // Proyección de un plazo sugerido a partir de `termOptions`, que el servidor
+  // ya calculó para ESTE fondo y ESTE monto en la respuesta vigente. No hay
+  // aritmética en el navegador: cada importe se copia tal cual del servidor.
+  function projectTermOption(base, term) {
+    if (!base || !Array.isArray(base.termOptions)) return null;
+    const option = base.termOptions.find(item => item && item.term === term);
+    if (!option) return null;
+    return Object.freeze({
+      ...base,
+      paymentCount: option.paymentCount,
+      interest: option.interest,
+      administrativeFeePerPayment: option.administrativeFeePerPayment,
+      administrativeFeeTotal: option.administrativeFeeTotal,
+      total: option.total,
+      paymentPerPeriod: option.paymentPerPeriod,
+      projectedFromTermOptions: true
+    });
   }
   function StepSimulatorV2({
     financial,
@@ -11838,11 +12010,17 @@ Object.assign(window, {
   }) {
     const overview = financial.overview || {};
     const programs = Array.isArray(overview.programs) ? overview.programs.filter(item => item.status === 'AVAILABLE') : [];
-    const [programId, setProgramId] = React.useState(() => programs[0] ? programs[0].id : '');
-    const program = programs.find(item => item.id === programId) || programs[0] || null;
-    const terms = program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter(value => typeof value === 'number' && value > 0) : [];
-    const [amount, setAmount] = React.useState(() => program ? Number(program.suggested_amount || program.min_amount) : 0);
-    const [term, setTerm] = React.useState(() => program ? terms[0] || Number(program.custom_term && program.custom_term.min) || 0 : 0);
+    // Estado compuesto: una sola transición por intención del afiliado.
+    // `immediate` viaja DENTRO de la selección para que no pueda consumirse
+    // sobre una selección intermedia que el mismo commit ya invalidó.
+    const [selection, setSelection] = React.useState(() => ({
+      ...deriveSelection(programs[0] || null, null),
+      immediate: true
+    }));
+    const program = programs.find(item => item.id === selection.programId) || programs[0] || null;
+    const terms = allowedTermsOf(program);
+    const amount = selection.amount;
+    const term = selection.term;
     const [confirmed, setConfirmed] = React.useState({
       key: '',
       quote: null,
@@ -11855,22 +12033,28 @@ Object.assign(window, {
     const activeRequest = React.useRef(null);
     const mounted = React.useRef(true);
     const latestSelection = React.useRef('');
-    // The authoritative overview already supplies the first eligible fund,
-    // suggested amount and allowed/custom term. Quote that initial selection
-    // immediately; later amount edits still opt back into the 320 ms debounce.
-    const immediate = React.useRef(true);
     const quoteRevision = React.useRef(0);
-    const quoteTimeoutMs = 6000;
-    const maxQuoteAttempts = 5;
+    // Presupuesto acotado por evidencia. Latencia medida contra Supabase en
+    // vivo (12 muestras): mediana 178 ms, p90 250 ms, máximo 364 ms. El corte a
+    // 4 s deja ~11× de holgura sobre el máximo observado y acota el peor caso a
+    // 2 × 4 s + 300 ms ≈ 8.3 s. Un servicio caído se reporta pronto, no tras
+    // medio minuto.
+    const quoteTimeoutMs = 4000;
+    const maxQuoteAttempts = 2;
+    const quoteRetryDelayMs = 300;
+
+    // Reconciliación con el overview autoritativo: si el fondo vigente
+    // desaparece o sus límites cambian, la selección se re-deriva ENTERA.
     React.useEffect(() => {
       if (!program) return;
-      setProgramId(program.id);
-      const min = Number(program.min_amount);
-      const max = Number(program.max_amount);
-      const suggested = Number(program.suggested_amount || program.min_amount);
-      setAmount(current => Number.isFinite(current) && current > 0 ? Math.min(max, Math.max(min, current)) : suggested);
-      setTerm(current => terms.includes(current) ? current : terms[0] || Number(program.custom_term && program.custom_term.min) || 0);
-    }, [program && program.id]);
+      setSelection(current => {
+        const next = deriveSelection(program, current);
+        return sameSelection(current, next) ? current : {
+          ...next,
+          immediate: true
+        };
+      });
+    }, [program && program.id, program && program.max_amount, program && program.min_amount]);
     React.useEffect(() => () => {
       mounted.current = false;
       clearTimeout(timer.current);
@@ -11915,14 +12099,14 @@ Object.assign(window, {
               });
               if (snapshot && snapshot.status === 'error' && isRetryableQuoteTransportError(snapshot.error) && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
                 snapshot = null;
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
               break;
             } catch (error) {
               if (active.controller.signal.aborted && active.reason !== 'timeout') break;
               if (active.reason === 'timeout' && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
               snapshot = {
@@ -11988,17 +12172,30 @@ Object.assign(window, {
       if (confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)) {
         return undefined;
       }
-      const delay = immediate.current ? 0 : 320;
-      immediate.current = false;
+      // `immediate` pertenece a la selección que acaba de comprometerse, así
+      // que un toque discreto (fondo, plazo, monto rápido) cotiza sin espera y
+      // sólo el arrastre/tecleo continuo entra al debounce de 320 ms.
+      const delay = selection.immediate ? 0 : 320;
       enqueueCurrent(delay);
       return () => clearTimeout(timer.current);
-    }, [selectionKey]);
+    }, [selectionKey, selection.immediate]);
 
     // A context/token refresh may re-render this route after the repository has
     // already accepted the server quote. Reuse it only when it matches the exact
     // current selection; financial values are never recomputed in the browser.
     const storedQuote = financial && financial.quote;
-    const result = confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term) ? confirmed.quote : quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
+    const authoritative = confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term) ? confirmed.quote : quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
+    // PLAZO SUGERIDO INSTANTÁNEO: la respuesta vigente para este fondo y este
+    // monto ya trae `termOptions` con los importes de cada plazo estándar
+    // resueltos por Supabase. Al tocar un plazo se proyecta ese renglón de
+    // inmediato mientras la confirmación autoritativa viaja en segundo plano.
+    const projectionBase = !authoritative && validSelection && confirmed.quote && confirmed.quote.amount === amount && (confirmed.quote.program === program.program_id || confirmed.quote.program === program.id || confirmed.quote.fund === program.fund) ? confirmed.quote : null;
+    // Memoizado a propósito: `projectTermOption` fabrica un objeto nuevo, y el
+    // efecto que publica la simulación al padre depende de la IDENTIDAD de
+    // `result`. Sin esto cada commit produce un `result` distinto y el par
+    // efecto → setState del padre → render se realimenta sin fin.
+    const projected = React.useMemo(() => projectionBase ? projectTermOption(projectionBase, term) : null, [projectionBase, term]);
+    const result = authoritative || projected;
     const overviewLoading = !financial.overview && (financial.status === 'idle' || financial.status === 'loading');
     const effectiveError = validSelection ? requestError : financial.error;
     const unavailableError = /NOT_CONFIGURED|UNAVAILABLE|REJECTED|INVALID_RESPONSE|CONTRACT_MISMATCH/.test(effectiveError || '');
@@ -12017,19 +12214,38 @@ Object.assign(window, {
       }
       return enqueueCurrent(0);
     };
-    const selectProgram = value => {
-      immediate.current = true;
-      setProgramId(value);
-    };
-    const selectTerm = value => {
-      immediate.current = true;
-      setTerm(value);
-    };
-    const selectAmount = value => {
-      immediate.current = false;
-      setAmount(value);
-    };
-    React.useEffect(() => {
+    // Toque discreto sobre una card = una transición atómica y cotización
+    // inmediata. Sólo el arrastre del slider y el tecleo del monto piden
+    // debounce, y lo piden explícitamente.
+    const selectProgram = value => setSelection(current => {
+      const next = deriveSelection(programs.find(item => item.id === value) || program, current);
+      return {
+        ...next,
+        immediate: true
+      };
+    });
+    const selectTerm = value => setSelection(current => current.term === value && current.immediate ? current : {
+      ...current,
+      term: value,
+      immediate: true
+    });
+    const selectAmount = value => setSelection(current => current.amount === value && !current.immediate ? current : {
+      ...current,
+      amount: value,
+      immediate: false
+    });
+    // Fin del arrastre / monto rápido / salida del campo: la intención ya es
+    // discreta, así que se cotiza sin esperar el debounce.
+    const commitAmount = value => setSelection(current => current.amount === value && current.immediate ? current : {
+      ...current,
+      amount: value,
+      immediate: true
+    });
+
+    // useLayoutEffect: el padre deriva `canContinue` de esta simulación. Con un
+    // efecto normal el botón se habilitaba un frame DESPUÉS de que los importes
+    // ya eran visibles; aquí el commit del padre ocurre antes de pintar.
+    React.useLayoutEffect(() => {
       if (!onSimulationChange) return;
       onSimulationChange({
         key: selectionKey,
@@ -12037,7 +12253,9 @@ Object.assign(window, {
         amount,
         term,
         result,
-        current: state === 'READY' && !!result && !updating
+        // Nunca continuar con una cotización de otra selección: `result` sólo
+        // existe si coincide con el fondo, monto y plazo vigentes.
+        current: state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term)
       });
     }, [selectionKey, result, updating, state]);
     return React.createElement('div', {
@@ -12067,6 +12285,7 @@ Object.assign(window, {
     }), React.createElement(AmountField, {
       amount,
       setAmount: selectAmount,
+      commitAmount,
       min: minAmount,
       max: maxAmount,
       disabled: !program || overviewLoading
@@ -39382,6 +39601,14 @@ Object.assign(window, {
       }
     }, 'No configurada'));
   }
+  function assetError(error) {
+    const code = String(error && (error.code || '') + ' ' + (error.message || error) || '').toUpperCase();
+    if (code.includes('INVALID_APP_ICON')) return 'El ícono debe ser cuadrado, de al menos 512 × 512 px.';
+    if (code.includes('INVALID_PWA_ICON')) return 'La variante debe ser cuadrada y alcanzar el tamaño indicado (180, 192 o 512 px).';
+    if (code.includes('INVALID_ASSET')) return 'Usa PNG, JPG, GIF, WebP, SVG o ICO; máximo 10 MB.';
+    if (code.includes('ADMIN_DENIED') || code.includes('42501') || code.includes('401') || code.includes('JWT')) return 'Tu sesión no tiene permiso o expiró. Vuelve a iniciar sesión.';
+    return 'No fue posible guardar el archivo. Reintenta; el archivo anterior se conserva.';
+  }
   function Upload({
     title,
     url,
@@ -39393,16 +39620,18 @@ Object.assign(window, {
     ratio
   }) {
     const [busy, setBusy] = React.useState(false);
+    const [error, setError] = React.useState('');
     const input = React.useRef(null);
     const change = async e => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       setBusy(true);
+      setError('');
       try {
         await window.AdminRepository.uploadBrandingAsset(file, assetKey, field);
         await onDone();
-      } catch (_) {
-        alert('No fue posible guardar el archivo.');
+      } catch (problem) {
+        setError(assetError(problem));
       } finally {
         setBusy(false);
         e.target.value = '';
@@ -39410,11 +39639,12 @@ Object.assign(window, {
     };
     const clear = async () => {
       setBusy(true);
+      setError('');
       try {
         await window.AdminRepository.clearAsset(field);
         await onDone();
-      } catch (_) {
-        alert('No fue posible quitar el archivo.');
+      } catch (problem) {
+        setError(assetError(problem));
       } finally {
         setBusy(false);
       }
@@ -39465,7 +39695,17 @@ Object.assign(window, {
         color: 'var(--ink-2)',
         fontWeight: 800
       }
-    }, 'Quitar')));
+    }, 'Quitar')), error && React.createElement('div', {
+      'data-branding-asset-error': field,
+      role: 'alert',
+      style: {
+        fontSize: 11.5,
+        lineHeight: 1.4,
+        color: '#A32921',
+        fontWeight: 750,
+        marginTop: 7
+      }
+    }, error));
   }
   function HomeHeaderPhoto({
     canEdit,
@@ -39656,7 +39896,7 @@ Object.assign(window, {
       }
     }, busy ? 'Guardando…' : 'Guardar textos')), React.createElement(Card, {
       title: 'Íconos e identidad visual',
-      sub: 'Formatos de imagen permitidos; tamaño máximo de 10 MB.'
+      sub: 'Formatos permitidos; máximo 10 MB. El Ícono de la app genera las variantes 512, PWA 192, Apple Touch y maskable.'
     }, React.createElement('div', {
       style: {
         display: 'grid',
@@ -55091,6 +55331,12 @@ Object.assign(window, {
   } = React;
   const I = window.Icon,
     D = () => window.DATA;
+  // Porción del store financiero que consume esta pantalla. Estable por
+  // identidad: `status` y `overview` no cambian al recotizar.
+  const overviewSlice = snapshot => ({
+    status: snapshot.status,
+    overview: snapshot.overview
+  });
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
     "primary": "#910022",
@@ -55172,7 +55418,9 @@ Object.assign(window, {
   }) {
     const u = app.user;
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
+    // Selector: el TopBar sólo depende de status/overview. Una cotización
+    // nueva no debe re-renderizar el encabezado ni sus drivers de scroll.
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : {
       status: 'error',
       overview: null
     };

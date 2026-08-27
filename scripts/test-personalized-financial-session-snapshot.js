@@ -50,19 +50,27 @@ assert.doesNotMatch(repository,/action: 'loanSessionQuote'/);
 assert.match(repository,/signal && signal\.aborted/);
 assert.match(repository,/SIMULATION_REQUEST_ABORTED/);
 assert.match(repository,/state\.status = state\.overview \? 'ready' : 'idle'/);
+assert.match(repository,/ensureLoanSessionPromise/);
+assert.match(repository,/SESSION_REFRESH_MARGIN_MS/);
+assert.match(repository,/code !== 'SNAPSHOT_INVALID'/);
+assert.match(repository,/window\.useFinancialLegacy = function \(selector\)/);
 assert.doesNotMatch(repository,/administrativeFeeTotal\s*=|paymentPerPeriod\s*=/);
 assert.match(loan,/requestLoanSessionQuote/);
 assert.match(loan,/financialLegacyStore\.confirmLoanSession/);
 assert.match(loan,/finally \{\s*running\.current = false/);
 assert.match(loan,/const displayedResult = result;/);
 assert.match(loan,/setRequestError\('SIMULATION_RESPONSE_MISMATCH'\)/);
-assert.match(loan,/const delay = immediate\.current \? 0 : 320/);
+assert.match(loan,/const delay = selection\.immediate \? 0 : 320/);
+assert.doesNotMatch(loan,/immediate\.current/);
+assert.match(loan,/function deriveSelection\(program, previous\)/);
+assert.match(loan,/function projectTermOption\(base, term\)/);
 assert.match(loan,/latestSelection\.current === request\.key/);
 assert.match(loan,/activeRequest\.current\.controller\.abort\(\)/);
-assert.match(loan,/quoteTimeoutMs = 6000/);
-assert.match(loan,/maxQuoteAttempts = 5/);
+assert.match(loan,/quoteTimeoutMs = 4000/);
+assert.match(loan,/maxQuoteAttempts = 2/);
 assert.match(loan,/isRetryableQuoteTransportError\(snapshot\.error\)/);
-assert.match(loan,/failed to send a request to the edge function/);
+assert.doesNotMatch(loan,/failed to send a request to the edge function/);
+assert.match(loan,/RETRYABLE_POSTGRES/);
 assert.match(loan,/SIMULATION_TIMEOUT/);
 assert.match(loan,/Las condiciones de tu simulación cambiaron/);
 assert.doesNotMatch(loan,/ProgramRequestRepository\.createFinancial|finalizeContext/);
@@ -70,12 +78,12 @@ assert.doesNotMatch(requests,/createFinancial|set_financial_program_request_term
 
 async function verifyAbortedQuoteRestoresReadyState(){
   let quoteSignal=null;
-  const overview={status:'AVAILABLE',programs:[],loanSession:{id:'00000000-0000-4000-8000-000000000001',expires_at:new Date(Date.now()+60000).toISOString(),financial_profile_version:1}};
+  const overview={status:'AVAILABLE',programs:[],loanSession:{id:'00000000-0000-4000-8000-000000000001',expires_at:new Date(Date.now()+900000).toISOString(),financial_profile_version:1}};
   const client={auth:{getSession:async()=>({data:{session:{user:{id:'00000000-0000-4000-8000-000000000002'}}}})},functions:{invoke:async(_name,options)=>{
     if(options.body.action==='loanSessionOpen')return{data:{data:overview},error:null};
     throw new Error('UNEXPECTED_ACTION');
   }},rpc:(name)=>{assert.equal(name,'resolve_current_loan_snapshot_quote');let signal;const pending=new Promise((resolve)=>setImmediate(()=>{if(signal)signal.addEventListener('abort',()=>resolve({data:null,error:new Error('aborted')}),{once:true});}));return{abortSignal(value){signal=value;quoteSignal=value;return pending;}};}};
-  const context={window:{SutiSupabase:{getClient:()=>client}},React:{useState:()=>[0,()=>{}],useEffect:()=>{}},console};
+  const context={window:{SutiSupabase:{getClient:()=>client}},React:{useState:()=>[0,()=>{}],useEffect:()=>{},useRef:()=>({current:null})},console};
   vm.createContext(context);new vm.Script(repository).runInContext(context);
   const store=context.window.financialLegacyStore;
   assert.equal((await store.openLoanSession(false)).status,'ready');
@@ -85,4 +93,5 @@ async function verifyAbortedQuoteRestoresReadyState(){
   assert.equal(quoteSignal,controller.signal);assert.equal(store.snapshot().status,'ready');assert.equal(store.snapshot().overview,overview);
 }
 
-verifyAbortedQuoteRestoresReadyState().then(()=>console.log('PERSONALIZED FINANCIAL SESSION SNAPSHOT STATIC CONTRACT: PASS')).catch((error)=>{console.error(error);process.exitCode=1;});
+const withTimeout=(promise,ms)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('ABORTED_QUOTE_VERIFICATION_TIMEOUT')),ms).unref())]);
+withTimeout(verifyAbortedQuoteRestoresReadyState(),10000).then(()=>console.log('PERSONALIZED FINANCIAL SESSION SNAPSHOT STATIC CONTRACT: PASS')).catch((error)=>{console.error(error);process.exitCode=1;});

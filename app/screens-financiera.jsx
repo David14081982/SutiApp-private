@@ -1,9 +1,12 @@
 /* screens-financiera.jsx — SutiApp Financiera super-app dashboard */
 (function () {
   const I = window.Icon;
+  // Porción del store financiero que consume esta pantalla. Estable por
+  // identidad: `status` y `overview` no cambian al recotizar.
+  const overviewSlice = (snapshot) => ({ status: snapshot.status, overview: snapshot.overview });
 
   function SummaryCard({ app }) {
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null };
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = (amount) => typeof amount === 'number' ? window.money(amount) : '—';
@@ -126,7 +129,7 @@
     if (window.useFinCatStore) window.useFinCatStore(); // re-render si el admin edita el catálogo
     if (window.useAdminStore) window.useAdminStore();   // re-render si cambia el espectador (segmentación)
     if (window.useMembershipStore) window.useMembershipStore(); // re-render si el admin edita membresías
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null };
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
     const [q, setQ] = React.useState('');
     const [fOpen, setFOpen] = React.useState(false);

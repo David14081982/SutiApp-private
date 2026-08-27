@@ -40,7 +40,10 @@
   const dist = Object.freeze({ xs: 8, sm: 14, md: 24 });
   const scale = Object.freeze({ press: 0.975, active: 0.99, elevated: 1.02, selected: 1.04, shared: 1 });
   const stagger = Object.freeze({ step: 35, max: 6 });
-  const slot = Object.freeze({ duration: 1000, turns: 6, blur: 2.8 });
+  // Odómetro: pista MODULAR de `cycle + 1` glifos (el último repite el primero),
+  // así `turns` vueltas se recorren con 11 nodos en vez de `turns * 10 + delta`.
+  // El blur es ESTÁTICO mientras gira (una rasterización, no una por frame).
+  const slot = Object.freeze({ duration: 480, turns: 6, cycle: 10, blur: 2.8 });
 
   // ── Reduced motion ───────────────────────────────────────────────────────
   const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -93,37 +96,54 @@
     } catch (e) { return null; }
   }
 
-  // Odometer / slot-machine. Un solo escritor WAAPI por track de glifos:
-  // compone transform + el blur autorizado por ADR-055 y no toca layout.
+  // Odometer / slot-machine. Un solo escritor WAAPI por track de glifos: solo
+  // compone `transform` y no toca layout.
+  //
+  // La pista es MODULAR: `slot.cycle + 1` glifos donde el último repite el
+  // primero. Trasladarla a -cycle em muestra exactamente el mismo glifo que a
+  // 0 em, así que un par de keyframes con el MISMO offset (-cycle em → 0 em)
+  // reinicia la vuelta sin salto visible. Con eso `turns` vueltas se animan
+  // sobre 11 nodos en vez de `turns * 10 + delta` nodos.
+  //
+  // El blur ya NO se interpola (ADR-055 pedía la sensación de giro, no una
+  // animación de filtro): se aplica estático mientras gira y se retira al
+  // asentar. Un filtro estático se rasteriza una vez; uno animado, cada frame.
   function spinSlot(el, opts) {
     if (!el) return null;
-    const o = Object.assign({ steps: slot.turns * 10, index: 0, loading: false, immediate: false }, opts || {});
-    const end = 'translateY(-' + o.steps + 'em)';
+    const cycle = slot.cycle;
+    const o = Object.assign({ turns: slot.turns, delta: 0, index: 0, loading: false, immediate: false }, opts || {});
+    const turns = Math.max(1, Math.round(o.turns));
+    const delta = o.loading ? 0 : Math.min(cycle - 1, Math.max(0, Math.round(o.delta)));
+    const end = 'translateY(-' + delta + 'em)';
     const finish = () => {
       el.style.transform = end;
-      el.style.filter = 'blur(0px)';
+      el.style.filter = '';
       el.style.visibility = 'visible';
     };
     if (o.immediate || reduced() || frozen() || !el.animate) { finish(); return null; }
     el.style.visibility = 'visible';
     el.style.transform = 'translateY(0)';
     el.style.filter = 'blur(' + slot.blur + 'px)';
-    const frames = o.loading ? [
-      { transform: 'translateY(0)', filter: 'blur(' + slot.blur + 'px)' },
-      { transform: end, filter: 'blur(' + slot.blur + 'px)' },
-    ] : [
-      { transform: 'translateY(0)', filter: 'blur(' + slot.blur + 'px)', offset: 0 },
-      { transform: 'translateY(-' + (o.steps * .72) + 'em)', filter: 'blur(' + (slot.blur * .78) + 'px)', offset: .72 },
-      { transform: 'translateY(-' + (o.steps * .91) + 'em)', filter: 'blur(' + (slot.blur * .34) + 'px)', offset: .91 },
-      { transform: end, filter: 'blur(0px)', offset: 1 },
-    ];
+    // Distancia total recorrida: `turns` vueltas completas + el asentamiento.
+    const span = (turns * cycle) + delta;
+    const frames = [];
+    let offset = 0;
+    for (let turn = 0; turn < turns; turn += 1) {
+      frames.push({ transform: 'translateY(0)', offset: offset });
+      offset = Math.min(1, offset + (cycle / span));
+      frames.push({ transform: 'translateY(-' + cycle + 'em)', offset: offset });
+    }
+    frames.push({ transform: 'translateY(0)', offset: offset });
+    frames.push({ transform: end, offset: 1 });
     const animation = animate(el, frames, {
       duration: slot.duration,
       easing: o.loading ? 'linear' : ease.enter,
       iterations: 1,
       fill: 'both',
     });
-    if (animation && o.loading) animation.addEventListener('finish', () => { animation.cancel(); finish(); }, { once: true });
+    // El blur estático se retira en cuanto la pista se asienta.
+    if (animation) animation.addEventListener('finish', () => { finish(); }, { once: true });
+    else finish();
     return animation;
   }
 

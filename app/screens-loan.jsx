@@ -6,27 +6,43 @@
   const exactMoneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value, { dec: 2 }) : dash;
   const textOrDash = (value) => typeof value === 'string' && value.trim() ? value.trim() : dash;
 
-  function OdometerDigit({ target, previous, index, loading, motionEpoch, cycleKey }) {
+  // Pista MODULAR: `cycle + 1` glifos donde el último repite el primero. Las
+  // vueltas las produce `MOTION.spinSlot` reiniciando el traslado sobre esa
+  // repetición, así que un dígito cuesta 11 nodos y no ~65. Los estilos son
+  // constantes hoisted: cero objetos nuevos por render.
+  const ODOMETER_CYCLE = 10;
+  const digitBoxStyle = { position: 'relative', display: 'inline-block', width: '.62em', height: '1em', overflow: 'hidden', verticalAlign: '-.08em' };
+  const digitTrackStyle = { position: 'absolute', inset: '0 auto auto 0', display: 'flex', flexDirection: 'column', width: '100%', lineHeight: '1em', willChange: 'transform', transform: 'translateY(0)' };
+  const digitGlyphStyle = { display: 'block', flex: '0 0 1em', height: '1em', lineHeight: '1em', textAlign: 'center' };
+  const currencyGlyphStyle = { display: 'inline-block', transform: 'translateY(-.20em)' };
+  const odometerBaseStyle = { display: 'inline-flex', alignItems: 'baseline', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' };
+  const cellMoneyStyle = { whiteSpace: 'nowrap', letterSpacing: '-.02em' };
+  const trackGlyphs = (start) => {
+    const glyphs = [];
+    for (let offset = 0; offset <= ODOMETER_CYCLE; offset += 1) glyphs.push(String((start + offset) % 10));
+    return glyphs;
+  };
+
+  const OdometerDigit = React.memo(function OdometerDigit({ target, previous, index, loading, motionEpoch, cycleKey }) {
     const track = React.useRef(null);
     const completedFor = React.useRef(null);
     const start = /^[0-9]$/.test(previous || '') ? Number(previous) : ((index * 3) + 7) % 10;
     const end = /^[0-9]$/.test(target || '') ? Number(target) : start;
-    const steps = (window.MOTION && window.MOTION.slot ? window.MOTION.slot.turns : 6) * 10 +
-      (loading ? 0 : (end - start + 10) % 10);
-    const digits = Array.from({ length: steps + 1 }, (_, offset) => String((start + offset) % 10));
+    const delta = (end - start + ODOMETER_CYCLE) % ODOMETER_CYCLE;
+    const glyphs = trackGlyphs(start);
     React.useLayoutEffect(() => {
       const completionKey = String(cycleKey || '') + ':' + target;
       const animation = window.MOTION && window.MOTION.spinSlot
-        ? window.MOTION.spinSlot(track.current, { steps, index, loading, immediate: !loading && completedFor.current === completionKey })
+        ? window.MOTION.spinSlot(track.current, { delta, index, loading, immediate: !loading && completedFor.current === completionKey })
         : null;
       const markComplete = () => { if (!loading) completedFor.current = completionKey; };
       if (animation) animation.addEventListener('finish', markComplete, { once: true }); else markComplete();
       return () => { if (animation) { animation.removeEventListener('finish', markComplete); animation.cancel(); } };
-    }, [target, previous, index, loading, motionEpoch, cycleKey, steps]);
-    return React.createElement('span', { className: 'su-odometer-digit', 'data-odometer-digit': '', style: { position: 'relative', display: 'inline-block', width: '.62em', height: '1em', overflow: 'hidden', verticalAlign: '-.08em' } },
-      React.createElement('span', { ref: track, className: 'su-odometer-track', 'data-odometer-track': loading ? 'loading' : 'settling', style: { position: 'absolute', inset: '0 auto auto 0', display: 'flex', flexDirection: 'column', width: '100%', lineHeight: '1em', willChange: 'transform, filter', transform: 'translateY(0)', filter: 'blur(2.8px)' } },
-        digits.map((digit, offset) => React.createElement('span', { key: offset, style: { display: 'block', flex: '0 0 1em', height: '1em', lineHeight: '1em', textAlign: 'center' } }, digit))));
-  }
+    }, [target, previous, index, loading, motionEpoch, cycleKey, delta]);
+    return React.createElement('span', { className: 'su-odometer-digit', 'data-odometer-digit': '', style: digitBoxStyle },
+      React.createElement('span', { ref: track, className: 'su-odometer-track', 'data-odometer-track': loading ? 'loading' : 'settling', style: digitTrackStyle },
+        glyphs.map((digit, offset) => React.createElement('span', { key: offset, style: digitGlyphStyle }, digit))));
+  });
 
   function OdometerText({ text, previousText, loading, style, ariaLabel, cycleKey }) {
     const [motionEpoch, setMotionEpoch] = React.useState(0);
@@ -37,26 +53,42 @@
       return () => { document.removeEventListener('visibilitychange', refresh); if (offReduced) offReduced(); };
     }, []);
     let digitIndex = -1;
+    const previousDigits = String(previousText || '').replace(/[^0-9]/g, '');
+    // Las ruedas se identifican por POSICIÓN DECIMAL (desde la derecha), no por
+    // posición en la cadena. Si el importe gana o pierde un dígito, las unidades
+    // siguen siendo las unidades: sólo se agrega o quita una rueda en el extremo
+    // y ninguna de las existentes se re-monta ni gira de más.
+    const digitCount = String(text).replace(/[^0-9]/g, '').length;
     return React.createElement('span', {
       className: 'su-odometer',
       'data-odometer-state': loading ? 'spinning' : 'settling',
+      // Importes en movimiento: no son copy editable ni tarjeta revelable. Sin
+      // esto los observers globales recorren cada glifo en cada commit.
+      'data-notext': '',
+      'data-noreveal': '',
       role: loading ? undefined : 'img',
       'aria-label': loading ? undefined : ariaLabel,
       'aria-hidden': loading ? 'true' : undefined,
-      style: { display: 'inline-flex', alignItems: 'baseline', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', ...style },
+      style: style ? { ...odometerBaseStyle, ...style } : odometerBaseStyle,
     }, Array.from(text).map((char, characterIndex) => {
       if (!/^[0-9]$/.test(char)) return React.createElement('span', {
         key: characterIndex,
         'aria-hidden': 'true',
         'data-odometer-currency': char === '$' ? '' : undefined,
-        style: char === '$' ? { display: 'inline-block', transform: 'translateY(-.20em)' } : undefined,
+        style: char === '$' ? currencyGlyphStyle : undefined,
       }, char);
       digitIndex += 1;
-      const previousDigits = String(previousText || '').replace(/[^0-9]/g, '');
-      return React.createElement(OdometerDigit, { key: characterIndex + ':' + digitIndex, target: char, previous: previousDigits[digitIndex], index: digitIndex, loading, motionEpoch, cycleKey });
+      const place = digitCount - 1 - digitIndex;
+      return React.createElement(OdometerDigit, { key: 'p' + place, target: char, previous: previousDigits[previousDigits.length - 1 - place], index: digitIndex, loading, motionEpoch, cycleKey });
     }));
   }
 
+  // NO REMOUNT: mientras se recotiza, el motor del odómetro se queda montado y
+  // conserva la FORMA del último importe válido (mismo número de glifos), así
+  // que las ruedas giran sobre la misma pista en vez de destruirse y volver a
+  // crearse. El valor anterior nunca se presenta como vigente: mientras
+  // `loading` está activo el nodo va `aria-hidden` y sin `aria-label`, y los
+  // dígitos están girando — no hay importe legible hasta que asienta.
   function SmoothMoney({ value, loading = false, compact = false, style, cycleKey }) {
     const valid = typeof value === 'number' && Number.isFinite(value);
     const label = valid ? exactMoneyOrDash(value) : null;
@@ -65,7 +97,7 @@
     React.useEffect(() => { if (label) previous.current = label; }, [label]);
     const placeholder = compact ? '$8888' : '$8,888.88';
     return React.createElement(OdometerText, {
-      text: valid ? label : placeholder,
+      text: valid ? label : (previousLabel || placeholder),
       previousText: previousLabel,
       loading: loading || !valid,
       ariaLabel: label,
@@ -150,9 +182,8 @@
         React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 } },
           React.createElement('div', null,
             React.createElement('div', { style: { fontSize: 12, opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
-            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 40, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } }, result
-              ? React.createElement(SmoothMoney, { value: result.paymentPerPeriod, loading: loadingMotion, cycleKey: loadingMotion ? loadingCycle : animationCycle })
-              : React.createElement(LoadingReels, { columns: 6, cycleKey: placeholderCycle }))),
+            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 40, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
+              React.createElement(SmoothMoney, { value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
           React.createElement('div', { style: { textAlign: 'right', fontSize: 11.5, fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
             updating && React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 10.5 } },
               React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…'),
@@ -164,20 +195,22 @@
               : result.rate + '% ' + result.ratePeriod))),
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
           React.createElement('div', { style: { opacity: .72, fontWeight: 600, fontSize: 10.5, whiteSpace: 'nowrap' } }, cell[0]),
-          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 13, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, result
-            ? React.createElement(SmoothMoney, { value: cell[1], loading: loadingMotion, compact: true, cycleKey: loadingMotion ? loadingCycle : animationCycle, style: { whiteSpace: 'nowrap', letterSpacing: '-.02em' } })
-            : React.createElement(LoadingReels, { columns: 4, cycleKey: placeholderCycle }))))))));
+          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 13, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+            React.createElement(SmoothMoney, { value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
   }
 
-  function AmountField({ amount, setAmount, min, max, disabled }) {
+  function AmountField({ amount, setAmount, commitAmount, min, max, disabled }) {
     const bounded = typeof min === 'number' && typeof max === 'number' && max >= min;
+    const settle = commitAmount || setAmount;
+    // Arrastre y tecleo: valor continuo, entra al debounce.
     const change = (value) => {
       setAmount(Number(value));
     };
+    // Fin de gesto o de edición: intención discreta, cotiza de inmediato.
     const commit = (value) => {
       const next = Number(value);
       if (!Number.isFinite(next) || !bounded) return;
-      setAmount(Math.min(max, Math.max(min, next)));
+      settle(Math.min(max, Math.max(min, next)));
     };
     const showNumericMinimum = bounded && min !== 1;
     const quickValues = bounded ? Array.from(new Set([
@@ -193,13 +226,13 @@
       bounded && React.createElement('div', { style: { position: 'relative', height: 30, display: 'flex', alignItems: 'center' } },
         React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, height: 8, borderRadius: 999, background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)' } }),
         React.createElement('div', { style: { position: 'absolute', left: 0, width: percent + '%', height: 8, borderRadius: 999, background: 'var(--grad-guinda-soft)' } }),
-        React.createElement('input', { className: 'su-range', type: 'range', min, max, step: 1, value: Math.min(max, Math.max(min, amount || min)), disabled, onChange: (event) => change(event.target.value), style: { position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', margin: 0, height: 30, cursor: disabled ? 'default' : 'pointer' } })),
+        React.createElement('input', { className: 'su-range', type: 'range', min, max, step: 1, value: Math.min(max, Math.max(min, amount || min)), disabled, onChange: (event) => change(event.target.value), onPointerUp: (event) => commit(event.target.value), onKeyUp: (event) => commit(event.target.value), style: { position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', margin: 0, height: 30, cursor: disabled ? 'default' : 'pointer' } })),
       React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
         React.createElement('span', { 'data-loan-min-label': '' }, bounded ? (showNumericMinimum ? moneyOrDash(min) : 'Mínimo') : dash),
         React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)),
       bounded && React.createElement('div', { 'data-loan-quick-amounts': '', style: { display: 'flex', gap: 7, marginTop: 11, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' } }, quickValues.map((value, index) => {
         const active = amount === value;
-        return React.createElement('button', { key: value, type: 'button', disabled, onClick: () => setAmount(value), 'data-loan-quick-amount': value, 'data-press': 'subtle', style: { flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 10, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'), background: active ? 'var(--guinda-50)' : 'var(--surface)', color: active ? 'var(--guinda)' : 'var(--ink-2)', fontSize: 12, fontWeight: 700 } }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
+        return React.createElement('button', { key: value, type: 'button', disabled, onClick: () => settle(value), 'data-loan-quick-amount': value, 'data-press': 'subtle', style: { flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 10, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'), background: active ? 'var(--guinda-50)' : 'var(--surface)', color: active ? 'var(--guinda)' : 'var(--ink-2)', fontSize: 12, fontWeight: 700 } }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
       })));
   }
 
@@ -287,24 +320,88 @@
     return result.program === program.program_id || result.program === program.id || result.fund === program.fund;
   }
 
+  // La cotización interactiva viaja por `client.rpc` (PostgREST), no por Edge
+  // Function: se clasifican fallos de transporte del navegador y códigos
+  // transitorios reales de PostgREST/PostgreSQL. SNAPSHOT_INVALID queda fuera a
+  // propósito — tiene su propia recuperación silenciosa en el repositorio.
+  const RETRYABLE_TRANSPORT = [
+    'failed to fetch', 'network request failed', 'networkerror', 'load failed',
+    'connection closed', 'socket hang up', 'err_network', 'err_connection',
+  ];
+  // 57014 statement_timeout · 40001 serialization_failure · 40p01 deadlock
+  // 55p03 lock_not_available · 08006 connection_failure · 53300 too_many_connections
+  const RETRYABLE_POSTGRES = ['57014', '40001', '40p01', '55p03', '08006', '53300'];
+  const RETRYABLE_GATEWAY = ['502', '503', '504', 'bad gateway', 'service unavailable', 'gateway timeout'];
   function isRetryableQuoteTransportError(error) {
     const message = String(error || '').toLowerCase();
-    return message.includes('failed to send a request to the edge function') ||
-      message.includes('failed to fetch') ||
-      message.includes('network request failed') ||
-      message.includes('networkerror') ||
-      message.includes('load failed') ||
-      message.includes('financial_legacy_unavailable');
+    if (!message || message.includes('snapshot_invalid')) return false;
+    return RETRYABLE_TRANSPORT.some((token) => message.includes(token)) ||
+      RETRYABLE_POSTGRES.some((code) => message.includes(code)) ||
+      RETRYABLE_GATEWAY.some((token) => message.includes(token));
+  }
+
+  const allowedTermsOf = (program) => (program && Array.isArray(program.allowed_terms)
+    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0) : []);
+
+  function customTermAccepts(program, term) {
+    const custom = (program && program.custom_term) || {};
+    const min = Number(custom.min), max = Number(custom.max), step = Number(custom.step);
+    return Number.isInteger(term) && Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(step) &&
+      step > 0 && term >= min && term <= max && (term - min) % step === 0;
+  }
+
+  // SELECCIÓN ATÓMICA: fondo, monto y plazo se derivan juntos, así `selectionKey`
+  // cambia UNA sola vez al tocar una card. Antes el fondo se aplicaba en un
+  // render y el ajuste de monto/plazo en el siguiente: ese estado intermedio
+  // disparaba una cotización que se desechaba y empujaba la real al debounce.
+  function deriveSelection(program, previous) {
+    if (!program) return { programId: '', amount: 0, term: 0 };
+    const terms = allowedTermsOf(program);
+    const min = Number(program.min_amount), max = Number(program.max_amount);
+    const suggested = Number(program.suggested_amount || program.min_amount);
+    const previousAmount = previous && Number(previous.amount);
+    const amount = Number.isFinite(previousAmount) && previousAmount > 0 && Number.isFinite(min) && Number.isFinite(max)
+      ? Math.min(max, Math.max(min, previousAmount))
+      : suggested;
+    const previousTerm = previous && previous.term;
+    // Un plazo personalizado válido para el fondo nuevo se conserva: reiniciarlo
+    // a `terms[0]` cambiaba la selección a espaldas del afiliado.
+    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm)
+      ? previousTerm
+      : (terms[0] || Number(program.custom_term && program.custom_term.min) || 0);
+    return { programId: program.id, amount, term };
+  }
+
+  const sameSelection = (a, b) => !!a && !!b && a.programId === b.programId && a.amount === b.amount && a.term === b.term;
+
+  // Proyección de un plazo sugerido a partir de `termOptions`, que el servidor
+  // ya calculó para ESTE fondo y ESTE monto en la respuesta vigente. No hay
+  // aritmética en el navegador: cada importe se copia tal cual del servidor.
+  function projectTermOption(base, term) {
+    if (!base || !Array.isArray(base.termOptions)) return null;
+    const option = base.termOptions.find((item) => item && item.term === term);
+    if (!option) return null;
+    return Object.freeze({ ...base,
+      paymentCount: option.paymentCount,
+      interest: option.interest,
+      administrativeFeePerPayment: option.administrativeFeePerPayment,
+      administrativeFeeTotal: option.administrativeFeeTotal,
+      total: option.total,
+      paymentPerPeriod: option.paymentPerPeriod,
+      projectedFromTermOptions: true });
   }
 
   function StepSimulatorV2({ financial, onSimulationChange }) {
     const overview = financial.overview || {};
     const programs = Array.isArray(overview.programs) ? overview.programs.filter((item) => item.status === 'AVAILABLE') : [];
-    const [programId, setProgramId] = React.useState(() => programs[0] ? programs[0].id : '');
-    const program = programs.find((item) => item.id === programId) || programs[0] || null;
-    const terms = program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0) : [];
-    const [amount, setAmount] = React.useState(() => program ? Number(program.suggested_amount || program.min_amount) : 0);
-    const [term, setTerm] = React.useState(() => program ? (terms[0] || Number(program.custom_term && program.custom_term.min) || 0) : 0);
+    // Estado compuesto: una sola transición por intención del afiliado.
+    // `immediate` viaja DENTRO de la selección para que no pueda consumirse
+    // sobre una selección intermedia que el mismo commit ya invalidó.
+    const [selection, setSelection] = React.useState(() => ({ ...deriveSelection(programs[0] || null, null), immediate: true }));
+    const program = programs.find((item) => item.id === selection.programId) || programs[0] || null;
+    const terms = allowedTermsOf(program);
+    const amount = selection.amount;
+    const term = selection.term;
     const [confirmed, setConfirmed] = React.useState({ key: '', quote: null, revision: 0 });
     const [requestError, setRequestError] = React.useState(null);
     const timer = React.useRef(null);
@@ -313,25 +410,25 @@
     const activeRequest = React.useRef(null);
     const mounted = React.useRef(true);
     const latestSelection = React.useRef('');
-    // The authoritative overview already supplies the first eligible fund,
-    // suggested amount and allowed/custom term. Quote that initial selection
-    // immediately; later amount edits still opt back into the 320 ms debounce.
-    const immediate = React.useRef(true);
     const quoteRevision = React.useRef(0);
-    const quoteTimeoutMs = 6000;
-    const maxQuoteAttempts = 5;
+    // Presupuesto acotado por evidencia. Latencia medida contra Supabase en
+    // vivo (12 muestras): mediana 178 ms, p90 250 ms, máximo 364 ms. El corte a
+    // 4 s deja ~11× de holgura sobre el máximo observado y acota el peor caso a
+    // 2 × 4 s + 300 ms ≈ 8.3 s. Un servicio caído se reporta pronto, no tras
+    // medio minuto.
+    const quoteTimeoutMs = 4000;
+    const maxQuoteAttempts = 2;
+    const quoteRetryDelayMs = 300;
 
+    // Reconciliación con el overview autoritativo: si el fondo vigente
+    // desaparece o sus límites cambian, la selección se re-deriva ENTERA.
     React.useEffect(() => {
       if (!program) return;
-      setProgramId(program.id);
-      const min = Number(program.min_amount);
-      const max = Number(program.max_amount);
-      const suggested = Number(program.suggested_amount || program.min_amount);
-      setAmount((current) => Number.isFinite(current) && current > 0
-        ? Math.min(max, Math.max(min, current))
-        : suggested);
-      setTerm((current) => terms.includes(current) ? current : (terms[0] || Number(program.custom_term && program.custom_term.min) || 0));
-    }, [program && program.id]);
+      setSelection((current) => {
+        const next = deriveSelection(program, current);
+        return sameSelection(current, next) ? current : { ...next, immediate: true };
+      });
+    }, [program && program.id, program && program.max_amount, program && program.min_amount]);
 
     React.useEffect(() => () => {
       mounted.current = false;
@@ -375,14 +472,14 @@
               if (snapshot && snapshot.status === 'error' && isRetryableQuoteTransportError(snapshot.error) &&
                 attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
                 snapshot = null;
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
               break;
             } catch (error) {
               if (active.controller.signal.aborted && active.reason !== 'timeout') break;
               if (active.reason === 'timeout' && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                await new Promise((resolve) => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
               snapshot = { status: 'error', error: active.reason === 'timeout'
@@ -437,19 +534,37 @@
       if (confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)) {
         return undefined;
       }
-      const delay = immediate.current ? 0 : 320;
-      immediate.current = false;
+      // `immediate` pertenece a la selección que acaba de comprometerse, así
+      // que un toque discreto (fondo, plazo, monto rápido) cotiza sin espera y
+      // sólo el arrastre/tecleo continuo entra al debounce de 320 ms.
+      const delay = selection.immediate ? 0 : 320;
       enqueueCurrent(delay);
       return () => clearTimeout(timer.current);
-    }, [selectionKey]);
+    }, [selectionKey, selection.immediate]);
 
     // A context/token refresh may re-render this route after the repository has
     // already accepted the server quote. Reuse it only when it matches the exact
     // current selection; financial values are never recomputed in the browser.
     const storedQuote = financial && financial.quote;
-    const result = confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)
+    const authoritative = confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)
       ? confirmed.quote
       : quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
+    // PLAZO SUGERIDO INSTANTÁNEO: la respuesta vigente para este fondo y este
+    // monto ya trae `termOptions` con los importes de cada plazo estándar
+    // resueltos por Supabase. Al tocar un plazo se proyecta ese renglón de
+    // inmediato mientras la confirmación autoritativa viaja en segundo plano.
+    const projectionBase = !authoritative && validSelection && confirmed.quote &&
+      confirmed.quote.amount === amount &&
+      (confirmed.quote.program === program.program_id || confirmed.quote.program === program.id || confirmed.quote.fund === program.fund)
+      ? confirmed.quote : null;
+    // Memoizado a propósito: `projectTermOption` fabrica un objeto nuevo, y el
+    // efecto que publica la simulación al padre depende de la IDENTIDAD de
+    // `result`. Sin esto cada commit produce un `result` distinto y el par
+    // efecto → setState del padre → render se realimenta sin fin.
+    const projected = React.useMemo(
+      () => (projectionBase ? projectTermOption(projectionBase, term) : null),
+      [projectionBase, term]);
+    const result = authoritative || projected;
     const overviewLoading = !financial.overview && (financial.status === 'idle' || financial.status === 'loading');
     const effectiveError = validSelection ? requestError : financial.error;
     const unavailableError = /NOT_CONFIGURED|UNAVAILABLE|REJECTED|INVALID_RESPONSE|CONTRACT_MISMATCH/.test(effectiveError || '');
@@ -475,11 +590,26 @@
       }
       return enqueueCurrent(0);
     };
-    const selectProgram = (value) => { immediate.current = true; setProgramId(value); };
-    const selectTerm = (value) => { immediate.current = true; setTerm(value); };
-    const selectAmount = (value) => { immediate.current = false; setAmount(value); };
+    // Toque discreto sobre una card = una transición atómica y cotización
+    // inmediata. Sólo el arrastre del slider y el tecleo del monto piden
+    // debounce, y lo piden explícitamente.
+    const selectProgram = (value) => setSelection((current) => {
+      const next = deriveSelection(programs.find((item) => item.id === value) || program, current);
+      return { ...next, immediate: true };
+    });
+    const selectTerm = (value) => setSelection((current) => (current.term === value && current.immediate
+      ? current : { ...current, term: value, immediate: true }));
+    const selectAmount = (value) => setSelection((current) => (current.amount === value && !current.immediate
+      ? current : { ...current, amount: value, immediate: false }));
+    // Fin del arrastre / monto rápido / salida del campo: la intención ya es
+    // discreta, así que se cotiza sin esperar el debounce.
+    const commitAmount = (value) => setSelection((current) => (current.amount === value && current.immediate
+      ? current : { ...current, amount: value, immediate: true }));
 
-    React.useEffect(() => {
+    // useLayoutEffect: el padre deriva `canContinue` de esta simulación. Con un
+    // efecto normal el botón se habilitaba un frame DESPUÉS de que los importes
+    // ya eran visibles; aquí el commit del padre ocurre antes de pintar.
+    React.useLayoutEffect(() => {
       if (!onSimulationChange) return;
       onSimulationChange({
         key: selectionKey,
@@ -487,7 +617,9 @@
         amount,
         term,
         result,
-        current: state === 'READY' && !!result && !updating,
+        // Nunca continuar con una cotización de otra selección: `result` sólo
+        // existe si coincide con el fondo, monto y plazo vigentes.
+        current: state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term),
       });
     }, [selectionKey, result, updating, state]);
 
@@ -495,7 +627,7 @@
       React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', animationCycle: confirmed.revision, loadingCycle: selectionKey }),
       state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
       React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading }),
-      React.createElement(AmountField, { amount, setAmount: selectAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),
+      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),
       React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading, result, customTerm: program && program.custom_term }),
       React.createElement(Breakdown, { result }),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },

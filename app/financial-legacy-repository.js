@@ -50,6 +50,11 @@
   }
   const state = { status: 'idle', overview: null, quote: null, loanSession: null, authContextKey: null, error: null };
   let loanSessionOpenPromise = null;
+  let ensureLoanSessionPromise = null;
+  // Margen de refresco: cotizar contra un snapshot que expira en segundos
+  // produce un SNAPSHOT_INVALID evitable. El TTL absoluto (15 min) NO se
+  // extiende nunca; se abre una sesión nueva.
+  const SESSION_REFRESH_MARGIN_MS = 60000;
   const listeners = new Set();
   const emit = () => listeners.forEach((fn) => fn());
   function snapshot() { return Object.freeze({ status: state.status, overview: state.overview, quote: state.quote, loanSession: state.loanSession, error: state.error }); }
@@ -154,19 +159,28 @@
       })();
       try { return await loanSessionOpenPromise; } finally { loanSessionOpenPromise = null; }
     },
-    async ensureLoanSession() {
-      const contextKey = await currentAuthContextKey();
-      const expiresAt = state.loanSession && Date.parse(state.loanSession.expires_at);
-      if (contextKey && state.authContextKey === contextKey && state.overview && state.loanSession &&
-          Number.isFinite(expiresAt) && expiresAt > Date.now()) {
-        try {
-          const validated = await invoke({ action: 'loanSessionValidate', snapshot_id: state.loanSession.id });
-          if (validated.googleResolutionCount === 0 && validated.loanSession && validated.loanSession.id === state.loanSession.id) {
-            state.loanSession = validated.loanSession; state.status = 'ready'; state.error = null; emit(); return snapshot();
-          }
-        } catch (_) { /* Effective affiliate or impersonation context changed. */ }
+    // Deduplicada: App, Financiera y Préstamo la invocan al montar. Sin esta
+    // guarda dos resoluciones simultáneas se invalidan el snapshot entre sí y
+    // la cotización en vuelo cae en SNAPSHOT_INVALID.
+    ensureLoanSession() {
+      if (ensureLoanSessionPromise) return ensureLoanSessionPromise;
+      ensureLoanSessionPromise = (async () => {
+        const contextKey = await currentAuthContextKey();
+        const expiresAt = state.loanSession && Date.parse(state.loanSession.expires_at);
+        if (contextKey && state.authContextKey === contextKey && state.overview && state.loanSession &&
+            Number.isFinite(expiresAt) && expiresAt - SESSION_REFRESH_MARGIN_MS > Date.now()) {
+          try {
+            const validated = await invoke({ action: 'loanSessionValidate', snapshot_id: state.loanSession.id });
+            if (validated.googleResolutionCount === 0 && validated.loanSession && validated.loanSession.id === state.loanSession.id) {
+              state.loanSession = validated.loanSession; state.status = 'ready'; state.error = null; emit(); return snapshot();
+            }
+          } catch (_) { /* Effective affiliate or impersonation context changed. */ }
+        }
+        return store.openLoanSession(false);
+      })();
+      try { return ensureLoanSessionPromise; } finally {
+        ensureLoanSessionPromise.then(() => { ensureLoanSessionPromise = null; }, () => { ensureLoanSessionPromise = null; });
       }
-      return store.openLoanSession(false);
     },
     async requestQuote(programId, amount, term) {
       state.status = 'loading'; state.quote = null; state.error = null; emit();
@@ -177,16 +191,37 @@
       catch (error) { state.quote = null; state.status = 'error'; state.error = error.message; }
       emit(); return snapshot();
     },
+    // Cotización interactiva. NO emite un `status: 'loading'` global de apertura:
+    // el overview ya está cargado y ese emit sólo re-renderizaba TopBar y
+    // Financiera, que siguen montadas detrás de la ruta apilada. El estado
+    // «Actualizando…» vive en el simulador, que es quien conoce la selección.
     async requestLoanSessionQuote(programId, amount, term, options) {
-      state.status = 'loading'; state.error = null; emit();
       const signal = options && options.signal;
-      try {
+      state.error = null;
+      const runQuote = async () => {
         if (!state.loanSession || !state.loanSession.id) throw Object.assign(new Error('SNAPSHOT_INVALID'), { code: 'SNAPSHOT_INVALID' });
         const result = await invokeLoanSnapshotRpc({ p_snapshot_id: state.loanSession.id,
           p_program_id: String(programId), p_amount: Number(amount), p_term: Number(term) }, { signal });
         if (signal && signal.aborted) throw abortedInvocation();
         state.loanSession = result.loanSession || state.loanSession;
         state.quote = assertFinancialSimulationResult(result); state.status = 'ready';
+      };
+      try {
+        // El TTL absoluto del snapshot no se extiende jamás: si está por vencer
+        // se abre uno nuevo ANTES de cotizar, en vez de fallar y avisar.
+        const expiresAt = state.loanSession && Date.parse(state.loanSession.expires_at);
+        if (Number.isFinite(expiresAt) && expiresAt - SESSION_REFRESH_MARGIN_MS <= Date.now()) await store.openLoanSession(true);
+        if (signal && signal.aborted) throw abortedInvocation();
+        try {
+          await runQuote();
+        } catch (error) {
+          // Recuperación silenciosa: EXACTAMENTE un ciclo por intención.
+          const code = error && (error.code || error.message);
+          if (code !== 'SNAPSHOT_INVALID' || (signal && signal.aborted)) throw error;
+          await store.openLoanSession(true);
+          if (signal && signal.aborted) throw abortedInvocation();
+          await runQuote();
+        }
       } catch (error) {
         if ((error.code || error.message) === 'SIMULATION_REQUEST_ABORTED') {
           state.status = state.overview ? 'ready' : 'idle'; state.error = null; emit(); throw error;
@@ -241,9 +276,32 @@
     validateFinancialSimulationResult, assertFinancialSimulationResult, validatePayrollImpact, availableCreditTotal,
   });
   window.financialLegacyStore = store;
-  window.useFinancialLegacy = function () {
+  // Suscripción granular opcional. Sin selector devuelve el snapshot completo
+  // (API previa intacta). Con selector sólo re-renderiza cuando la porción
+  // seleccionada cambia por comparación superficial, de modo que actualizar la
+  // cotización no re-renderiza pantallas que sólo leen `status`/`overview`.
+  const shallowEqual = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    return keys.every((key) => a[key] === b[key]);
+  };
+  window.useFinancialLegacy = function (selector) {
     const [, rerender] = React.useState(0);
-    React.useEffect(() => store.subscribe(() => rerender((value) => value + 1)), []);
-    return store.snapshot();
+    const selectorRef = React.useRef(selector);
+    selectorRef.current = selector;
+    const selected = selector ? selector(store.snapshot()) : store.snapshot();
+    const selectedRef = React.useRef(selected);
+    selectedRef.current = selected;
+    React.useEffect(() => store.subscribe(() => {
+      const current = selectorRef.current;
+      if (!current) { rerender((value) => value + 1); return; }
+      const next = current(store.snapshot());
+      if (shallowEqual(selectedRef.current, next)) return;
+      selectedRef.current = next;
+      rerender((value) => value + 1);
+    }), []);
+    return selected;
   };
 })();

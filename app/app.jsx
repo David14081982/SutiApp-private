@@ -2,6 +2,9 @@
 (function () {
   const { useState, useCallback, useEffect } = React;
   const I = window.Icon, D = () => window.DATA;
+  // Porción del store financiero que consume esta pantalla. Estable por
+  // identidad: `status` y `overview` no cambian al recotizar.
+  const overviewSlice = (snapshot) => ({ status: snapshot.status, overview: snapshot.overview });
 
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
@@ -29,7 +32,9 @@
   function TopBar({ app, variant }) {
     const u = app.user;
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null };
+    // Selector: el TopBar sólo depende de status/overview. Una cotización
+    // nueva no debe re-renderizar el encabezado ni sus drivers de scroll.
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
     const [homeFinancialUser, setHomeFinancialUser] = React.useState(null);
     React.useEffect(() => {
       if (variant !== 'home' || !window.financialLegacyStore) return undefined;

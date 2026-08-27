@@ -98,27 +98,9 @@
     return 'Buenas noches';
   }
 
-  // ---------- QUICK ACTIONS (orden y visibilidad administrables) ----------
-  function QuickActions({ app }) {
-    const map = {
-      qa_prestamo: { res: 'home.qa.prestamo', label: 'Préstamo', go: () => app.push('loan') },
-      qa_credencial: { res: 'home.qa.credencial', label: 'Credencial', go: () => app.setTab('credencial') },
-      qa_convenios: { res: 'home.qa.convenios', label: 'Convenios', go: () => app.setTab('convenios') },
-      qa_documentos: { res: 'home.qa.documentos', label: 'Documentos', go: () => app.push('documentos') },
-    };
-    const acts = Object.keys(map).map((id) => map[id]);
-    return React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(' + Math.min(acts.length, 4) + ',1fr)', gap: 10, padding: '0 20px' } },
-      acts.map((a) => React.createElement('button', {
-        key: a.label, onClick: a.go, className: 'su-press',
-        style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0 },
-      },
-        React.createElement('div', { style: { width: 58, height: 58, borderRadius: 18, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', display: 'grid', placeItems: 'center', color: '#E43135' } },
-          React.createElement(window.Res, { resKey: a.res, size: 25, stroke: 1.85 })),
-        React.createElement('span', { style: { fontSize: 12, fontWeight: 700, color: 'var(--ink-2)' } }, a.label))),
-    );
-  }
-
   // ---------- DYNAMIC BANNER ----------
+  const HOME_BANNER_HEIGHT = 224;
+
   function Banner({ app }) {
     const visual = app.visual;
     const banners = visual && visual.homeBanners || [];
@@ -134,11 +116,11 @@
     }, [index, paused, viewer, banners.length]);
     if (!visual || visual.phase === 'loading') {
       return React.createElement('div', { style: { padding: '0 20px' } },
-        React.createElement('div', { className: 'su-skeleton', 'data-h0072-banner-state': 'loading', style: { height: 122, borderRadius: 20 } }));
+        React.createElement('div', { className: 'su-skeleton', 'data-h0072-banner-state': 'loading', 'data-home-banner-layout': 'expanded', style: { height: HOME_BANNER_HEIGHT, borderRadius: 20 } }));
     }
     if (visual.phase === 'error') {
       return React.createElement('div', { style: { padding: '0 20px' } },
-        React.createElement('button', { onClick: visual.retry, 'data-h0072-banner-state': 'error', style: { width: '100%', minHeight: 72, border: 'none', borderRadius: 20, background: 'var(--surface)', color: 'var(--ink-2)', fontWeight: 700, boxShadow: 'var(--neo-sm)' } }, 'No pudimos cargar el anuncio. Reintentar'));
+        React.createElement('button', { onClick: visual.retry, 'data-h0072-banner-state': 'error', 'data-home-banner-layout': 'expanded', style: { width: '100%', minHeight: HOME_BANNER_HEIGHT, border: 'none', borderRadius: 20, background: 'var(--surface)', color: 'var(--ink-2)', fontWeight: 700, boxShadow: 'var(--neo-sm)' } }, 'No pudimos cargar el anuncio. Reintentar'));
     }
     const banner = banners[index];
     if (!banner || !banner.image_url) return null;
@@ -153,8 +135,8 @@
     return React.createElement('div', { style: { padding: '0 20px' }, onMouseEnter: () => setPaused(true), onMouseLeave: () => setPaused(false) },
       React.createElement('div', {
         'data-h0072-banner-state': 'loaded',
-        'data-home-banner-index': index, onPointerDown: begin, onPointerUp: end, onPointerCancel: () => { drag.current = null; setPaused(false); },
-        style: { position: 'relative', overflow: 'hidden', borderRadius: 20, height: 122, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', touchAction: 'pan-y' },
+        'data-home-banner-layout': 'expanded', 'data-home-banner-index': index, onPointerDown: begin, onPointerUp: end, onPointerCancel: () => { drag.current = null; setPaused(false); },
+        style: { position: 'relative', overflow: 'hidden', borderRadius: 20, height: HOME_BANNER_HEIGHT, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', touchAction: 'pan-y' },
       },
         React.createElement('button', { onClick: activate, 'aria-label': banner.action_url ? 'Abrir ' + (banner.title || 'anuncio') : 'Ampliar ' + (banner.title || 'anuncio'), style: { position: 'absolute', inset: 0, width: '100%', height: '100%', padding: 0, border: 'none', background: 'none', cursor: 'pointer' } },
           React.createElement('img', { src: banner.image_url, alt: banner.title || 'Anuncio SutiApp', draggable: false, style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } })),
@@ -325,13 +307,12 @@
   // ---------- HOME SCREEN (orden y visibilidad de secciones administrables) ----------
   function HomeScreen({ app, t }) {
     const blocks = {
-      quick_actions: () => React.createElement(QuickActions, { app }),
       banner_convenio: () => React.createElement(Banner, { app }),
       noticias: () => React.createElement(Noticias, { app }),
       ecosistema: () => React.createElement(Ecosistema, { app }),
       comite: () => React.createElement(Comite, { app }),
     };
-    const defOrder = ['quick_actions', 'banner_convenio', 'noticias', 'ecosistema', 'comite'];
+    const defOrder = ['banner_convenio', 'ecosistema', 'comite', 'noticias'];
     const orderIds = defOrder;
     // M2.1 · coreografía real: cada bloque entra al entrar en viewport, una sola
     // vez por sesión (los re-render del panel admin no la repiten).

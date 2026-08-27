@@ -9259,79 +9259,8 @@ Object.assign(window, {
     return 'Buenas noches';
   }
 
-  // ---------- QUICK ACTIONS (orden y visibilidad administrables) ----------
-  function QuickActions({
-    app
-  }) {
-    const map = {
-      qa_prestamo: {
-        res: 'home.qa.prestamo',
-        label: 'Préstamo',
-        go: () => app.push('loan')
-      },
-      qa_credencial: {
-        res: 'home.qa.credencial',
-        label: 'Credencial',
-        go: () => app.setTab('credencial')
-      },
-      qa_convenios: {
-        res: 'home.qa.convenios',
-        label: 'Convenios',
-        go: () => app.setTab('convenios')
-      },
-      qa_documentos: {
-        res: 'home.qa.documentos',
-        label: 'Documentos',
-        go: () => app.push('documentos')
-      }
-    };
-    const acts = Object.keys(map).map(id => map[id]);
-    return React.createElement('div', {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(' + Math.min(acts.length, 4) + ',1fr)',
-        gap: 10,
-        padding: '0 20px'
-      }
-    }, acts.map(a => React.createElement('button', {
-      key: a.label,
-      onClick: a.go,
-      className: 'su-press',
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 7,
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        padding: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 58,
-        height: 58,
-        borderRadius: 18,
-        background: 'var(--surface)',
-        boxShadow: 'var(--neo-sm)',
-        display: 'grid',
-        placeItems: 'center',
-        color: '#E43135'
-      }
-    }, React.createElement(window.Res, {
-      resKey: a.res,
-      size: 25,
-      stroke: 1.85
-    })), React.createElement('span', {
-      style: {
-        fontSize: 12,
-        fontWeight: 700,
-        color: 'var(--ink-2)'
-      }
-    }, a.label))));
-  }
-
   // ---------- DYNAMIC BANNER ----------
+  const HOME_BANNER_HEIGHT = 224;
   function Banner({
     app
   }) {
@@ -9357,8 +9286,9 @@ Object.assign(window, {
       }, React.createElement('div', {
         className: 'su-skeleton',
         'data-h0072-banner-state': 'loading',
+        'data-home-banner-layout': 'expanded',
         style: {
-          height: 122,
+          height: HOME_BANNER_HEIGHT,
           borderRadius: 20
         }
       }));
@@ -9371,9 +9301,10 @@ Object.assign(window, {
       }, React.createElement('button', {
         onClick: visual.retry,
         'data-h0072-banner-state': 'error',
+        'data-home-banner-layout': 'expanded',
         style: {
           width: '100%',
-          minHeight: 72,
+          minHeight: HOME_BANNER_HEIGHT,
           border: 'none',
           borderRadius: 20,
           background: 'var(--surface)',
@@ -9413,6 +9344,7 @@ Object.assign(window, {
       onMouseLeave: () => setPaused(false)
     }, React.createElement('div', {
       'data-h0072-banner-state': 'loaded',
+      'data-home-banner-layout': 'expanded',
       'data-home-banner-index': index,
       onPointerDown: begin,
       onPointerUp: end,
@@ -9424,7 +9356,7 @@ Object.assign(window, {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 20,
-        height: 122,
+        height: HOME_BANNER_HEIGHT,
         background: 'var(--surface)',
         boxShadow: 'var(--neo-sm)',
         touchAction: 'pan-y'
@@ -10062,9 +9994,6 @@ Object.assign(window, {
     t
   }) {
     const blocks = {
-      quick_actions: () => React.createElement(QuickActions, {
-        app
-      }),
       banner_convenio: () => React.createElement(Banner, {
         app
       }),
@@ -10078,7 +10007,7 @@ Object.assign(window, {
         app
       })
     };
-    const defOrder = ['quick_actions', 'banner_convenio', 'noticias', 'ecosistema', 'comite'];
+    const defOrder = ['banner_convenio', 'ecosistema', 'comite', 'noticias'];
     const orderIds = defOrder;
     // M2.1 · coreografía real: cada bloque entra al entrar en viewport, una sola
     // vez por sesión (los re-render del panel admin no la repiten).

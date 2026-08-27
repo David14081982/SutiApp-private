@@ -1,5 +1,48 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-HOME-NEWS-AFTER-COMMITTEE-001
+
+- Se reordenó exclusivamente la composición de Inicio a `Banner → Tu sindicato → Comité Ejecutivo Estatal → Noticias`. El bloque completo de Noticias —encabezado, acción “Ver todas”, estados y carrusel— queda después de las tarjetas del Comité.
+- No cambiaron los componentes internos, contenido, rutas, navegación, repositories ni autoridades Supabase de Noticias o Comité.
+- Chrome real certificó el orden completo en 390×844 y 430×932, con overflow horizontal 0. Suite estática 50/50.
+
+```text
+H-HOME-NEWS-AFTER-COMMITTEE-001 RESULT
+Status: PASS
+Files changed: Home block order; generated bundle/cache; focused tests; changelog/Registry
+Source-of-truth verdict: PASS — news and directory Supabase authorities unchanged
+Invariant verdict: PASS — owner-authorized order only; all sections and interactions preserved
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — static 50/50; Chrome real 390×844 and 430×932
+Security: NOT APPLICABLE — no Auth, permission, RLS, backend or data change
+Legacy impact: NO INTERACTION
+Unexpected files changed: 0
+Known limitations: none
+Evidence: scripts/test-home-banner-expansion.js; scripts/test-home-banner-expansion-browser.js; scripts/test-static-suite.js
+```
+
+## 2026-08-27 — H-HOME-BANNER-EXPANSION-001
+
+- En Inicio se eliminó exclusivamente la franja superior de cuatro accesos rápidos: Préstamo, Credencial, Convenios y Documentos. Sus pantallas, rutas, navegación inferior y las tarjetas de “Tu sindicato” permanecen intactas.
+- El carrusel de banners pasó de 122 a 224 px y ahora ocupa primero el espacio liberado. La misma altura aplica a estados loading/error/loaded; se preservaron recorte `cover`, swipe, rotación, indicadores, ampliación y enlaces seguros.
+- La autoridad sigue siendo Supabase mediante `BannerRepository → public.banners/app_assets/Storage`; no hubo cambios de datos, Repository, RLS, Admin, finanzas, Google ni Apps Script.
+- Chrome real certificó 390×844 y 430×932 con overflow horizontal 0, banner 224 px, franja rápida ausente e indicadores funcionales. Suite estática 50/50.
+
+```text
+H-HOME-BANNER-EXPANSION-001 RESULT
+Status: PASS
+Files changed: Home screen; generated bundle/cache; focused static/browser tests; changelog/Registry
+Source-of-truth verdict: PASS — Supabase banner authority preserved without fallback or duplicate store
+Invariant verdict: PASS — only the four owner-authorized Home shortcuts were removed; target routes remain intact
+Build: PASS — bundle reproducible from 90 source files
+Tests: PASS — static 50/50; Chrome real 390×844 and 430×932
+Security: NOT APPLICABLE — no Auth, permission, RLS, backend or data write change
+Legacy impact: NO INTERACTION / GOOGLE CALLS 0 / GOOGLE WRITES 0 / APPS SCRIPT CHANGES 0
+Unexpected files changed: 0
+Known limitations: banner images retain intentional `cover` cropping at the taller aspect ratio
+Evidence: scripts/test-home-banner-expansion.js; scripts/test-home-banner-expansion-browser.js; scripts/test-static-suite.js
+```
+
 ## 2026-08-27 — H-LOAN-QUOTE-STATE-GUARD-001
 
 - Se reprodujo en Suti Préstamo la mezcla semántica de la captura: al cambiar el monto de `$5,000` a `$3,300`, la tarjeta conservaba importes exactos del quote anterior mientras mostraba `Actualizando…`.

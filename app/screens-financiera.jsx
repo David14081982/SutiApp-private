@@ -29,7 +29,7 @@
         React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9, marginTop: 18 } },
           React.createElement(SummaryAction, { label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') }),
           React.createElement(SummaryAction, { label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') }),
-          React.createElement(SummaryAction, { label: 'Invertir', trend: true, onClick: () => app.openFinanceItem('inversion') })),
+          React.createElement(SummaryAction, { label: 'Invertir', trend: true, onClick: () => app.push('investment') })),
       ),
     );
   }

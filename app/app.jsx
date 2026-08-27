@@ -424,6 +424,7 @@
       articulo: window.ArticuloScreen, convenio: window.ConvenioDetail, tracking: window.TrackingScreen,
       catitem: window.CatalogItemScreen,
       documentos: window.DocumentosScreen, membership: window.MembershipApplicationScreen, notifs: NotifsScreen, perfil: PerfilScreen, terreno: window.TerrenoScreen,
+      investment: window.InvestmentScreen,
     };
     const PushedScreen = top ? ROUTES[top.name] : null;
     const pushAllowed = !top || gate(top.name) || (top.name === 'loan' && !!auth.impersonation);

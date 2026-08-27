@@ -221,3 +221,15 @@ Google `Historial de solicitudes` (append one row)
 `program_requests` es la única autoridad posterior al corte para registrar intención, beneficio o cotización inicial. La RPC deriva identidad en backend, exige firma/términos, protege reintentos con `(affiliate_id,idempotency_key)` y no ejecuta cálculos ni escrituras Google. RLS limita lectura al afiliado efectivo, empresa destino o Admin autorizado; los grants por columna excluyen firma, idempotencia y contexto interno del navegador. Historial y Admin son proyecciones de esta misma frontera, sin `DATA`, `localStorage` ni tablas de solicitud alternativas.
 
 La corrección de frontera 2026-08-22 prohíbe también que Historial, refresh o retry del afiliado ejecuten el export. Solo la aprobación Admin backend puede iniciarlo. `Historial de solicitudes` es el único destino de negocio y solo mediante append. La aprobación congela A:AL+SHA; Supabase audita la transición y Apps Script reserva UUID/hash/fila bajo `LockService`, verifica 38 headers y hace read-back antes de `handed_off`. Proceso 3 sin aval autoritativo falla cerrado. No existe procesamiento automático después del append.
+
+## H-SUTI-INVERSION-SCREEN-001 — simulador presentacional aislado
+
+```text
+Mi Financiera → route `investment` → InvestmentScreen
+                                      ↓
+                    estado React efímero (monto/plazo)
+                                      ↓
+          proyección simple aprobada; CTA informativo interno
+```
+
+La ruta full-screen reutiliza el stack y `app.back` del shell. El HTML del propietario se convirtió a componentes/estilos internos sin iframe, navegador externo ni segunda app. `InvestmentScreen` no cruza Repository: no consulta ni escribe Google, Supabase, Edge, RPC, Financial Resolver o `program_requests`; tampoco persiste en `localStorage`. Su cálculo local es exclusivamente la proyección presentacional acotada por ADR-070 e INV-115 y no pertenece a Suti Préstamo ni a la inversión operativa legacy.

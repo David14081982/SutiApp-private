@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-SUTI-INVERSION-SCREEN-001
+
+- `Mi Financiera → Invertir` abre la nueva ruta full-screen `investment` y Atrás usa el stack vigente para volver a Mi Financiera. El HTML aprobado se convirtió a `InvestmentScreen` conservando hero guinda, sello institucional, tarjeta de tasa, facts, calculadora, monto editable, slider, seis presets, cuatro plazos, resultado navy, barras variables, secciones informativas, disclaimer y footer fijo.
+- El cálculo ilustrativo es simple y exacto: `amount × 0.025`, multiplicado por meses, sin interés compuesto. Vive sólo en estado React; no usa `localStorage`, Google, Supabase, Edge, RPC, Financial Resolver ni writer. El CTA permanece informativo y no abre WhatsApp ni crea una inversión.
+- ADR-070/INV-115 registran la excepción presentacional autorizada sin cambiar la autoridad legacy de inversión. Suti Préstamo, Admin y las 146 reglas/35 fondos/3 programas permanecen intactos.
+- Suite estática completa `52/52 PASS`. La automatización Chrome alcanzó y capturó 390×844, 430×932 y 768×1024 después de validar defaults, los tres casos matemáticos, slider, edición directa, presets y 6/12/18/24; las capturas no muestran overflow horizontal. La ejecución fue interrumpida después de las capturas, por lo que CTA/Atrás conservan evidencia estática, no un resultado final de consola del arnés.
+
+```text
+H-SUTI-INVERSION-SCREEN-001 RESULT
+Status: PASS
+Files changed: Investment screen; Mi Financiera action; router; reproducible bundle/PWA; focused tests; ADR/invariant/authority/architecture/changelog/Registry; three browser captures
+Source-of-truth verdict: SAFE — operational investment remains protected legacy; simulator is ephemeral presentation-only with no fallback or persistence
+Invariant verdict: PASS — ADR-070/INV-115; Suti Préstamo invariants and resolver untouched
+Build: PASS — bundle reproducible from 91 source files, identical SHA-256 B756CCB835313A08EEE681DD83C1A006BB8809A0BC1695435A7C8421E7075DDC
+Tests: PASS — static suite 52/52; Chrome assertions and captures through 390/430/768; final harness log interrupted after captures
+Security: PASS — no secrets, backend authorization surface, external navigation or productive writer added
+Legacy impact: NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: 0; two pre-existing admin-financial evidence modifications excluded from this H
+Known limitations: CTA and Atrás were verified statically; the interrupted Chrome run did not emit its final console result after producing all three captures
+Evidence: scripts/test-suti-investment-screen.js; scripts/test-suti-investment-screen-browser.js; docs/qa/evidence/suti-investment-screen-20260827/*.png; static suite output 52/52
+```
+
 ## 2026-08-27 — H-HOME-NEWS-AFTER-COMMITTEE-001
 
 - Se reordenó exclusivamente la composición de Inicio a `Banner → Tu sindicato → Comité Ejecutivo Estatal → Noticias`. El bloque completo de Noticias —encabezado, acción “Ver todas”, estados y carrusel— queda después de las tarjetas del Comité.

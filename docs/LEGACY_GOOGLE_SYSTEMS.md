@@ -17,11 +17,11 @@ No asumir que una hoja equivale a una tabla ni que una celda calculada es un dat
 
 La arquitectura híbrida es válida si cada dominio conserva una única autoridad declarada.
 
-## Snapshot temporal autorizado — Suti Préstamo
+## Criterios financieros — corte Supabase ADR-065
 
-Google continúa como autoridad de elegibilidad, fondos, tasas, máximos y criterios. La única réplica permitida es `financial_session_snapshots`: subconjunto personalizado antes de persistir, generado por Edge, ligado a afiliado/actor/impersonación y con TTL duro de 15 minutos. No es catálogo general, no recibe escrituras del navegador y no modifica Sheets ni Apps Script.
+Google `Criterios de fondos` dejó de ser autoridad productiva de elegibilidad, fondos, tasas, máximos, plazos, fechas y visibilidad. Supabase es la única autoridad mediante `financial_programs`, `financial_funds`, `financial_rules` y el marcador explícito `financial_criteria_authority=SUPABASE`. Google queda intacto como histórico/procedencia: cero escrituras y cero cambios Apps Script durante el corte.
 
-Después de quedar READY, cambios de monto, fondo y plazo llaman la RPC Supabase autenticada, consultan cero veces Google y cero veces Edge, y reutilizan el resolver server-side certificado que Edge usa con Google vigente. Un error no activa fallback RPC→Edge→Google; la regeneración requiere reintento explícito. Confirmar vuelve a leer Google y usa el mismo resolver; si el fingerprint o resultado cambió se responde `409 CONDITIONS_CHANGED` y no se crea solicitud. La única escritura Google sigue siendo el append posterior a aprobación descrito abajo.
+La importación certificada consumió exclusivamente A/B/C/D/E/F/H/N/P. G/I/J/K/L/M/O quedaron excluidas; L `Plazo para calculo AD. NÓMINA` es `OUT OF SCOPE / AUXILIARY LEGACY CALCULATION` y el código productivo no la consume. `financial_session_snapshots` sigue como caché personalizado TTL 15m, derivado del batch Supabase activo. Apertura, cambios de monto/fondo/plazo y confirmación consultan cero veces Google; un fallo no activa dual-read ni fallback. La única escritura Google restante del dominio préstamos es el append posterior a aprobación descrito abajo, que no cambia criterios.
 
 ## Phase 7 — export después de aprobación
 

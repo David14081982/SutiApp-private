@@ -11,7 +11,7 @@ const html=read('SutiApp.html');
 const sw=read('sw.js');
 const rpc=read('supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql');
 const fields=['amount','paymentCount','paymentPeriod','rate','ratePeriod','interest','administrativeFeePerPayment','administrativeFeeTotal','total','paymentPerPeriod','fund','program','maxAmount','maxTerm','eligibility'];
-for(const field of fields) must(repo.includes("'"+field+"'")&&(edge.includes('"'+field+'"')||edge.includes('result.'+field)),'contract field missing: '+field);
+for(const field of fields) must(repo.includes("'"+field+"'")&&(edge.includes('"'+field+'"')||edge.includes('result.'+field)||rpc.includes("'"+field+"'")),'contract field missing: '+field);
 for(const state of ['LOADING','READY','NOT_ELIGIBLE','SCHEDULED','INCOMPLETE','ERROR','UNAVAILABLE']) must(loan.includes("'"+state+"'"),'UI state missing: '+state);
 for(const label of ['Monto','Destino','Documentos','Resumen','Recibes','Interés','Gto. admin.','Total','Ver desglose completo']) must(loan.includes(label),'visual contract missing: '+label);
 for(const retired of ['Impacto en tu quincena','Tu talón de pago','data-payroll-impact','data-payroll-card']) must(!loan.includes(retired),'retired payroll card remains: '+retired);

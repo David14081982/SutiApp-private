@@ -25,7 +25,8 @@ assert(!requests.includes('createFinancial')&&!requests.includes('set_financial_
 assert(edge.includes('create_validated_financial_program_request')&&edge.includes('loanSessionConfirm'));
 assert(seed.includes('F4BA18ABE82B148ED65737DB16074303627F96D37FA6F9F025E0A10649BD9591'));
 assert(seed.includes('CATEGORY_COLUMN=58')&&seed.includes('UNION_COLUMN=60')&&seed.includes('--apply'));
-assert(edge.includes('readCriteriaRules')&&edge.includes('FINANCIAL_CRITERIA_SPREADSHEET_ID')&&edge.includes('FINANCIAL_CRITERIA_RANGE'));
+assert(edge.includes('readCriteriaRules(privileged)')&&edge.includes('get_financial_runtime_rules')&&edge.includes('SUPABASE_FINANCIAL_CRITERIA'));
+assert(!/FINANCIAL_CRITERIA_SPREADSHEET_ID|FINANCIAL_CRITERIA_RANGE|docs\.google\.com|sheets\.googleapis\.com/.test(edge));
 assert(edge.includes('legacy_reference !== `Historial de solicitudes!A${result.google_row}`'));
 assert(edge.includes('rulesForProfile')&&edge.includes('normalize(rule.category) === category')&&edge.includes('normalize(rule.union) === union'));
 console.log('AFFILIATE FINANCIAL PROFILE STATIC CONTRACT: PASS');

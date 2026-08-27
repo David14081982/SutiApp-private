@@ -1,9 +1,10 @@
-/* Read-only projection of the authoritative Google financial criteria. */
+/* Admin projection of Supabase-authoritative financial programs, funds and rules. */
 (function () {
   const listeners = new Set();
   let rows = [];
   let phase = 'idle';
   let error = null;
+  let adminCatalog = Object.freeze({ authority: null, programs: [], funds: [], rules: [] });
   const blocked = () => { throw new Error('FINANCIAL_LEGACY_READ_ONLY'); };
   const emit = () => listeners.forEach((fn) => fn());
   const uniq = (values) => Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
@@ -14,24 +15,36 @@
       tipoEmpleado: 'Todos', tipo: rule.available_on ? 'evento' : 'revolvente', fecha: rule.available_on,
       montoMax: Number(rule.max_amount), tasaQuincenal: Number(rule.rate),
       plazoQuincenas: Number(rule.payment_count), plazoLabel: rule.term_label, periodoPago: rule.payment_period,
-      status: rule.status, activo: rule.effective_visibility === 'VISIBLE', readOnly: true,
+      status: rule.status, activo: rule.effective_visibility === 'VISIBLE',
       sheetRow: Number(rule.sheet_row), visibilityMode: rule.visibility_mode,
       automaticVisibility: rule.automatic_visibility, effectiveVisibility: rule.effective_visibility,
       visibilityWindowStart: rule.visibility_window_start, visibilityWindowEnd: rule.visibility_window_end,
       permanent: rule.permanent === true,
+      adminRuleId: rule.rule_id || null, unionCode: rule.financial_union_code || null,
+      categoryCode: rule.financial_employee_category_code || null,
+      lifecycleStatus: rule.lifecycle_status || 'PUBLISHED', reviewRequired: rule.review_required === true,
+      reviewSignals: Array.isArray(rule.review_signals) ? rule.review_signals.slice() : [], readOnly: false,
     });
   }
   async function load(force) {
     if (phase === 'loading' && !force) return;
     phase = 'loading'; error = null; emit();
     try {
-      const result = await window.FinancialLegacyRepository.listCriteriaCatalog();
+      const [result, config] = await Promise.all([
+        window.FinancialLegacyRepository.listCriteriaCatalog(),
+        window.FinancialLegacyRepository.getFinancialAdminCatalog(),
+      ]);
       rows = (result.rules || []).map(project); phase = 'ready';
+      adminCatalog = Object.freeze({ authority: config.authority,
+        programs: Object.freeze((config.programs || []).map((item) => Object.freeze({ ...item }))),
+        funds: Object.freeze((config.funds || []).map((item) => Object.freeze({ ...item }))),
+        rules: Object.freeze((config.rules || []).map((item) => Object.freeze({ ...item }))),
+      });
     } catch (reason) { rows = []; phase = 'error'; error = reason; }
     emit();
   }
   const store = {
-    load, status: () => phase, error: () => error,
+    load, status: () => phase, error: () => error, adminCatalog: () => adminCatalog,
     all: () => rows.slice(), get: (id) => rows.find((row) => row.id === id) || null,
     programas: () => uniq(rows.map((row) => row.programId)), fondos: () => uniq(rows.map((row) => row.fondo)), sindicatos: () => uniq(rows.map((row) => row.sindicato)), categorias: () => uniq(rows.map((row) => row.categoria)),
     query: (filters) => rows.filter((row) => (!filters || filters.fondo === 'all' || row.fondo === filters.fondo) &&
@@ -48,6 +61,11 @@
       if (window.financialLegacyStore && window.financialLegacyStore.loadOverview) await window.financialLegacyStore.loadOverview();
       return rows.find((item) => item.id !== id ? false : true) || null;
     },
+    async saveProgram(value) { const result = await window.FinancialLegacyRepository.saveFinancialProgram(value); await load(true); return result; },
+    async saveFund(value) { const result = await window.FinancialLegacyRepository.saveFinancialFund(value); await load(true); return result; },
+    async saveRuleDraft(value) { const result = await window.FinancialLegacyRepository.saveFinancialRuleDraft(value); await load(true); return result; },
+    async publishRule(id, reason) { const result = await window.FinancialLegacyRepository.publishFinancialRule(id, reason); await load(true); return result; },
+    previewRuleImpact: (id) => window.FinancialLegacyRepository.previewFinancialRuleImpact(id),
     blank: blocked, save: blocked, toggle: blocked, remove: blocked, duplicate: blocked, addFondo: blocked, resetAll: blocked,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };

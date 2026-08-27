@@ -47,7 +47,8 @@
 | ADR-054 | `home.header.collapsed` es un recurso declarativo administrable con override Supabase y default local versionado para disponibilidad offline; Inicio nunca referencia su archivo directamente. | Aceptada |
 | ADR-056 | La activación positiva por correo se difiere hasta URL/dominio/callback productivos; Fase 1 queda `PASS_WITH_DEFERRED_PRODUCTION_ACTIVATION_TEST` y se autoriza Fase 2 únicamente como dry run read-only. | Aceptada |
 | ADR-057 | Fase 2 queda `PASS / CLOSED`; el expediente runtime consume exclusivamente Supabase/RLS/Storage y Fase 3 se certifica end-to-end en Chrome real sin writes documentales. | Aceptada |
-| ADR-064 | La cotización interactiva de Suti Préstamo usa una RPC autenticada sobre el snapshot personalizado de 15 minutos y el mismo resolver certificado que Edge; Google sigue siendo autoridad y confirmación revalida. | Aceptada |
+| ADR-064 | La cotización interactiva usa una RPC autenticada sobre snapshot personalizado y el mismo resolver certificado que Edge; su autoridad Google original fue supersedida por ADR-065. | Aceptada / autoridad supersedida |
+| ADR-065 | Supabase es la autoridad única de programas, fondos y reglas financieras; Google `Criterios de fondos` queda sólo como histórico/procedencia sin dual-read ni fallback. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -299,12 +300,12 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 
 - **Contexto:** `CHOICE Categoría de Empleado (pantalla inicio)` y `CHOICE SINDICATO (pantalla inicio)` son semillas iniciales, pero sindicato, categoría, tipo y estatus cambian durante la vida laboral. Los raw previamente importados no representan este contrato financiero.
 - **Decisión:** el Excel exacto SHA-256 `F4BA18ABE82B148ED65737DB16074303627F96D37FA6F9F025E0A10649BD9591` puede sembrar una sola vez columnas 58/60. Después, `public.affiliates` es la autoridad productiva actual, editable en la superficie Admin existente mediante `affiliates.write` + RPC/RLS + auditoría por campo y control de concurrencia. No existe sync de regreso al Excel.
-- **Derivados:** fondo, tasa, plazo máximo, monto máximo y resultado nunca son atributos permanentes del afiliado. Se consultan de nuevo con el perfil vigente más Google `Criterios de fondos`, que permanece read-only.
-- **Excepción de sesión autorizada (2026-08-25):** `financial_session_snapshots` puede conservar durante un máximo absoluto de 15 minutos únicamente las reglas Google ya filtradas para el afiliado efectivo. Es una copia `DERIVED`, temporal, personalizada, expirable y generada server-side; no es catálogo global, autoridad financiera ni fallback.
-- **Binding e invalidación:** cada snapshot liga `affiliate_id`, actor Auth real, sesión de impersonación cuando existe, `financial_profile_version`, fingerprint completo del perfil, fingerprint del contenido Google usado —incluida visibilidad—, fingerprint de `loan_term_policy` y versión del contrato de cálculo. TTL vencido, perfil/contexto/política distintos o invalidación explícita impiden su uso aunque la fila siga presente.
-- **Cálculo y confirmación (actualizado por ADR-064):** monto/fondo/plazo interactivos se resuelven por RPC autenticada contra el snapshot mediante el resolver certificado compartido con Edge, con cero consultas Google, cero llamadas Edge y cero fórmulas frontend. Confirmar vuelve a leer perfil, Google y política, usa el mismo resolver y crea `program_requests` en un único flujo backend. Un cambio devuelve `409 CONDITIONS_CHANGED`, invalida la sesión y nunca confirma condiciones nuevas automáticamente.
+- **Derivados (actualizado por ADR-065):** fondo, tasa, plazo máximo, monto máximo y resultado nunca son atributos permanentes del afiliado. Se consultan de nuevo con el perfil vigente más el batch financiero Supabase activo.
+- **Excepción de sesión autorizada (2026-08-25, origen actualizado por ADR-065):** `financial_session_snapshots` puede conservar durante un máximo absoluto de 15 minutos únicamente reglas Supabase ya filtradas para el afiliado efectivo. Es una copia `DERIVED`, temporal, personalizada, expirable y generada server-side; no es autoridad financiera ni fallback.
+- **Binding e invalidación:** cada snapshot liga `affiliate_id`, actor Auth real, sesión de impersonación cuando existe, `financial_profile_version`, fingerprint completo del perfil, fingerprint del batch Supabase usado —incluida visibilidad—, fingerprint de `loan_term_policy` y versión del contrato de cálculo. TTL vencido, perfil/contexto/política/batch distintos o invalidación explícita impiden su uso aunque la fila siga presente.
+- **Cálculo y confirmación (actualizado por ADR-064/065):** monto/fondo/plazo interactivos se resuelven por RPC autenticada contra el snapshot mediante el resolver certificado compartido con Edge, con cero consultas Google, cero llamadas Edge y cero fórmulas frontend. Confirmar vuelve a leer perfil, criterios Supabase y política, usa el mismo resolver y crea `program_requests` en un único flujo backend. Un cambio devuelve `409 CONDITIONS_CHANGED`, invalida la sesión y nunca confirma condiciones nuevas automáticamente.
 - **Persistencia y seguridad:** RLS está habilitada y forzada; browser tiene cero lectura/escritura directa y sólo Edge/service role administra filas. La RPC autenticada puede leer internamente una fila propia después de validar todo el contexto, sin grant de tabla. La solicitud creada conserva su propio `financial_submission_snapshot` inmutable y no depende del snapshot de sesión. La recuperación puede retirar el caché sólo mientras no destruya historia contractual.
-- **Histórico:** cada solicitud financiera conserva un snapshot inmutable del perfil al solicitar y exige un snapshot completo Google al aprobar, incluida regla/versión de gasto administrativo. Una edición posterior no cambia solicitudes previas.
+- **Histórico (origen actualizado por ADR-065):** cada solicitud financiera conserva un snapshot inmutable del perfil al solicitar y exige un snapshot completo de los criterios Supabase vigentes al aprobar, incluida regla/versión de gasto administrativo. Una edición posterior no cambia solicitudes previas.
 - **Seguridad/recuperación:** segmentación laboral nunca concede permisos; los writers se pueden revocar sin borrar perfiles, auditoría ni snapshots. La aprobación común queda bloqueada si falta snapshot.
 - **Aprobación:** propietario, corrección crítica del 2026-08-22 y `OWNER DECISION — AUTHORIZE TEMPORARY PERSONALIZED FINANCIAL SNAPSHOT`, 2026-08-25.
 
@@ -372,7 +373,7 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Seguridad:** tablas sin acceso directo; RLS forzada; RPC autenticadas; `auth.uid()` se vincula a `affiliates`; edición durante impersonación denegada; actor real auditado; control de versión evita sobrescritura.
 - **Recuperación:** la migración es removible únicamente cuando no existan declaraciones. Si existen, el recovery falla cerrado y exige export/backup antes de eliminar la autoridad.
 
-## ADR-051 — Plazos flexibles y solicitud asistida de préstamo
+## ADR-051 — Plazos flexibles y solicitud asistida de préstamo (autoridad supersedida por ADR-065)
 
 - **Contexto:** el propietario ordenó las tarjetas 6/12/18/24/“Otro” del diseño aprobado y autorizó que cualquier administrador activo tramite un préstamo para un afiliado, especialmente en atención a personas mayores.
 - **Decisión:** Supabase conserva sólo la política de selección de plazo. Google `Criterios de fondos` conserva fondo, tasa, monto máximo, máximo de pagos y reglas financieras. La Edge Function intersecta ambas autoridades y calcula server-side; el navegador sólo representa respuestas completas.
@@ -382,14 +383,14 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Seguridad:** sin credenciales del afiliado, sin anidamiento, con RLS/RPC backend. La excepción visual sólo permite `loan` bajo contexto activo.
 - **Aprobación:** decisión explícita vigente del propietario, 2026-08-24; supersede restricciones anteriores sólo en estos puntos.
 
-## ADR-052 — Mínimo personalizado de un pago
+## ADR-052 — Mínimo personalizado de un pago (autoridad supersedida por ADR-065)
 
 - **Contexto:** el propietario determinó que “Otro” debe permitir liquidar un préstamo en un solo pago.
 - **Decisión:** el mínimo autoritativo de plazo personalizado cambia de 6 a 1 pago; las sugerencias visibles 6/12/18/24 permanecen sin cambios. Google conserva el máximo por fondo, la tasa y todos los cálculos.
 - **Implementación:** `loan_term_policy.custom_min_term=1`; la Edge intersecta `1..máximo Google` y cotiza server-side. El navegador sólo aplica el rango recibido.
 - **Aprobación:** decisión explícita del propietario, 2026-08-24.
 
-## ADR-053 — Visibilidad temporal administrable de criterios financieros
+## ADR-053 — Visibilidad temporal administrable de criterios financieros (autoridad/writer supersedidos por ADR-065)
 
 - **Autoridad:** Google `Criterios de fondos` conserva elegibilidad, categoría, sindicato, fondo, tasa, monto, plazo y fecha. La primera columna completamente libre después de O es P y su único contrato nuevo es `VISIBILIDAD SUTIAPP`; M `MOSTRAR PROGRAMA` permanece histórico y sin cambios.
 - **Modos:** vacío o `AUTO` aplica la política automática; `MOSTRAR` fuerza visibilidad y `OCULTAR` fuerza ocultamiento, siempre después de cumplir categoría y sindicato. Un override no altera elegibilidad, tasa, cálculo, fecha ni solicitud.
@@ -490,11 +491,21 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Pruebas:** el contrato UI debe exigir la ausencia de ambas cards y dejar de escribir/restaurar declaraciones de nómina durante las pruebas del simulador.
 - **Aprobación:** instrucción explícita del propietario tras pruebas con usuarios que indicaron que no usarían estas superficies, 2026-08-25.
 
-## ADR-064 — RPC autenticada para cotización interactiva sobre snapshot
+## ADR-064 — RPC autenticada para cotización interactiva sobre snapshot (autoridad supersedida por ADR-065)
 
-- **Autoridad:** Google conserva elegibilidad, fondo, tasa, máximo y plazo. `financial_session_snapshots` sigue siendo `DERIVED`, personalizado, expirable y no autoritativo; Supabase perfil/política conservan sus autoridades ya declaradas.
+- **Autoridad actualizada por ADR-065:** Supabase conserva elegibilidad, fondo, tasa, máximo y plazo. `financial_session_snapshots` sigue siendo `DERIVED`, personalizado, expirable y no autoritativo.
 - **Motor único:** `resolve_suti_loan_quote_contract` implementa `SUTI_LOAN_QUOTE_V1` con `numeric` y redondeo a centavos. La RPC de sesión y Edge para confirmación/legacy delegan al mismo resolver; no existe un cálculo financiero en frontend ni dos motores activos.
 - **Seguridad:** la RPC pública a PostgREST acepta sólo snapshot/fondo/monto/plazo, exige Auth y valida internamente actor, afiliado efectivo, impersonación, TTL, perfil/fingerprints, política y contrato. `financial_session_snapshots` mantiene cero acceso directo browser y el resolver interno es service-role-only.
-- **Flujo:** apertura permanece Edge→Google→snapshot. Interacción es browser→RPC con 0 Google/0 Edge y sin fallback. Confirmación permanece Edge→perfil/Google/política actual→mismo resolver→alta atómica; la cotización de sesión nunca autoriza el alta final.
+- **Flujo actualizado por ADR-065:** apertura es Edge→criterios Supabase→snapshot. Interacción es browser→RPC con 0 Google/0 Edge y sin fallback. Confirmación es Edge→perfil/criterios Supabase/política actual→mismo resolver→alta atómica; la cotización de sesión nunca autoriza el alta final.
 - **Gate:** el corte requiere forward/recovery transaccionales, equivalencia Edge↔RPC exacta, matriz de seguridad y pruebas pública/móvil. Una regresión obliga a revertir frontend/Edge antes de retirar las funciones.
 - **Aprobación:** `OWNER DECISION — AUTHORIZE AUTHENTICATED SUPABASE RPC FOR INTERACTIVE LOAN QUOTES`, propietario, 2026-08-26.
+
+## ADR-065 — Cutover autoritativo de criterios financieros a Supabase
+
+- **Autoridad única:** Supabase `financial_programs`, `financial_funds`, `financial_rules` y `financial_criteria_authority` sustituyen Google `Criterios de fondos` para elegibilidad, programa, fondo, tasa, monto, plazo, fechas y visibilidad. No existe dual-read ni fallback productivo.
+- **Importación certificada:** el batch activo conserva exactamente 146 reglas, 35 fondos, 3 programas, 2 grupos duplicados, 1 grupo conflictivo y hash `174F940E195DE5DAE595AAF798CC1B49976AA899E76D6CF141FB9D711A6E9C8A`. Sólo A/B/C/D/E/F/H/N/P son parte del contrato; G/I/J/K/L/M/O quedan excluidos. L es un cálculo auxiliar legacy no consumido por producción.
+- **Motor y sesiones:** `SUTI_LOAN_QUOTE_V1` permanece como motor server-side único. Apertura, cotización interactiva y confirmación consumen criterios Supabase; `financial_session_snapshots` se conserva como caché personalizado TTL 15m, nunca autoridad. Google calls de apertura/interacción/confirmación = 0.
+- **Administración:** Programas, fondos y reglas usan RPC auditadas, versiones `DRAFT/PUBLISHED/SCHEDULED/EXPIRED`, motivo y confirmación explícita. La UI no autoriza; permisos/RLS/backend deniegan responsable no autorizado, usuario normal y anónimo.
+- **Legacy y recovery:** Google queda intacto como histórico/procedencia y el append posterior a aprobación permanece separado. Google writes 0 y Apps Script changes 0 durante el corte. Recovery puede devolver explícitamente autoridad a Google conservando el batch, pero jamás opera automáticamente como fallback.
+- **Gate:** canary A/B Edge exacto, equivalencia de perfiles/cotizaciones, RLS, CRUD transaccional con rollback, navegador real, regresiones protegidas y suite estática pasaron. El Edge/RPC canary temporal se eliminó tras el corte.
+- **Aprobación:** `H-FINANCIAL-SUPABASE-CUTOVER-AUTONOMOUS-001`, autorización autónoma explícita del propietario, 2026-08-27.

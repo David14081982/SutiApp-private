@@ -109,6 +109,17 @@
     if (!data || !data.data) throw new Error('FINANCIAL_CRITERIA_ADMIN_INVALID_RESPONSE');
     return data.data;
   }
+  async function invokeFinancialAdminRpc(name, payload) {
+    const client = window.SutiSupabase && window.SutiSupabase.getClient();
+    if (!client) throw new Error('SUPABASE_NOT_CONFIGURED');
+    const { data, error } = await client.rpc(name, payload || {});
+    if (error) {
+      const failure = new Error(error.message || 'FINANCIAL_ADMIN_RPC_FAILED');
+      failure.code = failure.message; throw failure;
+    }
+    if (!data || typeof data !== 'object') throw new Error('FINANCIAL_ADMIN_RPC_INVALID_RESPONSE');
+    return data;
+  }
   const store = {
     snapshot,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
@@ -214,6 +225,14 @@
     resolveAvailableFunds: () => invoke({ action: 'resolveAvailableFunds' }),
     resolveSimulation: (programId, amount, term) => invoke({ action: 'resolveSimulation', program_id: String(programId), amount: Number(amount), term: Number(term) }).then(assertFinancialSimulationResult),
     listCriteriaCatalog: () => invoke({ action: 'catalog' }),
+    getFinancialAdminCatalog: () => invokeFinancialAdminRpc('get_financial_admin_catalog'),
+    saveFinancialProgram: (value) => invokeFinancialAdminRpc('save_financial_program', value),
+    saveFinancialFund: (value) => invokeFinancialAdminRpc('save_financial_fund', value),
+    saveFinancialRuleDraft: (value) => invokeFinancialAdminRpc('save_financial_rule_draft', value),
+    publishFinancialRule: (ruleId, reason) => invokeFinancialAdminRpc('publish_financial_rule', {
+      p_rule_id: String(ruleId), p_reason: String(reason || ''), p_confirmation: 'PUBLICAR',
+    }),
+    previewFinancialRuleImpact: (ruleId) => invokeFinancialAdminRpc('preview_financial_rule_impact', { p_rule_id: String(ruleId) }),
     setCriteriaVisibility: (criterionIdentity, visibilityMode, reason) => invokeCriteriaAdmin({
       action: 'setVisibility', criterion_identity: String(criterionIdentity),
       visibility_mode: String(visibilityMode), reason: String(reason || ''),

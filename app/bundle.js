@@ -22507,12 +22507,18 @@ Object.assign(window, {
 })();
 /* @@file funds-store.jsx */
 (function(){
-/* Read-only projection of the authoritative Google financial criteria. */
+/* Admin projection of Supabase-authoritative financial programs, funds and rules. */
 (function () {
   const listeners = new Set();
   let rows = [];
   let phase = 'idle';
   let error = null;
+  let adminCatalog = Object.freeze({
+    authority: null,
+    programs: [],
+    funds: [],
+    rules: []
+  });
   const blocked = () => {
     throw new Error('FINANCIAL_LEGACY_READ_ONLY');
   };
@@ -22536,14 +22542,20 @@ Object.assign(window, {
       periodoPago: rule.payment_period,
       status: rule.status,
       activo: rule.effective_visibility === 'VISIBLE',
-      readOnly: true,
       sheetRow: Number(rule.sheet_row),
       visibilityMode: rule.visibility_mode,
       automaticVisibility: rule.automatic_visibility,
       effectiveVisibility: rule.effective_visibility,
       visibilityWindowStart: rule.visibility_window_start,
       visibilityWindowEnd: rule.visibility_window_end,
-      permanent: rule.permanent === true
+      permanent: rule.permanent === true,
+      adminRuleId: rule.rule_id || null,
+      unionCode: rule.financial_union_code || null,
+      categoryCode: rule.financial_employee_category_code || null,
+      lifecycleStatus: rule.lifecycle_status || 'PUBLISHED',
+      reviewRequired: rule.review_required === true,
+      reviewSignals: Array.isArray(rule.review_signals) ? rule.review_signals.slice() : [],
+      readOnly: false
     });
   }
   async function load(force) {
@@ -22552,9 +22564,21 @@ Object.assign(window, {
     error = null;
     emit();
     try {
-      const result = await window.FinancialLegacyRepository.listCriteriaCatalog();
+      const [result, config] = await Promise.all([window.FinancialLegacyRepository.listCriteriaCatalog(), window.FinancialLegacyRepository.getFinancialAdminCatalog()]);
       rows = (result.rules || []).map(project);
       phase = 'ready';
+      adminCatalog = Object.freeze({
+        authority: config.authority,
+        programs: Object.freeze((config.programs || []).map(item => Object.freeze({
+          ...item
+        }))),
+        funds: Object.freeze((config.funds || []).map(item => Object.freeze({
+          ...item
+        }))),
+        rules: Object.freeze((config.rules || []).map(item => Object.freeze({
+          ...item
+        })))
+      });
     } catch (reason) {
       rows = [];
       phase = 'error';
@@ -22566,6 +22590,7 @@ Object.assign(window, {
     load,
     status: () => phase,
     error: () => error,
+    adminCatalog: () => adminCatalog,
     all: () => rows.slice(),
     get: id => rows.find(row => row.id === id) || null,
     programas: () => uniq(rows.map(row => row.programId)),
@@ -22589,6 +22614,27 @@ Object.assign(window, {
       if (window.financialLegacyStore && window.financialLegacyStore.loadOverview) await window.financialLegacyStore.loadOverview();
       return rows.find(item => item.id !== id ? false : true) || null;
     },
+    async saveProgram(value) {
+      const result = await window.FinancialLegacyRepository.saveFinancialProgram(value);
+      await load(true);
+      return result;
+    },
+    async saveFund(value) {
+      const result = await window.FinancialLegacyRepository.saveFinancialFund(value);
+      await load(true);
+      return result;
+    },
+    async saveRuleDraft(value) {
+      const result = await window.FinancialLegacyRepository.saveFinancialRuleDraft(value);
+      await load(true);
+      return result;
+    },
+    async publishRule(id, reason) {
+      const result = await window.FinancialLegacyRepository.publishFinancialRule(id, reason);
+      await load(true);
+      return result;
+    },
+    previewRuleImpact: id => window.FinancialLegacyRepository.previewFinancialRuleImpact(id),
     blank: blocked,
     save: blocked,
     toggle: blocked,
@@ -33048,7 +33094,7 @@ Object.assign(window, {
 })();
 /* @@file screens-admin-fondos.jsx */
 (function(){
-/* Admin visibility control for authoritative Google financial criteria. */
+/* Controlled Admin workspace for Supabase-authoritative financial configuration. */
 (function () {
   const {
     useState,
@@ -33152,9 +33198,14 @@ Object.assign(window, {
       .pcmx-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(278px,30%);gap:12px;min-width:0;min-height:560px;max-height:calc(100vh - 292px)}.pcmx-panel{background:var(--surface);border-radius:17px;box-shadow:var(--neo-sm);min-width:0;min-height:0;overflow:hidden}.pcmx-matrix{display:flex;flex-direction:column}.pcmx-table-scroll{overflow:auto;min-width:0;min-height:0;overscroll-behavior:contain}.pcmx-table{width:100%;min-width:1190px;border-collapse:separate;border-spacing:0;font-size:11.5px}.pcmx-table th{position:sticky;top:0;z-index:4;background:#F4F6FA;color:var(--ink-3);padding:9px 8px;border-bottom:1px solid #DDE2EA;text-align:left;font-size:9.5px;font-weight:900;letter-spacing:.035em;text-transform:uppercase;white-space:nowrap}.pcmx-table td{padding:10px 8px;border-bottom:1px solid var(--hairline);vertical-align:middle;color:var(--ink-2);font-weight:650}.pcmx-table tbody tr{cursor:pointer}.pcmx-table tbody tr:hover td{background:#FBF8F9}.pcmx-table tbody tr[aria-selected=true] td{background:#F8EDF1}.pcmx-table tbody tr[aria-selected=true] td:first-of-type{box-shadow:inset 3px 0 0 var(--guinda)}.pcmx-table .pcmx-sticky{position:sticky;left:0;z-index:2;background:var(--surface);min-width:170px;max-width:210px}.pcmx-table th.pcmx-sticky{z-index:6;background:#F4F6FA}.pcmx-table tr[aria-selected=true] .pcmx-sticky{background:#F8EDF1}.pcmx-table strong{display:block;color:var(--ink);font-size:11.8px}.pcmx-table small{display:block;margin-top:3px;color:var(--ink-3);font-size:9.8px;font-weight:650}.pcmx-compare-cell{width:34px;text-align:center}.pcmx-compare-cell input{accent-color:var(--guinda)}.pcmx-group-row td{position:sticky;left:0;padding:7px 10px!important;background:#EEF1F6!important;color:var(--ink)!important;font-size:10.5px!important;font-weight:900!important;letter-spacing:.02em;cursor:default}.pcmx-group-count{color:var(--ink-3);font-weight:700;margin-left:6px}.pcmx-badge{display:inline-flex;align-items:center;min-height:23px;padding:0 7px;border-radius:999px;font-size:9.8px;font-weight:850;line-height:1.15;white-space:nowrap}.pcmx-signals{display:flex;flex-wrap:wrap;gap:4px;max-width:154px}.pcmx-signal{display:inline-flex;padding:3px 6px;border-radius:999px;font-size:8.8px;font-weight:850;white-space:nowrap}
       .pcmx-detail{display:flex;flex-direction:column}.pcmx-detail-head{padding:13px 14px;border-bottom:1px solid var(--hairline);background:#F8F9FC}.pcmx-detail-head h2{margin:0;font-size:15px;line-height:1.3}.pcmx-detail-head p{margin:4px 0 0;color:var(--ink-3);font-size:10.5px;font-weight:700}.pcmx-detail-scroll{overflow:auto;min-height:0;padding:12px}.pcmx-detail-card{border:1px solid #E1E5ED;border-radius:13px;padding:11px;margin-bottom:9px;background:#fff}.pcmx-detail-card h3{margin:0 0 8px;font-size:11.5px;color:var(--ink)}.pcmx-kv{display:grid;grid-template-columns:1fr 1fr;gap:9px 11px}.pcmx-kv span{display:block;color:var(--ink-3);font-size:9.5px;font-weight:750}.pcmx-kv strong{display:block;margin-top:2px;color:var(--ink);font-size:11.5px;overflow-wrap:anywhere}.pcmx-explainer{padding:9px 10px;border-radius:10px;background:#F4F6FA;color:var(--ink-2);font-size:10.5px;font-weight:650;line-height:1.45}.pcmx-tech{margin-top:8px;border-top:1px solid var(--hairline);padding-top:8px}.pcmx-tech summary{cursor:pointer;color:var(--ink-3);font-size:10px;font-weight:800}.pcmx-tech code{display:block;margin-top:7px;color:var(--ink-3);font-size:9px;overflow-wrap:anywhere;white-space:normal}.pcmx-compare{border:1px solid #D8DDEA;border-radius:13px;padding:10px;margin-bottom:9px;background:#F8F9FC}.pcmx-compare-head{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:7px}.pcmx-compare-head strong{font-size:11.5px}.pcmx-compare-grid{display:grid;grid-template-columns:88px repeat(var(--compare-count),minmax(92px,1fr));overflow:auto;font-size:9.5px}.pcmx-compare-grid>*{padding:6px;border-bottom:1px solid #E1E5ED;min-width:0;overflow-wrap:anywhere}.pcmx-compare-grid b{color:var(--ink-3)}
       .pcmx-empty{display:grid;place-items:center;align-content:center;gap:8px;min-height:280px;padding:22px;text-align:center;color:var(--ink-3);font-size:12px;font-weight:700}.pcmx-empty button{border:0;border-radius:10px;background:var(--guinda);color:#fff;padding:9px 13px;font:800 11.5px inherit;cursor:pointer}.pcmx-skeleton{height:42px;margin:8px 10px;border-radius:9px;background:linear-gradient(90deg,#EEF0F4 25%,#F8F9FB 50%,#EEF0F4 75%);background-size:200% 100%;animation:pcmx-pulse 1.2s infinite}@keyframes pcmx-pulse{to{background-position:-200% 0}}
+      .pcmx-nav{display:flex;align-items:center;gap:5px;padding:5px;background:var(--surface);border-radius:14px;box-shadow:var(--neo-sm);width:max-content;max-width:100%;overflow:auto}.pcmx-nav button{height:34px;border:0;border-radius:10px;background:transparent;color:var(--ink-3);padding:0 13px;font:800 11.5px inherit;cursor:pointer;white-space:nowrap}.pcmx-nav button[aria-selected=true]{background:var(--guinda-50);color:var(--guinda)}
+      .pcmx-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pcmx-catalog-card{background:var(--surface);border-radius:16px;box-shadow:var(--neo-sm);padding:14px;min-width:0}.pcmx-catalog-card h3{margin:0;color:var(--ink);font-size:14px}.pcmx-catalog-card p{margin:5px 0 0;color:var(--ink-3);font-size:11px;font-weight:650;line-height:1.4}.pcmx-catalog-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pcmx-catalog-meta span{padding:5px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-size:9.8px;font-weight:800}.pcmx-card-actions{display:flex;justify-content:flex-end;margin-top:11px;padding-top:10px;border-top:1px solid var(--hairline)}
+      .pcmx-primary{border:0;border-radius:10px;background:var(--guinda);color:#fff;padding:9px 13px;font:800 11.5px inherit;cursor:pointer}.pcmx-secondary{border:1px solid #DCE1EA;border-radius:10px;background:var(--surface);color:var(--ink-2);padding:8px 12px;font:800 11px inherit;cursor:pointer}
+      .pcmx-editor-overlay{position:absolute;inset:0;z-index:86;background:rgba(30,22,25,.2);display:flex;justify-content:flex-end}.pcmx-editor{width:min(460px,100%);height:100%;background:var(--bg);box-shadow:-12px 0 30px rgba(20,15,17,.14);display:flex;flex-direction:column}.pcmx-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--hairline)}.pcmx-editor-head h2{margin:0;font-size:16px}.pcmx-editor-body{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:11px}.pcmx-editor-field{display:flex;flex-direction:column;gap:6px}.pcmx-editor-field label{font-size:10.5px;font-weight:850;color:var(--ink-3)}.pcmx-editor-field input,.pcmx-editor-field select,.pcmx-editor-field textarea{box-sizing:border-box;width:100%;border:1px solid #DCE1EA;border-radius:11px;background:var(--surface);padding:10px 11px;color:var(--ink);font:650 12px inherit;outline:none}.pcmx-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pcmx-editor-foot{display:flex;gap:9px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--hairline)}.pcmx-editor-error{padding:9px 10px;border-radius:10px;background:#FCE9EE;color:#9A1737;font-size:11px;font-weight:750}
       @media(max-width:1279px){.pcmx-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.pcmx-workspace{grid-template-columns:minmax(0,1fr) minmax(270px,35%)}.pcmx-kv{grid-template-columns:1fr}.pcmx-table{min-width:1110px}}
       @media(min-width:1280px){.pcmx-filters{grid-template-columns:minmax(190px,1.5fr) repeat(6,minmax(105px,1fr))}.pcmx-workspace{grid-template-columns:minmax(0,1fr) 340px}}
       @media(min-width:1440px){.pcmx-workspace{grid-template-columns:minmax(0,1fr) 380px}.pcmx-detail-scroll{padding:14px}}
+      @media(max-width:1100px){.pcmx-catalog{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
   }
@@ -33224,7 +33275,9 @@ Object.assign(window, {
   function CriteriaDetail({
     row,
     compared,
-    onClearCompare
+    onClearCompare,
+    canEdit,
+    onEdit
   }) {
     if (!row) return React.createElement('aside', {
       className: 'pcmx-panel pcmx-detail',
@@ -33243,7 +33296,19 @@ Object.assign(window, {
       'data-criteria-detail': row.id
     }, React.createElement('div', {
       className: 'pcmx-detail-head'
-    }, React.createElement('h2', null, row.fondo), React.createElement('p', null, programLabel(row.programId), ' · regla seleccionada')), React.createElement('div', {
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 10,
+        alignItems: 'flex-start'
+      }
+    }, React.createElement('div', null, React.createElement('h2', null, row.fondo), React.createElement('p', null, programLabel(row.programId), ' · regla seleccionada')), canEdit && row.adminRuleId && React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-secondary',
+      onClick: () => onEdit(row),
+      'data-financial-rule-edit': row.adminRuleId
+    }, 'Editar regla'))), React.createElement('div', {
       className: 'pcmx-detail-scroll'
     }, compared.length >= 2 && React.createElement('section', {
       className: 'pcmx-compare',
@@ -33297,7 +33362,10 @@ Object.assign(window, {
     }, React.createElement('summary', null, 'Información técnica'), React.createElement('code', null, 'Fila de origen: ', row.sheetRow), React.createElement('code', null, 'Identidad: ', row.id))));
   }
   function DesktopCriteriaMatrix({
-    store
+    store,
+    canEdit,
+    onEdit,
+    onCreate
   }) {
     const [search, setSearch] = useState(''),
       [program, setProgram] = useState('all'),
@@ -33419,7 +33487,7 @@ Object.assign(window, {
       tabIndex: 0,
       onKeyDown,
       'data-admin-program-criteria-matrix': 'true',
-      'data-read-only': 'true'
+      'data-read-only': canEdit ? 'false' : 'true'
     }, React.createElement('div', {
       className: 'pcmx-authority'
     }, React.createElement(I, {
@@ -33430,7 +33498,16 @@ Object.assign(window, {
         color: '#2456C7',
         flexShrink: 0
       }
-    }), React.createElement('div', null, React.createElement('strong', null, 'Solo lectura · autoridad Google. '), 'La matriz presenta criterios vigentes sin editar tasas, montos, plazos, reglas, fechas ni visibilidad.')), React.createElement('div', {
+    }), React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('strong', null, 'Autoridad Supabase. '), 'La matriz conserva lectura, comparación y filtros; los cambios sensibles se realizan con confirmación, versión y auditoría.'), canEdit && React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-primary',
+      onClick: onCreate,
+      'data-financial-rule-create': 'true'
+    }, 'Nueva regla')), React.createElement('div', {
       className: 'pcmx-toolbar',
       'data-criteria-toolbar': 'true'
     }, React.createElement('div', {
@@ -33523,7 +33600,412 @@ Object.assign(window, {
     }, label)))), React.createElement('tbody', null, bodyRows)))), React.createElement(CriteriaDetail, {
       row: selected,
       compared,
-      onClearCompare: () => setCompareIds([])
+      onClearCompare: () => setCompareIds([]),
+      canEdit,
+      onEdit
+    })));
+  }
+  function EditorShell({
+    title,
+    saving,
+    error,
+    onClose,
+    onSave,
+    saveLabel,
+    children
+  }) {
+    return React.createElement('div', {
+      className: 'pcmx-editor-overlay',
+      'data-financial-editor': title
+    }, React.createElement('section', {
+      className: 'pcmx-editor',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title
+    }, React.createElement('div', {
+      className: 'pcmx-editor-head'
+    }, React.createElement('h2', null, title), React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-secondary',
+      disabled: saving,
+      onClick: onClose
+    }, 'Cerrar')), React.createElement('div', {
+      className: 'pcmx-editor-body'
+    }, children, error && React.createElement('div', {
+      className: 'pcmx-editor-error',
+      role: 'alert'
+    }, error)), React.createElement('div', {
+      className: 'pcmx-editor-foot'
+    }, React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-secondary',
+      disabled: saving,
+      onClick: onClose,
+      style: {
+        flex: 1
+      }
+    }, 'Cancelar'), React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-primary',
+      disabled: saving,
+      onClick: onSave,
+      style: {
+        flex: 2
+      }
+    }, saving ? 'Guardando…' : saveLabel))));
+  }
+  function editorField(label, control) {
+    return React.createElement('div', {
+      className: 'pcmx-editor-field'
+    }, React.createElement('label', null, label), control);
+  }
+  const editorInput = (value, onChange, extra) => React.createElement('input', {
+    value: value == null ? '' : value,
+    onChange: event => onChange(event.target.value),
+    ...(extra || {})
+  });
+  const editorSelect = (value, onChange, options) => React.createElement('select', {
+    value,
+    onChange: event => onChange(event.target.value)
+  }, options.map(([id, label]) => React.createElement('option', {
+    key: id,
+    value: id
+  }, label)));
+  function ProgramEditor({
+    value,
+    store,
+    app,
+    onClose
+  }) {
+    const [form, setForm] = useState({
+      id: value?.id || '',
+      name: value?.name || '',
+      description: value?.description || '',
+      enabled: value ? value.enabled !== false : true,
+      publication: value?.publication_status || 'DRAFT',
+      sort: Number(value?.sort_order || 0),
+      reason: ''
+    });
+    const [saving, setSaving] = useState(false),
+      [error, setError] = useState('');
+    const set = (key, next) => setForm(current => ({
+      ...current,
+      [key]: next
+    }));
+    const save = async () => {
+      if (form.reason.trim().length < 8 || !form.id.trim() || !form.name.trim()) {
+        setError('Completa código, nombre y un motivo de al menos 8 caracteres.');
+        return;
+      }
+      if (!window.confirm('¿Confirmas guardar este programa financiero?')) return;
+      setSaving(true);
+      setError('');
+      try {
+        await store.saveProgram({
+          p_id: form.id.trim(),
+          p_name: form.name.trim(),
+          p_description: form.description.trim(),
+          p_enabled: form.enabled,
+          p_publication_status: form.publication,
+          p_sort_order: Number(form.sort),
+          p_reason: form.reason.trim(),
+          p_confirmation: 'CONFIRMAR'
+        });
+        app?.toast?.('Programa financiero guardado');
+        onClose();
+      } catch (failure) {
+        setError(failure?.message || 'No fue posible guardar el programa.');
+        setSaving(false);
+      }
+    };
+    return React.createElement(EditorShell, {
+      title: value ? 'Editar programa' : 'Nuevo programa',
+      saving,
+      error,
+      onClose,
+      onSave: save,
+      saveLabel: 'Guardar programa'
+    }, editorField('Código estable', editorInput(form.id, next => set('id', next), {
+      disabled: !!value,
+      placeholder: 'programa_estable'
+    })), editorField('Nombre', editorInput(form.name, next => set('name', next))), editorField('Descripción', React.createElement('textarea', {
+      rows: 3,
+      value: form.description,
+      onChange: event => set('description', event.target.value)
+    })), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Publicación', editorSelect(form.publication, next => set('publication', next), [['DRAFT', 'Borrador'], ['PUBLISHED', 'Publicado'], ['UNPUBLISHED', 'No publicado']])), editorField('Orden', editorInput(form.sort, next => set('sort', next), {
+      type: 'number',
+      min: 0,
+      max: 10000
+    }))), editorField('Estado', React.createElement('label', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center'
+      }
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: form.enabled,
+      onChange: event => set('enabled', event.target.checked)
+    }), 'Activo')), editorField('Motivo obligatorio', React.createElement('textarea', {
+      rows: 3,
+      value: form.reason,
+      onChange: event => set('reason', event.target.value),
+      placeholder: 'Razón administrativa del cambio'
+    })));
+  }
+  function FundEditor({
+    value,
+    store,
+    app,
+    onClose
+  }) {
+    const programs = store.adminCatalog().programs || [];
+    const [form, setForm] = useState({
+      program: value?.program_id || programs[0]?.id || '',
+      code: value?.code || '',
+      name: value?.name || '',
+      enabled: value ? value.enabled !== false : true,
+      publication: value?.publication_status || 'DRAFT',
+      sort: Number(value?.sort_order || 0),
+      reason: ''
+    });
+    const [saving, setSaving] = useState(false),
+      [error, setError] = useState('');
+    const set = (key, next) => setForm(current => ({
+      ...current,
+      [key]: next
+    }));
+    const save = async () => {
+      if (form.reason.trim().length < 8 || !form.code.trim() || !form.name.trim()) {
+        setError('Completa código, nombre y un motivo de al menos 8 caracteres.');
+        return;
+      }
+      if (!window.confirm('¿Confirmas guardar este fondo y su asociación al programa?')) return;
+      setSaving(true);
+      setError('');
+      try {
+        await store.saveFund({
+          p_id: value?.id || null,
+          p_program_id: form.program,
+          p_code: form.code.trim(),
+          p_name: form.name.trim(),
+          p_enabled: form.enabled,
+          p_publication_status: form.publication,
+          p_sort_order: Number(form.sort),
+          p_reason: form.reason.trim(),
+          p_confirmation: 'CONFIRMAR'
+        });
+        app?.toast?.('Fondo financiero guardado');
+        onClose();
+      } catch (failure) {
+        setError(failure?.message || 'No fue posible guardar el fondo.');
+        setSaving(false);
+      }
+    };
+    return React.createElement(EditorShell, {
+      title: value ? 'Editar fondo' : 'Nuevo fondo',
+      saving,
+      error,
+      onClose,
+      onSave: save,
+      saveLabel: 'Guardar fondo'
+    }, editorField('Programa', editorSelect(form.program, next => set('program', next), programs.map(item => [item.id, item.name]))), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Código estable', editorInput(form.code, next => set('code', next), {
+      disabled: !!value
+    })), editorField('Orden', editorInput(form.sort, next => set('sort', next), {
+      type: 'number',
+      min: 0,
+      max: 10000
+    }))), editorField('Nombre', editorInput(form.name, next => set('name', next))), editorField('Publicación', editorSelect(form.publication, next => set('publication', next), [['DRAFT', 'Borrador'], ['PUBLISHED', 'Publicado'], ['UNPUBLISHED', 'No publicado']])), editorField('Estado', React.createElement('label', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center'
+      }
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: form.enabled,
+      onChange: event => set('enabled', event.target.checked)
+    }), 'Activo')), editorField('Motivo obligatorio', React.createElement('textarea', {
+      rows: 3,
+      value: form.reason,
+      onChange: event => set('reason', event.target.value)
+    })));
+  }
+  function RuleEditor({
+    value,
+    store,
+    app,
+    canPublish,
+    onClose
+  }) {
+    const config = store.adminCatalog(),
+      raw = value?.adminRuleId ? config.rules.find(item => item.id === value.adminRuleId) : null;
+    const funds = config.funds.filter(item => item.enabled !== false),
+      unions = [],
+      categories = [];
+    for (const row of config.rules) {
+      if (row.financial_union_code && !unions.some(item => item[0] === row.financial_union_code)) unions.push([row.financial_union_code, row.financial_union_label]);
+      if (row.financial_employee_category_code && !categories.some(item => item[0] === row.financial_employee_category_code)) categories.push([row.financial_employee_category_code, row.financial_employee_category_label]);
+    }
+    const selectedFund = raw?.fund_id || funds.find(item => item.name === value?.fondo && item.program_id === value?.programId)?.id || funds[0]?.id || '';
+    const [form, setForm] = useState({
+      fund: selectedFund,
+      union: raw?.financial_union_code || value?.unionCode || unions[0]?.[0] || '',
+      category: raw?.financial_employee_category_code || value?.categoryCode || categories[0]?.[0] || '',
+      max: Number(raw?.max_amount || value?.montoMax || 0),
+      rate: Number(raw?.raw_rate ?? value?.tasaQuincenal ?? 0),
+      termLabel: raw?.term_label || value?.plazoLabel || '',
+      payments: Number(raw?.payment_count || value?.plazoQuincenas || 1),
+      maxTerm: Number(raw?.max_term || value?.plazoQuincenas || 1),
+      date: raw?.available_on || value?.fecha || '',
+      visibility: raw?.visibility_mode || value?.visibilityMode || 'AUTO',
+      reason: '',
+      publish: false
+    });
+    const [saving, setSaving] = useState(false),
+      [error, setError] = useState('');
+    const set = (key, next) => setForm(current => ({
+      ...current,
+      [key]: next
+    }));
+    const save = async () => {
+      if (form.reason.trim().length < 8 || !form.fund || !form.union || !form.category || !(Number(form.max) > 0) || Number(form.rate) < 0 || !(Number(form.payments) > 0)) {
+        setError('Completa todos los campos y un motivo de al menos 8 caracteres.');
+        return;
+      }
+      if (!window.confirm('¿Confirmas crear una nueva versión en borrador? La regla publicada no se sobrescribirá.')) return;
+      setSaving(true);
+      setError('');
+      try {
+        const draft = await store.saveRuleDraft({
+          p_existing_rule_id: value?.adminRuleId || null,
+          p_fund_id: form.fund,
+          p_union_code: form.union,
+          p_category_code: form.category,
+          p_max_amount: Number(form.max),
+          p_raw_rate: Number(form.rate),
+          p_term_label: form.termLabel.trim(),
+          p_payment_count: Number(form.payments),
+          p_max_term: Number(form.maxTerm),
+          p_available_on: form.date || null,
+          p_visibility_mode: form.visibility,
+          p_reason: form.reason.trim(),
+          p_confirmation: 'CONFIRMAR'
+        });
+        if (form.publish && canPublish) {
+          if (!window.confirm('¿Publicar esta nueva versión ahora? Cambiará las condiciones vigentes e invalidará simulaciones abiertas.')) {
+            app?.toast?.('Borrador guardado sin publicar');
+            onClose();
+            return;
+          }
+          await store.publishRule(draft.id, form.reason.trim());
+          app?.toast?.('Nueva versión publicada');
+        } else app?.toast?.('Borrador financiero guardado');
+        onClose();
+      } catch (failure) {
+        setError(failure?.message || 'No fue posible guardar la regla.');
+        setSaving(false);
+      }
+    };
+    return React.createElement(EditorShell, {
+      title: value ? 'Editar regla financiera' : 'Nueva regla financiera',
+      saving,
+      error,
+      onClose,
+      onSave: save,
+      saveLabel: 'Guardar borrador'
+    }, editorField('Fondo', editorSelect(form.fund, next => set('fund', next), funds.map(item => [item.id, programLabel(item.program_id) + ' · ' + item.name]))), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Sindicato', editorSelect(form.union, next => set('union', next), unions)), editorField('Categoría', editorSelect(form.category, next => set('category', next), categories))), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Monto máximo', editorInput(form.max, next => set('max', next), {
+      type: 'number',
+      min: 1,
+      step: '0.01'
+    })), editorField('Tasa legacy', editorInput(form.rate, next => set('rate', next), {
+      type: 'number',
+      min: 0,
+      step: '0.0001'
+    }))), editorField('Etiqueta de plazo', editorInput(form.termLabel, next => set('termLabel', next))), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Pagos quincenales', editorInput(form.payments, next => set('payments', next), {
+      type: 'number',
+      min: 1
+    })), editorField('Plazo legacy', editorInput(form.maxTerm, next => set('maxTerm', next), {
+      type: 'number',
+      min: 1
+    }))), React.createElement('div', {
+      className: 'pcmx-editor-grid'
+    }, editorField('Fecha / vigencia', editorInput(form.date, next => set('date', next), {
+      type: 'date'
+    })), editorField('Visibilidad', editorSelect(form.visibility, next => set('visibility', next), [['AUTO', 'Automática'], ['MOSTRAR', 'Mostrar'], ['OCULTAR', 'Ocultar']]))), editorField('Motivo obligatorio', React.createElement('textarea', {
+      rows: 3,
+      value: form.reason,
+      onChange: event => set('reason', event.target.value)
+    })), canPublish && editorField('Publicación', React.createElement('label', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center'
+      }
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: form.publish,
+      onChange: event => set('publish', event.target.checked)
+    }), 'Publicar después de guardar el borrador')));
+  }
+  function CatalogPanel({
+    kind,
+    store,
+    canWrite,
+    onEdit,
+    onCreate
+  }) {
+    const config = store.adminCatalog(),
+      items = kind === 'programs' ? config.programs : config.funds,
+      rules = config.rules;
+    return React.createElement('div', {
+      className: 'pcmx-root',
+      'data-financial-catalog': kind
+    }, React.createElement('div', {
+      className: 'pcmx-authority'
+    }, React.createElement(I, {
+      name: 'shield',
+      size: 17,
+      stroke: 2,
+      style: {
+        color: '#2456C7'
+      }
+    }), React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('strong', null, kind === 'programs' ? 'Programas financieros' : 'Fondos por programa'), '. Supabase conserva asociación, estado, publicación, orden, versión y auditoría.'), canWrite && React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-primary',
+      onClick: onCreate
+    }, kind === 'programs' ? 'Nuevo programa' : 'Nuevo fondo')), React.createElement('div', {
+      className: 'pcmx-catalog'
+    }, items.map(item => {
+      const relatedFunds = config.funds.filter(fund => fund.program_id === item.id);
+      const ruleCount = kind === 'programs' ? rules.filter(rule => rule.program_id === item.id && rule.lifecycle_status !== 'EXPIRED').length : rules.filter(rule => rule.fund_id === item.id && rule.lifecycle_status !== 'EXPIRED').length;
+      return React.createElement('article', {
+        key: item.id,
+        className: 'pcmx-catalog-card',
+        'data-financial-catalog-item': item.id
+      }, React.createElement('h3', null, item.name), React.createElement('p', null, kind === 'programs' ? item.description || 'Sin descripción' : programLabel(item.program_id)), React.createElement('div', {
+        className: 'pcmx-catalog-meta'
+      }, React.createElement('span', null, item.publication_status === 'PUBLISHED' ? 'Publicado' : item.publication_status === 'DRAFT' ? 'Borrador' : 'No publicado'), React.createElement('span', null, item.enabled ? 'Activo' : 'Inactivo'), React.createElement('span', null, 'Orden ' + item.sort_order), kind === 'programs' && React.createElement('span', null, relatedFunds.length + ' fondos'), React.createElement('span', null, ruleCount + ' reglas'), React.createElement('span', null, 'v' + item.version)), canWrite && React.createElement('div', {
+        className: 'pcmx-card-actions'
+      }, React.createElement('button', {
+        type: 'button',
+        className: 'pcmx-secondary',
+        onClick: () => onEdit(item)
+      }, 'Editar')));
     })));
   }
   function FondosModule({
@@ -33534,6 +34016,8 @@ Object.assign(window, {
     const store = useStore();
     const desktop = useDesktop();
     const [editing, setEditing] = useState(null);
+    const [section, setSection] = useState('rules');
+    const [editor, setEditor] = useState(null);
     const [filters, setFilters] = useState({
       fondo: 'all',
       sindicato: 'all',
@@ -33541,6 +34025,9 @@ Object.assign(window, {
       tipo: 'all'
     });
     const canWrite = !!(app && app.admin && app.admin.has('financial_criteria.visibility.write'));
+    const canProgramsWrite = !!(app && app.admin && app.admin.has('financial_programs.write'));
+    const canRulesWrite = !!(app && app.admin && app.admin.has('financial_rules.write') && app.admin.has('financial_rates.write'));
+    const canPublish = !!(app && app.admin && app.admin.has('financial_rules.publish'));
     useEffect(() => {
       if (store.status() === 'idle') store.load(false);
     }, []);
@@ -33570,12 +34057,59 @@ Object.assign(window, {
       key: value,
       value
     }, value)))));
+    const nav = desktop && React.createElement('div', {
+      className: 'pcmx-nav',
+      role: 'tablist',
+      'aria-label': 'Configuración financiera'
+    }, [['rules', 'Reglas / criterios'], ['programs', 'Programas'], ['funds', 'Fondos']].map(([id, label]) => React.createElement('button', {
+      key: id,
+      type: 'button',
+      role: 'tab',
+      'aria-selected': section === id,
+      onClick: () => setSection(id)
+    }, label)));
+    const desktopContent = section === 'programs' ? React.createElement(CatalogPanel, {
+      kind: 'programs',
+      store,
+      canWrite: canProgramsWrite,
+      onCreate: () => setEditor({
+        type: 'program',
+        value: null
+      }),
+      onEdit: value => setEditor({
+        type: 'program',
+        value
+      })
+    }) : section === 'funds' ? React.createElement(CatalogPanel, {
+      kind: 'funds',
+      store,
+      canWrite: canProgramsWrite,
+      onCreate: () => setEditor({
+        type: 'fund',
+        value: null
+      }),
+      onEdit: value => setEditor({
+        type: 'fund',
+        value
+      })
+    }) : React.createElement(DesktopCriteriaMatrix, {
+      store,
+      canEdit: canRulesWrite,
+      onCreate: () => setEditor({
+        type: 'rule',
+        value: null
+      }),
+      onEdit: value => setEditor({
+        type: 'rule',
+        value
+      })
+    });
     return React.createElement('div', {
       'data-admin-view': 'fondos',
-      'data-admin-classification': 'PRODUCTIVE_GOOGLE_CONTROLLED'
+      'data-admin-classification': 'PRODUCTIVE_SUPABASE_CONTROLLED'
     }, header({
-      title: desktop ? 'Criterios de programas' : 'Fondos y reglas',
-      sub: store.all().length + (desktop ? ' reglas · matriz de solo lectura' : ' criterios · visibilidad SutiApp'),
+      title: desktop ? 'Configuración financiera' : 'Fondos y reglas',
+      sub: store.all().length + (desktop ? ' reglas · autoridad Supabase' : ' criterios · visibilidad SutiApp'),
       onBack
     }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
       className: 'su-app-scroll',
@@ -33583,7 +34117,11 @@ Object.assign(window, {
         padding: 16,
         paddingBottom: 28
       }
-    }, desktop ? store.status() === 'loading' ? React.createElement('div', {
+    }, desktop ? React.createElement(React.Fragment, null, nav, React.createElement('div', {
+      style: {
+        height: 12
+      }
+    }), store.status() === 'loading' ? React.createElement('div', {
       className: 'pcmx-panel',
       'data-criteria-loading': 'true',
       style: {
@@ -33597,12 +34135,10 @@ Object.assign(window, {
     }))) : store.status() === 'error' ? React.createElement('div', {
       className: 'pcmx-empty',
       'data-criteria-error': 'true'
-    }, React.createElement('strong', null, 'No pudimos consultar los criterios'), React.createElement('span', null, 'Google no respondió. No se usó caché, mock ni fuente alternativa.'), React.createElement('button', {
+    }, React.createElement('strong', null, 'No pudimos consultar la configuración financiera'), React.createElement('span', null, 'Supabase no respondió. No se usó caché, mock ni fuente alternativa.'), React.createElement('button', {
       type: 'button',
       onClick: () => store.load(true)
-    }, 'Reintentar')) : React.createElement(DesktopCriteriaMatrix, {
-      store
-    }) : React.createElement(React.Fragment, null, React.createElement('div', {
+    }, 'Reintentar')) : desktopContent) : React.createElement(React.Fragment, null, React.createElement('div', {
       style: {
         background: '#EEF3FF',
         border: '1px solid #D6E2FB',
@@ -33668,6 +34204,22 @@ Object.assign(window, {
       store,
       app,
       onClose: () => setEditing(null)
+    }), desktop && editor?.type === 'program' && React.createElement(ProgramEditor, {
+      value: editor.value,
+      store,
+      app,
+      onClose: () => setEditor(null)
+    }), desktop && editor?.type === 'fund' && React.createElement(FundEditor, {
+      value: editor.value,
+      store,
+      app,
+      onClose: () => setEditor(null)
+    }), desktop && editor?.type === 'rule' && React.createElement(RuleEditor, {
+      value: editor.value,
+      store,
+      app,
+      canPublish,
+      onClose: () => setEditor(null)
     }));
   }
   function RuleRow({
@@ -33809,7 +34361,7 @@ Object.assign(window, {
     const [reason, setReason] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const reasonRequired = mode !== 'AUTO';
+    const reasonRequired = mode !== row.visibilityMode;
     const valid = mode !== row.visibilityMode && (!reasonRequired || reason.trim().length >= 8) && !saving;
     const save = async () => {
       if (!valid) return;
@@ -33819,7 +34371,7 @@ Object.assign(window, {
       setError('');
       try {
         await store.setVisibility(row.id, mode, reason.trim());
-        if (app && app.toast) app.toast('Visibilidad actualizada y confirmada en Google');
+        if (app && app.toast) app.toast('Visibilidad actualizada y auditada en Supabase');
         onClose();
       } catch (failure) {
         setError(failure && failure.message ? failure.message : 'No fue posible actualizar la visibilidad');

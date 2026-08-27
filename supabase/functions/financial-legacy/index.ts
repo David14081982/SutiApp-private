@@ -6,12 +6,6 @@ import { BUSINESS_TIME_ZONE, evaluateVisibility } from "./visibility-policy.js";
 type SupabaseClientLike = any;
 
 const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-// Public, owner-authorized source locator. Environment values override it; no financial rule is materialized here.
-const CRITERIA_SOURCE = Object.freeze({
-  spreadsheetId: "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
-  sheetName: "Criterios de fondos",
-  range: "A2:P",
-});
 const ACTION_KEYS: Record<string, Set<string>> = {
   loanSessionOpen: new Set(["action"]),
   loanSessionValidate: new Set(["action", "snapshot_id"]),
@@ -88,6 +82,7 @@ type FinancialProfile = {
 };
 
 type CriteriaRule = {
+  rule_id?: string;
   id: string;
   program_id: string;
   fund: string;
@@ -110,6 +105,11 @@ type CriteriaRule = {
   visibility_window_start: string;
   visibility_window_end: string;
   permanent: boolean;
+  financial_union_code?: string;
+  financial_employee_category_code?: string;
+  lifecycle_status?: string;
+  review_required?: boolean;
+  review_signals?: string[];
 };
 
 type TermPolicy = {
@@ -122,8 +122,6 @@ type TermPolicy = {
 
 const normalize = (value: unknown) => String(value ?? "").trim().normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").toUpperCase();
-const slug = (value: string) => normalize(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-const roundMoney = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const EXPORT_CONTRACT_VERSION = "FINAL_APPROVED_LOAN_EXPORT_V1";
 const LOAN_SESSION_TTL_MS = 15 * 60 * 1000;
 const LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V1";
@@ -176,120 +174,42 @@ async function requireExportPermission(userClient: SupabaseClientLike) {
   return true;
 }
 
-function programForFund(fund: string) {
-  const key = normalize(fund);
-  if (key === "CAJA CHICA") return "caja";
-  if (key === "SUTIEXPRESS") return "nomina";
-  return "prestamo";
-}
-
-function parseTerm(value: unknown) {
-  const label = String(value ?? "").trim();
-  const fortnights = label.match(/^(\d+)\s*(?:QNAS?|QUINCENAS?)/i);
-  if (fortnights) return { paymentCount: Number(fortnights[1]), maxTerm: Number(fortnights[1]), label };
-  const months = label.match(/^(\d+)\s*MESES?/i);
-  if (months) return { paymentCount: Number(months[1]) * 2, maxTerm: Number(months[1]), label };
-  return null;
-}
-
-function parseEventDate(fund: string, value: unknown) {
-  const raw = String(value ?? "").trim();
-  const serialized = raw.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})/);
-  if (serialized) return new Date(Date.UTC(Number(serialized[1]), Number(serialized[2]), Number(serialized[3])));
-  const match = (raw + " " + fund).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (!match) return null;
-  const date = new Date(Date.UTC(Number(match[3]), Number(match[2]) - 1, Number(match[1])));
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function gvizCell(cell: Record<string, unknown> | null | undefined) {
-  if (!cell) return null;
-  return cell.v ?? cell.f ?? null;
-}
-
-function identityDate(fund: string, primary: unknown, fallback: unknown) {
-  const parsed = parseEventDate(fund, primary ?? fallback);
-  return parsed ? parsed.toISOString().slice(0, 10) : "";
-}
-
-async function criterionIdentity(rowNumber: number, category: string, union: string, fund: string,
-  maxAmount: number, rawRate: number, termLabel: string, eventDateISO: string) {
-  const canonical = [category.trim(), union.trim(), fund.trim(), String(maxAmount), String(rawRate), termLabel.trim(), eventDateISO].join("\u001f");
-  return `CRITERIA_V1:${rowNumber}:${await sha256(canonical)}`;
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 12000) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try { return await fetch(url, { ...init, signal: controller.signal }); }
-  finally { clearTimeout(timer); }
-}
-
-async function readVisibilityColumn() {
-  const clientId = Deno.env.get("GOOGLE_VISIBILITY_OAUTH_CLIENT_ID") || "";
-  const clientSecret = Deno.env.get("GOOGLE_VISIBILITY_OAUTH_CLIENT_SECRET") || "";
-  const refreshToken = Deno.env.get("GOOGLE_VISIBILITY_OAUTH_REFRESH_TOKEN") || "";
-  if (!clientId || !clientSecret || !refreshToken) throw new Error("VISIBILITY_GOOGLE_AUTH_NOT_CONFIGURED");
-  const tokenResponse = await fetchWithTimeout("https://oauth2.googleapis.com/token", { method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" }) });
-  const token = await tokenResponse.json();
-  if (!tokenResponse.ok || typeof token.access_token !== "string") throw new Error("VISIBILITY_GOOGLE_AUTH_REJECTED");
-  const range = encodeURIComponent(`'${CRITERIA_SOURCE.sheetName}'!P1:P`);
-  const response = await fetchWithTimeout(`https://sheets.googleapis.com/v4/spreadsheets/${CRITERIA_SOURCE.spreadsheetId}/values/${range}?valueRenderOption=FORMATTED_VALUE`,
-    { headers: { "Authorization": `Bearer ${token.access_token}`, "Cache-Control": "no-cache" } });
-  const body = await response.json();
-  if (!response.ok || !Array.isArray(body.values)) throw new Error("VISIBILITY_COLUMN_UNAVAILABLE");
-  if (String(body.values[0]?.[0] || "") !== "VISIBILIDAD SUTIAPP") throw new Error("VISIBILITY_HEADER_MISMATCH");
-  return body.values.slice(1).map((row: unknown[]) => row?.[0] ?? "");
-}
-
-async function readCriteriaRules(): Promise<CriteriaRule[]> {
-  const spreadsheetId = Deno.env.get("FINANCIAL_CRITERIA_SPREADSHEET_ID") || CRITERIA_SOURCE.spreadsheetId;
-  const sheetName = Deno.env.get("FINANCIAL_CRITERIA_SHEET_NAME") || CRITERIA_SOURCE.sheetName;
-  const range = Deno.env.get("FINANCIAL_CRITERIA_RANGE") || CRITERIA_SOURCE.range;
-  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(spreadsheetId)}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&range=${encodeURIComponent(range)}`;
-  const response = await fetchWithTimeout(url, { headers: { "Accept": "application/json" } });
-  if (!response.ok) throw new Error("FINANCIAL_CRITERIA_UNAVAILABLE");
-  const raw = await response.text();
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start < 0 || end <= start) throw new Error("FINANCIAL_CRITERIA_INVALID_RESPONSE");
-  const payload = JSON.parse(raw.slice(start, end + 1));
-  const rows = Array.isArray(payload?.table?.rows) ? payload.table.rows : [];
-  const visibilityValues = await readVisibilityColumn();
-  const parsed: CriteriaRule[] = [];
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index] as { c?: Array<Record<string, unknown> | null> };
-    const cells = row.c || [];
-    const category = String(gvizCell(cells[0]) ?? "").trim();
-    const union = String(gvizCell(cells[1]) ?? "").trim();
-    const fund = String(gvizCell(cells[2]) ?? "").trim();
-    const maxAmount = Number(gvizCell(cells[3]));
-    const rawRate = Number(gvizCell(cells[4]));
-    const term = parseTerm(gvizCell(cells[5]));
-    if (!category || !union || !fund || !Number.isFinite(maxAmount) || maxAmount <= 0 ||
-        !Number.isFinite(rawRate) || rawRate < 0 || !term || term.paymentCount <= 0) continue;
-    const eventDateISO = identityDate(fund, gvizCell(cells[13]), gvizCell(cells[7]));
-    const visibility = evaluateVisibility(eventDateISO || null, visibilityValues[index], new Date(), BUSINESS_TIME_ZONE);
-    const rowNumber = index + 2;
-    const programId = programForFund(fund);
-    const rateFactor = rawRate > 1 ? rawRate / 100 : rawRate;
-    parsed.push({
-      id: `${programId}--${slug(fund)}--r${rowNumber}`, program_id: programId, fund, category, union,
-      max_amount: maxAmount, rate_factor: rateFactor, rate: roundMoney(rateFactor * 100),
-      payment_count: term.paymentCount, payment_period: "quincenal" as const,
-      max_term: term.maxTerm, term_label: term.label, status: visibility.status as CriteriaRule["status"],
-      available_on: eventDateISO || null,
-      criterion_identity: await criterionIdentity(rowNumber, category, union, fund, maxAmount, rawRate, term.label, eventDateISO),
-      sheet_row: rowNumber, visibility_mode: visibility.visibilityMode as CriteriaRule["visibility_mode"],
+async function readCriteriaRules(privileged: SupabaseClientLike): Promise<CriteriaRule[]> {
+  const rpcName = "get_financial_runtime_rules";
+  const { data, error } = await privileged.rpc(rpcName);
+  if (error || !Array.isArray(data) || data.length < 1) {
+    const message = String(error?.message || "");
+    console.error("financial criteria RPC failed", { rpc: rpcName, code: String(error?.code || "RPC_SHAPE"),
+      details: message.slice(0, 120), isArray: Array.isArray(data), rows: Array.isArray(data) ? data.length : 0 });
+    if (message.includes("FINANCIAL_CRITERIA_NOT_CONFIGURED")) throw new Error("FINANCIAL_CRITERIA_NOT_CONFIGURED");
+    throw new Error("FINANCIAL_CRITERIA_UNAVAILABLE");
+  }
+  return data.map((raw: Record<string, unknown>) => {
+    const availableOn = raw.available_on ? String(raw.available_on) : null;
+    const visibility = evaluateVisibility(availableOn, raw.visibility_mode, new Date(), BUSINESS_TIME_ZONE);
+    const rule: CriteriaRule = {
+      rule_id: String(raw.rule_id || ""), id: String(raw.id), program_id: String(raw.program_id), fund: String(raw.fund),
+      category: String(raw.category), union: String(raw.union), max_amount: Number(raw.max_amount),
+      rate_factor: Number(raw.rate_factor), rate: Number(raw.rate), payment_count: Number(raw.payment_count),
+      payment_period: "quincenal", max_term: Number(raw.max_term), term_label: String(raw.term_label),
+      status: visibility.status as CriteriaRule["status"], available_on: availableOn,
+      criterion_identity: String(raw.criterion_identity), sheet_row: Number(raw.sheet_row),
+      visibility_mode: visibility.visibilityMode as CriteriaRule["visibility_mode"],
       automatic_visibility: visibility.automaticVisibility as CriteriaRule["automatic_visibility"],
       effective_visibility: visibility.effectiveVisibility as CriteriaRule["effective_visibility"],
       visibility_window_start: visibility.windowStart, visibility_window_end: visibility.windowEnd,
       permanent: visibility.permanent,
-    });
-  }
-  return parsed;
+      financial_union_code: String(raw.financial_union_code || ""),
+      financial_employee_category_code: String(raw.financial_employee_category_code || ""),
+      lifecycle_status: String(raw.lifecycle_status || "PUBLISHED"),
+      review_required: raw.review_required === true,
+      review_signals: Array.isArray(raw.review_signals) ? raw.review_signals.map(String) : [],
+    };
+    if (!rule.id || !rule.program_id || !rule.fund || !rule.category || !rule.union ||
+        !Number.isFinite(rule.max_amount) || !Number.isFinite(rule.rate_factor) || !Number.isFinite(rule.rate) ||
+        !Number.isInteger(rule.payment_count) || !Number.isInteger(rule.max_term)) throw new Error("FINANCIAL_CRITERIA_INVALID_RESPONSE");
+    return rule;
+  });
 }
 
 function rulesForProfile(rules: CriteriaRule[], profile: FinancialProfile) {
@@ -334,7 +254,7 @@ function resolveOverview(rules: CriteriaRule[], profile: FinancialProfile, polic
     available_credit: available.length ? Math.max(...available.map((rule) => rule.max_amount)) : null,
     programs: available.map((rule) => publicProgram(rule, policy)),
     available_funds: available.map((rule) => publicProgram(rule, policy)), scheduled_funds: scheduled.map((rule) => publicProgram(rule, policy)),
-    source: "GOOGLE_LEGACY", resolved_at: new Date().toISOString(),
+    source: "SUPABASE_FINANCIAL_CRITERIA", resolved_at: new Date().toISOString(),
   };
 }
 
@@ -460,11 +380,11 @@ async function invalidateLoanSession(privileged: SupabaseClientLike, id: string,
 async function openPersonalizedLoanSession(
   userClient: SupabaseClientLike, privileged: SupabaseClientLike, context: LoanSessionContext,
 ) {
-  const [rules, policy] = await Promise.all([readCriteriaRules(), readTermPolicy(userClient)]);
+  const [rules, policy] = await Promise.all([readCriteriaRules(privileged), readTermPolicy(userClient)]);
   const matched = rulesForProfile(rules, context.profile)
     .filter((rule) => rule.payment_count >= policy.customMinTerm);
   const overview = resolveOverview(rules, context.profile, policy);
-  if (!matched.length) return { ...overview, loanSession: null, googleResolutionCount: 1 };
+  if (!matched.length) return { ...overview, loanSession: null, googleResolutionCount: 0 };
   const profileFingerprint = await sha256(profileFingerprintPayload(context));
   const criteriaFingerprint = await sha256(criteriaFingerprintPayload(matched));
   const policyFingerprint = await termPolicyFingerprint(policy);
@@ -487,7 +407,7 @@ async function openPersonalizedLoanSession(
   }).select("id,expires_at,financial_profile_version").single();
   if (error || !saved) throw new Error("FINANCIAL_SESSION_SNAPSHOT_WRITE_FAILED");
   return { ...overview, loanSession: { id: saved.id, expires_at: saved.expires_at,
-    financial_profile_version: saved.financial_profile_version }, googleResolutionCount: 1 };
+    financial_profile_version: saved.financial_profile_version }, googleResolutionCount: 0 };
 }
 
 async function loadPersonalizedLoanSession(
@@ -546,24 +466,24 @@ async function confirmPersonalizedLoanSession(
   try { snapshot = await loadPersonalizedLoanSession(privileged, context, policy, String(body.snapshot_id)); }
   catch { return { status: 409, body: { error: "CONDITIONS_CHANGED" } }; }
   let currentRules: CriteriaRule[];
-  try { currentRules = await readCriteriaRules(); }
+  try { currentRules = await readCriteriaRules(privileged); }
   catch (error) { return { status: 502, body: { error: error instanceof Error ? error.message : "FINANCIAL_CRITERIA_UNAVAILABLE" } }; }
   const matched = rulesForProfile(currentRules, context.profile).filter((rule) => rule.payment_count >= policy.customMinTerm);
   const currentSourceFingerprint = await sha256(criteriaFingerprintPayload(matched));
   if (currentSourceFingerprint !== snapshot.criteria_source_fingerprint) {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
-    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
+    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
   }
   let result: Record<string, unknown>;
   try { result = await resolveQuote(privileged, currentRules, context.profile, body, policy); }
   catch {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
-    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
+    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
   }
   const selectedRule = matched.find((rule) => rule.id === String(body.program_id)) ||
     (matched.filter((rule) => rule.program_id === String(body.program_id)).length === 1
       ? matched.find((rule) => rule.program_id === String(body.program_id)) : undefined);
-  if (!selectedRule) return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
+  if (!selectedRule) return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
   const submissionSnapshot = {
     affiliate_id: context.affiliateId,
     actor_real_auth_user_id: context.actorId,
@@ -590,14 +510,14 @@ async function confirmPersonalizedLoanSession(
     const code = String(error?.message || "");
     if (code.includes("CONDITIONS_CHANGED")) {
       await invalidateLoanSession(privileged, snapshot.id, "PROFILE_CHANGED_DURING_CONFIRMATION");
-      return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 1 } };
+      return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
     }
     return { status: 409, body: { error: code.includes("REQUIRED_DOCUMENTS") ? "REQUIRED_DOCUMENTS_MISSING" : "FINANCIAL_REQUEST_CREATE_FAILED",
-      googleResolutionCount: 1 } };
+      googleResolutionCount: 0 } };
   }
   await invalidateLoanSession(privileged, snapshot.id, "REQUEST_CONFIRMED");
   return { status: 200, body: { data: { request_id: request.id, folio: request.folio,
-    financialResult: result, googleResolutionCount: 1 } } };
+    financialResult: result, googleResolutionCount: 0 } } };
 }
 
 async function approveRequest(body: Record<string, unknown>, supabaseUrl: string, authHeader: string, approvedBy: string) {
@@ -642,7 +562,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     process = processForCategory(category);
     affiliation = affiliationForUnion(union);
     if (process === "3") throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
-    const rules = await readCriteriaRules();
+    const rules = await readCriteriaRules(privileged);
     const termPolicy = await readTermPolicy(userClient);
     result = await resolveQuote(privileged, rules, {
       numero_control: request.numero_control, financial_union: union,
@@ -702,22 +622,6 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
   const { data: updated, error: updateError } = await privileged.rpc("approve_financial_program_request", { p_request_id: request.id, p_snapshot: snapshot, p_approved_by: approvedBy });
   if (updateError || !updated) return { status: 500, body: { error: "APPROVAL_SNAPSHOT_WRITE_FAILED" } };
   return { status: 200, body: { data: { request_id: request.id, status: updated.status, processing_status: updated.financial_processing_status, idempotent: false } } };
-}
-
-function validLegacyResult(action: string, value: unknown, numeroControl: string) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const result = value as Record<string, unknown>;
-  if (result.source !== "GOOGLE_LEGACY" || result.action !== action || result.subject_numero_control !== numeroControl) return false;
-  if (action === "quote") {
-    const numericFields = ["amount", "paymentCount", "rate", "interest", "administrativeFeePerPayment",
-      "administrativeFeeTotal", "total", "paymentPerPeriod", "maxAmount", "maxTerm"];
-    const textFields = ["paymentPeriod", "ratePeriod", "fund", "program"];
-    return numericFields.every((field) => typeof result[field] === "number" && Number.isFinite(result[field])) &&
-      textFields.every((field) => typeof result[field] === "string" && String(result[field]).trim().length > 0) &&
-      (result.amount as number) > 0 && (result.paymentCount as number) > 0 && (result.maxAmount as number) > 0 &&
-      (result.maxTerm as number) > 0 && result.eligibility !== null && result.eligibility !== undefined;
-  }
-  return true;
 }
 
 async function handoffRequest(
@@ -835,7 +739,6 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply(400, { error: "INVALID_JSON" }, origin || null); }
   if (!validPayload(body)) return reply(400, { error: "INVALID_REQUEST" }, origin || null);
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
   const supabase = createClient(supabaseUrl, anonKey, {
@@ -912,7 +815,7 @@ Deno.serve(async (req) => {
   }
 
   let rules: CriteriaRule[];
-  try { rules = await readCriteriaRules(); }
+  try { rules = await readCriteriaRules(privilegedClient(supabaseUrl)); }
   catch (error) {
     const code = error instanceof Error ? error.message : "FINANCIAL_CRITERIA_UNAVAILABLE";
     return reply(code === "FINANCIAL_CRITERIA_NOT_CONFIGURED" ? 503 : 502, { error: code }, origin || null);
@@ -921,8 +824,8 @@ Deno.serve(async (req) => {
   if (body.action === "catalog") {
     const { data: allowed, error: permissionError } = await supabase.rpc("has_admin_permission", { required_permission: "financial_criteria.visibility.read" });
     if (permissionError || allowed !== true) return reply(403, { error: "ADMIN_READ_REQUIRED" }, origin || null);
-    return reply(200, { data: { source: "GOOGLE_LEGACY", read_only: true, rules: rules.map((rule) => ({
-      id: rule.id, program_id: rule.program_id, fund: rule.fund, category: rule.category, union: rule.union,
+    return reply(200, { data: { source: "SUPABASE_FINANCIAL_CRITERIA", read_only: false, rules: rules.map((rule) => ({
+      id: rule.id, rule_id: rule.rule_id, program_id: rule.program_id, fund: rule.fund, category: rule.category, union: rule.union,
       max_amount: rule.max_amount, rate: rule.rate, rate_period: rule.payment_period,
       payment_count: rule.payment_count, payment_period: rule.payment_period, term_label: rule.term_label,
       status: rule.status, available_on: rule.available_on,
@@ -930,6 +833,8 @@ Deno.serve(async (req) => {
       visibility_mode: rule.visibility_mode, automatic_visibility: rule.automatic_visibility,
       effective_visibility: rule.effective_visibility, visibility_window_start: rule.visibility_window_start,
       visibility_window_end: rule.visibility_window_end, permanent: rule.permanent,
+      financial_union_code: rule.financial_union_code, financial_employee_category_code: rule.financial_employee_category_code,
+      lifecycle_status: rule.lifecycle_status, review_required: rule.review_required, review_signals: rule.review_signals,
     })) } }, origin || null);
   }
 

@@ -30,6 +30,7 @@ function counts(rows, valueOf) { return Object.fromEntries(rows.reduce((map, row
     request(v.SUPABASE_URL + '/functions/v1/financial-legacy', { method:'POST', headers:{ apikey:v.SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json' }, body:JSON.stringify({ action:'catalog' }) }),
   ]);
   assert.equal(allowed.status, 200, JSON.stringify(allowed.data));
+  assert.equal(allowed.data.data.source, 'SUPABASE_FINANCIAL_CRITERIA');
   assert([401,403].includes(deniedResponsible.status), 'unauthorized responsible read allowed');
   assert([401,403].includes(deniedNormal.status), 'normal user read allowed');
   assert([401,403].includes(deniedAnonymous.status), 'anonymous read allowed');
@@ -45,7 +46,7 @@ function counts(rows, valueOf) { return Object.fromEntries(rows.reduce((map, row
   const conflictGroups = groups(rows, contextKey).filter((set) => new Set(set.map(valueKey)).size > 1);
   const conditionDifferenceGroups = groups(rows, (row) => [row.program_id,row.fund].map(normalized).join('|')).filter((set) => new Set(set.map((row) => [row.union,row.category,row.available_on || '',row.term_label].map(normalized).join('|'))).size > 1);
   console.log(JSON.stringify({
-    status:'PASS', source:'GOOGLE_LEGACY_READ_MODEL', total:rows.length,
+    status:'PASS', source:'SUPABASE_FINANCIAL_CRITERIA', total:rows.length,
     distinct:{ programs:new Set(rows.map((row) => row.program_id)).size, funds:new Set(rows.map((row) => row.fund)).size, unions:new Set(rows.map((row) => row.union)).size, categories:new Set(rows.map((row) => row.category)).size },
     availability:counts(rows, (row) => row.status), visibilityModes:counts(rows, (row) => row.visibility_mode), effectiveVisibility:counts(rows, (row) => row.effective_visibility),
     potentialDuplicateGroups:duplicateGroups.length, potentialConflictGroups:conflictGroups.length, conditionDifferenceGroups:conditionDifferenceGroups.length,

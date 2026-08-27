@@ -28,13 +28,13 @@ assert.match(applyScript,/--recovery-dry-run/);
 assert.match(applyScript,/rollback; select true as recovery_dry_run/);
 
 for(const action of ['loanSessionOpen','loanSessionValidate','loanSessionQuote','loanSessionConfirm']) assert.ok(edge.includes(action),'Edge action missing: '+action);
-assert.match(edge,/const \[rules, policy\] = await Promise\.all\(\[readCriteriaRules\(\), readTermPolicy\(userClient\)\]\)/);
+assert.match(edge,/const \[rules, policy\] = await Promise\.all\(\[readCriteriaRules\(privileged\), readTermPolicy\(userClient\)\]\)/);
 assert.match(edge,/const matched = rulesForProfile\(rules, context\.profile\)/);
 assert.match(edge,/await resolveQuote\(privileged, snapshot\.eligible_rules, context\.profile, body, policy\)/);
 assert.match(edge,/resolve_suti_loan_quote_contract/);
 assert.match(rpcMigration,/resolve_current_loan_snapshot_quote/);
 assert.match(edge,/googleResolutionCount: 0/);
-assert.match(edge,/currentRules = await readCriteriaRules\(\)/);
+assert.match(edge,/currentRules = await readCriteriaRules\(privileged\)/);
 assert.match(edge,/create_validated_financial_program_request/);
 assert.match(edge,/criteriaFingerprintPayload/);
 assert.match(edge,/effective_visibility: rule\.effective_visibility/);

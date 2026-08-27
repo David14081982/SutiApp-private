@@ -42,3 +42,9 @@ Estado: `APPLIED / CERTIFIED — PASS`. Con autorización explícita del propiet
 La lectura directa de `requested_amount` y snapshots continúa denegada al browser por los grants vigentes. El frontend depende de estas RPC para no ampliar acceso directo a la tabla. Dry-run, recovery dry-run, apply y status cerraron `PASS`; las tres funciones y grants autenticados están activos, anónimo permanece denegado y los conteos de solicitudes/documentos protegidos no cambiaron.
 
 Recovery: `supabase/recovery/20260826000200_admin_financial_requests_read_model_recovery.sql` revoca los tres grants y elimina exclusivamente las funciones. Su dry run transaccional con `ROLLBACK` cerró `PASS` y dejó cambios persistentes 0. No se ejecutó recovery productivo después del cutover exitoso.
+
+## 20260827000100–00700 — cutover de criterios financieros a Supabase
+
+Estado: `APPLIED / CERTIFIED — PASS`. El modelo importó un batch exacto de 146 reglas, 35 fondos y 3 programas desde los campos productivamente consumidos A/B/C/D/E/F/H/N/P; preservó 2 grupos duplicados y 1 grupo conflictivo y excluyó G/I/J/K/L/M/O. La activación atómica cambió `financial_criteria_authority` de `GOOGLE_SHADOW` a `SUPABASE` sólo después de equivalencia exacta y canary A/B. No existe dual authority ni fallback Google.
+
+Las migraciones 00200–00400 corrigieron equivalencia de tasa, frontera service-role e identidad determinista de fondos antes del corte. 00500/00510 habilitaron exclusivamente el canary shadow reversible; 00600 realizó el retry atómico autorizado; 00700 retiró el RPC canary después del PASS. Cada forward tiene recovery y los pares se probaron dentro de transacciones con `ROLLBACK`. El recovery primario devuelve autoridad a Google y conserva el batch importado para diagnóstico; sólo puede ejecutarse como rollback explícito, nunca como fallback runtime.

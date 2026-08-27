@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-FINANCIAL-SUPABASE-CUTOVER-AUTONOMOUS-001
+
+- Se resolvió el FAIL previo mediante un canary shadow que ejercitó el bundle Edge exacto antes de cambiar autoridad, con diagnóstico sanitizado y gate de readiness. El canary A/B pasó para 146 reglas, dos perfiles distintos y cuatro cotizaciones, sin diferencias de elegibilidad, programa, fondo, tasa, monto, plazo, fecha o visibilidad.
+- El retry atómico activó Supabase como autoridad única con 3 programas, 35 fondos, 146 reglas, 2 grupos duplicados, 1 conflicto y hash `174F940E195DE5DAE595AAF798CC1B49976AA899E76D6CF141FB9D711A6E9C8A`. A/B/C/D/E/F/H/N/P fueron equivalentes; G/I/J/K/L/M/O quedaron fuera y L se clasificó como cálculo auxiliar legacy no consumido.
+- `financial-legacy` v25 y `financial-criteria-admin` v10 están activos con JWT. El canary Edge y su RPC shadow se eliminaron después del PASS. Apertura, interacción y confirmación financiera reportan 0 lecturas Google; frontend math 0; Google writes 0; Apps Script changes 0.
+- Admin Programas/Fondos/Reglas quedó funcional con permisos granulares, versiones, publicación, auditoría y prueba CRUD transaccional con rollback total. Responsable no autorizado, usuario normal y anónimo quedaron denegados.
+- Suti Préstamo pasó RPC live, perfiles, seguridad, Chrome desktop/móvil, cuatro recálculos, odómetro continuo, blank frames 0 y stale renders 0. Las cinco regresiones Admin protegidas pasaron en Chrome real; suite estática 49/49.
+
+```text
+H-FINANCIAL-SUPABASE-CUTOVER-AUTONOMOUS-001 RESULT
+Status: PASS
+Files changed: financial migrations/recoveries; Edge runtime/Admin; repository/Admin financial UI; tests; governance/evidence/Registry
+Source-of-truth verdict: PASS — Supabase is the single productive financial-criteria authority; Google is historical provenance only
+Invariant verdict: PASS — exact imported contract; no dual authority, fallback, frontend math or historical rewrite
+Build: PASS — reproducible bundle from 90 source files; both Edge bundles compiled
+Tests: PASS — 49/49 static; live equivalence/security/snapshot/CRUD; public and protected Admin Chrome regressions
+Security: PASS — forced RLS; service-only runtime; granular Admin RPC; unauthorized/normal/anonymous denied; secrets/PII 0
+Legacy impact: READ-ONLY SOURCE SNAPSHOT / GOOGLE WRITES 0 / APPS SCRIPT CHANGES 0
+Unexpected files changed: 0 after restoring regenerated evidence from protected H tasks
+Known limitations: productive append after approval remains an independent owner-controlled Phase 7 validation
+Evidence: docs/FINANCIAL_SUPABASE_CUTOVER_RESULT.md
+```
+
 ## H-ADMIN-FINANCIAL-REQUESTS-WORKBENCH-001 — 2026-08-26
 
 - Se cerró, sólo para desktop, la bandeja `Admin → Finanzas → Solicitudes`: cola comparativa, filtros reales, detalle lazy persistente, snapshots contractuales almacenados, documentos privados bajo demanda, términos, timeline factual, navegación continua, teclado y feedback inline. A 1024/1280 usa cola compacta; a 1440 muestra la comparativa completa; móvil conserva su flujo secuencial.
@@ -20,6 +43,28 @@ Legacy impact: NO WRITE / NO CHANGE
 Unexpected files changed: 0 attributable outside declared scope
 Known limitations: no separate financial-responsible authority and no controlled owner row with stored snapshot; neither was invented
 Evidence: docs/qa/H-ADMIN-FINANCIAL-REQUESTS-WORKBENCH-001-EVIDENCE.md; docs/qa/evidence/admin-financial-requests-workbench-20260826/
+```
+
+## 2026-08-27 — H-FINANCIAL-SUPABASE-CUTOVER-001
+
+- Modelo Supabase y shadow import aplicados: 3 programas, 35 fondos y 146/146 reglas; equivalencia A/B/C/D/E/F/H/N/P PASS; G/I/J/K/L/M/O excluidos; duplicados 2 y conflicto 1 preservados.
+- El primer canary posterior al cutover devolvió `502 FINANCIAL_CRITERIA_UNAVAILABLE`. Se aplicó fail-closed inmediatamente: authority `GOOGLE_SHADOW`, motores SQL legacy y ambas Edge Functions pre-cutover restaurados; runtime Google 146 reglas/seis perfiles PASS.
+- Google writes 0, Apps Script changes 0, snapshots históricos preservados. Suite estática 49/49 y regresiones protegidas PASS, pero el canary de cutover obliga a `FAIL` global.
+- No hubo commit ni push. Evidencia: `docs/FINANCIAL_SUPABASE_CUTOVER_RESULT.md`.
+
+```text
+H-FINANCIAL-SUPABASE-CUTOVER-001 RESULT
+Status: FAIL
+Files changed: shadow migration/recovery; financial Edge/frontend/Admin foundation; tests; derived Registry; failure evidence
+Source-of-truth verdict: PASS fail-closed — Google restored as sole productive authority; Supabase remains shadow only
+Invariant verdict: FAIL for requested cutover; recovery and historical preservation PASS
+Build: PASS — reproducible bundle from 90 sources
+Tests: FAIL overall — static 49/49 and protected regressions PASS; post-cutover Edge canary FAIL
+Security: PASS — forced RLS; browser table access denied; service boundary verified
+Legacy impact: READ ONLY / GOOGLE WRITES 0 / APPS SCRIPT CHANGES 0
+Unexpected files changed: 0 after restoring generated evidence of closed H tasks
+Known limitations: exact Edge integration cause remains unresolved; reactivation prohibited until shadow canary passes
+Evidence: docs/FINANCIAL_SUPABASE_CUTOVER_RESULT.md
 ```
 
 ## H-ADMIN-REQUESTS-WORKBENCH-001 — 2026-08-26

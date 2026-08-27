@@ -76,6 +76,8 @@ Las relaciones históricas de la matriz anterior siguen describiendo catálogos,
 
 Cuando el programa requiere tasa, saldo, préstamo, amortización, descuento o aprobación financiera, la fila inicial se registra como `requires_financial_processing`; Google legacy conserva únicamente el procesamiento financiero posterior. No existe doble escritura ni handoff implícito.
 
+El workbench Admin financiero aplicado el 2026-08-26 no cambia esa autoridad: la cola y el detalle leen `program_requests`, sus snapshots inmutables, documentos y versión de términos. La proyección RPC de menor privilegio `20260826000200` está **aplicada y certificada**; el browser autorizado ejecuta sólo las tres funciones de lectura y continúa sin grants directos sobre importe o snapshots. No se consulta Google al abrir la cola o el detalle ni se reinterpretan solicitudes históricas con reglas actuales.
+
 ## Contrato compacto de los 37 dominios
 
 La tabla siguiente completa, para cada dominio de la matriz, los campos normativos que no deben inferirse de la recomendación. Las columnas históricas exactas están en el informe H-DATA-001 enlazado por nombre de hoja.

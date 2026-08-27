@@ -60,6 +60,14 @@
     const r=await db().from('program_requests').select(mobileFields).order('created_at',{ascending:false});
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
+  async function listFinancialMobile(){
+    const r=await db().rpc('list_admin_financial_requests_mobile');
+    if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
+  }
+  async function listFinancialQueue(){
+    const r=await db().rpc('list_admin_financial_request_queue');
+    if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
+  }
   async function detail(id){
     const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
@@ -70,7 +78,21 @@
     const trackingView=trackingRow?Object.freeze(Object.assign({},trackingRow,{workflow_name:workflow&&workflow.name||'',stages:Object.freeze((workflow&&workflow.operational_workflow_stages||[]).slice().sort((a,b)=>a.sort_order-b.sort_order))})):null;
     return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,tracking:trackingView,tracking_available:!parts[2].error,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
   }
+  async function financialDetail(id){
+    const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});
+    if(base.error)throw base.error;
+    const row=base.data;
+    const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
+    const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
+    const parts=await Promise.all([documents,terms]);
+    return Object.freeze(Object.assign({},project(row),{
+      request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),
+      documents_available:!parts[0].error,
+      terms_version:parts[1].error?null:parts[1].data||null,
+      terms_available:!parts[1].error,
+    }));
+  }
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,detail,update,respondQuote,newIdempotencyKey:key,project});
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,respondQuote,newIdempotencyKey:key,project});
 })();

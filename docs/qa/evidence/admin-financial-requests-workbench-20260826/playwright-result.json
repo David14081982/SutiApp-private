@@ -1,0 +1,162 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "realBrowser": true,
+  "mode": "READ_ONLY_LIVE",
+  "viewports": {
+    "1024x768": {
+      "columns": 2,
+      "filterColumns": 3,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    },
+    "1280x900": {
+      "columns": 2,
+      "filterColumns": 6,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    },
+    "1440x1000": {
+      "columns": 2,
+      "filterColumns": 6,
+      "viewportOverflow": false,
+      "workspaceOverflow": false,
+      "queue": true,
+      "detail": true,
+      "timeline": true,
+      "toolbar": true
+    }
+  },
+  "queue": {
+    "initialRows": 3,
+    "search": true,
+    "statusFilter": true,
+    "programFilter": true,
+    "stageFilter": true,
+    "ageFilter": true,
+    "dateFilter": true,
+    "order": true,
+    "keyboard": true,
+    "previousNext": true
+  },
+  "detail": {
+    "persistent": true,
+    "financialSnapshot": "CONTROLLED_UNAVAILABLE",
+    "historicalValuesImmutable": true,
+    "timeline": true,
+    "documents": true,
+    "termsAcceptance": true,
+    "technicalIdsPrimary": 0
+  },
+  "actions": {
+    "safeActionPersistence": "NOT_LIVE_MUTATED",
+    "inlineFeedback": "STATIC_VERIFIED",
+    "refreshPersistence": "READ_ONLY_REFRESH_PASS"
+  },
+  "history": {
+    "reflection": "N/A_NO_CONTROLLED_OWNER_FINANCIAL_ROW"
+  },
+  "security": {
+    "superAdmin": "ALLOWED",
+    "authorizedFinanceAdmin": "ALLOWED_BY_PROGRAM_REQUESTS_READ_CAPABILITY",
+    "unauthorizedAdmin": "DENIED_BY_LIVE_CAPABILITY_GATE",
+    "unauthorizedResponsible": "N/A_NO_FINANCE_RESPONSIBILITY_AUTHORITY",
+    "normalUserAdminModule": "DENIED",
+    "anonymous": "DENIED",
+    "crossUser": "DENIED",
+    "directFinancialTableColumns": "DENIED",
+    "rlsReadMatrix": true,
+    "readRpcMatrix": {
+      "queue": true,
+      "detail": true,
+      "mobile": true
+    },
+    "rpcWriteMatrix": "INSERT_UPDATE_DELETE_0_READ_MODEL_ONLY"
+  },
+  "mobile": {
+    "desktopWorkbench": false,
+    "bottomNav": "flex",
+    "rootWidth": 430,
+    "horizontalOverflow": false,
+    "cards": 3,
+    "cotizacionesTab": true
+  },
+  "performance": {
+    "metadataQueue": true,
+    "lazyDetail": true,
+    "lazyDocuments": true,
+    "noFinancialNPlusOne": true,
+    "detailCalls": 2
+  },
+  "contracts": {
+    "sharedQueueComponents": "NOT_APPLICABLE_LOCAL_APPROVED_WORKBENCH_COMPONENTS",
+    "safeBulk": "NOT_AUTHORIZED",
+    "responsible": "N/A_NO_REQUEST_OWNER_AUTHORITY",
+    "impersonation": "N/A_NO_IMPERSONATION_FIXTURE"
+  },
+  "legacy": {
+    "googleInteractiveReadsIntroduced": 0,
+    "googleWrites": 0,
+    "appsScriptChanges": 0,
+    "financialFormulasChanged": false,
+    "financialRulesChanged": false
+  },
+  "fixtures": {
+    "created": 0,
+    "restored": 0,
+    "cleanup": "NOT_APPLICABLE_READ_ONLY"
+  },
+  "networkWrites": [],
+  "edgeRequests": [
+    {
+      "method": "POST",
+      "action": "loanSessionOpen",
+      "url": "https://jsucdyothkuptosvskqf.supabase.co/functions/v1/financial-legacy"
+    }
+  ],
+  "blockedBackgroundEdgeRequests": 2,
+  "directGoogleRequests": [],
+  "pageErrors": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "{code: 42501, details: null, hint: Grant the required privileges to the current role …NT SELECT ON public.union_content_blocks TO anon;, message: permission denied for table union_content_blocks}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Workflow authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T SELECT ON public.operational_workflows TO anon;, message: permission denied for table operational_workflows}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Finance presentation authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.finance_catalog_presentation TO anon;, message: permission denied for table finance_catalog_presentation}",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Admin cutover authority error [roles] {code: 42501, details: null, hint: Grant the required privileges to the current role with: GRANT SELECT ON public.admin_roles TO anon;, message: permission denied for table admin_roles}",
+    "Admin cutover authority error [segments] {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.segmentation_catalog_entries TO anon;, message: permission denied for table segmentation_catalog_entries}",
+    "Admin cutover authority error [access] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.screen_access_policies TO anon;, message: permission denied for table screen_access_policies}",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:52770/app/bundle.js?v=152:6954:68)\n    at Object.listManaged (http://127.0.0.1:52770/app/bundle.js?v=152:7063:172)\n    at Array.<anonymous> (http://127.0.0.1:52770/app/bundle.js?v=152:20940:181)\n    at http://127.0.0.1:52770/app/bundle.js?v=152:20942:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:52770/app/bundle.js?v=152:20942:53)",
+    "Admin cutover authority error [profiles] {code: 42501, details: null, hint: null, message: permission denied for function has_admin_permission}",
+    "Admin cutover authority error [rules] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.company_audience_rules TO anon;, message: permission denied for table company_audience_rules}",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:52770/app/bundle.js?v=152:6953:72)\n    at Object.listManaged (http://127.0.0.1:52770/app/bundle.js?v=152:7063:226)\n    at Array.jobs (http://127.0.0.1:52770/app/bundle.js?v=152:20940:339)\n    at http://127.0.0.1:52770/app/bundle.js?v=152:20942:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:52770/app/bundle.js?v=152:20942:53)",
+    "Failed to load resource: the server responded with a status of 401 ()",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:52770/app/bundle.js?v=152:6954:68)\n    at Object.listManaged (http://127.0.0.1:52770/app/bundle.js?v=152:7063:172)\n    at Array.<anonymous> (http://127.0.0.1:52770/app/bundle.js?v=152:20940:181)\n    at http://127.0.0.1:52770/app/bundle.js?v=152:20942:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:52770/app/bundle.js?v=152:20942:53)",
+    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:52770/app/bundle.js?v=152:6953:72)\n    at Object.listManaged (http://127.0.0.1:52770/app/bundle.js?v=152:7063:226)\n    at Array.jobs (http://127.0.0.1:52770/app/bundle.js?v=152:20940:339)\n    at http://127.0.0.1:52770/app/bundle.js?v=152:20942:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:52770/app/bundle.js?v=152:20942:53)",
+    "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()"
+  ]
+}

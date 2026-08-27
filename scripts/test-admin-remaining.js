@@ -6,7 +6,7 @@ for(const id of pending)assert.match(admin,new RegExp("id: '"+id+"'.*classificat
 assert(!/EN PREPARACIÓN/.test(admin));assert(!/data-admin-status[^\n]+pending/.test(admin));
 assert(repo.includes("from('company_popup_proposals')"));assert(!/localStorage|\bDATA\b/.test(repo));
 assert(company.includes('PopupProposalRepository.list()')&&company.includes('PopupProposalRepository.submit'));
-assert(finance.includes('ProgramRequestRepository.list()')&&finance.includes('FINANCIAL_LEGACY_READ_ONLY')&&!/localStorage|\bDATA\b/.test(finance));
+assert(finance.includes('ProgramRequestRepository.listFinancialMobile()')&&finance.includes('FINANCIAL_LEGACY_READ_ONLY')&&!/localStorage|\bDATA\b/.test(finance));
 assert(migration.includes('force row level security')&&migration.includes('is_marketplace_company_member')&&migration.includes("has_admin_permission('popups.write')"));
 assert(migration.includes('allows_popups')&&migration.includes("status='active'")&&migration.includes("a.owner_company_id=company_popup_proposals.company_id"));
 assert(recovery.includes('RECOVERY_BLOCKED')&&recovery.includes('approved popup proposals exist'));

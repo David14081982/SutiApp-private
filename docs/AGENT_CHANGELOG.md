@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## H-ADMIN-FINANCIAL-REQUESTS-WORKBENCH-001 — 2026-08-26
+
+- Se cerró, sólo para desktop, la bandeja `Admin → Finanzas → Solicitudes`: cola comparativa, filtros reales, detalle lazy persistente, snapshots contractuales almacenados, documentos privados bajo demanda, términos, timeline factual, navegación continua, teclado y feedback inline. A 1024/1280 usa cola compacta; a 1440 muestra la comparativa completa; móvil conserva su flujo secuencial.
+- El workbench conserva `program_requests` y sus snapshots como única autoridad. No recalcula valores históricos, no crea responsables/bulk y no consulta Google al abrir cola o detalle. Las acciones existentes permanecen conectadas, pero esta certificación read-only no mutó solicitudes.
+- Con autorización explícita del owner se aplicó `20260826000200`: dry-run PASS, recovery dry-run PASS, apply/status PASS, tres RPC read-only activos, conteos protegidos sin cambio y acceso directo a importe/snapshots todavía denegado al browser.
+- Chrome real pasó 430/1024/1280/1440, seguridad Super Admin/capability/normal/anónimo/cross-user, lazy loading y refresh con writes 0. Suite estática 47/47 y regresión del shell Admin PASS; Google/Apps Script/fórmulas/reglas: 0 cambios.
+
+```text
+H-ADMIN-FINANCIAL-REQUESTS-WORKBENCH-001 RESULT
+Status: PASS
+Files changed: finance Admin/repository/store; applied migration/recovery/apply harness; generated bundle/cache; static/browser tests; evidence/governance/Registry
+Source-of-truth verdict: PASS — same program_requests/snapshots and Google legacy authorities; no duplicate store or fallback
+Invariant verdict: PASS — immutable snapshots only; legacy rows without snapshot remain visibly unavailable
+Build: PASS — reproducible bundle from 90 source files
+Tests: static 47/47 PASS; real Chrome financial workbench and Admin shell PASS
+Security: PASS — live RPC/capability/RLS matrix; direct financial columns and anonymous denied
+Legacy impact: NO WRITE / NO CHANGE
+Unexpected files changed: 0 attributable outside declared scope
+Known limitations: no separate financial-responsible authority and no controlled owner row with stored snapshot; neither was invented
+Evidence: docs/qa/H-ADMIN-FINANCIAL-REQUESTS-WORKBENCH-001-EVIDENCE.md; docs/qa/evidence/admin-financial-requests-workbench-20260826/
+```
+
 ## H-ADMIN-REQUESTS-WORKBENCH-001 — 2026-08-26
 
 - `Admin → Solicitudes` incorpora sólo en desktop una bandeja operativa de tabla + detalle persistente: búsqueda/filtros reales, tracking autoritativo lazy con fallback factual, documentos lazy, feedback inline, navegación continua y teclado seguro.

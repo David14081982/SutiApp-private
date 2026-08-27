@@ -78,7 +78,7 @@ assert.match(repository,/Promise\.all\(\[documents,requirements,tracking\]\)/);
 assert.match(repository,/documents_available:!parts\[0\]\.error/);
 assert.match(repository,/tracking_available:!parts\[2\]\.error/);
 assert.match(screen,/data-request-tracking-unavailable/);
-assert.match(repository,/listGeneralQueue,listHistory,listMobile,detail,update/);
+assert.match(repository,/listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update/);
 assert.match(screen,/ProgramRequestRepository\.update\(selected\.id,status,detail\.notes\|\|''\)/);
 
 assert.match(requestMigration,/status text not null default 'submitted'/);
@@ -95,8 +95,8 @@ assert.doesNotMatch(operations,/Promise\.all\(\[window\.MarketplaceRepository\.l
 
 assert.ok(bundle.includes('data-admin-requests-workbench'),'bundle missing requests workbench');
 assert.ok(bundle.includes('listGeneralQueue'),'bundle missing queue repository');
-assert.ok(html.includes('app/bundle.js?v=151'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v95")&&serviceWorker.includes('app/bundle.js?v=151'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=152'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v96")&&serviceWorker.includes('app/bundle.js?v=152'),'service worker cache cutover missing');
 assert.doesNotMatch(screen+'\n'+repository,/localStorage|sessionStorage|IndexedDB/);
 assert.doesNotMatch(screen+'\n'+repository,/\bDATA\b|\bMOCKS?\b|\bmockData\b/);
 

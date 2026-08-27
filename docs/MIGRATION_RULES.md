@@ -34,3 +34,11 @@ Recovery: `supabase/recovery/20260825000400_personalized_financial_session_snaps
 La migración crea únicamente funciones y grants; no agrega ni modifica filas. `resolve_current_loan_snapshot_quote` admite sólo Auth y cuatro parámetros, deriva identidad efectiva y valida ownership, impersonación, TTL, versión/fingerprints y contrato antes de leer internamente el snapshot. La tabla mantiene cero grants/policies browser. `resolve_suti_loan_quote_contract` es el único motor matemático `SUTI_LOAN_QUOTE_V1` y su ejecución directa queda reservada a service role.
 
 Recovery: revertir primero frontend/Edge al commit anterior y luego ejecutar `supabase/recovery/20260826000100_authenticated_loan_snapshot_quote_rpc_recovery.sql`, que revoca grants y elimina las tres funciones sin tocar snapshots, solicitudes, afiliados ni históricos. Forward y recovery deben probarse juntos dentro de una transacción con `ROLLBACK`; el cutover sólo procede con equivalencia y seguridad en PASS.
+
+## 20260826000200 — read model Admin de solicitudes financieras
+
+Estado: `APPLIED / CERTIFIED — PASS`. Con autorización explícita del propietario, la migración creó sólo tres funciones de lectura y sus grants; no agregó tablas, columnas, triggers, writers ni filas. Las funciones conservan `program_requests` como autoridad, exigen `program_requests.read`, limitan la cola a 250 filas de metadata y proyectan los snapshots inmutables sin perfil financiero, firma, payload de exportación o referencia legacy. La proyección móvil se resuelve en una sola consulta y no ejecuta un detalle por fila.
+
+La lectura directa de `requested_amount` y snapshots continúa denegada al browser por los grants vigentes. El frontend depende de estas RPC para no ampliar acceso directo a la tabla. Dry-run, recovery dry-run, apply y status cerraron `PASS`; las tres funciones y grants autenticados están activos, anónimo permanece denegado y los conteos de solicitudes/documentos protegidos no cambiaron.
+
+Recovery: `supabase/recovery/20260826000200_admin_financial_requests_read_model_recovery.sql` revoca los tres grants y elimina exclusivamente las funciones. Su dry run transaccional con `ROLLBACK` cerró `PASS` y dejó cambios persistentes 0. No se ejecutó recovery productivo después del cutover exitoso.

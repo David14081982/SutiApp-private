@@ -28,7 +28,7 @@
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [
-    { id: 'identity_access', label: 'Identidad y expediente', icon: 'users', desc: 'Perfil editable e impersonación auditada', ready: true },
+    { id: 'affiliates', label: 'Afiliados', icon: 'users', desc: 'Padrón, expedientes y solicitudes', ready: true },
     { id: 'data_exports', label: 'Datos y respaldos', icon: 'download', desc: 'XLSX y CSV por dominio autorizado', ready: true },
     { id: 'popups', label: 'Pop-ups por pantalla', icon: 'message', desc: 'Anuncios y avisos configurables', ready: true },
     { id: 'sindicato', label: 'Tu Sindicato', icon: 'fist', desc: 'Contenido de las 9 pantallas', classification: 'PRODUCTIVE_SUPABASE' },
@@ -61,11 +61,11 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
-    identity_access:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
+    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
-    { id:'people', label:'Personas y operación', icon:'users', modules:['identity_access','requests','documents_admin'] },
+    { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','fincat','flujos','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
@@ -85,7 +85,7 @@
       if(m.id==='convenios'&&sectionOnly)permission='agreements.read';
       const sectionExport=m.id==='data_exports'&&sectionActions.some((x)=>x.action==='export');
       const productive=m.ready||String(m.classification||'').startsWith('PRODUCTIVE_');
-      const canView=m.id==='identity_access'||sectionExport||(permission?app.admin.has(permission):productive);
+      const canView=sectionExport||(permission?app.admin.has(permission):productive);
       const usable=productive&&canView;
       const desktopCanView=sectionExport||(permission?app.admin.has(permission):productive);
       const desktopUsable=productive&&desktopCanView;
@@ -477,18 +477,20 @@
     const access=adminModuleAccess(app);
     const headerFn = (props) => React.createElement(desktop?AdminDesktopHeader:AdminHeader, props);
     const openView=(id)=>{setViewContext(null);setView(id);};
+    const affiliateContext=viewContext&&viewContext.from==='affiliates'?viewContext:null;
+    const backFromAffiliateLink=()=>{if(affiliateContext)setView('affiliates');else openView('menu');};
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
-    if (view === 'identity_access') body = React.createElement(window.IdentityAccessModule, { app, onBack: () => setView('menu'), header: headerFn });
+    if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, { app, initialAffiliateId:affiliateContext&&affiliateContext.affiliateId, onBack: () => openView('menu'), header: headerFn, onOpenModule:(id,context)=>{setViewContext(context||null);setView(id);} });
     else if (view === 'data_exports') body = React.createElement(window.DataExportsModule, { app, onBack: () => setView('menu'), header: headerFn });
     else if (view === 'branding') body = React.createElement(window.BrandingModule, { app, onBack: () => setView('menu'), header: headerFn, canEdit: app.admin.has('assets.write') });
     else if (view === 'noticias') body = React.createElement(window.NewsModule, { app, onBack: () => setView('menu'), header: headerFn });
     else if(view==='marketplace')body=React.createElement(window.MarketplaceModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('marketplace.create')||app.admin.has('marketplace.update')});
     else if(view==='membresias')body=React.createElement(window.MembresiasModule,{app,onBack:()=>setView('menu'),header:headerFn});
-    else if(view==='documents_admin')body=React.createElement(window.DocumentsAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='documents_admin')body=React.createElement(window.DocumentsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='planes')body=React.createElement(window.PlanesModule,{app,onBack:()=>setView('menu'),header:headerFn});
-    else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:()=>setView('menu'),header:headerFn});
-    else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
+    else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(context||null);setView(id);}});

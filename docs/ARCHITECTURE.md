@@ -1,5 +1,20 @@
 # Arquitectura
 
+## Admin Afiliados — ADR-071
+
+```text
+Admin Afiliados UI
+  → AdminAffiliatesRepository
+  → RPC con permiso + versión + motivo
+  → public.affiliates (maestro único)
+  → affiliate_admin_events / affiliate_profile_audit_log (auditoría)
+
+Perfil → Document Workbench / Requests Workbench / Financial Workbench
+Exportar Excel → DataExportRepository → Edge data-exports → XLSX temporal
+```
+
+El listado pagina, busca, ordena y filtra en servidor; el navegador no descarga las 947 filas para construir el padrón. El perfil compone proyecciones de documentos, solicitudes y acceso, pero no copia sus autoridades. Los enlaces abren los workbenches productivos existentes con `affiliate_id` como contexto y vuelven al mismo perfil. Alta, edición y cambio de estado nunca crean, revocan ni eliminan una cuenta Auth.
+
 ## Architecture Registry y Navigator
 
 ```text

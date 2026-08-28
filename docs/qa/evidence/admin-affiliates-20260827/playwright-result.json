@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "realBrowser": true,
+  "browser": "Chrome",
+  "viewports": {
+    "1024x768": {
+      "module": true,
+      "viewportOverflow": false,
+      "workbenchOverflow": false,
+      "columns": "728px"
+    },
+    "1280x900": {
+      "module": true,
+      "viewportOverflow": false,
+      "workbenchOverflow": false,
+      "columns": "573.469px 398.516px"
+    },
+    "1440x1000": {
+      "module": true,
+      "viewportOverflow": false,
+      "workbenchOverflow": false,
+      "columns": "667.875px 464.109px"
+    },
+    "430x932": {
+      "module": true,
+      "viewportOverflow": false,
+      "workbenchOverflow": false,
+      "columns": "minmax(430px, 1.05fr) minmax(300px, 0.95fr)"
+    }
+  },
+  "roster": {
+    "initialRows": 25,
+    "serverPagination": true,
+    "selection": true,
+    "search": true
+  },
+  "profile": {
+    "tabs": [
+      "Datos generales",
+      "Afiliación",
+      "Expediente",
+      "Solicitudes",
+      "Acceso",
+      "Auditoría"
+    ],
+    "allTabs": true
+  },
+  "exportContract": {
+    "authorizedDomain": true,
+    "xlsxButton": true,
+    "downloadAttempted": false,
+    "piiWrittenLocally": false
+  },
+  "security": {
+    "adminAuthorized": true,
+    "normalDenied": true,
+    "anonymousDenied": true,
+    "rls": true
+  },
+  "unexpectedWrites": [],
+  "pageErrors": []
+}

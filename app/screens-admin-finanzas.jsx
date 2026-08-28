@@ -106,13 +106,13 @@
     return 'No se completó la acción. Puedes reintentar sin duplicar la solicitud.';
   }
 
-  function DesktopFinancialWorkbench({ app, onCount }) {
+  function DesktopFinancialWorkbench({ app, onCount, initialAffiliateId }) {
     const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [error, setError] = useState('');
     const [selectedId, setSelectedId] = useState(''), [detail, setDetail] = useState(null), [detailPhase, setDetailPhase] = useState('idle'), [detailNonce, setDetailNonce] = useState(0);
     const [search, setSearch] = useState(''), [statusFilter, setStatusFilter] = useState('all'), [programFilter, setProgramFilter] = useState('all'), [stageFilter, setStageFilter] = useState('all'), [ageFilter, setAgeFilter] = useState('all'), [dateFilter, setDateFilter] = useState(''), [sort, setSort] = useState('newest');
     const [action, setAction] = useState(''), [actionNote, setActionNote] = useState(''), [busy, setBusy] = useState(false), [feedback, setFeedback] = useState(null), [rowFeedback, setRowFeedback] = useState({}), [documentViews, setDocumentViews] = useState({});
     useEffect(ensureWorkbenchStyles, []);
-    const load = React.useCallback(async (quiet) => { try { if (!quiet) setPhase('loading'); const source = await window.ProgramRequestRepository.listFinancialQueue(); setRows(source.slice()); setError(''); setPhase('loaded'); onCount(source.length); return source; } catch (_) { if (!quiet) setRows([]); setError('No fue posible cargar las solicitudes financieras.'); setPhase('error'); onCount(0); return []; } }, [onCount]);
+    const load = React.useCallback(async (quiet) => { try { if (!quiet) setPhase('loading'); const source = await window.ProgramRequestRepository.listFinancialQueue(); const scoped=initialAffiliateId?source.filter((row)=>row.affiliate_id===initialAffiliateId):source; setRows(scoped.slice()); setError(''); setPhase('loaded'); onCount(scoped.length); return scoped; } catch (_) { if (!quiet) setRows([]); setError('No fue posible cargar las solicitudes financieras.'); setPhase('error'); onCount(0); return []; } }, [onCount,initialAffiliateId]);
     useEffect(() => { load(false); }, [load]);
     const programs = React.useMemo(() => Array.from(new Map(rows.map((row) => [row.program_id, programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
     const visible = React.useMemo(() => { const needle = search.trim().toLocaleLowerCase('es-MX'); const filtered = rows.filter((row) => {
@@ -176,7 +176,7 @@
     return React.createElement(window.Badge, { tone: e.tone, icon: e.icon }, e.label);
   }
 
-  function FinanzasModule({ app, onBack, header }) {
+  function FinanzasModule({ app, onBack, header, initialAffiliateId }) {
     const desktop = useDesktop();
     const store = useStore(!desktop);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
@@ -187,8 +187,9 @@
 
     if (!desktop && openId) { const r = store.get(openId); if (r) return React.createElement(RequestDetail, { app, r, onBack: () => setOpenId(null), header }); }
 
-    const all = store.all();
-    const list = store.byEstado(filter).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const belongsToAffiliate=(row)=>!initialAffiliateId||row.affiliate_id===initialAffiliateId||(row.usuario&&row.usuario.id===initialAffiliateId);
+    const all = store.all().filter(belongsToAffiliate);
+    const list = store.byEstado(filter).filter(belongsToAffiliate).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     const montoTotal = all.reduce((s, r) => s + (r.simulacion.montoSolicitado || 0), 0);
     const chips = [{ id: 'all', label: 'Todas' }].concat(window.FINANZAS.ESTADOS.map((e) => ({ id: e.id, label: e.label })));
     const cotPend = qs ? qs.pendientes() : 0;
@@ -204,7 +205,7 @@
         React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 16 } },
           segBtn('sols', 'Financiamientos', desktop ? null : store.pendientes() || null),
           segBtn('cots', 'Cotizaciones', cotPend || null)),
-        desktop ? (tab === 'cots' ? React.createElement(CotizacionesAdmin, { qs, app }) : React.createElement(DesktopFinancialWorkbench, { app, onCount: setDesktopCount })) :
+        desktop ? (tab === 'cots' ? React.createElement(CotizacionesAdmin, { qs, app }) : React.createElement(DesktopFinancialWorkbench, { app, onCount: setDesktopCount, initialAffiliateId })) :
         source.phase==='error' ? React.createElement(window.EmptyState,{icon:'warning',title:'No fue posible cargar solicitudes',sub:'La fuente productiva no respondió.',actionLabel:'Reintentar',onAction:()=>store.retry()}) :
         source.phase==='loading' ? React.createElement(window.EmptyState,{icon:'clock',title:'Cargando solicitudes',sub:'Consultando información vigente.'}) :
         tab === 'cots' ? React.createElement(CotizacionesAdmin, { qs, app }) : React.createElement(React.Fragment, null,

@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-08-27 — H-ADMIN-AFFILIATES-MODULE-001
+
+- Se sustituyó la tarjeta básica “Identidad y expediente” por el módulo productivo Admin “Afiliados”: padrón server-side, búsqueda/filtros/orden/paginación, perfil por pestañas, alta, edición, baja/reactivación, duplicados, auditoría, relación Auth y asistencia autorizada.
+- `public.affiliates` sigue siendo el único maestro. La migración aplicada preservó 947 históricos y 3 cuentas Auth; las altas Admin usan procedencia explícita sin coordenadas fabricadas. Expediente y solicitudes enlazan a los workbenches existentes, sin duplicarlos ni tocar Google/Apps Script/finanzas legacy.
+- “Exportar Excel” reutiliza el Edge `data-exports`, permiso `data_exports.read`, allowlist, `no-store` y auditoría. El motor XLSX pasó su matriz live; por privacidad, la prueba de Afiliados no descargó ni guardó PII localmente.
+- Suite estática: módulo y 52 regresiones PASS; `test-pages-deployment.js` continúa FAIL únicamente por el `SutiApp.html` preexistente modificado fuera de esta H (comillas del registro del service worker). CRUD transaccional PASS con rollback y escrituras persistentes 0. Chrome real PASS en 1024/1280/1440/430, sin overflow ni escrituras inesperadas.
+- El archivo de referencia “Afiliados - demo.html” citado en la especificación no estaba adjunto ni existe en el repo; se preservó el shell Admin Claude y todos los componentes funcionales exigidos por el texto entregado.
+
+```text
+H-ADMIN-AFFILIATES-MODULE-001 RESULT
+Status: PASS
+Files changed: módulo/repository Admin Afiliados; integración Admin/Documentos/Solicitudes/Finanzas; bundle/builder; migración/recovery; tests; gobierno y evidencia
+Source-of-truth verdict: PASS — public.affiliates único; XLSX derivado
+Invariant verdict: PASS — INV-116..119
+Build: PASS — 93 fuentes
+Tests: PASS módulo/static/SQL rollback/Chrome/XLSX; 1 FAIL preexistente ajeno en pages deployment
+Security: PASS — permisos backend, RLS, normal/anónimo denegados, secretos expuestos 0
+Legacy impact: NOT APPLICABLE — Google/Apps Script/finanzas legacy 0 cambios
+Unexpected files changed: SutiApp.html y dos evidencias financieras preexistentes, preservados y no incluidos
+Known limitations: demo HTML citado no disponible; export Afiliados no descargado durante QA para no persistir PII
+Evidence: docs/qa/H-ADMIN-AFFILIATES-MODULE-001-EVIDENCE.md
+```
+
 ## 2026-08-27 — H-MEMBERSHIP-REQUEST-UI-CUTOVER-001
 
 - `Solicitud de membresía` adoptó el HTML aprobado: héroe guinda compacto, sello y logo administrados, cifras reales, tracker sobrepuesto, segmentos/chips dinámicos, documentos en cuadrícula 2×N, datos del afiliado, privacidad y CTA inferior fijo. La variante visual de teselas es opt-in; Mis Documentos y Suti Préstamo conservan su lista anterior.

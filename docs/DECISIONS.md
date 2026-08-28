@@ -536,3 +536,13 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Estado y writers:** monto/plazo viven únicamente en estado React efímero. Se prohíben `localStorage`, caché, mock como autoridad, Google, Supabase, Edge, RPC, registro productivo, transferencia y WhatsApp. El CTA muestra una confirmación informativa interna.
 - **Separación:** Suti Préstamo, su resolver, snapshot, odómetro, RPC, selección, reglas y Admin financiero quedan fuera de alcance e intactos.
 - **Aprobación:** `H-SUTI-INVERSION-SCREEN-001`, contrato visual, copy, constantes, fórmula y comportamiento autorizados expresamente por el propietario, 2026-08-27.
+
+## ADR-071 — Módulo productivo Admin Afiliados y exportación Excel
+
+- **Autoridad:** `public.affiliates` permanece como padrón único. El módulo no introduce otra tabla maestra, copia local, mock o fallback. Las altas nuevas se distinguen mediante `record_origin=ADMIN_AFFILIATES` sin fabricar procedencia histórica.
+- **Operación:** el listado usa búsqueda, filtros, orden y paginación server-side. Perfil, expediente, solicitudes, acceso y auditoría se componen desde las autoridades existentes; Document, Requests y Financial Workbench se reutilizan con contexto de afiliado.
+- **Escritura:** crear, editar, baja o reactivación exigen `affiliates.write`, motivo, validación backend, control optimista y auditoría before/after. No existe DELETE productivo y el cambio de estado no altera Auth, documentos, solicitudes o historia.
+- **Auth y asistencia:** Auth es separada y nullable. El módulo sólo informa el vínculo y reutiliza la impersonación backend existente con `affiliates.impersonate`; nunca usa contraseña del afiliado ni concede acceso por UI.
+- **Excel:** “Exportar Excel” reutiliza `data-exports`, exige `data_exports.read`, genera XLSX temporal `no-store` desde columnas allowlisted y audita metadatos. No persiste la base ni crea una fuente de verdad adicional.
+- **Migración y recovery:** `20260827001200_admin_affiliates_workbench.sql` conservó 947/947 históricos y 3 Auth. El recovery falla cerrado si ya hay altas Admin o auditoría, para impedir pérdida de operación real.
+- **Aprobación:** `H-ADMIN-AFFILIATES-MODULE-001` y solicitud explícita “dales funcionalidad, además agrega que puedan exportar en excel la base de datos”, propietario, 2026-08-27.

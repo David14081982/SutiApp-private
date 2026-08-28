@@ -1,5 +1,10 @@
 # Invariantes
 
+- **INV-116:** `public.affiliates` es el único maestro del padrón. Una alta Admin usa la misma tabla con `record_origin=ADMIN_AFFILIATES`, `source_row_ordinal=NULL` y `source_file_hash=NULL`; nunca inventa coordenadas históricas, una tabla paralela, un mock, `DATA` o browser storage.
+- **INV-117:** Alta, edición y cambio de estado de afiliado exigen permiso backend, motivo, validación, versión optimista y auditoría durable. No existe DELETE productivo; una baja conserva documentos, solicitudes, cuenta Auth, historial y `numero_control`.
+- **INV-118:** La cuenta Supabase Auth y el afiliado administrativo son autoridades separadas. Cambiar el padrón no crea, vincula, revoca ni elimina Auth; la asistencia conserva actor real, afiliado contexto, motivo y TTL mediante el mecanismo existente.
+- **INV-119:** La exportación de afiliados es una proyección temporal XLSX allowlisted y auditada detrás de `data_exports.read`; el archivo nunca es autoridad, fallback, backup automático ni fuente de reimportación y no se persiste en Storage.
+
 - **INV-069:** La foto de perfil runtime se resuelve exclusivamente por `affiliate.id → affiliate_files(profile_photo, Photo/DK) → private_assets/private-assets`; la URL firmada y su caché en memoria son derivados, se aíslan por principal y nunca se sustituyen con Glide, `DATA`, mock o almacenamiento del navegador.
 - **INV-070:** Al cambiar o cerrar sesión, la proyección y caché de foto se invalidan antes de mostrar otro afiliado; un usuario normal no puede consultar ni firmar la foto privada de otro, mientras Admin requiere permiso backend `assets.read`.
 

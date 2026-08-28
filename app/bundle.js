@@ -7289,6 +7289,33 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.DataExportRepository=Object.freeze({listDomains,download});
 })();
 })();
+/* @@file admin-affiliates-repository.js */
+(function(){
+/* Admin Affiliates boundary: UI -> permission-gated RPCs -> public.affiliates. */
+(function(){
+  'use strict';
+  function db(){return window.SutiSupabase.getClient();}
+  function requirePermission(permission){if(!window.AdminRepository||!window.AdminRepository.has(permission))throw new Error('ADMIN_DENIED');}
+  function clean(value){return value===undefined||value===''?null:value;}
+  async function list(filters){
+    requirePermission('affiliates.read');const f=filters||{};
+    const result=await db().rpc('list_admin_affiliates',{
+      p_query:clean(f.query),p_status:clean(f.status),p_auth_linked:f.authLinked===''||f.authLinked===undefined?null:Boolean(f.authLinked),
+      p_document_state:clean(f.documentState),p_has_pending_documents:f.pendingDocuments===''||f.pendingDocuments===undefined?null:Boolean(f.pendingDocuments),
+      p_union_code:clean(f.unionCode),p_category_code:clean(f.categoryCode),p_page:Number(f.page)||1,p_page_size:Number(f.pageSize)||25,p_sort:f.sort||'name'
+    });
+    if(result.error)throw result.error;return Object.freeze(result.data||{items:[],total:0,page:1,page_size:25,filter_options:{}});
+  }
+  async function detail(id){requirePermission('affiliates.read');const result=await db().rpc('get_admin_affiliate_workbench',{p_affiliate_id:id});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function duplicates(values,excludeId){requirePermission('affiliates.read');const result=await db().rpc('find_admin_affiliate_duplicates',{p_values:values||{},p_exclude_id:excludeId||null});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function create(values,reason){requirePermission('affiliates.write');const result=await db().rpc('create_admin_affiliate',{p_values:values||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function update(id,expectedUpdatedAt,patch,reason){requirePermission('affiliates.write');const result=await db().rpc('update_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_patch:patch||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function changeStatus(id,expectedUpdatedAt,status,reason){requirePermission('affiliates.write');const result=await db().rpc('change_admin_affiliate_status',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_new_status:status,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
+  async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,profilePhoto,exportXlsx});
+})();
+})();
 /* @@file program-request-repository.js */
 (function(){
 /* Unified initial-request boundary. Supabase program_requests is authoritative after cutover. */
@@ -32316,7 +32343,8 @@ Object.assign(window, {
   }
   function DesktopFinancialWorkbench({
     app,
-    onCount
+    onCount,
+    initialAffiliateId
   }) {
     const [rows, setRows] = useState([]),
       [phase, setPhase] = useState('loading'),
@@ -32343,11 +32371,12 @@ Object.assign(window, {
       try {
         if (!quiet) setPhase('loading');
         const source = await window.ProgramRequestRepository.listFinancialQueue();
-        setRows(source.slice());
+        const scoped = initialAffiliateId ? source.filter(row => row.affiliate_id === initialAffiliateId) : source;
+        setRows(scoped.slice());
         setError('');
         setPhase('loaded');
-        onCount(source.length);
-        return source;
+        onCount(scoped.length);
+        return scoped;
       } catch (_) {
         if (!quiet) setRows([]);
         setError('No fue posible cargar las solicitudes financieras.');
@@ -32355,7 +32384,7 @@ Object.assign(window, {
         onCount(0);
         return [];
       }
-    }, [onCount]);
+    }, [onCount, initialAffiliateId]);
     useEffect(() => {
       load(false);
     }, [load]);
@@ -32871,7 +32900,8 @@ Object.assign(window, {
   function FinanzasModule({
     app,
     onBack,
-    header
+    header,
+    initialAffiliateId
   }) {
     const desktop = useDesktop();
     const store = useStore(!desktop);
@@ -32889,8 +32919,9 @@ Object.assign(window, {
         header
       });
     }
-    const all = store.all();
-    const list = store.byEstado(filter).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const belongsToAffiliate = row => !initialAffiliateId || row.affiliate_id === initialAffiliateId || row.usuario && row.usuario.id === initialAffiliateId;
+    const all = store.all().filter(belongsToAffiliate);
+    const list = store.byEstado(filter).filter(belongsToAffiliate).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     const montoTotal = all.reduce((s, r) => s + (r.simulacion.montoSolicitado || 0), 0);
     const chips = [{
       id: 'all',
@@ -32960,7 +32991,8 @@ Object.assign(window, {
       app
     }) : React.createElement(DesktopFinancialWorkbench, {
       app,
-      onCount: setDesktopCount
+      onCount: setDesktopCount,
+      initialAffiliateId
     }) : source.phase === 'error' ? React.createElement(window.EmptyState, {
       icon: 'warning',
       title: 'No fue posible cargar solicitudes',
@@ -39419,7 +39451,8 @@ Object.assign(window, {
   function DocumentsAdminModule({
     app,
     onBack,
-    header
+    header,
+    initialAffiliateId
   }) {
     const desktop = useDocumentDesktop();
     const [tab, setTab] = React.useState('review');
@@ -39452,11 +39485,14 @@ Object.assign(window, {
       [previewNonce, setPreviewNonce] = React.useState(0),
       [statusFilter, setStatusFilter] = React.useState(''),
       [typeFilter, setTypeFilter] = React.useState(''),
-      [affiliateFilter, setAffiliateFilter] = React.useState(''),
+      [affiliateFilter, setAffiliateFilter] = React.useState(initialAffiliateId || ''),
       [sort, setSort] = React.useState('oldest'),
       [decision, setDecision] = React.useState(''),
       [observation, setObservation] = React.useState(''),
       [rowFeedback, setRowFeedback] = React.useState({});
+    React.useEffect(() => {
+      if (initialAffiliateId) setAffiliateFilter(initialAffiliateId);
+    }, [initialAffiliateId]);
     const load = React.useCallback(async () => {
       setLoading(true);
       try {
@@ -44081,7 +44117,8 @@ Object.assign(window, {
   function RequestsModule({
     app,
     onBack,
-    header
+    header,
+    initialAffiliateId
   }) {
     const desktop = useRequestsDesktop(),
       [rows, setRows] = React.useState([]),
@@ -44106,11 +44143,12 @@ Object.assign(window, {
     React.useEffect(() => {
       load(false);
     }, [load]);
+    const scopedRows = initialAffiliateId ? rows.filter(row => row.affiliate_id === initialAffiliateId) : rows;
     return desktop ? h(DesktopRequests, {
       app,
       onBack,
       header,
-      rows,
+      rows: scopedRows,
       phase,
       error,
       reload: load
@@ -44118,7 +44156,7 @@ Object.assign(window, {
       app,
       onBack,
       header,
-      rows,
+      rows: scopedRows,
       phase,
       error,
       load,
@@ -44464,6 +44502,1000 @@ Object.assign(window, {
   window.DataExportsModule = DataExportsModule;
 })();
 })();
+/* @@file screens-admin-affiliates.jsx */
+(function(){
+/* H-ADMIN-AFFILIATES-MODULE-001 — productive roster + affiliate workbench. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    I = window.Icon;
+  const PAGE_SIZE = 25;
+  const EDIT_FIELDS = Object.freeze([['full_name', 'Nombre completo'], ['display_name', 'Nombre visible'], ['historical_email_raw', 'Correo de contacto'], ['phone_raw', 'Teléfono'], ['rfc_raw', 'RFC'], ['curp_raw', 'CURP'], ['birth_date_raw', 'Fecha de nacimiento'], ['gender_raw', 'Género'], ['marital_status_raw', 'Estado civil'], ['address_raw', 'Domicilio'], ['city_raw', 'Ciudad'], ['unit_raw', 'Unidad'], ['employment_position_raw', 'Puesto'], ['employment_area_raw', 'Área'], ['employment_level_raw', 'Nivel laboral'], ['occupation_raw', 'Ocupación'], ['employment_entry_date_raw', 'Ingreso laboral'], ['institute_entry_date_raw', 'Ingreso al instituto'], ['union_enrollment_date_raw', 'Ingreso al sindicato'], ['affiliation_raw', 'Afiliación'], ['union_position_raw', 'Cargo sindical'], ['termination_date_raw', 'Fecha de baja'], ['financial_employee_type', 'Tipo de empleado'], ['financial_affiliation_status', 'Estatus de afiliación'], ['financial_employment_status', 'Estatus laboral']]);
+  const inputClass = 'aff-input';
+  function text(value, fallback) {
+    const result = String(value == null ? '' : value).trim();
+    return result || fallback || '—';
+  }
+  function norm(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+  function date(value) {
+    if (!value) return 'Sin fecha';
+    try {
+      return new Intl.DateTimeFormat('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    } catch (_) {
+      return 'Sin fecha';
+    }
+  }
+  function statusTone(value) {
+    const n = norm(value);
+    if (n.includes('baja') || n.includes('inactiv') || n.includes('cancel')) return 'danger';
+    if (n.includes('activ') || n.includes('vigente')) return 'ok';
+    return 'neutral';
+  }
+  function authMeta(row) {
+    if (row.auth_linked) return {
+      label: 'Activo y vinculado',
+      tone: 'ok'
+    };
+    if (row.auth_eligibility === 'duplicate_email' || row.auth_eligibility === 'invalid_email') return {
+      label: 'Revisión requerida',
+      tone: 'warn'
+    };
+    return {
+      label: 'Sin acceso',
+      tone: 'neutral'
+    };
+  }
+  function initials(row) {
+    return text(row.display_name || row.full_name, 'A').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  }
+  function Badge({
+    tone,
+    children
+  }) {
+    return h('span', {
+      className: 'aff-badge aff-' + (tone || 'neutral')
+    }, children);
+  }
+  function Metric({
+    value,
+    label,
+    tone
+  }) {
+    return h('div', {
+      className: 'aff-metric'
+    }, h('strong', {
+      className: tone ? 'aff-' + tone : ''
+    }, value), h('span', null, label));
+  }
+  function Field({
+    label,
+    value
+  }) {
+    return h('div', {
+      className: 'aff-fact'
+    }, h('span', null, label), h('strong', null, text(value)));
+  }
+  function Avatar({
+    row,
+    photo,
+    large
+  }) {
+    return h('div', {
+      className: 'aff-avatar ' + (large ? 'is-large' : '')
+    }, photo ? h('img', {
+      src: photo,
+      alt: 'Foto de ' + text(row.display_name || row.full_name, 'afiliado')
+    }) : initials(row));
+  }
+  function Empty({
+    title,
+    sub
+  }) {
+    return h('div', {
+      className: 'aff-empty'
+    }, h(I, {
+      name: 'users',
+      size: 32
+    }), h('strong', null, title), h('span', null, sub));
+  }
+  function Overlay({
+    title,
+    description,
+    onClose,
+    children,
+    wide
+  }) {
+    React.useEffect(() => {
+      const close = event => {
+        if (event.key === 'Escape') onClose();
+      };
+      document.addEventListener('keydown', close);
+      return () => document.removeEventListener('keydown', close);
+    }, [onClose]);
+    return h('div', {
+      'data-admin-affiliate-modal': 'true',
+      className: 'aff-overlay',
+      onMouseDown: event => {
+        if (event.target === event.currentTarget) onClose();
+      }
+    }, h('section', {
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title,
+      className: 'aff-modal ' + (wide ? 'is-wide' : '')
+    }, h('header', null, h('div', null, h('h2', null, title), description && h('p', null, description)), h('button', {
+      type: 'button',
+      'aria-label': 'Cerrar',
+      onClick: onClose
+    }, h(I, {
+      name: 'close',
+      size: 19
+    }))), children));
+  }
+  function NewAffiliateModal({
+    options,
+    onClose,
+    onCreated
+  }) {
+    const statuses = options.statuses || [],
+      unions = options.unions || [],
+      categories = options.categories || [];
+    const [form, setForm] = React.useState({
+      numero_control: '',
+      full_name: '',
+      affiliate_status_raw: statuses[0] || '',
+      historical_email_raw: '',
+      phone_raw: '',
+      rfc_raw: '',
+      curp_raw: '',
+      financial_union_code: '',
+      financial_employee_category_code: ''
+    });
+    const [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [duplicates, setDuplicates] = React.useState([]),
+      [emailReviewed, setEmailReviewed] = React.useState(false);
+    const set = (key, value) => {
+      setForm(Object.assign({}, form, {
+        [key]: value
+      }));
+      setDuplicates([]);
+      setEmailReviewed(false);
+    };
+    const submit = async () => {
+      if (busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        const found = await window.AdminAffiliatesRepository.duplicates(form);
+        const hard = found.some(row => (row.matches || []).some(match => match !== 'email'));
+        if (found.length && (!emailReviewed || hard)) {
+          setDuplicates(found.slice());
+          setEmailReviewed(!hard);
+          setError(hard ? 'Hay una coincidencia de identidad. El alta se detuvo para revisión.' : 'El correo ya existe. Revisa la coincidencia y confirma nuevamente si corresponde a otra persona.');
+          return;
+        }
+        if (!window.confirm('¿Crear este afiliado en el padrón autoritativo?')) return;
+        const result = await window.AdminAffiliatesRepository.create(form, reason);
+        onCreated(result);
+      } catch (errorValue) {
+        const code = String(errorValue && errorValue.message || '');
+        setError(code.includes('DUPLICATE') ? 'El alta fue detenida por una coincidencia de identidad.' : 'No fue posible crear el afiliado. Verifica campos y permisos.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const control = (key, label, type, items) => h('label', null, h('span', null, label), type === 'select' ? h('select', {
+      className: inputClass,
+      value: form[key] || '',
+      onChange: event => set(key, event.target.value)
+    }, items) : h('input', {
+      className: inputClass,
+      value: form[key] || '',
+      maxLength: key === 'full_name' ? 240 : 160,
+      onChange: event => set(key, event.target.value)
+    }));
+    const formBody = h('div', {
+      className: 'aff-modal-body'
+    }, h('div', {
+      className: 'aff-form-grid'
+    }, control('numero_control', 'Número de control'), control('full_name', 'Nombre completo'), control('affiliate_status_raw', 'Estado', 'select', statuses.map(value => h('option', {
+      key: value,
+      value
+    }, value))), control('historical_email_raw', 'Correo de contacto'), control('phone_raw', 'Teléfono'), control('rfc_raw', 'RFC'), control('curp_raw', 'CURP'), control('financial_union_code', 'Sindicato', 'select', [h('option', {
+      key: '',
+      value: ''
+    }, 'Sin dato')].concat(unions.map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label)))), control('financial_employee_category_code', 'Categoría', 'select', [h('option', {
+      key: '',
+      value: ''
+    }, 'Sin dato')].concat(categories.map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label)))), h('label', {
+      className: 'aff-span-2'
+    }, h('span', null, 'Motivo del alta'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      maxLength: 500,
+      rows: 3,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Motivo operativo obligatorio (mínimo 8 caracteres)'
+    })), duplicates.length > 0 && h('div', {
+      className: 'aff-duplicate aff-span-2'
+    }, h('strong', null, 'Coincidencias encontradas'), duplicates.map(row => h('div', {
+      key: row.id
+    }, text(row.name), ' · Control ', text(row.numero_control), ' · ', (row.matches || []).join(', ')))), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert aff-span-2'
+    }, error)));
+    const actions = h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      onClick: onClose
+    }, 'Cancelar'), h('button', {
+      type: 'button',
+      className: 'aff-primary',
+      disabled: busy || form.numero_control.trim() === '' || form.full_name.trim().length < 3 || !form.affiliate_status_raw || reason.trim().length < 8,
+      onClick: submit
+    }, busy ? 'Creando…' : emailReviewed && duplicates.length ? 'Confirmar alta' : 'Crear afiliado'));
+    return h(Overlay, {
+      title: 'Nuevo afiliado',
+      description: 'Alta administrativa en public.affiliates · no crea una cuenta Auth',
+      onClose,
+      wide: true
+    }, formBody, actions);
+  }
+  function StatusModal({
+    profile,
+    statuses,
+    onClose,
+    onSaved
+  }) {
+    const [target, setTarget] = React.useState(''),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState('');
+    const save = async () => {
+      if (!target || reason.trim().length < 8) return;
+      const lowering = norm(target).includes('baja') || norm(target).includes('inactiv');
+      if (!window.confirm(lowering ? '¿Confirmas la baja administrativa? No se borrarán documentos, solicitudes, Auth ni historial.' : '¿Confirmas este cambio de estado administrativo?')) return;
+      setBusy(true);
+      setError('');
+      try {
+        onSaved(await window.AdminAffiliatesRepository.changeStatus(profile.id, profile.updated_at, target, reason));
+      } catch (errorValue) {
+        setError(String(errorValue && errorValue.message).includes('VERSION') ? 'El perfil cambió en otra sesión. Recárgalo.' : 'No fue posible cambiar el estado.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h(Overlay, {
+      title: 'Cambiar estado',
+      description: 'Cambio administrativo auditado · nunca elimina al afiliado',
+      onClose
+    }, h('div', {
+      className: 'aff-modal-body'
+    }, h('label', null, h('span', null, 'Nuevo estado'), h('select', {
+      className: inputClass,
+      value: target,
+      onChange: event => setTarget(event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Selecciona un estado real'), statuses.filter(value => value !== profile.affiliate_status_raw).map(value => h('option', {
+      key: value,
+      value
+    }, value)))), h('label', null, h('span', null, 'Motivo obligatorio'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      maxLength: 500,
+      rows: 4,
+      onChange: event => setReason(event.target.value)
+    })), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error)), h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      className: 'aff-secondary',
+      onClick: onClose
+    }, 'Cancelar'), h('button', {
+      className: 'aff-primary',
+      disabled: busy || !target || reason.trim().length < 8,
+      onClick: save
+    }, busy ? 'Guardando…' : 'Confirmar cambio')));
+  }
+  function EditProfile({
+    profile,
+    options,
+    onSaved,
+    onCancel
+  }) {
+    const [form, setForm] = React.useState(profile),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState('');
+    const unions = options.union || [],
+      categories = options.employment_category || [];
+    const set = (key, value) => setForm(Object.assign({}, form, {
+      [key]: value
+    }));
+    const save = async () => {
+      const patch = {};
+      EDIT_FIELDS.forEach(([key]) => {
+        if (String(form[key] || '') !== String(profile[key] || '')) patch[key] = form[key] || null;
+      });
+      ['financial_union_code', 'financial_employee_category_code'].forEach(key => {
+        if (String(form[key] || '') !== String(profile[key] || '')) patch[key] = form[key] || null;
+      });
+      if (!Object.keys(patch).length) {
+        setError('No hay cambios por guardar.');
+        return;
+      }
+      if (!window.confirm('¿Guardar estos cambios en el expediente autoritativo?')) return;
+      setBusy(true);
+      setError('');
+      try {
+        onSaved(await window.AdminAffiliatesRepository.update(profile.id, profile.updated_at, patch, reason));
+      } catch (value) {
+        setError(String(value && value.message).includes('VERSION') ? 'El perfil cambió en otra sesión. Recarga antes de editar.' : 'No fue posible guardar. Revisa duplicados, valores y permisos.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h('div', {
+      'data-affiliate-edit-form': 'true',
+      className: 'aff-edit'
+    }, h('div', {
+      className: 'aff-edit-grid'
+    }, EDIT_FIELDS.map(([key, label]) => h('label', {
+      key
+    }, h('span', null, label), h('input', {
+      className: inputClass,
+      value: form[key] || '',
+      maxLength: 240,
+      onChange: event => set(key, event.target.value)
+    }))), h('label', null, h('span', null, 'Sindicato'), h('select', {
+      className: inputClass,
+      value: form.financial_union_code || '',
+      onChange: event => set('financial_union_code', event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Sin dato'), unions.map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label)))), h('label', null, h('span', null, 'Categoría laboral'), h('select', {
+      className: inputClass,
+      value: form.financial_employee_category_code || '',
+      onChange: event => set('financial_employee_category_code', event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Sin dato'), categories.map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label)))), h('label', {
+      className: 'aff-span-2'
+    }, h('span', null, 'Motivo del cambio'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      rows: 3,
+      maxLength: 500,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Mínimo 8 caracteres'
+    }))), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error), h('div', {
+      className: 'aff-edit-actions'
+    }, h('button', {
+      className: 'aff-secondary',
+      onClick: onCancel
+    }, 'Cancelar'), h('button', {
+      className: 'aff-primary',
+      disabled: busy || reason.trim().length < 8,
+      onClick: save
+    }, busy ? 'Guardando…' : 'Guardar cambios auditados')));
+  }
+  function DetailContent({
+    data,
+    tab,
+    setTab,
+    photo,
+    app,
+    onEdit,
+    onStatus,
+    onReload,
+    onOpenModule
+  }) {
+    const p = data.profile || {},
+      documents = data.documents || [],
+      requests = data.requests || [],
+      audit = data.audit || [],
+      cap = data.capabilities || {};
+    const required = documents.filter(row => row.required),
+      verified = required.filter(row => row.status === 'VERIFIED').length,
+      pending = documents.filter(row => ['PENDING_REVIEW', 'UNDER_REVIEW', 'REUPLOAD_REQUIRED'].includes(row.status)).length;
+    const tabs = [['general', 'Datos generales'], ['affiliation', 'Afiliación'], ['documents', 'Expediente'], ['requests', 'Solicitudes'], ['access', 'Acceso'], ['audit', 'Auditoría']];
+    let content;
+    if (tab === 'general') content = h('div', {
+      className: 'aff-facts'
+    }, h(Field, {
+      label: 'Nombre completo',
+      value: p.full_name
+    }), h(Field, {
+      label: 'Nombre visible',
+      value: p.display_name
+    }), h(Field, {
+      label: 'Correo',
+      value: p.historical_email_raw
+    }), h(Field, {
+      label: 'Teléfono',
+      value: p.phone_raw
+    }), h(Field, {
+      label: 'RFC',
+      value: p.rfc_raw
+    }), h(Field, {
+      label: 'CURP',
+      value: p.curp_raw
+    }), h(Field, {
+      label: 'Fecha de nacimiento',
+      value: p.birth_date_raw
+    }), h(Field, {
+      label: 'Género',
+      value: p.gender_raw
+    }), h(Field, {
+      label: 'Estado civil',
+      value: p.marital_status_raw
+    }), h(Field, {
+      label: 'Domicilio',
+      value: p.address_raw
+    }), h(Field, {
+      label: 'Ciudad',
+      value: p.city_raw
+    }));else if (tab === 'affiliation') content = h('div', {
+      className: 'aff-facts'
+    }, h(Field, {
+      label: 'Número de control',
+      value: p.numero_control
+    }), h(Field, {
+      label: 'Estado administrativo',
+      value: p.affiliate_status_raw
+    }), h(Field, {
+      label: 'Afiliación',
+      value: p.affiliation_raw
+    }), h(Field, {
+      label: 'Sindicato',
+      value: p.financial_union_code
+    }), h(Field, {
+      label: 'Categoría',
+      value: p.financial_employee_category_code
+    }), h(Field, {
+      label: 'Tipo de empleado',
+      value: p.financial_employee_type
+    }), h(Field, {
+      label: 'Estatus laboral',
+      value: p.financial_employment_status
+    }), h(Field, {
+      label: 'Unidad',
+      value: p.unit_raw
+    }), h(Field, {
+      label: 'Puesto',
+      value: p.employment_position_raw
+    }), h(Field, {
+      label: 'Área',
+      value: p.employment_area_raw
+    }), h(Field, {
+      label: 'Ingreso sindicato',
+      value: p.union_enrollment_date_raw
+    }), h(Field, {
+      label: 'Fecha de baja',
+      value: p.termination_date_raw
+    }));else if (tab === 'documents') content = !cap.documents ? h('div', {
+      className: 'aff-boundary'
+    }, 'Se requiere documents.read o assets.read para consultar el expediente.') : h('div', null, h('div', {
+      className: 'aff-metrics'
+    }, h(Metric, {
+      value: documents.length,
+      label: 'documentos'
+    }), h(Metric, {
+      value: required.length ? verified + '/' + required.length : '—',
+      label: 'obligatorios verificados',
+      tone: required.length && verified === required.length ? 'ok' : ''
+    }), h(Metric, {
+      value: pending,
+      label: 'pendientes',
+      tone: pending ? 'warn' : ''
+    })), h('div', {
+      className: 'aff-list'
+    }, documents.length ? documents.map(row => h('div', {
+      key: row.id
+    }, h(I, {
+      name: row.status === 'VERIFIED' ? 'checkCircle' : 'doc',
+      size: 18
+    }), h('span', null, h('strong', null, row.type_label), h('small', null, row.status + ' · ' + date(row.updated_at))))) : h(Empty, {
+      title: 'Expediente vacío',
+      sub: 'No hay documentos canónicos relacionados.'
+    })), h('button', {
+      className: 'aff-primary aff-block',
+      onClick: () => onOpenModule('documents_admin', {
+        affiliateId: p.id
+      })
+    }, 'Abrir Document Workbench'));else if (tab === 'requests') content = !cap.requests ? h('div', {
+      className: 'aff-boundary'
+    }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
+      className: 'aff-list'
+    }, requests.length ? requests.map(row => h('div', {
+      key: row.id
+    }, h(I, {
+      name: 'receipt',
+      size: 18
+    }), h('span', null, h('strong', null, row.folio + ' · ' + row.program_id), h('small', null, row.status + ' · ' + date(row.created_at))))) : h(Empty, {
+      title: 'Sin solicitudes',
+      sub: 'No hay trámites relacionados con este afiliado.'
+    })), h('div', {
+      className: 'aff-action-pair'
+    }, h('button', {
+      className: 'aff-secondary',
+      onClick: () => onOpenModule('requests', {
+        affiliateId: p.id
+      })
+    }, 'Solicitudes generales'), h('button', {
+      className: 'aff-secondary',
+      onClick: () => onOpenModule('finanzas', {
+        affiliateId: p.id
+      })
+    }, 'Solicitudes financieras')));else if (tab === 'access') {
+      const auth = authMeta(p);
+      content = h('div', null, h('div', {
+        className: 'aff-access-card'
+      }, h(I, {
+        name: p.auth_linked ? 'checkCircle' : 'lock',
+        size: 24
+      }), h('div', null, h('strong', null, 'Acceso a SutiApp'), h(Badge, {
+        tone: auth.tone
+      }, auth.label), h('p', null, 'La afiliación administrativa y la cuenta Auth son autoridades separadas. Cambiar el estado del afiliado no crea, revoca ni elimina su acceso.'))), app.admin.has('affiliates.impersonate') && h(Assistance, {
+        profile: p,
+        app
+      }));
+    } else content = h('div', {
+      className: 'aff-timeline'
+    }, audit.length ? audit.map(event => h('div', {
+      key: event.id
+    }, h('span', null), h('section', null, h('strong', null, event.action), h('small', null, date(event.at)), h('p', null, text(event.reason, 'Evento registrado')), event.changed_fields && h('em', null, event.changed_fields.join(', '))))) : h(Empty, {
+      title: 'Sin eventos administrativos',
+      sub: 'Los cambios nuevos aparecerán aquí con actor, motivo y fecha.'
+    }));
+    return h('div', {
+      'data-admin-affiliate-detail': p.id,
+      className: 'aff-detail'
+    }, h('div', {
+      className: 'aff-profile-head'
+    }, h(Avatar, {
+      row: p,
+      photo,
+      large: true
+    }), h('div', null, h('h2', null, text(p.display_name || p.full_name, 'Afiliado')), h('p', null, 'Control ', text(p.numero_control)), h(Badge, {
+      tone: statusTone(p.affiliate_status_raw)
+    }, text(p.affiliate_status_raw, 'Sin estado'))), h('button', {
+      className: 'aff-icon-button',
+      'aria-label': 'Recargar perfil',
+      onClick: onReload
+    }, h(I, {
+      name: 'refresh',
+      size: 18
+    }))), h('nav', {
+      className: 'aff-tabs',
+      'aria-label': 'Secciones del afiliado'
+    }, tabs.map(([id, label]) => h('button', {
+      key: id,
+      'aria-current': tab === id ? 'page' : undefined,
+      onClick: () => setTab(id)
+    }, label))), h('div', {
+      className: 'aff-detail-scroll'
+    }, content), h('aside', {
+      className: 'aff-actions'
+    }, app.admin.has('affiliates.write') && h('button', {
+      className: 'aff-primary',
+      onClick: onEdit
+    }, h(I, {
+      name: 'edit',
+      size: 16
+    }), ' Editar información'), app.admin.has('affiliates.write') && h('button', {
+      className: 'aff-secondary',
+      onClick: onStatus
+    }, 'Cambiar estado'), h('span', null, 'Última actualización · ' + date(p.updated_at))));
+  }
+  function Assistance({
+    profile,
+    app
+  }) {
+    const [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [message, setMessage] = React.useState('');
+    const start = async () => {
+      setBusy(true);
+      setMessage('');
+      try {
+        await window.AdminRepository.startImpersonation(profile.id, reason);
+        setMessage('Contexto asistido activo por un máximo de 30 minutos.');
+        app.toast && app.toast('Atención asistida activada');
+      } catch (_) {
+        setMessage('No fue posible activar la atención asistida.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h('section', {
+      className: 'aff-assistance'
+    }, h('strong', null, 'Atención asistida'), h('p', null, 'Usa actor real, afiliado contexto, motivo y TTL backend. No utiliza la contraseña del afiliado.'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      rows: 3,
+      maxLength: 500,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Motivo operativo (mínimo 8 caracteres)'
+    }), h('button', {
+      className: 'aff-secondary aff-block',
+      disabled: busy || reason.trim().length < 8,
+      onClick: start
+    }, busy ? 'Activando…' : 'Iniciar atención asistida'), message && h('small', null, message));
+  }
+  function AffiliatesModule({
+    app,
+    onBack,
+    header,
+    onOpenModule,
+    initialAffiliateId
+  }) {
+    const [filters, setFilters] = React.useState({
+      query: '',
+      status: '',
+      authLinked: '',
+      documentState: '',
+      pendingDocuments: '',
+      unionCode: '',
+      categoryCode: '',
+      page: 1,
+      pageSize: PAGE_SIZE,
+      sort: 'name'
+    });
+    const [data, setData] = React.useState({
+        items: [],
+        total: 0,
+        page: 1,
+        page_size: PAGE_SIZE,
+        filter_options: {
+          statuses: [],
+          unions: [],
+          categories: []
+        }
+      }),
+      [phase, setPhase] = React.useState('loading'),
+      [error, setError] = React.useState('');
+    const [selectedId, setSelectedId] = React.useState(initialAffiliateId || ''),
+      [detail, setDetail] = React.useState(null),
+      [detailPhase, setDetailPhase] = React.useState('idle'),
+      [photo, setPhoto] = React.useState(null),
+      [tab, setTab] = React.useState('general'),
+      [editing, setEditing] = React.useState(false),
+      [showNew, setShowNew] = React.useState(false),
+      [showStatus, setShowStatus] = React.useState(false),
+      [exporting, setExporting] = React.useState(false),
+      [nonce, setNonce] = React.useState(0);
+    const updateFilter = (key, value) => setFilters(current => Object.assign({}, current, {
+      [key]: value,
+      page: key === 'page' ? value : 1
+    }));
+    const load = React.useCallback(async () => {
+      setPhase('loading');
+      setError('');
+      try {
+        const result = await window.AdminAffiliatesRepository.list(filters);
+        setData(result);
+        setPhase('ready');
+        if (!selectedId && result.items && result.items.length) setSelectedId(result.items[0].id);
+      } catch (_) {
+        setPhase('error');
+        setError('No fue posible consultar el padrón autoritativo.');
+      }
+    }, [filters, nonce]);
+    React.useEffect(() => {
+      const timer = setTimeout(load, filters.query ? 260 : 0);
+      return () => clearTimeout(timer);
+    }, [load]);
+    const loadDetail = React.useCallback(() => {
+      if (!selectedId) {
+        setDetail(null);
+        setDetailPhase('idle');
+        return;
+      }
+      let active = true;
+      setDetailPhase('loading');
+      setEditing(false);
+      window.AdminAffiliatesRepository.detail(selectedId).then(async result => {
+        if (!active) return;
+        setDetail(result);
+        setDetailPhase('ready');
+        const image = await window.AdminAffiliatesRepository.profilePhoto(selectedId);
+        if (active) setPhoto(image && image.signedUrl || null);
+      }).catch(() => {
+        if (active) {
+          setDetail(null);
+          setDetailPhase('error');
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [selectedId, nonce]);
+    React.useEffect(loadDetail, [loadDetail]);
+    const options = data.filter_options || {
+        statuses: [],
+        unions: [],
+        categories: []
+      },
+      pages = Math.max(1, Math.ceil((data.total || 0) / (data.page_size || PAGE_SIZE)));
+    const runExport = async () => {
+      setExporting(true);
+      try {
+        await window.AdminAffiliatesRepository.exportXlsx(filters);
+        app.toast && app.toast('Excel de afiliados generado y auditado');
+      } catch (_) {
+        app.toast && app.toast('No fue posible exportar. Verifica data_exports.read.');
+      } finally {
+        setExporting(false);
+      }
+    };
+    const useSaved = result => {
+      setDetail(result);
+      setEditing(false);
+      setShowStatus(false);
+      setShowNew(false);
+      if (result.profile && result.profile.id) setSelectedId(result.profile.id);
+      setNonce(value => value + 1);
+      app.toast && app.toast('Padrón actualizado y auditado');
+    };
+    const row = item => {
+      const auth = authMeta(item);
+      return h('button', {
+        key: item.id,
+        type: 'button',
+        'data-affiliate-row': item.id,
+        'aria-selected': selectedId === item.id,
+        onClick: () => {
+          setSelectedId(item.id);
+          setTab('general');
+        }
+      }, h('span', {
+        className: 'aff-cell aff-person'
+      }, h(Avatar, {
+        row: item
+      }), h('span', null, h('strong', null, text(item.display_name || item.full_name, 'Sin nombre')), h('small', null, text(item.historical_email_raw, 'Sin correo')))), h('span', {
+        className: 'aff-cell aff-control'
+      }, text(item.numero_control)), h('span', {
+        className: 'aff-cell'
+      }, text(item.financial_employee_category_code || item.affiliation_raw)), h('span', {
+        className: 'aff-cell'
+      }, h(Badge, {
+        tone: statusTone(item.affiliate_status_raw)
+      }, text(item.affiliate_status_raw, 'Sin estado'))), h('span', {
+        className: 'aff-cell'
+      }, h(Badge, {
+        tone: auth.tone
+      }, auth.label)), h('span', {
+        className: 'aff-cell aff-docs'
+      }, item.verified_required_count + '/' + item.required_count, h('small', null, item.pending_document_count + ' pendiente(s)')), h('span', {
+        className: 'aff-cell aff-chevron'
+      }, h(I, {
+        name: 'chevronRight',
+        size: 17
+      })));
+    };
+    return h('div', {
+      'data-admin-affiliates': phase
+    }, header({
+      title: 'Afiliados',
+      sub: 'Padrón, expedientes y solicitudes',
+      onBack
+    }), window.ActingBanner && h(window.ActingBanner, {}), h(Styles), h('div', {
+      className: 'su-app-scroll aff-page'
+    }, h('section', {
+      className: 'aff-toolbar'
+    }, h('div', {
+      className: 'aff-toolbar-top'
+    }, h('label', {
+      className: 'aff-search'
+    }, h(I, {
+      name: 'search',
+      size: 18
+    }), h('input', {
+      value: filters.query,
+      onChange: event => updateFilter('query', event.target.value),
+      placeholder: 'Buscar nombre, control, correo, teléfono, RFC o CURP',
+      'aria-label': 'Buscar afiliados'
+    })), h('div', {
+      className: 'aff-toolbar-actions'
+    }, app.admin.has('data_exports.read') && h('button', {
+      className: 'aff-secondary',
+      disabled: exporting,
+      onClick: runExport
+    }, h(I, {
+      name: 'download',
+      size: 17
+    }), exporting ? ' Generando…' : ' Exportar Excel'), app.admin.has('affiliates.write') && h('button', {
+      className: 'aff-primary',
+      onClick: () => setShowNew(true)
+    }, h(I, {
+      name: 'plus',
+      size: 17
+    }), ' Nuevo afiliado'))), h('div', {
+      className: 'aff-filters'
+    }, h('select', {
+      value: filters.status,
+      onChange: event => updateFilter('status', event.target.value),
+      'aria-label': 'Filtrar por estado'
+    }, h('option', {
+      value: ''
+    }, 'Todos los estados'), (options.statuses || []).map(value => h('option', {
+      key: value,
+      value
+    }, value))), h('select', {
+      value: filters.authLinked,
+      onChange: event => updateFilter('authLinked', event.target.value === '' ? '' : event.target.value === 'true'),
+      'aria-label': 'Filtrar por acceso'
+    }, h('option', {
+      value: ''
+    }, 'Todo acceso'), h('option', {
+      value: 'true'
+    }, 'Con acceso'), h('option', {
+      value: 'false'
+    }, 'Sin acceso')), h('select', {
+      value: filters.documentState,
+      onChange: event => updateFilter('documentState', event.target.value),
+      'aria-label': 'Filtrar por expediente'
+    }, h('option', {
+      value: ''
+    }, 'Todo expediente'), h('option', {
+      value: 'COMPLETE'
+    }, 'Expediente completo'), h('option', {
+      value: 'INCOMPLETE'
+    }, 'Expediente incompleto'), h('option', {
+      value: 'NOT_CONFIGURED'
+    }, 'Sin requisitos configurados')), h('select', {
+      value: filters.pendingDocuments,
+      onChange: event => updateFilter('pendingDocuments', event.target.value === '' ? '' : event.target.value === 'true'),
+      'aria-label': 'Filtrar documentación pendiente'
+    }, h('option', {
+      value: ''
+    }, 'Toda documentación'), h('option', {
+      value: 'true'
+    }, 'Con pendientes'), h('option', {
+      value: 'false'
+    }, 'Sin pendientes')), h('select', {
+      value: filters.unionCode,
+      onChange: event => updateFilter('unionCode', event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Todos los sindicatos'), (options.unions || []).map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label))), h('select', {
+      value: filters.categoryCode,
+      onChange: event => updateFilter('categoryCode', event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Todas las categorías'), (options.categories || []).map(row => h('option', {
+      key: row.code,
+      value: row.code
+    }, row.label))), h('select', {
+      value: filters.sort,
+      onChange: event => updateFilter('sort', event.target.value)
+    }, h('option', {
+      value: 'name'
+    }, 'Nombre A–Z'), h('option', {
+      value: 'control'
+    }, 'Número de control'), h('option', {
+      value: 'recent'
+    }, 'Actualizados recientemente')))), h('div', {
+      className: 'aff-workbench'
+    }, h('section', {
+      className: 'aff-roster'
+    }, h('div', {
+      className: 'aff-roster-head'
+    }, h('div', null, h('h2', null, 'Padrón de afiliados'), h('p', null, (data.total || 0).toLocaleString('es-MX') + ' resultado(s) · página ' + data.page + ' de ' + pages)), h('button', {
+      className: 'aff-icon-button',
+      'aria-label': 'Recargar padrón',
+      onClick: () => setNonce(value => value + 1)
+    }, h(I, {
+      name: 'refresh',
+      size: 18
+    }))), h('div', {
+      className: 'aff-table-head'
+    }, h('span', null, 'Afiliado'), h('span', null, 'Control'), h('span', null, 'Categoría'), h('span', null, 'Estado'), h('span', null, 'Acceso'), h('span', null, 'Expediente'), h('span')), h('div', {
+      className: 'aff-table-body'
+    }, phase === 'loading' && !data.items.length ? h('div', {
+      className: 'aff-loading'
+    }, 'Cargando padrón…') : phase === 'error' ? h('div', {
+      className: 'aff-empty'
+    }, h('strong', null, error), h('button', {
+      className: 'aff-secondary',
+      onClick: load
+    }, 'Reintentar')) : (data.items || []).length ? (data.items || []).map(row) : h(Empty, {
+      title: 'Sin coincidencias',
+      sub: 'Ajusta búsqueda o filtros.'
+    })), h('footer', {
+      className: 'aff-pagination'
+    }, h('button', {
+      disabled: data.page <= 1,
+      onClick: () => updateFilter('page', data.page - 1)
+    }, 'Anterior'), h('span', null, data.page + ' / ' + pages), h('button', {
+      disabled: data.page >= pages,
+      onClick: () => updateFilter('page', data.page + 1)
+    }, 'Siguiente'))), h('section', {
+      className: 'aff-detail-host'
+    }, detailPhase === 'loading' ? h('div', {
+      className: 'aff-loading'
+    }, 'Cargando perfil…') : detailPhase === 'error' ? h('div', {
+      className: 'aff-empty'
+    }, h('strong', null, 'No fue posible abrir el perfil.'), h('button', {
+      className: 'aff-secondary',
+      onClick: () => setNonce(value => value + 1)
+    }, 'Reintentar')) : detail && editing ? h(EditProfile, {
+      profile: detail.profile,
+      options: detail.options || {},
+      onSaved: useSaved,
+      onCancel: () => setEditing(false)
+    }) : detail ? h(DetailContent, {
+      data: detail,
+      tab,
+      setTab,
+      photo,
+      app,
+      onEdit: () => setEditing(true),
+      onStatus: () => setShowStatus(true),
+      onReload: () => setNonce(value => value + 1),
+      onOpenModule: (id, context) => onOpenModule(id, Object.assign({
+        from: 'affiliates'
+      }, context))
+    }) : h(Empty, {
+      title: 'Selecciona un afiliado',
+      sub: 'Abre su perfil, expediente, solicitudes y auditoría.'
+    }))), showNew && h(NewAffiliateModal, {
+      options,
+      onClose: () => setShowNew(false),
+      onCreated: useSaved
+    }), showStatus && detail && h(StatusModal, {
+      profile: detail.profile,
+      statuses: options.statuses || [],
+      onClose: () => setShowStatus(false),
+      onSaved: useSaved
+    })));
+  }
+  function Styles() {
+    return h('style', null, `
+    .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline)}.aff-profile-head>div:nth-child(2){flex:1;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-actions{padding:10px 12px;border-top:1px solid var(--hairline);flex-wrap:wrap}.aff-actions>span{width:100%;font-size:9px;color:var(--ink-3)}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;overflow:auto;padding:14px}.aff-edit-actions{justify-content:flex-end;margin-top:12px}
+    @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
+    @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-control,.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(5),.aff-table-body .aff-docs{display:none}.aff-table-body .aff-cell:nth-child(4){display:block}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-detail-scroll{max-height:none}.aff-actions{position:sticky;bottom:0;background:#fff}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}
+  `);
+  }
+  window.AffiliatesAdminModule = AffiliatesModule;
+})();
+})();
 /* @@file screens-admin.jsx */
 (function(){
 /* screens-admin.jsx — Panel Administrativo: gate de acceso, menú de módulos
@@ -44583,10 +45615,10 @@ Object.assign(window, {
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [{
-    id: 'identity_access',
-    label: 'Identidad y expediente',
+    id: 'affiliates',
+    label: 'Afiliados',
     icon: 'users',
-    desc: 'Perfil editable e impersonación auditada',
+    desc: 'Padrón, expedientes y solicitudes',
     ready: true
   }, {
     id: 'data_exports',
@@ -44754,7 +45786,7 @@ Object.assign(window, {
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
-    identity_access: 'affiliates.read',
+    affiliates: 'affiliates.read',
     data_exports: 'data_exports.read',
     branding: 'assets.read',
     banners: 'banners.read',
@@ -44799,7 +45831,7 @@ Object.assign(window, {
     id: 'people',
     label: 'Personas y operación',
     icon: 'users',
-    modules: ['identity_access', 'requests', 'documents_admin']
+    modules: ['affiliates', 'requests', 'documents_admin']
   }, {
     id: 'finance',
     label: 'Finanzas',
@@ -44849,7 +45881,7 @@ Object.assign(window, {
       if (m.id === 'convenios' && sectionOnly) permission = 'agreements.read';
       const sectionExport = m.id === 'data_exports' && sectionActions.some(x => x.action === 'export');
       const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
-      const canView = m.id === 'identity_access' || sectionExport || (permission ? app.admin.has(permission) : productive);
+      const canView = sectionExport || (permission ? app.admin.has(permission) : productive);
       const usable = productive && canView;
       const desktopCanView = sectionExport || (permission ? app.admin.has(permission) : productive);
       const desktopUsable = productive && desktopCanView;
@@ -46718,12 +47750,21 @@ Object.assign(window, {
       setViewContext(null);
       setView(id);
     };
+    const affiliateContext = viewContext && viewContext.from === 'affiliates' ? viewContext : null;
+    const backFromAffiliateLink = () => {
+      if (affiliateContext) setView('affiliates');else openView('menu');
+    };
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
-    if (view === 'identity_access') body = React.createElement(window.IdentityAccessModule, {
+    if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, {
       app,
-      onBack: () => setView('menu'),
-      header: headerFn
+      initialAffiliateId: affiliateContext && affiliateContext.affiliateId,
+      onBack: () => openView('menu'),
+      header: headerFn,
+      onOpenModule: (id, context) => {
+        setViewContext(context || null);
+        setView(id);
+      }
     });else if (view === 'data_exports') body = React.createElement(window.DataExportsModule, {
       app,
       onBack: () => setView('menu'),
@@ -46748,20 +47789,23 @@ Object.assign(window, {
       header: headerFn
     });else if (view === 'documents_admin') body = React.createElement(window.DocumentsAdminModule, {
       app,
-      onBack: () => setView('menu'),
-      header: headerFn
+      onBack: backFromAffiliateLink,
+      header: headerFn,
+      initialAffiliateId: affiliateContext && affiliateContext.affiliateId
     });else if (view === 'planes') body = React.createElement(window.PlanesModule, {
       app,
       onBack: () => setView('menu'),
       header: headerFn
     });else if (view === 'requests') body = React.createElement(window.RequestsModule, {
       app,
-      onBack: () => setView('menu'),
-      header: headerFn
+      onBack: backFromAffiliateLink,
+      header: headerFn,
+      initialAffiliateId: affiliateContext && affiliateContext.affiliateId
     });else if (view === 'finanzas') body = React.createElement(window.FinanzasModule, {
       app,
-      onBack: () => setView('menu'),
-      header: headerFn
+      onBack: backFromAffiliateLink,
+      header: headerFn,
+      initialAffiliateId: affiliateContext && affiliateContext.affiliateId
     });else if (view === 'fondos') body = React.createElement(window.FondosModule, {
       app,
       onBack: () => setView('menu'),

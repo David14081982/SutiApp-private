@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Admin Afiliados — ADR-071
+
+Leer padrón/perfil exige `affiliates.read`; crear, editar o cambiar estado exige `affiliates.write`; atención asistida exige `affiliates.impersonate`; exportar XLSX exige `data_exports.read`. Los controles de UI sólo reflejan capacidades: cada RPC vuelve a autorizar con `has_admin_permission()`, `SECURITY DEFINER` y `search_path=''`. Anónimo y usuario normal fueron denegados en la matriz live.
+
+Los writers aceptan campos allowlisted, motivo de 8–500 caracteres y `updated_at` esperado para evitar pérdida de cambios. RFC, CURP y número de control pasan por revisión de duplicados; el correo duplicado se marca para revisión y no crea identidad Auth. `affiliate_admin_events` tiene RLS forzada, lectura restringida y cero grants directos de INSERT/UPDATE/DELETE. La baja es administrativa y preserva documentos, solicitudes, Auth e histórico. La exportación permanece detrás del Edge allowlisted y `no-store`; el navegador no puede enviar SQL, tabla o columnas arbitrarias.
+
 ## Estado PROFILE PHOTO CUTOVER
 
 Las 487 fotos `Photo/DK` se leen exclusivamente desde `affiliate_files` y el bucket privado `private-assets`. `AffiliateRepository` solicita una URL firmada de una hora después de que RLS autoriza la relación; el caché de 50 minutos se indexa por principal Auth + `affiliate.id`, vive solo en memoria y se vacía en login/logout. H005_TEST2 y H005_TEST3 no pueden leer metadata ni firmar el objeto del otro; anónimo es denegado. H005_TEST puede hacerlo solo por su permiso Admin `assets.read`. La matriz real no detectó fuga cruzada y no expone `source_url`, Secret Key ni `service_role` al frontend.

@@ -234,18 +234,18 @@ Open questions: ninguna dentro del cutover de criterios; el append final y proce
 
 ```text
 DOMAIN: Afiliados
-Frontend: Login/Auth por `AffiliateAuth` y `AffiliateRepository`; TopBar, Inicio, Perfil y Credencial por `AffiliateAuth.affiliateView`; consumidores financieros/marketplace pendientes
-Current prototype source: `public.affiliates` en las cuatro áreas H-006; DATA.user/viewer/localStorage siguen NO AUTORITATIVOS y fuera de esas áreas
+Frontend: Login/Auth por `AffiliateAuth` y `AffiliateRepository`; TopBar, Inicio, Perfil y Credencial por `AffiliateAuth.affiliateView`; Admin por `AdminAffiliatesRepository` → RPC permission-gated; consumidores financieros/marketplace usan sus fronteras separadas
+Current prototype source: `public.affiliates` en las cuatro áreas H-006 y Admin Afiliados ADR-071; DATA.user/viewer/localStorage siguen NO AUTORITATIVOS
 Historical source: Usuarios SUTIAPP.xlsx / Usuarios — fuera de SutiApp Final
 Historical sheets: ninguna hoja de SutiApp Final es autoridad del padrón
 Historical columns: referencias de solicitudes usan Número de control/Numero de control
-Reads: identidad propia autorizada por RLS y asociación futura de solicitudes
-Writes: ninguno desde UI; importador administrativo H-004 es el único escritor registrado
+Reads: identidad propia autorizada por RLS; Admin `affiliates.read` mediante RPC de padrón/perfil; solicitudes/documentos permanecen en sus autoridades
+Writes: importador administrativo H-004 para seed histórico; Admin `affiliates.write` exclusivamente mediante RPC ADR-071 con motivo, versión y auditoría
 Transforms: proyección de presentación en memoria; ninguno sobre numero_control, preservar TEXT raw
 Legacy dependency: puente de negocio con Google
 Current authority: Supabase public.affiliates; Excel maestro como procedencia histórica
 Future proposed authority: Supabase public.affiliates
-Migration recommendation: SUPABASE_ACTIVE; cuatro áreas prioritarias migradas, lectores restantes `PENDING H-LATER`
+Migration recommendation: SUPABASE_ACTIVE; cuatro áreas del afiliado y módulo Admin productivo, sin segunda tabla maestra
 Confidence: HIGH
 Open questions: dominios sensibles distintos de la foto y activación Auth masiva no autorizada; foto autoritativa resuelta por PROFILE PHOTO CUTOVER
 ```
@@ -294,7 +294,7 @@ Fuera de los repositorios ya implementados hasta H-007.3, permanecen pendientes:
 - `ToursRepository`, `VehiclesRepository`, `RentalsRepository`, `PropertiesRepository`, `SolarRepository`, `RafflesRepository`.
 - `NotificationsRepository` permanece conceptual. Solicitudes iniciales ya usan `ProgramRequestRepository`; documentos del afiliado usan `AffiliateRepository`/`DocumentWorkflowRepository`. Repositories adicionales sólo proceden para dominios históricos distintos con autoridad demostrada.
 - `SavingsRepository` permanece orientado al adaptador Google legacy. Préstamos usa `FinancialLegacyRepository` + Edge y el snapshot temporal ADR-043; no existe reimplementación ni calculadora frontend.
-- `AffiliateRepository` fue implementado en H-004 y es la única frontera permitida para nuevos consumidores del dominio Afiliados.
+- `AffiliateRepository` es la frontera del afiliado autenticado. Desde ADR-071, `AdminAffiliatesRepository` es la única frontera frontend administrativa y sólo delega en RPC permission-gated sobre el mismo `public.affiliates`; no es otra autoridad ni habilita lecturas/escrituras directas.
 
 ### H-LOAN-PAYROLL-IMPACT-003 — Nómina quincenal declarada
 

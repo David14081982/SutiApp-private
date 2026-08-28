@@ -49,7 +49,6 @@ assert.strictEqual(current,'****','bold action invented placeholder text');
 assert(!/texto destacado|Título de sección|Elemento|texto del enlace/.test(current),'template copy leaked into article');
 
 const rich=read('app/rich-text.jsx');
-const live=read('app/live-text.jsx');
 const news=read('app/screens-admin-news.jsx');
 const adminRepo=read('app/admin-repository.js');
 const publicRepo=read('app/content-repositories.js');
@@ -61,7 +60,6 @@ const flows=read('app/screens-admin-flujos.jsx');
 const unionAdmin=read('app/screens-admin-sindicato.jsx');
 const catalogAdmin=read('app/screens-admin-catalogo.jsx');
 const membershipsAdmin=read('app/screens-admin-membresias.jsx');
-assert(live.includes("[data-notext],[data-lt-ui],[data-structured-content]"),'LiveText structured-data exclusion missing');
 assert(news.includes("value: d.body||''")&&news.includes("value:d.body")&&news.includes("body:d.body||''"),'News canonical body chain diverged');
 assert(adminRepo.includes("table:'news_articles'")&&adminRepo.includes("'body'"),'News writer mapping missing');
 assert(publicRepo.includes('id,title,tag,body')&&publicScreen.includes("value:n.body||''"),'News public body chain missing');
@@ -69,6 +67,9 @@ assert(publicScreen.includes("n.tag && React.createElement('div'")&&publicScreen
 assert(!rich.includes('dangerouslySetInnerHTML'),'unsafe rich-text HTML injection introduced');
 
 const appSources=fs.readdirSync('app').filter((name)=>/\.(?:js|jsx)$/.test(name)&&name!=='bundle.js').map((name)=>read('app/'+name)).join('\n');
+assert(!fs.existsSync('app/live-text.jsx')&&!fs.existsSync('app/copy-store.jsx'),'retired live-copy sources remain');
+assert(!/window\.(?:TextEditBar|LiveText|copyStore|ManagedCopyRepository)/.test(appSources),'retired live-copy global remains');
+assert(!/managed_copy_overrides/.test(appSources),'retired live-copy reader or writer remains');
 assert.strictEqual((appSources.match(/React\.createElement\(window\.RichTextEditor/g)||[]).length,1,'unclassified RichTextEditor consumer');
 assert.strictEqual((appSources.match(/React\.createElement\(window\.RichText,/g)||[]).length,2,'preview/public renderer consumers diverged');
 for(const kind of ['banners','popups','companies','documents','education','minutes','programs'])assert(visualCrud.includes(kind+':{'),kind+' Admin pipeline missing');

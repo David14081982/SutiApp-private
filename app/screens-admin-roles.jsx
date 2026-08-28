@@ -28,11 +28,8 @@
   function RolesModule({ app, onBack, header }) {
     const store = useStore();
     const [editing, setEditing] = useState(null);
-    const [textos, setTextos] = useState(false);
     const roles = store.roles();
     const canCrear = store.can('crear', 'roles');
-
-    if (textos) return React.createElement(TextosPanel, { store, onBack: () => setTextos(false), header });
 
     return React.createElement('div', null,
       header({ title: 'Roles y permisos', sub: roles.length + ' roles definidos', onBack }),
@@ -46,14 +43,6 @@
 
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11 } },
           roles.map((r) => React.createElement(RoleCard, { key: r.id, role: r, store, onEdit: () => setEditing(r) }))),
-
-        React.createElement('div', { style: { fontSize: 13, fontWeight: 900, color: 'var(--ink-3)', letterSpacing: '.06em', margin: '24px 0 12px' } }, 'EDICIÓN DE TEXTOS'),
-        React.createElement('button', { onClick: () => setTextos(true), style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--neo-sm)', padding: 14, border: 'none', fontFamily: 'inherit', cursor: 'pointer' } },
-          React.createElement('div', { style: { width: 44, height: 44, borderRadius: 13, background: 'var(--grad-guinda-soft)', color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: 'var(--glow-guinda)' } }, React.createElement(I, { name: 'pencil', size: 22, stroke: 2 })),
-          React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-            React.createElement('div', { style: { fontSize: 15.5, fontWeight: 800, color: 'var(--ink)' } }, 'Quién puede editar textos'),
-            React.createElement('div', { style: { fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', marginTop: 3, lineHeight: 1.35 } }, (window.copyStore ? window.copyStore.editors().filter((e) => e.enabled).length : 0) + ' personas autorizadas · ' + (window.copyStore ? window.copyStore.count() : 0) + ' textos editados')),
-          React.createElement(I, { name: 'chevR', size: 19, stroke: 2.2, style: { color: 'var(--ink-3)' } })),
 
         React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textAlign: 'center', marginTop: 22, lineHeight: 1.5, padding: '0 8px' } }, 'Cada permiso define si el rol puede Ver, Crear, Editar, Eliminar o Reordenar cada módulo y pantalla.')),
 
@@ -190,70 +179,6 @@
             style: { width: 30, height: 30, borderRadius: 8, border: 'none', cursor: locked ? 'default' : 'pointer', display: 'grid', placeItems: 'center', background: on ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: on ? '#fff' : 'var(--ink-3)', boxShadow: on ? 'var(--glow-guinda)' : 'var(--neo-inset)', opacity: locked ? .8 : 1 },
           }, React.createElement(I, { name: a.icon, size: 15, stroke: 2 }));
         })));
-  }
-
-  // ── Edición de textos del frontend: quién puede editar + qué se editó ──
-  function TextosPanel({ store, onBack, header }) {
-    const cs = window.copyStore;
-    const [, force] = useState(0);
-    useEffect(() => cs.subscribe(() => force((n) => n + 1)), []);
-    const [nombre, setNombre] = useState('');
-    const [cargo, setCargo] = useState('');
-    const canManage = store.can('editar', 'textos');
-    const editors = cs.editors();
-    const overrides = cs.all();
-    const me = cs.me();
-    const label = { fontSize: 13, fontWeight: 900, color: 'var(--ink-3)', letterSpacing: '.06em', margin: '22px 0 11px' };
-    const inputSt = { flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 12, padding: '11px 13px', fontSize: 14, fontFamily: 'inherit', color: 'var(--ink)' };
-    const scopeLabel = (s) => (window.ADMIN ? window.ADMIN.SCREEN(s).label : s);
-
-    return React.createElement('div', null,
-      header({ title: 'Edición de textos', sub: 'Permisos y cambios de copy', onBack }),
-      React.createElement('div', { className: 'su-app-scroll', style: { padding: '16px 16px 26px' } },
-        React.createElement('div', { style: { display: 'flex', gap: 10, background: 'var(--guinda-50)', borderRadius: 16, padding: '13px 15px' } },
-          React.createElement(I, { name: 'info', size: 20, stroke: 2, style: { color: 'var(--guinda)', flexShrink: 0 } }),
-          React.createElement('div', { style: { fontSize: 12.5, fontWeight: 700, color: 'var(--guinda)', lineHeight: 1.45 } }, 'Los roles con permiso “Editar” sobre “Edición de textos del frontend” pueden tocar cualquier título, subtítulo o descripción de la app y cambiarlo al instante. Aquí autorizas a personas concretas, aunque no administren el panel.')),
-
-        React.createElement('div', { style: label }, 'PERSONAS AUTORIZADAS'),
-        React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--neo-sm)', overflow: 'hidden' } },
-          editors.length === 0 && React.createElement('div', { style: { padding: '18px 15px', fontSize: 13, fontWeight: 600, color: 'var(--ink-3)', textAlign: 'center' } }, 'Nadie más autorizado todavía.'),
-          editors.map((e, i) => React.createElement('div', { key: e.id, style: { display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderTop: i ? '1px solid var(--hairline)' : 'none' } },
-            React.createElement('div', { style: { width: 38, height: 38, borderRadius: 12, background: e.enabled ? 'var(--guinda-50)' : 'var(--surface-2)', color: e.enabled ? 'var(--guinda)' : 'var(--ink-3)', display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 900, flexShrink: 0 } }, e.name.trim().charAt(0).toUpperCase()),
-            React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-              React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, e.name),
-              React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1 } }, (e.cargo || 'Sin cargo') + ' · ' + (e.enabled ? 'puede editar textos' : 'sin permiso'))),
-            React.createElement(window.Toggle, { on: e.enabled, size: 'md', disabled: !canManage, onClick: () => cs.toggleEditor(e.id), 'aria-label': 'Permitir edición de textos a ' + e.name }),
-            canManage && React.createElement('button', { onClick: () => cs.removeEditor(e.id), 'aria-label': 'Quitar', style: { width: 34, height: 34, borderRadius: 10, border: 'none', background: 'var(--surface-2)', color: '#C0341D', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 } }, React.createElement(I, { name: 'trash', size: 17, stroke: 2 }))))),
-
-        canManage && React.createElement('div', { style: { display: 'flex', gap: 8, marginTop: 11 } },
-          React.createElement('input', { value: nombre, placeholder: 'Nombre', onChange: (ev) => setNombre(ev.target.value), style: inputSt }),
-          React.createElement('input', { value: cargo, placeholder: 'Cargo', onChange: (ev) => setCargo(ev.target.value), style: Object.assign({}, inputSt, { maxWidth: 120 }) }),
-          React.createElement('button', { onClick: () => { cs.addEditor(nombre, cargo); setNombre(''); setCargo(''); }, disabled: !nombre.trim(), style: { width: 46, height: 44, borderRadius: 12, border: 'none', background: nombre.trim() ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: nombre.trim() ? '#fff' : 'var(--ink-3)', display: 'grid', placeItems: 'center', cursor: nombre.trim() ? 'pointer' : 'default', flexShrink: 0 } }, React.createElement(I, { name: 'plus', size: 20, stroke: 2.6 }))),
-
-        React.createElement('div', { style: label }, 'PROBAR EL PERMISO COMO'),
-        React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
-          [{ id: null, name: 'Mi rol (' + store.actingRole().name + ')' }].concat(editors).map((p) => {
-            const on = (me || null) === (p.id || null);
-            return React.createElement('button', {
-              key: p.id || 'self', onClick: () => cs.setMe(p.id),
-              style: { height: 36, padding: '0 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, background: on ? 'var(--guinda)' : 'var(--surface-2)', color: on ? '#fff' : 'var(--ink-2)', boxShadow: on ? 'none' : 'var(--neo-inset)' },
-            }, p.name);
-          })),
-        React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 9, lineHeight: 1.5 } }, 'Al salir del panel verás la app como esa persona: si tiene permiso aparece el botón “Editar textos”; si no, no aparece.'),
-
-        React.createElement('div', { style: label }, 'TEXTOS EDITADOS (' + overrides.length + ')'),
-        overrides.length === 0
-          ? React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--neo-sm)', padding: '20px 16px', fontSize: 13, fontWeight: 600, color: 'var(--ink-3)', textAlign: 'center', lineHeight: 1.5 } }, 'Ningún texto se ha cambiado. Sal del panel, activa “Editar textos” y toca cualquier título.')
-          : React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-            overrides.map((o) => React.createElement('div', { key: o.key, style: { background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--neo-sm)', padding: 13, display: 'flex', gap: 11, alignItems: 'flex-start' } },
-              React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-                React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 800, letterSpacing: '.05em', color: 'var(--guinda)', background: 'var(--guinda-50)', padding: '3px 9px', borderRadius: 999 } }, scopeLabel(o.scope)),
-                React.createElement('div', { style: { fontSize: 14, fontWeight: 800, color: 'var(--ink)', marginTop: 7, lineHeight: 1.35 } }, o.to),
-                React.createElement('div', { style: { fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', marginTop: 3, lineHeight: 1.35, textDecoration: 'line-through' } }, o.from),
-                React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', marginTop: 5 } }, o.by)),
-              canManage && React.createElement('button', { onClick: () => cs.clear(o.key), 'aria-label': 'Restablecer texto', style: { width: 36, height: 36, borderRadius: 11, border: 'none', background: 'var(--surface-2)', color: 'var(--ink-2)', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 } }, React.createElement(I, { name: 'refresh', size: 17, stroke: 2 }))))),
-        canManage && overrides.length > 0 && React.createElement(window.Btn, { variant: 'outline', icon: 'refresh', full: true, style: { marginTop: 14 }, onClick: () => cs.resetAll() }, 'Restablecer todos los textos'),
-        React.createElement('div', { style: { height: 10 } })));
   }
 
   window.RolesModule = RolesModule;

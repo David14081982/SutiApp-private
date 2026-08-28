@@ -49,6 +49,7 @@
 | ADR-057 | Fase 2 queda `PASS / CLOSED`; el expediente runtime consume exclusivamente Supabase/RLS/Storage y Fase 3 se certifica end-to-end en Chrome real sin writes documentales. | Aceptada |
 | ADR-064 | La cotización interactiva usa una RPC autenticada sobre snapshot personalizado y el mismo resolver certificado que Edge; su autoridad Google original fue supersedida por ADR-065. | Aceptada / autoridad supersedida |
 | ADR-065 | Supabase es la autoridad única de programas, fondos y reglas financieras; Google `Criterios de fondos` queda sólo como histórico/procedencia sin dual-read ni fallback. | Aceptada / ACTIVE |
+| ADR-072 | Se retira del runtime la edición global de textos; `managed_copy_overrides` y sus filas se conservan como histórico inactivo, sin lectores ni writers frontend. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -546,3 +547,11 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Excel:** “Exportar Excel” reutiliza `data-exports`, exige `data_exports.read`, genera XLSX temporal `no-store` desde columnas allowlisted y audita metadatos. No persiste la base ni crea una fuente de verdad adicional.
 - **Migración y recovery:** `20260827001200_admin_affiliates_workbench.sql` conservó 947/947 históricos y 3 Auth. El recovery falla cerrado si ya hay altas Admin o auditoría, para impedir pérdida de operación real.
 - **Aprobación:** `H-ADMIN-AFFILIATES-MODULE-001` y solicitud explícita “dales funcionalidad, además agrega que puedan exportar en excel la base de datos”, propietario, 2026-08-27.
+
+## ADR-072 — Retiro de la edición global de textos
+
+- **Decisión visual:** retirar el botón flotante `Editar textos`, el modo que convertía nodos del frontend en editables, su acceso en Roles y el control pendiente homónimo de Convenios. Los editores administrativos específicos de cada dominio permanecen intactos.
+- **Autoridad e histórico:** `public.managed_copy_overrides` deja de tener lectores y writers frontend. La tabla y sus filas se conservan sin borrado como histórico recuperable; no se activa `DATA`, mock, `localStorage` ni otra fuente alternativa.
+- **Runtime:** `ManagedCopyRepository`, `copyStore`, `LiveText`, `TextEditBar`, `saveCopy` y `removeCopy` quedan fuera del bundle. El copy estructural vuelve a ser exclusivamente código versionado.
+- **Recuperación:** revertir el cambio de código puede volver a conectar la tabla existente; ninguna recuperación exige restaurar filas ni ejecutar SQL.
+- **Aprobación:** solicitud explícita del propietario “elimina el botón y sus funciones de editar texto”, confirmada para continuar el 2026-08-27.

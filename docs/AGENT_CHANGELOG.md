@@ -1569,3 +1569,25 @@ Unexpected files changed: ninguno atribuible a esta H; se preservaron modificaci
 Known limitations: las tres imágenes de instalación siguen sin configurar; assets parciales no vinculados se preservan hasta que el propietario cargue los archivos correctos
 Evidence: salidas de scripts/test-branding-upload-*.{js,py}; scripts/sync-icon-installation.py --verify --verify-static; scripts/test-icon-installation.js
 ```
+
+## 2026-08-27 — H-LIVE-TEXT-REMOVAL-001
+
+- Por instrucción del propietario se retiraron el botón flotante `Editar textos`, el motor global que convertía nodos en editables, su panel de Roles y el control pendiente homónimo de Convenios.
+- `ManagedCopyRepository`, `copyStore`, `LiveText`, `saveCopy` y `removeCopy` dejaron de formar parte del runtime. ADR-072 registra que `public.managed_copy_overrides` y sus filas se preservan sin lectores ni writers frontend para recuperación histórica; no se ejecutó SQL ni borrado de datos.
+- Los editores administrativos específicos de Noticias, Tu Sindicato, Branding y demás dominios permanecen intactos. Bundle `v159`, caché PWA `v103`; build reproducible desde 91 fuentes con SHA-256 `2167587D3BF3F6BBA46B7B9CD01B8609EF2601976D0CE9B4BBC2F6AE31BEAD39`.
+- Contratos focalizados, preservación Claude, sintaxis y Registry `FRESH`: `PASS`. Suite estática global: 54/55; el único fallo (`test-pages-deployment.js`) es preexistente y exige literalmente comillas simples, mientras el `SutiApp.html` ajeno ya estaba reformateado con comillas dobles equivalentes.
+
+```text
+H-LIVE-TEXT-REMOVAL-001 RESULT
+Status: PASS
+Files changed: shell/runtime de copy; Roles; Convenios; repositorios; bundle/cache; pruebas; SOURCE_OF_TRUTH; Registry derivado; este changelog
+Source-of-truth verdict: PASS — managed_copy_overrides queda histórico e inactivo; copy estructural vuelve a código; sin fallback
+Invariant verdict: PASS — sin autoridad paralela, borrado histórico ni cambio en editores de dominio
+Build: PASS — bundle reproducible desde 91 fuentes; node --check PASS
+Tests: PASS focalizado — retiro, Phase 2, consistencia editorial, preservación Claude y consumidores; suite global 54/55 por fallo preexistente de comillas
+Security: PASS — se eliminó la superficie frontend de lectura/escritura de overrides; Supabase/RLS no cambiaron
+Legacy impact: NOT APPLICABLE / NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: SutiApp.html y dos evidencias de Admin Financial Requests ya estaban modificados; sólo se añadió el cachebuster v159 al HTML
+Known limitations: test-pages-deployment.js conserva una aserción literal incompatible con el reformateo preexistente del HTML
+Evidence: node scripts/test-live-text-removal.js; node scripts/test-static-suite.js; node --check app/bundle.js; build reproducible por SHA-256; Architecture Registry FRESH
+```

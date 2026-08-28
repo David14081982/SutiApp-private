@@ -26,12 +26,6 @@
     if (result.error) throw result.error;
     return Object.freeze((result.data || []).map((row) => Object.freeze(Object.assign({}, row, { image_url: url(row.image_asset), document_url: url(row.document_asset) }))));
   }
-  async function listCopy() {
-    const result = await client().from('managed_copy_overrides').select('scope,source_text,replacement_text,enabled');
-    if (result.error) throw result.error;
-    return Object.freeze(result.data || []);
-  }
   window.NewsRepository = Object.freeze({ list: listNews, project: projectNews });
   window.EducationalRepository = Object.freeze({ list: listEducational });
-  window.ManagedCopyRepository = Object.freeze({ list: listCopy });
 })();

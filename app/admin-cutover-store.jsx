@@ -21,7 +21,7 @@
     if(id==='popups')return'popups'; if(id==='banners')return'banners';
     if(id==='finanzas')return'program_requests';
     if(id==='fondos')return'financial_criteria.visibility';
-    if(id==='secciones'||id==='menus'||id==='formularios'||id==='textos'||id.indexOf('scr_')===0)return'content';
+    if(id==='secciones'||id==='menus'||id==='formularios'||id.indexOf('scr_')===0)return'content';
     return'content';
   };
   function uiPerms(permissionList){

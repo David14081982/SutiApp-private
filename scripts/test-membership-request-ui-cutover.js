@@ -76,7 +76,7 @@ assert.match(membership, /documentIds:selectedDocuments\.map/);
 assert.match(membership, /idempotencyKey:idem\.current/);
 assert.match(membership, /Seguir mi solicitud/);
 assert.match(membership, /app\.setTab\('historial'\)/);
-assert.match(app, /window\.TextEditBar/);
+assert.doesNotMatch(app, /window\.TextEditBar|window\.LiveText/);
 assert.match(bundle, /@@file screens-membership-application\.jsx/);
 assert.match(bundle, /@@file screens-documentos\.jsx/);
 

@@ -6890,14 +6890,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if (result.error) throw result.error;
     return Object.freeze((result.data || []).map((row) => Object.freeze(Object.assign({}, row, { image_url: url(row.image_asset), document_url: url(row.document_asset) }))));
   }
-  async function listCopy() {
-    const result = await client().from('managed_copy_overrides').select('scope,source_text,replacement_text,enabled');
-    if (result.error) throw result.error;
-    return Object.freeze(result.data || []);
-  }
   window.NewsRepository = Object.freeze({ list: listNews, project: projectNews });
   window.EducationalRepository = Object.freeze({ list: listEducational });
-  window.ManagedCopyRepository = Object.freeze({ list: listCopy });
 })();
 })();
 /* @@file content-state.js */
@@ -7169,9 +7163,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function setSectionResponsibilities(email,section,actions){requirePermission('authorization.write');const result=await client().rpc('set_section_responsibilities',{p_email:String(email||'').trim(),p_section_key:section,p_actions:actions});if(result.error)throw result.error;return result.data;}
   async function revokeSectionResponsibilities(authUserId,section){requirePermission('authorization.write');const result=await client().rpc('revoke_section_responsibilities',{p_auth_user_id:authUserId,p_section_key:section});if(result.error)throw result.error;return true;}
   async function listSectionResponsibilityAudit(section){requirePermission('authorization.read');const result=await client().rpc('list_section_responsibility_audit',{p_section_key:section});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
-  async function saveCopy(scope,sourceText,replacementText){requirePermission('content.write');const row={scope,source_text:sourceText,replacement_text:replacementText,enabled:true};const result=await client().from('managed_copy_overrides').upsert(row,{onConflict:'scope,source_text'}).select('scope').single();if(result.error)throw result.error;return result.data;}
-  async function removeCopy(scope,sourceText){requirePermission('content.write');const result=await client().from('managed_copy_overrides').delete().eq('scope',scope).eq('source_text',sourceText).select('scope');if(result.error)throw result.error;if(result.data.length!==1)throw new Error('COPY_DELETE_COUNT_MISMATCH');}
-
   async function searchAffiliates(query){if(state.phase!=='authorized')throw new Error('ADMIN_DENIED');const result=await client().rpc('search_affiliates_for_impersonation',{p_query:String(query||'').trim()});if(result.error)throw result.error;const rows=result.data||[];if(!has('assets.read')||!window.AffiliateRepository)return Object.freeze(rows);const enriched=await Promise.all(rows.map(async(row)=>{try{const photo=await window.AffiliateRepository.getProfilePhoto(row.id);return Object.freeze(Object.assign({},row,{profilePhotoUrl:photo&&photo.signedUrl||null}));}catch(_){return Object.freeze(Object.assign({},row,{profilePhotoUrl:null}));}}));return Object.freeze(enriched);}
   async function getAffiliateProfile(affiliateId){requirePermission('affiliates.read');const result=await client().rpc('get_affiliate_admin_profile',{p_affiliate_id:String(affiliateId)});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function updateAffiliateProfile(affiliateId,expectedVersion,patch,reason){requirePermission('affiliates.write');const result=await client().rpc('update_affiliate_admin_profile',{p_affiliate_id:String(affiliateId),p_expected_version:Number(expectedVersion),p_patch:patch||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
@@ -7179,7 +7170,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function stopImpersonation(){const result=await client().rpc('stop_affiliate_impersonation');if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return Boolean(result.data);}
 
   function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{retry();},[]);return Object.assign({},snapshot,{retry,has});}
-  window.AdminRepository=Object.freeze({bootstrap,retry,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,saveCopy,removeCopy,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
+  window.AdminRepository=Object.freeze({bootstrap,retry,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
   window.useAdminAuth=useAdminAuth;
 })();
 })();
@@ -17084,7 +17075,6 @@ Object.assign(window, {
       setCat(value);
       setFilters(false);
     };
-    const canAdmin = app.admin && app.admin.phase === 'authorized' && app.admin.has('companies.write');
     return React.createElement('div', {
       className: 'su-route',
       'data-convenios-state': 'loaded',
@@ -17168,23 +17158,7 @@ Object.assign(window, {
       icon: 'search',
       title: 'Sin resultados',
       sub: 'Prueba con otra búsqueda o categoría.'
-    }))), canAdmin && React.createElement('div', {
-      style: {
-        padding: '14px 16px 0'
-      }
-    }, React.createElement('button', {
-      disabled: true,
-      'data-convenios-admin-control': 'pending',
-      style: {
-        width: '100%',
-        height: 44,
-        border: 'none',
-        borderRadius: 13,
-        background: 'var(--surface-2)',
-        color: 'var(--ink-3)',
-        fontWeight: 800
-      }
-    }, 'Editar textos · pendiente backend')), React.createElement(window.Sheet, {
+    }))), React.createElement(window.Sheet, {
       open: filters,
       onClose: () => setFilters(false),
       title: 'Filtrar convenios'
@@ -20190,10 +20164,6 @@ Object.assign(window, {
     label: 'Roles y permisos',
     icon: 'users'
   }, {
-    id: 'textos',
-    label: 'Edición de textos del frontend',
-    icon: 'pencil'
-  }, {
     id: 'banners',
     label: 'Banners',
     icon: 'image'
@@ -20562,7 +20532,7 @@ Object.assign(window, {
     if (r.all) return true;
     // roles guardados antes de existir el módulo Planes heredan el permiso de Convenios
     // roles guardados antes de existir un módulo heredan el permiso del más cercano
-    const rp = r.perms && (r.perms[resource] || (resource === 'planes' || resource === 'membresias' ? r.perms['convenios'] : resource === 'pantallas' || resource === 'textos' ? r.perms['secciones'] : null));
+    const rp = r.perms && (r.perms[resource] || (resource === 'planes' || resource === 'membresias' ? r.perms['convenios'] : resource === 'pantallas' ? r.perms['secciones'] : null));
     return !!(rp && rp[action]);
   };
 
@@ -21620,7 +21590,7 @@ Object.assign(window, {
     if (id === 'banners') return 'banners';
     if (id === 'finanzas') return 'program_requests';
     if (id === 'fondos') return 'financial_criteria.visibility';
-    if (id === 'secciones' || id === 'menus' || id === 'formularios' || id === 'textos' || id.indexOf('scr_') === 0) return 'content';
+    if (id === 'secciones' || id === 'menus' || id === 'formularios' || id.indexOf('scr_') === 0) return 'content';
     return 'content';
   };
   function uiPerms(permissionList) {
@@ -24828,14 +24798,8 @@ Object.assign(window, {
   }) {
     const store = useStore();
     const [editing, setEditing] = useState(null);
-    const [textos, setTextos] = useState(false);
     const roles = store.roles();
     const canCrear = store.can('crear', 'roles');
-    if (textos) return React.createElement(TextosPanel, {
-      store,
-      onBack: () => setTextos(false),
-      header
-    });
     return React.createElement('div', null, header({
       title: 'Roles y permisos',
       sub: roles.length + ' roles definidos',
@@ -24895,72 +24859,6 @@ Object.assign(window, {
       store,
       onEdit: () => setEditing(r)
     }))), React.createElement('div', {
-      style: {
-        fontSize: 13,
-        fontWeight: 900,
-        color: 'var(--ink-3)',
-        letterSpacing: '.06em',
-        margin: '24px 0 12px'
-      }
-    }, 'EDICIÓN DE TEXTOS'), React.createElement('button', {
-      onClick: () => setTextos(true),
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        width: '100%',
-        textAlign: 'left',
-        background: 'var(--surface)',
-        borderRadius: 16,
-        boxShadow: 'var(--neo-sm)',
-        padding: 14,
-        border: 'none',
-        fontFamily: 'inherit',
-        cursor: 'pointer'
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 44,
-        height: 44,
-        borderRadius: 13,
-        background: 'var(--grad-guinda-soft)',
-        color: '#fff',
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0,
-        boxShadow: 'var(--glow-guinda)'
-      }
-    }, React.createElement(I, {
-      name: 'pencil',
-      size: 22,
-      stroke: 2
-    })), React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 15.5,
-        fontWeight: 800,
-        color: 'var(--ink)'
-      }
-    }, 'Quién puede editar textos'), React.createElement('div', {
-      style: {
-        fontSize: 12,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 3,
-        lineHeight: 1.35
-      }
-    }, (window.copyStore ? window.copyStore.editors().filter(e => e.enabled).length : 0) + ' personas autorizadas · ' + (window.copyStore ? window.copyStore.count() : 0) + ' textos editados')), React.createElement(I, {
-      name: 'chevR',
-      size: 19,
-      stroke: 2.2,
-      style: {
-        color: 'var(--ink-3)'
-      }
-    })), React.createElement('div', {
       style: {
         fontSize: 11.5,
         fontWeight: 600,
@@ -25676,345 +25574,6 @@ Object.assign(window, {
         size: 15,
         stroke: 2
       }));
-    })));
-  }
-
-  // ── Edición de textos del frontend: quién puede editar + qué se editó ──
-  function TextosPanel({
-    store,
-    onBack,
-    header
-  }) {
-    const cs = window.copyStore;
-    const [, force] = useState(0);
-    useEffect(() => cs.subscribe(() => force(n => n + 1)), []);
-    const [nombre, setNombre] = useState('');
-    const [cargo, setCargo] = useState('');
-    const canManage = store.can('editar', 'textos');
-    const editors = cs.editors();
-    const overrides = cs.all();
-    const me = cs.me();
-    const label = {
-      fontSize: 13,
-      fontWeight: 900,
-      color: 'var(--ink-3)',
-      letterSpacing: '.06em',
-      margin: '22px 0 11px'
-    };
-    const inputSt = {
-      flex: 1,
-      minWidth: 0,
-      border: 'none',
-      outline: 'none',
-      background: 'var(--surface-2)',
-      boxShadow: 'var(--neo-inset)',
-      borderRadius: 12,
-      padding: '11px 13px',
-      fontSize: 14,
-      fontFamily: 'inherit',
-      color: 'var(--ink)'
-    };
-    const scopeLabel = s => window.ADMIN ? window.ADMIN.SCREEN(s).label : s;
-    return React.createElement('div', null, header({
-      title: 'Edición de textos',
-      sub: 'Permisos y cambios de copy',
-      onBack
-    }), React.createElement('div', {
-      className: 'su-app-scroll',
-      style: {
-        padding: '16px 16px 26px'
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 10,
-        background: 'var(--guinda-50)',
-        borderRadius: 16,
-        padding: '13px 15px'
-      }
-    }, React.createElement(I, {
-      name: 'info',
-      size: 20,
-      stroke: 2,
-      style: {
-        color: 'var(--guinda)',
-        flexShrink: 0
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 12.5,
-        fontWeight: 700,
-        color: 'var(--guinda)',
-        lineHeight: 1.45
-      }
-    }, 'Los roles con permiso “Editar” sobre “Edición de textos del frontend” pueden tocar cualquier título, subtítulo o descripción de la app y cambiarlo al instante. Aquí autorizas a personas concretas, aunque no administren el panel.')), React.createElement('div', {
-      style: label
-    }, 'PERSONAS AUTORIZADAS'), React.createElement('div', {
-      style: {
-        background: 'var(--surface)',
-        borderRadius: 16,
-        boxShadow: 'var(--neo-sm)',
-        overflow: 'hidden'
-      }
-    }, editors.length === 0 && React.createElement('div', {
-      style: {
-        padding: '18px 15px',
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        textAlign: 'center'
-      }
-    }, 'Nadie más autorizado todavía.'), editors.map((e, i) => React.createElement('div', {
-      key: e.id,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 11,
-        padding: '12px 14px',
-        borderTop: i ? '1px solid var(--hairline)' : 'none'
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        background: e.enabled ? 'var(--guinda-50)' : 'var(--surface-2)',
-        color: e.enabled ? 'var(--guinda)' : 'var(--ink-3)',
-        display: 'grid',
-        placeItems: 'center',
-        fontSize: 14,
-        fontWeight: 900,
-        flexShrink: 0
-      }
-    }, e.name.trim().charAt(0).toUpperCase()), React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 800,
-        color: 'var(--ink)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, e.name), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 1
-      }
-    }, (e.cargo || 'Sin cargo') + ' · ' + (e.enabled ? 'puede editar textos' : 'sin permiso'))), React.createElement(window.Toggle, {
-      on: e.enabled,
-      size: 'md',
-      disabled: !canManage,
-      onClick: () => cs.toggleEditor(e.id),
-      'aria-label': 'Permitir edición de textos a ' + e.name
-    }), canManage && React.createElement('button', {
-      onClick: () => cs.removeEditor(e.id),
-      'aria-label': 'Quitar',
-      style: {
-        width: 34,
-        height: 34,
-        borderRadius: 10,
-        border: 'none',
-        background: 'var(--surface-2)',
-        color: '#C0341D',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: 'trash',
-      size: 17,
-      stroke: 2
-    }))))), canManage && React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 8,
-        marginTop: 11
-      }
-    }, React.createElement('input', {
-      value: nombre,
-      placeholder: 'Nombre',
-      onChange: ev => setNombre(ev.target.value),
-      style: inputSt
-    }), React.createElement('input', {
-      value: cargo,
-      placeholder: 'Cargo',
-      onChange: ev => setCargo(ev.target.value),
-      style: Object.assign({}, inputSt, {
-        maxWidth: 120
-      })
-    }), React.createElement('button', {
-      onClick: () => {
-        cs.addEditor(nombre, cargo);
-        setNombre('');
-        setCargo('');
-      },
-      disabled: !nombre.trim(),
-      style: {
-        width: 46,
-        height: 44,
-        borderRadius: 12,
-        border: 'none',
-        background: nombre.trim() ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
-        color: nombre.trim() ? '#fff' : 'var(--ink-3)',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: nombre.trim() ? 'pointer' : 'default',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: 'plus',
-      size: 20,
-      stroke: 2.6
-    }))), React.createElement('div', {
-      style: label
-    }, 'PROBAR EL PERMISO COMO'), React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 8
-      }
-    }, [{
-      id: null,
-      name: 'Mi rol (' + store.actingRole().name + ')'
-    }].concat(editors).map(p => {
-      const on = (me || null) === (p.id || null);
-      return React.createElement('button', {
-        key: p.id || 'self',
-        onClick: () => cs.setMe(p.id),
-        style: {
-          height: 36,
-          padding: '0 14px',
-          borderRadius: 999,
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: 12.5,
-          fontWeight: 700,
-          background: on ? 'var(--guinda)' : 'var(--surface-2)',
-          color: on ? '#fff' : 'var(--ink-2)',
-          boxShadow: on ? 'none' : 'var(--neo-inset)'
-        }
-      }, p.name);
-    })), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 9,
-        lineHeight: 1.5
-      }
-    }, 'Al salir del panel verás la app como esa persona: si tiene permiso aparece el botón “Editar textos”; si no, no aparece.'), React.createElement('div', {
-      style: label
-    }, 'TEXTOS EDITADOS (' + overrides.length + ')'), overrides.length === 0 ? React.createElement('div', {
-      style: {
-        background: 'var(--surface)',
-        borderRadius: 16,
-        boxShadow: 'var(--neo-sm)',
-        padding: '20px 16px',
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        textAlign: 'center',
-        lineHeight: 1.5
-      }
-    }, 'Ningún texto se ha cambiado. Sal del panel, activa “Editar textos” y toca cualquier título.') : React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10
-      }
-    }, overrides.map(o => React.createElement('div', {
-      key: o.key,
-      style: {
-        background: 'var(--surface)',
-        borderRadius: 16,
-        boxShadow: 'var(--neo-sm)',
-        padding: 13,
-        display: 'flex',
-        gap: 11,
-        alignItems: 'flex-start'
-      }
-    }, React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        fontSize: 10.5,
-        fontWeight: 800,
-        letterSpacing: '.05em',
-        color: 'var(--guinda)',
-        background: 'var(--guinda-50)',
-        padding: '3px 9px',
-        borderRadius: 999
-      }
-    }, scopeLabel(o.scope)), React.createElement('div', {
-      style: {
-        fontSize: 14,
-        fontWeight: 800,
-        color: 'var(--ink)',
-        marginTop: 7,
-        lineHeight: 1.35
-      }
-    }, o.to), React.createElement('div', {
-      style: {
-        fontSize: 12,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 3,
-        lineHeight: 1.35,
-        textDecoration: 'line-through'
-      }
-    }, o.from), React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 5
-      }
-    }, o.by)), canManage && React.createElement('button', {
-      onClick: () => cs.clear(o.key),
-      'aria-label': 'Restablecer texto',
-      style: {
-        width: 36,
-        height: 36,
-        borderRadius: 11,
-        border: 'none',
-        background: 'var(--surface-2)',
-        color: 'var(--ink-2)',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: 'refresh',
-      size: 17,
-      stroke: 2
-    }))))), canManage && overrides.length > 0 && React.createElement(window.Btn, {
-      variant: 'outline',
-      icon: 'refresh',
-      full: true,
-      style: {
-        marginTop: 14
-      },
-      onClick: () => cs.resetAll()
-    }, 'Restablecer todos los textos'), React.createElement('div', {
-      style: {
-        height: 10
-      }
     })));
   }
   window.RolesModule = RolesModule;
@@ -56196,471 +55755,6 @@ Object.assign(window, {
   window.CoHeaderEl = CoHeader; // reutilizado por los módulos
 })();
 })();
-/* @@file copy-store.jsx */
-(function(){
-/* Supabase-backed managed copy projection. Structural UI text remains code-owned. */
-(function () {
-  'use strict';
-
-  const listeners = new Set();
-  let rows = [];
-  let phase = 'loading';
-  let live = false;
-  let promise = null;
-  const emit = () => listeners.forEach(fn => fn());
-  const keyOf = (scope, from) => String(scope) + '\u0000' + String(from);
-  const project = row => ({
-    key: keyOf(row.scope, row.source_text),
-    scope: row.scope,
-    from: row.source_text,
-    to: row.replacement_text,
-    enabled: row.enabled !== false,
-    by: 'Supabase Admin'
-  });
-  async function load() {
-    phase = 'loading';
-    emit();
-    try {
-      rows = (await window.ManagedCopyRepository.list()).map(project);
-      phase = 'loaded';
-    } catch (_) {
-      rows = [];
-      phase = 'error';
-    }
-    emit();
-    return rows;
-  }
-  function bootstrap() {
-    if (!promise) promise = load();
-    return promise;
-  }
-  function retry() {
-    promise = null;
-    return bootstrap();
-  }
-  const store = {
-    subscribe(fn) {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    bootstrap,
-    retry,
-    phase: () => phase,
-    overrides: () => rows.slice(),
-    count: () => rows.length,
-    lookupFrom: (scope, from) => rows.find(o => o.enabled && o.scope === scope && o.from === from) || null,
-    lookupTo: (scope, to) => rows.find(o => o.enabled && o.scope === scope && o.to === to) || null,
-    set(scope, from, to) {
-      if (!store.canEdit()) return;
-      const next = {
-        key: keyOf(scope, from),
-        scope,
-        from,
-        to,
-        enabled: true,
-        by: 'Supabase Admin'
-      };
-      rows = rows.filter(o => o.key !== next.key).concat(next);
-      emit();
-      window.AdminRepository.saveCopy(scope, from, to).then(retry).catch(retry);
-    },
-    clear(key) {
-      if (!store.canEdit()) return;
-      const row = rows.find(o => o.key === key);
-      if (!row) return;
-      rows = rows.filter(o => o.key !== key);
-      emit();
-      window.AdminRepository.removeCopy(row.scope, row.from).then(retry).catch(retry);
-    },
-    resetAll() {
-      if (!store.canEdit()) return;
-      rows.slice().forEach(row => store.clear(row.key));
-    },
-    canEdit: () => !!(window.AdminRepository && window.AdminRepository.has('content.write')),
-    live: () => live && store.canEdit(),
-    setLive(value) {
-      live = !!value && store.canEdit();
-      emit();
-    },
-    meName: () => window.AdminRepository && window.AdminRepository.getState().assignment ? window.AdminRepository.getState().assignment.role : 'Administrador',
-    editors: () => [],
-    getEditor: () => null,
-    toggleEditor: () => {},
-    removeEditor: () => {},
-    me: () => null,
-    setMe: () => {}
-  };
-  window.copyStore = store;
-  Promise.resolve().then(bootstrap);
-})();
-})();
-/* @@file live-text.jsx */
-(function(){
-/* live-text.jsx — Motor de edición de textos en vivo.
-   Aplica los overrides de copyStore sobre cualquier texto del frontend y, en
-   modo edición, convierte el nodo tocado en editable (un clic sobre la palabra).
-   Un solo listener delegado por tipo de evento; un solo MutationObserver.
-   Exporta window.LiveText y window.TextEditBar. */
-(function () {
-  const CS = () => window.copyStore;
-  const SKIP_TAGS = {
-    INPUT: 1,
-    TEXTAREA: 1,
-    SELECT: 1,
-    OPTION: 1,
-    SCRIPT: 1,
-    STYLE: 1,
-    'IMAGE-SLOT': 1,
-    CANVAS: 1
-  };
-  let scope = 'home';
-  let editing = null; // { el, from, prev }
-  let queued = false;
-  let observer = null;
-  function injectCSS() {
-    if (document.getElementById('su-livetext-css')) return;
-    const s = document.createElement('style');
-    s.id = 'su-livetext-css';
-    s.textContent = '.su-te{outline:1.5px dashed rgba(145,0,34,.45);outline-offset:2px;border-radius:5px;cursor:text}.su-te:hover{outline-color:var(--guinda,#910022);background:rgba(145,0,34,.06)}.su-te-active{outline:2px solid var(--guinda,#910022);outline-offset:2px;background:#fff;box-shadow:0 6px 20px -8px rgba(0,0,0,.35);cursor:text}[data-copy-edited]{}';
-    document.head.appendChild(s);
-  }
-  function eligible(el) {
-    if (!el || el.nodeType !== 1) return false;
-    if (SKIP_TAGS[el.tagName] || el.ownerSVGElement || el.tagName === 'svg') return false;
-    if (el.childNodes.length !== 1 || el.childNodes[0].nodeType !== 3) return false;
-    const t = el.textContent;
-    if (!t) return false;
-    const len = t.trim().length;
-    if (len < 1 || len > 400) return false;
-    if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(t)) return false; // números y símbolos sueltos no son copy
-    // Structured records keep their table as the sole content authority.
-    // managed_copy_overrides is reserved for explicit UI copy.
-    if (el.closest('[data-notext],[data-lt-ui],[data-structured-content]')) return false;
-    return true;
-  }
-  function apply() {
-    const cs = CS();
-    if (!cs) return;
-    const root = document.getElementById('root');
-    if (!root) return;
-    const live = cs.live();
-    const has = cs.count() > 0;
-    // Restaurar textos cuyo override ya no existe (restablecer individual o total)
-    const marked = root.querySelectorAll('[data-copy-edited]');
-    for (let i = 0; i < marked.length; i++) {
-      const el = marked[i];
-      if (el === (editing && editing.el)) continue;
-      const from = el.getAttribute('data-copy-edited');
-      if (!cs.lookupFrom(scope, from) && !cs.lookupTo(scope, el.textContent)) {
-        el.textContent = from;
-        el.removeAttribute('data-copy-edited');
-      }
-    }
-    if (!live) root.querySelectorAll('.su-te').forEach(n => n.classList.remove('su-te'));
-    if (!live && !has) return;
-    if (scope === 'admin') {
-      root.querySelectorAll('.su-te').forEach(n => n.classList.remove('su-te'));
-      return;
-    }
-    const nodes = root.querySelectorAll('*');
-    for (let i = 0; i < nodes.length; i++) {
-      const el = nodes[i];
-      if (el === (editing && editing.el)) continue;
-      if (!eligible(el)) {
-        if (el.classList && el.classList.contains('su-te')) el.classList.remove('su-te');
-        continue;
-      }
-      const text = el.textContent;
-      const done = cs.lookupTo(scope, text);
-      if (done) el.setAttribute('data-copy-edited', done.from);else {
-        const o = cs.lookupFrom(scope, text);
-        if (o) {
-          el.textContent = o.to;
-          el.setAttribute('data-copy-edited', o.from);
-        } else if (el.hasAttribute('data-copy-edited')) el.removeAttribute('data-copy-edited');
-      }
-      if (live) el.classList.add('su-te');else el.classList.remove('su-te');
-    }
-  }
-  // Un frame no entregado (documento oculto) no puede dejar los textos sin
-  // aplicar: el rAF lleva red de seguridad por timeout y el que llegue primero
-  // libera la cola.
-  function schedule() {
-    if (queued) return;
-    queued = true;
-    const run = () => {
-      if (!queued) return;
-      queued = false;
-      apply();
-    };
-    requestAnimationFrame(run);
-    setTimeout(run, 120);
-  }
-
-  // ── edición de un nodo ──
-  function startEdit(el) {
-    const cs = CS();
-    if (!cs || !cs.live()) return;
-    if (editing) commit();
-    const from = el.getAttribute('data-copy-edited') || el.textContent;
-    editing = {
-      el,
-      from,
-      prev: el.textContent
-    };
-    el.classList.add('su-te-active');
-    el.setAttribute('contenteditable', 'plaintext-only');
-    el.setAttribute('spellcheck', 'false');
-    el.focus();
-    const r = document.createRange();
-    r.selectNodeContents(el);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(r);
-  }
-  function finish(el) {
-    el.removeAttribute('contenteditable');
-    el.removeAttribute('spellcheck');
-    el.classList.remove('su-te-active');
-  }
-  function commit() {
-    if (!editing) return;
-    const {
-      el,
-      from,
-      prev
-    } = editing;
-    editing = null;
-    const next = (el.textContent || '').replace(/\s+/g, ' ').trim();
-    finish(el);
-    if (!next) {
-      el.textContent = prev;
-      schedule();
-      return;
-    }
-    if (next !== prev) CS().set(scope, from, next, CS().meName());else schedule();
-  }
-  function cancel() {
-    if (!editing) return;
-    const {
-      el,
-      prev
-    } = editing;
-    editing = null;
-    el.textContent = prev;
-    finish(el);
-  }
-  function hit(target) {
-    let el = target;
-    for (let i = 0; el && i < 4; i++) {
-      if (eligible(el)) return el;
-      el = el.parentElement;
-    }
-    return null;
-  }
-  function guard(e) {
-    const cs = CS();
-    if (!cs || !cs.live()) return;
-    if (editing && (e.target === editing.el || editing.el.contains(e.target))) return;
-    const el = hit(e.target);
-    if (!el) {
-      if (editing) commit();
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'click') startEdit(el);
-  }
-  function init() {
-    injectCSS();
-    ['pointerdown', 'mousedown', 'click'].forEach(t => document.addEventListener(t, guard, true));
-    document.addEventListener('keydown', e => {
-      if (!editing) return;
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        commit();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancel();
-      }
-    }, true);
-    document.addEventListener('focusout', e => {
-      if (editing && e.target === editing.el) commit();
-    }, true);
-    const root = document.getElementById('root');
-    if (root) {
-      observer = new MutationObserver(schedule);
-      observer.observe(root, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-    }
-    if (CS()) CS().subscribe(() => {
-      queued = false;
-      apply();
-    });
-    apply();
-    schedule();
-  }
-  const scopeSubs = new Set();
-  window.LiveText = {
-    setScope: s => {
-      if (s === scope) return;
-      if (editing) cancel();
-      scope = s || 'home';
-      queued = false;
-      apply();
-      schedule();
-      scopeSubs.forEach(f => f(scope));
-    },
-    scope: () => scope,
-    onScope: fn => {
-      scopeSubs.add(fn);
-      return () => scopeSubs.delete(fn);
-    },
-    refresh: schedule
-  };
-  if (document.getElementById('root')) init();else document.addEventListener('DOMContentLoaded', init);
-
-  // ─────────────────────────────────────────────────────────────
-  // Barra flotante de edición (solo para quien tiene permiso)
-  // ─────────────────────────────────────────────────────────────
-  function TextEditBar() {
-    const I = window.Icon;
-    const [, force] = React.useState(0);
-    React.useEffect(() => CS().subscribe(() => force(n => n + 1)), []);
-    React.useEffect(() => window.LiveText.onScope(() => force(n => n + 1)), []);
-    if (window.adminStore) window.useAdminStore && window.useAdminStore();
-    const cs = CS();
-    if (!cs.canEdit() || scope === 'admin') return null;
-    const live = cs.live();
-    const n = cs.count();
-    const shell = {
-      position: 'absolute',
-      left: 14,
-      right: 14,
-      bottom: 'calc(78px + env(safe-area-inset-bottom))',
-      zIndex: 55,
-      display: 'flex',
-      justifyContent: live ? 'stretch' : 'flex-end',
-      pointerEvents: 'none'
-    };
-    const pill = {
-      pointerEvents: 'auto',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      height: 42,
-      padding: '0 15px',
-      borderRadius: 999,
-      border: 'none',
-      background: 'var(--surface)',
-      color: 'var(--guinda)',
-      fontFamily: 'inherit',
-      fontSize: 13,
-      fontWeight: 800,
-      cursor: 'pointer',
-      boxShadow: '0 14px 30px -12px rgba(16,12,14,.45)'
-    };
-    if (!live) {
-      return React.createElement('div', {
-        'data-lt-ui': '1',
-        'data-notext': '1',
-        style: shell
-      }, React.createElement('button', {
-        onClick: () => cs.setLive(true),
-        style: pill
-      }, React.createElement(I, {
-        name: 'pencil',
-        size: 17,
-        stroke: 2.2
-      }), 'Editar textos', n > 0 && React.createElement('span', {
-        style: {
-          minWidth: 20,
-          height: 20,
-          borderRadius: 999,
-          background: 'var(--guinda-50)',
-          color: 'var(--guinda)',
-          fontSize: 11,
-          fontWeight: 900,
-          display: 'grid',
-          placeItems: 'center',
-          padding: '0 6px'
-        }
-      }, n)));
-    }
-    return React.createElement('div', {
-      'data-lt-ui': '1',
-      'data-notext': '1',
-      style: shell
-    }, React.createElement('div', {
-      style: {
-        pointerEvents: 'auto',
-        flex: 1,
-        background: 'var(--surface)',
-        borderRadius: 18,
-        boxShadow: '0 18px 40px -14px rgba(16,12,14,.5)',
-        padding: '11px 13px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 34,
-        height: 34,
-        borderRadius: 11,
-        background: 'var(--grad-guinda-soft)',
-        color: '#fff',
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: 'pencil',
-      size: 17,
-      stroke: 2.2
-    })), React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 12.5,
-        fontWeight: 800,
-        color: 'var(--ink)'
-      }
-    }, 'Toca un texto para editarlo'), React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, cs.meName() + ' · ' + n + (n === 1 ? ' texto editado' : ' textos editados'))), React.createElement('button', {
-      onClick: () => cs.setLive(false),
-      style: {
-        border: 'none',
-        background: 'var(--grad-guinda-soft)',
-        color: '#fff',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 800,
-        height: 36,
-        padding: '0 15px',
-        borderRadius: 12,
-        cursor: 'pointer',
-        flexShrink: 0
-      }
-    }, 'Listo')));
-  }
-  window.TextEditBar = TextEditBar;
-})();
-})();
 /* @@file affiliate-view-model.js */
 (function(){
 /* In-memory UI projection of the authoritative authenticated affiliate. */
@@ -58350,9 +57444,6 @@ Object.assign(window, {
     const top0 = stack[stack.length - 1];
     const currentScreen = top0 ? top0.name : tab;
     useEffect(() => {
-      if (window.LiveText) window.LiveText.setScope(currentScreen);
-    }, [currentScreen]);
-    useEffect(() => {
       if (!t.showPromo || tab === 'admin') return;
       // E·#2: el pop-up pertenece a la pantalla ENTRANTE. Mientras una ruta siga
       // saliendo no se programa ni se marca como mostrada; el efecto se repite al
@@ -58547,8 +57638,6 @@ Object.assign(window, {
     React.createElement(Toast, {
       msg: toast
     }),
-    // barra de edición de textos en vivo (solo con permiso)
-    window.TextEditBar && React.createElement(window.TextEditBar, null),
     // pop-ups administrables por pantalla (mismo diseño que el de inicio)
     popupItems && React.createElement(window.AdminPopup, {
       items: popupItems,

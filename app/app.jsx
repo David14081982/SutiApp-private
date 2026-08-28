@@ -393,7 +393,6 @@
     // ---- Pop-ups productivos H-007.2 (globales; sin segmentación inventada) ----
     const top0 = stack[stack.length - 1];
     const currentScreen = top0 ? top0.name : tab;
-    useEffect(() => { if (window.LiveText) window.LiveText.setScope(currentScreen); }, [currentScreen]);
     useEffect(() => {
       if (!t.showPromo || tab === 'admin') return;
       // E·#2: el pop-up pertenece a la pantalla ENTRANTE. Mientras una ruta siga
@@ -494,8 +493,6 @@
               : React.createElement(window.ScreenLocked, { screen: l.name, onBack: back })))),
         // toast
         React.createElement(Toast, { msg: toast }),
-        // barra de edición de textos en vivo (solo con permiso)
-        window.TextEditBar && React.createElement(window.TextEditBar, null),
         // pop-ups administrables por pantalla (mismo diseño que el de inicio)
         popupItems && React.createElement(window.AdminPopup, { items: popupItems, app, onClose: () => setPopupItems(null) }),
       )),

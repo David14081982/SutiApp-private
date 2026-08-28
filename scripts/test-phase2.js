@@ -5,7 +5,7 @@ const read=(name)=>fs.readFileSync(path.join(root,name),'utf8');const must=(ok,m
 const sql=read('supabase/migrations/20260821000800_complete_phase2_content.sql');
 const recovery=read('supabase/recovery/20260821000800_complete_phase2_content_recovery.sql');
 const repo=read('app/admin-repository.js');const publicRepo=read('app/content-repositories.js');
-const news=read('app/screens-admin-news.jsx');const copy=read('app/copy-store.jsx');const menu=read('app/screens-admin.jsx');
+const news=read('app/screens-admin-news.jsx');const menu=read('app/screens-admin.jsx');
 const dataSource=read('app/data.jsx');const oldAdminStore=read('app/admin-store.jsx');
 const educationMigration=read('supabase/migrations/20260821000801_phase2_education_provenance.sql');const educationSource=read('data/phase2-education-source.json');const educationImport=read('scripts/import-phase2-education.py');
 const educationRecovery=read('scripts/recover-phase2-education.py');const visualCrud=read('app/screens-admin-visual-crud.jsx');
@@ -31,10 +31,10 @@ must(!dataSource.match(/window\.DATA\s*=\s*\{[^}]*noticias/),'DATA still exports
 must(!oldAdminStore.includes('localStorage.getItem(NKEY)')&&!oldAdminStore.includes('localStorage.setItem(NKEY)')&&!oldAdminStore.includes('localStorage.getItem(NSKEY)'),'local news persistence remains active');
 must(!news.includes('PENDING BACKEND')&&news.includes('segmentación por perfil aún no está disponible')&&news.includes('reorderManaged'),'News UI user-facing pending/ordering contract missing');
 must(news.includes('pendingRef.current')&&news.includes('discardAsset'),'News upload cancellation cleanup missing');
-must(copy.includes('ManagedCopyRepository.list')&&copy.includes('AdminRepository.saveCopy'),'copy is not Supabase backed');
-must(!copy.includes('localStorage')&&!copy.includes('sessionStorage'),'browser copy authority found');
+must(!fs.existsSync(path.join(root,'app/copy-store.jsx'))&&!fs.existsSync(path.join(root,'app/live-text.jsx')),'retired live-copy sources remain');
+must(!publicRepo.includes('managed_copy_overrides')&&!repo.includes('saveCopy')&&!repo.includes('removeCopy'),'retired live-copy repository surface remains');
 must(menu.includes("noticias:'news.read'")&&menu.includes("education:'content.read'")&&menu.includes("education:['education','tutorials']")&&menu.includes("key+'.read'"),'Admin modules not permission-gated');
 must(home.includes('data-phase2-news-state')&&app.includes('useEditorialContent'),'News states missing');
-must(bundle.includes('/* @@file content-repositories.js */')&&bundle.includes('/* @@file copy-store.jsx */'),'bundle/source divergence');
+must(bundle.includes('/* @@file content-repositories.js */')&&!bundle.includes('/* @@file copy-store.jsx */')&&!bundle.includes('/* @@file live-text.jsx */'),'bundle/source divergence');
 must(Number.isInteger(bundleVersion)&&bundleVersion>=95&&Number.isInteger(cacheVersion)&&cacheVersion>=40,'PWA version below Phase 2 baseline');
-console.log('Phase 2 static verification PASS: empty news authority, secure editorial CRUD, Supabase copy, explicit states, no local fallback.');
+console.log('Phase 2 static verification PASS: empty news authority, secure editorial CRUD, retired live copy, explicit states, no local fallback.');

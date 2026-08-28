@@ -71,7 +71,6 @@
     { id: 'secciones', label: 'Secciones y contenedores', icon: 'grid' },
     { id: 'pantallas', label: 'Acceso a pantallas', icon: 'lock' },
     { id: 'roles', label: 'Roles y permisos', icon: 'users' },
-    { id: 'textos', label: 'Edición de textos del frontend', icon: 'pencil' },
     { id: 'banners', label: 'Banners', icon: 'image' },
     { id: 'menus', label: 'Menús y botones', icon: 'menu' },
     { id: 'formularios', label: 'Formularios', icon: 'doc' },
@@ -262,7 +261,7 @@
     if (r.all) return true;
     // roles guardados antes de existir el módulo Planes heredan el permiso de Convenios
     // roles guardados antes de existir un módulo heredan el permiso del más cercano
-    const rp = r.perms && (r.perms[resource] || (resource === 'planes' || resource === 'membresias' ? r.perms['convenios'] : ((resource === 'pantallas' || resource === 'textos') ? r.perms['secciones'] : null)));
+    const rp = r.perms && (r.perms[resource] || (resource === 'planes' || resource === 'membresias' ? r.perms['convenios'] : (resource === 'pantallas' ? r.perms['secciones'] : null)));
     return !!(rp && rp[action]);
   };
 

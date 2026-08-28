@@ -1591,3 +1591,26 @@ Unexpected files changed: SutiApp.html y dos evidencias de Admin Financial Reque
 Known limitations: test-pages-deployment.js conserva una aserción literal incompatible con el reformateo preexistente del HTML
 Evidence: node scripts/test-live-text-removal.js; node scripts/test-static-suite.js; node --check app/bundle.js; build reproducible por SHA-256; Architecture Registry FRESH
 ```
+
+## 2026-08-27 — H-ADMIN-AFFILIATES-CRUD-DOCUMENTS-001
+
+- Se mantuvo el editor auditado de perfiles y se hizo explícita la acción `Eliminar usuario` como baja administrativa reversible. Usa los RPC ADR-071 existentes, conserva Auth/documentos/solicitudes/historia y permite reactivación; no existe borrado físico del padrón.
+- El perfil de Afiliados ahora carga documentos al expediente seleccionado. `AdminAffiliatesRepository` valida archivo y SHA-256, sube a `private-assets` y llama `register_admin_affiliate_document`; backend revalida `documents.write`, UUID/tipo/ruta/owner/MIME/tamaño/hash/motivo, crea `PENDING_REVIEW` y audita.
+- `20260827001300–01320` y recovery pasaron rollback y fueron aplicadas. Los guards booleanos Storage evitan conceder lectura directa de afiliados y hacen la comprobación de referencias independiente de RLS. Aplicación: 947 afiliados, 3,425 documentos, 13,048 assets y 13,051 objetos preservados, business rows changed 0.
+- Prueba live reversible: admin `PASS`; normal/anónimo y borrado de objeto referenciado `DENIED`; documento/asset/objeto/auditoría persistieron y el cleanup restauró conteos exactos. Chrome real 1024/1280/1440/430 abrió edición, baja y carga sin overflow, errores o escrituras inesperadas.
+- Bundle `v160`, cache PWA `v104`, 91 fuentes, SHA-256 `A1010C695638FC24CDA942996F04EA5B2F32FD2DD41CEBC1A838F139B67B572D`. Registry `FRESH` y suite propia `PASS`; suite global 54/55 conserva únicamente el fallo preexistente de comillas en `test-pages-deployment.js`.
+
+```text
+H-ADMIN-AFFILIATES-CRUD-DOCUMENTS-001 RESULT
+Status: PASS
+Files changed: Afiliados UI/repository; SQL/recovery; tests; bundle/cache; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — public.affiliates + affiliate_documents/private_assets/private-assets canónicos
+Invariant verdict: PASS — INV-097, INV-103, INV-104 e INV-116 preservadas
+Build: PASS — bundle reproducible desde 91 fuentes; node --check PASS
+Tests: PASS focalizados, migration rollback/apply, live reversible, Chrome y Registry; global 54/55 preexistente
+Security: PASS — backend/RLS/Storage; normal/anónimo denied; secretos frontend 0
+Legacy impact: NOT APPLICABLE / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: SutiApp.html reformateado y dos evidencias Financial Requests preexistentes, preservados
+Known limitations: eliminación física prohibida; baja reversible es la operación de eliminación administrativa
+Evidence: docs/qa/H-ADMIN-AFFILIATES-MODULE-001-EVIDENCE.md y scripts relacionados
+```

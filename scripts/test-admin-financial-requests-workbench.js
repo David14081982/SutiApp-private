@@ -116,7 +116,7 @@ assert.match(readModelApply,/PROTECTED_DATA_CHANGED/);
 
 assert.ok(bundle.includes('data-admin-financial-workbench'),'bundle missing financial workbench');
 assert.ok(bundle.includes('listFinancialQueue'),'bundle missing financial queue projection');
-assert.ok(html.includes('app/bundle.js?v=159'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v103")&&serviceWorker.includes('app/bundle.js?v=159'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=160'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v104")&&serviceWorker.includes('app/bundle.js?v=160'),'service worker cache cutover missing');
 
 console.log('Admin financial requests workbench static contract PASS');

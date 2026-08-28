@@ -10,10 +10,11 @@ Admin Afiliados UI
   → affiliate_admin_events / affiliate_profile_audit_log (auditoría)
 
 Perfil → Document Workbench / Requests Workbench / Financial Workbench
+Carga documental → AdminAffiliatesRepository → Storage privado → RPC auditada
 Exportar Excel → DataExportRepository → Edge data-exports → XLSX temporal
 ```
 
-El listado pagina, busca, ordena y filtra en servidor; el navegador no descarga las 947 filas para construir el padrón. El perfil compone proyecciones de documentos, solicitudes y acceso, pero no copia sus autoridades. Los enlaces abren los workbenches productivos existentes con `affiliate_id` como contexto y vuelven al mismo perfil. Alta, edición y cambio de estado nunca crean, revocan ni eliminan una cuenta Auth.
+El listado pagina, busca, ordena y filtra en servidor; el navegador no descarga las 947 filas para construir el padrón. El perfil compone proyecciones de documentos, solicitudes y acceso, pero no copia sus autoridades. Los enlaces abren los workbenches productivos existentes con `affiliate_id` como contexto y vuelven al mismo perfil. `documents.write` permite cargar un archivo al expediente seleccionado: Storage acepta sólo rutas UUID existentes, la RPC valida archivo/actor/motivo y registra `affiliate_documents`, `private_assets` y auditoría. Alta, edición y cambio de estado nunca crean, revocan ni eliminan una cuenta Auth.
 
 ## Architecture Registry y Navigator
 

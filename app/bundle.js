@@ -7286,8 +7286,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function(){
   'use strict';
   function db(){return window.SutiSupabase.getClient();}
+  const MAX_DOCUMENT_SIZE=10*1024*1024;
   function requirePermission(permission){if(!window.AdminRepository||!window.AdminRepository.has(permission))throw new Error('ADMIN_DENIED');}
   function clean(value){return value===undefined||value===''?null:value;}
+  function extension(file){const value=String(file&&file.name||'').split('.').pop().toLowerCase();return /^[a-z0-9]{1,8}$/.test(value)?'.'+value:'';}
+  function hex(buffer){return Array.from(new Uint8Array(buffer)).map((value)=>value.toString(16).padStart(2,'0')).join('').toUpperCase();}
   async function list(filters){
     requirePermission('affiliates.read');const f=filters||{};
     const result=await db().rpc('list_admin_affiliates',{
@@ -7302,9 +7305,24 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function create(values,reason){requirePermission('affiliates.write');const result=await db().rpc('create_admin_affiliate',{p_values:values||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function update(id,expectedUpdatedAt,patch,reason){requirePermission('affiliates.write');const result=await db().rpc('update_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_patch:patch||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function changeStatus(id,expectedUpdatedAt,status,reason){requirePermission('affiliates.write');const result=await db().rpc('change_admin_affiliate_status',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_new_status:status,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function documentTypes(){requirePermission('documents.write');const result=await db().from('document_types').select('id,code,label,description,accepted_mime_types,sort_order').eq('enabled',true).order('sort_order',{ascending:true});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function uploadDocument(affiliateId,type,file,reason){
+    requirePermission('documents.write');if(!affiliateId||!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');
+    const accepted=Array.isArray(type.accepted_mime_types)?type.accepted_mime_types:[];
+    if(file.size<1||file.size>MAX_DOCUMENT_SIZE||!accepted.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');
+    const digest=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));
+    const path='affiliate-documents/'+affiliateId+'/'+crypto.randomUUID()+extension(file);
+    const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;
+    try{
+      const result=await db().rpc('register_admin_affiliate_document',{p_affiliate_id:affiliateId,p_document_type_id:type.id,p_storage_path:path,p_mime_type:file.type,p_file_size:file.size,p_sha256:digest,p_reason:String(reason||'').trim()});
+      if(result.error)throw result.error;
+      const cleanup=result.data&&result.data.cleanup_storage_path;if(cleanup)await db().storage.from('private-assets').remove([cleanup]).catch(()=>{});
+      return Object.freeze(result.data&&result.data.document||{});
+    }catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}
+  }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,profilePhoto,exportXlsx});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,documentTypes,uploadDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -44323,9 +44341,15 @@ Object.assign(window, {
     profile,
     statuses,
     onClose,
-    onSaved
+    onSaved,
+    mode
   }) {
-    const [target, setTarget] = React.useState(''),
+    const deactivation = mode === 'deactivate',
+      inactive = statuses.find(value => {
+        const key = norm(value);
+        return key.includes('baja') || key.includes('inactiv') || key.includes('cancel');
+      });
+    const [target, setTarget] = React.useState(deactivation ? inactive || '' : ''),
       [reason, setReason] = React.useState(''),
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState('');
@@ -44344,8 +44368,8 @@ Object.assign(window, {
       }
     };
     return h(Overlay, {
-      title: 'Cambiar estado',
-      description: 'Cambio administrativo auditado · nunca elimina al afiliado',
+      title: deactivation ? 'Eliminar usuario' : 'Cambiar estado',
+      description: deactivation ? 'Baja administrativa reversible · conserva expediente, Auth, solicitudes e historial' : 'Cambio administrativo auditado · nunca elimina al afiliado',
       onClose
     }, h('div', {
       className: 'aff-modal-body'
@@ -44363,7 +44387,101 @@ Object.assign(window, {
       value: reason,
       maxLength: 500,
       rows: 4,
-      onChange: event => setReason(event.target.value)
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Mínimo 8 caracteres'
+    })), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error)), h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      className: 'aff-secondary',
+      onClick: onClose
+    }, 'Cancelar'), h('button', {
+      'data-affiliate-deactivate-confirm': deactivation ? 'true' : undefined,
+      className: deactivation ? 'aff-danger-button' : 'aff-primary',
+      disabled: busy || !target || reason.trim().length < 8,
+      onClick: save
+    }, busy ? 'Guardando…' : deactivation ? 'Confirmar baja' : 'Confirmar cambio')));
+  }
+  function DocumentUploadModal({
+    profile,
+    onClose,
+    onUploaded
+  }) {
+    const [types, setTypes] = React.useState([]),
+      [typeId, setTypeId] = React.useState(''),
+      [file, setFile] = React.useState(null),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [loading, setLoading] = React.useState(true);
+    React.useEffect(() => {
+      let active = true;
+      window.AdminAffiliatesRepository.documentTypes().then(rows => {
+        if (!active) return;
+        setTypes(rows);
+        setTypeId(rows[0] && rows[0].id || '');
+        setLoading(false);
+      }).catch(() => {
+        if (active) {
+          setError('No fue posible consultar el catálogo documental.');
+          setLoading(false);
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, []);
+    const selected = types.find(row => row.id === typeId),
+      accept = selected && selected.accepted_mime_types || [];
+    const submit = async () => {
+      if (!selected || !file || reason.trim().length < 8 || busy) return;
+      if (!window.confirm('¿Cargar este documento al expediente privado del afiliado?')) return;
+      setBusy(true);
+      setError('');
+      try {
+        await window.AdminAffiliatesRepository.uploadDocument(profile.id, selected, file, reason);
+        onUploaded();
+      } catch (value) {
+        const code = String(value && value.message || '');
+        setError(code.includes('VERIFIED_DOCUMENT_IMMUTABLE') ? 'El documento verificado es inmutable. Usa el flujo de revisión autorizado.' : code.includes('INVALID_DOCUMENT_FILE') ? 'El archivo no cumple tipo o tamaño permitido.' : 'No fue posible guardar el documento en Supabase. Verifica permisos y vuelve a intentar.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h(Overlay, {
+      title: 'Cargar documento',
+      description: 'Expediente privado de ' + text(profile.display_name || profile.full_name, 'afiliado') + ' · máximo 10 MB',
+      onClose
+    }, h('div', {
+      'data-admin-affiliate-upload': profile.id,
+      className: 'aff-modal-body'
+    }, loading ? h('div', {
+      className: 'aff-loading'
+    }, 'Cargando tipos documentales…') : h('label', null, h('span', null, 'Tipo de documento'), h('select', {
+      className: inputClass,
+      value: typeId,
+      onChange: event => {
+        setTypeId(event.target.value);
+        setFile(null);
+      }
+    }, types.map(row => h('option', {
+      key: row.id,
+      value: row.id
+    }, row.label)))), h('label', null, h('span', null, 'Archivo privado'), h('input', {
+      key: typeId,
+      className: inputClass,
+      type: 'file',
+      accept: accept.join(','),
+      onChange: event => setFile(event.target.files && event.target.files[0] || null)
+    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      maxLength: 500,
+      rows: 3,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Mínimo 8 caracteres'
     })), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
@@ -44374,9 +44492,9 @@ Object.assign(window, {
       onClick: onClose
     }, 'Cancelar'), h('button', {
       className: 'aff-primary',
-      disabled: busy || !target || reason.trim().length < 8,
-      onClick: save
-    }, busy ? 'Guardando…' : 'Confirmar cambio')));
+      disabled: busy || loading || !selected || !file || reason.trim().length < 8,
+      onClick: submit
+    }, busy ? 'Guardando en Supabase…' : 'Cargar documento')));
   }
   function EditProfile({
     profile,
@@ -44477,6 +44595,8 @@ Object.assign(window, {
     app,
     onEdit,
     onStatus,
+    onDelete,
+    onUpload,
     onReload,
     onOpenModule
   }) {
@@ -44588,12 +44708,21 @@ Object.assign(window, {
     }), h('span', null, h('strong', null, row.type_label), h('small', null, row.status + ' · ' + date(row.updated_at))))) : h(Empty, {
       title: 'Expediente vacío',
       sub: 'No hay documentos canónicos relacionados.'
-    })), h('button', {
-      className: 'aff-primary aff-block',
+    })), h('div', {
+      className: 'aff-action-pair'
+    }, app.admin.has('documents.write') && h('button', {
+      'data-affiliate-upload-open': 'true',
+      className: 'aff-primary',
+      onClick: onUpload
+    }, h(I, {
+      name: 'upload',
+      size: 16
+    }), ' Cargar documento'), h('button', {
+      className: 'aff-secondary',
       onClick: () => onOpenModule('documents_admin', {
         affiliateId: p.id
       })
-    }, 'Abrir Document Workbench'));else if (tab === 'requests') content = !cap.requests ? h('div', {
+    }, 'Abrir Document Workbench')));else if (tab === 'requests') content = !cap.requests ? h('div', {
       className: 'aff-boundary'
     }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
       className: 'aff-list'
@@ -44676,7 +44805,14 @@ Object.assign(window, {
     }), ' Editar información'), app.admin.has('affiliates.write') && h('button', {
       className: 'aff-secondary',
       onClick: onStatus
-    }, 'Cambiar estado'), h('span', null, 'Última actualización · ' + date(p.updated_at))));
+    }, 'Cambiar estado / reactivar'), app.admin.has('affiliates.write') && statusTone(p.affiliate_status_raw) !== 'danger' && h('button', {
+      'data-affiliate-delete': 'true',
+      className: 'aff-danger-button',
+      onClick: onDelete
+    }, h(I, {
+      name: 'trash',
+      size: 16
+    }), ' Eliminar usuario'), h('span', null, 'Última actualización · ' + date(p.updated_at))));
   }
   function Assistance({
     profile,
@@ -44753,6 +44889,8 @@ Object.assign(window, {
       [editing, setEditing] = React.useState(false),
       [showNew, setShowNew] = React.useState(false),
       [showStatus, setShowStatus] = React.useState(false),
+      [showDelete, setShowDelete] = React.useState(false),
+      [showUpload, setShowUpload] = React.useState(false),
       [exporting, setExporting] = React.useState(false),
       [nonce, setNonce] = React.useState(0);
     const updateFilter = (key, value) => setFilters(current => Object.assign({}, current, {
@@ -44823,10 +44961,16 @@ Object.assign(window, {
       setDetail(result);
       setEditing(false);
       setShowStatus(false);
+      setShowDelete(false);
       setShowNew(false);
       if (result.profile && result.profile.id) setSelectedId(result.profile.id);
       setNonce(value => value + 1);
       app.toast && app.toast('Padrón actualizado y auditado');
+    };
+    const documentUploaded = () => {
+      setShowUpload(false);
+      setNonce(value => value + 1);
+      app.toast && app.toast('Documento guardado en Supabase y enviado a revisión');
     };
     const row = item => {
       const auth = authMeta(item);
@@ -45026,6 +45170,8 @@ Object.assign(window, {
       app,
       onEdit: () => setEditing(true),
       onStatus: () => setShowStatus(true),
+      onDelete: () => setShowDelete(true),
+      onUpload: () => setShowUpload(true),
       onReload: () => setNonce(value => value + 1),
       onOpenModule: (id, context) => onOpenModule(id, Object.assign({
         from: 'affiliates'
@@ -45042,10 +45188,21 @@ Object.assign(window, {
       statuses: options.statuses || [],
       onClose: () => setShowStatus(false),
       onSaved: useSaved
+    }), showDelete && detail && h(StatusModal, {
+      profile: detail.profile,
+      statuses: options.statuses || [],
+      mode: 'deactivate',
+      onClose: () => setShowDelete(false),
+      onSaved: useSaved
+    }), showUpload && detail && h(DocumentUploadModal, {
+      profile: detail.profile,
+      onClose: () => setShowUpload(false),
+      onUploaded: documentUploaded
     })));
   }
   function Styles() {
     return h('style', null, `
+    .aff-danger-button{border:1px solid #F4C9D4;border-radius:11px;min-height:38px;padding:0 13px;background:#FCE9EE;color:#A00027;font:850 11.5px var(--font);cursor:pointer}
     .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline)}.aff-profile-head>div:nth-child(2){flex:1;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-actions{padding:10px 12px;border-top:1px solid var(--hairline);flex-wrap:wrap}.aff-actions>span{width:100%;font-size:9px;color:var(--ink-3)}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;overflow:auto;padding:14px}.aff-edit-actions{justify-content:flex-end;margin-top:12px}
     @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
     @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}

@@ -240,7 +240,7 @@ Historical source: Usuarios SUTIAPP.xlsx / Usuarios — fuera de SutiApp Final
 Historical sheets: ninguna hoja de SutiApp Final es autoridad del padrón
 Historical columns: referencias de solicitudes usan Número de control/Numero de control
 Reads: identidad propia autorizada por RLS; Admin `affiliates.read` mediante RPC de padrón/perfil; solicitudes/documentos permanecen en sus autoridades
-Writes: importador administrativo H-004 para seed histórico; Admin `affiliates.write` exclusivamente mediante RPC ADR-071 con motivo, versión y auditoría
+Writes: importador administrativo H-004 para seed histórico; Admin `affiliates.write` exclusivamente mediante RPC ADR-071 con motivo, versión y auditoría; carga de expediente con `documents.write` mediante `register_admin_affiliate_document`, `affiliate_documents`/`private_assets` y `private-assets` privado
 Transforms: proyección de presentación en memoria; ninguno sobre numero_control, preservar TEXT raw
 Legacy dependency: puente de negocio con Google
 Current authority: Supabase public.affiliates; Excel maestro como procedencia histórica

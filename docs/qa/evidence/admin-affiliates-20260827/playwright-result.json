@@ -43,7 +43,10 @@
       "Acceso",
       "Auditoría"
     ],
-    "allTabs": true
+    "allTabs": true,
+    "editAction": true,
+    "deactivateAction": true,
+    "documentUploadAction": true
   },
   "exportContract": {
     "authorizedDomain": true,

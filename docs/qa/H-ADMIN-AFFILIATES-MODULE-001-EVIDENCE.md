@@ -104,3 +104,29 @@ Unexpected files changed: 3 preexistentes, preservados y excluidos
 Known limitations: demo HTML ausente; QA no persistió PII ni descargó el padrón
 Evidence: este documento + playwright-result.json agregado
 ```
+
+## Extensión 2026-08-27 — edición, baja y carga documental
+
+- La edición auditada existente permanece accesible desde el perfil y continúa usando `update_admin_affiliate`; Chrome abrió el formulario con más de diez campos editables.
+- `Eliminar usuario` abre una baja administrativa reversible mediante `change_admin_affiliate_status`; el modal informa que conserva expediente, Auth, solicitudes e historial. No existe `DELETE FROM public.affiliates`.
+- `Cargar documento` usa `AdminAffiliatesRepository → private-assets → register_admin_affiliate_document`. El backend exige `documents.write`, UUID/tipo/ruta/owner/MIME/tamaño/hash/motivo válidos y conserva `VERIFIED` inmutable.
+- `20260827001300–01320` pasaron forward + recovery con `ROLLBACK` y se aplicaron con filas de negocio cambiadas = 0. Conteos preservados al aplicar: afiliados 947, documentos 3,425, assets 13,048, objetos privados 13,051.
+- Prueba real reversible: +1 documento `PENDING_REVIEW`, +1 asset, +1 objeto privado y +1 auditoría; normal/anónimo y borrado del objeto referenciado `DENIED`; cleanup exacto restauró los cuatro conteos. El único objeto QA huérfano producido por un primer error del arnés fue identificado por prefijo `qa-admin-`, limpiado y la repetición completa cerró `PASS`.
+- Chrome real: edición, baja y carga `PASS`; 1024/1280/1440/430 sin overflow, page errors 0, unexpected writes 0. `playwright-result.json` conserva sólo métricas/booleanos y ningún documento o PII.
+- Bundle reproducible desde 91 fuentes, SHA-256 `A1010C695638FC24CDA942996F04EA5B2F32FD2DD41CEBC1A838F139B67B572D`; `bundle.js?v=160`, PWA cache `v104`.
+- Suite estática: 54/55; único fallo preexistente `test-pages-deployment.js` por comillas simples frente a dobles equivalentes en el `SutiApp.html` reformateado ajeno. Architecture Registry: `FRESH`, suite de generación/freshness/incremental/secrets/determinismo `PASS`.
+
+```text
+H-ADMIN-AFFILIATES-CRUD-DOCUMENTS-001 RESULT
+Status: PASS
+Files changed: UI/repository; migraciones/recovery; pruebas; bundle/cache; gobierno/evidencia; Registry derivado
+Source-of-truth verdict: PASS — public.affiliates y expediente/Storage canónicos reutilizados; sin tabla o fallback paralelo
+Invariant verdict: PASS — baja reversible, VERIFIED inmutable, Auth/historia preservados
+Build: PASS — 91 fuentes; node --check; SHA-256 reproducible
+Tests: PASS focalizado/live/Chrome/Registry; suite global 54/55 por fallo preexistente documentado
+Security: PASS — documents.write backend; private-assets; normal/anónimo denied; sin service_role frontend
+Legacy impact: NOT APPLICABLE / Google read 0 / Google write 0
+Unexpected files changed: tres cambios preexistentes preservados y excluidos del commit
+Known limitations: eliminación física prohibida; “eliminar” opera como baja reversible auditada
+Evidence: scripts/test-admin-affiliate-document-*.py; scripts/test-admin-affiliates*.js; playwright-result.json
+```

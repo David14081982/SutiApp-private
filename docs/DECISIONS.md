@@ -555,3 +555,12 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Runtime:** `ManagedCopyRepository`, `copyStore`, `LiveText`, `TextEditBar`, `saveCopy` y `removeCopy` quedan fuera del bundle. El copy estructural vuelve a ser exclusivamente código versionado.
 - **Recuperación:** revertir el cambio de código puede volver a conectar la tabla existente; ninguna recuperación exige restaurar filas ni ejecutar SQL.
 - **Aprobación:** solicitud explícita del propietario “elimina el botón y sus funciones de editar texto”, confirmada para continuar el 2026-08-27.
+
+## ADR-073 — Edición, baja reversible y carga documental en Admin Afiliados
+
+- **Identidad:** editar continúa sobre `public.affiliates` mediante `update_admin_affiliate`, con `affiliates.write`, versión optimista, motivo y auditoría. “Eliminar usuario” significa baja administrativa reversible mediante el writer de estado existente; no existe DELETE físico ni se alteran Auth, documentos, solicitudes o historia.
+- **Documentos:** el perfil permite cargar a `affiliate_documents`/`private_assets` y `private-assets` mediante `register_admin_affiliate_document`. Exige `documents.write`, archivo máximo 10 MB, MIME allowlisted, SHA-256, ruta bajo el UUID objetivo, owner igual al actor y motivo; el alta queda `PENDING_REVIEW`.
+- **Inmutabilidad:** un `VERIFIED` no se reemplaza. Duplicación por hash reutiliza el asset canónico y el frontend intenta limpiar el objeto no referenciado; ningún fallo activa Storage público, fallback local o segunda autoridad.
+- **Seguridad Storage:** `can_admin_upload_affiliate_document_path` sólo devuelve un booleano para permiso + UUID existente. `can_delete_unreferenced_affiliate_document_object` verifica referencias fuera del filtrado RLS antes de permitir cleanup. Ninguno otorga lectura directa ni expone PII; normal, anónimo y el borrado de objetos referenciados quedan denegados.
+- **Migración/recovery:** `20260827001300–01320` son aditivas; forward y recovery pasaron en rollback y aplicación sin filas de negocio. Los recovery preservan todo documento registrado.
+- **Aprobación:** solicitud explícita del propietario de editar, eliminar y cargar documentos guardados en Supabase desde Afiliados, 2026-08-27.

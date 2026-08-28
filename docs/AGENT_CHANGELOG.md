@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-27 — ADMIN AFILIADOS / ACCIONES EN ENCABEZADO
+
+- `Editar información`, `Cambiar estado / reactivar` y `Eliminar usuario` se movieron del pie del perfil al encabezado superior solicitado. Conservan los mismos callbacks, permisos `affiliates.write`, baja reversible y confirmaciones; no se duplicaron acciones ni se modificó Supabase.
+- El encabezado distribuye y envuelve los controles dentro de su propia área. En móvil ocupa una fila superior completa y permanece sticky; la fecha de actualización se conserva junto a la identidad.
+- Bundle `v161` y caché PWA `v105`. Chrome real verificó los tres controles dentro del encabezado, sin overflow, en 1024×768, 1280×900, 1440×1000 y 430×932; edición, baja reversible y carga documental siguen operativas.
+
+```text
+ADMIN AFILIADOS / ACCIONES EN ENCABEZADO RESULT
+Status: PASS
+Files changed: pantalla Afiliados; bundle/cache; pruebas/evidencia; esta bitácora
+Source-of-truth verdict: NOT APPLICABLE — layout únicamente; public.affiliates y repositories sin cambios
+Invariant verdict: PASS — ADR-071/073 y baja reversible preservadas
+Build: PASS — bundle reproducible desde 91 fuentes; node --check PASS
+Tests: PASS — contratos focalizados y Chrome real en cuatro viewports
+Security: PASS — permisos/callbacks existentes sin cambios; normal/anónimo denegados por la matriz real
+Legacy impact: NOT APPLICABLE / NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: SutiApp.html reformateado y dos evidencias Financial Requests eran cambios preexistentes; sólo se añadió el cachebuster v161 al HTML
+Known limitations: el Registry permanece STALE por cambios amplios del repositorio; este ajuste CSS no requiere actualización estructural
+Evidence: docs/qa/evidence/admin-affiliates-20260827/playwright-result.json
+```
+
 ## 2026-08-27 — H-ADMIN-AFFILIATES-MODULE-001
 
 - Se sustituyó la tarjeta básica “Identidad y expediente” por el módulo productivo Admin “Afiliados”: padrón server-side, búsqueda/filtros/orden/paginación, perfil por pestañas, alta, edición, baja/reactivación, duplicados, auditoría, relación Auth y asistencia autorizada.

@@ -7,25 +7,33 @@
       "module": true,
       "viewportOverflow": false,
       "workbenchOverflow": false,
-      "columns": "728px"
+      "columns": "728px",
+      "actionButtons": 3,
+      "actionsInsideHeader": true
     },
     "1280x900": {
       "module": true,
       "viewportOverflow": false,
       "workbenchOverflow": false,
-      "columns": "573.469px 398.516px"
+      "columns": "573.469px 398.516px",
+      "actionButtons": 3,
+      "actionsInsideHeader": true
     },
     "1440x1000": {
       "module": true,
       "viewportOverflow": false,
       "workbenchOverflow": false,
-      "columns": "667.875px 464.109px"
+      "columns": "667.875px 464.109px",
+      "actionButtons": 3,
+      "actionsInsideHeader": true
     },
     "430x932": {
       "module": true,
       "viewportOverflow": false,
       "workbenchOverflow": false,
-      "columns": "minmax(430px, 1.05fr) minmax(300px, 0.95fr)"
+      "columns": "minmax(430px, 1.05fr) minmax(300px, 0.95fr)",
+      "actionButtons": 3,
+      "actionsInsideHeader": true
     }
   },
   "roster": {
@@ -35,6 +43,7 @@
     "search": true
   },
   "profile": {
+    "actionsInHeader": true,
     "tabs": [
       "Datos generales",
       "Afiliación",

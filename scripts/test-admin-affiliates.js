@@ -43,6 +43,8 @@ assert.match(screen,/onOpenModule\('finanzas'/);
 assert.match(screen,/data-admin-affiliate-upload/);
 assert.match(screen,/data-affiliate-delete/);
 assert.match(screen,/mode:'deactivate'/);
+assert.match(screen,/data-affiliate-actions':'header'/);
+assert.doesNotMatch(screen,/h\('aside',\{className:'aff-actions'/);
 
 [
   'list_admin_affiliates','get_admin_affiliate_workbench','find_admin_affiliate_duplicates',

@@ -7724,12 +7724,20 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
   const MAX=10*1024*1024;
+  const MAX_SOURCE=25*1024*1024;
+  const IMAGE_TARGET=2500*1024;
+  const IMAGE_MAX_DIMENSION=2400;
   const hex=(buffer)=>Array.from(new Uint8Array(buffer)).map((b)=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
   const ext=(file)=>{const value=String(file.name||'').split('.').pop().toLowerCase();return /^[a-z0-9]{1,8}$/.test(value)?'.'+value:'';};
+  const failure=(code)=>Object.assign(new Error(code),{code});
   async function catalog(filters){const f=filters||{};let q=db().from('document_types').select('id,code,label,description,icon,required_by_default,accepted_mime_types,enabled,sort_order,system_type').order('sort_order',{ascending:true});if(f.includeDisabled!==true)q=q.eq('enabled',true);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
   async function requirements(programId,membershipOfferingId){let q=db().from('program_document_requirements').select('id,program_id,membership_offering_id,document_type_id,required,allow_verified_reuse,sort_order,enabled,document_type:document_types(id,code,label,description,icon,accepted_mime_types)').eq('program_id',programId).eq('enabled',true).order('sort_order',{ascending:true});q=membershipOfferingId?q.eq('membership_offering_id',membershipOfferingId):q.is('membership_offering_id',null);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
-  async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false});if(r.error)throw r.error;const raw=r.data||[],privateRows=raw.map((row)=>({row,asset:row.private_asset||row.affiliate_file})).filter((entry)=>entry.asset&&entry.asset.storage_bucket==='private-assets'),signedByPath=new Map();if(privateRows.length){const paths=Array.from(new Set(privateRows.map((entry)=>entry.asset.storage_path))),signed=await db().storage.from('private-assets').createSignedUrls(paths,300);if(!signed.error)(signed.data||[]).forEach((entry,index)=>{if(entry&&entry.signedUrl)signedByPath.set(paths[index],entry.signedUrl);});}const rows=raw.map((row)=>{const a=row.private_asset||row.affiliate_file,signedUrl=a&&signedByPath.get(a.storage_path)||null;return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),signedUrl,previewUnavailable:!!(a&&a.storage_bucket==='private-assets'&&!signedUrl)}));});return Object.freeze(rows);}
-  async function upload(type,file){if(!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX||!type.accepted_mime_types.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||new Error('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(file);const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;try{const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:file.type,p_file_size:file.size,p_sha256:sha});if(r.error)throw r.error;return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
+  async function availability(documentIds){const ids=Array.from(new Set((documentIds||[]).filter(Boolean)));if(!ids.length)return Object.freeze([]);const r=await db().rpc('get_affiliate_document_availability',{p_document_ids:ids});if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>Object.freeze(row)));}
+  async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,replaces_document_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false}).order('id',{ascending:false});if(r.error)throw r.error;const raw=r.data||[],availabilityRows=await availability(raw.map((row)=>row.id)),availabilityById=new Map(availabilityRows.map((row)=>[row.document_id,row])),privateRows=raw.map((row)=>({row,asset:row.private_asset||row.affiliate_file,state:availabilityById.get(row.id)})).filter((entry)=>entry.state&&entry.state.available&&entry.asset&&entry.asset.storage_bucket==='private-assets'),signedByPath=new Map();if(privateRows.length){const paths=Array.from(new Set(privateRows.map((entry)=>entry.asset.storage_path))),signed=await db().storage.from('private-assets').createSignedUrls(paths,300);if(!signed.error)(signed.data||[]).forEach((entry,index)=>{if(entry&&entry.signedUrl)signedByPath.set(paths[index],entry.signedUrl);});}const rows=raw.map((row)=>{const a=row.private_asset||row.affiliate_file,state=availabilityById.get(row.id),signedUrl=a&&signedByPath.get(a.storage_path)||null,availabilityState=state&&state.reason||'AVAILABILITY_UNKNOWN';return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),storageBucket:a&&a.storage_bucket,storagePath:a&&a.storage_path,signedUrl,availability:availabilityState,available:!!(state&&state.available),previewUnavailable:availabilityState!=='AVAILABLE'||!signedUrl}));});return Object.freeze(rows);}
+  async function freshPreview(document){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');const states=await availability([document.id]),state=states[0];if(!state||!state.available)throw failure('DOCUMENT_OBJECT_MISSING');const asset=document.private_asset||document.affiliate_file,bucket=document.storageBucket||asset&&asset.storage_bucket,path=document.storagePath||asset&&asset.storage_path;if(bucket!=='private-assets'||!path)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');const signed=await db().storage.from(bucket).createSignedUrl(path,300);if(signed.error||!signed.data||!signed.data.signedUrl){const message=String(signed.error&&signed.error.message||'');throw failure(/not.?found|404/i.test(message)?'DOCUMENT_OBJECT_MISSING':'DOCUMENT_PREVIEW_UNAVAILABLE');}return Object.freeze({signedUrl:signed.data.signedUrl,expiresIn:300});}
+  async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
+  async function prepareFile(type,file,onProgress){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>MAX||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
+  async function upload(type,file,options){const settings=options||{},progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
   const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
   const previewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)';
@@ -7757,7 +7765,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function saveType(row){const values={code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};let q=row.id?db().from('document_types').update(values).eq('id',row.id):db().from('document_types').insert(values);const r=await q.select().single();if(r.error)throw r.error;return r.data;}
   async function removeType(id){const r=await db().from('document_types').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('DOCUMENT_TYPE_DELETE_DENIED');}
   async function attach(requestId,ids){const r=await db().rpc('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
-  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,list,upload,review,reviewQueue,reviewPreview,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX});
+  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,list,availability,freshPreview,prepareFile,upload,review,reviewQueue,reviewPreview,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
 })();
 })();
 /* @@file bank-account-repository.js */
@@ -13175,11 +13183,60 @@ Object.assign(window, {
       }
     }, value.length + '/500')));
   }
+  function MissingDocumentsNotice({
+    missing,
+    onCorrect
+  }) {
+    if (!missing || !missing.length) return null;
+    return React.createElement('div', {
+      role: 'alert',
+      'data-loan-missing-documents': '',
+      style: {
+        padding: 13,
+        borderRadius: 14,
+        background: '#FCE9EE',
+        color: '#9B1C31',
+        fontSize: 12,
+        fontWeight: 700,
+        lineHeight: 1.45
+      }
+    }, React.createElement('div', {
+      style: {
+        fontWeight: 850
+      }
+    }, 'Necesitamos actualizar algunos documentos antes de continuar.'), React.createElement('div', {
+      style: {
+        marginTop: 7
+      }
+    }, 'Faltan:'), React.createElement('ul', {
+      style: {
+        margin: '4px 0 0',
+        paddingLeft: 19
+      }
+    }, missing.map(entry => React.createElement('li', {
+      key: entry.requirement.document_type_id
+    }, entry.requirement.document_type && entry.requirement.document_type.label || 'Documento requerido'))), onCorrect && React.createElement('button', {
+      type: 'button',
+      onClick: onCorrect,
+      style: {
+        marginTop: 10,
+        minHeight: 38,
+        border: 0,
+        borderRadius: 10,
+        padding: '0 13px',
+        background: 'var(--guinda)',
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 850
+      }
+    }, 'Corregir documentos'));
+  }
   function StepDocuments({
     requirements,
     documents,
     onChanged,
-    phase
+    phase,
+    missing
   }) {
     return React.createElement('div', {
       className: 'su-route',
@@ -13206,11 +13263,14 @@ Object.assign(window, {
         color: 'inherit',
         fontWeight: 900
       }
-    }, 'Reintentar')), React.createElement(window.DocumentRequirementList, {
+    }, 'Reintentar')), phase === 'ready' && React.createElement(MissingDocumentsNotice, {
+      missing
+    }), React.createElement(window.DocumentRequirementList, {
       requirements,
       documents,
       onChanged,
-      compact: true
+      compact: true,
+      editable: true
     }), React.createElement('div', {
       style: {
         display: 'flex',
@@ -13239,7 +13299,9 @@ Object.assign(window, {
     setSignature,
     accepted,
     setAccepted,
-    terms
+    terms,
+    missingDocuments,
+    onCorrectDocuments
   }) {
     const result = simulation && simulation.result;
     if (!result) return React.createElement(StatusNotice, {
@@ -13331,7 +13393,10 @@ Object.assign(window, {
         fontSize: 12,
         fontWeight: 700
       }
-    }, 'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'), React.createElement(window.SignBlock, {
+    }, 'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'), React.createElement(MissingDocumentsNotice, {
+      missing: missingDocuments,
+      onCorrect: onCorrectDocuments
+    }), React.createElement(window.SignBlock, {
       programa: 'prestamo',
       subtitulo: 'Suti Préstamo',
       firma: signature,
@@ -13356,19 +13421,34 @@ Object.assign(window, {
     });
   }
   const ACCEPTED_LOAN_DOCUMENT_STATUSES = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
+  function newestLoanDocument(documents, documentTypeId) {
+    return (documents || []).filter(document => document.document_type_id === documentTypeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
+  }
   function resolveLoanDocuments(requirements, documents) {
     const required = (requirements || []).filter(requirement => requirement.required !== false);
-    const selected = (requirements || []).map(requirement => (documents || []).find(document => document.document_type_id === requirement.document_type_id && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status))).filter(Boolean);
-    const missing = required.filter(requirement => !selected.some(document => document.document_type_id === requirement.document_type_id));
+    const resolved = (requirements || []).map(requirement => {
+      const document = newestLoanDocument(documents, requirement.document_type_id);
+      const physicallyAvailable = !!(document && document.available === true && document.availability === 'AVAILABLE');
+      return {
+        requirement,
+        document,
+        valid: !!(document && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status) && physicallyAvailable)
+      };
+    });
+    const selected = resolved.filter(entry => entry.valid).map(entry => entry.document);
+    const missing = resolved.filter(entry => entry.requirement.required !== false && !entry.valid);
     return {
       selected,
       missing
     };
   }
   function missingLoanDocumentsMessage(requirements) {
-    const labels = (requirements || []).map(requirement => requirement.document_type && requirement.document_type.label || 'documento requerido');
+    const labels = (requirements || []).map(entry => {
+      const requirement = entry.requirement || entry;
+      return requirement.document_type && requirement.document_type.label || 'documento requerido';
+    });
     if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
-    return 'Antes de enviar, adjunta: ' + labels.join(', ') + '.';
+    return 'Necesitamos actualizar estos documentos antes de continuar: ' + labels.join(', ') + '.';
   }
   function LoanScreen({
     app
@@ -13386,6 +13466,7 @@ Object.assign(window, {
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
     const [submitError, setSubmitError] = React.useState('');
+    const [documentRecovery, setDocumentRecovery] = React.useState([]);
     const [submission, setSubmission] = React.useState(null);
     const [documentState, setDocumentState] = React.useState({
       requirements: [],
@@ -13413,6 +13494,7 @@ Object.assign(window, {
           phase: 'ready'
         };
         setDocumentState(next);
+        if (resolveLoanDocuments(next.requirements, next.documents).missing.length === 0) setDocumentRecovery([]);
         return next;
       } catch (_) {
         const failed = {
@@ -13434,9 +13516,8 @@ Object.assign(window, {
     const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', '¿Para qué lo necesitas?', 'Verifica tus documentos', 'Confirma tu solicitud'];
     const loanDocumentSelection = resolveLoanDocuments(documentState.requirements, documentState.documents);
-    const loanDocs = loanDocumentSelection.selected;
     const documentsReady = documentState.phase === 'ready' && loanDocumentSelection.missing.length === 0;
-    const canContinue = step === 0 ? !!(simulation && simulation.current) : step === 1 ? !!destination.trim() : step === 2 ? documentsReady : !!(simulation && simulation.current && signature && accepted && documentState.terms && !submitting);
+    const canContinue = step === 0 ? !!(simulation && simulation.current) : step === 1 ? !!destination.trim() : step === 2 ? documentsReady : !!(simulation && simulation.current && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
     const submit = async () => {
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
@@ -13451,8 +13532,8 @@ Object.assign(window, {
         }
         const freshDocuments = resolveLoanDocuments(freshDocumentState.requirements, freshDocumentState.documents);
         if (freshDocuments.missing.length) {
-          setStep(2);
-          setSubmitError(missingLoanDocumentsMessage(freshDocuments.missing));
+          setDocumentRecovery(freshDocuments.missing);
+          setSubmitError('');
           return;
         }
         if (!freshDocumentState.terms) {
@@ -13489,7 +13570,7 @@ Object.assign(window, {
         } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
           const refreshed = await loadDocuments();
           const missing = refreshed ? resolveLoanDocuments(refreshed.requirements, refreshed.documents).missing : [];
-          setStep(2);
+          setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
         } else {
           setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
@@ -13557,7 +13638,8 @@ Object.assign(window, {
       requirements: documentState.requirements,
       documents: documentState.documents,
       onChanged: loadDocuments,
-      phase: documentState.phase
+      phase: documentState.phase,
+      missing: loanDocumentSelection.missing
     }), step === 3 && React.createElement(StepSummary, {
       simulation,
       destination,
@@ -13565,7 +13647,12 @@ Object.assign(window, {
       setSignature,
       accepted,
       setAccepted,
-      terms: documentState.terms
+      terms: documentState.terms,
+      missingDocuments: documentRecovery,
+      onCorrectDocuments: () => {
+        setStep(2);
+        setSubmitError('');
+      }
     })), React.createElement('div', {
       'data-loan-flow-footer': '',
       style: {
@@ -19712,43 +19799,79 @@ Object.assign(window, {
     }
   };
   const ACCEPTED = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
-  const newest = (docs, typeId) => docs.filter(d => d.document_type_id === typeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] || null;
+  const newest = (docs, typeId) => docs.filter(d => d.document_type_id === typeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
+  const physicalAvailable = doc => !!(doc && doc.available !== false && doc.availability !== 'OBJECT_MISSING' && doc.availability !== 'ASSET_METADATA_MISSING' && doc.availability !== 'ASSET_DISABLED');
   function DocumentRequirementList({
     requirements,
     documents,
     onChanged,
     compact,
     variant,
-    highlightedId
+    highlightedId,
+    editable
   }) {
-    const [fileType, setFileType] = useState(null),
+    const selection = useRef(null),
       input = useRef(null),
-      [busy, setBusy] = useState(''),
+      [busy, setBusy] = useState(null),
       [error, setError] = useState('');
-    const pick = type => {
-      setFileType(type);
+    const pick = (type, source) => {
+      selection.current = {
+        type,
+        source
+      };
       setError('');
       if (input.current) {
-        input.current.accept = (type.accepted_mime_types || []).join(',');
+        input.current.accept = source === 'camera' ? 'image/*' : (type.accepted_mime_types || []).join(',');
+        if (source === 'camera') input.current.setAttribute('capture', 'environment');else input.current.removeAttribute('capture');
         input.current.click();
       }
     };
     const upload = async event => {
-      const file = event.target.files && event.target.files[0];
+      const file = event.target.files && event.target.files[0],
+        selected = selection.current;
       event.target.value = '';
-      if (!file || !fileType) return;
-      setBusy(fileType.id);
+      if (!file || !selected) return;
+      const type = selected.type;
+      setBusy({
+        id: type.id,
+        phase: 'preparing'
+      });
       try {
-        await window.DocumentWorkflowRepository.upload(fileType, file);
+        await window.DocumentWorkflowRepository.upload(type, file, {
+          onProgress: phase => setBusy({
+            id: type.id,
+            phase
+          })
+        });
         await onChanged();
       } catch (e) {
-        setError(e && e.message === 'VERIFIED_DOCUMENT_IMMUTABLE' ? 'El documento verificado debe ser reabierto por Admin.' : 'No se pudo subir el archivo. Revisa formato y tamaño.');
+        const code = e && (e.code || e.message);
+        setError(type.label + ': ' + (code === 'INVALID_DOCUMENT_FILE' ? 'el archivo no tiene un formato o tamaño permitido.' : 'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
       } finally {
-        setBusy('');
+        setBusy(null);
+        selection.current = null;
       }
     };
-    const open = doc => {
-      if (doc && doc.signedUrl) window.open(doc.signedUrl, '_blank', 'noopener,noreferrer');
+    const open = async (doc, type) => {
+      if (!doc) return;
+      setError('');
+      setBusy({
+        id: type.id,
+        phase: 'authorizing'
+      });
+      const popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+      try {
+        const preview = await window.DocumentWorkflowRepository.freshPreview(doc);
+        if (popup) popup.location.replace(preview.signedUrl);else window.open(preview.signedUrl, '_blank', 'noopener,noreferrer');
+      } catch (e) {
+        if (popup) popup.close();
+        const code = e && (e.code || e.message);
+        setError(type.label + ': ' + (code === 'DOCUMENT_OBJECT_MISSING' ? 'este documento ya no está disponible. Puedes cargarlo nuevamente.' : 'no fue posible autorizar la vista. Intenta nuevamente.'));
+        await onChanged();
+      } finally {
+        setBusy(null);
+      }
     };
     const hiddenInput = h('input', {
       ref: input,
@@ -19769,6 +19892,35 @@ Object.assign(window, {
         marginBottom: 9
       }
     }, error);
+    const phaseLabel = type => {
+      if (!busy || busy.id !== type.id) return '';
+      return busy.phase === 'preparing' ? 'Preparando imagen…' : busy.phase === 'authorizing' ? 'Autorizando vista…' : busy.phase === 'registering' ? 'Registrando…' : 'Subiendo…';
+    };
+    const actionButton = (label, icon, onClick, disabled, kind) => h('button', {
+      type: 'button',
+      disabled,
+      onClick,
+      'data-document-action': kind,
+      style: {
+        height: 36,
+        border: '1px solid var(--hairline-strong)',
+        borderRadius: 10,
+        background: '#fff',
+        color: 'var(--guinda)',
+        fontSize: 11.5,
+        fontWeight: 800,
+        padding: '0 10px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        flex: '1 1 auto'
+      }
+    }, h(I, {
+      name: icon,
+      size: 14,
+      stroke: 2
+    }), label);
     if (variant === 'tiles') {
       return h(React.Fragment, null, hiddenInput, alert, h('div', {
         className: 'mr-doc-grid',
@@ -19783,16 +19935,17 @@ Object.assign(window, {
             icon: 'upload'
           };
         const accepted = !!(doc && ACCEPTED.has(doc.status)),
-          canUpload = !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
-          preview = accepted && doc.signedUrl;
-        const image = !!(preview && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
-          isBusy = busy === type.id;
-        const action = canUpload ? 'upload' : preview ? 'preview' : 'unavailable';
-        const actionCopy = canUpload ? doc ? 'Reemplazar' : 'Adjuntar' : state.label;
-        const hint = type.description || state.label;
-        const classes = ['mr-doc-tile', accepted ? 'is-filled' : '', highlightedId === type.id && !accepted ? 'is-highlighted' : '', doc && ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) ? 'is-error' : ''].filter(Boolean).join(' ');
+          available = physicalAvailable(doc),
+          canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
+          preview = accepted && available;
+        const image = !!(preview && doc.signedUrl && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
+          isBusy = !!(busy && busy.id === type.id);
+        const action = canUpload ? 'upload' : preview ? 'preview' : 'unavailable',
+          actionCopy = canUpload ? doc ? 'Reemplazar' : 'Adjuntar' : state.label,
+          hint = type.description || state.label;
+        const classes = ['mr-doc-tile', accepted && available ? 'is-filled' : '', highlightedId === type.id && (!accepted || !available) ? 'is-highlighted' : '', doc && (['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) || !available) ? 'is-error' : ''].filter(Boolean).join(' ');
         const act = () => {
-          if (canUpload) pick(type);else if (preview) open(doc);
+          if (preview) open(doc, type);else if (canUpload) pick(type, 'file');
         };
         return h('article', {
           key: type.id,
@@ -19800,6 +19953,7 @@ Object.assign(window, {
           'data-document-type': type.code,
           'data-document-type-id': type.id,
           'data-document-status': doc ? doc.status : 'MISSING',
+          'data-document-availability': doc && doc.availability || 'MISSING',
           'data-document-required': req.required === false ? 'false' : 'true'
         }, h('button', {
           type: 'button',
@@ -19813,7 +19967,7 @@ Object.assign(window, {
           src: doc.signedUrl,
           alt: '',
           loading: 'lazy'
-        }), accepted && h('span', {
+        }), accepted && available && h('span', {
           className: 'mr-doc-veil',
           'aria-hidden': 'true'
         }), h('span', {
@@ -19826,12 +19980,12 @@ Object.assign(window, {
         })), h('span', {
           className: 'mr-doc-meta'
         }, h('strong', null, type.label), h('span', {
-          className: accepted ? 'mr-doc-file' : 'mr-doc-add'
+          className: accepted && available ? 'mr-doc-file' : 'mr-doc-add'
         }, h(I, {
           name: isBusy ? 'clock' : canUpload ? 'camera' : state.icon,
           size: 14,
           stroke: 2.1
-        }), isBusy ? 'Subiendo…' : actionCopy + (canUpload ? ' · ' + hint : ''))), accepted && h('span', {
+        }), isBusy ? phaseLabel(type) : actionCopy + (canUpload ? ' · ' + hint : ''))), accepted && available && h('span', {
           className: 'mr-doc-ok',
           'aria-label': state.label
         }, h(I, {
@@ -19842,12 +19996,12 @@ Object.assign(window, {
           type: 'button',
           className: 'mr-doc-view',
           'aria-label': 'Ver ' + type.label,
-          onClick: () => open(doc)
+          onClick: () => open(doc, type)
         }, h(I, {
           name: 'eye',
           size: 16,
           stroke: 2
-        })), accepted && h('span', {
+        })), accepted && available && h('span', {
           className: 'mr-doc-status'
         }, state.label), doc && doc.review_observation && h('p', {
           className: 'mr-doc-observation'
@@ -19863,26 +20017,42 @@ Object.assign(window, {
     }, requirements.map(req => {
       const type = req.document_type || req,
         doc = newest(documents, type.id),
-        state = doc ? COLORS[doc.status] : {
+        available = physicalAvailable(doc),
+        accepted = !!(doc && ACCEPTED.has(doc.status)),
+        missingObject = !!(doc && !available),
+        baseState = doc ? COLORS[doc.status] : null,
+        state = missingObject ? {
           fg: '#B0002A',
           bg: '#FCE9EE',
-          label: 'Pendiente',
+          label: 'Archivo no disponible',
+          icon: 'info'
+        } : baseState || {
+          fg: '#B0002A',
+          bg: '#FCE9EE',
+          label: 'Documento requerido',
           icon: 'upload'
         },
-        canUpload = !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status);
+        canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
+        cameraAllowed = (type.accepted_mime_types || []).some(mime => String(mime).startsWith('image/')),
+        isBusy = !!(busy && busy.id === type.id),
+        canView = accepted && available;
       return h('div', {
         key: type.id,
         'data-document-type': type.code,
         'data-document-type-id': type.id,
         'data-document-status': doc ? doc.status : 'MISSING',
+        'data-document-availability': doc && doc.availability || 'MISSING',
         style: {
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
           background: 'var(--surface)',
           borderRadius: 16,
           padding: compact ? '11px 12px' : '13px 14px',
           boxShadow: 'var(--neo-sm)'
+        }
+      }, h('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12
         }
       }, h('div', {
         style: {
@@ -19920,19 +20090,20 @@ Object.assign(window, {
           marginTop: 2
         }
       }, h(I, {
-        name: state.icon,
+        name: isBusy ? 'clock' : state.icon,
         size: 13,
         stroke: 2.1
-      }), busy === type.id ? 'Subiendo…' : state.label), doc && doc.review_observation && h('div', {
+      }), isBusy ? phaseLabel(type) : state.label), doc && doc.review_observation && h('div', {
         style: {
           fontSize: 11,
           color: '#9B2743',
           marginTop: 3
         }
-      }, doc.review_observation)), doc && doc.signedUrl && h('button', {
+      }, doc.review_observation)), canView && h('button', {
         type: 'button',
         'aria-label': 'Ver ' + type.label,
-        onClick: () => open(doc),
+        disabled: isBusy,
+        onClick: () => open(doc, type),
         style: {
           width: 38,
           height: 38,
@@ -19947,22 +20118,14 @@ Object.assign(window, {
         name: 'eye',
         size: 18,
         stroke: 2
-      })), canUpload && h('button', {
-        type: 'button',
-        disabled: busy === type.id,
-        onClick: () => pick(type),
+      }))), canUpload && h('div', {
         style: {
-          minWidth: 62,
-          height: 38,
-          border: 'none',
-          borderRadius: 11,
-          background: '#fff',
-          boxShadow: 'var(--neo-sm)',
-          color: 'var(--guinda)',
-          fontSize: 12.5,
-          fontWeight: 800
+          display: 'flex',
+          gap: 7,
+          marginTop: 10,
+          flexWrap: 'wrap'
         }
-      }, 'Subir'));
+      }, cameraAllowed && actionButton('Tomar foto', 'camera', () => pick(type, 'camera'), isBusy, 'camera'), actionButton(doc ? 'Reemplazar' : 'Subir archivo', 'upload', () => pick(type, 'file'), isBusy, 'upload')));
     })));
   }
   function useDocuments() {
@@ -20006,7 +20169,7 @@ Object.assign(window, {
       requirements = useMemo(() => state.types.filter(t => t.required_by_default), [state.types]);
     const verified = requirements.filter(t => {
       const d = newest(state.docs, t.id);
-      return d && d.status === 'VERIFIED';
+      return d && d.status === 'VERIFIED' && physicalAvailable(d);
     }).length;
     return h('div', {
       'data-document-authority': 'supabase',
@@ -20149,7 +20312,8 @@ Object.assign(window, {
     }, 'Reintentar')), state.phase === 'ready' && h(DocumentRequirementList, {
       requirements,
       documents: state.docs,
-      onChanged: load
+      onChanged: load,
+      editable: true
     }))));
   }
   window.DocumentRequirementList = DocumentRequirementList;

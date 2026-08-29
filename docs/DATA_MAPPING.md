@@ -333,3 +333,17 @@ Failed source files: Íconos!B2:B4, Firebase HTTP 402; no replacement inferred
 Fallback: NONE; Storage failure produces placeholder/error
 Status: OPERATIONALLY COMPLETE; HISTORICAL_ASSET_RECOVERY_PENDING=3; UNMAPPED_FILE_COLUMNS=0
 ```
+
+```text
+DOMAIN: Disponibilidad documental para solicitudes
+Authority: affiliate_documents + document_types; disponibilidad exige private_assets + objeto existente en private-assets
+Business key: affiliate_id + document_type_id; la versión más reciente se ordena por created_at,id
+Version lineage: affiliate_documents.replaces_document_id -> affiliate_documents.id
+Reader: DocumentWorkflowRepository.list/freshPreview; get_affiliate_document_availability
+Writer: register_affiliate_document; crea PENDING_REVIEW y audita UPLOAD/REPLACEMENT_UPLOAD
+Backend gate: request_documents_require_available_object sobre request_documents
+Signed URL: derivada, privada, 300 segundos, regenerada en cada apertura, nunca persistida
+Fallback/cache: NONE; objeto ausente produce estado controlado y recuperación explícita
+Recovery: bloqueada si ya existe historia de reemplazo
+Status: SUPABASE_ACTIVE / ADR-075 / INV-122
+```

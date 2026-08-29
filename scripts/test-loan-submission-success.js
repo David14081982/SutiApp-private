@@ -56,7 +56,7 @@ assert.match(membership,/kind:'membership'/);
 for(const marker of ['data-loan-submission-success','¿Qué sigue?','data-loan-success-confetti','Volver al inicio']) {
   assert.ok(bundle.includes(marker),'generated bundle missing: '+marker);
 }
-for(const marker of ['REQUIRED_DOCUMENTS_MISSING','data-loan-submission-error','Antes de enviar, adjunta:']) {
+for(const marker of ['REQUIRED_DOCUMENTS_MISSING','data-loan-submission-error','Corregir documentos']) {
   assert.ok(bundle.includes(marker),'generated bundle missing document preflight: '+marker);
 }
 

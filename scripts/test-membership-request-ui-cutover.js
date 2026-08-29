@@ -66,9 +66,9 @@ assert.match(documents, /variant==='tiles'/);
 assert.match(documents, /data-document-grid/);
 assert.match(documents, /data-document-type-id/);
 assert.match(documents, /data-document-status/);
-assert.match(documents, /DocumentWorkflowRepository\.upload\(fileType,file\)/);
+assert.match(documents, /DocumentWorkflowRepository\.upload\(type,file,\{onProgress:/);
 assert.match(documents, /\['REJECTED','REUPLOAD_REQUIRED'\]\.includes\(doc\.status\)/);
-assert.match(documents, /doc\.signedUrl/);
+assert.match(documents, /DocumentWorkflowRepository\.freshPreview\(doc\)/);
 assert.doesNotMatch(documents, /Quitar|\.remove\(|storage\.from\([^)]*\)\.remove/);
 
 assert.match(membership, /phase==='ready'&&missing===0&&!!terms/);

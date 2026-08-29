@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-29 — H-LOAN-DOCUMENT-FLOW-RECOVERY-001
+
+- Se corrigió la causa de `InvalidJWT`: `Ver` ya no reutiliza una URL firmada expirada; revalida el objeto privado y firma por 300 segundos en cada clic. Un fallo queda dentro de SutiApp con recuperación, no en el JSON de Storage.
+- El expediente distingue metadata de existencia física. La versión más reciente por tipo gobierna el requisito y el trigger backend impide adjuntar una fila huérfana o antigua a una solicitud.
+- El afiliado puede tomar foto, elegir archivo/galería o reemplazar. Un `VERIFIED` anterior permanece inmutable y el reemplazo crea otra fila `PENDING_REVIEW` enlazada/auditada; no hay overwrite, DELETE histórico ni fallback.
+- El préstamo enumera los nombres exactos faltantes y vuelve a Documentos sin perder simulación, destino, firma ni términos. Cálculos, elegibilidad, reglas, roles, legales, Google y Apps Script quedaron intactos.
+
+```text
+H-LOAN-DOCUMENT-FLOW-RECOVERY-001 RESULT
+Status: PASS
+Files changed: repository/pantallas de documentos y préstamo; migración/recovery; bundle/cache; pruebas; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — affiliate_documents/document_types + private_assets/objeto privado único; signed URL sólo derivada
+Invariant verdict: PASS — INV-097–099, INV-108, INV-120–122 preservadas
+Build: PASS — bundle reproducible desde 92 fuentes; sintaxis válida
+Tests: PASS — 59/59 estáticas; 10 casos focalizados; migración live; reemplazo reversible; Chrome real autenticado
+Security: PASS — bucket privado, Auth/RLS, cross-user 0, anónimo denegado, secretos frontend 0, validación backend
+Legacy impact: NO INTERACTION — Google/Apps Script/finanzas legacy 0 lecturas, 0 escrituras y 0 cambios
+Unexpected files changed: ninguno fuera del alcance declarado
+Known limitations: el arnés browser integral anterior se detenía en el simulador financiero; la ruta documental se cubrió con un arnés Chrome directo y autenticado
+Evidence: docs/qa/H-LOAN-DOCUMENT-FLOW-RECOVERY-001-EVIDENCE.md y scripts/test-loan-document-flow*.{js,py}
+```
+
 ## 2026-08-29 — H-SUPABASE-PERFORMANCE-001
 
 - Se midió el recorrido real Supabase antes de cambiar código y se corrigieron las causas dominantes: bootstrap global de cuatro stores, store visual completo en login, resolución Auth duplicada, consultas secuenciales, firma privada N+1, originales de varios MB y recarga de imágenes públicas sin caché efectiva.

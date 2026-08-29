@@ -51,6 +51,7 @@
 | ADR-065 | Supabase es la autoridad única de programas, fondos y reglas financieras; Google `Criterios de fondos` queda sólo como histórico/procedencia sin dual-read ni fallback. | Aceptada / ACTIVE |
 | ADR-072 | Se retira del runtime la edición global de textos; `managed_copy_overrides` y sus filas se conservan como histórico inactivo, sin lectores ni writers frontend. | Aceptada / ACTIVE |
 | ADR-074 | Una solicitud pendiente o revisada no bloquea otra del mismo afiliado para el mismo programa/producto ni para otro; Ahorro Voluntario y Portafolio de Inversión quedan fuera de esta habilitación. | Aceptada / ACTIVE |
+| ADR-075 | El expediente exige versión documental más reciente y objeto privado existente; cada vista firma de nuevo y un reemplazo crea historia enlazada sin mutar el `VERIFIED` anterior. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -574,3 +575,14 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Excepciones:** esta habilitación no crea writers ni cambia el comportamiento de Ahorro Voluntario o Portafolio de Inversión. Ambos permanecen bajo sus contratos y fronteras legacy vigentes.
 - **Autoridad y seguridad:** `program_requests`, sus RPC, RLS, identidad derivada, auditoría e idempotencia permanecen sin cambios. No se toca Google, Apps Script ni ningún cálculo financiero.
 - **Aprobación:** instrucción explícita del propietario, 2026-08-29.
+
+## ADR-075 — Disponibilidad física y versionado del expediente de préstamo
+
+- **Autoridad:** `affiliate_documents` + `document_types` permanecen canónicos; `private_assets` y la existencia en `storage.objects/private-assets` son condición de disponibilidad. Metadata sin objeto no satisface un requisito.
+- **Vista:** ninguna URL firmada se persiste ni se reutiliza como autoridad. Cada acción `Ver` consulta disponibilidad y genera una URL privada nueva de 300 segundos; el fallo se presenta dentro de SutiApp, sin abrir la respuesta JSON de Storage.
+- **Reemplazo:** una fila `VERIFIED` continúa inmutable. El afiliado puede crear una nueva versión `PENDING_REVIEW` enlazada por `replaces_document_id`; no se sobrescribe ni elimina historia. La versión más reciente del tipo prevalece y se audita como `REPLACEMENT_UPLOAD`.
+- **Solicitud:** UI y trigger backend exigen que cada versión elegida sea la más reciente, tenga estado aceptable y objeto físico disponible. Si falta, se enumera el nombre exacto y el usuario vuelve a Documentos conservando simulación, destino, firma y aceptación.
+- **Captura:** cámara y archivo/galería son intenciones separadas. Las imágenes grandes se preparan en el dispositivo con orientación EXIF, límite de dimensión y compresión antes de la carga; el backend conserva el límite máximo de 10 MB, MIME y hash.
+- **Seguridad y legacy:** bucket privado, RLS, identidad derivada y auditoría se preservan. No cambia cálculo, elegibilidad, tasa, plazo, rol, regla legal, Google ni Apps Script.
+- **Recovery:** `20260829000100_loan_document_flow_recovery_recovery.sql` aborta si existe historia de reemplazo; nunca borra documentos para facilitar un rollback.
+- **Aprobación:** instrucción explícita del propietario de corregir quirúrgicamente el flujo documental de préstamo, 2026-08-29.

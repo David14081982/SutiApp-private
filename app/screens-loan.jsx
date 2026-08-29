@@ -647,16 +647,26 @@
         React.createElement('div', { style: { textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginTop: 6 } }, value.length + '/500')));
   }
 
-  function StepDocuments({ requirements, documents, onChanged, phase }) {
+  function MissingDocumentsNotice({ missing, onCorrect }) {
+    if (!missing || !missing.length) return null;
+    return React.createElement('div', { role: 'alert', 'data-loan-missing-documents': '', style: { padding: 13, borderRadius: 14, background: '#FCE9EE', color: '#9B1C31', fontSize: 12, fontWeight: 700, lineHeight: 1.45 } },
+      React.createElement('div', { style: { fontWeight: 850 } }, 'Necesitamos actualizar algunos documentos antes de continuar.'),
+      React.createElement('div', { style: { marginTop: 7 } }, 'Faltan:'),
+      React.createElement('ul', { style: { margin: '4px 0 0', paddingLeft: 19 } }, missing.map((entry) => React.createElement('li', { key: entry.requirement.document_type_id }, entry.requirement.document_type && entry.requirement.document_type.label || 'Documento requerido'))),
+      onCorrect && React.createElement('button', { type: 'button', onClick: onCorrect, style: { marginTop: 10, minHeight: 38, border: 0, borderRadius: 10, padding: '0 13px', background: 'var(--guinda)', color: '#fff', fontSize: 12, fontWeight: 850 } }, 'Corregir documentos'));
+  }
+
+  function StepDocuments({ requirements, documents, onChanged, phase, missing }) {
     return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 10 } },
       phase==='error'&&React.createElement('div',{role:'alert',style:{padding:12,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize:12,fontWeight:750}},'No fue posible consultar los requisitos. ',React.createElement('button',{onClick:onChanged,style:{border:'none',background:'transparent',color:'inherit',fontWeight:900}},'Reintentar')),
-      React.createElement(window.DocumentRequirementList,{requirements,documents,onChanged,compact:true}),
+      phase==='ready'&&React.createElement(MissingDocumentsNotice,{missing}),
+      React.createElement(window.DocumentRequirementList,{requirements,documents,onChanged,compact:true,editable:true}),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
         React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
   }
 
-  function StepSummary({ simulation, destination, signature, setSignature, accepted, setAccepted, terms }) {
+  function StepSummary({ simulation, destination, signature, setSignature, accepted, setAccepted, terms, missingDocuments, onCorrectDocuments }) {
     const result = simulation && simulation.result;
     if (!result) return React.createElement(StatusNotice, { state: 'UNAVAILABLE' });
     const rows = [
@@ -679,6 +689,7 @@
           React.createElement('div', { style: { fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)' } }, 'Destino'),
           React.createElement('div', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.45, marginTop: 3 } }, destination))),
       !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize:12,fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
+      React.createElement(MissingDocumentsNotice,{missing:missingDocuments,onCorrect:onCorrectDocuments}),
       React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
   }
 
@@ -690,17 +701,25 @@
   }
 
   const ACCEPTED_LOAN_DOCUMENT_STATUSES = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
+  function newestLoanDocument(documents, documentTypeId) {
+    return (documents || []).filter((document) => document.document_type_id === documentTypeId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
+  }
   function resolveLoanDocuments(requirements, documents) {
     const required = (requirements || []).filter((requirement) => requirement.required !== false);
-    const selected = (requirements || []).map((requirement) => (documents || []).find((document) =>
-      document.document_type_id === requirement.document_type_id && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status))).filter(Boolean);
-    const missing = required.filter((requirement) => !selected.some((document) => document.document_type_id === requirement.document_type_id));
+    const resolved = (requirements || []).map((requirement) => {
+      const document = newestLoanDocument(documents, requirement.document_type_id);
+      const physicallyAvailable = !!(document && document.available === true && document.availability === 'AVAILABLE');
+      return { requirement, document, valid: !!(document && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status) && physicallyAvailable) };
+    });
+    const selected = resolved.filter((entry) => entry.valid).map((entry) => entry.document);
+    const missing = resolved.filter((entry) => entry.requirement.required !== false && !entry.valid);
     return { selected, missing };
   }
   function missingLoanDocumentsMessage(requirements) {
-    const labels = (requirements || []).map((requirement) => requirement.document_type && requirement.document_type.label || 'documento requerido');
+    const labels = (requirements || []).map((entry) => { const requirement=entry.requirement||entry; return requirement.document_type && requirement.document_type.label || 'documento requerido'; });
     if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
-    return 'Antes de enviar, adjunta: ' + labels.join(', ') + '.';
+    return 'Necesitamos actualizar estos documentos antes de continuar: ' + labels.join(', ') + '.';
   }
 
   function LoanScreen({ app }) {
@@ -712,23 +731,23 @@
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
     const [submitError, setSubmitError] = React.useState('');
+    const [documentRecovery,setDocumentRecovery]=React.useState([]);
     const [submission, setSubmission] = React.useState(null);
     const [documentState,setDocumentState]=React.useState({requirements:[],documents:[],terms:null,phase:'loading'});
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
-    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.list(),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
+    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.list(),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
     React.useEffect(()=>{loadDocuments();},[loadDocuments]);
     React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
     const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', '¿Para qué lo necesitas?', 'Verifica tus documentos', 'Confirma tu solicitud'];
     const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
-    const loanDocs=loanDocumentSelection.selected;
     const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
     const canContinue = step === 0 ? !!(simulation && simulation.current)
       : step === 1 ? !!destination.trim()
       : step === 2 ? documentsReady
-      : !!(simulation && simulation.current && signature && accepted && documentState.terms && !submitting);
+      : !!(simulation && simulation.current && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
     const submit = async () => {
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
@@ -737,7 +756,7 @@
         const freshDocumentState=await loadDocuments();
         if(!freshDocumentState){setStep(2);setSubmitError('No fue posible verificar tu expediente. Intenta consultar los documentos nuevamente.');return;}
         const freshDocuments=resolveLoanDocuments(freshDocumentState.requirements,freshDocumentState.documents);
-        if(freshDocuments.missing.length){setStep(2);setSubmitError(missingLoanDocumentsMessage(freshDocuments.missing));return;}
+        if(freshDocuments.missing.length){setDocumentRecovery(freshDocuments.missing);setSubmitError('');return;}
         if(!freshDocumentState.terms){setStep(3);setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');return;}
         const items = await window.ProgramCatalogRepository.listItems();
         const item = items.find((value) => value.program_key === 'prestamo' && value.requestMode === 'supabase');
@@ -764,7 +783,7 @@
         } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
           const refreshed=await loadDocuments();
           const missing=refreshed?resolveLoanDocuments(refreshed.requirements,refreshed.documents).missing:[];
-          setStep(2);
+          setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
         } else {
           setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
@@ -779,8 +798,8 @@
         React.createElement('h2', { className: 'su-route', style: { fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
         step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation }),
         step === 1 && React.createElement(StepDestination, { value: destination, onChange: setDestination }),
-        step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase}),
-        step === 3 && React.createElement(StepSummary, { simulation, destination, signature, setSignature, accepted, setAccepted,terms:documentState.terms })),
+        step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),
+        step === 3 && React.createElement(StepSummary, { simulation, destination, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');} })),
       React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
         submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 12, fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
         React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : setStep(step + 1) }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));

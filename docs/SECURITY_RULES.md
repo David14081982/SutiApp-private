@@ -134,6 +134,8 @@ La proyección de impacto se ejecuta server-side con el pago previamente resuelt
 
 Los archivos siguen en `private-assets`; afiliado y Admin autorizado reciben únicamente URL firmada temporal. La bandeja de revisión firma por 300 segundos y no expone paths públicos. La matriz bancaria final confirmó: anónimo 401, cruce A↔B 0, cada afiliado ve sólo su fila y Admin ve 504 exclusivamente por `bank_accounts.read`; los CRUD de prueba fueron reversibles. El listado enmascara identificadores y la auditoría conserva acciones/booleanos, nunca números completos.
 
+Para el flujo documental de solicitudes, `get_affiliate_document_availability` es `SECURITY DEFINER`, usa `search_path=''`, deriva el afiliado efectivo y sólo admite Auth propio o Admin con `documents.read`; anónimo queda sin grant y otro afiliado obtiene cero filas. La RPC devuelve únicamente `document_id`, estado booleano y motivo controlado, nunca bucket, path ni URL. La URL de vista se firma por 300 segundos en cada clic después de revalidar el objeto. `request_documents_require_available_object` impide que una comprobación sólo visual autorice una solicitud con metadata huérfana.
+
 La URL del QR se construye localmente desde una ruta validada y un token de 64 caracteres; no usa API externa ni introduce nombre, CURP, número de control, banco o documento. El servicio no admite redirects arbitrarios porque `destination_path` está restringido por constraint y sólo Admin `content.write` puede cambiar la política.
 
 ## Carga documental desde Admin Afiliados — 2026-08-27

@@ -92,7 +92,7 @@
         collapsedHeader&&collapsedHeader.kind==='image'
           ? React.createElement('img', { ref:imageRef,src:collapsedHeader.url,alt:'','aria-hidden':'true','data-home-header-resource':'home.header.collapsed',style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 32%',display:'block',pointerEvents:'none',opacity:0,transform:'translate3d(0,0,0) scale(1.08)',transformOrigin:'50% 32%',willChange:'transform, opacity',zIndex:0} })
           : React.createElement('div', { ref:imageRef,'aria-hidden':'true','data-home-header-resource':'home.header.collapsed','data-home-header-fallback':'icon',style:{position:'absolute',inset:0,display:'grid',placeItems:'center',pointerEvents:'none',opacity:0,transform:'translate3d(0,0,0) scale(1.08)',transformOrigin:'50% 32%',willChange:'transform, opacity',zIndex:0} },React.createElement(I,{name:(collapsedHeader&&collapsedHeader.icon)||'image',size:58})),
-        React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: -50, top: -40, opacity: .14, zIndex:1 } }, React.createElement(window.SutiSeal, { size: 200 })),
+        React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: 0, top: '50%', marginTop: -100, opacity: .14, zIndex:1 } }, React.createElement(window.SutiSeal, { size: 200 })),
         // controls row
         React.createElement('div', { ref: riseRef, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', willChange: 'transform', zIndex:2 } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 11 } },
@@ -116,7 +116,7 @@
 
     // other tabs: gradient header with title + bell + sheet lip
     return React.createElement('div', { ref: barRef, style: Object.assign({ background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '6px 18px 0', position: 'relative', overflow: 'hidden' }, stick) },
-      React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: -46, top: -46, opacity: .12 } }, React.createElement(window.SutiSeal, { size: 180 })),
+      React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: 0, top: '50%', marginTop: -90, opacity: .12 } }, React.createElement(window.SutiSeal, { size: 180 })),
       React.createElement('div', { ref: riseRef, style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', willChange: 'transform' } },
         React.createElement('div', null,
           React.createElement('h1', { style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', margin: 0 } }, titles[variant]),

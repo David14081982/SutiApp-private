@@ -1635,3 +1635,25 @@ Unexpected files changed: SutiApp.html reformateado y dos evidencias Financial R
 Known limitations: eliminación física prohibida; baja reversible es la operación de eliminación administrativa
 Evidence: docs/qa/H-ADMIN-AFFILIATES-MODULE-001-EVIDENCE.md y scripts relacionados
 ```
+
+## 2026-08-29 — H-TOPBAR-SEAL-ALIGNMENT-001
+
+- El sello institucional decorativo del fondo de `TopBar` quedó centrado verticalmente y alineado al borde derecho tanto en Inicio como en las cabeceras internas. Tamaño, opacidad, parallax, controles, navegación, tarjetas, scroll y autoridad Supabase del asset permanecen intactos.
+- Bundle reproducido desde 91 fuentes; HTML `v162`, caché PWA `v106`, SHA-256 `B62008CAAFB9874ECC190D607A856FE7110F746253EB6395A49A55959C825C4C` y reproducción determinista `PASS`.
+- Contrato focalizado del encabezado, preservación Claude, sintaxis y sincronía de cachebusters `PASS`. Suite estática global 54/55; el único fallo es el preexistente de comillas literales en `test-pages-deployment.js`. El arnés browser CDP no produjo evidencia verificable en este entorno y no se contabilizó como `PASS`.
+- Supabase, Auth, Storage, RLS, datos, Google, Ahorro, Préstamos y cálculos financieros: `NO READ / NO WRITE / NO CHANGE`.
+
+```text
+H-TOPBAR-SEAL-ALIGNMENT-001 RESULT
+Status: PASS
+Files changed: app/app.jsx; app/bundle.js; SutiApp.html; sw.js; contratos de caché/TopBar; este changelog
+Source-of-truth verdict: NOT APPLICABLE — posición visual únicamente; la autoridad del sello no cambió
+Invariant verdict: PASS — INV-015, INV-027 e INV-036 preservadas
+Build: PASS — 91 fuentes, bundle determinista y sintaxis válida
+Tests: PASS focalizados; suite global 54/55 por fallo preexistente no relacionado
+Security: NOT APPLICABLE — sin cambios de Auth, RLS, permisos o secretos
+Legacy impact: NOT APPLICABLE / NO READ / NO WRITE / NO CHANGE
+Unexpected files changed: SutiApp.html reformateado y dos evidencias Financial Requests preexistentes, preservados
+Known limitations: validación browser no acreditada porque el arnés CDP terminó sin salida verificable
+Evidence: node scripts/test-home-header-collapsed.js; node scripts/test-claude-ui-preservation.js; node scripts/test-static-suite.js; node --check app/bundle.js; build reproducible por SHA-256
+```

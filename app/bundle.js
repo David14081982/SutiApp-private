@@ -56555,8 +56555,9 @@ Object.assign(window, {
         ref: sealRef,
         style: {
           position: 'absolute',
-          right: -50,
-          top: -40,
+          right: 0,
+          top: '50%',
+          marginTop: -100,
           opacity: .14,
           zIndex: 1
         }
@@ -56685,8 +56686,9 @@ Object.assign(window, {
       ref: sealRef,
       style: {
         position: 'absolute',
-        right: -46,
-        top: -46,
+        right: 0,
+        top: '50%',
+        marginTop: -90,
         opacity: .12
       }
     }, React.createElement(window.SutiSeal, {

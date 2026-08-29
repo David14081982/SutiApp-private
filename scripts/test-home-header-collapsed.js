@@ -38,6 +38,8 @@ assert(app.includes('TRAVEL * .55 * p'));
 assert(app.includes('1.08 - .08 * p'));
 assert(app.includes("objectPosition:'50% 32%'"));
 assert(app.includes("pointerEvents:'none'"));
+assert(app.includes("right: 0, top: '50%', marginTop: -100"), 'el sello de Inicio debe quedar centrado verticalmente y alineado a la derecha');
+assert(app.includes("right: 0, top: '50%', marginTop: -90"), 'el sello de las cabeceras internas debe quedar centrado verticalmente y alineado a la derecha');
 assert(!/home-header-collapsed\.(?:png|webp)/.test(app), 'Inicio no debe referenciar el archivo directo');
 assert(app.includes("saludoHome() + ','"));
 assert(app.includes("h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'"));

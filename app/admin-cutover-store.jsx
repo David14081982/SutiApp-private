@@ -114,5 +114,4 @@
   store.saveNode=structural;store.toggleNode=structural;store.removeNode=structural;store.duplicateNode=structural;store.reorderContent=structural;store.resetContent=structural;
   window.AdminCutoverStore=Object.freeze({load,toCodes,toLabels,get segments(){return segments;},get failedDomains(){return failedDomains.slice();}});
   if(window.AdminRepository&&window.AdminRepository.subscribe)window.AdminRepository.subscribe(s=>{if(s.phase==='authorized')load();});
-  setTimeout(load,0);
 })();

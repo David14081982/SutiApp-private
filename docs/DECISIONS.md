@@ -50,6 +50,7 @@
 | ADR-064 | La cotización interactiva usa una RPC autenticada sobre snapshot personalizado y el mismo resolver certificado que Edge; su autoridad Google original fue supersedida por ADR-065. | Aceptada / autoridad supersedida |
 | ADR-065 | Supabase es la autoridad única de programas, fondos y reglas financieras; Google `Criterios de fondos` queda sólo como histórico/procedencia sin dual-read ni fallback. | Aceptada / ACTIVE |
 | ADR-072 | Se retira del runtime la edición global de textos; `managed_copy_overrides` y sus filas se conservan como histórico inactivo, sin lectores ni writers frontend. | Aceptada / ACTIVE |
+| ADR-074 | Una solicitud pendiente o revisada no bloquea otra del mismo afiliado para el mismo programa/producto ni para otro; Ahorro Voluntario y Portafolio de Inversión quedan fuera de esta habilitación. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -564,3 +565,12 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Seguridad Storage:** `can_admin_upload_affiliate_document_path` sólo devuelve un booleano para permiso + UUID existente. `can_delete_unreferenced_affiliate_document_object` verifica referencias fuera del filtrado RLS antes de permitir cleanup. Ninguno otorga lectura directa ni expone PII; normal, anónimo y el borrado de objetos referenciados quedan denegados.
 - **Migración/recovery:** `20260827001300–01320` son aditivas; forward y recovery pasaron en rollback y aplicación sin filas de negocio. Los recovery preservan todo documento registrado.
 - **Aprobación:** solicitud explícita del propietario de editar, eliminar y cargar documentos guardados en Supabase desde Afiliados, 2026-08-27.
+
+## ADR-074 — Solicitudes concurrentes por afiliado y programa
+
+- **Decisión:** una solicitud previa, incluso pendiente o en revisión, no bloquea una nueva solicitud del mismo afiliado para el mismo programa, producto o para otro destino. Cada intención nueva recibe una `idempotency_key` nueva y crea una fila distinta en `program_requests`; sólo el reintento técnico de la misma intención reutiliza su fila.
+- **Documentos:** un documento canónico `PENDING_REVIEW`, `UNDER_REVIEW` o `VERIFIED` puede adjuntarse conforme al requisito vigente. Que la revisión documental de otra solicitud siga abierta no constituye un bloqueo global ni por programa.
+- **UX:** los estados y folios existentes siguen visibles, pero son informativos. Una cotización pendiente o lista conserva una acción para abrir otra solicitud sin cancelar, reemplazar ni alterar la anterior.
+- **Excepciones:** esta habilitación no crea writers ni cambia el comportamiento de Ahorro Voluntario o Portafolio de Inversión. Ambos permanecen bajo sus contratos y fronteras legacy vigentes.
+- **Autoridad y seguridad:** `program_requests`, sus RPC, RLS, identidad derivada, auditoría e idempotencia permanecen sin cambios. No se toca Google, Apps Script ni ningún cálculo financiero.
+- **Aprobación:** instrucción explícita del propietario, 2026-08-29.

@@ -14,7 +14,7 @@ assert(screen.includes("app.admin.has('assets.write')"));
 assert(repository.includes("rpc('get_admin_access_context')"));
 assert(repository.includes("from('app_settings').update"));
 assert(repository.includes("storage.from('app-assets').upload"));
-assert(repository.includes('React.useEffect(()=>{retry();},[])'));
+assert(repository.includes('React.useEffect(()=>{bootstrap();},[])'));
 assert(read('app/affiliate-auth.js').includes('adminOnly: !affiliate && isAdmin'));
 assert(read('app/app.jsx').includes("defaultTab: auth.affiliateView ? 'home' : 'admin'"));
 assert(branding.includes("'data-h008-admin-editor'"));

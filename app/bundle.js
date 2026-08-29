@@ -3989,7 +3989,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     size = 96,
     mono = false
   }) {
-    const visual = window.useVisualContent ? window.useVisualContent() : {
+    const visual = window.useVisualBranding ? window.useVisualBranding() : {
       phase: 'loading',
       branding: null
     };
@@ -5040,6 +5040,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     size = 44,
     src,
     tone = 'var(--guinda)',
+    loading,
     ...rest
   }) {
     const [failed, setFailed] = React.useState(false);
@@ -5067,6 +5068,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }, showPhoto && React.createElement('img', {
       src,
       alt: '',
+      loading,
+      decoding: 'async',
       onError: () => setFailed(true),
       style: {
         position: 'absolute',
@@ -5290,6 +5293,264 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     useBtnConfirm,
     money
   });
+})();
+})();
+/* @@file request-submission-success.jsx */
+(function(){
+/* request-submission-success.jsx — shared post-submit confirmation for requestable programs. */
+(function () {
+  const I = window.Icon;
+  const dash = '—';
+  const colors = ['#B9003B', '#E2AA3B', '#0E8A61', '#314A7C', '#F0A9BA'];
+  const COPY = {
+    loan: {
+      stages: [{
+        state: 'done',
+        title: 'Solicitud enviada',
+        meta: 'Justo ahora'
+      }, {
+        state: 'current',
+        title: 'Revisión de documentos',
+        badge: 'EN CURSO',
+        detail: 'Recibirás una notificación en cuanto el comité evalúe tu solicitud (máximo 24 hrs.).'
+      }, {
+        state: 'upcoming',
+        title: 'Autorización'
+      }, {
+        state: 'upcoming',
+        title: 'Depósito vía nómina'
+      }]
+    },
+    membership: {
+      stages: [{
+        state: 'done',
+        title: 'Solicitud enviada',
+        meta: 'Justo ahora'
+      }, {
+        state: 'current',
+        title: 'Revisión de documentos',
+        badge: 'EN CURSO',
+        detail: 'Te notificaremos en cuanto el área responsable revise tu solicitud.'
+      }, {
+        state: 'upcoming',
+        title: 'Resolución'
+      }, {
+        state: 'upcoming',
+        title: 'Activación de membresía'
+      }]
+    },
+    quote: {
+      stages: [{
+        state: 'done',
+        title: 'Solicitud enviada',
+        meta: 'Justo ahora'
+      }, {
+        state: 'current',
+        title: 'Preparación de cotización',
+        badge: 'EN CURSO',
+        detail: 'El proveedor preparará el presupuesto con el monto real.'
+      }, {
+        state: 'upcoming',
+        title: 'Cotización disponible'
+      }, {
+        state: 'upcoming',
+        title: 'Simulación de financiamiento'
+      }]
+    },
+    benefit: {
+      stages: [{
+        state: 'done',
+        title: 'Solicitud enviada',
+        meta: 'Justo ahora'
+      }, {
+        state: 'current',
+        title: 'Revisión del área responsable',
+        badge: 'EN CURSO',
+        detail: 'Te notificaremos cuando exista una actualización de tu solicitud.'
+      }, {
+        state: 'upcoming',
+        title: 'Resolución'
+      }, {
+        state: 'upcoming',
+        title: 'Seguimiento'
+      }]
+    }
+  };
+  const CSS = `
+    .request-success{position:relative;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg)}
+    .request-success.is-fullscreen{position:fixed;inset:0;z-index:2600}
+    .request-success-head{position:relative;z-index:4;display:flex;align-items:center;gap:6px;min-height:56px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--hairline);font-size:16.5px;font-weight:800}
+    .request-success-back{width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:var(--ink);display:grid;place-items:center;cursor:pointer}
+    .request-success-scroll{position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;padding:28px 22px 18px;scrollbar-width:none}
+    .request-success-scroll::-webkit-scrollbar{display:none}
+    .request-success-hero{text-align:center;display:flex;flex-direction:column;align-items:center}
+    .request-success-icon{width:92px;height:92px;border-radius:50%;background:#E3F7EE;color:#087A50;display:grid;place-items:center}
+    .request-success h2{font-size:24px;font-weight:900;letter-spacing:-.025em;margin:22px 0 0;color:var(--ink)}
+    .request-success-lead{max-width:350px;font-size:14px;font-weight:650;line-height:1.55;color:var(--ink-2);margin:9px 0 0}
+    .request-success-lead strong{color:var(--guinda);font-weight:900}
+    .request-success-folio{margin-top:20px;padding:10px 16px;border-radius:14px;background:var(--guinda-50);color:var(--guinda);font:850 13px var(--mono)}
+    .request-success-destination{max-width:340px;font-size:12px;font-weight:600;line-height:1.5;color:var(--ink-3);margin:12px 0 0}
+    .request-success-next{max-width:580px;margin:26px auto 0}
+    .request-success-next-title{display:flex;align-items:center;gap:9px;margin:0 0 12px;font-size:17px;font-weight:900;color:var(--ink)}
+    .request-success-next-title svg{color:var(--guinda)}
+    .request-success-timeline{list-style:none;margin:0;padding:16px 18px;background:var(--surface);border-radius:22px;box-shadow:var(--neo-sm)}
+    .request-success-stage{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;min-height:67px;text-align:left}
+    .request-success-stage:last-child{min-height:40px}
+    .request-success-stage:not(:last-child)::before{content:'';position:absolute;left:18px;top:34px;bottom:-2px;width:3px;border-radius:3px;background:#E7EAF1}
+    .request-success-stage[data-state='done']:not(:last-child)::before{background:linear-gradient(var(--guinda) 0 55%,#E7EAF1 55%)}
+    .request-success-dot{position:relative;z-index:1;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;margin-top:1px;background:#EEF1F6;color:#9CA7BB;border:4px solid var(--surface)}
+    .request-success-stage[data-state='done'] .request-success-dot{background:var(--guinda);color:#fff;border:0;box-shadow:0 7px 15px -6px rgba(145,0,34,.6)}
+    .request-success-stage[data-state='current'] .request-success-dot{background:var(--surface);color:var(--guinda);border:2px solid var(--guinda);box-shadow:0 0 0 4px #F8E8ED}
+    .request-success-current-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+    .request-success-upcoming-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+    .request-success-stage-body{min-width:0;padding-top:4px}
+    .request-success-stage-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .request-success-stage-title{font-size:14px;font-weight:850;color:var(--ink)}
+    .request-success-stage[data-state='upcoming'] .request-success-stage-title{color:#9CA7BB}
+    .request-success-stage-meta{display:block;margin-top:4px;font-size:11px;font-weight:650;color:var(--ink-3)}
+    .request-success-badge{display:inline-flex;align-items:center;min-height:20px;padding:3px 9px;border-radius:999px;background:#FCE8EE;color:var(--guinda);font-size:9px;font-weight:900;letter-spacing:.03em}
+    .request-success-detail{margin-top:9px;padding:11px 12px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600;line-height:1.45}
+    .request-success-footer{position:relative;z-index:2;padding:8px 22px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,var(--bg) 18%)}
+    .request-success-home{display:block;width:100%;height:38px;margin-top:7px;border:0;background:transparent;color:var(--guinda);font:800 13px var(--font);cursor:pointer}
+    .request-success button:focus-visible{outline:2px solid var(--guinda);outline-offset:2px}
+    @keyframes suti-request-confetti{0%{transform:translate3d(0,-24px,0) rotate(0);opacity:0}9%{opacity:1}100%{transform:translate3d(var(--confetti-drift),105vh,0) rotate(620deg);opacity:0}}
+    @media(max-height:760px){.request-success-scroll{padding-top:18px}.request-success-icon{width:76px;height:76px}.request-success h2{margin-top:15px}.request-success-next{margin-top:20px}}
+  `;
+  function RequestSubmissionSuccess({
+    app,
+    folio,
+    amount,
+    kind = 'benefit',
+    subject,
+    destination,
+    onBack,
+    fullScreen = false,
+    membershipSuccessId
+  }) {
+    const celebrate = !(window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen()));
+    const config = COPY[kind] || COPY.benefit;
+    const amountLabel = typeof amount === 'number' && Number.isFinite(amount) ? window.money(amount) : null;
+    const history = () => app && app.setTab && app.setTab('historial');
+    const home = () => app && app.setTab && app.setTab('home');
+    let lead;
+    if (kind === 'loan') lead = React.createElement(React.Fragment, null, 'Tu préstamo', amountLabel ? React.createElement(React.Fragment, null, ' por ', React.createElement('strong', null, amountLabel)) : null, ' ya está en revisión. Te avisaremos al avanzar.');else if (kind === 'quote') lead = React.createElement(React.Fragment, null, 'Tu solicitud de cotización', subject ? React.createElement(React.Fragment, null, ' para ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos cuando el presupuesto esté listo.');else if (kind === 'membership') lead = React.createElement(React.Fragment, null, 'Tu solicitud', subject ? React.createElement(React.Fragment, null, ' para ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos al avanzar.');else lead = React.createElement(React.Fragment, null, 'Tu solicitud', subject ? React.createElement(React.Fragment, null, ' de ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos al avanzar.');
+    return React.createElement('div', {
+      className: 'request-success' + (fullScreen ? ' is-fullscreen' : ''),
+      'data-request-submission-success': kind,
+      'data-loan-submission-success': kind === 'loan' ? folio || dash : undefined,
+      'data-membership-application-success': membershipSuccessId
+    }, React.createElement('style', null, CSS), fullScreen && React.createElement('header', {
+      className: 'request-success-head'
+    }, React.createElement('button', {
+      type: 'button',
+      className: 'request-success-back',
+      onClick: onBack,
+      'aria-label': 'Volver'
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 22,
+      stroke: 2
+    })), 'Listo'), celebrate && React.createElement('div', {
+      'aria-hidden': 'true',
+      'data-request-success-confetti': 'three-pass',
+      'data-loan-success-confetti': kind === 'loan' ? 'three-pass' : undefined,
+      style: {
+        position: 'absolute',
+        zIndex: 3,
+        inset: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden'
+      }
+    }, Array.from({
+      length: 42
+    }, (_, i) => React.createElement('i', {
+      key: i,
+      style: {
+        position: 'absolute',
+        top: -18,
+        left: i * 37 % 100 + '%',
+        width: i % 3 === 0 ? 8 : 6,
+        height: i % 4 === 0 ? 14 : 9,
+        borderRadius: i % 5 === 0 ? '50%' : '2px',
+        background: colors[i % colors.length],
+        animation: 'suti-request-confetti .9s cubic-bezier(.2,.65,.3,1) ' + (i % 14 * 24 + Math.floor(i / 14) * 720) + 'ms both',
+        '--confetti-drift': i * 29 % 120 - 60 + 'px'
+      }
+    }))), React.createElement('main', {
+      className: 'request-success-scroll'
+    }, React.createElement('section', {
+      className: 'request-success-hero',
+      'aria-labelledby': 'request-success-title'
+    }, React.createElement('div', {
+      className: 'request-success-icon',
+      style: {
+        animation: celebrate ? 'su-pop .5s cubic-bezier(.22,1,.36,1)' : 'none'
+      }
+    }, React.createElement(I, {
+      name: 'checkCircle',
+      size: 50,
+      stroke: 2
+    })), React.createElement('h2', {
+      id: 'request-success-title'
+    }, '¡Solicitud enviada!'), React.createElement('p', {
+      className: 'request-success-lead'
+    }, lead), React.createElement('div', {
+      className: 'request-success-folio'
+    }, 'Folio ' + (folio || dash)), React.createElement('p', {
+      className: 'request-success-destination'
+    }, destination || 'Tu solicitud fue enviada al área responsable para su revisión.')), React.createElement('section', {
+      className: 'request-success-next',
+      'aria-labelledby': 'request-success-next-title'
+    }, React.createElement('h3', {
+      id: 'request-success-next-title',
+      className: 'request-success-next-title'
+    }, React.createElement(I, {
+      name: 'clock',
+      size: 18,
+      stroke: 2.2
+    }), '¿Qué sigue?'), React.createElement('ol', {
+      className: 'request-success-timeline'
+    }, config.stages.map(stage => React.createElement('li', {
+      key: stage.title,
+      className: 'request-success-stage',
+      'data-state': stage.state
+    }, React.createElement('span', {
+      className: 'request-success-dot',
+      'aria-hidden': 'true'
+    }, stage.state === 'done' ? React.createElement(I, {
+      name: 'check',
+      size: 18,
+      stroke: 3
+    }) : stage.state === 'current' ? React.createElement('span', {
+      className: 'request-success-current-dot'
+    }) : React.createElement('span', {
+      className: 'request-success-upcoming-dot'
+    })), React.createElement('div', {
+      className: 'request-success-stage-body'
+    }, React.createElement('div', {
+      className: 'request-success-stage-title-row'
+    }, React.createElement('span', {
+      className: 'request-success-stage-title'
+    }, stage.title), stage.badge && React.createElement('span', {
+      className: 'request-success-badge'
+    }, stage.badge)), stage.meta && React.createElement('span', {
+      className: 'request-success-stage-meta'
+    }, stage.meta), stage.detail && React.createElement('div', {
+      className: 'request-success-detail'
+    }, stage.detail))))))), React.createElement('footer', {
+      className: 'request-success-footer'
+    }, React.createElement(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: 'receipt',
+      onClick: history
+    }, 'Seguir mi solicitud'), React.createElement('button', {
+      type: 'button',
+      className: 'request-success-home',
+      onClick: home
+    }, 'Volver al inicio')));
+  }
+  window.RequestSubmissionSuccess = RequestSubmissionSuccess;
 })();
 })();
 /* @@file image-viewer.jsx */
@@ -6694,9 +6955,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }
   }
 
-  function publicUrl(asset) {
+  function publicUrl(asset, transform) {
     if (!asset || asset.status !== 'READY' || !asset.storage_bucket || !asset.storage_path) return null;
-    const result = window.SutiSupabase.getClient().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path);
+    const transformable = ['image/jpeg', 'image/png', 'image/webp'].includes(String(asset.mime_type || '').toLowerCase());
+    const options = transform && transformable ? { transform } : undefined;
+    const result = window.SutiSupabase.getClient().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path, options);
     return result && result.data ? result.data.publicUrl : null;
   }
 
@@ -6738,21 +7001,23 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         relation('install_screen_2_asset', 'app_settings_install_screen_2_asset_id_fkey'),
         relation('install_screen_3_asset', 'app_settings_install_screen_3_asset_id_fkey'),
       ].join(',');
-      const rows = await list('app_settings', fields, (query) => query.eq('id', 'primary').limit(1));
+      const [rows, homeHeaderAsset] = await Promise.all([
+        list('app_settings', fields, (query) => query.eq('id', 'primary').limit(1)),
+        window.AssetRepository.getByKey('home.header.collapsed'),
+      ]);
       if (rows.length !== 1) throw new VisualRepositoryError('app_settings');
       const row = rows[0];
-      const homeHeaderAsset = await window.AssetRepository.getByKey('home.header.collapsed');
       return Object.freeze({
         id: row.id, app_name: row.app_name, short_name: row.short_name,
         description: row.description, updated_at: row.updated_at,
         app_icon_url: window.AssetRepository.publicUrl(row.app_icon_asset),
-        institutional_seal_url: window.AssetRepository.publicUrl(row.institutional_seal_asset),
+        institutional_seal_url: window.AssetRepository.publicUrl(row.institutional_seal_asset, { width: 240, height: 240, resize: 'contain', quality: 84 }),
         favicon_url: window.AssetRepository.publicUrl(row.favicon_asset),
         apple_touch_url: window.AssetRepository.publicUrl(row.apple_touch_asset),
         pwa_icon_192_url: window.AssetRepository.publicUrl(row.pwa_icon_192_asset),
         pwa_icon_512_url: window.AssetRepository.publicUrl(row.pwa_icon_512_asset),
         pwa_maskable_512_url: window.AssetRepository.publicUrl(row.pwa_maskable_512_asset),
-        home_header_collapsed_url: homeHeaderAsset && homeHeaderAsset.url,
+        home_header_collapsed_url: homeHeaderAsset && window.AssetRepository.publicUrl(homeHeaderAsset, { width: 860, height: 180, resize: 'cover', quality: 82 }),
         install_screens: Object.freeze([
           window.AssetRepository.publicUrl(row.install_screen_1_asset),
           window.AssetRepository.publicUrl(row.install_screen_2_asset),
@@ -6766,7 +7031,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     async list(placement) {
       const rows = await list('banners', `id,placement,title,description,action_label,action_url,company_raw,category_raw,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
         (query) => query.eq('placement', placement).eq('enabled', true).order('sort_order', { ascending: true }));
-      return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset) }))));
+      return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset, { width: 860, height: 448, resize: 'cover', quality: 82 }) }))));
     },
   });
 
@@ -6776,7 +7041,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       const rows = await list('popups', `id,title,body,action_label,action_url,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
         (query) => query.eq('enabled', true).or(`start_at.is.null,start_at.lte.${now}`).or(`end_at.is.null,end_at.gte.${now}`).order('sort_order', { ascending: true }));
       return Object.freeze(rows.map((row) => Object.freeze({
-        id: row.id, titulo: row.title || '', contenido: row.body || '', image_url: publicUrl(row.image_asset),
+        id: row.id, titulo: row.title || '', contenido: row.body || '', image_url: publicUrl(row.image_asset, { width: 680, height: 368, resize: 'cover', quality: 82 }),
         ctaText: row.action_label || 'Continuar', actionType: row.action_url ? 'url' : 'none',
         actionTarget: row.action_url || null, hue: 345,
       })));
@@ -6791,9 +7056,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         const linked = (row.company_assets || []).slice().sort((a, b) => a.sort_order - b.sort_order);
         const cover = linked.find((item) => item.role === 'cover');
         return Object.freeze(Object.assign({}, row, {
-          logo_url: publicUrl(row.logo_asset),
-          cover_url: cover ? publicUrl(cover.asset) : null,
-          gallery_urls: Object.freeze(linked.filter((item) => item.role === 'gallery').map((item) => publicUrl(item.asset)).filter(Boolean)),
+          logo_url: publicUrl(row.logo_asset, { width: 192, height: 192, resize: 'contain', quality: 82 }),
+          cover_url: cover ? publicUrl(cover.asset, { width: 860, height: 480, resize: 'cover', quality: 82 }) : null,
+          gallery_urls: Object.freeze(linked.filter((item) => item.role === 'gallery').map((item) => publicUrl(item.asset, { width: 640, height: 460, resize: 'cover', quality: 82 })).filter(Boolean)),
         }));
       }));
     },
@@ -6808,15 +7073,29 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   const listeners = new Set();
   let loadPromise = null;
-  let state = Object.freeze({ phase: 'loading', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: null });
+  let brandingPromise = null;
+  let state = Object.freeze({ phase: 'loading', brandingPhase: 'loading', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: null });
 
   function publish(next) {
-    state = Object.freeze(Object.assign({ phase: 'error', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: 'SOURCE_ERROR' }, next));
+    state = Object.freeze(Object.assign({ phase: 'error', brandingPhase: 'error', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: 'SOURCE_ERROR' }, next));
     if (window.assetsStore && window.assetsStore.setAuthoritative && state.phase !== 'loading') {
       const url = state.phase === 'loaded' && state.branding ? state.branding.home_header_collapsed_url : null;
       window.assetsStore.setAuthoritative('home.header.collapsed', { url: url || null });
     }
     listeners.forEach((listener) => listener(state));
+  }
+
+  function bootstrapBranding() {
+    if (state.branding) return Promise.resolve(state.branding);
+    if (brandingPromise) return brandingPromise;
+    brandingPromise = window.BrandingRepository.get().then((branding) => {
+      publish(Object.assign({}, state, { branding, brandingPhase: 'loaded' }));
+      return branding;
+    }).catch((error) => {
+      publish(Object.assign({}, state, { branding: null, brandingPhase: 'error' }));
+      throw error;
+    });
+    return brandingPromise;
   }
 
   function bootstrap() {
@@ -6827,7 +7106,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       window.BannerRepository.list('marketplace'),
       window.PopupRepository.listActive(),
       window.CompaniesRepository.list(),
-      window.BrandingRepository.get(),
+      bootstrapBranding(),
     ]).then(([homeBanners, marketplaceBanners, popups, companies, branding]) => {
       publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, errorCode: null });
       return state;
@@ -6840,6 +7119,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function retry() {
     loadPromise = null;
+    brandingPromise = null;
+    publish(Object.assign({}, state, { phase: 'loading', brandingPhase: 'loading', branding: null, errorCode: null }));
     return bootstrap();
   }
 
@@ -6856,8 +7137,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     return Object.assign({}, snapshot, { retry });
   }
 
-  window.VisualContent = Object.freeze({ bootstrap, retry, subscribe, getState: () => state });
+  function useVisualBranding() {
+    const [snapshot, setSnapshot] = React.useState(state);
+    React.useEffect(() => subscribe(setSnapshot), []);
+    React.useEffect(() => { bootstrapBranding().catch(() => {}); }, []);
+    return { phase: snapshot.brandingPhase, branding: snapshot.branding };
+  }
+
+  window.VisualContent = Object.freeze({ bootstrap, bootstrapBranding, retry, subscribe, getState: () => state });
   window.useVisualContent = useVisualContent;
+  window.useVisualBranding = useVisualBranding;
 })();
 })();
 /* @@file content-repositories.js */
@@ -6867,7 +7156,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   'use strict';
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   function client() { return window.SutiSupabase.getClient(); }
-  function url(asset) { return window.AssetRepository.publicUrl(asset); }
+  function url(asset) { return window.AssetRepository.publicUrl(asset, { width: 640, height: 360, resize: 'cover', quality: 82 }); }
   function projectNews(row) {
     return Object.freeze(Object.assign({}, row, {
       hue: row.accent_hue,
@@ -6953,6 +7242,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
+  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[];publish(permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice())})}:{phase:'denied'});return state;}
+  function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
+  function clearAccessContext(){promise=null;publish({phase:'denied'});}
   function technical(permission) { return state.phase === 'authorized' && state.assignment.permissions.includes(permission); }
   function sectionAction(section,action) { return state.phase === 'authorized' && state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action); }
   function has(permission) {
@@ -6984,8 +7276,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     try {
       const result=await client().rpc('get_admin_access_context');
       if(result.error) throw result.error;
-      const context=result.data||{};const permissions=context.technical_permissions||[];const sectionActions=context.section_actions||[];
-      publish(permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions),sectionActions:Object.freeze(sectionActions)})}:{phase:'denied'});
+      applyAccessContext(result.data||{});
     } catch(_){ publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
     return state;
   }
@@ -7169,8 +7460,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function startImpersonation(affiliateId,reason){if(state.phase!=='authorized')throw new Error('ADMIN_DENIED');const result=await client().rpc('start_affiliate_impersonation',{p_affiliate_id:affiliateId,p_reason:String(reason||'').trim()});if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return (result.data||[])[0]||null;}
   async function stopImpersonation(){const result=await client().rpc('stop_affiliate_impersonation');if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return Boolean(result.data);}
 
-  function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{retry();},[]);return Object.assign({},snapshot,{retry,has});}
-  window.AdminRepository=Object.freeze({bootstrap,retry,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
+  function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{bootstrap();},[]);return Object.assign({},snapshot,{retry,has});}
+  window.AdminRepository=Object.freeze({bootstrap,retry,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
   window.useAdminAuth=useAdminAuth;
 })();
 })();
@@ -7437,7 +7728,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const ext=(file)=>{const value=String(file.name||'').split('.').pop().toLowerCase();return /^[a-z0-9]{1,8}$/.test(value)?'.'+value:'';};
   async function catalog(filters){const f=filters||{};let q=db().from('document_types').select('id,code,label,description,icon,required_by_default,accepted_mime_types,enabled,sort_order,system_type').order('sort_order',{ascending:true});if(f.includeDisabled!==true)q=q.eq('enabled',true);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
   async function requirements(programId,membershipOfferingId){let q=db().from('program_document_requirements').select('id,program_id,membership_offering_id,document_type_id,required,allow_verified_reuse,sort_order,enabled,document_type:document_types(id,code,label,description,icon,accepted_mime_types)').eq('program_id',programId).eq('enabled',true).order('sort_order',{ascending:true});q=membershipOfferingId?q.eq('membership_offering_id',membershipOfferingId):q.is('membership_offering_id',null);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
-  async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false});if(r.error)throw r.error;const rows=await Promise.all((r.data||[]).map(async(row)=>{const a=row.private_asset||row.affiliate_file;let signedUrl=null;if(a&&a.storage_bucket==='private-assets'){const s=await db().storage.from(a.storage_bucket).createSignedUrl(a.storage_path,300);if(!s.error)signedUrl=s.data&&s.data.signedUrl;}return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),signedUrl,previewUnavailable:!!(a&&a.storage_bucket==='private-assets'&&!signedUrl)}));}));return Object.freeze(rows);}
+  async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false});if(r.error)throw r.error;const raw=r.data||[],privateRows=raw.map((row)=>({row,asset:row.private_asset||row.affiliate_file})).filter((entry)=>entry.asset&&entry.asset.storage_bucket==='private-assets'),signedByPath=new Map();if(privateRows.length){const paths=Array.from(new Set(privateRows.map((entry)=>entry.asset.storage_path))),signed=await db().storage.from('private-assets').createSignedUrls(paths,300);if(!signed.error)(signed.data||[]).forEach((entry,index)=>{if(entry&&entry.signedUrl)signedByPath.set(paths[index],entry.signedUrl);});}const rows=raw.map((row)=>{const a=row.private_asset||row.affiliate_file,signedUrl=a&&signedByPath.get(a.storage_path)||null;return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),signedUrl,previewUnavailable:!!(a&&a.storage_bucket==='private-assets'&&!signedUrl)}));});return Object.freeze(rows);}
   async function upload(type,file){if(!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX||!type.accepted_mime_types.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||new Error('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(file);const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;try{const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:file.type,p_file_size:file.size,p_sha256:sha});if(r.error)throw r.error;return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
   const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
@@ -7584,7 +7875,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function resolveAssetUrls(links){
     const urls=new Map(),privateByBucket=new Map();
     for(const link of links){
-      if(link.public_asset){urls.set(link,window.AssetRepository.publicUrl(link.public_asset));continue;}
+      if(link.public_asset){urls.set(link,window.AssetRepository.publicUrl(link.public_asset,{width:640,height:640,resize:'cover',quality:82}));continue;}
       if(!link.private_asset)continue;
       const bucket=link.private_asset.storage_bucket;
       if(!privateByBucket.has(bucket))privateByBucket.set(bucket,[]);
@@ -7600,9 +7891,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function listItems(){
     const api=db();
-    const rows=await api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal').eq('enabled',true).order('sort_order',{ascending:true});
+    const [rows,links]=await Promise.all([
+      api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal').eq('enabled',true).order('sort_order',{ascending:true}),
+      api.from('program_catalog_item_assets').select(`item_id,role,sort_order,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).order('sort_order',{ascending:true}),
+    ]);
     if(rows.error)throw rows.error;
-    const links=await api.from('program_catalog_item_assets').select(`item_id,role,sort_order,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).order('sort_order',{ascending:true});
     if(links.error)throw links.error;
     const allLinks=links.data||[],assetUrls=await resolveAssetUrls(allLinks),byItem=new Map();
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}
@@ -7694,8 +7987,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }
   }
 
-  function assetUrl(asset) {
-    return window.AssetRepository.publicUrl(asset);
+  function assetUrl(asset, transform) {
+    return window.AssetRepository.publicUrl(asset, transform);
   }
 
   function createRepository(table, fields, project, configure) {
@@ -7717,25 +8010,25 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.DirectoryRepository = createRepository(
     'directory_members',
     'id,name,role,sort_order,source_row_ordinal,image_asset:app_assets!image_asset_id(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status)',
-    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset) }),
+    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset, { width: 160, height: 160, resize: 'cover', quality: 82 }) }),
     (query) => query.eq('enabled', true)
   );
   window.MinutesRepository = createRepository(
     'minutes',
     'id,title,description,source_date_raw,published_on,sort_order,source_row_ordinal,image_asset:app_assets!minutes_image_asset_id_fkey(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status),document_asset:app_assets!minutes_document_asset_id_fkey(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status)',
-    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset), document_url: assetUrl(row.document_asset) }),
+    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset, { width: 640, height: 360, resize: 'cover', quality: 82 }), document_url: assetUrl(row.document_asset) }),
     (query) => query.eq('enabled', true)
   );
   window.InstitutionalDocumentsRepository = createRepository(
     'institutional_documents',
     'id,kind,title,description,sort_order,source_sheet,source_row_ordinal,image_asset:app_assets!institutional_documents_image_asset_id_fkey(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status),document_asset:app_assets!institutional_documents_document_asset_id_fkey(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status)',
-    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset), document_url: assetUrl(row.document_asset) }),
+    (row) => Object.assign({}, row, { image_url: assetUrl(row.image_asset, { width: 640, height: 360, resize: 'cover', quality: 82 }), document_url: assetUrl(row.document_asset) }),
     (query) => query.eq('enabled', true)
   );
   window.InstitutionalProgramsRepository = createRepository(
     'institutional_programs',
     'id,category,description,phone_raw,whatsapp_raw,facebook_url,instagram_url,share_url,location_raw,whatsapp_url,tiktok_url,sort_order,source_row_ordinal,primary_image_asset:app_assets!primary_image_asset_id(id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status)',
-    (row) => Object.assign({}, row, { primary_image_url: assetUrl(row.primary_image_asset), gallery_image_urls: [] }),
+    (row) => Object.assign({}, row, { primary_image_url: assetUrl(row.primary_image_asset, { width: 640, height: 360, resize: 'cover', quality: 82 }), gallery_image_urls: [] }),
     (query) => query.eq('enabled', true)
   );
 })();
@@ -9675,6 +9968,8 @@ Object.assign(window, {
     }, n.image_url && React.createElement('img', {
       src: n.image_url,
       alt: '',
+      loading: 'lazy',
+      decoding: 'async',
       'data-shared-inner': '',
       style: {
         position: 'absolute',
@@ -9854,7 +10149,8 @@ Object.assign(window, {
     }, React.createElement(window.Avatar, {
       name: c.name || '',
       src: c.image_url || undefined,
-      size: 50
+      size: 50,
+      loading: 'lazy'
     })), React.createElement('div', {
       style: {
         fontSize: 13,
@@ -9981,6 +10277,8 @@ Object.assign(window, {
     }, React.createElement('img', {
       src: brand.app_icon_url,
       alt: '',
+      loading: 'lazy',
+      decoding: 'async',
       style: {
         width: '100%',
         height: '100%',
@@ -13046,95 +13344,31 @@ Object.assign(window, {
   }
   function Success({
     app,
-    folio
+    folio,
+    amount
   }) {
-    const celebrate = !(window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen()));
-    const colors = ['#910022', '#D6A84B', '#13794A', '#243B6B', '#E9B7C3'];
-    return React.createElement('div', {
-      style: {
-        position: 'relative',
-        overflow: 'hidden',
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: 32
-      }
-    }, celebrate && React.createElement(React.Fragment, null, React.createElement('style', null, '@keyframes suti-loan-confetti{0%{transform:translate3d(0,-24px,0) rotate(0);opacity:0}8%{opacity:1}100%{transform:translate3d(var(--drift),105vh,0) rotate(620deg);opacity:0}}'), React.createElement('div', {
-      'aria-hidden': 'true',
-      style: {
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden'
-      }
-    }, Array.from({
-      length: 42
-    }, (_, i) => React.createElement('i', {
-      key: i,
-      style: {
-        position: 'absolute',
-        top: -18,
-        left: i * 37 % 100 + '%',
-        width: i % 3 === 0 ? 8 : 6,
-        height: i % 4 === 0 ? 14 : 9,
-        borderRadius: i % 5 === 0 ? '50%' : '2px',
-        background: colors[i % colors.length],
-        animation: 'suti-loan-confetti 1.15s cubic-bezier(.2,.65,.3,1) ' + (i % 14 * 28 + Math.floor(i / 14) * 900) + 'ms both',
-        '--drift': i * 29 % 120 - 60 + 'px'
-      }
-    })))), React.createElement('div', {
-      style: {
-        width: 86,
-        height: 86,
-        borderRadius: '50%',
-        background: '#E7F6ED',
-        color: '#13794A',
-        display: 'grid',
-        placeItems: 'center',
-        animation: 'su-pop .5s cubic-bezier(.22,1,.36,1)'
-      }
-    }, React.createElement(I, {
-      name: 'checkCircle',
-      size: 48,
-      stroke: 2
-    })), React.createElement('h2', {
-      style: {
-        fontSize: 23,
-        fontWeight: 900,
-        margin: '20px 0 0'
-      }
-    }, '¡Solicitud enviada!'), React.createElement('p', {
-      style: {
-        maxWidth: 290,
-        fontSize: 14,
-        fontWeight: 600,
-        lineHeight: 1.55,
-        color: 'var(--ink-2)',
-        margin: '9px 0 0'
-      }
-    }, 'Tu solicitud quedó registrada y pasará al proceso de revisión correspondiente.'), React.createElement('div', {
-      style: {
-        marginTop: 18,
-        padding: '10px 15px',
-        borderRadius: 13,
-        background: 'var(--guinda-50)',
-        color: 'var(--guinda)',
-        font: '800 13px var(--mono)'
-      }
-    }, 'Folio ' + (folio || dash)), React.createElement(window.Btn, {
-      full: true,
-      size: 'lg',
-      style: {
-        marginTop: 28
-      },
-      onClick: () => {
-        app.back();
-        app.setTab && app.setTab('historial');
-      }
-    }, 'Seguir mi solicitud'));
+    return React.createElement(window.RequestSubmissionSuccess, {
+      app,
+      folio,
+      amount,
+      kind: 'loan',
+      destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.'
+    });
+  }
+  const ACCEPTED_LOAN_DOCUMENT_STATUSES = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
+  function resolveLoanDocuments(requirements, documents) {
+    const required = (requirements || []).filter(requirement => requirement.required !== false);
+    const selected = (requirements || []).map(requirement => (documents || []).find(document => document.document_type_id === requirement.document_type_id && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status))).filter(Boolean);
+    const missing = required.filter(requirement => !selected.some(document => document.document_type_id === requirement.document_type_id));
+    return {
+      selected,
+      missing
+    };
+  }
+  function missingLoanDocumentsMessage(requirements) {
+    const labels = (requirements || []).map(requirement => requirement.document_type && requirement.document_type.label || 'documento requerido');
+    if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
+    return 'Antes de enviar, adjunta: ' + labels.join(', ') + '.';
   }
   function LoanScreen({
     app
@@ -13152,7 +13386,7 @@ Object.assign(window, {
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
     const [submitError, setSubmitError] = React.useState('');
-    const [folio, setFolio] = React.useState('');
+    const [submission, setSubmission] = React.useState(null);
     const [documentState, setDocumentState] = React.useState({
       requirements: [],
       documents: [],
@@ -13171,19 +13405,24 @@ Object.assign(window, {
       try {
         const r = await window.DocumentWorkflowRepository.requirements('prestamo');
         const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.list(), window.ProgramTermsRepository.current('prestamo')]);
-        setDocumentState({
+        if (dResult.status !== 'fulfilled') throw dResult.reason || new Error('DOCUMENTS_UNAVAILABLE');
+        const next = {
           requirements: r.slice(),
-          documents: dResult.status === 'fulfilled' ? dResult.value.slice() : [],
+          documents: dResult.value.slice(),
           terms: tResult.status === 'fulfilled' ? tResult.value : null,
           phase: 'ready'
-        });
+        };
+        setDocumentState(next);
+        return next;
       } catch (_) {
-        setDocumentState({
+        const failed = {
           requirements: [],
           documents: [],
           terms: null,
           phase: 'error'
-        });
+        };
+        setDocumentState(failed);
+        return null;
       }
     }, []);
     React.useEffect(() => {
@@ -13194,8 +13433,9 @@ Object.assign(window, {
     }, [step]);
     const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', '¿Para qué lo necesitas?', 'Verifica tus documentos', 'Confirma tu solicitud'];
-    const loanDocs = documentState.requirements.map(r => documentState.documents.find(d => d.document_type_id === r.document_type_id && ['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED'].includes(d.status))).filter(Boolean);
-    const documentsReady = documentState.phase === 'ready' && loanDocs.length === documentState.requirements.filter(r => r.required).length;
+    const loanDocumentSelection = resolveLoanDocuments(documentState.requirements, documentState.documents);
+    const loanDocs = loanDocumentSelection.selected;
+    const documentsReady = documentState.phase === 'ready' && loanDocumentSelection.missing.length === 0;
     const canContinue = step === 0 ? !!(simulation && simulation.current) : step === 1 ? !!destination.trim() : step === 2 ? documentsReady : !!(simulation && simulation.current && signature && accepted && documentState.terms && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
     const submit = async () => {
@@ -13203,6 +13443,23 @@ Object.assign(window, {
       setSubmitting(true);
       setSubmitError('');
       try {
+        const freshDocumentState = await loadDocuments();
+        if (!freshDocumentState) {
+          setStep(2);
+          setSubmitError('No fue posible verificar tu expediente. Intenta consultar los documentos nuevamente.');
+          return;
+        }
+        const freshDocuments = resolveLoanDocuments(freshDocumentState.requirements, freshDocumentState.documents);
+        if (freshDocuments.missing.length) {
+          setStep(2);
+          setSubmitError(missingLoanDocumentsMessage(freshDocuments.missing));
+          return;
+        }
+        if (!freshDocumentState.terms) {
+          setStep(3);
+          setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');
+          return;
+        }
         const items = await window.ProgramCatalogRepository.listItems();
         const item = items.find(value => value.program_key === 'prestamo' && value.requestMode === 'supabase');
         if (!item) throw new Error('PROGRAM_NOT_REQUESTABLE');
@@ -13216,16 +13473,24 @@ Object.assign(window, {
           idempotencyKey: idempotencyKey.current,
           amount: result.amount,
           term: result.paymentCount,
-          termsVersionId: documentState.terms.id,
-          documentIds: loanDocs.map(document => document.id)
+          termsVersionId: freshDocumentState.terms.id,
+          documentIds: freshDocuments.selected.map(document => document.id)
         });
-        setFolio(request.folio || request.request_id);
+        setSubmission({
+          folio: request.folio || request.request_id,
+          amount: result.amount
+        });
       } catch (error) {
         const code = error && (error.code || error.message);
         if (code === 'CONDITIONS_CHANGED' || code === 'SNAPSHOT_INVALID') {
           setStep(0);
           setSimulation(null);
           setSubmitError('Las condiciones de tu simulación cambiaron. Revisa los valores actualizados antes de continuar.');
+        } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
+          const refreshed = await loadDocuments();
+          const missing = refreshed ? resolveLoanDocuments(refreshed.requirements, refreshed.documents).missing : [];
+          setStep(2);
+          setSubmitError(missingLoanDocumentsMessage(missing));
         } else {
           setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
         }
@@ -13233,13 +13498,14 @@ Object.assign(window, {
         setSubmitting(false);
       }
     };
-    if (folio) return React.createElement(Shell, {
+    if (submission) return React.createElement(Shell, {
       app,
       title: 'Listo',
       onBack: app.back
     }, React.createElement(Success, {
       app,
-      folio
+      folio: submission.folio,
+      amount: submission.amount
     }));
     return React.createElement(Shell, {
       app,
@@ -13311,6 +13577,7 @@ Object.assign(window, {
     }, submitError && React.createElement('div', {
       role: 'alert',
       className: 'su-err',
+      'data-loan-submission-error': '',
       style: {
         fontSize: 12,
         fontWeight: 700,
@@ -13694,39 +13961,33 @@ Object.assign(window, {
       size: 'lg',
       icon: isListing ? 'plus' : 'cash',
       onClick: () => isListing ? app.toast('Selecciona un producto en “Disponibles ahora”') : setSheet(true)
-    }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora') : !quote || quote.estado === 'vencida' ? React.createElement(window.Btn, {
+    }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora') : !quoteReady ? React.createElement(window.Btn, {
       full: true,
       size: 'lg',
       icon: 'doc',
       onClick: () => setQSheet(true)
-    }, 'Solicitar cotización') : quote.estado === 'solicitada' ? React.createElement('button', {
-      disabled: true,
+    }, quote && quote.estado === 'solicitada' ? 'Solicitar otra cotización' : 'Solicitar cotización') : React.createElement(React.Fragment, null, React.createElement(window.Btn, {
+      size: 'lg',
+      variant: 'outline',
+      icon: 'plus',
       style: {
         flex: 1,
-        height: 54,
-        borderRadius: 16,
-        border: 'none',
-        background: 'var(--surface-2)',
-        boxShadow: 'var(--neo-inset)',
-        color: 'var(--ink-3)',
-        fontFamily: 'inherit',
-        fontSize: 15,
-        fontWeight: 800,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8
-      }
-    }, React.createElement(I, {
-      name: 'clock',
-      size: 19,
-      stroke: 2.2
-    }), 'Esperando cotización del proveedor') : React.createElement(window.Btn, {
-      full: true,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 13
+      },
+      onClick: () => setQSheet(true)
+    }, 'Nueva cotización'), React.createElement(window.Btn, {
       size: 'lg',
       icon: 'cash',
+      style: {
+        flex: 1,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 13
+      },
       onClick: () => setSheet(true)
-    }, 'Simular con monto cotizado')),
+    }, 'Simular monto'))),
     // confirm sheet → simulador de financiamiento (descuento vía nómina)
     React.createElement(FinanceSimSheet, {
       open: sheet,
@@ -13825,7 +14086,7 @@ Object.assign(window, {
           marginTop: 5,
           lineHeight: 1.45
         }
-      }, (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Te avisaremos cuando el presupuesto esté listo.'));
+      }, (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Esta revisión continúa y no impide enviar otra solicitud.'));
     }
     const c = quote.cotizacion || {};
     return React.createElement('div', {
@@ -13934,67 +14195,15 @@ Object.assign(window, {
         sending.current = false;
       }
     };
-    if (sent) {
-      return React.createElement(window.Sheet, {
-        open,
-        onClose,
-        title: 'Solicitud enviada'
-      }, React.createElement('div', {
-        style: {
-          textAlign: 'center',
-          padding: '4px 0 8px'
-        }
-      }, React.createElement('div', {
-        style: {
-          width: 72,
-          height: 72,
-          borderRadius: '50%',
-          background: '#E7F6ED',
-          color: '#13794A',
-          display: 'grid',
-          placeItems: 'center',
-          margin: '0 auto',
-          animation: 'su-pop .5s cubic-bezier(.22,1,.36,1)'
-        }
-      }, React.createElement(I, {
-        name: 'doc',
-        size: 38,
-        stroke: 2
-      })), React.createElement('div', {
-        style: {
-          fontSize: 18,
-          fontWeight: 800,
-          marginTop: 16
-        }
-      }, '¡Solicitud de cotización enviada!'), React.createElement('p', {
-        style: {
-          fontSize: 13.5,
-          color: 'var(--ink-2)',
-          fontWeight: 500,
-          lineHeight: 1.5,
-          margin: '8px auto 0',
-          maxWidth: 300
-        }
-      }, (sent.empresaNombre || 'El Área de Finanzas') + ' preparará tu presupuesto de ', React.createElement('b', null, it.label), '. Te notificaremos para que realices la simulación.'), React.createElement('div', {
-        style: {
-          background: 'var(--guinda-50)',
-          borderRadius: 12,
-          padding: '10px 14px',
-          margin: '16px auto 0',
-          width: 'fit-content',
-          fontSize: 13,
-          fontWeight: 700,
-          color: 'var(--guinda)',
-          fontFamily: 'var(--mono)'
-        }
-      }, 'Folio ' + sent.folio), React.createElement(window.Btn, {
-        full: true,
-        style: {
-          marginTop: 20
-        },
-        onClick: onClose
-      }, 'Entendido')));
-    }
+    if (sent) return React.createElement(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'quote',
+      subject: it.label,
+      onBack: onClose,
+      fullScreen: true,
+      destination: (sent.empresaNombre || 'El Área de Finanzas') + ' recibió tu solicitud y preparará el presupuesto para su revisión.'
+    });
     return React.createElement(window.Sheet, {
       open,
       onClose,
@@ -22079,7 +22288,6 @@ Object.assign(window, {
   if (window.AdminRepository && window.AdminRepository.subscribe) window.AdminRepository.subscribe(s => {
     if (s.phase === 'authorized') load();
   });
-  setTimeout(load, 0);
 })();
 })();
 /* @@file custom-screen.jsx */
@@ -22492,14 +22700,18 @@ Object.assign(window, {
     },
     can: (a, r) => window.adminStore.can(a, r)
   };
+  let initialLoad = null;
+  const ensureLoaded = () => initialLoad || (initialLoad = load());
   window.SIND_KINDS = KINDS;
   window.sindicatoStore = store;
   window.useSindicatoStore = function () {
     const [, f] = React.useState(0);
     React.useEffect(() => store.subscribe(() => f(n => n + 1)), []);
+    React.useEffect(() => {
+      ensureLoaded();
+    }, []);
     return store;
   };
-  setTimeout(load, 0);
 })();
 })();
 /* @@file finance-store.jsx */
@@ -23201,6 +23413,8 @@ Object.assign(window, {
     },
     restore: () => load()
   };
+  let initialLoad = null;
+  const ensureLoaded = () => initialLoad || (initialLoad = load());
   window.flowStore = store;
   window.FLUJOS = {
     TIPOS,
@@ -23210,9 +23424,11 @@ Object.assign(window, {
   window.useFlowStore = function () {
     const [, f] = React.useState(0);
     React.useEffect(() => store.subscribe(() => f(n => n + 1)), []);
+    React.useEffect(() => {
+      ensureLoaded();
+    }, []);
     return store;
   };
-  setTimeout(load, 0);
 })();
 })();
 /* @@file funds-store.jsx */
@@ -39670,13 +39886,17 @@ Object.assign(window, {
       return () => listeners.delete(fn);
     }
   };
+  let initialLoad = null;
+  const ensureLoaded = () => initialLoad || (initialLoad = load());
   window.finCatStore = store;
   window.useFinCatStore = function () {
     const [, f] = React.useState(0);
     React.useEffect(() => store.subscribe(() => f(n => n + 1)), []);
+    React.useEffect(() => {
+      ensureLoaded();
+    }, []);
     return store;
   };
-  setTimeout(load, 0);
 })();
 })();
 /* @@file screens-admin-branding.jsx */
@@ -48786,39 +49006,33 @@ Object.assign(window, {
       size: 'lg',
       icon: 'plus',
       onClick: () => setRequestSheet(true)
-    }, 'SOLICITAR ESTE BENEFICIO');else if (!quote || quote.estado === 'vencida') cta = React.createElement(window.Btn, {
+    }, 'SOLICITAR ESTE BENEFICIO');else if (!quoteReady) cta = React.createElement(window.Btn, {
       full: true,
       size: 'lg',
       icon: 'doc',
       onClick: () => setQSheet(true)
-    }, 'SOLICITAR ESTE BENEFICIO');else if (quote.estado === 'solicitada') cta = React.createElement('button', {
-      disabled: true,
+    }, quote && quote.estado === 'solicitada' ? 'SOLICITAR OTRA COTIZACIÓN' : 'SOLICITAR ESTE BENEFICIO');else cta = React.createElement(React.Fragment, null, React.createElement(window.Btn, {
+      size: 'lg',
+      variant: 'outline',
+      icon: 'plus',
       style: {
         flex: 1,
-        height: 54,
-        borderRadius: 16,
-        border: 'none',
-        background: 'var(--surface-2)',
-        boxShadow: 'var(--neo-inset)',
-        color: 'var(--ink-3)',
-        fontFamily: 'inherit',
-        fontSize: 15,
-        fontWeight: 800,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8
-      }
-    }, React.createElement(I, {
-      name: 'clock',
-      size: 19,
-      stroke: 2.2
-    }), 'Esperando cotización');else cta = React.createElement(window.Btn, {
-      full: true,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 13
+      },
+      onClick: () => setQSheet(true)
+    }, 'Nueva cotización'), React.createElement(window.Btn, {
       size: 'lg',
       icon: 'cash',
+      style: {
+        flex: 1,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 13
+      },
       onClick: () => setSheet(true)
-    }, 'Simular con monto cotizado');
+    }, 'Simular monto'));
     return React.createElement(React.Fragment, null, React.createElement('div', {
       style: {
         position: 'absolute',
@@ -49060,7 +49274,8 @@ Object.assign(window, {
   function BenefitRequestSheet({
     open,
     onClose,
-    item
+    item,
+    app
   }) {
     const [msg, setMsg] = useState('');
     const [qty, setQty] = useState(1);
@@ -49098,50 +49313,15 @@ Object.assign(window, {
         setBusy(false);
       }
     };
-    if (sent) return React.createElement(window.Sheet, {
-      open,
-      onClose,
-      title: 'Solicitud enviada'
-    }, React.createElement('div', {
-      style: {
-        textAlign: 'center',
-        padding: 8
-      }
-    }, React.createElement(I, {
-      name: 'checkCircle',
-      size: 54,
-      stroke: 1.8,
-      style: {
-        color: '#13794A'
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 18,
-        fontWeight: 900,
-        marginTop: 10
-      }
-    }, '¡Solicitud enviada!'), React.createElement('div', {
-      style: {
-        fontFamily: 'var(--mono)',
-        color: 'var(--guinda)',
-        fontWeight: 800,
-        marginTop: 10
-      }
-    }, 'Folio ' + sent.folio), sent.status === 'requires_financial_processing' && React.createElement('div', {
-      style: {
-        fontSize: 12.5,
-        color: 'var(--ink-2)',
-        fontWeight: 600,
-        lineHeight: 1.5,
-        marginTop: 10
-      }
-    }, 'El área responsable continuará la revisión financiera. Puedes consultar el estado en Mi Historial.'), React.createElement(window.Btn, {
-      full: true,
-      style: {
-        marginTop: 18
-      },
-      onClick: onClose
-    }, 'Entendido')));
+    if (sent) return React.createElement(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'benefit',
+      subject: item.nombre,
+      onBack: onClose,
+      fullScreen: true,
+      destination: sent.status === 'requires_financial_processing' ? 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.' : 'Tu solicitud fue enviada al área responsable para su revisión.'
+    });
     return React.createElement(window.Sheet, {
       open,
       onClose,
@@ -49246,7 +49426,7 @@ Object.assign(window, {
           color: '#7a5410',
           lineHeight: 1.45
         }
-      }, 'Cotización en proceso · ' + quote.folio));
+      }, 'Cotización en proceso · ' + quote.folio + '. Puedes enviar otra solicitud sin detener esta revisión.'));
     }
     if (quote.estado === 'cotizada') {
       const c = quote.cotizacion || {};
@@ -52028,41 +52208,16 @@ Object.assign(window, {
         [field.id]: normalized
       }));
     };
-    if (sent) {
-      return h('div', {
-        className: 'mr-screen mr-success',
-        'data-membership-application-success': sent.id
-      }, h('style', null, CSS), h('header', {
-        className: 'mr-success-head'
-      }, h('button', {
-        type: 'button',
-        className: 'mr-success-back',
-        onClick: app.back,
-        'aria-label': 'Atrás'
-      }, h(I, {
-        name: 'arrowL',
-        size: 22,
-        stroke: 2
-      })), 'Listo'), h('main', {
-        className: 'mr-success-body'
-      }, h('div', null, h('div', {
-        className: 'mr-success-icon'
-      }, h(I, {
-        name: 'checkCircle',
-        size: 48,
-        stroke: 2
-      })), h('h2', null, '¡Solicitud enviada!'), h('p', null, 'Tu solicitud quedó registrada y pasará al proceso de revisión correspondiente.'), h('div', {
-        className: 'mr-folio'
-      }, 'Folio ' + sent.folio), h('div', {
-        className: 'mr-success-action'
-      }, h(window.Btn, {
-        full: true,
-        onClick: () => {
-          app.back();
-          app.setTab('historial');
-        }
-      }, 'Seguir mi solicitud')))));
-    }
+    if (sent) return h(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'membership',
+      subject: offering && offering.concepto,
+      onBack: app.back,
+      fullScreen: true,
+      destination: 'Tu solicitud fue enviada al área responsable del sindicato para su revisión.',
+      membershipSuccessId: sent.id
+    });
     const trackerDone = phase === 'ready' && missing === 0;
     const ctaCopy = busy ? 'Enviando…' : phase === 'loading' ? 'Consultando requisitos…' : missing ? 'Solicitar · faltan ' + missing : 'Solicitar';
     return h('div', {
@@ -56005,6 +56160,8 @@ Object.assign(window, {
   let bootstrapPromise = null;
   let authSubscription = null;
   let resolutionVersion = 0;
+  let resolutionPromise = null;
+  let resolutionUserId = null;
   let blockedPhase = null;
   let state = Object.freeze({
     phase: 'loading',
@@ -56049,10 +56206,11 @@ Object.assign(window, {
     blockedPhase = phase;
     resolutionVersion += 1;
     try { await provideClient().auth.signOut(); } catch (_) {}
+    if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
     publish({ phase, errorCode });
   }
 
-  async function resolveSession(session) {
+  async function resolveSessionOnce(session) {
     const version = ++resolutionVersion;
     if (!session || !session.user) {
       publish({ phase: blockedPhase || 'unauthenticated' });
@@ -56067,20 +56225,25 @@ Object.assign(window, {
       state.session && state.session.user && state.session.user.id === session.user.id;
     if (!preservesAuthenticatedApp) publish({ phase: 'loading', session });
     try {
-      let affiliate = null;
-      try { affiliate = await window.AffiliateRepository.getCurrentAffiliate(); }
-      catch (error) {
-        if (!error || error.code !== 'AUTH_IDENTITY_WITHOUT_AFFILIATE') throw error;
-        try {
-          await window.AffiliateRepository.claimCurrentIdentity();
-          affiliate = await window.AffiliateRepository.getCurrentAffiliate();
-        } catch (claimError) {
-          if (!claimError || claimError.code !== 'SOURCE_ERROR') throw claimError;
+      const affiliatePromise = (async () => {
+        let affiliate = null;
+        try { affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user); }
+        catch (error) {
+          if (!error || error.code !== 'AUTH_IDENTITY_WITHOUT_AFFILIATE') throw error;
+          try {
+            await window.AffiliateRepository.claimCurrentIdentity();
+            affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user);
+          } catch (claimError) {
+            if (!claimError || claimError.code !== 'SOURCE_ERROR') throw claimError;
+          }
         }
-      }
-      const adminResult = await provideClient().rpc('get_admin_access_context');
+        return affiliate;
+      })();
+      const adminPromise = provideClient().rpc('get_admin_access_context');
+      const [affiliate, adminResult] = await Promise.all([affiliatePromise, adminPromise]);
       if (adminResult.error) throw adminResult.error;
       const adminContext=adminResult.data||{};
+      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
       const isAdmin = Boolean((adminContext.technical_permissions||[]).length||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion) return;
       if (!affiliate && !isAdmin) {
@@ -56096,10 +56259,13 @@ Object.assign(window, {
         return;
       }
       blockedPhase = null;
-      const profilePhoto = affiliate ? await window.AffiliateRepository.getProfilePhoto(affiliate.id) : null;
       if (version !== resolutionVersion) return;
-      const affiliateView = affiliate ? window.createAffiliateViewModel(affiliate, profilePhoto) : null;
+      const affiliateView = affiliate ? window.createAffiliateViewModel(affiliate, null) : null;
       publish({ phase: 'authenticated', session, affiliate, affiliateView, impersonation: affiliate && affiliate._impersonation || null, adminOnly: !affiliate && isAdmin });
+      if (affiliate) window.AffiliateRepository.getProfilePhoto(affiliate.id, session.user).then((profilePhoto) => {
+        if (version !== resolutionVersion || state.phase !== 'authenticated' || !state.session || state.session.user.id !== session.user.id) return;
+        publish(Object.assign({}, state, { affiliateView: window.createAffiliateViewModel(affiliate, profilePhoto) }));
+      }).catch(() => {});
     } catch (error) {
       if (version !== resolutionVersion) return;
       if (error && error.code === 'AUTH_IDENTITY_WITHOUT_AFFILIATE') {
@@ -56110,12 +56276,23 @@ Object.assign(window, {
     }
   }
 
+  function resolveSession(session) {
+    const userId = session && session.user && session.user.id || null;
+    if (userId && resolutionPromise && resolutionUserId === userId) return resolutionPromise;
+    const current = resolveSessionOnce(session);
+    resolutionPromise = current;
+    resolutionUserId = userId;
+    current.finally(() => { if (resolutionPromise === current) { resolutionPromise = null; resolutionUserId = null; } });
+    return current;
+  }
+
   function listenForAuthChanges(authClient) {
     if (authSubscription) return;
     const result = authClient.auth.onAuthStateChange((event, session) => {
       setTimeout(() => {
         if (event === 'SIGNED_OUT') {
           resolutionVersion += 1;
+          if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
           // A recovery update publishes its success notice immediately after
           // signOut. Preserve it when Supabase delivers SIGNED_OUT on the next
           // task; otherwise the reset form remains without completion feedback.
@@ -56158,6 +56335,7 @@ Object.assign(window, {
     blockedPhase = null;
     resolutionVersion += 1;
     window.AffiliateRepository.clearProfilePhotoCache();
+    if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
     publish({ phase: 'signing_in' });
     try {
       const authClient = provideClient();

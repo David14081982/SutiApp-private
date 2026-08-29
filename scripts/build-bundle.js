@@ -17,7 +17,7 @@ if (babelPath) {
 const files = [
   'vendor-qrcode-generator.js',
   'assets-registry.jsx', 'assets-store.jsx', 'assets-resolver.jsx', 'motion.jsx',
-  'icons.jsx', 'brand.jsx', 'ui.jsx', 'image-viewer.jsx', 'rich-text.jsx', 'press.jsx', 'reveal-cards.jsx',
+  'icons.jsx', 'brand.jsx', 'ui.jsx', 'request-submission-success.jsx', 'image-viewer.jsx', 'rich-text.jsx', 'press.jsx', 'reveal-cards.jsx',
   'union-screen-registry.js', 'data.jsx', 'visual-repositories.js', 'visual-content.js', 'content-repositories.js', 'content-state.js', 'admin-repository.js', 'admin-cutover-repository.js', 'data-export-repository.js', 'admin-affiliates-repository.js', 'program-request-repository.js', 'document-workflow-repository.js', 'bank-account-repository.js', 'program-terms-repository.js', 'credential-qr-repository.js', 'marketplace-repository.js', 'program-catalog-repository.js', 'popup-proposal-repository.js', 'payroll-declaration-repository.js',
   'institutional-repositories.js', 'institutional-content.js', 'tweaks-panel.jsx', 'signature.jsx',
   'screens-home-r2.jsx', 'screens-financiera.jsx', 'screens-inversion.jsx', 'screens-loan.jsx',

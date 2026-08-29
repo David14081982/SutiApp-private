@@ -4,15 +4,29 @@
 
   const listeners = new Set();
   let loadPromise = null;
-  let state = Object.freeze({ phase: 'loading', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: null });
+  let brandingPromise = null;
+  let state = Object.freeze({ phase: 'loading', brandingPhase: 'loading', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: null });
 
   function publish(next) {
-    state = Object.freeze(Object.assign({ phase: 'error', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: 'SOURCE_ERROR' }, next));
+    state = Object.freeze(Object.assign({ phase: 'error', brandingPhase: 'error', homeBanners: [], marketplaceBanners: [], popups: [], companies: [], branding: null, errorCode: 'SOURCE_ERROR' }, next));
     if (window.assetsStore && window.assetsStore.setAuthoritative && state.phase !== 'loading') {
       const url = state.phase === 'loaded' && state.branding ? state.branding.home_header_collapsed_url : null;
       window.assetsStore.setAuthoritative('home.header.collapsed', { url: url || null });
     }
     listeners.forEach((listener) => listener(state));
+  }
+
+  function bootstrapBranding() {
+    if (state.branding) return Promise.resolve(state.branding);
+    if (brandingPromise) return brandingPromise;
+    brandingPromise = window.BrandingRepository.get().then((branding) => {
+      publish(Object.assign({}, state, { branding, brandingPhase: 'loaded' }));
+      return branding;
+    }).catch((error) => {
+      publish(Object.assign({}, state, { branding: null, brandingPhase: 'error' }));
+      throw error;
+    });
+    return brandingPromise;
   }
 
   function bootstrap() {
@@ -23,7 +37,7 @@
       window.BannerRepository.list('marketplace'),
       window.PopupRepository.listActive(),
       window.CompaniesRepository.list(),
-      window.BrandingRepository.get(),
+      bootstrapBranding(),
     ]).then(([homeBanners, marketplaceBanners, popups, companies, branding]) => {
       publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, errorCode: null });
       return state;
@@ -36,6 +50,8 @@
 
   function retry() {
     loadPromise = null;
+    brandingPromise = null;
+    publish(Object.assign({}, state, { phase: 'loading', brandingPhase: 'loading', branding: null, errorCode: null }));
     return bootstrap();
   }
 
@@ -52,6 +68,14 @@
     return Object.assign({}, snapshot, { retry });
   }
 
-  window.VisualContent = Object.freeze({ bootstrap, retry, subscribe, getState: () => state });
+  function useVisualBranding() {
+    const [snapshot, setSnapshot] = React.useState(state);
+    React.useEffect(() => subscribe(setSnapshot), []);
+    React.useEffect(() => { bootstrapBranding().catch(() => {}); }, []);
+    return { phase: snapshot.brandingPhase, branding: snapshot.branding };
+  }
+
+  window.VisualContent = Object.freeze({ bootstrap, bootstrapBranding, retry, subscribe, getState: () => state });
   window.useVisualContent = useVisualContent;
+  window.useVisualBranding = useVisualBranding;
 })();

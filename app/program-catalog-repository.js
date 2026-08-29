@@ -7,7 +7,7 @@
   async function resolveAssetUrls(links){
     const urls=new Map(),privateByBucket=new Map();
     for(const link of links){
-      if(link.public_asset){urls.set(link,window.AssetRepository.publicUrl(link.public_asset));continue;}
+      if(link.public_asset){urls.set(link,window.AssetRepository.publicUrl(link.public_asset,{width:640,height:640,resize:'cover',quality:82}));continue;}
       if(!link.private_asset)continue;
       const bucket=link.private_asset.storage_bucket;
       if(!privateByBucket.has(bucket))privateByBucket.set(bucket,[]);
@@ -23,9 +23,11 @@
   }
   async function listItems(){
     const api=db();
-    const rows=await api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal').eq('enabled',true).order('sort_order',{ascending:true});
+    const [rows,links]=await Promise.all([
+      api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal').eq('enabled',true).order('sort_order',{ascending:true}),
+      api.from('program_catalog_item_assets').select(`item_id,role,sort_order,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).order('sort_order',{ascending:true}),
+    ]);
     if(rows.error)throw rows.error;
-    const links=await api.from('program_catalog_item_assets').select(`item_id,role,sort_order,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).order('sort_order',{ascending:true});
     if(links.error)throw links.error;
     const allLinks=links.data||[],assetUrls=await resolveAssetUrls(allLinks),byItem=new Map();
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}

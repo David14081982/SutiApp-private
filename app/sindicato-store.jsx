@@ -25,5 +25,6 @@
     reorder:(id,ordered)=>Promise.all(ordered.map((bid,i)=>{const b=store.getBlock(id,bid);b.order=i+1;return store.saveBlock(id,b);})).then(load).catch(fail),
     resetModule:id=>Promise.all(store.blocks(id).map(b=>repo.deleteUnionBlock(b.id))).then(()=>repo.saveUnionScreen({screen_key:id,title:'',description:'',header_asset_id:null,published:false})).then(load).catch(fail),resetAll:()=>Promise.all(ids().map(x=>store.resetModule(x.screen_key))),
     subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},can:(a,r)=>window.adminStore.can(a,r)};
-  window.SIND_KINDS=KINDS;window.sindicatoStore=store;window.useSindicatoStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);return store;};setTimeout(load,0);
+  let initialLoad=null;const ensureLoaded=()=>initialLoad||(initialLoad=load());
+  window.SIND_KINDS=KINDS;window.sindicatoStore=store;window.useSindicatoStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);React.useEffect(()=>{ensureLoaded();},[]);return store;};
 })();

@@ -28,12 +28,15 @@ def main():
         anon,_=call(rest+'/program_requests?select=id&limit=1',key,expected={401,403})
         direct,_=call(rest+'/program_requests',key,'POST',{'numero_control':'OTHER'},user,{400,401,403})
         _,items=call(rest+'/program_catalog_items?select=id,program_key,request_mode,legacy_boundary&enabled=eq.true&order=sort_order',key,token=user)
-        if len(items)!=134 or any(x['request_mode']!='supabase' for x in items):raise RuntimeError('REQUESTABLE_ITEMS_MISMATCH')
-        legacy=next(x for x in items if x['legacy_boundary']);farma=next(x for x in items if x['program_key']=='farma')
-        idem=str(uuid.uuid4());payload={'p_program_item_id':legacy['id'],'p_product_id':None,'p_quantity':1,'p_notes':'ADR-038 reversible test','p_signature_data':'data:text/plain;base64,VEVTVA==','p_terms_accepted':True,'p_idempotency_key':idem}
+        requestable=[x for x in items if x['request_mode']=='supabase']
+        non_financial=[x for x in requestable if not x['legacy_boundary']];farma=next((x for x in non_financial if x['program_key']=='farma'),None)
+        if not farma:raise RuntimeError('NON_FINANCIAL_REQUESTABLE_TARGET_MISSING')
+        idem=str(uuid.uuid4());payload={'p_program_item_id':farma['id'],'p_product_id':None,'p_quantity':1,'p_notes':'ADR-074 reversible test','p_signature_data':'data:text/plain;base64,VEVTVA==','p_terms_accepted':True,'p_idempotency_key':idem}
         _,first=call(rest+'/rpc/create_program_request',key,'POST',payload,user);created.append(first['id'])
         _,second=call(rest+'/rpc/create_program_request',key,'POST',payload,user)
-        if first['id']!=second['id'] or first['status']!='requires_financial_processing' or first['financial_processing_status']!='pending':raise RuntimeError('IDEMPOTENCY_OR_FINANCIAL_BOUNDARY_FAILED')
+        if first['id']!=second['id'] or first['status']!='submitted' or first['financial_processing_status'] is not None:raise RuntimeError('IDEMPOTENCY_OR_REQUEST_BOUNDARY_FAILED')
+        _,repeated=call(rest+'/rpc/create_program_request',key,'POST',dict(payload,p_idempotency_key=str(uuid.uuid4())),user);created.append(repeated['id'])
+        if repeated['id']==first['id'] or repeated['program_id']!=first['program_id'] or repeated['status']!=first['status']:raise RuntimeError('REPEATED_PROGRAM_REQUEST_BLOCKED')
         _,affiliate=call(rest+'/affiliates?select=id,numero_control&auth_user_id=eq.'+sub(user),key,token=user)
         if len(affiliate)!=1 or first['affiliate_id']!=affiliate[0]['id'] or first['numero_control']!=affiliate[0]['numero_control']:raise RuntimeError('DERIVED_IDENTITY_MISMATCH')
         _,cross=call(rest+'/program_requests?select=id&id=eq.'+first['id'],key,token=other)
@@ -42,9 +45,11 @@ def main():
         _,visible_admin=call(rest+'/program_requests?select='+admin_select+'&id=eq.'+first['id'],key,token=admin)
         if cross or len(visible_admin)!=1:raise RuntimeError('RLS_VISIBILITY_MISMATCH')
         spoof,_=call(rest+'/rpc/create_program_request',key,'POST',dict(payload,p_affiliate_id=affiliate[0]['id'],p_idempotency_key=str(uuid.uuid4())),user,{400,404})
-        _,normal=call(rest+'/rpc/create_program_request',key,'POST',dict(payload,p_program_item_id=farma['id'],p_idempotency_key=str(uuid.uuid4())),user);created.append(normal['id'])
-        if normal['status']!='submitted' or normal['financial_processing_status'] is not None:raise RuntimeError('NON_FINANCIAL_STATUS_MISMATCH')
-        print(json.dumps({'status':'PASS','requestable_items':len(items),'idempotent_same_id':True,'derived_numero_control':True,'cross_user_rows':len(cross),'admin_rows':len(visible_admin),'anon':anon,'direct_insert':direct,'sensitive_column_select':sensitive,'identity_spoof':spoof,'legacy_writes':0},sort_keys=True))
+        other=next((x for x in non_financial if x['program_key']!=farma['program_key']),None)
+        if other:
+            _,normal=call(rest+'/rpc/create_program_request',key,'POST',dict(payload,p_program_item_id=other['id'],p_idempotency_key=str(uuid.uuid4())),user);created.append(normal['id'])
+            if normal['status']!='submitted' or normal['financial_processing_status'] is not None:raise RuntimeError('OTHER_PROGRAM_STATUS_MISMATCH')
+        print(json.dumps({'status':'PASS','enabled_catalog_items':len(items),'requestable_items':len(requestable),'non_financial_programs':len(set(x['program_key'] for x in non_financial)),'idempotent_same_id':True,'repeated_same_program_distinct_id':True,'different_program_while_pending':bool(other),'derived_numero_control':True,'cross_user_rows':len(cross),'admin_rows':len(visible_admin),'anon':anon,'direct_insert':direct,'sensitive_column_select':sensitive,'identity_spoof':spoof,'legacy_writes':0},sort_keys=True))
     finally:
         for request_id in set(created):call(rest+'/program_requests?id=eq.'+request_id,secret,'DELETE',expected={200,204})
 if __name__=='__main__':main()

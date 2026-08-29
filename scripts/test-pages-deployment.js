@@ -41,7 +41,7 @@ assert.equal(manifest.start_url, './SutiApp.html');
 assert.equal(manifest.scope, './');
 
 const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
-assert(html.includes('navigator.serviceWorker.register(\'sw.js\')'));
+assert(/navigator\.serviceWorker\.register\(["']sw\.js["']\)/.test(html));
 assert(html.includes('app/supabase-config.js'));
 
 fs.rmSync(output, { recursive: true, force: true });

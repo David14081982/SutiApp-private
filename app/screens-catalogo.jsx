@@ -98,9 +98,10 @@
     if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'plus', onClick: () => setRequestSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
     else if (programItem) cta = React.createElement('button', { disabled: true, style: { flex: 1, height: 54, borderRadius: 16, border: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 14, fontWeight: 800 } }, 'NO DISPONIBLE PARA SOLICITAR');
     else if (!cotiza) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'plus', onClick: () => setRequestSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
-    else if (!quote || quote.estado === 'vencida') cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
-    else if (quote.estado === 'solicitada') cta = React.createElement('button', { disabled: true, style: { flex: 1, height: 54, borderRadius: 16, border: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 } }, React.createElement(I, { name: 'clock', size: 19, stroke: 2.2 }), 'Esperando cotización');
-    else cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'cash', onClick: () => setSheet(true) }, 'Simular con monto cotizado');
+    else if (!quoteReady) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, quote && quote.estado === 'solicitada' ? 'SOLICITAR OTRA COTIZACIÓN' : 'SOLICITAR ESTE BENEFICIO');
+    else cta = React.createElement(React.Fragment, null,
+      React.createElement(window.Btn, { size: 'lg', variant: 'outline', icon: 'plus', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 13 }, onClick: () => setQSheet(true) }, 'Nueva cotización'),
+      React.createElement(window.Btn, { size: 'lg', icon: 'cash', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 13 }, onClick: () => setSheet(true) }, 'Simular monto'));
 
     return React.createElement(React.Fragment, null,
       React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
@@ -148,7 +149,7 @@
       React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));
   }
 
-  function BenefitRequestSheet({ open, onClose, item }) {
+  function BenefitRequestSheet({ open, onClose, item, app }) {
     const [msg,setMsg]=useState('');
     const [qty,setQty]=useState(1);
     const [firma,setFirma]=useState('');
@@ -159,13 +160,7 @@
     const sending=React.useRef(false);const idem=React.useRef(null);
     React.useEffect(()=>{if(open){setMsg('');setQty(1);setFirma('');setAccept(false);setSent(null);setErr('');sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey();}},[open]);
     const send=async()=>{if(sending.current)return;sending.current=true;try{setBusy(true);const repository=item.catalogSource==='program'?window.ProgramCatalogRepository:window.MarketplaceRepository;const created=await repository.createRequest(item.id,qty,msg.trim(),firma,accept,idem.current);setSent(created);}catch(_){setErr('No se pudo enviar la solicitud. Inténtalo de nuevo.');sending.current=false;}finally{setBusy(false);}};
-    if(sent)return React.createElement(window.Sheet,{open,onClose,title:'Solicitud enviada'},
-      React.createElement('div',{style:{textAlign:'center',padding:8}},
-        React.createElement(I,{name:'checkCircle',size:54,stroke:1.8,style:{color:'#13794A'}}),
-        React.createElement('div',{style:{fontSize:18,fontWeight:900,marginTop:10}},'¡Solicitud enviada!'),
-        React.createElement('div',{style:{fontFamily:'var(--mono)',color:'var(--guinda)',fontWeight:800,marginTop:10}},'Folio '+sent.folio),
-        sent.status==='requires_financial_processing'&&React.createElement('div',{style:{fontSize:12.5,color:'var(--ink-2)',fontWeight:600,lineHeight:1.5,marginTop:10}},'El área responsable continuará la revisión financiera. Puedes consultar el estado en Mi Historial.'),
-        React.createElement(window.Btn,{full:true,style:{marginTop:18},onClick:onClose},'Entendido')));
+    if(sent)return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'benefit',subject:item.nombre,onBack:onClose,fullScreen:true,destination:sent.status==='requires_financial_processing'?'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.':'Tu solicitud fue enviada al área responsable para su revisión.'});
     return React.createElement(window.Sheet,{open,onClose,title:'Solicitar beneficio'},
       React.createElement('div',{style:{fontSize:15,fontWeight:900}},item.nombre),
       React.createElement('label',{style:{display:'block',fontSize:12,fontWeight:800,marginTop:14}},'Cantidad'),
@@ -181,7 +176,7 @@
     if (quote.estado === 'solicitada') {
       return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, background: '#FFF3DC', border: '1px solid #F0DFB6', borderRadius: 14, padding: '12px 14px', marginTop: 14 } },
         React.createElement(I, { name: 'clock', size: 17, stroke: 2.2, style: { color: '#9A6B16', flexShrink: 0 } }),
-        React.createElement('div', { style: { flex: 1, fontSize: 12.5, fontWeight: 700, color: '#7a5410', lineHeight: 1.45 } }, 'Cotización en proceso · ' + quote.folio));
+        React.createElement('div', { style: { flex: 1, fontSize: 12.5, fontWeight: 700, color: '#7a5410', lineHeight: 1.45 } }, 'Cotización en proceso · ' + quote.folio + '. Puedes enviar otra solicitud sin detener esta revisión.'));
     }
     if (quote.estado === 'cotizada') {
       const c = quote.cotizacion || {};

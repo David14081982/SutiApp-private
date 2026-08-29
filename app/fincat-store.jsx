@@ -19,5 +19,6 @@
     toggleItem:(gid,id)=>{const it=store.findItem(id);store.saveItem(gid,id,{visible:it.visible===false});},moveItem:(gid,id,dir)=>{const g=groups().find(x=>x.id===gid),i=g.items.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=g.items.length)return;const a=g.items[i],b=g.items[j];Promise.all([save(a.id,gid,{label_override:a.label,description_override:a.tagline,enabled:a.visible,sort_order:j}),save(b.id,gid,{label_override:b.label,description_override:b.tagline,enabled:b.visible,sort_order:i})]);},
     resetAll:()=>Promise.all(rows.map(r=>window.SutiSupabase.getClient().from('finance_catalog_presentation').delete().eq('item_key',r.item_key))).then(load),
     blankRec:()=>null,saveRec:()=>{},removeRec:()=>{},toggleRec:()=>{},moveRec:()=>{},subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);}};
-  window.finCatStore=store;window.useFinCatStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);return store;};setTimeout(load,0);
+  let initialLoad=null;const ensureLoaded=()=>initialLoad||(initialLoad=load());
+  window.finCatStore=store;window.useFinCatStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);React.useEffect(()=>{ensureLoaded();},[]);return store;};
 })();

@@ -682,16 +682,25 @@
       React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
   }
 
-  function Success({ app, folio }) {
-    const celebrate=!(window.MOTION&&(window.MOTION.reduced()||window.MOTION.frozen()));
-    const colors=['#910022','#D6A84B','#13794A','#243B6B','#E9B7C3'];
-    return React.createElement('div', { style: { position:'relative',overflow:'hidden',flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 32 } },
-      celebrate&&React.createElement(React.Fragment,null,React.createElement('style',null,'@keyframes suti-loan-confetti{0%{transform:translate3d(0,-24px,0) rotate(0);opacity:0}8%{opacity:1}100%{transform:translate3d(var(--drift),105vh,0) rotate(620deg);opacity:0}}'),React.createElement('div',{'aria-hidden':'true',style:{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden'}},Array.from({length:42},(_,i)=>React.createElement('i',{key:i,style:{position:'absolute',top:-18,left:((i*37)%100)+'%',width:i%3===0?8:6,height:i%4===0?14:9,borderRadius:i%5===0?'50%':'2px',background:colors[i%colors.length],animation:'suti-loan-confetti 1.15s cubic-bezier(.2,.65,.3,1) '+((i%14)*28+Math.floor(i/14)*900)+'ms both','--drift':(((i*29)%120)-60)+'px'}})))),
-      React.createElement('div', { style: { width: 86, height: 86, borderRadius: '50%', background: '#E7F6ED', color: '#13794A', display: 'grid', placeItems: 'center', animation: 'su-pop .5s cubic-bezier(.22,1,.36,1)' } }, React.createElement(I, { name: 'checkCircle', size: 48, stroke: 2 })),
-      React.createElement('h2', { style: { fontSize: 23, fontWeight: 900, margin: '20px 0 0' } }, '¡Solicitud enviada!'),
-      React.createElement('p', { style: { maxWidth: 290, fontSize: 14, fontWeight: 600, lineHeight: 1.55, color: 'var(--ink-2)', margin: '9px 0 0' } }, 'Tu solicitud quedó registrada y pasará al proceso de revisión correspondiente.'),
-      React.createElement('div', { style: { marginTop: 18, padding: '10px 15px', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', font: '800 13px var(--mono)' } }, 'Folio ' + (folio || dash)),
-      React.createElement(window.Btn, { full: true, size: 'lg', style: { marginTop: 28 }, onClick: () => { app.back(); app.setTab && app.setTab('historial'); } }, 'Seguir mi solicitud'));
+  function Success({ app, folio, amount }) {
+    return React.createElement(window.RequestSubmissionSuccess, {
+      app, folio, amount, kind: 'loan',
+      destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.',
+    });
+  }
+
+  const ACCEPTED_LOAN_DOCUMENT_STATUSES = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
+  function resolveLoanDocuments(requirements, documents) {
+    const required = (requirements || []).filter((requirement) => requirement.required !== false);
+    const selected = (requirements || []).map((requirement) => (documents || []).find((document) =>
+      document.document_type_id === requirement.document_type_id && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status))).filter(Boolean);
+    const missing = required.filter((requirement) => !selected.some((document) => document.document_type_id === requirement.document_type_id));
+    return { selected, missing };
+  }
+  function missingLoanDocumentsMessage(requirements) {
+    const labels = (requirements || []).map((requirement) => requirement.document_type && requirement.document_type.label || 'documento requerido');
+    if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
+    return 'Antes de enviar, adjunta: ' + labels.join(', ') + '.';
   }
 
   function LoanScreen({ app }) {
@@ -703,18 +712,19 @@
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
     const [submitError, setSubmitError] = React.useState('');
-    const [folio, setFolio] = React.useState('');
+    const [submission, setSubmission] = React.useState(null);
     const [documentState,setDocumentState]=React.useState({requirements:[],documents:[],terms:null,phase:'loading'});
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
-    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.list(),window.ProgramTermsRepository.current('prestamo')]);setDocumentState({requirements:r.slice(),documents:dResult.status==='fulfilled'?dResult.value.slice():[],terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'});}catch(_){setDocumentState({requirements:[],documents:[],terms:null,phase:'error'});}},[]);
+    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.list(),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
     React.useEffect(()=>{loadDocuments();},[loadDocuments]);
     React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
     const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', '¿Para qué lo necesitas?', 'Verifica tus documentos', 'Confirma tu solicitud'];
-    const loanDocs=documentState.requirements.map((r)=>documentState.documents.find((d)=>d.document_type_id===r.document_type_id&&['PENDING_REVIEW','UNDER_REVIEW','VERIFIED'].includes(d.status))).filter(Boolean);
-    const documentsReady=documentState.phase==='ready'&&loanDocs.length===documentState.requirements.filter((r)=>r.required).length;
+    const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
+    const loanDocs=loanDocumentSelection.selected;
+    const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
     const canContinue = step === 0 ? !!(simulation && simulation.current)
       : step === 1 ? !!destination.trim()
       : step === 2 ? documentsReady
@@ -724,6 +734,11 @@
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
       setSubmitting(true); setSubmitError('');
       try {
+        const freshDocumentState=await loadDocuments();
+        if(!freshDocumentState){setStep(2);setSubmitError('No fue posible verificar tu expediente. Intenta consultar los documentos nuevamente.');return;}
+        const freshDocuments=resolveLoanDocuments(freshDocumentState.requirements,freshDocumentState.documents);
+        if(freshDocuments.missing.length){setStep(2);setSubmitError(missingLoanDocumentsMessage(freshDocuments.missing));return;}
+        if(!freshDocumentState.terms){setStep(3);setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');return;}
         const items = await window.ProgramCatalogRepository.listItems();
         const item = items.find((value) => value.program_key === 'prestamo' && value.requestMode === 'supabase');
         if (!item) throw new Error('PROGRAM_NOT_REQUESTABLE');
@@ -737,21 +752,26 @@
           idempotencyKey: idempotencyKey.current,
           amount: result.amount,
           term: result.paymentCount,
-          termsVersionId: documentState.terms.id,
-          documentIds: loanDocs.map((document) => document.id),
+          termsVersionId: freshDocumentState.terms.id,
+          documentIds: freshDocuments.selected.map((document) => document.id),
         });
-        setFolio(request.folio || request.request_id); 
+        setSubmission({folio:request.folio||request.request_id,amount:result.amount});
       } catch (error) {
         const code = error && (error.code || error.message);
         if (code === 'CONDITIONS_CHANGED' || code === 'SNAPSHOT_INVALID') {
           setStep(0); setSimulation(null);
           setSubmitError('Las condiciones de tu simulación cambiaron. Revisa los valores actualizados antes de continuar.');
+        } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
+          const refreshed=await loadDocuments();
+          const missing=refreshed?resolveLoanDocuments(refreshed.requirements,refreshed.documents).missing:[];
+          setStep(2);
+          setSubmitError(missingLoanDocumentsMessage(missing));
         } else {
           setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
         }
       } finally { setSubmitting(false); }
     };
-    if (folio) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio }));
+    if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount }));
     return React.createElement(Shell, { app, onBack: goBack },
       React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 10.5, fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
@@ -762,7 +782,7 @@
         step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase}),
         step === 3 && React.createElement(StepSummary, { simulation, destination, signature, setSignature, accepted, setAccepted,terms:documentState.terms })),
       React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
-        submitError && React.createElement('div', { role: 'alert', className: 'su-err', style: { fontSize: 12, fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
+        submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 12, fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
         React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : setStep(step + 1) }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));
   }
 

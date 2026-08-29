@@ -1,0 +1,901 @@
+{
+  "status": "PASS",
+  "label": "baseline",
+  "measuredAt": "2026-08-29T12:50:13.841Z",
+  "milestones": {
+    "loginStart": 0,
+    "authenticatedMs": 3855,
+    "homeShellMs": 3891,
+    "visualReadyMs": 3964,
+    "financialReadyMs": 4074,
+    "editorialReadyMs": 4352,
+    "institutionalReadyMs": 4439,
+    "initialSettledMs": 5049
+  },
+  "visits": {
+    "convenios": {
+      "firstMs": 1877,
+      "firstRequests": 21,
+      "secondMs": 427,
+      "secondRequests": 29
+    },
+    "historial": {
+      "firstMs": 1907,
+      "firstRequests": 2,
+      "secondMs": 299,
+      "secondRequests": 0
+    },
+    "finanzas": {
+      "firstMs": 544,
+      "firstRequests": 10,
+      "secondMs": 580,
+      "secondRequests": 2
+    },
+    "documents": {
+      "firstMs": 3533,
+      "firstRequests": 17
+    }
+  },
+  "states": {
+    "visual": "loaded",
+    "editorial": "loaded",
+    "institutional": "loaded",
+    "financial": "error",
+    "catalog": "loaded",
+    "operations": "loaded",
+    "documents": "ready"
+  },
+  "summary": {
+    "boot": {
+      "requests": 32,
+      "totalBytes": 23866,
+      "sumDurationMs": 24020,
+      "p50Ms": 416,
+      "p95Ms": 1117,
+      "maxMs": 1122,
+      "endpoints": {
+        "GET /rest/v1/banners": {
+          "count": 2,
+          "totalMs": 2204,
+          "maxMs": 1103,
+          "bytes": 3132
+        },
+        "GET /rest/v1/company_benefits": {
+          "count": 1,
+          "totalMs": 1122,
+          "maxMs": 1122,
+          "bytes": 857
+        },
+        "GET /rest/v1/segmentation_catalog_entries": {
+          "count": 1,
+          "totalMs": 1117,
+          "maxMs": 1117,
+          "bytes": 934
+        },
+        "GET /rest/v1/company_benefit_profiles": {
+          "count": 1,
+          "totalMs": 1117,
+          "maxMs": 1117,
+          "bytes": 854
+        },
+        "GET /rest/v1/screen_access_policies": {
+          "count": 1,
+          "totalMs": 1115,
+          "maxMs": 1115,
+          "bytes": 928
+        },
+        "GET /rest/v1/union_screen_content": {
+          "count": 1,
+          "totalMs": 1114,
+          "maxMs": 1114,
+          "bytes": 926
+        },
+        "GET /rest/v1/operational_workflows": {
+          "count": 1,
+          "totalMs": 1114,
+          "maxMs": 1114,
+          "bytes": 931
+        },
+        "GET /rest/v1/operational_request_tracking": {
+          "count": 1,
+          "totalMs": 1114,
+          "maxMs": 1114,
+          "bytes": 932
+        },
+        "GET /rest/v1/union_content_blocks": {
+          "count": 1,
+          "totalMs": 1113,
+          "maxMs": 1113,
+          "bytes": 931
+        },
+        "GET /rest/v1/finance_catalog_presentation": {
+          "count": 1,
+          "totalMs": 1111,
+          "maxMs": 1111,
+          "bytes": 933
+        },
+        "GET /rest/v1/popups": {
+          "count": 1,
+          "totalMs": 1098,
+          "maxMs": 1098,
+          "bytes": 1778
+        },
+        "GET /rest/v1/companies": {
+          "count": 1,
+          "totalMs": 1098,
+          "maxMs": 1098,
+          "bytes": 6148
+        },
+        "GET /rest/v1/app_settings": {
+          "count": 1,
+          "totalMs": 1097,
+          "maxMs": 1097,
+          "bytes": 2729
+        },
+        "GET /rest/v1/admin_roles": {
+          "count": 1,
+          "totalMs": 1049,
+          "maxMs": 1049,
+          "bytes": 923
+        },
+        "GET /rest/v1/company_audience_rules": {
+          "count": 1,
+          "totalMs": 987,
+          "maxMs": 987,
+          "bytes": 930
+        },
+        "OPTIONS /rest/v1/banners": {
+          "count": 2,
+          "totalMs": 787,
+          "maxMs": 395,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/admin_roles": {
+          "count": 1,
+          "totalMs": 416,
+          "maxMs": 416,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/screen_access_policies": {
+          "count": 1,
+          "totalMs": 413,
+          "maxMs": 413,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/company_benefits": {
+          "count": 1,
+          "totalMs": 412,
+          "maxMs": 412,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/segmentation_catalog_entries": {
+          "count": 1,
+          "totalMs": 411,
+          "maxMs": 411,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/operational_workflows": {
+          "count": 1,
+          "totalMs": 411,
+          "maxMs": 411,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/company_benefit_profiles": {
+          "count": 1,
+          "totalMs": 410,
+          "maxMs": 410,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/union_screen_content": {
+          "count": 1,
+          "totalMs": 410,
+          "maxMs": 410,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/company_audience_rules": {
+          "count": 1,
+          "totalMs": 409,
+          "maxMs": 409,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/operational_request_tracking": {
+          "count": 1,
+          "totalMs": 409,
+          "maxMs": 409,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/finance_catalog_presentation": {
+          "count": 1,
+          "totalMs": 409,
+          "maxMs": 409,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/union_content_blocks": {
+          "count": 1,
+          "totalMs": 402,
+          "maxMs": 402,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/popups": {
+          "count": 1,
+          "totalMs": 392,
+          "maxMs": 392,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/app_settings": {
+          "count": 1,
+          "totalMs": 380,
+          "maxMs": 380,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/companies": {
+          "count": 1,
+          "totalMs": 379,
+          "maxMs": 379,
+          "bytes": 0
+        }
+      }
+    },
+    "login": {
+      "requests": 30,
+      "totalBytes": 4017235,
+      "sumDurationMs": 7590,
+      "p50Ms": 187,
+      "p95Ms": 892,
+      "maxMs": 932,
+      "endpoints": {
+        "GET /storage/v1/object/public": {
+          "count": 3,
+          "totalMs": 1404,
+          "maxMs": 932,
+          "bytes": 3863816
+        },
+        "POST /rest/v1/rpc": {
+          "count": 6,
+          "totalMs": 1124,
+          "maxMs": 297,
+          "bytes": 4435
+        },
+        "GET /auth/v1/user": {
+          "count": 3,
+          "totalMs": 998,
+          "maxMs": 472,
+          "bytes": 2987
+        },
+        "POST /auth/v1/token": {
+          "count": 1,
+          "totalMs": 892,
+          "maxMs": 892,
+          "bytes": 1784
+        },
+        "POST /storage/v1/object/sign": {
+          "count": 1,
+          "totalMs": 816,
+          "maxMs": 816,
+          "bytes": 915
+        },
+        "GET /rest/v1/affiliates": {
+          "count": 2,
+          "totalMs": 574,
+          "maxMs": 356,
+          "bytes": 4039
+        },
+        "GET /rest/v1/app_assets": {
+          "count": 1,
+          "totalMs": 418,
+          "maxMs": 418,
+          "bytes": 827
+        },
+        "GET /storage/v1/object/sign": {
+          "count": 1,
+          "totalMs": 371,
+          "maxMs": 371,
+          "bytes": 136960
+        },
+        "GET /rest/v1/affiliate_files": {
+          "count": 1,
+          "totalMs": 231,
+          "maxMs": 231,
+          "bytes": 1472
+        },
+        "OPTIONS /rest/v1/rpc": {
+          "count": 3,
+          "totalMs": 217,
+          "maxMs": 76,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/affiliates": {
+          "count": 2,
+          "totalMs": 130,
+          "maxMs": 66,
+          "bytes": 0
+        },
+        "OPTIONS /auth/v1/user": {
+          "count": 2,
+          "totalMs": 105,
+          "maxMs": 53,
+          "bytes": 0
+        },
+        "OPTIONS /auth/v1/token": {
+          "count": 1,
+          "totalMs": 99,
+          "maxMs": 99,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/app_assets": {
+          "count": 1,
+          "totalMs": 80,
+          "maxMs": 80,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/affiliate_files": {
+          "count": 1,
+          "totalMs": 71,
+          "maxMs": 71,
+          "bytes": 0
+        },
+        "OPTIONS /storage/v1/object/sign": {
+          "count": 1,
+          "totalMs": 60,
+          "maxMs": 60,
+          "bytes": 0
+        }
+      }
+    },
+    "initial": {
+      "requests": 44,
+      "totalBytes": 5738532,
+      "sumDurationMs": 25558,
+      "p50Ms": 604,
+      "p95Ms": 966,
+      "maxMs": 982,
+      "endpoints": {
+        "GET /storage/v1/object/public": {
+          "count": 29,
+          "totalMs": 22054,
+          "maxMs": 982,
+          "bytes": 5720710
+        },
+        "GET /rest/v1/program_requests": {
+          "count": 1,
+          "totalMs": 581,
+          "maxMs": 581,
+          "bytes": 910
+        },
+        "GET /rest/v1/minutes": {
+          "count": 1,
+          "totalMs": 485,
+          "maxMs": 485,
+          "bytes": 1947
+        },
+        "GET /rest/v1/institutional_documents": {
+          "count": 1,
+          "totalMs": 485,
+          "maxMs": 485,
+          "bytes": 2675
+        },
+        "GET /rest/v1/institutional_programs": {
+          "count": 1,
+          "totalMs": 484,
+          "maxMs": 484,
+          "bytes": 4043
+        },
+        "GET /rest/v1/directory_members": {
+          "count": 1,
+          "totalMs": 482,
+          "maxMs": 482,
+          "bytes": 4977
+        },
+        "GET /rest/v1/news_articles": {
+          "count": 1,
+          "totalMs": 469,
+          "maxMs": 469,
+          "bytes": 2512
+        },
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 201,
+          "maxMs": 201,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 154,
+          "maxMs": 154,
+          "bytes": 0
+        },
+        "POST /rest/v1/rpc": {
+          "count": 1,
+          "totalMs": 93,
+          "maxMs": 93,
+          "bytes": 758
+        },
+        "OPTIONS /rest/v1/directory_members": {
+          "count": 1,
+          "totalMs": 13,
+          "maxMs": 13,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/minutes": {
+          "count": 1,
+          "totalMs": 12,
+          "maxMs": 12,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/news_articles": {
+          "count": 1,
+          "totalMs": 12,
+          "maxMs": 12,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/program_requests": {
+          "count": 1,
+          "totalMs": 11,
+          "maxMs": 11,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/institutional_documents": {
+          "count": 1,
+          "totalMs": 11,
+          "maxMs": 11,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/institutional_programs": {
+          "count": 1,
+          "totalMs": 11,
+          "maxMs": 11,
+          "bytes": 0
+        }
+      }
+    },
+    "convenios-first": {
+      "requests": 21,
+      "totalBytes": 956531,
+      "sumDurationMs": 4937,
+      "p50Ms": 235,
+      "p95Ms": 487,
+      "maxMs": 605,
+      "endpoints": {
+        "GET /storage/v1/object/public": {
+          "count": 5,
+          "totalMs": 1101,
+          "maxMs": 319,
+          "bytes": 865071
+        },
+        "POST /storage/v1/object/sign": {
+          "count": 1,
+          "totalMs": 605,
+          "maxMs": 605,
+          "bytes": 38877
+        },
+        "GET /rest/v1/program_catalog_item_assets": {
+          "count": 1,
+          "totalMs": 487,
+          "maxMs": 487,
+          "bytes": 23635
+        },
+        "GET /rest/v1/program_catalog_items": {
+          "count": 1,
+          "totalMs": 327,
+          "maxMs": 327,
+          "bytes": 23844
+        },
+        "GET /rest/v1/marketplace_categories": {
+          "count": 1,
+          "totalMs": 302,
+          "maxMs": 302,
+          "bytes": 1690
+        },
+        "GET /rest/v1/marketplace_products": {
+          "count": 1,
+          "totalMs": 300,
+          "maxMs": 300,
+          "bytes": 1146
+        },
+        "GET /rest/v1/marketplace_favorites": {
+          "count": 1,
+          "totalMs": 299,
+          "maxMs": 299,
+          "bytes": 755
+        },
+        "GET /rest/v1/marketplace_company_favorites": {
+          "count": 1,
+          "totalMs": 291,
+          "maxMs": 291,
+          "bytes": 758
+        },
+        "GET /rest/v1/program_catalog_favorites": {
+          "count": 1,
+          "totalMs": 290,
+          "maxMs": 290,
+          "bytes": 755
+        },
+        "OPTIONS /rest/v1/marketplace_categories": {
+          "count": 1,
+          "totalMs": 151,
+          "maxMs": 151,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/marketplace_products": {
+          "count": 1,
+          "totalMs": 137,
+          "maxMs": 137,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/marketplace_favorites": {
+          "count": 1,
+          "totalMs": 135,
+          "maxMs": 135,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/marketplace_company_favorites": {
+          "count": 1,
+          "totalMs": 130,
+          "maxMs": 130,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/program_catalog_items": {
+          "count": 1,
+          "totalMs": 130,
+          "maxMs": 130,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/program_catalog_favorites": {
+          "count": 1,
+          "totalMs": 130,
+          "maxMs": 130,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/program_catalog_item_assets": {
+          "count": 1,
+          "totalMs": 66,
+          "maxMs": 66,
+          "bytes": 0
+        },
+        "OPTIONS /storage/v1/object/sign": {
+          "count": 1,
+          "totalMs": 56,
+          "maxMs": 56,
+          "bytes": 0
+        }
+      }
+    },
+    "convenios-return": {
+      "requests": 2,
+      "totalBytes": 0,
+      "sumDurationMs": 674,
+      "p50Ms": 336,
+      "p95Ms": 338,
+      "maxMs": 338,
+      "endpoints": {
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 338,
+          "maxMs": 338,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 336,
+          "maxMs": 336,
+          "bytes": 0
+        }
+      }
+    },
+    "convenios-second": {
+      "requests": 29,
+      "totalBytes": 8790389,
+      "sumDurationMs": 52521,
+      "p50Ms": 1921,
+      "p95Ms": 1930,
+      "maxMs": 1931,
+      "endpoints": {
+        "GET /storage/v1/object/public": {
+          "count": 29,
+          "totalMs": 52521,
+          "maxMs": 1931,
+          "bytes": 8790389
+        }
+      }
+    },
+    "historial-first": {
+      "requests": 2,
+      "totalBytes": 1092,
+      "sumDurationMs": 1782,
+      "p50Ms": 200,
+      "p95Ms": 1582,
+      "maxMs": 1582,
+      "endpoints": {
+        "GET /rest/v1/program_requests": {
+          "count": 1,
+          "totalMs": 1582,
+          "maxMs": 1582,
+          "bytes": 1092
+        },
+        "OPTIONS /rest/v1/program_requests": {
+          "count": 1,
+          "totalMs": 200,
+          "maxMs": 200,
+          "bytes": 0
+        }
+      }
+    },
+    "historial-return": {
+      "requests": 2,
+      "totalBytes": 0,
+      "sumDurationMs": 354,
+      "p50Ms": 176,
+      "p95Ms": 178,
+      "maxMs": 178,
+      "endpoints": {
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 178,
+          "maxMs": 178,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 176,
+          "maxMs": 176,
+          "bytes": 0
+        }
+      }
+    },
+    "finanzas-first": {
+      "requests": 10,
+      "totalBytes": 206406,
+      "sumDurationMs": 1671,
+      "p50Ms": 165,
+      "p95Ms": 245,
+      "maxMs": 245,
+      "endpoints": {
+        "GET /storage/v1/object/public": {
+          "count": 6,
+          "totalMs": 1021,
+          "maxMs": 245,
+          "bytes": 204604
+        },
+        "GET /rest/v1/membership_offerings": {
+          "count": 1,
+          "totalMs": 243,
+          "maxMs": 243,
+          "bytes": 1802
+        },
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 169,
+          "maxMs": 169,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 168,
+          "maxMs": 168,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/membership_offerings": {
+          "count": 1,
+          "totalMs": 70,
+          "maxMs": 70,
+          "bytes": 0
+        }
+      }
+    },
+    "finanzas-return": {
+      "requests": 2,
+      "totalBytes": 0,
+      "sumDurationMs": 302,
+      "p50Ms": 147,
+      "p95Ms": 155,
+      "maxMs": 155,
+      "endpoints": {
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 155,
+          "maxMs": 155,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 147,
+          "maxMs": 147,
+          "bytes": 0
+        }
+      }
+    },
+    "finanzas-second": {
+      "requests": 2,
+      "totalBytes": 0,
+      "sumDurationMs": 488,
+      "p50Ms": 244,
+      "p95Ms": 244,
+      "maxMs": 244,
+      "endpoints": {
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 244,
+          "maxMs": 244,
+          "bytes": 0
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 244,
+          "maxMs": 244,
+          "bytes": 0
+        }
+      }
+    },
+    "documents-open": {
+      "requests": 19,
+      "totalBytes": 11521,
+      "sumDurationMs": 14221,
+      "p50Ms": 181,
+      "p95Ms": 2118,
+      "maxMs": 2118,
+      "endpoints": {
+        "POST /storage/v1/object/sign": {
+          "count": 7,
+          "totalMs": 12006,
+          "maxMs": 2118,
+          "bytes": 6417
+        },
+        "GET /rest/v1/affiliate_documents": {
+          "count": 1,
+          "totalMs": 1079,
+          "maxMs": 1079,
+          "bytes": 3205
+        },
+        "OPTIONS /storage/v1/object/sign": {
+          "count": 6,
+          "totalMs": 424,
+          "maxMs": 75,
+          "bytes": 0
+        },
+        "GET /rest/v1/document_types": {
+          "count": 1,
+          "totalMs": 211,
+          "maxMs": 211,
+          "bytes": 1899
+        },
+        "OPTIONS /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 181,
+          "maxMs": 181,
+          "bytes": 0
+        },
+        "POST /functions/v1/financial-legacy": {
+          "count": 1,
+          "totalMs": 180,
+          "maxMs": 180,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/document_types": {
+          "count": 1,
+          "totalMs": 77,
+          "maxMs": 77,
+          "bytes": 0
+        },
+        "OPTIONS /rest/v1/affiliate_documents": {
+          "count": 1,
+          "totalMs": 63,
+          "maxMs": 63,
+          "bytes": 0
+        }
+      }
+    }
+  },
+  "duplicates": {
+    "boot OPTIONS /rest/v1/banners": 2,
+    "boot GET /rest/v1/banners": 2,
+    "login GET /auth/v1/user": 3,
+    "login OPTIONS /auth/v1/user": 2,
+    "login GET /storage/v1/object/public": 3,
+    "login POST /rest/v1/rpc": 6,
+    "login OPTIONS /rest/v1/rpc": 3,
+    "login GET /rest/v1/affiliates": 2,
+    "login OPTIONS /rest/v1/affiliates": 2,
+    "initial GET /storage/v1/object/public": 29,
+    "convenios-first GET /storage/v1/object/public": 5,
+    "convenios-second GET /storage/v1/object/public": 29,
+    "finanzas-first GET /storage/v1/object/public": 6,
+    "documents-open OPTIONS /storage/v1/object/sign": 6,
+    "documents-open POST /storage/v1/object/sign": 7
+  },
+  "images": {
+    "count": 76,
+    "totalBytes": 19684958,
+    "largest": [
+      {
+        "phase": "login",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 3249326,
+        "durationMs": 932
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 494154,
+        "durationMs": 1930
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 482652,
+        "durationMs": 1918
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 455283,
+        "durationMs": 1922
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 442979,
+        "durationMs": 1906
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 390972,
+        "durationMs": 116
+      },
+      {
+        "phase": "initial",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 389562,
+        "durationMs": 982
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 366165,
+        "durationMs": 1922
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 360486,
+        "durationMs": 1929
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 356745,
+        "durationMs": 1923
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 355590,
+        "durationMs": 1930
+      },
+      {
+        "phase": "login",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 355144,
+        "durationMs": 224
+      },
+      {
+        "phase": "convenios-second",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 349918,
+        "durationMs": 1931
+      },
+      {
+        "phase": "initial",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 348148,
+        "durationMs": 973
+      },
+      {
+        "phase": "initial",
+        "endpoint": "/storage/v1/object/public",
+        "bytes": 338453,
+        "durationMs": 966
+      }
+    ]
+  }
+}

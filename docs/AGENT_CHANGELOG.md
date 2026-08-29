@@ -1,5 +1,93 @@
 # Bitácora de agentes
 
+## 2026-08-29 — H-SUPABASE-PERFORMANCE-001
+
+- Se midió el recorrido real Supabase antes de cambiar código y se corrigieron las causas dominantes: bootstrap global de cuatro stores, store visual completo en login, resolución Auth duplicada, consultas secuenciales, firma privada N+1, originales de varios MB y recarga de imágenes públicas sin caché efectiva.
+- Usuario autenticado bajó de 3,855 a 1,641 ms; shell de Inicio de 3,891 a 1,728 ms; estabilización inicial de 5,049 a 2,787 ms. Arranque previo al login bajó de 32 a 4 requests, login de 30 a 14 y carga inicial de 5,738,532 a 165,982 bytes.
+- Documentos firma siete rutas en una sola llamada batch. Imágenes públicas usan transforms según su tamaño de uso y caché PWA exclusivamente para rutas públicas content-addressed; `private-assets`, signed URLs, REST, RPC, Auth y Edge nunca se cachean.
+- No se agregaron índices ni migraciones: los payloads de tablas fueron pequeños y no se demostró un plan SQL lento. Supabase/RLS permanecen como autoridad, sin cambios en reglas, permisos, datos, diseño o legacy financiero.
+
+```text
+H-SUPABASE-PERFORMANCE-001 RESULT
+Status: PASS
+Files changed: stores/repositorios/auth/visuales; Home/UI; bundle/cache; harness/pruebas/reporte; Registry y esta bitácora
+Source-of-truth verdict: SAFE — Supabase único; caché sólo de imágenes públicas SHA, nunca datos ni assets privados
+Invariant verdict: PASS — autoridades, flujos, contratos visuales, documentos privados y reglas financieras preservados
+Build: PASS — bundle reproducible desde 92 fuentes; node --check app/bundle.js
+Tests: PASS — suite estática 58/58; prueba focalizada; Chrome real móvil; medición baseline/after completa
+Security: PASS — RLS/roles/grants/RPC/secrets sin cambios; signed URLs y private-assets fuera de CacheStorage
+Legacy impact: READ ONLY — verificación de pantalla financiera existente; Google/Apps Script/fórmulas/tasas/saldos 0 cambios
+Unexpected files changed: se preservaron cambios preexistentes no relacionados y no se atribuyen a esta H
+Known limitations: select('*') administrativo y fan-out institucional quedan fuera del arranque; revalidación Edge financiera exige auditoría legacy separada
+Evidence: docs/qa/SUPABASE_PERFORMANCE_AUDIT_20260829.md; docs/qa/evidence/supabase-performance-20260829/baseline.json; after.json; scripts/test-supabase-performance-optimizations.js
+```
+
+## 2026-08-29 — H-LOAN-SUBMISSION-DOCUMENT-PREFLIGHT-001
+
+- Se diagnosticó el rechazo mostrado como `No pudimos enviar tu solicitud`: no proviene de otra solicitud pendiente. La inspección productiva de solo lectura confirmó un destino Préstamo habilitado, términos publicados, ocho requisitos obligatorios, una sesión financiera vigente y cero altas nuevas; el expediente del perfil observado cubría cuatro de esos requisitos.
+- `LoanScreen` vuelve a consultar requisitos, expediente y términos justo antes de confirmar. Si un requisito ya no está cubierto, conserva monto/destino/firma, regresa a `Documentos` y enumera los documentos faltantes; si Edge responde `REQUIRED_DOCUMENTS_MISSING`, aplica el mismo estado controlado en vez del mensaje genérico.
+- La reutilización vigente no cambió: `PENDING_REVIEW`, `UNDER_REVIEW` y `VERIFIED` siguen siendo aceptados. Tampoco cambió la regla de solicitudes concurrentes, la idempotencia, los requisitos configurados por Administración, Supabase, RPC/RLS, cálculos financieros, Google ni Apps Script.
+- La pantalla de éxito aprobada permanece completa. Chrome real `430×900` verificó monto, folio, cuatro etapas, Historial/Inicio, cero overflow y 42 piezas de confeti. Bundle `v165`, caché PWA `v109`; suite estática global 57/57 `PASS`.
+
+```text
+H-LOAN-SUBMISSION-DOCUMENT-PREFLIGHT-001 RESULT
+Status: PASS
+Files changed: pantalla Préstamo; bundle/cache; pruebas de preflight/cache; Registry y esta bitácora
+Source-of-truth verdict: SAFE — requisitos, documentos y términos continúan únicamente en Supabase; la UI sólo vuelve a leer antes del writer
+Invariant verdict: PASS — INV-012, INV-015, INV-063–066, INV-097–099, INV-108, INV-120 e INV-121 preservadas
+Build: PASS — bundle reproducible desde 92 fuentes con Babel Standalone 7.29.0; node --check app/bundle.js y sw.js
+Tests: PASS — 57/57 suite estática; pruebas focalizadas de solicitud repetida/documentos/snapshot/Phase 7; Chrome real de confirmación y solicitudes repetidas
+Security: PASS — sin nuevos permisos, secretos, grants, RPC ni confianza en UI; backend conserva el rechazo autoritativo
+Legacy impact: READ ONLY / NO INTERACTION — diagnóstico Supabase de solo lectura; Google/Apps Script 0 lecturas, 0 escrituras y 0 cambios
+Unexpected files changed: se preservaron todos los cambios preexistentes; no quedó el script diagnóstico temporal
+Known limitations: no se creó una solicitud financiera productiva de prueba; los documentos actualmente configurados como obligatorios no fueron modificados
+Evidence: scripts/test-loan-submission-success.js; scripts/test-static-suite.js; scripts/test-repeat-program-requests-browser.js; docs/qa/evidence/loan-submission-success-20260829/loan-success-430x900.png
+```
+
+## 2026-08-29 — H-REQUEST-SUBMISSION-SUCCESS-001
+
+- Se restauró la confirmación posterior al envío como pantalla completa: check de éxito, folio real, resumen, `¿Qué sigue?`, timeline, `Seguir mi solicitud`, `Volver al inicio` y confeti no bloqueante de tres pasadas. En préstamo conserva además el monto confirmado y las etapas aprobadas de revisión documental, autorización y depósito vía nómina.
+- El patrón quedó compartido por préstamo, solicitudes de beneficios, solicitudes de cotización y membresías; cada flujo presenta etapas coherentes con su proceso existente. Ahorro Voluntario y Portafolio de Inversión continúan excluidos porque no crean solicitudes productivas.
+- La pantalla sólo proyecta el resultado ya creado. No escribe estados, no calcula importes, no cambia idempotencia, Supabase, RLS, RPC, documentos, Google, Apps Script ni reglas financieras. La preferencia de movimiento reduce únicamente la celebración, nunca oculta la confirmación.
+- Chrome real `430×900`: monto `$20,000`, folio `SF-2947`, cuatro etapas, 42 piezas de confeti, cero overflow y navegación a Historial/Inicio `PASS`; las variantes beneficio/cotización/membresía también montaron su pantalla y timeline compartidos.
+
+```text
+H-REQUEST-SUBMISSION-SUCCESS-001 RESULT
+Status: PASS
+Files changed: componente de confirmación compartido; integraciones préstamo/catálogo/marketplace/membresía; builder/bundle/cache; pruebas y evidencia; Registry e INV-121
+Source-of-truth verdict: SAFE — sólo proyección efímera del registro recién creado; program_requests y autoridades existentes sin cambios
+Invariant verdict: PASS — INV-015, INV-063–066, INV-097–099, INV-120 e INV-121 preservadas
+Build: PASS — bundle reproducible desde 92 fuentes con Babel Standalone 7.29.0; node --check app/bundle.js y sw.js
+Tests: PASS focalizadas/Claude/browser; suite estática global 56/57 con la única falla preexistente de comillas en test-pages-deployment.js
+Security: PASS — sin nueva lectura/escritura, permiso, secreto, rol ni decisión de autorización frontend
+Legacy impact: NO INTERACTION — Google/Apps Script/cálculos/tasas/saldos/fórmulas 0 lecturas, 0 escrituras y 0 cambios
+Unexpected files changed: SutiApp.html reformateado y dos evidencias Admin Financial Requests eran cambios preexistentes; sólo la línea cachebuster de SutiApp.html pertenece a este cierre
+Known limitations: no se creó una solicitud productiva de prueba; el componente se validó en navegador aislado con datos sintéticos y los writers existentes permanecieron cubiertos por sus contratos
+Evidence: scripts/test-loan-submission-success.js; scripts/test-loan-submission-success-browser.js; docs/qa/evidence/loan-submission-success-20260829/loan-success-430x900.png
+```
+
+## 2026-08-29 — H-REPEAT-PROGRAM-REQUESTS-001
+
+- Se retiraron los dos bloqueos visuales que sustituían el CTA por `Esperando cotización`. Una solicitud pendiente ahora conserva su folio/estado informativo y ofrece `Solicitar otra cotización`; una cotización lista conserva tanto `Nueva cotización` como `Simular monto`.
+- `program_requests` continúa como autoridad única. No cambiaron schema, RPC, RLS, grants ni writers: una clave repetida deduplica el mismo envío y una clave nueva crea una intención distinta. Membresía y préstamo ya aceptan documentos `PENDING_REVIEW`, `UNDER_REVIEW` o `VERIFIED` y no consultan solicitudes activas para bloquear otra.
+- Ahorro Voluntario y Portafolio de Inversión permanecen fuera de esta habilitación: no recibieron writer, persistencia ni cambio funcional. Google, Apps Script, fórmulas, criterios, tasas, saldos y cálculos financieros tuvieron cero lecturas/escrituras/cambios.
+- Browser real aislado: `PASS` para CTA pendiente habilitado, copy informativo y dos acciones cuando la cotización está lista. Supabase reversible: `PASS` para dos filas distintas del mismo programa/objetivo con claves nuevas, idempotencia con la misma clave, RLS cross-user 0, insert directo 403, columna sensible 403, identidad falsa 404 y cleanup. El catálogo live tiene 135 destinos solicitables, pero sólo un `program_key` no financiero; por eso el cruce live entre dos programas no financieros no fue ejecutable sin crear catálogo productivo artificial.
+
+```text
+H-REPEAT-PROGRAM-REQUESTS-001 RESULT
+Status: PASS
+Files changed: dos pantallas de catálogo/cotización; bundle/cachebuster/PWA; pruebas focalizadas/live/browser; ADR-074, INV-120 y esta bitácora
+Source-of-truth verdict: SAFE — program_requests único; sin fallback, store paralelo o nueva autoridad
+Invariant verdict: PASS — INV-063–066, INV-073, INV-097–099, INV-108 e INV-120 preservadas
+Build: PASS — bundle reproducible desde 91 fuentes; node --check app/bundle.js
+Tests: PASS — focalizada estática, browser real y Supabase reversible; suite global 55/56 con una falla preexistente de comillas en SutiApp.html/test-pages-deployment.js
+Security: PASS — Auth/identidad derivada, RLS, grants y RPC sin cambios; cross-user 0; secretos frontend 0
+Legacy impact: NO INTERACTION — Google/Apps Script/finanzas legacy 0 lecturas, 0 escrituras y 0 cambios
+Unexpected files changed: SutiApp.html y dos evidencias Admin Financial Requests eran cambios preexistentes; esta H sólo actualizó una línea cachebuster dentro de SutiApp.html
+Known limitations: producción sólo expone un program_key no financiero para la matriz live; el cruce entre programas queda cubierto por ausencia de unicidad/gate global y por flujos UI independientes, sin fabricar fixtures catalogales
+Evidence: scripts/test-repeat-program-requests.js; scripts/test-repeat-program-requests-browser.js; scripts/test-program-requests-live.py; C:\\tmp\\sutiapp-repeat-program-requests.png
+```
+
 ## 2026-08-27 — ADMIN AFILIADOS / ACCIONES EN ENCABEZADO
 
 - `Editar información`, `Cambiar estado / reactivar` y `Eliminar usuario` se movieron del pie del perfil al encabezado superior solicitado. Conservan los mismos callbacks, permisos `affiliates.write`, baja reversible y confirmaciones; no se duplicaron acciones ni se modificó Supabase.

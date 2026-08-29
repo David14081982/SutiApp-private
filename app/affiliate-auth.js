@@ -7,6 +7,8 @@
   let bootstrapPromise = null;
   let authSubscription = null;
   let resolutionVersion = 0;
+  let resolutionPromise = null;
+  let resolutionUserId = null;
   let blockedPhase = null;
   let state = Object.freeze({
     phase: 'loading',
@@ -51,10 +53,11 @@
     blockedPhase = phase;
     resolutionVersion += 1;
     try { await provideClient().auth.signOut(); } catch (_) {}
+    if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
     publish({ phase, errorCode });
   }
 
-  async function resolveSession(session) {
+  async function resolveSessionOnce(session) {
     const version = ++resolutionVersion;
     if (!session || !session.user) {
       publish({ phase: blockedPhase || 'unauthenticated' });
@@ -69,20 +72,25 @@
       state.session && state.session.user && state.session.user.id === session.user.id;
     if (!preservesAuthenticatedApp) publish({ phase: 'loading', session });
     try {
-      let affiliate = null;
-      try { affiliate = await window.AffiliateRepository.getCurrentAffiliate(); }
-      catch (error) {
-        if (!error || error.code !== 'AUTH_IDENTITY_WITHOUT_AFFILIATE') throw error;
-        try {
-          await window.AffiliateRepository.claimCurrentIdentity();
-          affiliate = await window.AffiliateRepository.getCurrentAffiliate();
-        } catch (claimError) {
-          if (!claimError || claimError.code !== 'SOURCE_ERROR') throw claimError;
+      const affiliatePromise = (async () => {
+        let affiliate = null;
+        try { affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user); }
+        catch (error) {
+          if (!error || error.code !== 'AUTH_IDENTITY_WITHOUT_AFFILIATE') throw error;
+          try {
+            await window.AffiliateRepository.claimCurrentIdentity();
+            affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user);
+          } catch (claimError) {
+            if (!claimError || claimError.code !== 'SOURCE_ERROR') throw claimError;
+          }
         }
-      }
-      const adminResult = await provideClient().rpc('get_admin_access_context');
+        return affiliate;
+      })();
+      const adminPromise = provideClient().rpc('get_admin_access_context');
+      const [affiliate, adminResult] = await Promise.all([affiliatePromise, adminPromise]);
       if (adminResult.error) throw adminResult.error;
       const adminContext=adminResult.data||{};
+      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
       const isAdmin = Boolean((adminContext.technical_permissions||[]).length||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion) return;
       if (!affiliate && !isAdmin) {
@@ -98,10 +106,13 @@
         return;
       }
       blockedPhase = null;
-      const profilePhoto = affiliate ? await window.AffiliateRepository.getProfilePhoto(affiliate.id) : null;
       if (version !== resolutionVersion) return;
-      const affiliateView = affiliate ? window.createAffiliateViewModel(affiliate, profilePhoto) : null;
+      const affiliateView = affiliate ? window.createAffiliateViewModel(affiliate, null) : null;
       publish({ phase: 'authenticated', session, affiliate, affiliateView, impersonation: affiliate && affiliate._impersonation || null, adminOnly: !affiliate && isAdmin });
+      if (affiliate) window.AffiliateRepository.getProfilePhoto(affiliate.id, session.user).then((profilePhoto) => {
+        if (version !== resolutionVersion || state.phase !== 'authenticated' || !state.session || state.session.user.id !== session.user.id) return;
+        publish(Object.assign({}, state, { affiliateView: window.createAffiliateViewModel(affiliate, profilePhoto) }));
+      }).catch(() => {});
     } catch (error) {
       if (version !== resolutionVersion) return;
       if (error && error.code === 'AUTH_IDENTITY_WITHOUT_AFFILIATE') {
@@ -112,12 +123,23 @@
     }
   }
 
+  function resolveSession(session) {
+    const userId = session && session.user && session.user.id || null;
+    if (userId && resolutionPromise && resolutionUserId === userId) return resolutionPromise;
+    const current = resolveSessionOnce(session);
+    resolutionPromise = current;
+    resolutionUserId = userId;
+    current.finally(() => { if (resolutionPromise === current) { resolutionPromise = null; resolutionUserId = null; } });
+    return current;
+  }
+
   function listenForAuthChanges(authClient) {
     if (authSubscription) return;
     const result = authClient.auth.onAuthStateChange((event, session) => {
       setTimeout(() => {
         if (event === 'SIGNED_OUT') {
           resolutionVersion += 1;
+          if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
           // A recovery update publishes its success notice immediately after
           // signOut. Preserve it when Supabase delivers SIGNED_OUT on the next
           // task; otherwise the reset form remains without completion feedback.
@@ -160,6 +182,7 @@
     blockedPhase = null;
     resolutionVersion += 1;
     window.AffiliateRepository.clearProfilePhotoCache();
+    if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
     publish({ phase: 'signing_in' });
     try {
       const authClient = provideClient();

@@ -370,7 +370,7 @@
   }
 
   // ---------- Avatar ----------
-  function Avatar({ name = '', size = 44, src, tone = 'var(--guinda)', ...rest }) {
+  function Avatar({ name = '', size = 44, src, tone = 'var(--guinda)', loading, ...rest }) {
     const [failed, setFailed] = React.useState(false);
     React.useEffect(() => setFailed(false), [src]);
     const initials = name.split(' ').slice(0, 2).map((s) => s[0]).join('').toUpperCase();
@@ -387,7 +387,7 @@
       },
     },
     showPhoto && React.createElement('img', {
-      src, alt: '', onError: () => setFailed(true),
+      src, alt: '', loading, decoding: 'async', onError: () => setFailed(true),
       style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' },
     }),
     !showPhoto && initials);

@@ -241,17 +241,7 @@
       setData((current)=>Object.assign({},current,{[field.id]:normalized}));
     };
 
-    if(sent){
-      return h('div',{className:'mr-screen mr-success','data-membership-application-success':sent.id},
-        h('style',null,CSS),
-        h('header',{className:'mr-success-head'},h('button',{type:'button',className:'mr-success-back',onClick:app.back,'aria-label':'Atrás'},h(I,{name:'arrowL',size:22,stroke:2})),'Listo'),
-        h('main',{className:'mr-success-body'},h('div',null,
-          h('div',{className:'mr-success-icon'},h(I,{name:'checkCircle',size:48,stroke:2})),
-          h('h2',null,'¡Solicitud enviada!'),
-          h('p',null,'Tu solicitud quedó registrada y pasará al proceso de revisión correspondiente.'),
-          h('div',{className:'mr-folio'},'Folio '+sent.folio),
-          h('div',{className:'mr-success-action'},h(window.Btn,{full:true,onClick:()=>{app.back();app.setTab('historial');}},'Seguir mi solicitud')))));
-    }
+    if(sent)return h(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'membership',subject:offering&&offering.concepto,onBack:app.back,fullScreen:true,destination:'Tu solicitud fue enviada al área responsable del sindicato para su revisión.',membershipSuccessId:sent.id});
 
     const trackerDone=phase==='ready'&&missing===0;
     const ctaCopy=busy?'Enviando…':phase==='loading'?'Consultando requisitos…':missing?'Solicitar · faltan '+missing:'Solicitar';

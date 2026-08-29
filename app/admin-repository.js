@@ -19,6 +19,9 @@
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
+  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[];publish(permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice())})}:{phase:'denied'});return state;}
+  function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
+  function clearAccessContext(){promise=null;publish({phase:'denied'});}
   function technical(permission) { return state.phase === 'authorized' && state.assignment.permissions.includes(permission); }
   function sectionAction(section,action) { return state.phase === 'authorized' && state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action); }
   function has(permission) {
@@ -50,8 +53,7 @@
     try {
       const result=await client().rpc('get_admin_access_context');
       if(result.error) throw result.error;
-      const context=result.data||{};const permissions=context.technical_permissions||[];const sectionActions=context.section_actions||[];
-      publish(permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions),sectionActions:Object.freeze(sectionActions)})}:{phase:'denied'});
+      applyAccessContext(result.data||{});
     } catch(_){ publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
     return state;
   }
@@ -235,7 +237,7 @@
   async function startImpersonation(affiliateId,reason){if(state.phase!=='authorized')throw new Error('ADMIN_DENIED');const result=await client().rpc('start_affiliate_impersonation',{p_affiliate_id:affiliateId,p_reason:String(reason||'').trim()});if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return (result.data||[])[0]||null;}
   async function stopImpersonation(){const result=await client().rpc('stop_affiliate_impersonation');if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return Boolean(result.data);}
 
-  function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{retry();},[]);return Object.assign({},snapshot,{retry,has});}
-  window.AdminRepository=Object.freeze({bootstrap,retry,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
+  function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{bootstrap();},[]);return Object.assign({},snapshot,{retry,has});}
+  window.AdminRepository=Object.freeze({bootstrap,retry,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
   window.useAdminAuth=useAdminAuth;
 })();

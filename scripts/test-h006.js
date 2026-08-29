@@ -39,7 +39,7 @@ for (const required of [
 
 const auth = read('app/affiliate-auth.js');
 assert(auth.includes('createAffiliateViewModel(affiliate, profilePhoto)'));
-assert(auth.includes('AffiliateRepository.getProfilePhoto(affiliate.id)'));
+assert(auth.includes('AffiliateRepository.getProfilePhoto(affiliate.id, session.user)'));
 assert(auth.includes("publish({ phase: 'authenticated', session, affiliate, affiliateView,"));
 const repository = read('app/affiliate-repository.js');
 for (const field of ['historical_email_raw', 'birth_date_raw', 'union_enrollment_date_raw']) {

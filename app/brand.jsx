@@ -15,7 +15,7 @@
   }
 
   function SutiSeal({ size = 96, mono = false }) {
-    const visual = window.useVisualContent ? window.useVisualContent() : { phase: 'loading', branding: null };
+    const visual = window.useVisualBranding ? window.useVisualBranding() : { phase: 'loading', branding: null };
     const url = visual.phase === 'loaded' && visual.branding ? visual.branding.institutional_seal_url : null;
     return React.createElement('div', {
       'data-branding-seal-state': visual.phase,

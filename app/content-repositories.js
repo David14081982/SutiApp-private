@@ -3,7 +3,7 @@
   'use strict';
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   function client() { return window.SutiSupabase.getClient(); }
-  function url(asset) { return window.AssetRepository.publicUrl(asset); }
+  function url(asset) { return window.AssetRepository.publicUrl(asset, { width: 640, height: 360, resize: 'cover', quality: 82 }); }
   function projectNews(row) {
     return Object.freeze(Object.assign({}, row, {
       hue: row.accent_hue,

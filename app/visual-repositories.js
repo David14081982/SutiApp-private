@@ -12,9 +12,11 @@
     }
   }
 
-  function publicUrl(asset) {
+  function publicUrl(asset, transform) {
     if (!asset || asset.status !== 'READY' || !asset.storage_bucket || !asset.storage_path) return null;
-    const result = window.SutiSupabase.getClient().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path);
+    const transformable = ['image/jpeg', 'image/png', 'image/webp'].includes(String(asset.mime_type || '').toLowerCase());
+    const options = transform && transformable ? { transform } : undefined;
+    const result = window.SutiSupabase.getClient().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path, options);
     return result && result.data ? result.data.publicUrl : null;
   }
 
@@ -56,21 +58,23 @@
         relation('install_screen_2_asset', 'app_settings_install_screen_2_asset_id_fkey'),
         relation('install_screen_3_asset', 'app_settings_install_screen_3_asset_id_fkey'),
       ].join(',');
-      const rows = await list('app_settings', fields, (query) => query.eq('id', 'primary').limit(1));
+      const [rows, homeHeaderAsset] = await Promise.all([
+        list('app_settings', fields, (query) => query.eq('id', 'primary').limit(1)),
+        window.AssetRepository.getByKey('home.header.collapsed'),
+      ]);
       if (rows.length !== 1) throw new VisualRepositoryError('app_settings');
       const row = rows[0];
-      const homeHeaderAsset = await window.AssetRepository.getByKey('home.header.collapsed');
       return Object.freeze({
         id: row.id, app_name: row.app_name, short_name: row.short_name,
         description: row.description, updated_at: row.updated_at,
         app_icon_url: window.AssetRepository.publicUrl(row.app_icon_asset),
-        institutional_seal_url: window.AssetRepository.publicUrl(row.institutional_seal_asset),
+        institutional_seal_url: window.AssetRepository.publicUrl(row.institutional_seal_asset, { width: 240, height: 240, resize: 'contain', quality: 84 }),
         favicon_url: window.AssetRepository.publicUrl(row.favicon_asset),
         apple_touch_url: window.AssetRepository.publicUrl(row.apple_touch_asset),
         pwa_icon_192_url: window.AssetRepository.publicUrl(row.pwa_icon_192_asset),
         pwa_icon_512_url: window.AssetRepository.publicUrl(row.pwa_icon_512_asset),
         pwa_maskable_512_url: window.AssetRepository.publicUrl(row.pwa_maskable_512_asset),
-        home_header_collapsed_url: homeHeaderAsset && homeHeaderAsset.url,
+        home_header_collapsed_url: homeHeaderAsset && window.AssetRepository.publicUrl(homeHeaderAsset, { width: 860, height: 180, resize: 'cover', quality: 82 }),
         install_screens: Object.freeze([
           window.AssetRepository.publicUrl(row.install_screen_1_asset),
           window.AssetRepository.publicUrl(row.install_screen_2_asset),
@@ -84,7 +88,7 @@
     async list(placement) {
       const rows = await list('banners', `id,placement,title,description,action_label,action_url,company_raw,category_raw,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
         (query) => query.eq('placement', placement).eq('enabled', true).order('sort_order', { ascending: true }));
-      return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset) }))));
+      return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset, { width: 860, height: 448, resize: 'cover', quality: 82 }) }))));
     },
   });
 
@@ -94,7 +98,7 @@
       const rows = await list('popups', `id,title,body,action_label,action_url,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
         (query) => query.eq('enabled', true).or(`start_at.is.null,start_at.lte.${now}`).or(`end_at.is.null,end_at.gte.${now}`).order('sort_order', { ascending: true }));
       return Object.freeze(rows.map((row) => Object.freeze({
-        id: row.id, titulo: row.title || '', contenido: row.body || '', image_url: publicUrl(row.image_asset),
+        id: row.id, titulo: row.title || '', contenido: row.body || '', image_url: publicUrl(row.image_asset, { width: 680, height: 368, resize: 'cover', quality: 82 }),
         ctaText: row.action_label || 'Continuar', actionType: row.action_url ? 'url' : 'none',
         actionTarget: row.action_url || null, hue: 345,
       })));
@@ -109,9 +113,9 @@
         const linked = (row.company_assets || []).slice().sort((a, b) => a.sort_order - b.sort_order);
         const cover = linked.find((item) => item.role === 'cover');
         return Object.freeze(Object.assign({}, row, {
-          logo_url: publicUrl(row.logo_asset),
-          cover_url: cover ? publicUrl(cover.asset) : null,
-          gallery_urls: Object.freeze(linked.filter((item) => item.role === 'gallery').map((item) => publicUrl(item.asset)).filter(Boolean)),
+          logo_url: publicUrl(row.logo_asset, { width: 192, height: 192, resize: 'contain', quality: 82 }),
+          cover_url: cover ? publicUrl(cover.asset, { width: 860, height: 480, resize: 'cover', quality: 82 }) : null,
+          gallery_urls: Object.freeze(linked.filter((item) => item.role === 'gallery').map((item) => publicUrl(item.asset, { width: 640, height: 460, resize: 'cover', quality: 82 })).filter(Boolean)),
         }));
       }));
     },

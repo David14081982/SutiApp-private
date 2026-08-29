@@ -56,7 +56,8 @@
     const provideClient = clientProvider || (() => window.SutiSupabase.getClient());
     const profilePhotoCache = new Map();
 
-    async function getAuthenticatedUser(client) {
+    async function getAuthenticatedUser(client, knownUser) {
+      if (knownUser && knownUser.id) return knownUser;
       const result = await client.auth.getUser();
       if (result.error) throw sourceError(result.error);
       if (!result.data || !result.data.user) {
@@ -65,19 +66,19 @@
       return result.data.user;
     }
 
-    async function getCurrentAffiliate() {
+    async function getCurrentAffiliate(knownUser) {
       try {
         const client = provideClient();
-        await getAuthenticatedUser(client);
+        await getAuthenticatedUser(client, knownUser);
         const effective = await client.rpc('get_effective_affiliate_id');
         if (effective.error) throw effective.error;
         if (!effective.data) {
           throw new AffiliateRepositoryError('AUTH_IDENTITY_WITHOUT_AFFILIATE', 'Authenticated principal has no linked affiliate');
         }
-        const result = await client.from('affiliates')
-          .select(PUBLIC_FIELDS)
-          .eq('id', effective.data)
-          .maybeSingle();
+        const [result, context] = await Promise.all([
+          client.from('affiliates').select(PUBLIC_FIELDS).eq('id', effective.data).maybeSingle(),
+          client.rpc('get_impersonation_context'),
+        ]);
         if (result.error) throw result.error;
         if (!result.data) {
           throw new AffiliateRepositoryError(
@@ -85,7 +86,6 @@
             'Authenticated principal has no linked affiliate'
           );
         }
-        const context = await client.rpc('get_impersonation_context');
         if (context.error) throw context.error;
         const active = Array.isArray(context.data) ? context.data[0] : null;
         return Object.assign({}, result.data, { _impersonation: active || null });
@@ -149,10 +149,10 @@
       }
     }
 
-    async function getProfilePhoto(affiliateId) {
+    async function getProfilePhoto(affiliateId, knownUser) {
       try {
         const client = provideClient();
-        const principal = await getAuthenticatedUser(client);
+        const principal = await getAuthenticatedUser(client, knownUser);
         let resolvedAffiliateId = affiliateId;
         if (!resolvedAffiliateId) {
           const effective = await client.rpc('get_effective_affiliate_id');
@@ -243,7 +243,16 @@
           .order('url_order', { ascending: true });
         if (result.error) throw result.error;
 
-        const documents = await Promise.all((result.data || []).map(async (row) => {
+        const sourceRows = result.data || [];
+        const privateRows = sourceRows.filter((row) => row.classification === 'PRIVATE');
+        const signedByPath = new Map();
+        if (privateRows.length) {
+          const paths = Array.from(new Set(privateRows.map((row) => row.storage_path)));
+          const signed = await client.storage.from('private-assets').createSignedUrls(paths, DOCUMENTS.signedUrlTtlSeconds);
+          if (signed.error) throw signed.error;
+          (signed.data || []).forEach((entry, index) => { if (entry && entry.signedUrl) signedByPath.set(paths[index], entry.signedUrl); });
+        }
+        const documents = sourceRows.map((row) => {
           if (row.affiliate_id !== resolvedAffiliateId) {
             throw new AffiliateRepositoryError('INVALID_DOCUMENT_RELATION', 'Document relation does not belong to the requested affiliate');
           }
@@ -253,10 +262,7 @@
             if (row.storage_bucket !== 'private-assets' || !row.private_asset_id) {
               throw new AffiliateRepositoryError('INVALID_DOCUMENT_RELATION', 'Private document relation violates the asset contract');
             }
-            const signed = await client.storage.from(row.storage_bucket)
-              .createSignedUrl(row.storage_path, DOCUMENTS.signedUrlTtlSeconds);
-            if (signed.error) throw signed.error;
-            signedUrl = signed.data && signed.data.signedUrl;
+            signedUrl = signedByPath.get(row.storage_path) || null;
             if (!signedUrl) {
               throw new AffiliateRepositoryError('DOCUMENT_SIGNING_FAILED', 'Private document signed URL was not created');
             }
@@ -289,7 +295,7 @@
             signedUrl,
             expiresAt,
           });
-        }));
+        });
         return Object.freeze(documents);
       } catch (error) {
         throw sourceError(error);

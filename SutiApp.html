@@ -1,202 +1,592 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>SutiApp — SUTISSSTESON</title>
-<!-- PWA -->
-<link rel="manifest" href="manifest.webmanifest" />
-<meta name="theme-color" content="#910022" />
-<link rel="apple-touch-icon" href="icon-180.png" />
-<link rel="icon" type="image/png" href="icon-192.png" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="SutiApp" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&family=Cormorant+Garamond:wght@500;600;700&family=Spline+Sans+Mono:wght@500;600&display=swap" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --guinda: #910022;
-    --guinda-600: #7e0020;
-    --guinda-700: #6a001b;
-    --guinda-50: #fbeef1;
-    --guinda-100: #f3d6de;
-    --guinda-glow: #d11f3a;
-    --guinda-coral: #e8364f;
-    --grad-guinda: linear-gradient(150deg, #e8364f 0%, #c41230 42%, #910022 100%);
-    --grad-guinda-soft: linear-gradient(145deg, #d11f3a, #910022);
-    --gold: #9a6b16;
-    --gold-2: #c8922f;
-    --ink: #14213d;
-    --ink-2: #5a6378;
-    --ink-3: #97a0b3;
-    --navy: #14213d;
-    --pos: #1c9d6b;
-    --surface: #ffffff;
-    --surface-2: #eef1f6;
-    --bg: #f2f3f5;
-    --hairline: #e6eaf1;
-    --hairline-strong: #d6dbe6;
-    --shadow-sm: 0 1px 2px rgba(20,33,61,.04), 0 1px 3px rgba(20,33,61,.05);
-    --shadow-md: 0 10px 30px -10px rgba(20,33,61,.16), 0 2px 8px rgba(20,33,61,.05);
-    --shadow-lg: 0 24px 56px -18px rgba(20,33,61,.26);
-    /* soft clean elevation (no dark contour) */
-    --neo-sm: 0 6px 16px -8px rgba(20,33,61,.16), 0 2px 5px rgba(20,33,61,.05);
-    --neo-md: 0 14px 30px -12px rgba(20,33,61,.2), 0 4px 10px -2px rgba(20,33,61,.06);
-    --neo-inset: inset 2px 2px 5px rgba(170,182,204,.3), inset -2px -2px 5px rgba(255,255,255,.9);
-    --neo-press: inset 3px 3px 8px rgba(170,182,204,.35), inset -3px -3px 8px rgba(255,255,255,.85);
-    /* glow */
-    --glow-guinda: 0 10px 26px -6px rgba(209,31,58,.55), 0 4px 10px -2px rgba(145,0,34,.4);
-    --glow-guinda-strong: 0 14px 34px -4px rgba(232,54,79,.6), 0 6px 14px -2px rgba(145,0,34,.45);
-    --font: 'Nunito', system-ui, -apple-system, sans-serif;
-    --mono: 'Spline Sans Mono', ui-monospace, monospace;
-    --r-card: 24px;
-    --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  }
-  .fres-serif { font-family: var(--serif); }
-  /* accessible mode overrides applied via [data-a11y] on app root */
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-  html, body { overscroll-behavior: none; touch-action: manipulation; }
-  body {
-    font-family: var(--font); background: #d9dee8; color: var(--ink);
-    min-height: 100dvh;
-    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
-  }
-  #root { position: fixed; inset: 0; overflow: hidden; background: var(--bg); }
-  img, video, canvas, svg { max-width: 100%; }
-  /* iOS: evita el auto-zoom al enfocar campos (<16px dispara zoom) */
-  @supports (-webkit-touch-callout: none) { input, select, textarea { font-size: 16px; } }
-  /* Tablet / escritorio: marco tipo teléfono centrado (el transform contiene los position:fixed internos) */
-  @media (min-width: 760px) and (min-height: 640px) {
-    body { background: #c9cfda; }
-    #root { inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 430px; height: min(932px, calc(100dvh - 48px)); border-radius: 30px; box-shadow: 0 40px 90px -30px rgba(20,33,61,.55); }
-  }
-  /* H-ADMIN-DESKTOP-SHELL-001: el viewport amplio pertenece solo al Admin autorizado. */
-  @media (min-width: 1024px) {
-    html[data-admin-desktop="true"], html[data-admin-desktop="true"] body { width: 100%; height: 100%; overflow: hidden; }
-    html[data-admin-desktop="true"] body { background: #EEEEF1 !important; }
-    html[data-admin-desktop="true"] #root { position: fixed; inset: 0; left: 0; top: 0; transform: none; width: auto; height: auto; border-radius: 0; box-shadow: none; background: #EEEEF1; }
-    html[data-admin-desktop="true"] [data-app-tab-scroll="admin"] { overflow: hidden !important; }
-    html[data-admin-desktop="true"] [data-app-bottom-nav="true"] { display: none !important; }
-    [data-admin-desktop-shell] button:focus-visible,
-    [data-admin-overlay] button:focus-visible,
-    [data-admin-overlay] input:focus-visible,
-    [data-admin-overlay] select:focus-visible,
-    [data-admin-overlay] textarea:focus-visible { outline: 3px solid rgba(138,21,56,.3); outline-offset: 2px; }
-  }
-  button { font-family: var(--font); outline: none; }
-  button:focus, button:focus-visible { outline: none; }
-  input, textarea { font-family: var(--font); }
-  ::-webkit-scrollbar { width: 0; height: 0; }
-  .su-app-scroll { scrollbar-width: none; }
-  /* C1 · Pressable global — única fuente de feedback táctil. Sustituye a
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <title>SutiApp — SUTISSSTESON</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#910022" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="SutiApp" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&family=Cormorant+Garamond:wght@500;600;700&family=Spline+Sans+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --guinda: #910022;
+        --guinda-600: #7e0020;
+        --guinda-700: #6a001b;
+        --guinda-50: #fbeef1;
+        --guinda-100: #f3d6de;
+        --guinda-glow: #d11f3a;
+        --guinda-coral: #e8364f;
+        --grad-guinda: linear-gradient(
+          150deg,
+          #e8364f 0%,
+          #c41230 42%,
+          #910022 100%
+        );
+        --grad-guinda-soft: linear-gradient(145deg, #d11f3a, #910022);
+        --gold: #9a6b16;
+        --gold-2: #c8922f;
+        --ink: #14213d;
+        --ink-2: #5a6378;
+        --ink-3: #97a0b3;
+        --navy: #14213d;
+        --pos: #1c9d6b;
+        --surface: #ffffff;
+        --surface-2: #eef1f6;
+        --bg: #f2f3f5;
+        --hairline: #e6eaf1;
+        --hairline-strong: #d6dbe6;
+        --shadow-sm:
+          0 1px 2px rgba(20, 33, 61, 0.04), 0 1px 3px rgba(20, 33, 61, 0.05);
+        --shadow-md:
+          0 10px 30px -10px rgba(20, 33, 61, 0.16),
+          0 2px 8px rgba(20, 33, 61, 0.05);
+        --shadow-lg: 0 24px 56px -18px rgba(20, 33, 61, 0.26);
+        /* soft clean elevation (no dark contour) */
+        --neo-sm:
+          0 6px 16px -8px rgba(20, 33, 61, 0.16),
+          0 2px 5px rgba(20, 33, 61, 0.05);
+        --neo-md:
+          0 14px 30px -12px rgba(20, 33, 61, 0.2),
+          0 4px 10px -2px rgba(20, 33, 61, 0.06);
+        --neo-inset:
+          inset 2px 2px 5px rgba(170, 182, 204, 0.3),
+          inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+        --neo-press:
+          inset 3px 3px 8px rgba(170, 182, 204, 0.35),
+          inset -3px -3px 8px rgba(255, 255, 255, 0.85);
+        /* glow */
+        --glow-guinda:
+          0 10px 26px -6px rgba(209, 31, 58, 0.55),
+          0 4px 10px -2px rgba(145, 0, 34, 0.4);
+        --glow-guinda-strong:
+          0 14px 34px -4px rgba(232, 54, 79, 0.6),
+          0 6px 14px -2px rgba(145, 0, 34, 0.45);
+        --font: "Nunito", system-ui, -apple-system, sans-serif;
+        --mono: "Spline Sans Mono", ui-monospace, monospace;
+        --r-card: 24px;
+        --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+      }
+      .fres-serif {
+        font-family: var(--serif);
+      }
+      /* accessible mode overrides applied via [data-a11y] on app root */
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      html,
+      body {
+        overscroll-behavior: none;
+        touch-action: manipulation;
+      }
+      body {
+        font-family: var(--font);
+        background: #d9dee8;
+        color: var(--ink);
+        min-height: 100dvh;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      #root {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      img,
+      video,
+      canvas,
+      svg {
+        max-width: 100%;
+      }
+      /* iOS: evita el auto-zoom al enfocar campos (<16px dispara zoom) */
+      @supports (-webkit-touch-callout: none) {
+        input,
+        select,
+        textarea {
+          font-size: 16px;
+        }
+      }
+      /* Tablet / escritorio: marco tipo teléfono centrado (el transform contiene los position:fixed internos) */
+      @media (min-width: 760px) and (min-height: 640px) {
+        body {
+          background: #c9cfda;
+        }
+        #root {
+          inset: auto;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 430px;
+          height: min(932px, calc(100dvh - 48px));
+          border-radius: 30px;
+          box-shadow: 0 40px 90px -30px rgba(20, 33, 61, 0.55);
+        }
+      }
+      /* H-ADMIN-DESKTOP-SHELL-001: el viewport amplio pertenece solo al Admin autorizado. */
+      @media (min-width: 1024px) {
+        html[data-admin-desktop="true"],
+        html[data-admin-desktop="true"] body {
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        html[data-admin-desktop="true"] body {
+          background: #eeeef1 !important;
+        }
+        html[data-admin-desktop="true"] #root {
+          position: fixed;
+          inset: 0;
+          left: 0;
+          top: 0;
+          transform: none;
+          width: auto;
+          height: auto;
+          border-radius: 0;
+          box-shadow: none;
+          background: #eeeef1;
+        }
+        html[data-admin-desktop="true"] [data-app-tab-scroll="admin"] {
+          overflow: hidden !important;
+        }
+        html[data-admin-desktop="true"] [data-app-bottom-nav="true"] {
+          display: none !important;
+        }
+        [data-admin-desktop-shell] button:focus-visible,
+        [data-admin-overlay] button:focus-visible,
+        [data-admin-overlay] input:focus-visible,
+        [data-admin-overlay] select:focus-visible,
+        [data-admin-overlay] textarea:focus-visible {
+          outline: 3px solid rgba(138, 21, 56, 0.3);
+          outline-offset: 2px;
+        }
+      }
+      button {
+        font-family: var(--font);
+        outline: none;
+      }
+      button:focus,
+      button:focus-visible {
+        outline: none;
+      }
+      input,
+      textarea {
+        font-family: var(--font);
+      }
+      ::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+      }
+      .su-app-scroll {
+        scrollbar-width: none;
+      }
+      /* C1 · Pressable global — única fuente de feedback táctil. Sustituye a
      .su-btn:active y .su-press:active (delegación en app/press.jsx). */
-  button, .su-press, [data-press] { -webkit-tap-highlight-color: transparent; transition: transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .2s cubic-bezier(.2,.7,.3,1); }
-  [data-pressed] { --press-s: .975; transform: scale(var(--press-s)); }
-  .su-press[data-pressed], [data-press="subtle"][data-pressed] { --press-s: .988; }
-  [data-press="standard"][data-pressed] { --press-s: .975; }
-  [data-press="strong"][data-pressed] { --press-s: .955; }
-  @media (prefers-reduced-motion: reduce) { [data-pressed] { transform: none; } }
-  /* C2 · estados e iconos del botón */
-  .su-btn-ico, .su-btn-ico-r, .su-chev { transition: transform .18s cubic-bezier(.2,.7,.3,1); }
-  [data-pressed] .su-btn-ico-r, [data-pressed] .su-chev { transform: translateX(2.5px); }
-  [data-pressed] .su-btn-ico { transform: scale(.94); }
-  .su-btn-spin { animation: su-spin .7s linear infinite; }
-  .su-btn-state { animation: su-fadein .16s ease both; }
-  .su-check path, .su-check circle { stroke-dasharray: 30; stroke-dashoffset: 30; animation: su-draw .34s cubic-bezier(.2,.8,.3,1) forwards; }
-  @keyframes su-draw { to { stroke-dashoffset: 0; } }
-  /* C3 · cards, tiles y filas */
-  .su-card-i { cursor: pointer; }
-  .su-card-i[data-pressed] { box-shadow: var(--neo-sm); }
-  .su-tile { transition: transform .18s cubic-bezier(.2,.7,.3,1); }
-  [data-pressed] .su-tile { transform: scale(.955); }
-  /* fila con chevron al final: el chevron avanza; los icon-only quedan fuera
+      button,
+      .su-press,
+      [data-press] {
+        -webkit-tap-highlight-color: transparent;
+        transition:
+          transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1),
+          box-shadow 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      [data-pressed] {
+        --press-s: 0.975;
+        transform: scale(var(--press-s));
+      }
+      .su-press[data-pressed],
+      [data-press="subtle"][data-pressed] {
+        --press-s: 0.988;
+      }
+      [data-press="standard"][data-pressed] {
+        --press-s: 0.975;
+      }
+      [data-press="strong"][data-pressed] {
+        --press-s: 0.955;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-pressed] {
+          transform: none;
+        }
+      }
+      /* C2 · estados e iconos del botón */
+      .su-btn-ico,
+      .su-btn-ico-r,
+      .su-chev {
+        transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      [data-pressed] .su-btn-ico-r,
+      [data-pressed] .su-chev {
+        transform: translateX(2.5px);
+      }
+      [data-pressed] .su-btn-ico {
+        transform: scale(0.94);
+      }
+      .su-btn-spin {
+        animation: su-spin 0.7s linear infinite;
+      }
+      .su-btn-state {
+        animation: su-fadein 0.16s ease both;
+      }
+      .su-check path,
+      .su-check circle {
+        stroke-dasharray: 30;
+        stroke-dashoffset: 30;
+        animation: su-draw 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+      }
+      @keyframes su-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      /* C3 · cards, tiles y filas */
+      .su-card-i {
+        cursor: pointer;
+      }
+      .su-card-i[data-pressed] {
+        box-shadow: var(--neo-sm);
+      }
+      .su-tile {
+        transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      [data-pressed] .su-tile {
+        transform: scale(0.955);
+      }
+      /* fila con chevron al final: el chevron avanza; los icon-only quedan fuera
      porque en ellos el svg es el primer hijo */
-  button[data-pressed] > svg:last-child:not(:first-child) { transform: translateX(2.5px); }
-  button > svg:last-child:not(:first-child) { transition: transform .18s cubic-bezier(.2,.7,.3,1); }
-  /* C4 · controles de formulario: foco perceptible, cero salto de layout */
-  input, textarea, select { transition: box-shadow .2s cubic-bezier(.2,.7,.3,1), background .2s, border-color .2s; }
-  input:focus, textarea:focus, select:focus { outline: none; }
-  input:focus-visible, textarea:focus-visible, select:focus-visible { box-shadow: 0 0 0 3px var(--guinda-100); }
-  .su-search { transition: box-shadow .22s cubic-bezier(.2,.7,.3,1), background .22s; }
-  .su-search:focus-within { background: var(--surface); box-shadow: var(--neo-sm), 0 0 0 3px var(--guinda-100); }
-  .su-search-ico { transition: transform .22s cubic-bezier(.2,.7,.3,1); }
-  .su-search:focus-within .su-search-ico { transform: scale(1.12); }
-  [aria-invalid="true"] { box-shadow: 0 0 0 3px rgba(192,52,29,.22) !important; }
-  .su-err { animation: su-err-in .22s cubic-bezier(.2,.8,.3,1) both; }
-  @keyframes su-err-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-  button:focus-visible, [data-press]:focus-visible { outline: 2px solid var(--guinda); outline-offset: 2px; }
-  input[type="range"]::-webkit-slider-thumb { transition: transform .16s cubic-bezier(.2,.7,.3,1); }
-  input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.18); }
-  @media (prefers-reduced-motion: reduce) { .su-tile, .su-search, .su-search-ico, button > svg:last-child:not(:first-child), input, textarea, select { transition: none; } .su-err { animation: none; } }
-  @media (prefers-reduced-motion: reduce) { .su-btn-spin { animation-duration: 1.4s; } .su-check path, .su-check circle { animation: none; stroke-dashoffset: 0; } .su-btn-ico, .su-btn-ico-r, .su-chev { transition: none; } }
-  .su-card { transition: box-shadow .2s, transform .15s; }
-  @keyframes su-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-  .su-skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, #e3e8f0 37%, var(--surface-2) 63%); background-size: 200% 100%; animation: su-shimmer 1.4s infinite; }
-  @keyframes su-pop { 0% { transform: scale(.8); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
-  @keyframes su-slideup { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  @keyframes su-fadein { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes su-spin { to { transform: rotate(360deg); } }
-  @keyframes su-confetti { 0% { transform: translateY(0) rotate(0); opacity: 1; } 100% { transform: translateY(420px) rotate(540deg); opacity: 0; } }
-  @keyframes su-promo-next { from { transform: translateX(26px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes su-promo-prev { from { transform: translateX(-26px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  .su-promo-next { animation: su-promo-next .32s cubic-bezier(.22,1,.36,1); }
-  .su-promo-prev { animation: su-promo-prev .32s cubic-bezier(.22,1,.36,1); }
-  .su-route { animation: su-rise .34s cubic-bezier(.22,1,.36,1); }
-  .su-stagger > * { animation: su-rise .42s cubic-bezier(.22,1,.36,1) both; }
-  @keyframes su-rise { from { transform: translateY(14px); } to { transform: translateY(0); } }
-  @media (prefers-reduced-motion: reduce) { .su-route, .su-stagger > * { animation: none !important; } }
-  /* range slider */
-  .su-range::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 5px solid var(--guinda); box-shadow: 0 2px 8px rgba(145,0,34,.35); cursor: pointer; margin-top: 0; }
-  .su-range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 5px solid var(--guinda); box-shadow: 0 2px 8px rgba(145,0,34,.35); cursor: pointer; }
-  .su-range::-webkit-slider-runnable-track { background: transparent; height: 30px; }
-  /* accessible mode */
-  [data-a11y="on"] { --r-card: 18px; }
-  [data-a11y="on"] .su-scale-text { font-size: 1.12em; }
-</style>
-</head>
-<body style="font-family: var(--font); background-color: rgb(240, 243, 244)">
-<template id="__bundler_thumbnail">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-<rect width="100" height="100" rx="20" fill="#910022" />
-<text x="50" y="63" font-family="Nunito, sans-serif" font-size="34" font-weight="900" fill="#fff" text-anchor="middle">Su</text>
-</svg>
-</template>
-<div id="root"></div>
+      button[data-pressed] > svg:last-child:not(:first-child) {
+        transform: translateX(2.5px);
+      }
+      button > svg:last-child:not(:first-child) {
+        transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      /* C4 · controles de formulario: foco perceptible, cero salto de layout */
+      input,
+      textarea,
+      select {
+        transition:
+          box-shadow 0.2s cubic-bezier(0.2, 0.7, 0.3, 1),
+          background 0.2s,
+          border-color 0.2s;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+      }
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible {
+        box-shadow: 0 0 0 3px var(--guinda-100);
+      }
+      .su-search {
+        transition:
+          box-shadow 0.22s cubic-bezier(0.2, 0.7, 0.3, 1),
+          background 0.22s;
+      }
+      .su-search:focus-within {
+        background: var(--surface);
+        box-shadow:
+          var(--neo-sm),
+          0 0 0 3px var(--guinda-100);
+      }
+      .su-search-ico {
+        transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      .su-search:focus-within .su-search-ico {
+        transform: scale(1.12);
+      }
+      [aria-invalid="true"] {
+        box-shadow: 0 0 0 3px rgba(192, 52, 29, 0.22) !important;
+      }
+      .su-err {
+        animation: su-err-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+      }
+      @keyframes su-err-in {
+        from {
+          opacity: 0;
+          transform: translateY(-4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      button:focus-visible,
+      [data-press]:focus-visible {
+        outline: 2px solid var(--guinda);
+        outline-offset: 2px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        transition: transform 0.16s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      input[type="range"]:active::-webkit-slider-thumb {
+        transform: scale(1.18);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .su-tile,
+        .su-search,
+        .su-search-ico,
+        button > svg:last-child:not(:first-child),
+        input,
+        textarea,
+        select {
+          transition: none;
+        }
+        .su-err {
+          animation: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .su-btn-spin {
+          animation-duration: 1.4s;
+        }
+        .su-check path,
+        .su-check circle {
+          animation: none;
+          stroke-dashoffset: 0;
+        }
+        .su-btn-ico,
+        .su-btn-ico-r,
+        .su-chev {
+          transition: none;
+        }
+      }
+      .su-card {
+        transition:
+          box-shadow 0.2s,
+          transform 0.15s;
+      }
+      @keyframes su-shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+      .su-skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--surface-2) 25%,
+          #e3e8f0 37%,
+          var(--surface-2) 63%
+        );
+        background-size: 200% 100%;
+        animation: su-shimmer 1.4s infinite;
+      }
+      @keyframes su-pop {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        60% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      @keyframes su-slideup {
+        from {
+          transform: translateY(16px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes su-fadein {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes su-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes su-confetti {
+        0% {
+          transform: translateY(0) rotate(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(420px) rotate(540deg);
+          opacity: 0;
+        }
+      }
+      @keyframes su-promo-next {
+        from {
+          transform: translateX(26px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes su-promo-prev {
+        from {
+          transform: translateX(-26px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      .su-promo-next {
+        animation: su-promo-next 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .su-promo-prev {
+        animation: su-promo-prev 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .su-route {
+        animation: su-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .su-stagger > * {
+        animation: su-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+      @keyframes su-rise {
+        from {
+          transform: translateY(14px);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .su-route,
+        .su-stagger > * {
+          animation: none !important;
+        }
+      }
+      /* range slider */
+      .su-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #fff;
+        border: 5px solid var(--guinda);
+        box-shadow: 0 2px 8px rgba(145, 0, 34, 0.35);
+        cursor: pointer;
+        margin-top: 0;
+      }
+      .su-range::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #fff;
+        border: 5px solid var(--guinda);
+        box-shadow: 0 2px 8px rgba(145, 0, 34, 0.35);
+        cursor: pointer;
+      }
+      .su-range::-webkit-slider-runnable-track {
+        background: transparent;
+        height: 30px;
+      }
+      /* accessible mode */
+      [data-a11y="on"] {
+        --r-card: 18px;
+      }
+      [data-a11y="on"] .su-scale-text {
+        font-size: 1.12em;
+      }
+    </style>
+  </head>
+  <body style="font-family: var(--font); background-color: rgb(240, 243, 244)">
+    <template id="__bundler_thumbnail">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <rect width="100" height="100" rx="20" fill="#910022" />
+        <text
+          x="50"
+          y="63"
+          font-family="Nunito, sans-serif"
+          font-size="34"
+          font-weight="900"
+          fill="#fff"
+          text-anchor="middle"
+        >
+          Su
+        </text>
+      </svg>
+    </template>
+    <div id="root"></div>
 
-<script>
-  // Captura del evento de instalación PWA (relay para el botón "Instalar app")
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    window.__sutiInstallPrompt = e;
-    window.dispatchEvent(new Event('sutibip'));
-  });
-  window.addEventListener('appinstalled', function () {
-    window.__sutiInstallPrompt = null;
-    window.dispatchEvent(new Event('sutiinstalled'));
-  });
-</script>
+    <script>
+      // Captura del evento de instalación PWA (relay para el botón "Instalar app")
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        window.__sutiInstallPrompt = e;
+        window.dispatchEvent(new Event("sutibip"));
+      });
+      window.addEventListener("appinstalled", function () {
+        window.__sutiInstallPrompt = null;
+        window.dispatchEvent(new Event("sutiinstalled"));
+      });
+    </script>
 
-<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-<script src="app/supabase-config.js"></script>
-<script src="app/supabase-client.js"></script>
-<script src="app/affiliate-repository.js?v=3"></script>
-<script src="app/financial-legacy-repository.js?v=6"></script>
-  <script src="app/bundle.js?v=162"></script>
+    <script
+      src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="app/supabase-config.js"></script>
+    <script src="app/supabase-client.js"></script>
+    <script src="app/affiliate-repository.js?v=3"></script>
+    <script src="app/financial-legacy-repository.js?v=6"></script>
+    <script src="app/bundle.js?v=166"></script>
 
-<script>
-  // Service worker (offline + instalación PWA)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
-    });
-  }
-</script>
-</body>
+    <script>
+      // Service worker (offline + instalación PWA)
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").catch(function () {});
+        });
+      }
+    </script>
+  </body>
 </html>

@@ -98,11 +98,11 @@
       React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } },
         !needsQuote
           ? React.createElement(window.Btn, { full: true, size: 'lg', icon: isListing ? 'plus' : 'cash', onClick: () => isListing ? app.toast('Selecciona un producto en “Disponibles ahora”') : setSheet(true) }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora')
-          : !quote || quote.estado === 'vencida'
-            ? React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, 'Solicitar cotización')
-            : quote.estado === 'solicitada'
-              ? React.createElement('button', { disabled: true, style: { flex: 1, height: 54, borderRadius: 16, border: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 } }, React.createElement(I, { name: 'clock', size: 19, stroke: 2.2 }), 'Esperando cotización del proveedor')
-              : React.createElement(window.Btn, { full: true, size: 'lg', icon: 'cash', onClick: () => setSheet(true) }, 'Simular con monto cotizado')),
+          : !quoteReady
+            ? React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, quote && quote.estado === 'solicitada' ? 'Solicitar otra cotización' : 'Solicitar cotización')
+            : React.createElement(React.Fragment, null,
+              React.createElement(window.Btn, { size: 'lg', variant: 'outline', icon: 'plus', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 13 }, onClick: () => setQSheet(true) }, 'Nueva cotización'),
+              React.createElement(window.Btn, { size: 'lg', icon: 'cash', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 13 }, onClick: () => setSheet(true) }, 'Simular monto'))),
       // confirm sheet → simulador de financiamiento (descuento vía nómina)
       React.createElement(FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing, quote: quoteReady ? quote : null }),
       needsQuote && React.createElement(QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app }),
@@ -126,7 +126,7 @@
           React.createElement('div', { style: { flex: 1, fontSize: 13.5, fontWeight: 800, color: '#7a5410' } }, 'Cotización en proceso'),
           React.createElement('span', { style: { fontSize: 11.5, fontWeight: 700, color: '#9A6B16', fontFamily: 'var(--mono)' } }, quote.folio)),
         React.createElement('div', { style: { fontSize: 12, color: '#7a5410', fontWeight: 600, marginTop: 5, lineHeight: 1.45 } },
-          (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Te avisaremos cuando el presupuesto esté listo.'));
+          (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Esta revisión continúa y no impide enviar otra solicitud.'));
     }
     const c = quote.cotizacion || {};
     return React.createElement('div', { style: { background: '#E7F6ED', border: '1px solid #C4E8D2', borderRadius: 15, padding: '13px 14px', marginTop: 16 } },
@@ -157,16 +157,7 @@
         firma, idempotencyKey:idem.current, terminos: { aceptado: true, programa: 'cotizacion', fecha: new Date().toISOString() },
       });setSent(rec);}catch(_){setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');sending.current=false;}
     };
-    if (sent) {
-      return React.createElement(window.Sheet, { open, onClose, title: 'Solicitud enviada' },
-        React.createElement('div', { style: { textAlign: 'center', padding: '4px 0 8px' } },
-          React.createElement('div', { style: { width: 72, height: 72, borderRadius: '50%', background: '#E7F6ED', color: '#13794A', display: 'grid', placeItems: 'center', margin: '0 auto', animation: 'su-pop .5s cubic-bezier(.22,1,.36,1)' } }, React.createElement(I, { name: 'doc', size: 38, stroke: 2 })),
-          React.createElement('div', { style: { fontSize: 18, fontWeight: 800, marginTop: 16 } }, '¡Solicitud de cotización enviada!'),
-          React.createElement('p', { style: { fontSize: 13.5, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.5, margin: '8px auto 0', maxWidth: 300 } },
-            (sent.empresaNombre || 'El Área de Finanzas') + ' preparará tu presupuesto de ', React.createElement('b', null, it.label), '. Te notificaremos para que realices la simulación.'),
-          React.createElement('div', { style: { background: 'var(--guinda-50)', borderRadius: 12, padding: '10px 14px', margin: '16px auto 0', width: 'fit-content', fontSize: 13, fontWeight: 700, color: 'var(--guinda)', fontFamily: 'var(--mono)' } }, 'Folio ' + sent.folio),
-          React.createElement(window.Btn, { full: true, style: { marginTop: 20 }, onClick: onClose }, 'Entendido')));
-    }
+    if (sent) return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'quote',subject:it.label,onBack:onClose,fullScreen:true,destination:(sent.empresaNombre||'El Área de Finanzas')+' recibió tu solicitud y preparará el presupuesto para su revisión.'});
     return React.createElement(window.Sheet, { open, onClose, title: 'Solicitar cotización' },
       React.createElement('div', { style: { display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface-2)', borderRadius: 15, padding: '13px 14px' } },
         React.createElement('div', { style: { width: 44, height: 44, borderRadius: 12, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: it.icon, size: 23, stroke: 2 })),

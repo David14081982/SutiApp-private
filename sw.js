@@ -1,9 +1,9 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v106';
+const CACHE = 'sutiapp-v110';
 const CORE = [
   './',
   './SutiApp.html',
-  './app/bundle.js?v=162',
+  './app/bundle.js?v=166',
   './app/financial-legacy-repository.js?v=6',
   './app/payroll-declaration-repository.js',
   './manifest.webmanifest',
@@ -38,9 +38,22 @@ self.addEventListener('fetch', (e) => {
     'fonts.gstatic.com',
   ]);
   const sameOrigin = url.origin === self.location.origin;
+  const immutablePublicAsset = /\.supabase\.co$/i.test(url.hostname) &&
+    /^\/storage\/v1\/(?:object|render\/image)\/public\/(?:app-assets|company-assets)\//.test(url.pathname);
 
-  // Cache only the local app shell and explicitly known static CDNs. Supabase
-  // and any other cross-origin API remain governed by the live authority/RLS.
+  // Los assets públicos usan rutas derivadas del SHA-256: una ruta nueva
+  // representa contenido nuevo. Cache-first evita volver a transferir imágenes
+  // pesadas sin convertir CacheStorage en autoridad ni incluir URLs privadas.
+  if (immutablePublicAsset) {
+    e.respondWith(caches.open(CACHE).then((cache) => cache.match(req).then((hit) => hit || fetch(req).then((res) => {
+      if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone()).catch(() => {});
+      return res;
+    }))));
+    return;
+  }
+
+  // Cache only the local app shell, explicitly known static CDNs and the
+  // immutable public assets above. Supabase data APIs and private Storage stay live.
   if (url.pathname.endsWith('/app/supabase-config.js') || (!sameOrigin && !staticCdnHosts.has(url.hostname))) {
     return;
   }

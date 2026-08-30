@@ -63,7 +63,7 @@ Estado base: **H-DATA-001 — AUDITED / READ ONLY**; estado runtime incorporado 
 | 29 | Solicitudes, historial y seguimiento | `operationsStore` → `ProgramRequestRepository.listHistory()`; Admin → `listGeneralQueue()`/`detail()` | `program_requests` para altas posteriores al corte; hojas legacy conservan únicamente historia/procesamiento financiero según dominio | Supabase unificado para intención inicial; legacy aislado cuando aplica | Estados, PII mínima y documentos lazy; finanzas separadas | SUPABASE_ACTIVE + GOOGLE_LEGACY posterior | HIGH | HIGH |
 | 30 | Cotizaciones / presupuestos | Producto, Admin Finanzas, Panel Empresa | `Historial Presupuestos`; otras hojas de solicitudes contienen montos | MULTI_SOURCE | Puede preceder financiamiento | SUPABASE_LATER | HIGH | MEDIUM |
 | 31 | Notificaciones | Campana y Panel Empresa | Sin maestro; derivadas de stores y `DATA.notifs` | DERIVED / DESIGN_ONLY | No | DERIVED_VIEW | MEDIUM | HIGH |
-| 32 | Documentos del afiliado | Mis Documentos y solicitud de préstamo | Columnas de documentos dispersas en solicitudes | UNRESOLVED; no hay maestro documental | PII/documentos | UNRESOLVED | HIGH | LOW |
+| 32 | Documentos del afiliado | Unified Document Phase en expediente, préstamo, membresía, programas y productos compatibles | Excel histórico reconciliado; solicitudes conservan sus vínculos propios | Catálogo/requisitos/expediente/snapshot separados y autoritativos en Supabase | PII/documentos privados | SUPABASE_ACTIVE / ADR-075/077/078 | HIGH | HIGH |
 | 33 | Flujos y etapas | Tracking y Admin Flujos | Estados/fechas por transacción; no existe catálogo histórico de etapas | DESIGN_ONLY / DERIVED | Puede tocar finanzas | SUPABASE_LATER | HIGH | MEDIUM |
 | 34 | Catálogos reconciliados | Admin Catálogos/filtros; candidatos Marketplace/App/Programa | 19 hojas/rangos H-007.1 | AUDITED: 27 subdominios en 8 clases; ninguno supera aún gate de writer/autoridad | Sí: inversión, pago/cobro, rifa y plazos | UNRESOLVED por subdominio; FINANCIAL_LEGACY donde aplica | HIGH | HIGH |
 | 35 | Admin, roles, branding y copy | Supabase Auth/RLS; roles técnicos, segmentación y writers visuales Supabase; estructura Claude en código | `admin_roles`, `admin_role_permissions`, `admin_assignments`, tablas de cutover, `app_assets`, Storage y auditoría | H005_TEST único principal inicial; RPC/RLS; normales denegados | Solo frontera de presentación/workflow con Phase 7 | ADR-041 ACTIVE | HIGH | HIGH |
@@ -348,4 +348,21 @@ Signed URL: derivada, privada, 300 segundos, regenerada en cada apertura, nunca 
 Fallback/cache: NONE; objeto ausente produce estado controlado y recuperación explícita
 Recovery: bloqueada si ya existe historia de reemplazo
 Status: SUPABASE_ACTIVE / ADR-075 / INV-122
+```
+
+```text
+DOMAIN: Plataforma de requisitos documentales
+Catalog authority: document_types
+Configuration authority: program_document_requirements(scope_type,scope_key,effect)
+Effective reader: resolve_effective_document_requirements
+Supported scopes: PROGRAM, COMPANY, PRODUCT, SERVICE, MEMBERSHIP
+Demonstrated inheritance: COMPANY -> PRODUCT; addition/exclusion/restore server-side
+Admin writer: permission-gated audited RPC; direct browser DML denied
+Request history: program_requests.document_requirements_snapshot immutable for new requests
+Request evidence: request_documents; never reconstructed from current expediente
+UI consumer: UnifiedDocumentPhase shared by compatible request flows
+Upload origins: CAMERA or FILE, validated server-side; private-assets only
+Service status: contract supported / productive entity not available / fail-closed
+Fallback/cache: NONE; no DATA, localStorage, base64 authority or bulk signed URLs
+Status: SUPABASE_ACTIVE / ADR-078 / INV-128..132
 ```

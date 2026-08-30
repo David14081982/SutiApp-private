@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-30 — H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001
+
+- Catálogo, requisitos, herencia, snapshots y vinculación por solicitud convergen en la autoridad documental existente; no se creó una segunda fuente ni se reinterpretó historia.
+- La fase documental es compartida por préstamo, membresía, programas y marketplace, con captura móvil/desktop real, adjunto de archivo, preview, reemplazo y gate backend.
+- Admin configura catálogo y reglas por programa, membresía, empresa y producto mediante RPC auditada; Servicio permanece fail-closed porque no existe entidad productiva autorizada.
+
+```text
+H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001 RESULT
+Status: PASS
+Files changed: plataforma SQL/recovery; repositories y pantallas; Admin; bundle; pruebas; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — document_types + program_document_requirements + affiliate_documents/request_documents + Storage privado, sin autoridad paralela
+Invariant verdict: PASS — INV-128–132 y contratos históricos, de privacidad y snapshot preservados
+Build: PASS — bundle reproducible; sintaxis válida
+Tests: PASS — 62/62 estáticas; dry-run/apply/recovery; live con rollback; reemplazo real; Chrome responsive/Admin/membresía
+Security: PASS — RLS/RPC, objetivos derivados o explícitos, writer antiguo denegado, bucket privado, cero secretos frontend
+Legacy impact: NOT APPLICABLE / NO READ / NO WRITE / NO CHANGE — finanzas 146/35/3 intactas; Google y Apps Script sin interacción
+Unexpected files changed: ninguno; evidencia histórica alterada por un arnés fallido fue restaurada sin cambio de contenido
+Known limitations: Servicio N/A; 0 productos productivos, herencia certificada con fixture transaccional revertida; snapshots históricos permanecen nulos por diseño
+Evidence: docs/qa/H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001-EVIDENCE.md
+```
+
 ## 2026-08-29 — H-ADMIN-FINANCIAL-REQUEST-DECISIONS-001
 
 - Admin Finanzas ahora separa los documentos enviados (`request_documents`) del expediente actual del afiliado; una solicitud antigua sin vínculos declara que no puede reconstruirse, en lugar de presentar archivos actuales como evidencia histórica.

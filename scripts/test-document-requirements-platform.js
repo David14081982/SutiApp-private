@@ -1,0 +1,36 @@
+'use strict';
+const assert=require('assert').strict,fs=require('fs'),path=require('path'),vm=require('vm'),root=path.resolve(__dirname,'..'),read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const migration=read('supabase/migrations/20260830000200_document_requirements_platform_unified_ui.sql');
+const recovery=read('supabase/recovery/20260830000200_document_requirements_platform_unified_ui_recovery.sql');
+const uploadHardening=read('supabase/migrations/20260830000210_enforce_document_upload_origin.sql');
+const uploadHardeningRecovery=read('supabase/recovery/20260830000210_enforce_document_upload_origin_recovery.sql');
+const applyHelper=read('scripts/apply-document-requirements-platform.py');
+const workflow=read('app/document-workflow-repository.js'),documents=read('app/screens-documentos.jsx'),loan=read('app/screens-loan.jsx'),membership=read('app/screens-membership-application.jsx'),catalog=read('app/screens-catalogo.jsx'),marketplace=read('app/screens-marketplace.jsx'),admin=read('app/screens-admin-documents.jsx'),requests=read('app/program-request-repository.js');
+[workflow,documents,loan,membership,catalog,marketplace,admin,requests].forEach((source)=>new vm.Script(source));
+
+assert.match(migration,/alter table public\.program_document_requirements/);
+assert.match(migration,/scope_type in\('PROGRAM','COMPANY','PRODUCT','SERVICE','MEMBERSHIP'\)/);
+assert.match(migration,/create function public\.resolve_effective_document_requirements/);
+assert.match(migration,/effect in\('INCLUDE','EXCLUDE'\)/);
+assert.match(migration,/parent_scope_type','COMPANY'/);
+assert.match(migration,/create table public\.document_configuration_audit_log/);
+assert.match(migration,/before_state jsonb/);assert.match(migration,/after_state jsonb/);
+assert.match(migration,/document_requirements_snapshot jsonb/);
+assert.match(migration,/create trigger program_requests_capture_document_requirements/);
+assert.match(migration,/create_program_request_with_documents/);
+assert.match(migration,/REQUIRED_DOCUMENTS_MISSING/);
+assert.match(migration,/revoke insert,update,delete on public\.document_types,public\.program_document_requirements from authenticated/);
+assert.match(migration,/revoke execute on function public\.create_program_request\(uuid,uuid,integer,text,text,boolean,uuid\) from authenticated/);
+assert.match(migration,/p_source text/);assert.match(migration,/v_type\.camera_allowed/);assert.match(migration,/v_type\.file_upload_allowed/);
+assert.match(uploadHardening,/drop function public\.register_affiliate_document\(uuid,text,text,bigint,text\)/);assert.match(uploadHardeningRecovery,/create function public\.register_affiliate_document/);
+assert.match(migration,/get_effective_affiliate_id\(\)/);assert.doesNotMatch(migration,/service_role/);
+assert.match(recovery,/RECOVERY_BLOCKED_DOCUMENT_CONFIGURATION_AUDIT_EXISTS/);assert.match(recovery,/RECOVERY_BLOCKED_DOCUMENT_REQUIREMENT_SNAPSHOTS_EXIST/);
+assert.match(applyHelper,/RECOVERY_STACK/);assert.match(applyHelper,/20260830000220_fix_membership_document_scope_recovery\.sql/);assert.match(applyHelper,/20260830000210_enforce_document_upload_origin_recovery\.sql/);assert.match(applyHelper,/run_stack/);
+
+assert.match(workflow,/resolve_effective_document_requirements/);assert.match(workflow,/requirementTargets/);assert.match(workflow,/restoreRequirement/);assert.match(workflow,/p_source:source\.toUpperCase\(\)/);assert.doesNotMatch(workflow,/from\('document_types'\)\.delete/);
+assert.match(documents,/function UnifiedDocumentPhase/);assert.match(documents,/function DocumentRequestGate/);assert.match(documents,/Tomar foto/);assert.match(documents,/Adjuntar archivo/);assert.match(documents,/capture','environment/);assert.match(documents,/getUserMedia/);assert.match(documents,/data-document-live-camera/);assert.match(documents,/data-unified-document-phase/);assert.doesNotMatch(documents,/localStorage|window\.DATA|data:image/);
+assert.match(loan,/window\.UnifiedDocumentPhase/);assert.match(membership,/window\.UnifiedDocumentPhase/);assert.match(catalog,/window\.DocumentRequestGate/);assert.match(marketplace,/window\.DocumentRequestGate/);
+assert.match(admin,/list_document_requirement_targets|requirementTargets/);assert.match(admin,/Heredado/);assert.match(admin,/Excluido/);assert.match(admin,/Restaurar/);assert.match(admin,/Impacto antes de guardar/);assert.match(admin,/Cámara/);assert.match(admin,/Archivo/);
+assert.match(requests,/create_program_request_with_documents/);assert.match(requests,/document_requirements_snapshot/);assert.match(requests,/row\.document_requirements_snapshot\|\|\[\]/);
+assert.doesNotMatch([workflow,documents,loan,membership,catalog,marketplace,admin,requests].join('\n'),/localStorage|sessionStorage/);
+console.log('Document requirements platform and unified UI static contract PASS');

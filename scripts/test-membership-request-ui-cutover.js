@@ -24,7 +24,7 @@ assert.match(membership, /ProgramTermsRepository\.current\('membership',offering
 assert.match(membership, /DocumentWorkflowRepository\.listSelfDocuments\('SELF_SERVICE_MEMBERSHIP'\)/);
 assert.match(membership, /ProgramRequestRepository\.createMembership/);
 assert.match(requests, /rpc\('create_membership_request'/);
-assert.match(workflow, /from\('program_document_requirements'\)/);
+assert.match(workflow, /resolve_effective_document_requirements/);
 assert.match(workflow, /list_effective_affiliate_documents/);
 assert.match(workflow, /list_admin_affiliate_documents/);
 assert.doesNotMatch(workflow, /createSignedUrl|createSignedUrls/);
@@ -59,14 +59,14 @@ assert.match(membership, /grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/
 assert.match(membership, /mr-privacy/);
 assert.match(membership, /mr-footer/);
 assert.match(membership, /Solicitar · faltan/);
-assert.match(membership, /variant:'tiles'/);
+assert.match(membership, /UnifiedDocumentPhase/);
 assert.match(membership, /@media\(max-width:340px\)/);
 
 assert.match(documents, /variant==='tiles'/);
 assert.match(documents, /data-document-grid/);
 assert.match(documents, /data-document-type-id/);
 assert.match(documents, /data-document-status/);
-assert.match(documents, /DocumentWorkflowRepository\.upload\(type,file,\{onProgress:/);
+assert.match(documents, /DocumentWorkflowRepository\.upload\(type,file,\{source:selected\.source,onProgress:/);
 assert.match(documents, /\['REJECTED','REUPLOAD_REQUIRED'\]\.includes\(doc\.status\)/);
 assert.match(documents, /DocumentWorkflowRepository\.selfPreview\(doc,accessPurpose\|\|'SELF_SERVICE_EXPEDIENTE'\)/);
 assert.doesNotMatch(documents, /Quitar|\.remove\(|storage\.from\([^)]*\)\.remove/);

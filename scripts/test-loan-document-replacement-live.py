@@ -84,6 +84,26 @@ order by created_at desc,id desc limit 1
         raise RuntimeError("CROSS_AFFILIATE_AVAILABILITY_EXPOSED")
     if anon_status < 400:
         raise RuntimeError("ANONYMOUS_AVAILABILITY_ALLOWED")
+    # Recover only residues created by this reversible harness. A concurrent
+    # privacy certification can legitimately audit a QA document before this
+    # harness reaches teardown, so its exact QA audit rows must be removed first.
+    master.management_sql(env, f"""
+begin;
+delete from public.document_access_audit_log a using public.affiliate_documents d,public.private_assets pa
+ where a.document_id=d.id and d.private_asset_id=pa.id and d.affiliate_id='{affiliate_id}'::uuid
+   and pa.storage_bucket='private-assets' and pa.storage_path like 'affiliate-documents/{affiliate_id}/qa-loan-%';
+delete from public.sensitive_change_audit a using public.affiliate_documents d,public.private_assets pa
+ where a.target_id=d.id and d.private_asset_id=pa.id and d.affiliate_id='{affiliate_id}'::uuid
+   and pa.storage_bucket='private-assets' and pa.storage_path like 'affiliate-documents/{affiliate_id}/qa-loan-%';
+delete from public.affiliate_documents d using public.private_assets pa
+ where d.private_asset_id=pa.id and d.affiliate_id='{affiliate_id}'::uuid
+   and pa.storage_bucket='private-assets' and pa.storage_path like 'affiliate-documents/{affiliate_id}/qa-loan-%';
+delete from public.private_assets pa where pa.storage_bucket='private-assets'
+  and pa.storage_path like 'affiliate-documents/{affiliate_id}/qa-loan-%'
+  and not exists(select 1 from public.affiliate_documents d where d.private_asset_id=pa.id)
+  and not exists(select 1 from public.affiliate_files f where f.private_asset_id=pa.id);
+commit;
+""")
     stale = master.management_sql(env, f"""
 select name from storage.objects o
 where bucket_id='private-assets' and name like 'affiliate-documents/{affiliate_id}/qa-loan-%'
@@ -121,7 +141,7 @@ order by r.sort_order limit 1
         paths.append((storage_path, storage_url))
         status, detail = request(base + "/rest/v1/rpc/register_affiliate_document", key, affiliate_token, "POST", {
             "p_document_type_id": target["document_type_id"], "p_storage_path": storage_path,
-            "p_mime_type": "image/png", "p_file_size": len(payload), "p_sha256": digest,
+            "p_mime_type": "image/png", "p_file_size": len(payload), "p_sha256": digest, "p_source": "FILE",
         })
         if status != 200:
             raise RuntimeError("AFFILIATE_REGISTER_FAILED: " + json.dumps(detail))
@@ -164,6 +184,7 @@ select json_build_object(
             quoted_assets = ",".join("'%s'::uuid" % value for value in assets)
             master.management_sql(env, f"""
 begin;
+delete from public.document_access_audit_log where document_id in ({quoted_docs});
 delete from public.sensitive_change_audit where target_id in ({quoted_docs});
 delete from public.affiliate_documents where id='{documents[-1]}'::uuid;
 delete from public.affiliate_documents where id in ({quoted_docs});

@@ -157,9 +157,10 @@
     const [sent,setSent]=useState(null);
     const [busy,setBusy]=useState(false);
     const [err,setErr]=useState('');
+    const [documentGate,setDocumentGate]=useState({phase:'loading',ready:false,documentIds:[],missing:0});
     const sending=React.useRef(false);const idem=React.useRef(null);
-    React.useEffect(()=>{if(open){setMsg('');setQty(1);setFirma('');setAccept(false);setSent(null);setErr('');sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey();}},[open]);
-    const send=async()=>{if(sending.current)return;sending.current=true;try{setBusy(true);const repository=item.catalogSource==='program'?window.ProgramCatalogRepository:window.MarketplaceRepository;const created=await repository.createRequest(item.id,qty,msg.trim(),firma,accept,idem.current);setSent(created);}catch(_){setErr('No se pudo enviar la solicitud. Inténtalo de nuevo.');sending.current=false;}finally{setBusy(false);}};
+    React.useEffect(()=>{if(open){setMsg('');setQty(1);setFirma('');setAccept(false);setSent(null);setErr('');setDocumentGate({phase:'loading',ready:false,documentIds:[],missing:0});sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey();}},[open]);
+    const send=async()=>{if(sending.current||!documentGate.ready)return;sending.current=true;try{setBusy(true);const repository=item.catalogSource==='program'?window.ProgramCatalogRepository:window.MarketplaceRepository;const created=await repository.createRequest(item.id,qty,msg.trim(),firma,accept,idem.current,documentGate.documentIds);setSent(created);}catch(_){setErr('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');sending.current=false;}finally{setBusy(false);}};
     if(sent)return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'benefit',subject:item.nombre,onBack:onClose,fullScreen:true,destination:sent.status==='requires_financial_processing'?'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.':'Tu solicitud fue enviada al área responsable para su revisión.'});
     return React.createElement(window.Sheet,{open,onClose,title:'Solicitar beneficio'},
       React.createElement('div',{style:{fontSize:15,fontWeight:900}},item.nombre),
@@ -167,9 +168,10 @@
       React.createElement('input',{type:'number',min:1,max:999,value:qty,onChange:(e)=>setQty(Math.max(1,Number(e.target.value)||1)),style:{width:'100%',padding:12,border:'none',borderRadius:12,background:'var(--surface-2)',marginTop:6}}),
       React.createElement('label',{style:{display:'block',fontSize:12,fontWeight:800,marginTop:14}},'Mensaje (opcional)'),
       React.createElement('textarea',{value:msg,onChange:(e)=>setMsg(e.target.value),rows:3,style:{width:'100%',padding:12,border:'none',borderRadius:12,background:'var(--surface-2)',marginTop:6}}),
+      React.createElement('div',{style:{marginTop:18}},React.createElement(window.DocumentRequestGate,{scopeType:item.catalogSource==='program'?'PROGRAM':'PRODUCT',scopeKey:item.id,onState:setDocumentGate})),
       React.createElement(window.SignBlock,{programa:'marketplace',subtitulo:'Solicitud comercial · '+item.nombre,firma,setFirma,accept,setAccept,compact:true}),
       err&&React.createElement('div',{style:{color:'#C0341D',fontWeight:700,marginTop:10}},err),
-      React.createElement(window.Btn,{full:true,icon:'check',disabled:busy||!accept||!firma,style:{marginTop:14},onClick:send},busy?'Enviando…':'Enviar solicitud'));
+      React.createElement(window.Btn,{full:true,icon:'check',disabled:busy||!accept||!firma||!documentGate.ready,style:{marginTop:14},onClick:send},busy?'Enviando…':documentGate.phase==='loading'?'Consultando documentos…':documentGate.missing?'Faltan '+documentGate.missing+' documentos':'Enviar solicitud'));
   }
 
   function QuoteBanner({ quote }) {

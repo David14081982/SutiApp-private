@@ -53,6 +53,8 @@
 | ADR-074 | Una solicitud pendiente o revisada no bloquea otra del mismo afiliado para el mismo programa/producto ni para otro; Ahorro Voluntario y Portafolio de Inversión quedan fuera de esta habilitación. | Aceptada / ACTIVE |
 | ADR-075 | El expediente exige versión documental más reciente y objeto privado existente; cada vista firma de nuevo y un reemplazo crea historia enlazada sin mutar el `VERIFIED` anterior. | Aceptada / ACTIVE |
 | ADR-076 | Las decisiones administrativas de solicitudes financieras usan una bitácora inmutable separada; `program_requests` conserva estado/solicitud, `notes` conserva la nota del solicitante y el expediente actual nunca se presenta como evidencia histórica enviada. | Aceptada / ACTIVE |
+| ADR-077 | Autoservicio documental y Administración usan contratos separados; cada preview privado se autoriza y firma individualmente con auditoría. | Aceptada / ACTIVE |
+| ADR-078 | Catálogo, requisitos, herencia, snapshot y UI documental convergen en una plataforma central; `SERVICE` permanece fail-closed hasta existir entidad productiva. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -608,3 +610,13 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Recovery:** la migración es aditiva y su recovery sólo puede retirar frontera y bitácora antes de que exista historia de acceso; después falla cerrado. La función Edge puede retirarse independientemente mediante el script de despliegue.
 - **Legacy:** cero cambios o lecturas nuevas en Google, Apps Script, Ahorro, reglas, tasas, fondos, elegibilidad o cálculo financiero. El gate backend final de `request_documents` permanece vigente.
 - **Aprobación:** instrucción explícita del propietario de remediar quirúrgicamente el incidente de privacidad documental, 2026-08-30.
+
+## ADR-078 — Plataforma central de requisitos y fase documental única
+
+- **Autoridad:** se evoluciona `program_document_requirements` en lugar de crear otra fuente. `document_types` define capacidades y `scope_type + scope_key` enlaza `PROGRAM`, `COMPANY`, `PRODUCT`, `SERVICE` o `MEMBERSHIP`; toda lectura efectiva pasa por una RPC server-side.
+- **Herencia:** sólo se implementa la relación real `companies.id → marketplace_products.company_id`. Un producto hereda requisitos de empresa, puede agregar o excluir y restaura herencia eliminando su override. No se inventa jerarquía para programas o servicios; `SERVICE` conserva el contrato extensible y devuelve no disponible hasta que exista entidad autorizada.
+- **Historia:** cada nueva solicitud congela los requisitos efectivos en `program_requests.document_requirements_snapshot`. Las solicitudes anteriores permanecen sin snapshot y no se reconstruyen. `request_documents` sigue siendo la única evidencia de archivos enviados y el expediente actual permanece separado.
+- **Operación y seguridad:** catálogo/configuración sólo cambian mediante RPC con `documents.write`, razón y auditoría durable; escrituras directas quedan revocadas. Cámara y archivo son orígenes explícitos validados por backend, Storage sigue privado y los contratos de aislamiento/firma individual de ADR-077 permanecen intactos.
+- **UI:** `UnifiedDocumentPhase` es el único componente compartido para préstamo, membresía, programas y productos compatibles. El HTML entregado por el propietario es referencia visual/funcional, no fuente de datos; se excluyen su demo local, `DATA`, `localStorage` y base64 persistente.
+- **Legacy:** no cambia Google, Apps Script, reglas financieras, tasas, fondos, cálculos, solicitudes históricas ni semántica `VERIFIED`. El workbench Admin de revisión permanece separado de la fase autoservicio.
+- **Aprobación:** `H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001` e instrucción explícita “hazlo de forma quirúrgica; incluye tomar foto o adjuntar archivo”, propietario, 2026-08-30.

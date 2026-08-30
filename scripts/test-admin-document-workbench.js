@@ -43,9 +43,9 @@ assert.match(screen,/Hoja Tribunal/);
 assert.match(screen,/Talón Última Quincena/);
 assert.match(screen,/draggable:canWrite/);
 assert.match(screen,/aria-label':'Posición de '/);
-assert.match(screen,/Cuenta para el 100% del expediente/);
-assert.match(screen,/data-owner-clarification-required':'required_by_default/);
-assert.match(screen,/Nombre de negocio pendiente de definición/);
+assert.match(screen,/data-document-camera/);
+assert.match(screen,/data-document-file/);
+assert.match(screen,/Impacto antes de guardar/);
 
 assert.match(screen,/function MobileDocuments/);
 assert.match(screen,/\[\['review','Revisión'\],\['catalog','Catálogo'\],\['requirements','Requisitos'\],\['terms','Términos'\],\['qr','QR'\]\]/);

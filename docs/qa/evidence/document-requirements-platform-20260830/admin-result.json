@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "desktop": {
+    "targets": 174,
+    "programs": 136,
+    "memberships": 5,
+    "companies": 33,
+    "products": 0,
+    "services": 0,
+    "document_types": 13,
+    "columns": 2,
+    "overflow": false
+  },
+  "mobile": { "columns": 1, "overflow": false, "bottom_navigation": true },
+  "productive_writes": 0,
+  "service_context": "N/A_NO_PRODUCTIVE_ENTITY"
+}

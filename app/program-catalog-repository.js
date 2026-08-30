@@ -39,8 +39,8 @@
     }
     return Object.freeze(projected);
   }
-  async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey){
-    return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey});
+  async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
+    return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
   }
   async function listFavorites(){const r=await db().from('program_catalog_favorites').select('item_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>row.item_id));}
   async function setFavorite(itemId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('program_catalog_favorites').upsert({auth_user_id:user.id,item_id:itemId},{onConflict:'auth_user_id,item_id'}):await api.from('program_catalog_favorites').delete().eq('item_id',itemId);if(r.error)throw r.error;}

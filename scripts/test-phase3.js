@@ -15,7 +15,7 @@ must(sql.includes('category_raw text')&&sql.includes('subcategory_raw text'),'ra
 must(!catalog.includes('localStorage')&&!company.includes('localStorage')&&!quotes.includes('localStorage'),'browser persistence remains');
 must(!catalog.includes('window.DATA')&&!company.includes('window.DATA')&&!quotes.includes('window.DATA'),'DATA fallback remains');
 must(repo.includes("from('marketplace_products')")&&repo.includes('ProgramRequestRepository.create'),'marketplace repository cutover missing');
-must(requestRepo.includes("rpc('create_program_request'")&&requestRepo.includes("from('program_requests')"),'unified repository missing');
+must(requestRepo.includes("rpc('create_program_request_with_documents'")&&requestRepo.includes("from('program_requests')"),'unified repository missing');
 must(hardening.includes('revoke insert on public.marketplace_quote_requests')&&hardening.includes('SIGNATURE_AND_TERMS_REQUIRED'),'historical hardening missing');
 must(requestsSql.includes('program_requests_idempotency_unique')&&requestsSql.includes('public.get_effective_affiliate_id()')&&!/p_numero_control|p_affiliate_id/i.test(requestsSql),'unified request security missing');
 ['CatalogGrid','Gallery','Lightbox','CatalogItemScreen','BenefitRequestSheet'].forEach(x=>must(detail.includes('function '+x)||detail.includes('{ '+x),'product UI contract missing '+x));

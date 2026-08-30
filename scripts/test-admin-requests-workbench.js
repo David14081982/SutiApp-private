@@ -72,7 +72,8 @@ const mobileMethod=repository.slice(repository.indexOf('async function listMobil
 assert.match(queueMethod,/\.limit\(250\)/);
 assert.doesNotMatch(historyMethod+mobileMethod,/\.limit\(/);
 assert.match(repository,/async function detail\(id\)/);
-['request_documents','program_document_requirements','operational_request_tracking'].forEach((table)=>assert.ok(repository.includes(`from('${table}')`),table));
+['request_documents','operational_request_tracking'].forEach((table)=>assert.ok(repository.includes(`from('${table}')`),table));
+assert.match(repository,/document_requirements_snapshot/);
 assert.match(repository,/operational_workflows!workflow_id/);
 assert.match(repository,/Promise\.all\(\[documents,requirements,tracking\]\)/);
 assert.match(repository,/documents_available:!parts\[0\]\.error/);

@@ -146,16 +146,17 @@
     const [firma, setFirma] = React.useState('');
     const [accept, setAccept] = React.useState(false);
     const [error,setError]=React.useState('');
+    const [documentGate,setDocumentGate]=React.useState({phase:producto?'loading':'ready',ready:!producto,documentIds:[],missing:0});
     const sending=React.useRef(false);const idem=React.useRef(null);
-    React.useEffect(() => { if (open) { setSent(null); setMsg(''); setFirma(''); setAccept(false); setError(''); sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey(); } }, [open]);
+    React.useEffect(() => { if (open) { setSent(null); setMsg(''); setFirma(''); setAccept(false); setError(''); setDocumentGate({phase:producto?'loading':'ready',ready:!producto,documentIds:[],missing:0});sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey(); } }, [open,producto&&producto.id]);
     const provider = window.quoteStore ? window.quoteStore.providerFor(it.id) : null;
     const [okCot, runCot] = window.useBtnConfirm();
     const enviar = async () => {
-      if(sending.current)return;sending.current=true;
-      try{const rec = await window.quoteStore.solicitar({
-        productoId: it.id, productoNombre: it.label, icon: it.icon, mensaje: msg.trim(),
+      if(sending.current||!documentGate.ready)return;sending.current=true;
+      try{let rec;if(producto&&producto.catalogSource==='program')rec=await window.ProgramCatalogRepository.createRequest(producto.id,1,msg.trim(),firma,true,idem.current,documentGate.documentIds);else if(producto)rec=await window.MarketplaceRepository.createQuote(producto.id,msg.trim(),firma,true,idem.current,documentGate.documentIds);else rec=await window.quoteStore.solicitar({
+        productoId: it.id, productoNombre: it.label, icon: it.icon, mensaje: msg.trim(),documentIds:documentGate.documentIds,
         firma, idempotencyKey:idem.current, terminos: { aceptado: true, programa: 'cotizacion', fecha: new Date().toISOString() },
-      });setSent(rec);}catch(_){setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');sending.current=false;}
+      });setSent(rec);}catch(_){setError('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');sending.current=false;}
     };
     if (sent) return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'quote',subject:it.label,onBack:onClose,fullScreen:true,destination:(sent.empresaNombre||'El Área de Finanzas')+' recibió tu solicitud y preparará el presupuesto para su revisión.'});
     return React.createElement(window.Sheet, { open, onClose, title: 'Solicitar cotización' },
@@ -168,11 +169,12 @@
       React.createElement('div', { style: { marginTop: 14 } },
         React.createElement('label', { style: { fontSize: 12, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 6 } }, '¿Qué te interesa? (opcional)'),
         React.createElement('textarea', { value: msg, rows: 3, placeholder: 'Ej. Viaje a Cancún para 2 personas en agosto…', onChange: (e) => setMsg(e.target.value), style: { width: '100%', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '12px 14px', fontSize: 14, fontFamily: 'inherit', color: 'var(--ink)', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5 } })),
+      producto&&React.createElement('div',{style:{marginTop:18}},React.createElement(window.DocumentRequestGate,{scopeType:producto.catalogSource==='program'?'PROGRAM':'PRODUCT',scopeKey:producto.id,onState:setDocumentGate})),
       React.createElement(window.SignBlock, { programa: 'cotizacion', subtitulo: 'Solicitud de cotización · ' + it.label, firma, setFirma, accept, setAccept, compact: true }),
       error&&React.createElement('div',{style:{color:'#C0341D',fontSize:12.5,fontWeight:700,marginTop:10}},error),
       React.createElement('div', { style: { display: 'flex', gap: 10, marginTop: 16 } },
         React.createElement(window.Btn, { full: true, variant: 'outline', onClick: onClose }, 'Cancelar'),
-        React.createElement(window.Btn, { full: true, icon: 'doc', success: okCot, disabled: !accept || !firma, onClick: () => runCot(enviar) }, 'Enviar solicitud')));
+        React.createElement(window.Btn, { full: true, icon: 'doc', success: okCot, disabled: !accept || !firma || !documentGate.ready, onClick: () => runCot(enviar) }, documentGate.phase==='loading'?'Consultando documentos…':documentGate.missing?'Faltan '+documentGate.missing+' documentos':'Enviar solicitud')));
   }
 
   function actionPill(icon, label, onClick) {

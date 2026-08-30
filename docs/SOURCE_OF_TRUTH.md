@@ -1,5 +1,13 @@
 # Fuentes de verdad
 
+## Corte ADR-078 — plataforma central de requisitos documentales
+
+`document_types` es el catálogo único de tipos; `program_document_requirements` continúa como única autoridad de configuración y ahora identifica el destino mediante `scope_type + scope_key` para `PROGRAM`, `COMPANY`, `PRODUCT`, `SERVICE` y `MEMBERSHIP`. No existe otra tabla de requisitos por pantalla. `resolve_effective_document_requirements` valida la entidad server-side y resuelve requisitos propios, herencia `COMPANY → PRODUCT`, adiciones, exclusiones y orden. `SERVICE` está soportado por contrato, pero no expone destinos mientras no exista una entidad productiva de servicio autorizada.
+
+Las escrituras de catálogo y reglas se realizan exclusivamente por RPC administrativa con `documents.write`, motivo y `document_configuration_audit_log`; las escrituras directas del navegador están revocadas. `document_requirements_snapshot` congela los requisitos efectivos de cada nueva `program_request`; las cinco solicitudes históricas anteriores conservan `NULL` y nunca se reinterpretan con la configuración vigente.
+
+`UnifiedDocumentPhase` es el único componente de autoservicio para presentar, reutilizar, capturar, adjuntar, previsualizar y reemplazar documentos en préstamo, membresía, programa y producto. Sigue consumiendo los contratos aislados de ADR-077: expediente vigente en `affiliate_documents`, evidencia enviada en `request_documents`, archivos físicos privados en `private_assets/private-assets` y firma individual derivada. La referencia HTML del propietario define presentación/interacción, pero no es fuente de datos ni introduce `DATA`, base64 persistente o `localStorage`.
+
 ## Corte ADR-076 — decisiones administrativas de solicitudes financieras
 
 `program_requests` permanece como autoridad única de la solicitud y su estado; `program_requests.notes` conserva la nota original del solicitante. `program_request_admin_events` es la bitácora histórica append-only de comentarios, revisión, rechazo, cancelación y aprobación administrativa. Sus writers son `record_program_request_admin_action` para acciones browser autorizadas y la sobrecarga service-only de `approve_financial_program_request` para registrar aprobación en la misma transacción que el snapshot contractual. No existe store, mock, `DATA`, browser storage ni fallback productivo.
@@ -113,9 +121,9 @@ Cambiar cualquier fila requiere ADR, lectores/escritores enumerados, plan de rec
 
 | Dominio | Autoridad única | Contrato |
 |---|---|---|
-| Catálogo documental | Supabase `document_types` | 12 tipos; los ocho nombres históricos iniciales son estables. Admin autorizado administra presentación, activación y orden. |
+| Catálogo documental | Supabase `document_types` | 13 tipos; los ocho nombres históricos iniciales son estables. Admin autorizado administra presentación, capacidades de cámara/archivo, activación y orden mediante RPC auditada. |
 | Expediente electrónico | Supabase `affiliate_documents` relacionado con `affiliate_files`/`private_assets` y objeto privado existente | El backfill relaciona 3,421 instancias con archivos existentes. La versión más reciente por tipo gobierna el flujo; un `VERIFIED` no se muta y su reemplazo crea otra fila enlazada. Una URL firmada temporal no es autoridad. |
-| Requisitos por programa | Supabase `program_document_requirements` | Préstamo y cada membresía tienen requisitos explícitos y reutilización configurable; `request_documents` conserva snapshot inmutable. |
+| Requisitos documentales | Supabase `program_document_requirements` | Configuración central por programa, empresa, producto, servicio o membresía; producto hereda empresa y admite adición/exclusión/restauración. `program_requests.document_requirements_snapshot` congela configuración y `request_documents` fija los archivos usados. |
 | Datos bancarios | Supabase `affiliate_bank_accounts` es la única autoridad productiva; `Usuarios SUTIAPP.xlsx` fue exclusivamente seed histórico | Seed aplicado: 504 cuentas parciales seguras por `numero_control` exacto/único, 8 ambiguas y 1 irrecuperable omitidas. Excel no participa en runtime. Afiliado mantiene 0..N cuentas mediante RPC/RLS; Admin sólo lee con `bank_accounts.read`. |
 | Términos | Supabase `program_terms_versions` y aceptación inmutable por solicitud | La autoridad quedó resuelta por el propietario: texto o PDF, versión, publicación, vigencia e historial por programa. Sólo una versión publicada y vigente permite enviar. El propietario aporta el contenido; no existe fallback legal. La ampliación de vigencia/PDF/aceptación se implementará después del dry run bancario. |
 | QR de credencial | Supabase `credential_qr_settings` + `credential_qr_tokens` | Política global allowlisted, token aleatorio efímero cuyo hash se persiste; el QR local codifica ruta y token, nunca PII. |

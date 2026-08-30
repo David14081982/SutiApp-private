@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "viewports": {
+    "390x844": { "columns": 2, "tiles": 6, "complete": 3, "total": 6, "overflow": false },
+    "430x932": { "columns": 2, "tiles": 6, "complete": 3, "total": 6, "overflow": false },
+    "768x1024": { "app_width": 430, "columns": 2, "tiles": 6, "complete": 3, "total": 6, "overflow": false }
+  },
+  "origins": ["Tomar foto", "Adjuntar archivo"],
+  "mobile_capture": "environment",
+  "desktop_get_user_media": true,
+  "pii_in_evidence": false
+}

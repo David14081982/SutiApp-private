@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Plataforma central de requisitos documentales — ADR-078
+
+`resolve_effective_document_requirements` acepta sólo contexto de entidad validado server-side y requiere Auth. `anon` no ejecuta el resolver. Catálogo y reglas revocan `INSERT/UPDATE/DELETE` directos a `authenticated`; las RPC administrativas vuelven a exigir `documents.write`, usan `SECURITY DEFINER`, `search_path=''`, validan destino/tipo/efecto/orden/motivo y escriben auditoría durable.
+
+La carga exige ahora `p_source=CAMERA|FILE`; la firma antigua sin origen fue eliminada para impedir bypass de capacidades. El backend valida origen, MIME, tamaño, hash, propiedad y ruta privada. Autoservicio continúa derivando el afiliado efectivo y Administración continúa requiriendo objetivo explícito; el resolver de requisitos nunca amplía el expediente ni firma objetos. El browser no contiene `service_role`, secretos, rutas privadas o URLs persistentes.
+
 ## Bitácora administrativa de solicitudes financieras — ADR-076
 
 `program_request_admin_events` tiene RLS habilitada y forzada, y `anon`/`authenticated` no reciben grants directos sobre la tabla. La lectura ocurre exclusivamente mediante `get_program_request_admin_events`, que exige `program_requests.read`, limita el dominio a solicitudes financieras y no proyecta UUID del actor ni claves de idempotencia. La escritura browser usa `record_program_request_admin_action`, exige `program_requests.write`, deriva el actor desde `auth.uid()`, valida transición y motivo, y deduplica por `client_action_id`.

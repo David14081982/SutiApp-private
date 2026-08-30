@@ -658,9 +658,7 @@
 
   function StepDocuments({ requirements, documents, onChanged, phase, missing }) {
     return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-      phase==='error'&&React.createElement('div',{role:'alert',style:{padding:12,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize:12,fontWeight:750}},'No fue posible consultar los requisitos. ',React.createElement('button',{onClick:onChanged,style:{border:'none',background:'transparent',color:'inherit',fontWeight:900}},'Reintentar')),
-      phase==='ready'&&React.createElement(MissingDocumentsNotice,{missing}),
-      React.createElement(window.DocumentRequirementList,{requirements,documents,onChanged,compact:true,editable:true,accessPurpose:'SELF_SERVICE_LOAN'}),
+      React.createElement(window.UnifiedDocumentPhase,{requirements,documents,onChanged,phase,error:'No fue posible consultar los requisitos autorizados.',onRetry:onChanged,accessPurpose:'SELF_SERVICE_LOAN',title:'Verifica tus documentos'}),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
         React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));

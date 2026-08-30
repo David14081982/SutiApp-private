@@ -7622,9 +7622,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function(){
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
-  const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
+  const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
-  const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
+  const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const historyFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const mobileFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
@@ -7656,9 +7656,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function create(values){
     const v=values||{};
-    const r=await db().rpc('create_program_request',{
+    const r=await db().rpc('create_program_request_with_documents',{
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
-      p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key()
+      p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
     if(r.error)throw r.error;return project(r.data);
   }
@@ -7692,7 +7692,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
     const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
-    const requirements=row.program_id==='membership'?Promise.resolve({data:[],error:{code:'MEMBERSHIP_SCOPE_NOT_EXPOSED'}}):db().from('program_document_requirements').select('id,required,allow_verified_reuse,sort_order,document_type:document_types!document_type_id(id,code,label)').eq('program_id',row.program_id).is('membership_offering_id',null).eq('enabled',true).order('sort_order',{ascending:true});
+    const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
     const tracking=db().from('operational_request_tracking').select('request_id,current_stage_id,stage_dates,updated_at,workflow:operational_workflows!workflow_id(id,name,operational_workflow_stages(id,name,description,responsible,status_reference,sort_order))').eq('request_id',id).maybeSingle();
     const parts=await Promise.all([documents,requirements,tracking]),trackingRow=parts[2].error?null:parts[2].data,workflow=trackingRow&&trackingRow.workflow;
     const trackingView=trackingRow?Object.freeze(Object.assign({},trackingRow,{workflow_name:workflow&&workflow.name||'',stages:Object.freeze((workflow&&workflow.operational_workflow_stages||[]).slice().sort((a,b)=>a.sort_order-b.sort_order))})):null;
@@ -7738,8 +7738,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const hex=(buffer)=>Array.from(new Uint8Array(buffer)).map((b)=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
   const ext=(file)=>{const value=String(file.name||'').split('.').pop().toLowerCase();return /^[a-z0-9]{1,8}$/.test(value)?'.'+value:'';};
   const failure=(code)=>Object.assign(new Error(code),{code});
-  async function catalog(filters){const f=filters||{};let q=db().from('document_types').select('id,code,label,description,icon,required_by_default,accepted_mime_types,enabled,sort_order,system_type').order('sort_order',{ascending:true});if(f.includeDisabled!==true)q=q.eq('enabled',true);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
-  async function requirements(programId,membershipOfferingId){let q=db().from('program_document_requirements').select('id,program_id,membership_offering_id,document_type_id,required,allow_verified_reuse,sort_order,enabled,document_type:document_types(id,code,label,description,icon,accepted_mime_types)').eq('program_id',programId).eq('enabled',true).order('sort_order',{ascending:true});q=membershipOfferingId?q.eq('membership_offering_id',membershipOfferingId):q.is('membership_offering_id',null);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
+  async function catalog(filters){const f=filters||{};let q=db().from('document_types').select('id,code,label,description,icon,required_by_default,accepted_mime_types,camera_allowed,file_upload_allowed,max_file_size_bytes,enabled,sort_order,system_type').order('sort_order',{ascending:true});if(f.includeDisabled!==true)q=q.eq('enabled',true);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
+  const requirementRow=(row)=>Object.freeze({id:row.requirement_id,scope_type:row.scope_type,scope_key:row.scope_key,document_type_id:row.document_type_id,required:row.required,allow_verified_reuse:row.allow_verified_reuse,sort_order:row.sort_order,inherited:row.inherited,source_scope_type:row.source_scope_type,source_scope_key:row.source_scope_key,document_type:Object.freeze({id:row.document_type_id,code:row.document_type_code,label:row.document_type_label,description:row.document_type_description,icon:row.document_type_icon,accepted_mime_types:row.accepted_mime_types||[],camera_allowed:row.camera_allowed!==false,file_upload_allowed:row.file_upload_allowed!==false,max_file_size_bytes:Number(row.max_file_size_bytes)||MAX})});
+  async function resolveRequirements(scopeType,scopeKey){const r=await db().rpc('resolve_effective_document_requirements',{p_scope_type:String(scopeType||'').toUpperCase(),p_scope_key:String(scopeKey||'')});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(requirementRow));}
+  async function requirements(programId,membershipOfferingId){return resolveRequirements(programId==='membership'?'MEMBERSHIP':'PROGRAM',programId==='membership'?membershipOfferingId:programId);}
   function projectDocument(row){return Object.freeze({id:row.document_id,affiliate_id:row.affiliate_id,document_type_id:row.document_type_id,affiliate_file_id:row.affiliate_file_id,private_asset_id:row.private_asset_id,replaces_document_id:row.replaces_document_id,status:row.document_status,review_observation:row.review_observation,reviewed_at:row.reviewed_at,created_at:row.created_at,updated_at:row.updated_at,document_type:Object.freeze({id:row.document_type_id,code:row.document_type_code,label:row.document_type_label,description:row.document_type_description,icon:row.document_type_icon,accepted_mime_types:row.accepted_mime_types||[]}),mimeType:row.mime_type,sha256:row.sha256,signedUrl:null,availability:row.availability,available:row.available===true,previewUnavailable:row.available!==true,verificationProvenance:row.verification_provenance||'WORKFLOW_STATUS'});}
   async function listSelfDocuments(purpose){const allowed=['SELF_SERVICE_EXPEDIENTE','SELF_SERVICE_LOAN','SELF_SERVICE_MEMBERSHIP'];if(!allowed.includes(purpose))throw failure('INVALID_DOCUMENT_ACCESS_PURPOSE');const[listed,effective]=await Promise.all([db().rpc('list_effective_affiliate_documents',{p_purpose:purpose}),db().rpc('get_effective_affiliate_id')]);if(listed.error)throw listed.error;if(effective.error||!effective.data)throw effective.error||failure('AFFILIATE_IDENTITY_REQUIRED');const rows=(listed.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==effective.data))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
   async function listAdminDocuments(affiliateId,purpose){if(!affiliateId)throw failure('TARGET_AFFILIATE_REQUIRED');const r=await db().rpc('list_admin_affiliate_documents',{p_target_affiliate_id:affiliateId,p_purpose:purpose});if(r.error)throw r.error;const rows=(r.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==affiliateId))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
@@ -7747,8 +7749,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
   async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
   async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
-  async function prepareFile(type,file,onProgress){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>MAX||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
-  async function upload(type,file,options){const settings=options||{},progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
+  async function prepareFile(type,file,onProgress,source){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');const origin=source==='camera'?'camera':'file',limit=Math.min(MAX,Number(type.max_file_size_bytes)||MAX);if(origin==='camera'&&type.camera_allowed===false||origin==='file'&&type.file_upload_allowed===false)throw failure('DOCUMENT_SOURCE_NOT_ALLOWED');if(origin==='camera'&&!String(file.type||'').startsWith('image/'))throw failure('INVALID_DOCUMENT_FILE');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>limit||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
+  async function upload(type,file,options){const settings=options||{},source=settings.source==='camera'?'camera':'file',progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress,source);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha,p_source:source.toUpperCase()});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
   const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
   async function reviewQueue(){
@@ -7756,11 +7758,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(r.error)throw r.error;
     return Object.freeze((r.data||[]).map((row)=>Object.freeze(Object.assign({},row,{signedUrl:null,mimeType:(row.private_asset||row.affiliate_file||{}).mime_type||null}))));
   }
-  async function saveRequirement(row){const r=await db().rpc('save_program_document_requirement',{p_program_id:row.program_id,p_membership_offering_id:row.membership_offering_id||null,p_document_type_id:row.document_type_id,p_required:row.required!==false,p_allow_reuse:row.allow_verified_reuse!==false,p_sort_order:Number(row.sort_order),p_enabled:row.enabled!==false});if(r.error)throw r.error;return r.data;}
-  async function saveType(row){const values={code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};let q=row.id?db().from('document_types').update(values).eq('id',row.id):db().from('document_types').insert(values);const r=await q.select().single();if(r.error)throw r.error;return r.data;}
-  async function removeType(id){const r=await db().from('document_types').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('DOCUMENT_TYPE_DELETE_DENIED');}
+  async function requirementTargets(){const r=await db().rpc('list_document_requirement_targets');if(r.error)throw r.error;return Object.freeze(r.data||[]);}
+  async function requirementConfiguration(scopeType,scopeKey){const[rules,impact]=await Promise.all([db().rpc('get_document_requirement_configuration',{p_scope_type:scopeType,p_scope_key:scopeKey}),db().rpc('get_document_requirement_impact',{p_scope_type:scopeType,p_scope_key:scopeKey})]);if(rules.error)throw rules.error;if(impact.error)throw impact.error;return Object.freeze({rules:Object.freeze(rules.data||[]),impact:Object.freeze(impact.data||{})});}
+  async function saveRequirement(row,reason){const r=await db().rpc('save_document_requirement_rule',{p_scope_type:row.scope_type,p_scope_key:row.scope_key,p_document_type_id:row.document_type_id,p_effect:row.effect||'INCLUDE',p_required:row.required!==false,p_allow_verified_reuse:row.allow_verified_reuse!==false,p_sort_order:Number(row.sort_order)||1,p_reason:reason||'Configuración documental administrativa'});if(r.error)throw r.error;return r.data;}
+  async function restoreRequirement(scopeType,scopeKey,documentTypeId,reason){const r=await db().rpc('restore_document_requirement_rule',{p_scope_type:scopeType,p_scope_key:scopeKey,p_document_type_id:documentTypeId,p_reason:reason||'Restauración de herencia documental'});if(r.error)throw r.error;return r.data;}
+  async function saveType(row,reason){const values={id:row.id||null,code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types||[],camera_allowed:row.camera_allowed!==false,file_upload_allowed:row.file_upload_allowed!==false,max_file_size_bytes:Number(row.max_file_size_bytes)||MAX,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};const r=await db().rpc('save_document_type_configuration',{p_value:values,p_reason:reason||'Configuración de tipo documental'});if(r.error)throw r.error;return r.data;}
+  async function removeType(id,reason){const rows=await catalog({includeDisabled:true}),type=rows.find((row)=>row.id===id);if(!type)throw failure('DOCUMENT_TYPE_NOT_FOUND');return saveType(Object.assign({},type,{enabled:false}),reason||'Desactivación reversible del tipo documental');}
   async function attach(requestId,ids){const r=await db().rpc('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
-  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,listSelfDocuments,listAdminDocuments,selfPreview,adminPreview,prepareFile,upload,review,reviewQueue,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
+  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,resolveRequirements,requirementTargets,requirementConfiguration,listSelfDocuments,listAdminDocuments,selfPreview,adminPreview,prepareFile,upload,review,reviewQueue,saveType,removeType,saveRequirement,restoreRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
 })();
 })();
 /* @@file bank-account-repository.js */
@@ -7845,12 +7850,12 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function setFavorite(productId,on){const api=db();const r=on?await api.from('marketplace_favorites').upsert({auth_user_id:(await api.auth.getUser()).data.user.id,product_id:productId},{onConflict:'auth_user_id,product_id'}):await api.from('marketplace_favorites').delete().eq('product_id',productId);if(r.error)throw r.error;}
   async function listCompanyFavorites(){const r=await db().from('marketplace_company_favorites').select('company_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>x.company_id));}
   async function setCompanyFavorite(companyId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('marketplace_company_favorites').upsert({auth_user_id:user.id,company_id:companyId},{onConflict:'auth_user_id,company_id'}):await api.from('marketplace_company_favorites').delete().eq('company_id',companyId);if(r.error)throw r.error;}
-  async function createQuote(productId,message,signature,terms,idempotencyKey){return window.ProgramRequestRepository.create({productId,quantity:1,notes:message,signature,terms,idempotencyKey});}
+  async function createQuote(productId,message,signature,terms,idempotencyKey,documentIds){return window.ProgramRequestRepository.create({productId,quantity:1,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});}
   function projectQuote(r){if(!r)return null;const map={requested:'solicitada',quoted:'cotizada',expired:'vencida',cancelled:'vencida'};return Object.freeze(Object.assign({},r,{estado:map[r.status]||r.status,productoId:r.product_id,empresaId:r.company_id,ts:new Date(r.created_at).getTime(),fechaHora:new Date(r.created_at).toLocaleString('es-MX'),visto:Boolean(r.seen_at),cotizacion:r.status==='quoted'?{monto:Number(r.quoted_amount),nota:r.quote_note||'',vigencia:r.valid_until||'',fechaHora:r.quoted_at?new Date(r.quoted_at).toLocaleString('es-MX'):'',actor:'Proveedor'}:null}));}
   async function listQuotes(){return window.ProgramRequestRepository.list({programId:'marketplace',requestType:'quote'});}
   async function respondQuote(id,amount,note,validUntil){return window.ProgramRequestRepository.respondQuote(id,amount,note,validUntil);}
   async function markQuoteSeen(){return true;}
-  async function createRequest(productId,quantity,message,signature,terms,idempotencyKey){return window.ProgramRequestRepository.create({productId,quantity,notes:message,signature,terms,idempotencyKey});}
+  async function createRequest(productId,quantity,message,signature,terms,idempotencyKey,documentIds){return window.ProgramRequestRepository.create({productId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});}
   async function listRequests(){return window.ProgramRequestRepository.list({programId:'marketplace',requestType:'benefit'});}
   async function updateRequest(id,status,notes){const mapped={pendiente:'submitted',revision:'in_review',aprobada:'approved',rechazada:'rejected',entregada:'approved',cancelada:'cancelled'}[status]||status;return window.ProgramRequestRepository.update(id,mapped,notes);}
   async function companyContext(){const r=await db().from('marketplace_company_memberships').select('id,company_id,role,enabled,company:companies!company_id(*)').eq('enabled',true);if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>Object.freeze(Object.assign({},x.company,{id:x.company_id,name:x.company.display_name,role:x.role}))));}
@@ -7910,8 +7915,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }
     return Object.freeze(projected);
   }
-  async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey){
-    return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey});
+  async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
+    return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
   }
   async function listFavorites(){const r=await db().from('program_catalog_favorites').select('item_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>row.item_id));}
   async function setFavorite(itemId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('program_catalog_favorites').upsert({auth_user_id:user.id,item_id:itemId},{onConflict:'auth_user_id,item_id'}):await api.from('program_catalog_favorites').delete().eq('item_id',itemId);if(r.error)throw r.error;}
@@ -13240,33 +13245,15 @@ Object.assign(window, {
         flexDirection: 'column',
         gap: 10
       }
-    }, phase === 'error' && React.createElement('div', {
-      role: 'alert',
-      style: {
-        padding: 12,
-        borderRadius: 12,
-        background: '#FCE9EE',
-        color: '#A00027',
-        fontSize: 12,
-        fontWeight: 750
-      }
-    }, 'No fue posible consultar los requisitos. ', React.createElement('button', {
-      onClick: onChanged,
-      style: {
-        border: 'none',
-        background: 'transparent',
-        color: 'inherit',
-        fontWeight: 900
-      }
-    }, 'Reintentar')), phase === 'ready' && React.createElement(MissingDocumentsNotice, {
-      missing
-    }), React.createElement(window.DocumentRequirementList, {
+    }, React.createElement(window.UnifiedDocumentPhase, {
       requirements,
       documents,
       onChanged,
-      compact: true,
-      editable: true,
-      accessPurpose: 'SELF_SERVICE_LOAN'
+      phase,
+      error: 'No fue posible consultar los requisitos autorizados.',
+      onRetry: onChanged,
+      accessPurpose: 'SELF_SERVICE_LOAN',
+      title: 'Verifica tus documentos'
     }), React.createElement('div', {
       style: {
         display: 'flex',
@@ -14240,6 +14227,12 @@ Object.assign(window, {
     const [firma, setFirma] = React.useState('');
     const [accept, setAccept] = React.useState(false);
     const [error, setError] = React.useState('');
+    const [documentGate, setDocumentGate] = React.useState({
+      phase: producto ? 'loading' : 'ready',
+      ready: !producto,
+      documentIds: [],
+      missing: 0
+    });
     const sending = React.useRef(false);
     const idem = React.useRef(null);
     React.useEffect(() => {
@@ -14249,21 +14242,29 @@ Object.assign(window, {
         setFirma('');
         setAccept(false);
         setError('');
+        setDocumentGate({
+          phase: producto ? 'loading' : 'ready',
+          ready: !producto,
+          documentIds: [],
+          missing: 0
+        });
         sending.current = false;
         idem.current = window.ProgramRequestRepository.newIdempotencyKey();
       }
-    }, [open]);
+    }, [open, producto && producto.id]);
     const provider = window.quoteStore ? window.quoteStore.providerFor(it.id) : null;
     const [okCot, runCot] = window.useBtnConfirm();
     const enviar = async () => {
-      if (sending.current) return;
+      if (sending.current || !documentGate.ready) return;
       sending.current = true;
       try {
-        const rec = await window.quoteStore.solicitar({
+        let rec;
+        if (producto && producto.catalogSource === 'program') rec = await window.ProgramCatalogRepository.createRequest(producto.id, 1, msg.trim(), firma, true, idem.current, documentGate.documentIds);else if (producto) rec = await window.MarketplaceRepository.createQuote(producto.id, msg.trim(), firma, true, idem.current, documentGate.documentIds);else rec = await window.quoteStore.solicitar({
           productoId: it.id,
           productoNombre: it.label,
           icon: it.icon,
           mensaje: msg.trim(),
+          documentIds: documentGate.documentIds,
           firma,
           idempotencyKey: idem.current,
           terminos: {
@@ -14274,7 +14275,7 @@ Object.assign(window, {
         });
         setSent(rec);
       } catch (_) {
-        setError('No se pudo enviar la solicitud. Inténtalo de nuevo.');
+        setError('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');
         sending.current = false;
       }
     };
@@ -14368,6 +14369,14 @@ Object.assign(window, {
         resize: 'vertical',
         lineHeight: 1.5
       }
+    })), producto && React.createElement('div', {
+      style: {
+        marginTop: 18
+      }
+    }, React.createElement(window.DocumentRequestGate, {
+      scopeType: producto.catalogSource === 'program' ? 'PROGRAM' : 'PRODUCT',
+      scopeKey: producto.id,
+      onState: setDocumentGate
     })), React.createElement(window.SignBlock, {
       programa: 'cotizacion',
       subtitulo: 'Solicitud de cotización · ' + it.label,
@@ -14397,9 +14406,9 @@ Object.assign(window, {
       full: true,
       icon: 'doc',
       success: okCot,
-      disabled: !accept || !firma,
+      disabled: !accept || !firma || !documentGate.ready,
       onClick: () => runCot(enviar)
-    }, 'Enviar solicitud')));
+    }, documentGate.phase === 'loading' ? 'Consultando documentos…' : documentGate.missing ? 'Faltan ' + documentGate.missing + ' documentos' : 'Enviar solicitud')));
   }
   function actionPill(icon, label, onClick) {
     return React.createElement('button', {
@@ -19815,8 +19824,13 @@ Object.assign(window, {
   }) {
     const selection = useRef(null),
       input = useRef(null),
+      cameraVideo = useRef(null),
+      cameraStream = useRef(null),
       [busy, setBusy] = useState(null),
-      [error, setError] = useState('');
+      [error, setError] = useState(''),
+      [origin, setOrigin] = useState(null),
+      [camera, setCamera] = useState(null),
+      [cameraError, setCameraError] = useState('');
     const pick = (type, source) => {
       selection.current = {
         type,
@@ -19841,6 +19855,7 @@ Object.assign(window, {
       });
       try {
         await window.DocumentWorkflowRepository.upload(type, file, {
+          source: selected.source,
           onProgress: phase => setBusy({
             id: type.id,
             phase
@@ -19854,6 +19869,72 @@ Object.assign(window, {
         setBusy(null);
         selection.current = null;
       }
+    };
+    useEffect(() => {
+      if (!camera) return;
+      let active = true;
+      setCameraError('');
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: {
+            ideal: 'environment'
+          }
+        },
+        audio: false
+      }).then(stream => {
+        if (!active) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        cameraStream.current = stream;
+        if (cameraVideo.current) {
+          cameraVideo.current.srcObject = stream;
+          cameraVideo.current.play().catch(() => {});
+        }
+      }).catch(() => {
+        if (active) setCameraError('No fue posible abrir la cámara. Revisa el permiso o adjunta un archivo.');
+      });
+      return () => {
+        active = false;
+        if (cameraStream.current) {
+          cameraStream.current.getTracks().forEach(track => track.stop());
+          cameraStream.current = null;
+        }
+      };
+    }, [camera && camera.id]);
+    const openCamera = type => {
+      if (window.innerWidth > 768 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        setCamera(type);
+        return;
+      }
+      pick(type, 'camera');
+    };
+    const captureCamera = async () => {
+      const video = cameraVideo.current,
+        type = camera;
+      if (!video || !type || !video.videoWidth || !video.videoHeight) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .9));
+      if (!blob) {
+        setCameraError('No fue posible capturar la foto.');
+        return;
+      }
+      setCamera(null);
+      selection.current = {
+        type,
+        source: 'camera'
+      };
+      await upload({
+        target: {
+          files: [new File([blob], 'captura-' + Date.now() + '.jpg', {
+            type: 'image/jpeg'
+          })],
+          value: ''
+        }
+      });
     };
     const open = async (doc, type) => {
       if (!doc) return;
@@ -19895,6 +19976,127 @@ Object.assign(window, {
         marginBottom: 9
       }
     }, error);
+    const originSheet = h(window.Sheet, {
+      open: !!origin,
+      onClose: () => setOrigin(null),
+      title: origin ? 'Agregar ' + origin.label : 'Agregar documento'
+    }, origin && h(React.Fragment, null, h('p', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink-3)',
+        lineHeight: 1.5,
+        margin: '0 0 12px'
+      }
+    }, 'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'), origin.camera_allowed !== false && h('button', {
+      type: 'button',
+      'data-document-origin': 'camera',
+      onClick: () => {
+        const type = origin;
+        setOrigin(null);
+        openCamera(type);
+      },
+      style: {
+        width: '100%',
+        minHeight: 52,
+        border: '1px solid var(--hairline-strong)',
+        borderRadius: 14,
+        background: '#fff',
+        color: 'var(--guinda)',
+        fontWeight: 850,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 9,
+        marginBottom: 9
+      }
+    }, h(I, {
+      name: 'camera',
+      size: 20,
+      stroke: 2
+    }), 'Tomar foto'), origin.file_upload_allowed !== false && h('button', {
+      type: 'button',
+      'data-document-origin': 'file',
+      onClick: () => {
+        const type = origin;
+        setOrigin(null);
+        pick(type, 'file');
+      },
+      style: {
+        width: '100%',
+        minHeight: 52,
+        border: 0,
+        borderRadius: 14,
+        background: 'var(--guinda)',
+        color: '#fff',
+        fontWeight: 850,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 9
+      }
+    }, h(I, {
+      name: 'upload',
+      size: 20,
+      stroke: 2
+    }), 'Adjuntar archivo')));
+    const cameraSheet = h(window.Sheet, {
+      open: !!camera,
+      onClose: () => setCamera(null),
+      title: camera ? 'Tomar foto · ' + camera.label : 'Tomar foto'
+    }, camera && h(React.Fragment, null, h('video', {
+      ref: cameraVideo,
+      'data-document-live-camera': 'true',
+      playsInline: true,
+      muted: true,
+      style: {
+        display: cameraError ? 'none' : 'block',
+        width: '100%',
+        maxHeight: '52vh',
+        objectFit: 'cover',
+        borderRadius: 15,
+        background: '#111'
+      }
+    }), cameraError && h('div', {
+      role: 'alert',
+      style: {
+        padding: 13,
+        borderRadius: 12,
+        background: '#FCE9EE',
+        color: '#A00027',
+        fontSize: 12,
+        fontWeight: 750
+      }
+    }, cameraError), h('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        marginTop: 12
+      }
+    }, h('button', {
+      type: 'button',
+      onClick: () => setCamera(null),
+      style: {
+        flex: 1,
+        minHeight: 48,
+        border: '1px solid var(--hairline-strong)',
+        borderRadius: 13,
+        background: '#fff',
+        fontWeight: 800
+      }
+    }, 'Cancelar'), h('button', {
+      type: 'button',
+      disabled: !!cameraError,
+      onClick: captureCamera,
+      style: {
+        flex: 1,
+        minHeight: 48,
+        border: 0,
+        borderRadius: 13,
+        background: 'var(--guinda)',
+        color: '#fff',
+        fontWeight: 850
+      }
+    }, 'Capturar foto'))));
     const phaseLabel = type => {
       if (!busy || busy.id !== type.id) return '';
       return busy.phase === 'preparing' ? 'Preparando imagen…' : busy.phase === 'authorizing' ? 'Autorizando vista…' : busy.phase === 'registering' ? 'Registrando…' : 'Subiendo…';
@@ -19937,7 +20139,8 @@ Object.assign(window, {
             label: 'Pendiente',
             icon: 'upload'
           };
-        const accepted = !!(doc && ACCEPTED.has(doc.status)),
+        const verified = !!(doc && doc.status === 'VERIFIED'),
+          accepted = !!(doc && ACCEPTED.has(doc.status)),
           available = physicalAvailable(doc),
           canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
           preview = accepted && available;
@@ -19948,7 +20151,7 @@ Object.assign(window, {
           hint = type.description || state.label;
         const classes = ['mr-doc-tile', accepted && available ? 'is-filled' : '', highlightedId === type.id && (!accepted || !available) ? 'is-highlighted' : '', doc && (['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) || !available) ? 'is-error' : ''].filter(Boolean).join(' ');
         const act = () => {
-          if (preview) open(doc, type);else if (canUpload) pick(type, 'file');
+          if (canUpload) setOrigin(type);else if (preview) open(doc, type);
         };
         return h('article', {
           key: type.id,
@@ -19975,7 +20178,11 @@ Object.assign(window, {
           'aria-hidden': 'true'
         }), h('span', {
           className: 'mr-doc-badge',
-          'aria-hidden': 'true'
+          'aria-hidden': 'true',
+          style: {
+            background: state.bg,
+            color: state.fg
+          }
         }, h(I, {
           name: image ? 'doc' : type.icon || 'doc',
           size: 21,
@@ -19988,7 +20195,7 @@ Object.assign(window, {
           name: isBusy ? 'clock' : canUpload ? 'camera' : state.icon,
           size: 14,
           stroke: 2.1
-        }), isBusy ? phaseLabel(type) : actionCopy + (canUpload ? ' · ' + hint : ''))), accepted && available && h('span', {
+        }), isBusy ? phaseLabel(type) : actionCopy + (canUpload ? ' · ' + hint : ''))), verified && available && h('span', {
           className: 'mr-doc-ok',
           'aria-label': state.label
         }, h(I, {
@@ -20005,11 +20212,14 @@ Object.assign(window, {
           size: 16,
           stroke: 2
         })), accepted && available && h('span', {
-          className: 'mr-doc-status'
+          className: 'mr-doc-status',
+          style: {
+            color: state.fg
+          }
         }, state.label), doc && doc.review_observation && h('p', {
           className: 'mr-doc-observation'
         }, doc.review_observation));
-      })));
+      })), originSheet, cameraSheet);
     }
     return h(React.Fragment, null, hiddenInput, alert, h('div', {
       style: {
@@ -20129,7 +20339,158 @@ Object.assign(window, {
           flexWrap: 'wrap'
         }
       }, cameraAllowed && actionButton('Tomar foto', 'camera', () => pick(type, 'camera'), isBusy, 'camera'), actionButton(doc ? 'Reemplazar' : 'Subir archivo', 'upload', () => pick(type, 'file'), isBusy, 'upload')));
-    })));
+    })), originSheet, cameraSheet);
+  }
+  const UNIFIED_CSS = `
+    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:21px;line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:11.5px;color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:10.5px;font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:14px;font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:11.5px;line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:12.5px;font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:12px;line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:10px;color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center}.mr-doc-status{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:9.5px;font-weight:850;color:#087A50}.mr-doc-observation{font-size:9px;color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
+  `;
+  function UnifiedDocumentPhase({
+    requirements,
+    documents,
+    onChanged,
+    phase,
+    error,
+    onRetry,
+    highlightedId,
+    accessPurpose,
+    title
+  }) {
+    const required = (requirements || []).filter(r => r.required !== false),
+      covered = required.filter(r => {
+        const d = newest(documents || [], r.document_type_id);
+        return d && ACCEPTED.has(d.status) && physicalAvailable(d);
+      }),
+      missing = required.filter(r => !covered.includes(r)),
+      total = required.length,
+      done = covered.length;
+    return h('section', {
+      className: 'ud-phase',
+      'data-unified-document-phase': 'true',
+      'data-document-total': total,
+      'data-document-complete': done,
+      'aria-busy': phase === 'loading' ? 'true' : 'false'
+    }, h('style', null, UNIFIED_CSS), h('h2', {
+      className: 'ud-title'
+    }, title || 'Verifica tus documentos'), h('p', {
+      className: 'ud-sub'
+    }, 'Completa tu expediente con una foto o un archivo. Los requisitos provienen de la configuración vigente.'), h('div', {
+      className: 'ud-tracker',
+      style: {
+        '--ud-total': Math.max(1, total)
+      }
+    }, h('div', {
+      className: 'ud-head'
+    }, h('span', null, 'Expediente'), h('span', {
+      className: 'ud-count',
+      'aria-live': 'polite'
+    }, phase === 'ready' ? done + ' de ' + total : '—')), h('div', {
+      className: 'ud-segments',
+      'aria-hidden': 'true'
+    }, Array.from({
+      length: Math.max(1, total)
+    }, (_, index) => h('i', {
+      key: index,
+      className: index < done ? 'on' : ''
+    }))), h('div', {
+      className: 'ud-help'
+    }, phase === 'ready' ? missing.length ? 'Te faltan ' + missing.length + ' documento' + (missing.length === 1 ? '' : 's') + ' obligatorio' + (missing.length === 1 ? '' : 's') + '.' : 'Tu expediente requerido está completo.' : 'Consultando el expediente autorizado…'), phase === 'ready' && missing.length > 0 && h('div', {
+      className: 'ud-chips'
+    }, missing.map(r => h('span', {
+      key: r.document_type_id,
+      className: 'ud-chip'
+    }, (r.document_type || r).label)))), h('div', {
+      className: 'ud-section-title'
+    }, h(I, {
+      name: 'folder',
+      size: 18,
+      stroke: 2
+    }), 'Documentos del expediente'), phase === 'loading' && h('div', {
+      className: 'ud-state',
+      role: 'status'
+    }, 'Cargando documentos…'), phase === 'error' && h('div', {
+      className: 'ud-state err',
+      role: 'alert'
+    }, error || 'No fue posible consultar la fuente autorizada.', ' ', onRetry && h('button', {
+      type: 'button',
+      onClick: onRetry
+    }, 'Reintentar')), phase === 'ready' && requirements.length === 0 && h('div', {
+      className: 'ud-state'
+    }, 'Este trámite no tiene documentos configurados.'), phase === 'ready' && requirements.length > 0 && h(DocumentRequirementList, {
+      requirements,
+      documents,
+      onChanged,
+      variant: 'tiles',
+      highlightedId,
+      editable: true,
+      accessPurpose: accessPurpose || 'SELF_SERVICE_EXPEDIENTE'
+    }), h('div', {
+      className: 'ud-privacy'
+    }, h(I, {
+      name: 'lock',
+      size: 15,
+      stroke: 2
+    }), h('span', null, 'Tus archivos se envían de forma segura, permanecen privados y sólo se consultan con autorización temporal.')));
+  }
+  function DocumentRequestGate({
+    scopeType,
+    scopeKey,
+    onState,
+    title
+  }) {
+    const [state, setState] = useState({
+      phase: 'loading',
+      requirements: [],
+      documents: [],
+      error: ''
+    });
+    const load = React.useCallback(async () => {
+      setState(current => Object.assign({}, current, {
+        phase: 'loading',
+        error: ''
+      }));
+      try {
+        const [requirements, documents] = await Promise.all([window.DocumentWorkflowRepository.resolveRequirements(scopeType, scopeKey), window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
+        setState({
+          phase: 'ready',
+          requirements: requirements.slice(),
+          documents: documents.slice(),
+          error: ''
+        });
+      } catch (_) {
+        setState({
+          phase: 'error',
+          requirements: [],
+          documents: [],
+          error: 'No fue posible consultar los requisitos autorizados.'
+        });
+      }
+    }, [scopeType, scopeKey]);
+    useEffect(() => {
+      load();
+    }, [load]);
+    const result = useMemo(() => {
+      const required = state.requirements.filter(row => row.required !== false),
+        selected = state.requirements.map(row => newest(state.documents, row.document_type_id)).filter(doc => doc && ACCEPTED.has(doc.status) && physicalAvailable(doc));
+      return {
+        phase: state.phase,
+        ready: state.phase === 'ready' && required.every(row => selected.some(doc => doc.document_type_id === row.document_type_id)),
+        documentIds: selected.map(doc => doc.id),
+        missing: Math.max(0, required.length - selected.filter(doc => required.some(row => row.document_type_id === doc.document_type_id)).length)
+      };
+    }, [state]);
+    useEffect(() => {
+      if (onState) onState(result);
+    }, [result.phase, result.ready, result.missing, result.documentIds.join('|')]);
+    return h(UnifiedDocumentPhase, {
+      requirements: state.requirements,
+      documents: state.documents,
+      onChanged: load,
+      phase: state.phase,
+      error: state.error,
+      onRetry: load,
+      accessPurpose: 'SELF_SERVICE_EXPEDIENTE',
+      title: title || 'Verifica tus documentos'
+    });
   }
   function useDocuments() {
     const [state, setState] = useState({
@@ -20321,6 +20682,8 @@ Object.assign(window, {
     }))));
   }
   window.DocumentRequirementList = DocumentRequirementList;
+  window.UnifiedDocumentPhase = UnifiedDocumentPhase;
+  window.DocumentRequestGate = DocumentRequestGate;
   window.DocumentosScreen = DocumentosScreen;
 })();
 })();
@@ -23164,7 +23527,7 @@ Object.assign(window, {
     },
     solicitar: async opts => {
       const o = opts || {};
-      const rec = enrich(await window.MarketplaceRepository.createQuote(o.productoId, o.mensaje, o.firma, o.terminos && o.terminos.aceptado, o.idempotencyKey));
+      const rec = enrich(await window.MarketplaceRepository.createQuote(o.productoId, o.mensaje, o.firma, o.terminos && o.terminos.aceptado, o.idempotencyKey, o.documentIds || []));
       await load(true);
       return rec;
     },
@@ -38698,40 +39061,41 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 6
       }
-    }, 'Código interno: ', h('code', null, type.code)))), h('label', {
+    }, 'Código interno: ', h('code', null, type.code)))), h('div', {
       style: {
-        fontSize: 11,
+        fontSize: 10.5,
         fontWeight: 800,
-        color: type.required_by_default ? 'var(--guinda)' : 'var(--ink-3)'
+        display: 'grid',
+        gap: 5
       }
-    }, h('span', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 7
-      }
-    }, h('input', {
-      'data-global-required': type.code,
+    }, h('label', null, h('input', {
+      'data-document-camera': type.code,
       type: 'checkbox',
       disabled: !canWrite,
-      checked: !!type.required_by_default,
+      checked: type.camera_allowed !== false,
       onChange: async event => {
         await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
-          required_by_default: event.target.checked
-        }));
+          camera_allowed: event.target.checked
+        }), 'Actualización de captura por cámara');
         await load();
       }
-    }), 'Cuenta para el 100% del expediente'), h('span', {
-      'data-owner-clarification-required': 'required_by_default',
-      style: {
-        display: 'block',
-        fontSize: 9.5,
-        fontWeight: 650,
-        lineHeight: 1.35,
-        color: 'var(--ink-3)',
-        marginTop: 4
+    }), ' Cámara'), h('label', null, h('input', {
+      'data-document-file': type.code,
+      type: 'checkbox',
+      disabled: !canWrite,
+      checked: type.file_upload_allowed !== false,
+      onChange: async event => {
+        await window.DocumentWorkflowRepository.saveType(Object.assign({}, type, {
+          file_upload_allowed: event.target.checked
+        }), 'Actualización de carga por archivo');
+        await load();
       }
-    }, 'Incluye este tipo en el cálculo global de completitud. Nombre de negocio pendiente de definición.')), h('label', {
+    }), ' Archivo'), h('span', {
+      style: {
+        fontSize: 9.5,
+        color: 'var(--ink-3)'
+      }
+    }, 'Máx. ' + Math.round((Number(type.max_file_size_bytes) || 10485760) / 1048576) + ' MB')), h('label', {
       style: {
         fontSize: 10.5,
         fontWeight: 800,
@@ -38779,14 +39143,14 @@ Object.assign(window, {
       } : undefined
     })), !type.system_type ? h('button', {
       type: 'button',
-      disabled: !canWrite,
-      'aria-label': 'Eliminar ' + businessLabel(type),
+      disabled: !canWrite || !type.enabled,
+      'aria-label': 'Desactivar ' + businessLabel(type),
       onClick: async () => {
-        if (confirm('¿Eliminar este tipo sin uso?')) try {
-          await window.DocumentWorkflowRepository.removeType(type.id);
+        if (confirm('¿Desactivar este tipo documental? El histórico se conservará.')) try {
+          await window.DocumentWorkflowRepository.removeType(type.id, 'Desactivación reversible desde catálogo');
           await load();
         } catch (_) {
-          app.toast && app.toast('No puede eliminarse porque ya está relacionado. Desactívalo.');
+          app.toast && app.toast('No fue posible desactivar el tipo documental.');
         }
       },
       style: {
@@ -38796,10 +39160,10 @@ Object.assign(window, {
         borderRadius: 9,
         width: 32,
         height: 32,
-        opacity: canWrite ? 1 : .45
+        opacity: canWrite && type.enabled ? 1 : .45
       }
     }, h(I, {
-      name: 'trash',
+      name: 'ban',
       size: 15
     })) : h('span', null)))));
   }
@@ -38808,15 +39172,43 @@ Object.assign(window, {
     reqTarget,
     setReqTarget,
     reqRows,
+    reqTargets,
+    reqImpact,
     loadRequirements,
     app
   }) {
-    const canWrite = app.admin.has('documents.write');
+    const canWrite = app.admin.has('documents.write'),
+      targetValue = reqTarget.scope_type + '|' + reqTarget.scope_key;
+    const compact = window.innerWidth < 760;
+    const reason = () => {
+      const value = prompt('Motivo del cambio (mínimo 8 caracteres):') || '';
+      return value.trim().length >= 8 ? value.trim() : null;
+    };
+    const save = async (type, effect, required) => {
+      const why = reason();
+      if (!why) return;
+      await window.DocumentWorkflowRepository.saveRequirement({
+        scope_type: reqTarget.scope_type,
+        scope_key: reqTarget.scope_key,
+        document_type_id: type.id,
+        effect,
+        required,
+        allow_verified_reuse: true,
+        sort_order: type.sort_order
+      }, why);
+      await loadRequirements();
+    };
+    const restore = async type => {
+      const why = reason();
+      if (!why) return;
+      await window.DocumentWorkflowRepository.restoreRequirement(reqTarget.scope_type, reqTarget.scope_key, type.id, why);
+      await loadRequirements();
+    };
     return h('div', {
       'data-document-requirements-desktop': 'true',
       style: {
         display: 'grid',
-        gridTemplateColumns: 'minmax(240px,.6fr) minmax(420px,1.4fr)',
+        gridTemplateColumns: compact ? 'minmax(0,1fr)' : 'minmax(260px,.65fr) minmax(440px,1.35fr)',
         gap: 14
       }
     }, h('section', {
@@ -38830,7 +39222,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         textTransform: 'uppercase'
       }
-    }, 'Regla por programa o trámite'), h('h2', {
+    }, 'Regla por entidad o trámite'), h('h2', {
       style: {
         fontSize: 17,
         margin: '5px 0 12px'
@@ -38840,47 +39232,39 @@ Object.assign(window, {
         fontSize: 11,
         fontWeight: 800
       }
-    }, 'Programa', h('select', {
-      value: reqTarget.program_id,
-      onChange: event => setReqTarget({
-        program_id: event.target.value,
-        membership_offering_id: ''
-      }),
+    }, 'Destino', h('select', {
+      value: targetValue,
+      onChange: event => {
+        const index = event.target.value.indexOf('|');
+        setReqTarget({
+          scope_type: event.target.value.slice(0, index),
+          scope_key: event.target.value.slice(index + 1)
+        });
+      },
       style: Object.assign({}, input, {
         marginTop: 6
       })
-    }, h('option', {
-      value: 'prestamo'
-    }, 'Suti Préstamo'), h('option', {
-      value: 'membership'
-    }, 'Membresía'))), reqTarget.program_id === 'membership' && h('label', {
+    }, (reqTargets || []).map(target => h('option', {
+      key: target.scope_type + ':' + target.scope_key,
+      value: target.scope_type + '|' + target.scope_key
+    }, target.scope_type + ' · ' + target.label)))), h('div', {
+      'data-document-requirement-impact': 'true',
       style: {
-        display: 'block',
-        fontSize: 11,
-        fontWeight: 800,
-        marginTop: 11
+        marginTop: 14,
+        borderRadius: 12,
+        background: 'var(--surface-2)',
+        padding: 11,
+        fontSize: 11.5,
+        lineHeight: 1.5
       }
-    }, 'Membresía', h('select', {
-      value: reqTarget.membership_offering_id,
-      onChange: event => setReqTarget(value => Object.assign({}, value, {
-        membership_offering_id: event.target.value
-      })),
-      style: Object.assign({}, input, {
-        marginTop: 6
-      })
-    }, h('option', {
-      value: ''
-    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
-      key: membership.id,
-      value: membership.id
-    }, membership.empresa)))), h('p', {
+    }, h('b', null, 'Impacto antes de guardar'), h('div', null, (reqImpact.effective_requirements || 0) + ' requisitos efectivos'), h('div', null, (reqImpact.active_requests || 0) + ' solicitudes activas')), h('p', {
       style: {
         fontSize: 10.5,
         color: 'var(--ink-3)',
         lineHeight: 1.5,
         marginTop: 15
       }
-    }, 'Este panel define la regla del trámite. No modifica el catálogo de tipos documentales.')), h('section', {
+    }, 'Producto hereda los requisitos de su empresa. Una exclusión propia prevalece; Restaurar elimina la excepción y recupera la herencia. Servicio queda sin destinos hasta que exista una entidad productiva autorizada.')), h('section', {
       style: Object.assign({}, panel, {
         padding: 16
       })
@@ -38897,44 +39281,77 @@ Object.assign(window, {
         margin: '5px 0 10px'
       }
     }, 'Documentos requeridos'), h('div', null, types.filter(type => type.enabled).map(type => {
-      const existing = reqRows.find(row => row.document_type_id === type.id);
+      const direct = reqRows.find(row => row.document_type_id === type.id && !row.inherited),
+        inherited = reqRows.find(row => row.document_type_id === type.id && row.inherited),
+        state = direct ? direct.effect === 'EXCLUDE' ? 'Excluido' : 'Propio' : inherited ? 'Heredado' : 'No requerido',
+        tone = direct && direct.effect === 'EXCLUDE' ? '#A00027' : inherited ? '#7A5B00' : direct ? '#087A50' : 'var(--ink-3)';
       return h('div', {
         key: type.id,
+        'data-requirement-state': state.toUpperCase(),
         style: {
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: compact ? 'minmax(0,1fr)' : '1fr 88px 112px',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
           padding: '11px 0',
           borderTop: '1px solid var(--hairline)'
         }
       }, h('span', {
         style: {
-          flex: 1,
           fontSize: 12.5,
           fontWeight: 800
         }
-      }, businessLabel(type)), h('label', {
+      }, businessLabel(type), h('small', {
         style: {
-          fontSize: 11,
-          fontWeight: 750
+          display: 'block',
+          color: tone,
+          marginTop: 3
+        }
+      }, state)), h('label', {
+        style: {
+          fontSize: 10.5,
+          fontWeight: 750,
+          opacity: direct && direct.effect === 'INCLUDE' ? 1 : .45
         }
       }, 'Obligatorio ', h('input', {
         type: 'checkbox',
+        disabled: !canWrite || !direct || direct.effect !== 'INCLUDE',
+        checked: !!(direct && direct.effect === 'INCLUDE' && direct.required),
+        onChange: event => save(type, 'INCLUDE', event.target.checked)
+      })), direct ? h('button', {
+        type: 'button',
         disabled: !canWrite,
-        checked: !!(existing && existing.required),
-        onChange: async event => {
-          await window.DocumentWorkflowRepository.saveRequirement({
-            program_id: reqTarget.program_id,
-            membership_offering_id: reqTarget.membership_offering_id || null,
-            document_type_id: type.id,
-            required: event.target.checked,
-            allow_verified_reuse: true,
-            sort_order: existing && existing.sort_order || type.sort_order,
-            enabled: true
-          });
-          await loadRequirements();
+        onClick: () => restore(type),
+        style: {
+          border: 0,
+          borderRadius: 9,
+          padding: 8,
+          fontWeight: 800,
+          color: 'var(--guinda)'
         }
-      })));
+      }, 'Restaurar') : inherited ? h('button', {
+        type: 'button',
+        disabled: !canWrite,
+        onClick: () => save(type, 'EXCLUDE', false),
+        style: {
+          border: 0,
+          borderRadius: 9,
+          padding: 8,
+          fontWeight: 800,
+          color: '#A00027'
+        }
+      }, 'Excluir') : h('button', {
+        type: 'button',
+        disabled: !canWrite,
+        onClick: () => save(type, 'INCLUDE', true),
+        style: {
+          border: 0,
+          borderRadius: 9,
+          padding: 8,
+          fontWeight: 800,
+          color: '#087A50'
+        }
+      }, 'Agregar'));
     }))));
   }
   function DesktopConfiguration(props) {
@@ -39342,80 +39759,9 @@ Object.assign(window, {
       size: 15
     }))))), props.tab === 'requirements' && h('div', {
       style: {
-        background: '#fff',
-        borderRadius: 16,
-        padding: 14
+        overflowX: 'auto'
       }
-    }, h('select', {
-      value: props.reqTarget.program_id,
-      onChange: event => props.setReqTarget({
-        program_id: event.target.value,
-        membership_offering_id: ''
-      }),
-      style: input
-    }, h('option', {
-      value: 'prestamo'
-    }, 'Suti Préstamo'), h('option', {
-      value: 'membership'
-    }, 'Membresía')), props.reqTarget.program_id === 'membership' && h('select', {
-      value: props.reqTarget.membership_offering_id,
-      onChange: event => props.setReqTarget(value => Object.assign({}, value, {
-        membership_offering_id: event.target.value
-      })),
-      style: Object.assign({}, input, {
-        marginTop: 9
-      })
-    }, h('option', {
-      value: ''
-    }, 'Selecciona membresía'), window.membershipStore.all().map(membership => h('option', {
-      key: membership.id,
-      value: membership.id
-    }, membership.empresa))), h('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        marginTop: 12
-      }
-    }, props.types.filter(type => type.enabled).map(type => {
-      const existing = props.reqRows.find(row => row.document_type_id === type.id);
-      return h('div', {
-        key: type.id,
-        style: {
-          display: 'flex',
-          alignItems: 'center',
-          gap: 9,
-          padding: '9px 0',
-          borderTop: '1px solid var(--hairline)'
-        }
-      }, h('div', {
-        style: {
-          flex: 1,
-          fontSize: 12.5,
-          fontWeight: 800
-        }
-      }, type.label), h('label', {
-        style: {
-          fontSize: 11,
-          fontWeight: 700
-        }
-      }, 'Obligatorio ', h('input', {
-        type: 'checkbox',
-        checked: !!(existing && existing.required),
-        onChange: async event => {
-          await window.DocumentWorkflowRepository.saveRequirement({
-            program_id: props.reqTarget.program_id,
-            membership_offering_id: props.reqTarget.membership_offering_id || null,
-            document_type_id: type.id,
-            required: event.target.checked,
-            allow_verified_reuse: true,
-            sort_order: existing && existing.sort_order || type.sort_order,
-            enabled: true
-          });
-          await props.loadRequirements();
-        }
-      })));
-    }))), props.tab === 'terms' && h('div', {
+    }, h(RequirementsPanel, props)), props.tab === 'terms' && h('div', {
       style: {
         background: '#fff',
         borderRadius: 16,
@@ -39532,10 +39878,12 @@ Object.assign(window, {
       [reviewFilter, setReviewFilter] = React.useState(''),
       [dragId, setDragId] = React.useState(''),
       [reqTarget, setReqTarget] = React.useState({
-        program_id: 'prestamo',
-        membership_offering_id: ''
+        scope_type: 'PROGRAM',
+        scope_key: 'prestamo'
       }),
       [reqRows, setReqRows] = React.useState([]),
+      [reqTargets, setReqTargets] = React.useState([]),
+      [reqImpact, setReqImpact] = React.useState({}),
       [terms, setTerms] = React.useState({
         program_id: 'prestamo',
         membership_offering_id: '',
@@ -39566,11 +39914,12 @@ Object.assign(window, {
     const load = React.useCallback(async () => {
       setLoading(true);
       try {
-        const [t, q, s] = await Promise.all([window.DocumentWorkflowRepository.catalog({
+        const [t, q, s, targets] = await Promise.all([window.DocumentWorkflowRepository.catalog({
           includeDisabled: true
-        }), window.DocumentWorkflowRepository.reviewQueue(), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single()]);
+        }), window.DocumentWorkflowRepository.reviewQueue(), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single(), window.DocumentWorkflowRepository.requirementTargets()]);
         setTypes(t.slice());
         setQueue(q.slice());
+        setReqTargets(targets.slice());
         if (!s.error) setQr(s.data);
         setError('');
       } catch (_) {
@@ -39584,16 +39933,15 @@ Object.assign(window, {
       if (window.membershipStore.state().phase === 'idle') window.membershipStore.load(false);
     }, [load]);
     const loadRequirements = React.useCallback(async () => {
-      if (reqTarget.program_id === 'membership' && !reqTarget.membership_offering_id) {
-        setReqRows([]);
-        return;
-      }
       try {
-        setReqRows((await window.DocumentWorkflowRepository.requirements(reqTarget.program_id, reqTarget.membership_offering_id || null)).slice());
+        const config = await window.DocumentWorkflowRepository.requirementConfiguration(reqTarget.scope_type, reqTarget.scope_key);
+        setReqRows(config.rules.slice());
+        setReqImpact(config.impact);
       } catch (_) {
         setReqRows([]);
+        setReqImpact({});
       }
-    }, [reqTarget.program_id, reqTarget.membership_offering_id]);
+    }, [reqTarget.scope_type, reqTarget.scope_key]);
     React.useEffect(() => {
       loadRequirements();
     }, [loadRequirements]);
@@ -39822,6 +40170,8 @@ Object.assign(window, {
       reqTarget,
       setReqTarget,
       reqRows,
+      reqTargets,
+      reqImpact,
       terms,
       setTerms,
       qr,
@@ -49581,6 +49931,12 @@ Object.assign(window, {
     const [sent, setSent] = useState(null);
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState('');
+    const [documentGate, setDocumentGate] = useState({
+      phase: 'loading',
+      ready: false,
+      documentIds: [],
+      missing: 0
+    });
     const sending = React.useRef(false);
     const idem = React.useRef(null);
     React.useEffect(() => {
@@ -49591,20 +49947,26 @@ Object.assign(window, {
         setAccept(false);
         setSent(null);
         setErr('');
+        setDocumentGate({
+          phase: 'loading',
+          ready: false,
+          documentIds: [],
+          missing: 0
+        });
         sending.current = false;
         idem.current = window.ProgramRequestRepository.newIdempotencyKey();
       }
     }, [open]);
     const send = async () => {
-      if (sending.current) return;
+      if (sending.current || !documentGate.ready) return;
       sending.current = true;
       try {
         setBusy(true);
         const repository = item.catalogSource === 'program' ? window.ProgramCatalogRepository : window.MarketplaceRepository;
-        const created = await repository.createRequest(item.id, qty, msg.trim(), firma, accept, idem.current);
+        const created = await repository.createRequest(item.id, qty, msg.trim(), firma, accept, idem.current, documentGate.documentIds);
         setSent(created);
       } catch (_) {
-        setErr('No se pudo enviar la solicitud. Inténtalo de nuevo.');
+        setErr('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');
         sending.current = false;
       } finally {
         setBusy(false);
@@ -49668,7 +50030,15 @@ Object.assign(window, {
         background: 'var(--surface-2)',
         marginTop: 6
       }
-    }), React.createElement(window.SignBlock, {
+    }), React.createElement('div', {
+      style: {
+        marginTop: 18
+      }
+    }, React.createElement(window.DocumentRequestGate, {
+      scopeType: item.catalogSource === 'program' ? 'PROGRAM' : 'PRODUCT',
+      scopeKey: item.id,
+      onState: setDocumentGate
+    })), React.createElement(window.SignBlock, {
       programa: 'marketplace',
       subtitulo: 'Solicitud comercial · ' + item.nombre,
       firma,
@@ -49685,12 +50055,12 @@ Object.assign(window, {
     }, err), React.createElement(window.Btn, {
       full: true,
       icon: 'check',
-      disabled: busy || !accept || !firma,
+      disabled: busy || !accept || !firma || !documentGate.ready,
       style: {
         marginTop: 14
       },
       onClick: send
-    }, busy ? 'Enviando…' : 'Enviar solicitud'));
+    }, busy ? 'Enviando…' : documentGate.phase === 'loading' ? 'Consultando documentos…' : documentGate.missing ? 'Faltan ' + documentGate.missing + ' documentos' : 'Enviar solicitud'));
   }
   function QuoteBanner({
     quote
@@ -52647,15 +53017,14 @@ Object.assign(window, {
       type: 'button',
       className: 'mr-retry',
       onClick: load
-    }, 'Reintentar')), phase === 'ready' && requirements.length === 0 && h('div', {
-      className: 'mr-state'
-    }, 'Esta membresía no tiene documentos configurados.'), phase === 'ready' && requirements.length > 0 && h(window.DocumentRequirementList, {
+    }, 'Reintentar')), phase === 'ready' && h(window.UnifiedDocumentPhase, {
       requirements,
       documents,
       onChanged: load,
-      variant: 'tiles',
+      phase: 'ready',
       highlightedId: highlighted,
-      accessPurpose: 'SELF_SERVICE_MEMBERSHIP'
+      accessPurpose: 'SELF_SERVICE_MEMBERSHIP',
+      title: 'Verifica tus documentos'
     })), h('section', {
       className: 'mr-section'
     }, h('div', {

@@ -84,3 +84,9 @@ Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega una bitácora y cua
 Forward y recovery compilaron dentro de transacciones con `ROLLBACK` antes de generar eventos. La aplicación conservó 947 afiliados, 3,425 documentos, 0 `request_documents`, 146 reglas, 35 fondos y 3 programas. La matriz viva confirmó tres cuentas, Admin sin afiliado mediante prueba transaccional, impersonación con actor real, cruce/anónimo denegados, tres firmas individuales de 300 segundos y cero URLs en listados.
 
 Recovery: `20260830000100_loan_document_context_isolation_recovery.sql` retira exclusivamente funciones/bitácora mientras no exista historial de acceso. Desde el primer evento aborta con `RECOVERY_BLOCKED_DOCUMENT_ACCESS_HISTORY_EXISTS`; nunca elimina auditoría para facilitar un rollback. La Edge puede retirarse por separado con `scripts/deploy-document-access.js delete`, pero no se ejecutó ese modo tras el cutover exitoso.
+
+## 20260830000200–00220 — plataforma central de requisitos documentales
+
+Estado: `APPLIED / CERTIFIED — PASS`. `00200` evoluciona la autoridad existente, agrega capacidades de carga, scopes, herencia/exclusión, auditoría y snapshot de requisitos sin copiar ni reescribir documentos o solicitudes. `00210` elimina la sobrecarga de upload que no declaraba `CAMERA|FILE`; `00220` corrige únicamente dos definiciones de función para usar la columna canónica `membership_offerings.concept`.
+
+Los tres forward y recovery se validaron dentro de transacciones con `ROLLBACK`. La aplicación conservó 32 reglas configuradas, 13 tipos, 3,425 documentos, cinco solicitudes históricas sin reinterpretar, cero `request_documents` y 146/35/3 filas financieras. La recuperación principal falla cerrada si ya existe auditoría/configuración/snapshot que pudiera perderse; la recuperación del hotfix mantiene deliberadamente la última definición válida porque restaurar la referencia a una columna inexistente rompería membresías.

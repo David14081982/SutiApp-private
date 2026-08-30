@@ -17,7 +17,7 @@
   const physicalAvailable=(doc)=>!!(doc&&doc.available!==false&&doc.availability!=='OBJECT_MISSING'&&doc.availability!=='ASSET_METADATA_MISSING'&&doc.availability!=='ASSET_DISABLED');
 
   function DocumentRequirementList({requirements,documents,onChanged,compact,variant,highlightedId,editable,accessPurpose}){
-    const selection=useRef(null),input=useRef(null),[busy,setBusy]=useState(null),[error,setError]=useState('');
+    const selection=useRef(null),input=useRef(null),cameraVideo=useRef(null),cameraStream=useRef(null),[busy,setBusy]=useState(null),[error,setError]=useState(''),[origin,setOrigin]=useState(null),[camera,setCamera]=useState(null),[cameraError,setCameraError]=useState('');
     const pick=(type,source)=>{
       selection.current={type,source};
       setError('');
@@ -35,7 +35,7 @@
       const type=selected.type;
       setBusy({id:type.id,phase:'preparing'});
       try{
-        await window.DocumentWorkflowRepository.upload(type,file,{onProgress:(phase)=>setBusy({id:type.id,phase})});
+        await window.DocumentWorkflowRepository.upload(type,file,{source:selected.source,onProgress:(phase)=>setBusy({id:type.id,phase})});
         await onChanged();
       }catch(e){
         const code=e&&(e.code||e.message);
@@ -47,6 +47,9 @@
         selection.current=null;
       }
     };
+    useEffect(()=>{if(!camera)return;let active=true;setCameraError('');navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}).then((stream)=>{if(!active){stream.getTracks().forEach((track)=>track.stop());return;}cameraStream.current=stream;if(cameraVideo.current){cameraVideo.current.srcObject=stream;cameraVideo.current.play().catch(()=>{});}}).catch(()=>{if(active)setCameraError('No fue posible abrir la cámara. Revisa el permiso o adjunta un archivo.');});return()=>{active=false;if(cameraStream.current){cameraStream.current.getTracks().forEach((track)=>track.stop());cameraStream.current=null;}};},[camera&&camera.id]);
+    const openCamera=(type)=>{if(window.innerWidth>768&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){setCamera(type);return;}pick(type,'camera');};
+    const captureCamera=async()=>{const video=cameraVideo.current,type=camera;if(!video||!type||!video.videoWidth||!video.videoHeight)return;const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.9));if(!blob){setCameraError('No fue posible capturar la foto.');return;}setCamera(null);selection.current={type,source:'camera'};await upload({target:{files:[new File([blob],'captura-'+Date.now()+'.jpg',{type:'image/jpeg'})],value:''}});};
     const open=async(doc,type)=>{
       if(!doc)return;
       setError('');
@@ -68,6 +71,14 @@
     };
     const hiddenInput=h('input',{ref:input,type:'file',style:{display:'none'},onChange:upload,'aria-hidden':'true',tabIndex:-1});
     const alert=error&&h('div',{role:'alert',style:{fontSize:12,fontWeight:700,color:'#A32921',marginBottom:9}},error);
+    const originSheet=h(window.Sheet,{open:!!origin,onClose:()=>setOrigin(null),title:origin?'Agregar '+origin.label:'Agregar documento'},origin&&h(React.Fragment,null,
+      h('p',{style:{fontSize:13,color:'var(--ink-3)',lineHeight:1.5,margin:'0 0 12px'}},'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'),
+      origin.camera_allowed!==false&&h('button',{type:'button','data-document-origin':'camera',onClick:()=>{const type=origin;setOrigin(null);openCamera(type);},style:{width:'100%',minHeight:52,border:'1px solid var(--hairline-strong)',borderRadius:14,background:'#fff',color:'var(--guinda)',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9,marginBottom:9}},h(I,{name:'camera',size:20,stroke:2}),'Tomar foto'),
+      origin.file_upload_allowed!==false&&h('button',{type:'button','data-document-origin':'file',onClick:()=>{const type=origin;setOrigin(null);pick(type,'file');},style:{width:'100%',minHeight:52,border:0,borderRadius:14,background:'var(--guinda)',color:'#fff',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9}},h(I,{name:'upload',size:20,stroke:2}),'Adjuntar archivo')));
+    const cameraSheet=h(window.Sheet,{open:!!camera,onClose:()=>setCamera(null),title:camera?'Tomar foto · '+camera.label:'Tomar foto'},camera&&h(React.Fragment,null,
+      h('video',{ref:cameraVideo,'data-document-live-camera':'true',playsInline:true,muted:true,style:{display:cameraError?'none':'block',width:'100%',maxHeight:'52vh',objectFit:'cover',borderRadius:15,background:'#111'}}),
+      cameraError&&h('div',{role:'alert',style:{padding:13,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize:12,fontWeight:750}},cameraError),
+      h('div',{style:{display:'flex',gap:9,marginTop:12}},h('button',{type:'button',onClick:()=>setCamera(null),style:{flex:1,minHeight:48,border:'1px solid var(--hairline-strong)',borderRadius:13,background:'#fff',fontWeight:800}},'Cancelar'),h('button',{type:'button',disabled:!!cameraError,onClick:captureCamera,style:{flex:1,minHeight:48,border:0,borderRadius:13,background:'var(--guinda)',color:'#fff',fontWeight:850}},'Capturar foto'))));
     const phaseLabel=(type)=>{if(!busy||busy.id!==type.id)return'';return busy.phase==='preparing'?'Preparando imagen…':busy.phase==='authorizing'?'Autorizando vista…':busy.phase==='registering'?'Registrando…':'Subiendo…';};
     const actionButton=(label,icon,onClick,disabled,kind)=>h('button',{type:'button',disabled,onClick,'data-document-action':kind,style:{height:36,border:'1px solid var(--hairline-strong)',borderRadius:10,background:'#fff',color:'var(--guinda)',fontSize:11.5,fontWeight:800,padding:'0 10px',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:5,flex:'1 1 auto'}},h(I,{name:icon,size:14,stroke:2}),label);
 
@@ -77,22 +88,22 @@
         alert,
         h('div',{className:'mr-doc-grid','data-document-grid':'membership'},requirements.map((req)=>{
           const type=req.document_type||req,doc=newest(documents,type.id),state=documentState(doc)||{fg:'#B0002A',bg:'#FCE9EE',label:'Pendiente',icon:'upload'};
-          const accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),preview=accepted&&available;
+          const verified=!!(doc&&doc.status==='VERIFIED'),accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),preview=accepted&&available;
           const image=!!(preview&&doc.signedUrl&&String(doc.mimeType||'').toLowerCase().startsWith('image/')),isBusy=!!(busy&&busy.id===type.id);
           const action=canUpload?'upload':preview?'preview':'unavailable',actionCopy=canUpload?(doc?'Reemplazar':'Adjuntar'):state.label,hint=type.description||state.label;
           const classes=['mr-doc-tile',accepted&&available?'is-filled':'',highlightedId===type.id&&(!accepted||!available)?'is-highlighted':'',doc&&(['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)||!available)?'is-error':''].filter(Boolean).join(' ');
-          const act=()=>{if(preview)open(doc,type);else if(canUpload)pick(type,'file');};
+          const act=()=>{if(canUpload)setOrigin(type);else if(preview)open(doc,type);};
           return h('article',{key:type.id,className:classes,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING','data-document-required':req.required===false?'false':'true'},
             h('button',{type:'button',className:'mr-doc-pick',disabled:isBusy||action==='unavailable',onClick:act,'data-document-action':action,'aria-label':(canUpload?(doc?'Reemplazar ':'Adjuntar '):preview?'Ver ':'Vista no disponible de ')+type.label},
               image&&h('img',{className:'mr-doc-thumb',src:doc.signedUrl,alt:'',loading:'lazy'}),
               accepted&&available&&h('span',{className:'mr-doc-veil','aria-hidden':'true'}),
-              h('span',{className:'mr-doc-badge','aria-hidden':'true'},h(I,{name:image?'doc':type.icon||'doc',size:21,stroke:1.9})),
+              h('span',{className:'mr-doc-badge','aria-hidden':'true',style:{background:state.bg,color:state.fg}},h(I,{name:image?'doc':type.icon||'doc',size:21,stroke:1.9})),
               h('span',{className:'mr-doc-meta'},h('strong',null,type.label),h('span',{className:accepted&&available?'mr-doc-file':'mr-doc-add'},h(I,{name:isBusy?'clock':canUpload?'camera':state.icon,size:14,stroke:2.1}),isBusy?phaseLabel(type):actionCopy+(canUpload?' · '+hint:''))),
-              accepted&&available&&h('span',{className:'mr-doc-ok','aria-label':state.label},h(I,{name:'checkCircle',size:15,stroke:2.3}))),
+              verified&&available&&h('span',{className:'mr-doc-ok','aria-label':state.label},h(I,{name:'checkCircle',size:15,stroke:2.3}))),
             preview&&h('button',{type:'button',className:'mr-doc-view','aria-label':'Ver '+type.label,onClick:()=>open(doc,type)},h(I,{name:'eye',size:16,stroke:2})),
-            accepted&&available&&h('span',{className:'mr-doc-status'},state.label),
+            accepted&&available&&h('span',{className:'mr-doc-status',style:{color:state.fg}},state.label),
             doc&&doc.review_observation&&h('p',{className:'mr-doc-observation'},doc.review_observation));
-        })));
+        })),originSheet,cameraSheet);
     }
 
     return h(React.Fragment,null,
@@ -109,7 +120,35 @@
               doc&&doc.review_observation&&h('div',{style:{fontSize:11,color:'#9B2743',marginTop:3}},doc.review_observation)),
             canView&&h('button',{type:'button','aria-label':'Ver '+type.label,disabled:isBusy,onClick:()=>open(doc,type),style:{width:38,height:38,borderRadius:11,border:'1px solid var(--hairline-strong)',background:'#fff',display:'grid',placeItems:'center',color:'var(--ink-3)'}},h(I,{name:'eye',size:18,stroke:2}))),
           canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},cameraAllowed&&actionButton('Tomar foto','camera',()=>pick(type,'camera'),isBusy,'camera'),actionButton(doc?'Reemplazar':'Subir archivo','upload',()=>pick(type,'file'),isBusy,'upload')));
-      })));
+      })),originSheet,cameraSheet);
+  }
+
+  const UNIFIED_CSS=`
+    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:21px;line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:11.5px;color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:10.5px;font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:14px;font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:11.5px;line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:12.5px;font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:12px;line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:10px;color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center}.mr-doc-status{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:9.5px;font-weight:850;color:#087A50}.mr-doc-observation{font-size:9px;color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
+  `;
+  function UnifiedDocumentPhase({requirements,documents,onChanged,phase,error,onRetry,highlightedId,accessPurpose,title}){
+    const required=(requirements||[]).filter((r)=>r.required!==false),covered=required.filter((r)=>{const d=newest(documents||[],r.document_type_id);return d&&ACCEPTED.has(d.status)&&physicalAvailable(d);}),missing=required.filter((r)=>!covered.includes(r)),total=required.length,done=covered.length;
+    return h('section',{className:'ud-phase','data-unified-document-phase':'true','data-document-total':total,'data-document-complete':done,'aria-busy':phase==='loading'?'true':'false'},h('style',null,UNIFIED_CSS),
+      h('h2',{className:'ud-title'},title||'Verifica tus documentos'),h('p',{className:'ud-sub'},'Completa tu expediente con una foto o un archivo. Los requisitos provienen de la configuración vigente.'),
+      h('div',{className:'ud-tracker',style:{'--ud-total':Math.max(1,total)}},h('div',{className:'ud-head'},h('span',null,'Expediente'),h('span',{className:'ud-count','aria-live':'polite'},phase==='ready'?done+' de '+total:'—')),
+        h('div',{className:'ud-segments','aria-hidden':'true'},Array.from({length:Math.max(1,total)},(_,index)=>h('i',{key:index,className:index<done?'on':''}))),
+        h('div',{className:'ud-help'},phase==='ready'?(missing.length?'Te faltan '+missing.length+' documento'+(missing.length===1?'':'s')+' obligatorio'+(missing.length===1?'':'s')+'.':'Tu expediente requerido está completo.'):'Consultando el expediente autorizado…'),
+        phase==='ready'&&missing.length>0&&h('div',{className:'ud-chips'},missing.map((r)=>h('span',{key:r.document_type_id,className:'ud-chip'},(r.document_type||r).label)))),
+      h('div',{className:'ud-section-title'},h(I,{name:'folder',size:18,stroke:2}),'Documentos del expediente'),
+      phase==='loading'&&h('div',{className:'ud-state',role:'status'},'Cargando documentos…'),
+      phase==='error'&&h('div',{className:'ud-state err',role:'alert'},error||'No fue posible consultar la fuente autorizada.',' ',onRetry&&h('button',{type:'button',onClick:onRetry},'Reintentar')),
+      phase==='ready'&&requirements.length===0&&h('div',{className:'ud-state'},'Este trámite no tiene documentos configurados.'),
+      phase==='ready'&&requirements.length>0&&h(DocumentRequirementList,{requirements,documents,onChanged,variant:'tiles',highlightedId,editable:true,accessPurpose:accessPurpose||'SELF_SERVICE_EXPEDIENTE'}),
+      h('div',{className:'ud-privacy'},h(I,{name:'lock',size:15,stroke:2}),h('span',null,'Tus archivos se envían de forma segura, permanecen privados y sólo se consultan con autorización temporal.')));
+  }
+
+  function DocumentRequestGate({scopeType,scopeKey,onState,title}){
+    const[state,setState]=useState({phase:'loading',requirements:[],documents:[],error:''});
+    const load=React.useCallback(async()=>{setState((current)=>Object.assign({},current,{phase:'loading',error:''}));try{const[requirements,documents]=await Promise.all([window.DocumentWorkflowRepository.resolveRequirements(scopeType,scopeKey),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);setState({phase:'ready',requirements:requirements.slice(),documents:documents.slice(),error:''});}catch(_){setState({phase:'error',requirements:[],documents:[],error:'No fue posible consultar los requisitos autorizados.'});}},[scopeType,scopeKey]);
+    useEffect(()=>{load();},[load]);
+    const result=useMemo(()=>{const required=state.requirements.filter((row)=>row.required!==false),selected=state.requirements.map((row)=>newest(state.documents,row.document_type_id)).filter((doc)=>doc&&ACCEPTED.has(doc.status)&&physicalAvailable(doc));return{phase:state.phase,ready:state.phase==='ready'&&required.every((row)=>selected.some((doc)=>doc.document_type_id===row.document_type_id)),documentIds:selected.map((doc)=>doc.id),missing:Math.max(0,required.length-selected.filter((doc)=>required.some((row)=>row.document_type_id===doc.document_type_id)).length)};},[state]);
+    useEffect(()=>{if(onState)onState(result);},[result.phase,result.ready,result.missing,result.documentIds.join('|')]);
+    return h(UnifiedDocumentPhase,{requirements:state.requirements,documents:state.documents,onChanged:load,phase:state.phase,error:state.error,onRetry:load,accessPurpose:'SELF_SERVICE_EXPEDIENTE',title:title||'Verifica tus documentos'});
   }
 
   function useDocuments(){
@@ -138,5 +177,7 @@
         h('div',{style:{marginTop:20}},h(window.SectionHead,{title:'Documentos requeridos',icon:'folder'}),state.phase==='loading'&&h('div',{role:'status'},'Cargando documentos…'),state.phase==='error'&&h('div',{role:'alert',style:{background:'#fff',borderRadius:16,padding:18,color:'#A32921',fontWeight:700}},'No fue posible consultar la fuente autorizada. ',h('button',{onClick:load},'Reintentar')),state.phase==='ready'&&h(DocumentRequirementList,{requirements,documents:state.docs,onChanged:load,editable:true,accessPurpose:'SELF_SERVICE_EXPEDIENTE'}))));
   }
   window.DocumentRequirementList=DocumentRequirementList;
+  window.UnifiedDocumentPhase=UnifiedDocumentPhase;
+  window.DocumentRequestGate=DocumentRequestGate;
   window.DocumentosScreen=DocumentosScreen;
 })();

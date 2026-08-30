@@ -80,10 +80,9 @@ function connectCdp(url) {
 async function main() {
   let stage = 'start';
   const env = readEnv();
-  const appPort = 8080;
+  const appPort = await freePort();
   const debugPort = await freePort();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'suti-required-docs-'));
-  let ownsServer = true;
   const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://local').pathname;
     const relative = pathname === '/' ? 'SutiApp.html' : decodeURIComponent(pathname.slice(1));
@@ -99,14 +98,7 @@ async function main() {
     fs.createReadStream(file).pipe(response);
   });
   await new Promise((resolve, reject) => {
-    server.once('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        ownsServer = false;
-        resolve();
-        return;
-      }
-      reject(error);
-    });
+    server.once('error', reject);
     server.listen(appPort, '127.0.0.1', resolve);
   });
 
@@ -200,7 +192,14 @@ async function main() {
     stage = 'membership_navigation';
     await click('Finanzas');
     stage = 'membership_store';
-    await waitFor(() => evaluate("window.membershipStore?.state().phase === 'loaded' && window.membershipStore.active().length > 0"));
+    await waitFor(() => evaluate("['loaded','error'].includes(window.membershipStore?.state().phase)"));
+    const membershipState = await evaluate(`(() => {
+      const state=window.membershipStore.state(),error=state.error;
+      return {phase:state.phase,error:error?{message:error.message||null,code:error.code||null,details:error.details||null,hint:error.hint||null}:null,count:window.membershipStore.active().length};
+    })()`);
+    if (membershipState.phase !== 'loaded' || membershipState.count < 1) {
+      throw new Error(`MEMBERSHIP_STORE_UNAVAILABLE:${JSON.stringify(membershipState)}`);
+    }
     const membershipId = await evaluate('window.membershipStore.active()[0].id');
     const membershipExpected = await evaluate(`window.DocumentWorkflowRepository.requirements('membership', ${JSON.stringify(membershipId)}).then((items) => items.length)`);
     stage = 'membership_open';
@@ -269,7 +268,8 @@ async function main() {
   } finally {
     if (page) page.close();
     chrome.kill();
-    if (ownsServer) server.close();
+    server.closeAllConnections?.();
+    server.close();
     await sleep(700);
     try {
       fs.rmSync(profile, { recursive: true, force: true });

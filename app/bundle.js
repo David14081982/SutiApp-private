@@ -13603,7 +13603,7 @@ Object.assign(window, {
         overflowY: 'auto',
         padding: '8px 20px 18px'
       }
-    }, React.createElement('h2', {
+    }, step !== 2 && React.createElement('h2', {
       className: 'su-route',
       style: {
         fontSize: 21,

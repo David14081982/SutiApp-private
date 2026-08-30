@@ -793,7 +793,7 @@
       React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 10.5, fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
       React.createElement('div', { ref: scroller, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '8px 20px 18px' } },
-        React.createElement('h2', { className: 'su-route', style: { fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
+        step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
         step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation }),
         step === 1 && React.createElement(StepDestination, { value: destination, onChange: setDestination }),
         step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),

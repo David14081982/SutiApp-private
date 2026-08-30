@@ -177,12 +177,13 @@ async function main() {
         const rows = [...document.querySelectorAll('[data-document-type]')];
         return {
           rows: rows.length,
+          titleCount: [...document.querySelectorAll('h2')].filter((heading) => heading.textContent.trim() === 'Verifica tus documentos').length,
           error: document.body.innerText.includes('No fue posible consultar los requisitos'),
           missingActionable: rows.filter((row) => ['MISSING', 'REUPLOAD_REQUIRED', 'REJECTED'].includes(row.dataset.documentStatus))
             .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir' || button.dataset.documentAction === 'upload')),
         };
       })()`);
-      if (loan.rows !== loanExpected || loan.error || !loan.missingActionable) {
+      if (loan.rows !== loanExpected || loan.titleCount !== 1 || loan.error || !loan.missingActionable) {
         throw new Error(`REQUIRED_DOCUMENT_UI_MISMATCH:${JSON.stringify({ loanExpected, loan })}`);
       }
       console.log(JSON.stringify({ status: 'PASS', browser: 'Chrome', loan: { requirements: loan.rows, uploadControls: true } }));
@@ -246,6 +247,7 @@ async function main() {
       const rows = [...document.querySelectorAll('[data-document-type]')];
       return {
         rows: rows.length,
+        titleCount: [...document.querySelectorAll('h2')].filter((heading) => heading.textContent.trim() === 'Verifica tus documentos').length,
         error: document.body.innerText.includes('No fue posible consultar los requisitos'),
         missingActionable: rows.filter((row) => ['MISSING', 'REUPLOAD_REQUIRED', 'REJECTED'].includes(row.dataset.documentStatus))
           .every((row) => [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Subir' || button.dataset.documentAction === 'upload')),
@@ -253,7 +255,7 @@ async function main() {
     })()`);
 
     if (membership.rows !== membershipExpected || membership.error || !membership.missingActionable
-      || loan.rows !== loanExpected || loan.error || !loan.missingActionable) {
+      || loan.rows !== loanExpected || loan.titleCount !== 1 || loan.error || !loan.missingActionable) {
       throw new Error(`REQUIRED_DOCUMENT_UI_MISMATCH:${JSON.stringify({ membershipExpected, membership, loanExpected, loan })}`);
     }
     console.log(JSON.stringify({

@@ -149,7 +149,7 @@
       try{
         const rows=await window.DocumentWorkflowRepository.requirements('membership',offering.id);
         const[dResult,tResult]=await Promise.allSettled([
-          window.DocumentWorkflowRepository.list(),
+          window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'),
           window.ProgramTermsRepository.current('membership',offering.id),
         ]);
         setRequirements(rows.slice());
@@ -273,7 +273,7 @@
             phase==='loading'&&h('div',{className:'mr-state',role:'status'},'Cargando documentos y requisitos…'),
             phase==='error'&&h('div',{className:'mr-state is-error',role:'alert'},error,h('br'),h('button',{type:'button',className:'mr-retry',onClick:load},'Reintentar')),
             phase==='ready'&&requirements.length===0&&h('div',{className:'mr-state'},'Esta membresía no tiene documentos configurados.'),
-            phase==='ready'&&requirements.length>0&&h(window.DocumentRequirementList,{requirements,documents,onChanged:load,variant:'tiles',highlightedId:highlighted})),
+            phase==='ready'&&requirements.length>0&&h(window.DocumentRequirementList,{requirements,documents,onChanged:load,variant:'tiles',highlightedId:highlighted,accessPurpose:'SELF_SERVICE_MEMBERSHIP'})),
           h('section',{className:'mr-section'},
             h('div',{className:'mr-section-head'},h(I,{name:'idcard',size:18,stroke:2}),h('h2',null,'Tus datos')),
             h('div',{className:'mr-data'},FIELDS.map((field)=>{

@@ -7704,7 +7704,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const row=base.data;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
-    const currentDocuments=db().from('affiliate_documents').select('id,replaces_document_id,status,created_at,document_type:document_types!document_type_id(id,code,label)').eq('affiliate_id',row.affiliate_id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(100);
+    const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
     const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
@@ -7740,40 +7740,27 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const failure=(code)=>Object.assign(new Error(code),{code});
   async function catalog(filters){const f=filters||{};let q=db().from('document_types').select('id,code,label,description,icon,required_by_default,accepted_mime_types,enabled,sort_order,system_type').order('sort_order',{ascending:true});if(f.includeDisabled!==true)q=q.eq('enabled',true);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
   async function requirements(programId,membershipOfferingId){let q=db().from('program_document_requirements').select('id,program_id,membership_offering_id,document_type_id,required,allow_verified_reuse,sort_order,enabled,document_type:document_types(id,code,label,description,icon,accepted_mime_types)').eq('program_id',programId).eq('enabled',true).order('sort_order',{ascending:true});q=membershipOfferingId?q.eq('membership_offering_id',membershipOfferingId):q.is('membership_offering_id',null);const r=await q;if(r.error)throw r.error;return Object.freeze(r.data||[]);}
-  async function availability(documentIds){const ids=Array.from(new Set((documentIds||[]).filter(Boolean)));if(!ids.length)return Object.freeze([]);const r=await db().rpc('get_affiliate_document_availability',{p_document_ids:ids});if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>Object.freeze(row)));}
-  async function list(affiliateId){let q=db().from('affiliate_documents').select('id,affiliate_id,document_type_id,affiliate_file_id,private_asset_id,replaces_document_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,description,icon,accepted_mime_types),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)');if(affiliateId)q=q.eq('affiliate_id',affiliateId);const r=await q.order('created_at',{ascending:false}).order('id',{ascending:false});if(r.error)throw r.error;const raw=r.data||[],availabilityRows=await availability(raw.map((row)=>row.id)),availabilityById=new Map(availabilityRows.map((row)=>[row.document_id,row])),privateRows=raw.map((row)=>({row,asset:row.private_asset||row.affiliate_file,state:availabilityById.get(row.id)})).filter((entry)=>entry.state&&entry.state.available&&entry.asset&&entry.asset.storage_bucket==='private-assets'),signedByPath=new Map();if(privateRows.length){const paths=Array.from(new Set(privateRows.map((entry)=>entry.asset.storage_path))),signed=await db().storage.from('private-assets').createSignedUrls(paths,300);if(!signed.error)(signed.data||[]).forEach((entry,index)=>{if(entry&&entry.signedUrl)signedByPath.set(paths[index],entry.signedUrl);});}const rows=raw.map((row)=>{const a=row.private_asset||row.affiliate_file,state=availabilityById.get(row.id),signedUrl=a&&signedByPath.get(a.storage_path)||null,availabilityState=state&&state.reason||'AVAILABILITY_UNKNOWN';return Object.freeze(Object.assign({},row,{mimeType:a&&a.mime_type,sha256:a&&(a.content_sha256||a.sha256),storageBucket:a&&a.storage_bucket,storagePath:a&&a.storage_path,signedUrl,availability:availabilityState,available:!!(state&&state.available),previewUnavailable:availabilityState!=='AVAILABLE'||!signedUrl}));});return Object.freeze(rows);}
-  async function freshPreview(document){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');const states=await availability([document.id]),state=states[0];if(!state||!state.available)throw failure('DOCUMENT_OBJECT_MISSING');const asset=document.private_asset||document.affiliate_file,bucket=document.storageBucket||asset&&asset.storage_bucket,path=document.storagePath||asset&&asset.storage_path;if(bucket!=='private-assets'||!path)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');const signed=await db().storage.from(bucket).createSignedUrl(path,300);if(signed.error||!signed.data||!signed.data.signedUrl){const message=String(signed.error&&signed.error.message||'');throw failure(/not.?found|404/i.test(message)?'DOCUMENT_OBJECT_MISSING':'DOCUMENT_PREVIEW_UNAVAILABLE');}return Object.freeze({signedUrl:signed.data.signedUrl,expiresIn:300});}
+  function projectDocument(row){return Object.freeze({id:row.document_id,affiliate_id:row.affiliate_id,document_type_id:row.document_type_id,affiliate_file_id:row.affiliate_file_id,private_asset_id:row.private_asset_id,replaces_document_id:row.replaces_document_id,status:row.document_status,review_observation:row.review_observation,reviewed_at:row.reviewed_at,created_at:row.created_at,updated_at:row.updated_at,document_type:Object.freeze({id:row.document_type_id,code:row.document_type_code,label:row.document_type_label,description:row.document_type_description,icon:row.document_type_icon,accepted_mime_types:row.accepted_mime_types||[]}),mimeType:row.mime_type,sha256:row.sha256,signedUrl:null,availability:row.availability,available:row.available===true,previewUnavailable:row.available!==true,verificationProvenance:row.verification_provenance||'WORKFLOW_STATUS'});}
+  async function listSelfDocuments(purpose){const allowed=['SELF_SERVICE_EXPEDIENTE','SELF_SERVICE_LOAN','SELF_SERVICE_MEMBERSHIP'];if(!allowed.includes(purpose))throw failure('INVALID_DOCUMENT_ACCESS_PURPOSE');const[listed,effective]=await Promise.all([db().rpc('list_effective_affiliate_documents',{p_purpose:purpose}),db().rpc('get_effective_affiliate_id')]);if(listed.error)throw listed.error;if(effective.error||!effective.data)throw effective.error||failure('AFFILIATE_IDENTITY_REQUIRED');const rows=(listed.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==effective.data))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
+  async function listAdminDocuments(affiliateId,purpose){if(!affiliateId)throw failure('TARGET_AFFILIATE_REQUIRED');const r=await db().rpc('list_admin_affiliate_documents',{p_target_affiliate_id:affiliateId,p_purpose:purpose});if(r.error)throw r.error;const rows=(r.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==affiliateId))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
+  async function preview(body){const result=await db().functions.invoke('document-access',{body});if(result.error){let code=result.data&&result.data.error;try{if(!code&&result.error.context){const payload=await result.error.context.clone().json();code=payload&&payload.error;}}catch(_){}throw failure(code||'DOCUMENT_PREVIEW_UNAVAILABLE');}if(!result.data||!result.data.signedUrl)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return Object.freeze(result.data);}
+  async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
+  async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
   async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
   async function prepareFile(type,file,onProgress){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>MAX||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
   async function upload(type,file,options){const settings=options||{},progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
   const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
-  const previewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,storage_bucket,storage_path,mime_type,sha256),private_asset:private_assets(id,storage_bucket,storage_path,mime_type,content_sha256)';
-  async function reviewPreview(id){
-    const r=await db().from('affiliate_documents').select(previewFields).eq('id',id).single();
-    if(r.error)throw r.error;
-    const row=r.data,asset=row.private_asset||row.affiliate_file;
-    let signedUrl=null,previewUnavailable=false;
-    if(asset&&asset.storage_bucket==='private-assets'){
-      const signed=await db().storage.from(asset.storage_bucket).createSignedUrl(asset.storage_path,300);
-      signedUrl=!signed.error&&signed.data&&signed.data.signedUrl||null;
-      previewUnavailable=!signedUrl;
-    }
-    return Object.freeze(Object.assign({},row,{signedUrl,mimeType:asset&&asset.mime_type,previewUnavailable}));
-  }
-  async function reviewQueue(options){
-    const settings=options||{};
+  async function reviewQueue(){
     const r=await db().from('affiliate_documents').select(reviewFields).in('status',['PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED']).order('created_at',{ascending:true}).limit(100);
     if(r.error)throw r.error;
-    const metadata=(r.data||[]).map((row)=>Object.freeze(Object.assign({},row,{signedUrl:null,mimeType:(row.private_asset||row.affiliate_file||{}).mime_type||null})));
-    if(settings.includePreviews!==true)return Object.freeze(metadata);
-    return Object.freeze(await Promise.all(metadata.map((row)=>reviewPreview(row.id))));
+    return Object.freeze((r.data||[]).map((row)=>Object.freeze(Object.assign({},row,{signedUrl:null,mimeType:(row.private_asset||row.affiliate_file||{}).mime_type||null}))));
   }
   async function saveRequirement(row){const r=await db().rpc('save_program_document_requirement',{p_program_id:row.program_id,p_membership_offering_id:row.membership_offering_id||null,p_document_type_id:row.document_type_id,p_required:row.required!==false,p_allow_reuse:row.allow_verified_reuse!==false,p_sort_order:Number(row.sort_order),p_enabled:row.enabled!==false});if(r.error)throw r.error;return r.data;}
   async function saveType(row){const values={code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};let q=row.id?db().from('document_types').update(values).eq('id',row.id):db().from('document_types').insert(values);const r=await q.select().single();if(r.error)throw r.error;return r.data;}
   async function removeType(id){const r=await db().from('document_types').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('DOCUMENT_TYPE_DELETE_DENIED');}
   async function attach(requestId,ids){const r=await db().rpc('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
-  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,list,availability,freshPreview,prepareFile,upload,review,reviewQueue,reviewPreview,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
+  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,listSelfDocuments,listAdminDocuments,selfPreview,adminPreview,prepareFile,upload,review,reviewQueue,saveType,removeType,saveRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
 })();
 })();
 /* @@file bank-account-repository.js */
@@ -13278,7 +13265,8 @@ Object.assign(window, {
       documents,
       onChanged,
       compact: true,
-      editable: true
+      editable: true,
+      accessPurpose: 'SELF_SERVICE_LOAN'
     }), React.createElement('div', {
       style: {
         display: 'flex',
@@ -13455,8 +13443,8 @@ Object.assign(window, {
       const requirement = entry.requirement || entry;
       return requirement.document_type && requirement.document_type.label || 'documento requerido';
     });
-    if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
-    return 'Necesitamos actualizar estos documentos antes de continuar: ' + labels.join(', ') + '.';
+    if (!labels.length) return 'Te faltan documentos obligatorios para continuar. Revisa tu expediente y completa los pendientes.';
+    return 'Te faltan documentos obligatorios para continuar. Pendientes: ' + labels.join(', ') + '.';
   }
   function LoanScreen({
     app
@@ -13493,7 +13481,7 @@ Object.assign(window, {
       }));
       try {
         const r = await window.DocumentWorkflowRepository.requirements('prestamo');
-        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.list(), window.ProgramTermsRepository.current('prestamo')]);
+        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'), window.ProgramTermsRepository.current('prestamo')]);
         if (dResult.status !== 'fulfilled') throw dResult.reason || new Error('DOCUMENTS_UNAVAILABLE');
         const next = {
           requirements: r.slice(),
@@ -19806,6 +19794,12 @@ Object.assign(window, {
       icon: 'upload'
     }
   };
+  const documentState = doc => doc && doc.status === 'VERIFIED' && doc.verificationProvenance === 'HISTORICAL_IMPORT' ? {
+    fg: '#087A50',
+    bg: '#E5F7EF',
+    label: 'Histórico importado',
+    icon: 'checkCircle'
+  } : doc ? COLORS[doc.status] : null;
   const ACCEPTED = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
   const newest = (docs, typeId) => docs.filter(d => d.document_type_id === typeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
   const physicalAvailable = doc => !!(doc && doc.available !== false && doc.availability !== 'OBJECT_MISSING' && doc.availability !== 'ASSET_METADATA_MISSING' && doc.availability !== 'ASSET_DISABLED');
@@ -19816,7 +19810,8 @@ Object.assign(window, {
     compact,
     variant,
     highlightedId,
-    editable
+    editable,
+    accessPurpose
   }) {
     const selection = useRef(null),
       input = useRef(null),
@@ -19870,7 +19865,7 @@ Object.assign(window, {
       const popup = window.open('about:blank', '_blank');
       if (popup) popup.opener = null;
       try {
-        const preview = await window.DocumentWorkflowRepository.freshPreview(doc);
+        const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
         if (popup) popup.location.replace(preview.signedUrl);else window.open(preview.signedUrl, '_blank', 'noopener,noreferrer');
       } catch (e) {
         if (popup) popup.close();
@@ -19936,7 +19931,7 @@ Object.assign(window, {
       }, requirements.map(req => {
         const type = req.document_type || req,
           doc = newest(documents, type.id),
-          state = doc ? COLORS[doc.status] : {
+          state = documentState(doc) || {
             fg: '#B0002A',
             bg: '#FCE9EE',
             label: 'Pendiente',
@@ -20028,7 +20023,7 @@ Object.assign(window, {
         available = physicalAvailable(doc),
         accepted = !!(doc && ACCEPTED.has(doc.status)),
         missingObject = !!(doc && !available),
-        baseState = doc ? COLORS[doc.status] : null,
+        baseState = documentState(doc),
         state = missingObject ? {
           fg: '#B0002A',
           bg: '#FCE9EE',
@@ -20149,7 +20144,7 @@ Object.assign(window, {
         error: null
       }));
       try {
-        const [types, docs] = await Promise.all([window.DocumentWorkflowRepository.catalog(), window.DocumentWorkflowRepository.list()]);
+        const [types, docs] = await Promise.all([window.DocumentWorkflowRepository.catalog(), window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
         setState({
           phase: 'ready',
           types,
@@ -20321,7 +20316,8 @@ Object.assign(window, {
       requirements,
       documents: state.docs,
       onChanged: load,
-      editable: true
+      editable: true,
+      accessPurpose: 'SELF_SERVICE_EXPEDIENTE'
     }))));
   }
   window.DocumentRequirementList = DocumentRequirementList;
@@ -32574,7 +32570,7 @@ Object.assign(window, {
         }
       }));
       try {
-        const preview = await window.DocumentWorkflowRepository.reviewPreview(document.affiliate_document_id || document.id);
+        const preview = await window.DocumentWorkflowRepository.adminPreview(document.affiliate_document_id || document.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST');
         if (!preview.signedUrl) throw new Error('PREVIEW_UNAVAILABLE');
         setDocumentViews(all => Object.assign({}, all, {
           [viewKey]: {
@@ -39184,8 +39180,8 @@ Object.assign(window, {
         marginTop: 11
       }
     }, h('button', {
-      disabled: !d.signedUrl,
-      onClick: () => window.open(d.signedUrl, '_blank', 'noopener,noreferrer'),
+      disabled: props.busy === d.id,
+      onClick: () => props.mobileOpen(d),
       style: {
         border: 'none',
         borderRadius: 10,
@@ -39194,7 +39190,7 @@ Object.assign(window, {
         color: 'var(--ink)',
         fontWeight: 800
       }
-    }, 'Ver'), h('button', {
+    }, props.busy === d.id ? 'Autorizando…' : 'Ver'), h('button', {
       disabled: props.busy === d.id,
       onClick: () => props.mobileReview(d.id, 'VERIFIED'),
       style: {
@@ -39572,9 +39568,7 @@ Object.assign(window, {
       try {
         const [t, q, s] = await Promise.all([window.DocumentWorkflowRepository.catalog({
           includeDisabled: true
-        }), window.DocumentWorkflowRepository.reviewQueue({
-          includePreviews: !desktop
-        }), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single()]);
+        }), window.DocumentWorkflowRepository.reviewQueue(), window.SutiSupabase.getClient().from('credential_qr_settings').select('*').single()]);
         setTypes(t.slice());
         setQueue(q.slice());
         if (!s.error) setQr(s.data);
@@ -39584,7 +39578,7 @@ Object.assign(window, {
       } finally {
         setLoading(false);
       }
-    }, [desktop]);
+    }, []);
     React.useEffect(() => {
       load();
       if (window.membershipStore.state().phase === 'idle') window.membershipStore.load(false);
@@ -39623,12 +39617,19 @@ Object.assign(window, {
         setPreviewError('');
         return;
       }
+      const selected = queue.find(row => row.id === selectedId);
+      if (!selected) {
+        setPreview(null);
+        setPreviewPhase('error');
+        setPreviewError('PREVIEW_UNAVAILABLE');
+        return;
+      }
       let active = true;
       setPreviewPhase('loading');
       setPreviewError('');
-      window.DocumentWorkflowRepository.reviewPreview(selectedId).then(row => {
+      window.DocumentWorkflowRepository.adminPreview(selected.id, selected.affiliate_id, 'ADMIN_DOCUMENT_REVIEW').then(row => {
         if (active) {
-          setPreview(row);
+          setPreview(Object.assign({}, selected, row));
           setPreviewPhase('ready');
         }
       }).catch(() => {
@@ -39641,7 +39642,7 @@ Object.assign(window, {
       return () => {
         active = false;
       };
-    }, [desktop, selectedId, previewNonce]);
+    }, [desktop, selectedId, previewNonce, queue]);
     React.useEffect(() => {
       setDecision('');
       setObservation('');
@@ -39705,6 +39706,20 @@ Object.assign(window, {
         await load();
       } catch (_) {
         app.toast && app.toast('No se pudo completar la revisión');
+      } finally {
+        setBusy('');
+      }
+    };
+    const mobileOpen = async document => {
+      setBusy(document.id);
+      const popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+      try {
+        const previewResult = await window.DocumentWorkflowRepository.adminPreview(document.id, document.affiliate_id, 'ADMIN_DOCUMENT_REVIEW');
+        if (popup) popup.location.replace(previewResult.signedUrl);else window.open(previewResult.signedUrl, '_blank', 'noopener,noreferrer');
+      } catch (_) {
+        if (popup) popup.close();
+        app.toast && app.toast('No fue posible autorizar la vista');
       } finally {
         setBusy('');
       }
@@ -39818,6 +39833,7 @@ Object.assign(window, {
       publish,
       saveQr,
       mobileReview,
+      mobileOpen,
       createType
     };
     if (!desktop) return h(MobileDocuments, common);
@@ -41410,7 +41426,7 @@ Object.assign(window, {
       const raw = await window.AffiliateRepository.getHistoricalDocuments(affiliateId);
       setDocuments(raw);
       if (app.admin.has('documents.read')) {
-        const [types, canonical] = await Promise.all([window.DocumentWorkflowRepository.catalog(), window.DocumentWorkflowRepository.list(affiliateId)]);
+        const [types, canonical] = await Promise.all([window.DocumentWorkflowRepository.catalog(), window.DocumentWorkflowRepository.listAdminDocuments(affiliateId, 'ADMIN_AFFILIATE_PROFILE')]);
         setDocumentTypes(types.slice());
         setCanonicalDocuments(canonical.slice());
       } else {
@@ -52374,7 +52390,7 @@ Object.assign(window, {
       setError('');
       try {
         const rows = await window.DocumentWorkflowRepository.requirements('membership', offering.id);
-        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.list(), window.ProgramTermsRepository.current('membership', offering.id)]);
+        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'), window.ProgramTermsRepository.current('membership', offering.id)]);
         setRequirements(rows.slice());
         setDocuments(dResult.status === 'fulfilled' ? dResult.value.slice() : []);
         setTerms(tResult.status === 'fulfilled' ? tResult.value : null);
@@ -52638,7 +52654,8 @@ Object.assign(window, {
       documents,
       onChanged: load,
       variant: 'tiles',
-      highlightedId: highlighted
+      highlightedId: highlighted,
+      accessPurpose: 'SELF_SERVICE_MEMBERSHIP'
     })), h('section', {
       className: 'mr-section'
     }, h('div', {

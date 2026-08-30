@@ -59,7 +59,7 @@ assert.match(screen,/min-width: 1024px/);
 const desktopSource=screen.slice(screen.indexOf('function DesktopFinancialWorkbench'),screen.indexOf('function FinanzasModule'));
 assert.match(desktopSource,/ProgramRequestRepository\.listFinancialQueue\(\)/);
 assert.match(desktopSource,/ProgramRequestRepository\.financialDetail\(selectedId\)/);
-assert.match(desktopSource,/DocumentWorkflowRepository\.reviewPreview/);
+assert.match(desktopSource,/DocumentWorkflowRepository\.adminPreview\(document\.affiliate_document_id \|\| document\.id,detail\.affiliate_id,'ADMIN_FINANCIAL_REQUEST'\)/);
 assert.match(desktopSource,/FinancialLegacyRepository\.approveRequest/);
 assert.match(desktopSource,/FinancialLegacyRepository\.handoffRequest/);
 assert.match(desktopSource,/ProgramRequestRepository\.recordAdminAction/);
@@ -92,7 +92,7 @@ const queueMethod=repository.slice(repository.indexOf('async function listFinanc
 assert.doesNotMatch(queueMethod,/financial_submission_snapshot|financial_approval_snapshot|financial_profile_snapshot/);
 assert.match(repository,/async function financialDetail\(id\)/);
 assert.match(repository,/from\('request_documents'\)/);
-assert.match(repository,/from\('affiliate_documents'\)/);
+assert.match(repository,/DocumentWorkflowRepository\.listAdminDocuments\(row\.affiliate_id,'ADMIN_FINANCIAL_REQUEST'\)/);
 assert.match(repository,/from\('program_terms_versions'\)/);
 assert.match(repository,/rpc\('get_program_request_admin_events'/);
 assert.match(repository,/rpc\('record_program_request_admin_action'/);
@@ -153,7 +153,7 @@ assert.match(readModelApply,/PROTECTED_DATA_CHANGED/);
 
 assert.ok(bundle.includes('data-admin-financial-workbench'),'bundle missing financial workbench');
 assert.ok(bundle.includes('listFinancialQueue'),'bundle missing financial queue projection');
-assert.ok(html.includes('app/bundle.js?v=168'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v112")&&serviceWorker.includes('app/bundle.js?v=168'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=169'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v113")&&serviceWorker.includes('app/bundle.js?v=169'),'service worker cache cutover missing');
 
 console.log('Admin financial requests workbench static contract PASS');

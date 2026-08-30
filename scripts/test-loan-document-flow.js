@@ -3,12 +3,12 @@ const assert=require('assert').strict,fs=require('fs'),path=require('path'),vm=r
 const repository=read('app/document-workflow-repository.js'),documents=read('app/screens-documentos.jsx'),loan=read('app/screens-loan.jsx'),migration=read('supabase/migrations/20260829000100_loan_document_flow_recovery.sql'),recovery=read('supabase/recovery/20260829000100_loan_document_flow_recovery_recovery.sql');
 [repository,documents,loan].forEach((source)=>new vm.Script(source));
 
-// Cases 1, 2 and 10: every click checks physical availability and signs again.
-assert.match(repository,/async function freshPreview/);
-assert.match(repository,/await availability\(\[document\.id\]\)/);
-assert.match(repository,/createSignedUrl\(path,300\)/);
+// Cases 1, 2 and 10: every click uses the auth-bound Edge authorization and signs one object.
+assert.match(repository,/async function selfPreview\(document,purpose\)/);
+assert.match(repository,/mode:'SELF_SERVICE',purpose,document_id:document\.id/);
+assert.doesNotMatch(repository,/createSignedUrl|createSignedUrls/);
 assert.doesNotMatch(documents,/window\.open\(doc\.signedUrl/);
-assert.match(documents,/DocumentWorkflowRepository\.freshPreview\(doc\)/);
+assert.match(documents,/DocumentWorkflowRepository\.selfPreview\(doc,accessPurpose\|\|'SELF_SERVICE_EXPEDIENTE'\)/);
 
 // Case 3: DB metadata is not treated as physical availability.
 assert.match(migration,/left join storage\.objects/);
@@ -45,7 +45,7 @@ assert.match(repository,/IMAGE_MAX_DIMENSION=2400/);
 assert.match(repository,/imageOrientation:'from-image'/);
 assert.match(repository,/upsert:false/);
 assert.match(migration,/security definer set search_path=''/);
-assert.match(migration,/revoke all on function public\.get_affiliate_document_availability\(uuid\[\]\) from public,anon/);
+assert.match(read('supabase/migrations/20260830000100_loan_document_context_isolation.sql'),/revoke all on function[\s\S]*public\.authorize_self_document_preview\(uuid,text\)[\s\S]*from public,anon,authenticated/);
 assert.match(recovery,/RECOVERY_BLOCKED_REPLACEMENT_HISTORY_EXISTS/);
 assert.doesNotMatch(repository,/localStorage|sessionStorage|service_role|SUPABASE_SERVICE_ROLE/);
 

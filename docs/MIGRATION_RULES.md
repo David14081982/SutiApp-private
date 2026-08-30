@@ -76,3 +76,11 @@ Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega exclusivamente `pro
 Forward y recovery compilaron dentro de transacciones con `ROLLBACK`; la aplicación conservó los conteos protegidos de `program_requests`, solicitudes financieras, `request_documents` y auditoría de exportación. La matriz autenticada ejecutó comentario/retry, revisión/rechazo y cancelación dentro de otra transacción, comprobó idempotencia, transiciones válidas, notas intactas y `persistent_changes=0`. Anónimo, lectura e inserción directa quedaron denegados.
 
 Recovery: `supabase/recovery/20260829000200_financial_request_admin_events_recovery.sql` retira sólo la infraestructura nueva mientras la tabla esté vacía. Si existe cualquier evento aborta con `RECOVERY_BLOCKED_PROGRAM_REQUEST_ADMIN_HISTORY_EXISTS`; nunca elimina historia administrativa para facilitar un rollback.
+
+## 20260830000100 — aislamiento de contexto documental
+
+Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega una bitácora y cuatro RPC sin copiar, reclasificar ni modificar documentos. Autoservicio deriva el afiliado efectivo; Administración exige `documents.read` y objetivo explícito. Los listados omiten rutas/URLs y las RPC de autorización limitan cada intención a un documento existente del contexto correcto. `document_access_audit_log` tiene RLS habilitada/forzada y cero escrituras browser.
+
+Forward y recovery compilaron dentro de transacciones con `ROLLBACK` antes de generar eventos. La aplicación conservó 947 afiliados, 3,425 documentos, 0 `request_documents`, 146 reglas, 35 fondos y 3 programas. La matriz viva confirmó tres cuentas, Admin sin afiliado mediante prueba transaccional, impersonación con actor real, cruce/anónimo denegados, tres firmas individuales de 300 segundos y cero URLs en listados.
+
+Recovery: `20260830000100_loan_document_context_isolation_recovery.sql` retira exclusivamente funciones/bitácora mientras no exista historial de acceso. Desde el primer evento aborta con `RECOVERY_BLOCKED_DOCUMENT_ACCESS_HISTORY_EXISTS`; nunca elimina auditoría para facilitar un rollback. La Edge puede retirarse por separado con `scripts/deploy-document-access.js delete`, pero no se ejecutó ese modo tras el cutover exitoso.

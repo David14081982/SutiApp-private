@@ -1788,3 +1788,26 @@ Unexpected files changed: SutiApp.html reformateado y dos evidencias Financial R
 Known limitations: validación browser no acreditada porque el arnés CDP terminó sin salida verificable
 Evidence: node scripts/test-home-header-collapsed.js; node scripts/test-claude-ui-preservation.js; node scripts/test-static-suite.js; node --check app/bundle.js; build reproducible por SHA-256
 ```
+
+## 2026-08-30 — H-LOAN-DOCUMENT-CONTEXT-ISOLATION-001
+
+- Se separaron de forma irreversible en código los contratos documentales de autoservicio y Administración. Autoservicio deriva el afiliado efectivo server-side y no acepta objetivo; Admin exige `documents.read` y afiliado objetivo explícito.
+- Los listados ya no firman objetos ni exponen rutas. `document-access` autoriza y firma exactamente un documento por clic durante 300 segundos, con JWT, `no-store`, bucket privado y auditoría obligatoria antes de responder.
+- `document_access_audit_log` conserva actor real, efectivo, objetivo, documento, propósito, modo e impersonación sin URL/token/path. RLS forzada, escritura browser revocada y lectura Admin limitada.
+- Se preservaron todos los `VERIFIED`; los importados sin revisión humana se muestran como `Histórico importado`. No se cambió el gate backend final ni Google, Apps Script, Ahorro o reglas/cálculos financieros.
+- Migración dry-run/apply/recovery-dry-run, Edge v1 activa, matriz viva 8/8, Chrome focal y de flujo, bundle reproducible y suite estática 61/61: `PASS`.
+
+```text
+H-LOAN-DOCUMENT-CONTEXT-ISOLATION-001 RESULT
+Status: PASS
+Files changed: RPC/auditoría/recovery; Edge document-access; repository y consumidores documentales; bundle/cache; pruebas; ADR/invariantes/seguridad/SOT/evidencia; Registry
+Source-of-truth verdict: PASS — expediente canónico preservado; auditoría derivada sin autoridad paralela
+Invariant verdict: PASS — aislamiento por afiliado efectivo, Admin explícito, firma individual, VERIFIED y gate final preservados
+Build: PASS — 92 fuentes; node --check; SHA-256 7569486F2EBA39CEB530B8BF51835C1E7FD9B50C7965AFB601BDBD9E742CC773
+Tests: PASS — estáticas 61/61; live 8/8; Chrome focal y flujo documental
+Security: PASS — RLS forzada; JWT; normal/foreign/anonymous denied; Admin explícito; auditoría sin secretos
+Legacy impact: NOT APPLICABLE / Google read 0 / write 0 / Apps Script change 0 / financial rows changed 0
+Unexpected files changed: 0
+Known limitations: reclasificación histórica de VERIFIED requiere decisión del propietario y otra H
+Evidence: docs/qa/H-LOAN-DOCUMENT-CONTEXT-ISOLATION-001-EVIDENCE.md
+```

@@ -86,7 +86,7 @@ async function browserAuthority() {
   const id = window.__membershipTestId;
   const [requirements, documents, terms] = await Promise.all([
     window.DocumentWorkflowRepository.requirements('membership', id),
-    window.DocumentWorkflowRepository.list(),
+    window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'),
     window.ProgramTermsRepository.current('membership', id),
   ]);
   const offering = window.membershipStore.get(id);

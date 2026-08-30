@@ -597,3 +597,14 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Cancelación:** sólo está permitida antes de la aprobación; una solicitud con snapshot de aprobación conserva su estado inmutable.
 - **Legacy:** aprobar conserva el handoff append-only vigente y la confirmación UI lo declara explícitamente. Esta decisión no autoriza ejecutar una aprobación QA ni escribir una fila de prueba en Google.
 - **Aprobación:** autorización explícita del propietario `sí` a la corrección quirúrgica propuesta, 2026-08-29.
+
+## ADR-077 — Frontera documental por contexto y firma individual auditada
+
+- **Problema:** el repositorio compartía un listado que aceptaba afiliado opcional, ampliaba resultados por permiso Admin y firmaba múltiples objetos al cargar. Esto permitía mezclar contexto de autoservicio con contexto administrativo y presentar documentos ajenos o capacidades temporales obsoletas.
+- **Decisión:** autoservicio usa `list_effective_affiliate_documents` y `authorize_self_document_preview`, siempre ligados al afiliado efectivo server-side. Administración usa `list_admin_affiliate_documents` y `authorize_admin_document_preview`, con `documents.read` y afiliado objetivo obligatorio. Ningún contrato es intercambiable.
+- **Firma:** los listados contienen cero URLs y cero rutas. `document-access` valida JWT, propósito y contexto, firma exactamente un objeto privado durante 300 segundos y sólo devuelve la capacidad después de insertar auditoría. No existe firmado masivo, fallback local ni firma directa desde repository.
+- **Impersonación:** el afiliado efectivo cambia conforme a la sesión válida, pero `actor_auth_user_id` conserva siempre al administrador real. Autoservicio impersonado no puede volver al expediente propio del actor ni ampliar por permisos globales.
+- **Histórico:** no se reescriben filas `VERIFIED`. Cuando una fila importada carece de revisor y fecha, la UI aclara `Histórico importado`; la decisión de reclasificar estados históricos queda fuera de esta H.
+- **Recovery:** la migración es aditiva y su recovery sólo puede retirar frontera y bitácora antes de que exista historia de acceso; después falla cerrado. La función Edge puede retirarse independientemente mediante el script de despliegue.
+- **Legacy:** cero cambios o lecturas nuevas en Google, Apps Script, Ahorro, reglas, tasas, fondos, elegibilidad o cálculo financiero. El gate backend final de `request_documents` permanece vigente.
+- **Aprobación:** instrucción explícita del propietario de remediar quirúrgicamente el incidente de privacidad documental, 2026-08-30.

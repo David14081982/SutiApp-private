@@ -9,11 +9,14 @@
     REJECTED:{fg:'#B0002A',bg:'#FCE9EE',label:'Rechazado',icon:'info'},
     REUPLOAD_REQUIRED:{fg:'#B0002A',bg:'#FCE9EE',label:'Volver a subir',icon:'upload'},
   };
+  const documentState=(doc)=>doc&&doc.status==='VERIFIED'&&doc.verificationProvenance==='HISTORICAL_IMPORT'
+    ?{fg:'#087A50',bg:'#E5F7EF',label:'Histórico importado',icon:'checkCircle'}
+    :doc?COLORS[doc.status]:null;
   const ACCEPTED=new Set(['PENDING_REVIEW','UNDER_REVIEW','VERIFIED']);
   const newest=(docs,typeId)=>docs.filter((d)=>d.document_type_id===typeId).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)||String(b.id).localeCompare(String(a.id)))[0]||null;
   const physicalAvailable=(doc)=>!!(doc&&doc.available!==false&&doc.availability!=='OBJECT_MISSING'&&doc.availability!=='ASSET_METADATA_MISSING'&&doc.availability!=='ASSET_DISABLED');
 
-  function DocumentRequirementList({requirements,documents,onChanged,compact,variant,highlightedId,editable}){
+  function DocumentRequirementList({requirements,documents,onChanged,compact,variant,highlightedId,editable,accessPurpose}){
     const selection=useRef(null),input=useRef(null),[busy,setBusy]=useState(null),[error,setError]=useState('');
     const pick=(type,source)=>{
       selection.current={type,source};
@@ -51,7 +54,7 @@
       const popup=window.open('about:blank','_blank');
       if(popup)popup.opener=null;
       try{
-        const preview=await window.DocumentWorkflowRepository.freshPreview(doc);
+        const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
         if(popup)popup.location.replace(preview.signedUrl);
         else window.open(preview.signedUrl,'_blank','noopener,noreferrer');
       }catch(e){
@@ -73,7 +76,7 @@
         hiddenInput,
         alert,
         h('div',{className:'mr-doc-grid','data-document-grid':'membership'},requirements.map((req)=>{
-          const type=req.document_type||req,doc=newest(documents,type.id),state=doc?COLORS[doc.status]:{fg:'#B0002A',bg:'#FCE9EE',label:'Pendiente',icon:'upload'};
+          const type=req.document_type||req,doc=newest(documents,type.id),state=documentState(doc)||{fg:'#B0002A',bg:'#FCE9EE',label:'Pendiente',icon:'upload'};
           const accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),preview=accepted&&available;
           const image=!!(preview&&doc.signedUrl&&String(doc.mimeType||'').toLowerCase().startsWith('image/')),isBusy=!!(busy&&busy.id===type.id);
           const action=canUpload?'upload':preview?'preview':'unavailable',actionCopy=canUpload?(doc?'Reemplazar':'Adjuntar'):state.label,hint=type.description||state.label;
@@ -96,7 +99,7 @@
       hiddenInput,
       alert,
       h('div',{style:{display:'flex',flexDirection:'column',gap:compact?9:11}},requirements.map((req)=>{
-        const type=req.document_type||req,doc=newest(documents,type.id),available=physicalAvailable(doc),accepted=!!(doc&&ACCEPTED.has(doc.status)),missingObject=!!(doc&&!available),baseState=doc?COLORS[doc.status]:null,state=missingObject?{fg:'#B0002A',bg:'#FCE9EE',label:'Archivo no disponible',icon:'info'}:baseState||{fg:'#B0002A',bg:'#FCE9EE',label:'Documento requerido',icon:'upload'},canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),cameraAllowed=(type.accepted_mime_types||[]).some((mime)=>String(mime).startsWith('image/')),isBusy=!!(busy&&busy.id===type.id),canView=accepted&&available;
+        const type=req.document_type||req,doc=newest(documents,type.id),available=physicalAvailable(doc),accepted=!!(doc&&ACCEPTED.has(doc.status)),missingObject=!!(doc&&!available),baseState=documentState(doc),state=missingObject?{fg:'#B0002A',bg:'#FCE9EE',label:'Archivo no disponible',icon:'info'}:baseState||{fg:'#B0002A',bg:'#FCE9EE',label:'Documento requerido',icon:'upload'},canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),cameraAllowed=(type.accepted_mime_types||[]).some((mime)=>String(mime).startsWith('image/')),isBusy=!!(busy&&busy.id===type.id),canView=accepted&&available;
         return h('div',{key:type.id,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING',style:{background:'var(--surface)',borderRadius:16,padding:compact?'11px 12px':'13px 14px',boxShadow:'var(--neo-sm)'}},
           h('div',{style:{display:'flex',alignItems:'center',gap:12}},
             h('div',{style:{width:44,height:44,borderRadius:13,background:state.bg,color:state.fg,display:'grid',placeItems:'center',flexShrink:0}},h(I,{name:type.icon||'doc',size:22,stroke:1.9})),
@@ -114,7 +117,7 @@
     const load=React.useCallback(async()=>{
       setState((s)=>Object.assign({},s,{phase:'loading',error:null}));
       try{
-        const[types,docs]=await Promise.all([window.DocumentWorkflowRepository.catalog(),window.DocumentWorkflowRepository.list()]);
+        const[types,docs]=await Promise.all([window.DocumentWorkflowRepository.catalog(),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
         setState({phase:'ready',types,docs,error:null});
       }catch(error){
         setState({phase:'error',types:[],docs:[],error});
@@ -132,7 +135,7 @@
       h('div',{className:'su-app-scroll su-route',style:{flex:1,overflowY:'auto',padding:16}},
         h('div',{style:{background:'linear-gradient(135deg,#16322a,#0f4536)',borderRadius:20,padding:18,color:'#fff',display:'flex',gap:14,alignItems:'center'}},h('div',{style:{width:48,height:48,borderRadius:14,background:'rgba(255,255,255,.14)',display:'grid',placeItems:'center'}},h(I,{name:'shield',size:26,stroke:2})),h('div',null,h('div',{style:{fontSize:15,fontWeight:800}},'Tus documentos están protegidos'),h('div',{style:{fontSize:12.2,opacity:.82,fontWeight:600,marginTop:2,lineHeight:1.45}},'Cifrado de extremo a extremo. Solo el comité autorizado puede verlos.'))),
         h('div',{style:{background:'var(--surface)',borderRadius:18,padding:16,marginTop:16,boxShadow:'var(--neo-sm)'}},h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},h('span',{style:{fontSize:14.5,fontWeight:800}},'Expediente completo'),h('span',{'data-document-count':verified+'/'+requirements.length,style:{fontSize:14.5,fontWeight:800,color:'var(--guinda)'}},state.phase==='ready'?verified+' / '+requirements.length:'—')),h(window.ProgressBar,{value:requirements.length?verified/requirements.length*100:0,height:10}),h('div',{style:{fontSize:12.3,color:'var(--ink-3)',fontWeight:600,marginTop:9}},requirements.length-verified>0?'Te faltan '+(requirements.length-verified)+' documentos por verificar.':'Tu expediente está verificado.')),
-        h('div',{style:{marginTop:20}},h(window.SectionHead,{title:'Documentos requeridos',icon:'folder'}),state.phase==='loading'&&h('div',{role:'status'},'Cargando documentos…'),state.phase==='error'&&h('div',{role:'alert',style:{background:'#fff',borderRadius:16,padding:18,color:'#A32921',fontWeight:700}},'No fue posible consultar la fuente autorizada. ',h('button',{onClick:load},'Reintentar')),state.phase==='ready'&&h(DocumentRequirementList,{requirements,documents:state.docs,onChanged:load,editable:true}))));
+        h('div',{style:{marginTop:20}},h(window.SectionHead,{title:'Documentos requeridos',icon:'folder'}),state.phase==='loading'&&h('div',{role:'status'},'Cargando documentos…'),state.phase==='error'&&h('div',{role:'alert',style:{background:'#fff',borderRadius:16,padding:18,color:'#A32921',fontWeight:700}},'No fue posible consultar la fuente autorizada. ',h('button',{onClick:load},'Reintentar')),state.phase==='ready'&&h(DocumentRequirementList,{requirements,documents:state.docs,onChanged:load,editable:true,accessPurpose:'SELF_SERVICE_EXPEDIENTE'}))));
   }
   window.DocumentRequirementList=DocumentRequirementList;
   window.DocumentosScreen=DocumentosScreen;

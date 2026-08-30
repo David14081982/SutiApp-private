@@ -21,13 +21,13 @@ new vm.Script(documents);
 assert.doesNotMatch([membership, documents].join('\n'), /localStorage|sessionStorage|IndexedDB|FileReader|data:image|Sams Club|\$350|\$175/);
 assert.match(membership, /requirements\('membership',offering\.id\)/);
 assert.match(membership, /ProgramTermsRepository\.current\('membership',offering\.id\)/);
-assert.match(membership, /DocumentWorkflowRepository\.list\(\)/);
+assert.match(membership, /DocumentWorkflowRepository\.listSelfDocuments\('SELF_SERVICE_MEMBERSHIP'\)/);
 assert.match(membership, /ProgramRequestRepository\.createMembership/);
 assert.match(requests, /rpc\('create_membership_request'/);
 assert.match(workflow, /from\('program_document_requirements'\)/);
-assert.match(workflow, /from\('affiliate_documents'\)/);
-assert.match(workflow, /createSignedUrls\(paths,300\)/);
-assert.doesNotMatch(workflow, /raw\.map\(async[\s\S]*createSignedUrl/);
+assert.match(workflow, /list_effective_affiliate_documents/);
+assert.match(workflow, /list_admin_affiliate_documents/);
+assert.doesNotMatch(workflow, /createSignedUrl|createSignedUrls/);
 
 assert.match(membership, /requirements\.filter\(\(requirement\)=>requirement\.required===true\)/);
 assert.match(membership, /requiredRequirements\.length\+FIELDS\.length/);
@@ -68,7 +68,7 @@ assert.match(documents, /data-document-type-id/);
 assert.match(documents, /data-document-status/);
 assert.match(documents, /DocumentWorkflowRepository\.upload\(type,file,\{onProgress:/);
 assert.match(documents, /\['REJECTED','REUPLOAD_REQUIRED'\]\.includes\(doc\.status\)/);
-assert.match(documents, /DocumentWorkflowRepository\.freshPreview\(doc\)/);
+assert.match(documents, /DocumentWorkflowRepository\.selfPreview\(doc,accessPurpose\|\|'SELF_SERVICE_EXPEDIENTE'\)/);
 assert.doesNotMatch(documents, /Quitar|\.remove\(|storage\.from\([^)]*\)\.remove/);
 
 assert.match(membership, /phase==='ready'&&missing===0&&!!terms/);

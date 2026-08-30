@@ -84,7 +84,7 @@
     const row=base.data;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
-    const currentDocuments=db().from('affiliate_documents').select('id,replaces_document_id,status,created_at,document_type:document_types!document_type_id(id,code,label)').eq('affiliate_id',row.affiliate_id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(100);
+    const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
     const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));

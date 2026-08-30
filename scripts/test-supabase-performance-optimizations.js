@@ -15,10 +15,10 @@ assert.ok(auth.includes('createAffiliateViewModel(affiliate, null)')&&auth.inclu
 assert.ok(affiliate.includes('getCurrentAffiliate(knownUser)')&&affiliate.includes("client.rpc('get_impersonation_context')"),'known authenticated principal/parallel context missing');
 assert.ok(adminRepository.includes('primeAccessContext')&&adminRepository.includes('React.useEffect(()=>{bootstrap();},[])'),'admin context reuse missing');
 const documents=read('app/document-workflow-repository.js');
-assert.ok(documents.includes('createSignedUrls(paths,300)')&&!documents.includes('createSignedUrl(a.storage_path,300)'),'document signed URLs are not batched');
+assert.ok(documents.includes("functions.invoke('document-access'")&&!documents.includes('createSignedUrl')&&!documents.includes('createSignedUrls'),'document previews must be signed individually by the access boundary');
 const catalog=read('app/program-catalog-repository.js');
 assert.ok(catalog.includes('const [rows,links]=await Promise.all(['),'program catalog tables are still sequential');
 const sw=read('sw.js');
 assert.ok(sw.includes('immutablePublicAsset')&&sw.includes('render\\/image')&&sw.includes('app-assets|company-assets'),'public content-addressed image cache missing');
 assert.ok(!/private-assets/.test(sw.match(/immutablePublicAsset[\s\S]*?if \(immutablePublicAsset\)/)[0]),'private assets must never enter the public cache rule');
-console.log(JSON.stringify({status:'PASS',eagerAdminLoads:0,documentSigning:'batch',authResolution:'deduplicated_parallel',images:'transformed_public_hash_cache'}));
+console.log(JSON.stringify({status:'PASS',eagerAdminLoads:0,documentSigning:'on_demand_edge',authResolution:'deduplicated_parallel',images:'transformed_public_hash_cache'}));

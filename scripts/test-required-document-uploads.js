@@ -4,6 +4,6 @@ const membership=read('app/screens-membership-application.jsx'),loan=read('app/s
 assert.match(membership,/requirements\('membership',offering\.id\)/);assert.match(membership,/Promise\.allSettled/);assert.match(membership,/DocumentRequirementList/);assert.match(membership,/phase==='ready'/);
 assert.match(loan,/requirements\('prestamo'\)/);assert.match(loan,/Promise\.allSettled/);assert.match(loan,/StepDocuments/);assert.match(loan,/phase:documentState\.phase/);assert.match(loan,/Reintentar/);
 assert.match(workflow,/previewUnavailable/);assert.doesNotMatch(workflow,/if\(s\.error\)throw s\.error/);assert.match(read('app/screens-documentos.jsx'),/canUpload/);
-assert.match(workflow,/freshPreview/);assert.match(workflow,/get_affiliate_document_availability/);
+assert.match(workflow,/selfPreview/);assert.match(workflow,/list_effective_affiliate_documents/);
 assert.match(read('app/screens-documentos.jsx'),/Subir archivo/);assert.match(read('app/screens-documentos.jsx'),/Tomar foto/);assert.match(read('app/screens-documentos.jsx'),/capture','environment/);
 console.log('Required document upload resilience PASS');

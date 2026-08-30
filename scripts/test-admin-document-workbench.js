@@ -49,19 +49,19 @@ assert.match(screen,/Nombre de negocio pendiente de definición/);
 
 assert.match(screen,/function MobileDocuments/);
 assert.match(screen,/\[\['review','Revisión'\],\['catalog','Catálogo'\],\['requirements','Requisitos'\],\['terms','Términos'\],\['qr','QR'\]\]/);
-assert.match(screen,/window\.open\(d\.signedUrl/);
+assert.match(screen,/DocumentWorkflowRepository\.adminPreview\(document\.id,document\.affiliate_id,'ADMIN_DOCUMENT_REVIEW'\)/);
 assert.match(screen,/mobileReview\(d\.id,'VERIFIED'\)/);
 assert.match(screen,/mobileReview\(d\.id,'REUPLOAD_REQUIRED'\)/);
-assert.match(screen,/includePreviews:!desktop/);
+assert.doesNotMatch(screen,/includePreviews/);
 
 const queueFields=(repository.match(/const reviewFields='([^']+)'/)||[])[1]||'';
 assert(queueFields,'reviewFields missing');
 assert(!queueFields.includes('storage_path'),'queue metadata must not expose or sign storage paths');
-assert.match(repository,/async function reviewPreview\(id\)/);
-assert.match(repository,/\.eq\('id',id\)\.single\(\)/);
-assert.match(repository,/createSignedUrl\(asset\.storage_path,300\)/);
-assert.match(repository,/if\(settings\.includePreviews!==true\)return Object\.freeze\(metadata\)/);
-assert.match(repository,/reviewQueue,reviewPreview/);
+assert.match(repository,/async function adminPreview\(documentId,targetAffiliateId,purpose\)/);
+assert.match(repository,/mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId/);
+assert.doesNotMatch(repository,/createSignedUrl|createSignedUrls/);
+assert.match(repository,/selfPreview,adminPreview/);
+assert.match(repository,/review,reviewQueue/);
 
 assert.match(migration,/if not public\.has_admin_permission\('documents\.write'\) then raise exception 'DOCUMENT_REVIEW_DENIED'/);
 assert.match(migration,/create policy affiliate_documents_read[\s\S]*public\.has_admin_permission\('documents\.read'\)/);

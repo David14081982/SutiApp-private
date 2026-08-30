@@ -660,7 +660,7 @@
     return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 10 } },
       phase==='error'&&React.createElement('div',{role:'alert',style:{padding:12,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize:12,fontWeight:750}},'No fue posible consultar los requisitos. ',React.createElement('button',{onClick:onChanged,style:{border:'none',background:'transparent',color:'inherit',fontWeight:900}},'Reintentar')),
       phase==='ready'&&React.createElement(MissingDocumentsNotice,{missing}),
-      React.createElement(window.DocumentRequirementList,{requirements,documents,onChanged,compact:true,editable:true}),
+      React.createElement(window.DocumentRequirementList,{requirements,documents,onChanged,compact:true,editable:true,accessPurpose:'SELF_SERVICE_LOAN'}),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
         React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
@@ -718,8 +718,8 @@
   }
   function missingLoanDocumentsMessage(requirements) {
     const labels = (requirements || []).map((entry) => { const requirement=entry.requirement||entry; return requirement.document_type && requirement.document_type.label || 'documento requerido'; });
-    if (!labels.length) return 'Uno o más documentos obligatorios ya no están disponibles. Verifica nuevamente tu expediente.';
-    return 'Necesitamos actualizar estos documentos antes de continuar: ' + labels.join(', ') + '.';
+    if (!labels.length) return 'Te faltan documentos obligatorios para continuar. Revisa tu expediente y completa los pendientes.';
+    return 'Te faltan documentos obligatorios para continuar. Pendientes: ' + labels.join(', ') + '.';
   }
 
   function LoanScreen({ app }) {
@@ -737,7 +737,7 @@
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
-    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.list(),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
+    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
     React.useEffect(()=>{loadDocuments();},[loadDocuments]);
     React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
     const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];

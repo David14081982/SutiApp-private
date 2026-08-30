@@ -30,6 +30,12 @@ Ante fallo de autoridad: estado de carga, error controlado, reintento seguro u o
 
 Toda H declara dominio, autoridad, lectores, escritores, copias, cachés, datos derivados, retención, borrado, recuperación e invariantes. Si algo es desconocido, usar `UNRESOLVED`; si compiten fuentes, usar `SOURCE OF TRUTH CONFLICT`.
 
+## Decisiones administrativas de solicitudes financieras
+
+`program_request_admin_events` es historia operacional retenida: cada fila conserva solicitud, actor, acción, transición, comentario opcional y tiempo. No se edita ni se borra para corregir una solicitud; una acción posterior se agrega como otro evento válido. `client_action_id` evita duplicados por retry sin convertir el navegador en autoridad. El recovery de la infraestructura aborta si existe al menos un evento, de modo que ningún rollback técnico elimine decisiones reales.
+
+Los adjuntos históricos se gobiernan por vínculo, no por disponibilidad actual. Sólo `request_documents` demuestra qué acompañó una solicitud; mostrar `affiliate_documents` actuales es una consulta separada y etiquetada, sin copia, backfill ni reconstrucción implícita.
+
 ## Nómina declarada para simulación
 
 `affiliate_payroll_declarations` es una autoridad de declaración del usuario, no una copia de nómina oficial ni de un talón. Conserva el valor vigente y una auditoría de cambios; no tiene fallback ni caché persistente. El afiliado puede actualizar su declaración, pero la eliminación no está expuesta en UI y cualquier recuperación destructiva exige preservar filas existentes. Las proyecciones de neto, remanente, barras y 30% son derivados informativos y nunca datos maestros financieros.

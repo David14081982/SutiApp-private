@@ -52,6 +52,7 @@
 | ADR-072 | Se retira del runtime la edición global de textos; `managed_copy_overrides` y sus filas se conservan como histórico inactivo, sin lectores ni writers frontend. | Aceptada / ACTIVE |
 | ADR-074 | Una solicitud pendiente o revisada no bloquea otra del mismo afiliado para el mismo programa/producto ni para otro; Ahorro Voluntario y Portafolio de Inversión quedan fuera de esta habilitación. | Aceptada / ACTIVE |
 | ADR-075 | El expediente exige versión documental más reciente y objeto privado existente; cada vista firma de nuevo y un reemplazo crea historia enlazada sin mutar el `VERIFIED` anterior. | Aceptada / ACTIVE |
+| ADR-076 | Las decisiones administrativas de solicitudes financieras usan una bitácora inmutable separada; `program_requests` conserva estado/solicitud, `notes` conserva la nota del solicitante y el expediente actual nunca se presenta como evidencia histórica enviada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -586,3 +587,13 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Seguridad y legacy:** bucket privado, RLS, identidad derivada y auditoría se preservan. No cambia cálculo, elegibilidad, tasa, plazo, rol, regla legal, Google ni Apps Script.
 - **Recovery:** `20260829000100_loan_document_flow_recovery_recovery.sql` aborta si existe historia de reemplazo; nunca borra documentos para facilitar un rollback.
 - **Aprobación:** instrucción explícita del propietario de corregir quirúrgicamente el flujo documental de préstamo, 2026-08-29.
+
+## ADR-076 — Bitácora administrativa y separación documental de solicitudes financieras
+
+- **Solicitud y estado:** `program_requests` continúa como autoridad. Las notas originales del afiliado permanecen en `program_requests.notes`; revisión, comentario, rechazo, cancelación y autorización se registran en `program_request_admin_events` y no reescriben ese campo.
+- **Writer:** `record_program_request_admin_action` exige `program_requests.write`, valida transiciones, obliga motivo para rechazo/cancelación y usa `client_action_id` idempotente. La aprobación sigue en `financial-legacy`; el RPC service-only agrega el evento `APPROVE` dentro de la misma transacción que el snapshot autorizado.
+- **Documentos:** `request_documents` es la única evidencia de archivos enviados con una solicitud. `affiliate_documents/private_assets/private-assets` puede mostrarse como expediente vigente separado, nunca como reconstrucción o backfill de una solicitud antigua sin vínculos.
+- **Seguridad:** leer la bitácora exige `program_requests.read`; la tabla tiene RLS habilitada/forzada, cero acceso directo browser y no proyecta UUID de actor ni claves de idempotencia. Las vistas privadas continúan requiriendo permisos documentales y URL firmada temporal.
+- **Cancelación:** sólo está permitida antes de la aprobación; una solicitud con snapshot de aprobación conserva su estado inmutable.
+- **Legacy:** aprobar conserva el handoff append-only vigente y la confirmación UI lo declara explícitamente. Esta decisión no autoriza ejecutar una aprobación QA ni escribir una fila de prueba en Google.
+- **Aprobación:** autorización explícita del propietario `sí` a la corrección quirúrgica propuesta, 2026-08-29.

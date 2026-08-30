@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Bitácora administrativa de solicitudes financieras — ADR-076
+
+`program_request_admin_events` tiene RLS habilitada y forzada, y `anon`/`authenticated` no reciben grants directos sobre la tabla. La lectura ocurre exclusivamente mediante `get_program_request_admin_events`, que exige `program_requests.read`, limita el dominio a solicitudes financieras y no proyecta UUID del actor ni claves de idempotencia. La escritura browser usa `record_program_request_admin_action`, exige `program_requests.write`, deriva el actor desde `auth.uid()`, valida transición y motivo, y deduplica por `client_action_id`.
+
+La aprobación continúa detrás de Edge `financial-legacy`: JWT, origen y permisos se validan antes de invocar la sobrecarga service-only de `approve_financial_program_request`, que agrega el evento `APPROVE` atómicamente con el snapshot contractual. El frontend no contiene `service_role`, secretos ni autorización basada sólo en UI. Los documentos permanecen en el bucket privado; cada vista requiere permisos documentales y una URL firmada temporal.
+
 ## Admin Afiliados — ADR-071
 
 Leer padrón/perfil exige `affiliates.read`; crear, editar o cambiar estado exige `affiliates.write`; atención asistida exige `affiliates.impersonate`; exportar XLSX exige `data_exports.read`. Los controles de UI sólo reflejan capacidades: cada RPC vuelve a autorizar con `has_admin_permission()`, `SECURITY DEFINER` y `search_path=''`. Anónimo y usuario normal fueron denegados en la matriz live.

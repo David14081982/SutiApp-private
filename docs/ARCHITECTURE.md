@@ -238,6 +238,21 @@ Google `Historial de solicitudes` (append one row)
 
 La corrección de frontera 2026-08-22 prohíbe también que Historial, refresh o retry del afiliado ejecuten el export. Solo la aprobación Admin backend puede iniciarlo. `Historial de solicitudes` es el único destino de negocio y solo mediante append. La aprobación congela A:AL+SHA; Supabase audita la transición y Apps Script reserva UUID/hash/fila bajo `LockService`, verifica 38 headers y hace read-back antes de `handed_off`. Proceso 3 sin aval autoritativo falla cerrado. No existe procesamiento automático después del append.
 
+## ADR-076 — decisiones Admin y evidencia documental financiera
+
+```text
+Admin Finanzas → get_program_request_admin_events → bitácora autorizada
+               → record_program_request_admin_action → COMMENT / REVIEW / REJECT / CANCEL
+               → financial-legacy → aprobación + evento atómicos → handoff legacy existente
+
+request_documents       → documentos enviados con la solicitud
+affiliate_documents     → expediente vigente separado → private_assets → URL firmada al abrir
+```
+
+`program_requests` conserva la solicitud, estado y nota original del afiliado. Las decisiones del personal se agregan a `program_request_admin_events`, con identidad backend, idempotencia y transiciones válidas; no se concatenan en `notes`. La tabla no tiene acceso browser directo y sus RPC exigen `program_requests.read/write`. Una aprobación se audita en la misma transacción del snapshot contractual y una solicitud aprobada no puede cancelarse.
+
+`request_documents` es la única evidencia de qué archivos acompañaron un envío. Admin puede consultar el expediente vigente del mismo afiliado en una sección separada, pero una solicitud antigua sin vínculos queda explícitamente no reconstruible. Las vistas siguen usando Storage privado y firma temporal bajo permiso documental.
+
 ## H-SUTI-INVERSION-SCREEN-001 — simulador presentacional aislado
 
 ```text

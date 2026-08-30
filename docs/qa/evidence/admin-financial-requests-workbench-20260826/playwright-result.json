@@ -36,7 +36,7 @@
     }
   },
   "queue": {
-    "initialRows": 3,
+    "initialRows": 5,
     "search": true,
     "statusFilter": true,
     "programFilter": true,
@@ -53,6 +53,7 @@
     "historicalValuesImmutable": true,
     "timeline": true,
     "documents": true,
+    "currentAffiliateDocuments": true,
     "termsAcceptance": true,
     "technicalIdsPrimary": 0
   },
@@ -86,7 +87,7 @@
     "bottomNav": "flex",
     "rootWidth": 430,
     "horizontalOverflow": false,
-    "cards": 3,
+    "cards": 5,
     "cotizacionesTab": true
   },
   "performance": {
@@ -94,7 +95,7 @@
     "lazyDetail": true,
     "lazyDocuments": true,
     "noFinancialNPlusOne": true,
-    "detailCalls": 2
+    "detailCalls": 3
   },
   "contracts": {
     "sharedQueueComponents": "NOT_APPLICABLE_LOCAL_APPROVED_WORKBENCH_COMPONENTS",
@@ -126,34 +127,10 @@
   "directGoogleRequests": [],
   "pageErrors": [],
   "consoleErrors": [
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "{code: 42501, details: null, hint: Grant the required privileges to the current role …NT SELECT ON public.union_screen_content TO anon;, message: permission denied for table union_screen_content}",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Admin cutover authority error [roles] {code: 42501, details: null, hint: Grant the required privileges to the current role with: GRANT SELECT ON public.admin_roles TO anon;, message: permission denied for table admin_roles}",
-    "Admin cutover authority error [segments] {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.segmentation_catalog_entries TO anon;, message: permission denied for table segmentation_catalog_entries}",
-    "Admin cutover authority error [access] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.screen_access_policies TO anon;, message: permission denied for table screen_access_policies}",
-    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:60066/app/bundle.js?v=157:6972:68)\n    at Object.listManaged (http://127.0.0.1:60066/app/bundle.js?v=157:7081:172)\n    at Array.<anonymous> (http://127.0.0.1:60066/app/bundle.js?v=157:21026:181)\n    at http://127.0.0.1:60066/app/bundle.js?v=157:21028:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:60066/app/bundle.js?v=157:21028:53)",
-    "Admin cutover authority error [profiles] {code: 42501, details: null, hint: null, message: permission denied for function has_admin_permission}",
-    "Admin cutover authority error [rules] {code: 42501, details: null, hint: Grant the required privileges to the current role … SELECT ON public.company_audience_rules TO anon;, message: permission denied for table company_audience_rules}",
-    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:60066/app/bundle.js?v=157:6971:72)\n    at Object.listManaged (http://127.0.0.1:60066/app/bundle.js?v=157:7081:226)\n    at Array.jobs (http://127.0.0.1:60066/app/bundle.js?v=157:21026:339)\n    at http://127.0.0.1:60066/app/bundle.js?v=157:21028:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:60066/app/bundle.js?v=157:21028:53)",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Failed to load resource: the server responded with a status of 401 ()",
-    "Workflow authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T SELECT ON public.operational_workflows TO anon;, message: permission denied for table operational_workflows}",
-    "Finance presentation authority error {code: 42501, details: null, hint: Grant the required privileges to the current role …T ON public.finance_catalog_presentation TO anon;, message: permission denied for table finance_catalog_presentation}",
     "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
     "Failed to load resource: the server responded with a status of 403 ()",
     "Failed to load resource: the server responded with a status of 403 ()",
     "Failed to load resource: the server responded with a status of 403 ()",
-    "Admin cutover authority error [companies] Error: ADMIN_DENIED\n    at requireAny (http://127.0.0.1:60066/app/bundle.js?v=157:6972:68)\n    at Object.listManaged (http://127.0.0.1:60066/app/bundle.js?v=157:7081:172)\n    at Array.<anonymous> (http://127.0.0.1:60066/app/bundle.js?v=157:21026:181)\n    at http://127.0.0.1:60066/app/bundle.js?v=157:21028:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:60066/app/bundle.js?v=157:21028:53)",
-    "Admin cutover authority error [banners] Error: ADMIN_DENIED\n    at requirePermission (http://127.0.0.1:60066/app/bundle.js?v=157:6971:72)\n    at Object.listManaged (http://127.0.0.1:60066/app/bundle.js?v=157:7081:226)\n    at Array.jobs (http://127.0.0.1:60066/app/bundle.js?v=157:21026:339)\n    at http://127.0.0.1:60066/app/bundle.js?v=157:21028:66\n    at Array.map (<anonymous>)\n    at load (http://127.0.0.1:60066/app/bundle.js?v=157:21028:53)",
     "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
     "Failed to load resource: the server responded with a status of 403 ()",
     "Failed to load resource: the server responded with a status of 403 ()",

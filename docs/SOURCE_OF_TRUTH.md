@@ -1,5 +1,13 @@
 # Fuentes de verdad
 
+## Corte ADR-076 — decisiones administrativas de solicitudes financieras
+
+`program_requests` permanece como autoridad única de la solicitud y su estado; `program_requests.notes` conserva la nota original del solicitante. `program_request_admin_events` es la bitácora histórica append-only de comentarios, revisión, rechazo, cancelación y aprobación administrativa. Sus writers son `record_program_request_admin_action` para acciones browser autorizadas y la sobrecarga service-only de `approve_financial_program_request` para registrar aprobación en la misma transacción que el snapshot contractual. No existe store, mock, `DATA`, browser storage ni fallback productivo.
+
+`request_documents` es la evidencia exacta de los archivos vinculados al envío. `affiliate_documents` + `private_assets` + el objeto en `private-assets` siguen siendo el expediente vigente y pueden proyectarse en una sección separada, pero no completan ni reconstruyen solicitudes históricas sin vínculos. Las URLs firmadas son derivados temporales creados al abrir y nunca autoridad.
+
+La aprobación conserva el handoff append-only posterior hacia Google como una frontera legacy separada y explícita. Comentarios, revisión, rechazo y cancelación sólo escriben Supabase; no llaman Google ni alteran reglas, cálculos, tasas, saldos, amortizaciones o conciliaciones.
+
 ## Corte ADR-071 — Admin Afiliados
 
 `public.affiliates` continúa como única autoridad productiva del padrón y expediente de identidad; el módulo Admin Afiliados no crea una tabla maestra paralela. Las altas administrativas escriben en esa misma tabla con `record_origin=ADMIN_AFFILIATES`, sin inventar `source_row_ordinal` ni `source_file_hash`. Las importaciones históricas conservan `record_origin=HISTORICAL_IMPORT` y sus coordenadas inmutables.

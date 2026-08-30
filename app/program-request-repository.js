@@ -84,15 +84,23 @@
     const row=base.data;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
-    const parts=await Promise.all([documents,terms]);
+    const currentDocuments=db().from('affiliate_documents').select('id,replaces_document_id,status,created_at,document_type:document_types!document_type_id(id,code,label)').eq('affiliate_id',row.affiliate_id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(100);
+    const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
+    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
+    const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
     return Object.freeze(Object.assign({},project(row),{
       request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),
       documents_available:!parts[0].error,
       terms_version:parts[1].error?null:parts[1].data||null,
       terms_available:!parts[1].error,
+      current_affiliate_documents:Object.freeze(currentRows.filter((document)=>!superseded.has(document.id))),
+      current_documents_available:!parts[2].error,
+      admin_events:Object.freeze(parts[3].error?[]:parts[3].data||[]),
+      admin_events_available:!parts[3].error,
     }));
   }
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
+  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,respondQuote,newIdempotencyKey:key,project});
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
 })();

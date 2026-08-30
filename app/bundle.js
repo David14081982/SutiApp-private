@@ -7704,17 +7704,25 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const row=base.data;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
-    const parts=await Promise.all([documents,terms]);
+    const currentDocuments=db().from('affiliate_documents').select('id,replaces_document_id,status,created_at,document_type:document_types!document_type_id(id,code,label)').eq('affiliate_id',row.affiliate_id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(100);
+    const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
+    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
+    const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
     return Object.freeze(Object.assign({},project(row),{
       request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),
       documents_available:!parts[0].error,
       terms_version:parts[1].error?null:parts[1].data||null,
       terms_available:!parts[1].error,
+      current_affiliate_documents:Object.freeze(currentRows.filter((document)=>!superseded.has(document.id))),
+      current_documents_available:!parts[2].error,
+      admin_events:Object.freeze(parts[3].error?[]:parts[3].data||[]),
+      admin_events_available:!parts[3].error,
     }));
   }
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
+  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,respondQuote,newIdempotencyKey:key,project});
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
 })();
 })();
 /* @@file document-workflow-repository.js */
@@ -22921,6 +22929,12 @@ Object.assign(window, {
     tone: 'red',
     icon: 'close',
     meta: 'rejected'
+  }, {
+    id: 'cancelada',
+    label: 'Cancelada',
+    tone: 'gray',
+    icon: 'close',
+    meta: 'cancelled'
   }];
   const ESTADO = id => ESTADOS.find(item => item.id === id) || ESTADOS[0];
   const emit = () => listeners.forEach(fn => fn());
@@ -22928,7 +22942,12 @@ Object.assign(window, {
     const submission = r.financial_submission_snapshot && r.financial_submission_snapshot.financialResult || null,
       approval = r.financial_approval_snapshot && r.financial_approval_snapshot.financialResult || null,
       result = submission || approval || {},
-      amount = r.requested_amount != null ? Number(r.requested_amount) : result.amount != null ? Number(result.amount) : r.importe == null ? 0 : Number(r.importe) * Number(r.quantity || 1);
+      amount = r.requested_amount != null ? Number(r.requested_amount) : result.amount != null ? Number(result.amount) : r.importe == null ? 0 : Number(r.importe) * Number(r.quantity || 1),
+      adminObservations = (r.admin_events || []).filter(event => event.comment).map(event => ({
+        texto: event.comment,
+        actor: event.actor_label || 'Personal autorizado',
+        fechaHora: event.created_at
+      }));
     return Object.freeze(Object.assign({}, r, {
       estado: r.estado || 'pendiente',
       programa: r.program_id || '',
@@ -22949,11 +22968,11 @@ Object.assign(window, {
         totalPagar: result.total == null ? null : Number(result.total),
         fondo: result.fund || ''
       },
-      observaciones: r.notes ? [{
+      observaciones: (r.notes ? [{
         texto: r.notes,
         actor: 'Solicitud',
         fechaHora: r.fechaHora
-      }] : [],
+      }] : []).concat(adminObservations),
       firma: r.signature_data || null
     }));
   }
@@ -22979,11 +22998,6 @@ Object.assign(window, {
     })();
     return promise;
   }
-  const mapStatus = {
-    pendiente: 'requires_financial_processing',
-    revision: 'in_review',
-    rechazada: 'rejected'
-  };
   const store = {
     ESTADOS,
     ESTADO,
@@ -23000,18 +23014,35 @@ Object.assign(window, {
     mine: () => rows.slice(),
     count: () => rows.length,
     pendientes: () => rows.filter(r => r.estado === 'pendiente' || r.estado === 'revision').length,
-    setEstado: async (id, status) => {
-      if (status === 'depositada') throw new Error('FINANCIAL_LEGACY_READ_ONLY');
+    loadDetail: async id => {
+      const detail = await window.ProgramRequestRepository.financialDetail(id);
+      rows = rows.map(row => row.id === id ? project(Object.assign({}, row, detail)) : row);
+      emit();
+      return store.get(id);
+    },
+    setEstado: async (id, status, comment) => {
+      if (status === 'depositada' || status === 'pendiente') throw new Error('FINANCIAL_LEGACY_READ_ONLY');
       const row = store.get(id);
       if (!row) throw new Error('REQUEST_NOT_FOUND');
-      if (status === 'aprobada') await window.FinancialLegacyRepository.approveRequest(row.id);else await window.ProgramRequestRepository.update(row.id, mapStatus[status] || status, row.notes || '');
+      if (status === 'aprobada') await window.FinancialLegacyRepository.approveRequest(row.id, String(comment || ''));else {
+        const action = {
+          revision: 'MARK_IN_REVIEW',
+          rechazada: 'REJECT',
+          cancelada: 'CANCEL'
+        }[status];
+        if (!action) throw new Error('FINANCIAL_REQUEST_TRANSITION_INVALID');
+        await window.ProgramRequestRepository.recordAdminAction(row.id, action, String(comment || ''), window.ProgramRequestRepository.newIdempotencyKey());
+      }
       await load(true);
+      await store.loadDetail(row.id);
     },
     addObs: async (id, text) => {
-      const row = store.get(id);
-      if (!row || !String(text || '').trim()) return;
-      await window.ProgramRequestRepository.update(row.id, row.status, [row.notes, String(text).trim()].filter(Boolean).join('\n'));
+      const row = store.get(id),
+        comment = String(text || '').trim();
+      if (!row || comment.length < 3) return;
+      await window.ProgramRequestRepository.recordAdminAction(row.id, 'COMMENT', comment, window.ProgramRequestRepository.newIdempotencyKey());
       await load(true);
+      await store.loadDetail(row.id);
     },
     actor: () => ({
       name: 'Área de Finanzas'
@@ -32164,6 +32195,13 @@ Object.assign(window, {
     red: ['#FCE9EE', '#A00027'],
     gray: ['#EEF0F4', '#596273']
   });
+  const ADMIN_EVENT_LABELS = Object.freeze({
+    COMMENT: 'Observación administrativa',
+    MARK_IN_REVIEW: 'Marcada en revisión',
+    REJECT: 'Solicitud rechazada',
+    CANCEL: 'Solicitud cancelada',
+    APPROVE: 'Financiamiento aprobado'
+  });
   const programLabel = row => row && row.program_item && row.program_item.name || PROGRAM_LABELS[row && row.program_id] || 'Financiamiento';
   const statusMeta = status => REQUEST_STATUS[status] || {
     label: 'Estado no reconocido',
@@ -32274,8 +32312,14 @@ Object.assign(window, {
       title: 'Documento incorporado',
       text: document.document_type && document.document_type.label || 'Documento del expediente'
     }));
+    const adminEvents = detail.admin_events || [];
+    adminEvents.forEach(event => events.push({
+      at: event.created_at,
+      title: ADMIN_EVENT_LABELS[event.action] || 'Acción administrativa',
+      text: [event.actor_label || 'Personal autorizado', event.comment].filter(Boolean).join(' · ')
+    }));
     const approvedAt = detail.financial_approved_at || detail.financial_approval_snapshot && detail.financial_approval_snapshot.approved_at;
-    if (approvedAt) events.push({
+    if (approvedAt && !adminEvents.some(event => event.action === 'APPROVE')) events.push({
       at: approvedAt,
       title: 'Financiamiento aprobado',
       text: 'Condiciones aprobadas guardadas en snapshot inmutable.'
@@ -32290,7 +32334,9 @@ Object.assign(window, {
   }
   function humanActionError(error) {
     const code = String(error && (error.code || error.message) || '');
-    if (/ADMIN_APPROVAL_REQUIRED|REQUEST_DENIED|42501/.test(code)) return 'No tienes permiso para realizar esta acción.';
+    if (/ADMIN_APPROVAL_REQUIRED|REQUEST_DENIED|PROGRAM_REQUEST_(?:READ|WRITE)_DENIED|42501/.test(code)) return 'No tienes permiso para realizar esta acción.';
+    if (/PROGRAM_REQUEST_COMMENT_(?:REQUIRED|INVALID)/.test(code)) return 'La observación debe tener entre 3 y 2,000 caracteres.';
+    if (/FINANCIAL_REQUEST_TRANSITION_INVALID/.test(code)) return 'El estado de la solicitud cambió y esa acción ya no está permitida.';
     if (/SIGNATURE_AND_TERMS_REQUIRED/.test(code)) return 'La solicitud no tiene firma y términos válidos.';
     if (/REQUESTED_AMOUNT_TERM_CONTRACT_REQUIRED|FINANCIAL_SUBMISSION/.test(code)) return 'Faltan condiciones contractuales de la solicitud.';
     if (/REQUIRED_DOCUMENTS_MISSING/.test(code)) return 'Faltan documentos obligatorios para continuar.';
@@ -32323,6 +32369,7 @@ Object.assign(window, {
       [feedback, setFeedback] = useState(null),
       [rowFeedback, setRowFeedback] = useState({}),
       [documentViews, setDocumentViews] = useState({});
+    const actionAttempts = React.useRef(new Map());
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async quiet => {
       try {
@@ -32407,6 +32454,9 @@ Object.assign(window, {
       }, {
         id: 'reject',
         label: 'Rechazar solicitud'
+      }, {
+        id: 'cancel',
+        label: 'Cancelar solicitud'
       });
       if (detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.unshift({
         id: 'handoff',
@@ -32433,6 +32483,13 @@ Object.assign(window, {
     };
     const save = async advance => {
       if (!detail || !action || busy) return;
+      if (actionNote.trim().length > 0 && actionNote.trim().length < 3) {
+        setFeedback({
+          tone: 'error',
+          text: 'La observación debe tener al menos 3 caracteres.'
+        });
+        return;
+      }
       if (action === 'note' && actionNote.trim().length < 3) {
         setFeedback({
           tone: 'error',
@@ -32440,17 +32497,18 @@ Object.assign(window, {
         });
         return;
       }
-      if (action === 'reject' && actionNote.trim().length < 3) {
+      if (['reject', 'cancel'].includes(action) && actionNote.trim().length < 3) {
         setFeedback({
           tone: 'error',
-          text: 'Indica el motivo del rechazo.'
+          text: action === 'reject' ? 'Indica el motivo del rechazo.' : 'Indica el motivo de la cancelación.'
         });
         return;
       }
       const confirmations = {
-        approve: '¿Aprobar este financiamiento? El backend revalidará las condiciones financieras vigentes.',
-        handoff: '¿Enviar esta solicitud aprobada a la gestión financiera?',
-        reject: '¿Rechazar esta solicitud financiera?'
+        approve: '¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y el backend intentará entregarla al historial financiero de Google.',
+        handoff: '¿Enviar esta solicitud aprobada a la gestión financiera de Google?',
+        reject: '¿Rechazar esta solicitud financiera?',
+        cancel: '¿Cancelar esta solicitud? Esta acción quedará registrada en la bitácora.'
       };
       if (confirmations[action] && !window.confirm(confirmations[action])) return;
       const currentId = detail.id,
@@ -32463,13 +32521,29 @@ Object.assign(window, {
       setRowFeedback(all => Object.assign({}, all, {
         [currentId]: 'saving'
       }));
+      const adminAction = {
+          review: 'MARK_IN_REVIEW',
+          reject: 'REJECT',
+          cancel: 'CANCEL',
+          note: 'COMMENT'
+        }[action],
+        fingerprint = [currentId, action, actionNote.trim()].join('|');
+      let persistedEvent = null;
       try {
-        const note = [detail.notes, actionNote.trim()].filter(Boolean).join('\n');
-        if (action === 'review') await window.ProgramRequestRepository.update(currentId, 'in_review', note);else if (action === 'reject') await window.ProgramRequestRepository.update(currentId, 'rejected', note);else if (action === 'note') await window.ProgramRequestRepository.update(currentId, detail.status, note);else if (action === 'approve') await window.FinancialLegacyRepository.approveRequest(currentId);else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
+        if (adminAction) {
+          const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
+          actionAttempts.current.set(fingerprint, actionId);
+          persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);
+        } else if (action === 'approve') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
         const refreshed = await load(true),
           verified = refreshed.find(row => row.id === currentId);
-        const valid = verified && (action === 'review' ? verified.status === 'in_review' : action === 'reject' ? verified.status === 'rejected' : action === 'approve' ? verified.status === 'approved' && ['ready_for_handoff', 'in_progress', 'handed_off'].includes(verified.financial_processing_status) : action === 'handoff' ? verified.financial_processing_status === 'handed_off' : true);
+        let valid = verified && (action === 'review' ? verified.status === 'in_review' : action === 'reject' ? verified.status === 'rejected' : action === 'cancel' ? verified.status === 'cancelled' : action === 'approve' ? verified.status === 'approved' && ['ready_for_handoff', 'in_progress', 'handed_off'].includes(verified.financial_processing_status) : action === 'handoff' ? verified.financial_processing_status === 'handed_off' : true);
+        if (valid && persistedEvent) {
+          const verifiedDetail = await window.ProgramRequestRepository.financialDetail(currentId);
+          valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
+        }
         if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
+        actionAttempts.current.delete(fingerprint);
         setFeedback({
           tone: 'success',
           text: '✓ Actualizado y verificado'
@@ -32493,24 +32567,24 @@ Object.assign(window, {
         setBusy(false);
       }
     };
-    const prepareDocument = async document => {
+    const prepareDocument = async (document, viewKey) => {
       setDocumentViews(all => Object.assign({}, all, {
-        [document.id]: {
+        [viewKey]: {
           phase: 'loading'
         }
       }));
       try {
-        const preview = await window.DocumentWorkflowRepository.reviewPreview(document.affiliate_document_id);
+        const preview = await window.DocumentWorkflowRepository.reviewPreview(document.affiliate_document_id || document.id);
         if (!preview.signedUrl) throw new Error('PREVIEW_UNAVAILABLE');
         setDocumentViews(all => Object.assign({}, all, {
-          [document.id]: {
+          [viewKey]: {
             phase: 'ready',
             url: preview.signedUrl
           }
         }));
       } catch (_) {
         setDocumentViews(all => Object.assign({}, all, {
-          [document.id]: {
+          [viewKey]: {
             phase: 'error'
           }
         }));
@@ -32544,6 +32618,33 @@ Object.assign(window, {
     }, h('span', null, item[0]), h('strong', null, item[1])))) : h('div', {
       className: 'finwb-snapshot-note'
     }, 'Snapshot contractual no disponible. No se recalculan valores históricos con reglas actuales.'));
+    const renderDocumentRows = (documents, scope) => documents.map(document => {
+      const viewKey = scope + ':' + document.id,
+        view = documentViews[viewKey] || {},
+        status = document.status_at_submission || document.status || 'No disponible';
+      return h('div', {
+        className: 'finwb-doc',
+        key: viewKey
+      }, h(I, {
+        name: 'doc',
+        size: 18,
+        stroke: 2
+      }), h('div', {
+        className: 'finwb-doc-main'
+      }, h('div', {
+        className: 'finwb-person'
+      }, document.document_type && document.document_type.label || 'Documento'), h('div', {
+        className: 'finwb-sub'
+      }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status)), view.phase === 'ready' ? h('a', {
+        href: view.url,
+        target: '_blank',
+        rel: 'noopener noreferrer'
+      }, 'Abrir') : h('button', {
+        type: 'button',
+        disabled: view.phase === 'loading',
+        onClick: () => prepareDocument(document, viewKey)
+      }, view.phase === 'loading' ? 'Autorizando…' : view.phase === 'error' ? 'Reintentar' : 'Preparar vista'));
+    });
     const renderDetail = () => {
       if (detailPhase === 'loading') return h('div', {
         className: 'finwb-empty'
@@ -32595,42 +32696,36 @@ Object.assign(window, {
         style: {
           marginTop: 10
         }
-      }, detail.notes)), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {
         name: 'doc',
         size: 17,
         stroke: 2
-      }), 'Documentos'), !detail.documents_available ? h('div', {
+      }), 'Documentos enviados con esta solicitud'), !detail.documents_available ? h('div', {
         className: 'finwb-snapshot-note'
       }, 'No fue posible consultar la relación documental autorizada.') : !(detail.request_documents || []).length ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'Esta solicitud no conserva documentos vinculados. No es posible reconstruir qué archivos fueron enviados usando el expediente actual.') : renderDocumentRows(detail.request_documents, 'request')), h('section', {
+        className: 'finwb-card',
+        'data-financial-current-documents': 'true'
+      }, h('h3', null, h(I, {
+        name: 'doc',
+        size: 17,
+        stroke: 2
+      }), 'Expediente actual del afiliado'), h('div', {
+        className: 'finwb-sub',
+        style: {
+          whiteSpace: 'normal',
+          lineHeight: 1.45,
+          marginBottom: 8
+        }
+      }, 'Referencia vigente · no demuestra qué documentos acompañaron esta solicitud.'), !detail.current_documents_available ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
         className: 'finwb-sub'
-      }, 'Sin documentos vinculados a esta solicitud.') : detail.request_documents.map(document => {
-        const view = documentViews[document.id] || {};
-        return h('div', {
-          className: 'finwb-doc',
-          key: document.id
-        }, h(I, {
-          name: 'doc',
-          size: 18,
-          stroke: 2
-        }), h('div', {
-          className: 'finwb-doc-main'
-        }, h('div', {
-          className: 'finwb-person'
-        }, document.document_type && document.document_type.label || 'Documento'), h('div', {
-          className: 'finwb-sub'
-        }, 'Estado al enviar: ' + (document.status_at_submission || 'No disponible'))), view.phase === 'ready' ? h('a', {
-          href: view.url,
-          target: '_blank',
-          rel: 'noopener noreferrer'
-        }, 'Abrir') : h('button', {
-          type: 'button',
-          disabled: view.phase === 'loading',
-          onClick: () => prepareDocument(document)
-        }, view.phase === 'loading' ? 'Autorizando…' : view.phase === 'error' ? 'Reintentar' : 'Preparar vista'));
-      })), h('section', {
+      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate')), h('section', {
         className: 'finwb-card',
         'data-financial-terms': 'true'
       }, h('h3', null, h(I, {
@@ -32646,7 +32741,12 @@ Object.assign(window, {
         name: 'clock',
         size: 17,
         stroke: 2
-      }), 'Timeline'), h('div', {
+      }), 'Timeline'), !detail.admin_events_available ? h('div', {
+        className: 'finwb-snapshot-note',
+        style: {
+          marginBottom: 9
+        }
+      }, 'No fue posible consultar la bitácora administrativa.') : null, h('div', {
         className: 'finwb-timeline'
       }, events.map((event, eventIndex) => h('div', {
         className: 'finwb-event',
@@ -32662,7 +32762,10 @@ Object.assign(window, {
         className: 'finwb-action-select',
         value: action,
         disabled: busy,
-        onChange: event => setAction(event.target.value),
+        onChange: event => {
+          setAction(event.target.value);
+          setActionNote('');
+        },
         'aria-label': 'Acción financiera permitida'
       }, actionOptions.map(item => h('option', {
         key: item.id,
@@ -32676,9 +32779,9 @@ Object.assign(window, {
       }, stageMeta(detail.financial_processing_status).label))), h('textarea', {
         className: 'finwb-note',
         value: actionNote,
-        disabled: busy,
+        disabled: busy || action === 'handoff',
         onChange: event => setActionNote(event.target.value),
-        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : 'Observación (obligatoria al guardar observación)',
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'approve' ? 'Comentario de autorización (opcional)' : action === 'review' ? 'Comentario de revisión (opcional)' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Observación administrativa obligatoria',
         'aria-label': 'Observación de la acción'
       }), h('div', {
         className: 'finwb-buttons'
@@ -33508,6 +33611,9 @@ Object.assign(window, {
   }) {
     const store = useStore(true);
     const [obs, setObs] = useState('');
+    useEffect(() => {
+      store.loadDetail(r.id).catch(() => {});
+    }, [r.id]);
     const sim = r.simulacion;
     const fld = (label, value, mono) => React.createElement('div', {
       style: {
@@ -33628,40 +33734,51 @@ Object.assign(window, {
         flexWrap: 'wrap',
         gap: 8
       }
-    }, window.FINANZAS.ESTADOS.map(e => React.createElement('button', {
-      key: e.id,
-      disabled: e.id === 'depositada' || !app.admin.has('program_requests.write'),
-      title: e.id === 'depositada' ? 'La confirmación del depósito se realiza por separado' : '',
-      onClick: async () => {
-        if (e.id === 'aprobada' && !window.confirm('¿Aprobar este financiamiento? El backend revalidará las condiciones financieras vigentes.')) return;
-        try {
-          await store.setEstado(r.id, e.id);
-          app.toast && app.toast('Estado actualizado');
-        } catch (_) {
-          app.toast && app.toast(e.id === 'depositada' ? 'El depósito se confirma en el sistema financiero' : 'No se pudo actualizar');
+    }, window.FINANZAS.ESTADOS.map(e => {
+      const transitionAllowed = e.id === 'revision' && ['submitted', 'requires_financial_processing'].includes(r.status) || ['aprobada', 'rechazada', 'cancelada'].includes(e.id) && ['submitted', 'requires_financial_processing', 'in_review'].includes(r.status);
+      return React.createElement('button', {
+        key: e.id,
+        disabled: !transitionAllowed || !app.admin.has('program_requests.write'),
+        title: e.id === 'depositada' ? 'La confirmación del depósito se realiza por separado' : e.id === 'pendiente' ? 'El estado pendiente no se restablece manualmente' : '',
+        onClick: async () => {
+          let reason = '';
+          if (['rechazada', 'cancelada'].includes(e.id)) {
+            reason = String(window.prompt(e.id === 'rechazada' ? 'Motivo del rechazo' : 'Motivo de la cancelación') || '').trim();
+            if (reason.length < 3) {
+              app.toast && app.toast('Escribe un motivo de al menos 3 caracteres');
+              return;
+            }
+          }
+          if (e.id === 'aprobada' && !window.confirm('¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y se intentará la entrega a Google.')) return;
+          try {
+            await store.setEstado(r.id, e.id, reason);
+            app.toast && app.toast('Estado actualizado');
+          } catch (_) {
+            app.toast && app.toast(e.id === 'depositada' ? 'El depósito se confirma en el sistema financiero' : 'No se pudo actualizar');
+          }
+        },
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          height: 34,
+          padding: '0 12px',
+          borderRadius: 999,
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 12.5,
+          fontWeight: 700,
+          background: r.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
+          color: r.estado === e.id ? '#fff' : 'var(--ink-2)',
+          boxShadow: r.estado === e.id ? 'var(--glow-guinda)' : 'var(--neo-inset)'
         }
-      },
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        height: 34,
-        padding: '0 12px',
-        borderRadius: 999,
-        border: 'none',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: r.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
-        color: r.estado === e.id ? '#fff' : 'var(--ink-2)',
-        boxShadow: r.estado === e.id ? 'var(--glow-guinda)' : 'var(--neo-inset)'
-      }
-    }, React.createElement(I, {
-      name: e.icon,
-      size: 14,
-      stroke: 2.2
-    }), e.label)))),
+      }, React.createElement(I, {
+        name: e.icon,
+        size: 14,
+        stroke: 2.2
+      }), e.label);
+    }))),
     // Observaciones y documentación
     React.createElement('div', {
       style: {

@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-29 — H-ADMIN-FINANCIAL-REQUEST-DECISIONS-001
+
+- Admin Finanzas ahora separa los documentos enviados (`request_documents`) del expediente actual del afiliado; una solicitud antigua sin vínculos declara que no puede reconstruirse, en lugar de presentar archivos actuales como evidencia histórica.
+- Comentario, revisión, rechazo y cancelación se escriben en la bitácora inmutable `program_request_admin_events`; la nota del solicitante permanece intacta. La aprobación conserva Edge/Google y registra su evento dentro de la transacción contractual existente.
+- Desktop y móvil comparten los writers autorizados, validan motivos/transiciones, verifican el readback y muestran la bitácora. Cancelar sólo opera antes de aprobación.
+
+```text
+H-ADMIN-FINANCIAL-REQUEST-DECISIONS-001 RESULT
+Status: PASS
+Files changed: Admin Finanzas desktop/móvil; repositories/Edge; migración/recovery/harness; bundle/cache; pruebas; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — program_requests conserva solicitud/estado; eventos Admin y documentos históricos/vigentes tienen fronteras explícitas
+Invariant verdict: PASS — INV-063–068, INV-097, INV-109, INV-120, INV-122–124 preservadas
+Build: PASS — bundle reproducible desde 92 fuentes; sintaxis válida
+Tests: PASS — 60/60 estáticas; dry-run/recovery/matriz autenticada; Chrome real read-only en 430/1024/1280/1440
+Security: PASS — RLS forzada, cero grants directos browser, permisos backend, actor derivado, secretos frontend 0
+Legacy impact: NO TEST WRITE — Edge v26 activo; Google 0 lecturas/escrituras de QA y Apps Script 0 cambios
+Unexpected files changed: ninguno fuera del alcance declarado
+Known limitations: solicitudes antiguas sin request_documents no pueden demostrar retroactivamente qué archivos se enviaron
+Evidence: docs/qa/H-ADMIN-FINANCIAL-REQUEST-DECISIONS-001-EVIDENCE.md y docs/qa/evidence/admin-financial-requests-workbench-20260826/
+```
+
 ## 2026-08-29 — H-LOAN-DOCUMENT-FLOW-RECOVERY-001
 
 - Se corrigió la causa de `InvalidJWT`: `Ver` ya no reutiliza una URL firmada expirada; revalida el objeto privado y firma por 300 segundos en cada clic. Un fallo queda dentro de SutiApp con recuperación, no en el JSON de Storage.

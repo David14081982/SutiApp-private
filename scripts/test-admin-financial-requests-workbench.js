@@ -20,6 +20,9 @@ const documentMigration=read('supabase/migrations/20260825000100_complete_docume
 const readModelMigration=read('supabase/migrations/20260826000200_admin_financial_requests_read_model.sql');
 const readModelRecovery=read('supabase/recovery/20260826000200_admin_financial_requests_read_model_recovery.sql');
 const readModelApply=read('scripts/apply-admin-financial-requests-read-model.py');
+const adminEventsMigration=read('supabase/migrations/20260829000200_financial_request_admin_events.sql');
+const adminEventsRecovery=read('supabase/recovery/20260829000200_financial_request_admin_events_recovery.sql');
+const financialEdge=read('supabase/functions/financial-legacy/index.ts');
 
 new vm.Script(screen);
 new vm.Script(repository);
@@ -27,7 +30,7 @@ new vm.Script(financeStore);
 
 [
   'data-admin-financial-workbench','data-financial-queue-toolbar','data-financial-queue',
-  'data-financial-request-detail','data-financial-timeline','data-financial-documents',
+  'data-financial-request-detail','data-financial-timeline','data-financial-documents','data-financial-current-documents',
   'data-financial-terms','data-financial-safe-action-bar','Guardar y siguiente',
   'Buscar solicitudes financieras','Filtrar por estado financiero','Filtrar por programa financiero',
   'Filtrar por etapa financiera','Filtrar por antigüedad financiera','Filtrar por fecha financiera',
@@ -42,6 +45,12 @@ assert.match(screen,/event\.key === 'Enter'/);
 assert.match(screen,/Guardando…/);
 assert.match(screen,/Actualizado y verificado/);
 assert.match(screen,/Aprobar y enviar a gestión/);
+assert.match(screen,/Cancelar solicitud/);
+assert.match(screen,/Documentos enviados con esta solicitud/);
+assert.match(screen,/Expediente actual del afiliado/);
+assert.match(screen,/no demuestra qué documentos acompañaron esta solicitud/);
+assert.match(screen,/No es posible reconstruir qué archivos fueron enviados/);
+assert.match(screen,/Nota del solicitante/);
 assert.match(screen,/Se verificó el estado persistido/);
 assert.match(screen,/@media\(max-width:1279px\)/);
 assert.match(screen,/@media\(min-width:1280px\)/);
@@ -53,6 +62,8 @@ assert.match(desktopSource,/ProgramRequestRepository\.financialDetail\(selectedI
 assert.match(desktopSource,/DocumentWorkflowRepository\.reviewPreview/);
 assert.match(desktopSource,/FinancialLegacyRepository\.approveRequest/);
 assert.match(desktopSource,/FinancialLegacyRepository\.handoffRequest/);
+assert.match(desktopSource,/ProgramRequestRepository\.recordAdminAction/);
+assert.doesNotMatch(desktopSource,/ProgramRequestRepository\.update\(/);
 assert.match(desktopSource,/window\.confirm/);
 assert.match(desktopSource,/app\.admin\.has\('program_requests\.write'\)/);
 assert.doesNotMatch(desktopSource,/resolveEligibility|resolveAvailableFunds|resolveSimulation|requestQuote|loanSessionOpen|listCriteriaCatalog/);
@@ -66,7 +77,11 @@ assert.match(screen,/useStore\(!desktop\)/);
 assert.match(screen,/function CotizacionesAdmin/);
 assert.match(screen,/window\.FINANZAS\.ESTADOS\.map/);
 assert.match(financeStore,/ProgramRequestRepository\.listFinancialMobile\(\)/);
-assert.match(financeStore,/FinancialLegacyRepository\.approveRequest\(row\.id\)/);
+assert.match(financeStore,/FinancialLegacyRepository\.approveRequest\(row\.id/);
+assert.match(financeStore,/ProgramRequestRepository\.recordAdminAction\(row\.id,action/);
+assert.match(financeStore,/ProgramRequestRepository\.recordAdminAction\(row\.id,'COMMENT'/);
+assert.match(financeStore,/loadDetail:async\(id\).*financialDetail\(id\)/s);
+assert.doesNotMatch(financeStore,/ProgramRequestRepository\.update\(/);
 assert.doesNotMatch(financeStore,/mapStatus=\{[^}]*aprobada:'approved'/);
 
 assert.match(repository,/async function listFinancialQueue\(\)/);
@@ -77,9 +92,12 @@ const queueMethod=repository.slice(repository.indexOf('async function listFinanc
 assert.doesNotMatch(queueMethod,/financial_submission_snapshot|financial_approval_snapshot|financial_profile_snapshot/);
 assert.match(repository,/async function financialDetail\(id\)/);
 assert.match(repository,/from\('request_documents'\)/);
+assert.match(repository,/from\('affiliate_documents'\)/);
 assert.match(repository,/from\('program_terms_versions'\)/);
-assert.match(repository,/Promise\.all\(\[documents,terms\]\)/);
-assert.match(repository,/listFinancialMobile,listFinancialQueue,detail,financialDetail/);
+assert.match(repository,/rpc\('get_program_request_admin_events'/);
+assert.match(repository,/rpc\('record_program_request_admin_action'/);
+assert.match(repository,/Promise\.all\(\[documents,terms,currentDocuments,adminEvents\]\)/);
+assert.match(repository,/listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction/);
 
 assert.match(requestMigration,/program_requests_status_check check \(status in \('submitted','in_review','approved','rejected','cancelled','requires_financial_processing'\)\)/);
 assert.match(requestMigration,/public\.has_admin_permission\('program_requests\.write'\)/);
@@ -91,8 +109,27 @@ assert.match(approvalMigration,/financial_request_export_audit/);
 assert.match(snapshotMigration,/FINANCIAL_SUBMISSION_SNAPSHOT_IMMUTABLE/);
 assert.match(snapshotMigration,/financial_submission_snapshot/);
 assert.match(documentMigration,/create policy request_documents_read/);
-assert.match(financialRepository,/approveRequest\(requestId\).*action: 'approve'/s);
+assert.match(financialRepository,/approveRequest\(requestId, comment\).*action: 'approve'.*comment:/s);
 assert.match(financialRepository,/handoffRequest\(requestId\).*action: 'handoff'/s);
+assert.match(financialEdge,/approve: new Set\(\["action", "request_id", "comment"\]\)/);
+assert.match(financialEdge,/p_comment: typeof body\.comment === "string" \? body\.comment : ""/);
+
+assert.match(adminEventsMigration,/create table public\.program_request_admin_events/);
+assert.match(adminEventsMigration,/action in \('COMMENT','MARK_IN_REVIEW','REJECT','CANCEL','APPROVE'\)/);
+assert.match(adminEventsMigration,/create function public\.record_program_request_admin_action/);
+assert.match(adminEventsMigration,/create function public\.get_program_request_admin_events/);
+assert.match(adminEventsMigration,/has_admin_permission\('program_requests\.write'\)/);
+assert.match(adminEventsMigration,/has_admin_permission\('program_requests\.read'\)/);
+assert.match(adminEventsMigration,/alter table public\.program_request_admin_events force row level security/);
+assert.match(adminEventsMigration,/revoke all on public\.program_request_admin_events from public,anon,authenticated/);
+assert.match(adminEventsMigration,/p_client_action_id uuid/);
+assert.match(adminEventsMigration,/v_action<>'COMMENT'.*APPROVED_FINANCIAL_REQUEST_STATUS_IMMUTABLE/s);
+assert.match(adminEventsMigration,/update public\.program_requests set status=v_to_status,updated_at=now\(\)/);
+assert.doesNotMatch(adminEventsMigration,/update public\.program_requests set[^;]*notes=/s);
+assert.match(adminEventsMigration,/approve_financial_program_request\(p_request_id,p_snapshot,p_approved_by\)/);
+assert.match(adminEventsRecovery,/RECOVERY_BLOCKED_PROGRAM_REQUEST_ADMIN_HISTORY_EXISTS/);
+assert.match(adminEventsRecovery,/drop function public\.approve_financial_program_request\(uuid,jsonb,uuid,text\)/);
+assert.match(adminEventsRecovery,/drop table public\.program_request_admin_events/);
 
 ['list_admin_financial_request_queue','get_admin_financial_request_detail','list_admin_financial_requests_mobile'].forEach((name)=>{
   assert.match(readModelMigration,new RegExp('create function public\\.'+name.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')));
@@ -116,7 +153,7 @@ assert.match(readModelApply,/PROTECTED_DATA_CHANGED/);
 
 assert.ok(bundle.includes('data-admin-financial-workbench'),'bundle missing financial workbench');
 assert.ok(bundle.includes('listFinancialQueue'),'bundle missing financial queue projection');
-assert.ok(html.includes('app/bundle.js?v=167'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v111")&&serviceWorker.includes('app/bundle.js?v=167'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=168'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v112")&&serviceWorker.includes('app/bundle.js?v=168'),'service worker cache cutover missing');
 
 console.log('Admin financial requests workbench static contract PASS');

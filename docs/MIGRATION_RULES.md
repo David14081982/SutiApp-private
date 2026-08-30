@@ -68,3 +68,11 @@ Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega `replaces_document_
 Forward y recovery compilaron en una transacción con `ROLLBACK`; la aplicación preservó 947 afiliados, 3,425 documentos, 0 adjuntos de solicitud, 13,048 assets, 13,051 objetos privados y 26 auditorías. La prueba real reversible cargó, verificó, reemplazó, volvió a firmar y eliminó exclusivamente sus artefactos QA, restaurando los conteos exactos; además confirmó anónimo denegado y cruce entre afiliados en cero filas.
 
 Recovery: `supabase/recovery/20260829000100_loan_document_flow_recovery_recovery.sql` restaura función e índice anteriores sólo cuando `replaces_document_id` no tiene historia. Si existe al menos un reemplazo, aborta con `RECOVERY_BLOCKED_REPLACEMENT_HISTORY_EXISTS`; no elimina ni aplana versiones.
+
+## 20260829000200 — bitácora administrativa de solicitudes financieras
+
+Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega exclusivamente `program_request_admin_events`, dos RPC browser con permisos explícitos y una sobrecarga service-only del RPC de aprobación existente. No copia solicitudes, no modifica notas históricas, no reconstruye adjuntos y no cambia reglas financieras. La tabla tiene RLS habilitada/forzada, cero grants directos browser, `client_action_id` único y una sola aprobación auditable por solicitud.
+
+Forward y recovery compilaron dentro de transacciones con `ROLLBACK`; la aplicación conservó los conteos protegidos de `program_requests`, solicitudes financieras, `request_documents` y auditoría de exportación. La matriz autenticada ejecutó comentario/retry, revisión/rechazo y cancelación dentro de otra transacción, comprobó idempotencia, transiciones válidas, notas intactas y `persistent_changes=0`. Anónimo, lectura e inserción directa quedaron denegados.
+
+Recovery: `supabase/recovery/20260829000200_financial_request_admin_events_recovery.sql` retira sólo la infraestructura nueva mientras la tabla esté vacía. Si existe cualquier evento aborta con `RECOVERY_BLOCKED_PROGRAM_REQUEST_ADMIN_HISTORY_EXISTS`; nunca elimina historia administrativa para facilitar un rollback.

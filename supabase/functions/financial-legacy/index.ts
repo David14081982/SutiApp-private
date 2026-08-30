@@ -18,7 +18,7 @@ const ACTION_KEYS: Record<string, Set<string>> = {
   catalog: new Set(["action"]),
   quote: new Set(["action", "program_id", "amount", "term"]),
   resolveSimulation: new Set(["action", "program_id", "amount", "term"]),
-  approve: new Set(["action", "request_id"]),
+  approve: new Set(["action", "request_id", "comment"]),
   handoff: new Set(["action", "request_id"]),
 };
 
@@ -62,7 +62,8 @@ function validPayload(body: Record<string, unknown>) {
       typeof body.idempotency_key === "string" && UUID_PATTERN.test(body.idempotency_key);
   }
   if (action === "handoff" || action === "approve") {
-    return typeof body.request_id === "string" &&
+    return typeof body.request_id === "string" && (body.comment === undefined ||
+      typeof body.comment === "string" && body.comment.length <= 2000) &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.request_id);
   }
   return true;
@@ -619,7 +620,10 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     financialResult: result, approved_by: approvedBy, approved_at: new Date().toISOString(),
     google_export: { contract_version: EXPORT_CONTRACT_VERSION, row: googleRow, payload_sha256: payloadHash },
   };
-  const { data: updated, error: updateError } = await privileged.rpc("approve_financial_program_request", { p_request_id: request.id, p_snapshot: snapshot, p_approved_by: approvedBy });
+  const { data: updated, error: updateError } = await privileged.rpc("approve_financial_program_request", {
+    p_request_id: request.id, p_snapshot: snapshot, p_approved_by: approvedBy,
+    p_comment: typeof body.comment === "string" ? body.comment : "",
+  });
   if (updateError || !updated) return { status: 500, body: { error: "APPROVAL_SNAPSHOT_WRITE_FAILED" } };
   return { status: 200, body: { data: { request_id: request.id, status: updated.status, processing_status: updated.financial_processing_status, idempotent: false } } };
 }

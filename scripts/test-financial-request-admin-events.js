@@ -1,0 +1,73 @@
+'use strict';
+
+const assert=require('assert').strict;
+const fs=require('fs');
+const path=require('path');
+const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const migration=read('supabase/migrations/20260829000200_financial_request_admin_events.sql');
+const recovery=read('supabase/recovery/20260829000200_financial_request_admin_events_recovery.sql');
+const repository=read('app/program-request-repository.js');
+const screen=read('app/screens-admin-finanzas.jsx');
+const financeStore=read('app/finance-store.jsx');
+const edge=read('supabase/functions/financial-legacy/index.ts');
+const applyScript=read('scripts/apply-financial-request-admin-events.py');
+
+new vm.Script(repository);
+new vm.Script(screen);
+new vm.Script(financeStore);
+
+assert.match(migration,/begin;[\s\S]*commit;/);
+assert.match(migration,/request_id uuid not null references public\.program_requests\(id\) on delete restrict/);
+assert.match(migration,/actor_auth_user_id uuid not null references auth\.users\(id\) on delete restrict/);
+assert.match(migration,/client_action_id uuid not null/);
+assert.match(migration,/create unique index program_request_admin_events_client_action_unique/);
+assert.match(migration,/create unique index program_request_admin_events_single_approval/);
+assert.match(migration,/enable row level security/);
+assert.match(migration,/force row level security/);
+assert.match(migration,/revoke all on public\.program_request_admin_events from public,anon,authenticated/);
+assert.doesNotMatch(migration,/grant (?:insert|update|delete|all) on public\.program_request_admin_events to authenticated/i);
+assert.match(migration,/if auth\.uid\(\) is null or not public\.has_admin_permission\('program_requests\.write'\)/);
+assert.match(migration,/if not public\.has_admin_permission\('program_requests\.read'\)/);
+assert.match(migration,/v_action in \('COMMENT','REJECT','CANCEL'\) and v_comment is null/);
+assert.match(migration,/v_request\.status not in \('submitted','requires_financial_processing','in_review'\)/);
+assert.match(migration,/return to_jsonb\(v_event\)-'actor_auth_user_id'-'client_action_id'/);
+assert.match(migration,/coalesce\(auth\.role\(\),''\)<>'service_role'/);
+assert.match(migration,/v_row:=public\.approve_financial_program_request\(p_request_id,p_snapshot,p_approved_by\)/);
+assert.match(migration,/on conflict\(request_id\) where action='APPROVE' do nothing/);
+assert.doesNotMatch(migration,/service_role.*frontend|SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY/);
+
+assert.match(recovery,/if exists\(select 1 from public\.program_request_admin_events\)/);
+assert.match(recovery,/RECOVERY_BLOCKED_PROGRAM_REQUEST_ADMIN_HISTORY_EXISTS/);
+assert.match(recovery,/drop function public\.record_program_request_admin_action/);
+assert.match(recovery,/drop function public\.get_program_request_admin_events/);
+assert.match(recovery,/drop table public\.program_request_admin_events/);
+assert.match(applyScript,/--dry-run/);
+assert.match(applyScript,/--recovery-dry-run/);
+assert.match(applyScript,/--matrix-dry-run/);
+assert.match(applyScript,/--apply/);
+assert.match(applyScript,/EXPLICIT_MODE_REQUIRED/);
+assert.match(applyScript,/PROTECTED_DATA_CHANGED/);
+assert.match(applyScript,/IDEMPOTENCY_FAILED/);
+assert.match(applyScript,/REQUEST_AUTHORITY_CHANGED/);
+
+const desktop=screen.slice(screen.indexOf('function DesktopFinancialWorkbench'),screen.indexOf('function FinanzasModule'));
+assert.match(desktop,/MARK_IN_REVIEW/);
+assert.match(desktop,/REJECT/);
+assert.match(desktop,/CANCEL/);
+assert.match(desktop,/COMMENT/);
+assert.match(desktop,/admin_events\.some\(\(event\) => event\.id === persistedEvent\.id\)/);
+assert.match(desktop,/actionAttempts\.current/);
+assert.match(desktop,/current_affiliate_documents/);
+assert.match(desktop,/request_documents/);
+assert.doesNotMatch(desktop,/\[detail\.notes, actionNote/);
+assert.doesNotMatch(desktop,/ProgramRequestRepository\.update\(/);
+assert.match(financeStore,/recordAdminAction\(row\.id,'COMMENT'/);
+assert.match(financeStore,/recordAdminAction\(row\.id,action/);
+assert.doesNotMatch(financeStore,/ProgramRequestRepository\.update\(/);
+assert.match(repository,/current_documents_available/);
+assert.match(repository,/admin_events_available/);
+assert.match(edge,/p_comment: typeof body\.comment === "string" \? body\.comment : ""/);
+
+console.log('Financial request admin events contract PASS');

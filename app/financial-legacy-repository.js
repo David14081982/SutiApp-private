@@ -253,7 +253,7 @@
   async function handoffRequest(requestId) {
     return invoke({ action: 'handoff', request_id: String(requestId) });
   }
-  async function approveRequest(requestId) { return invoke({ action: 'approve', request_id: String(requestId) }); }
+  async function approveRequest(requestId, comment) { return invoke({ action: 'approve', request_id: String(requestId), comment: String(comment || '') }); }
   window.FinancialLegacyRepository = Object.freeze({
     invoke, handoffRequest, approveRequest,
     resolveEligibility: () => invoke({ action: 'resolveEligibility' }),

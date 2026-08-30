@@ -1832,3 +1832,24 @@ Unexpected files changed: 0
 Known limitations: reclasificación histórica de VERIFIED requiere decisión del propietario y otra H
 Evidence: docs/qa/H-LOAN-DOCUMENT-CONTEXT-ISOLATION-001-EVIDENCE.md
 ```
+## 2026-08-30 — H-REQUEST-SUBMISSION-E2E-REMEDIATION-001
+
+- Se demostró la causa del 409: el trigger de snapshot documental exigía `auth.uid()` al escritor financiero service-only. La migración `20260830000300` permite exclusivamente `service_role` o usuario autenticado y mantiene anónimo denegado; no modificó filas.
+- Mi Historial dejó de depender del `SELECT` directo incompleto y usa `list_self_program_request_history()`, ligado al afiliado efectivo sin selector cliente ni exposición de identidad, firma, términos, snapshots o idempotencia. `Seguir mi solicitud` invalida la proyección en memoria y relee Supabase.
+- `financial-legacy` v27 devuelve contrato explícito y correlación; los 409 conocidos son accionables y los fallos de servidor ya no culpan al usuario ni exponen detalles PostgreSQL. La pantalla compartida, folio, monto, timeline y política de confeti permanecen intactos.
+- E2E real completo pasó en 390×844, 430×932/reduced y 1280×900 desktop; tres fixtures se eliminaron por alcance exacto. Seguridad normal/cross-user/anon/admin/impersonación, 409 reversible, build y suite estática 63/63 pasaron. Google/App Script: 0 lecturas, 0 escrituras, 0 cambios.
+
+```text
+H-REQUEST-SUBMISSION-E2E-REMEDIATION-001 RESULT
+Status: PASS
+Files changed: SQL/recovery; Edge; request/history wiring; error copy; bundle/cache; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — program_requests y request_documents preservados; sin fallback ni caché autoritativa
+Invariant verdict: PASS — cálculos/146 reglas/35 fondos/3 programas, snapshot documental, folio real y UI aprobada preservados
+Build: PASS — 92 fuentes; bundle SHA-256 522019A0E7F6C8ED6EFBB54441061BD6A4DC070AF4B9BDB32F9F9DE781D9194C
+Tests: PASS — 63/63 static; migration/recovery; live security/error; E2E 390×844, 430×932 reduced y desktop 1280×900
+Security: PASS — service-role restringido; anonymous/cross-user denied; proyección self mínima; correlación sanitizada
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: append Google posterior a aprobación sigue separado y requiere acción autorizada del propietario
+Evidence: docs/qa/H-REQUEST-SUBMISSION-E2E-REMEDIATION-001-EVIDENCE.md
+```

@@ -783,8 +783,17 @@
           const missing=refreshed?resolveLoanDocuments(refreshed.requirements,refreshed.documents).missing:[];
           setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
+        } else if (code === 'PROGRAM_NOT_REQUESTABLE') {
+          setSubmitError('Este programa no está disponible para nuevas solicitudes en este momento.');
+        } else if (code === 'SIGNATURE_AND_TERMS_REQUIRED') {
+          setSubmitError('Confirma tu firma y la aceptación de los términos para continuar.');
+        } else if (code === 'TERMS_VERSION_REQUIRED') {
+          setSubmitError('Los términos vigentes cambiaron. Revísalos nuevamente antes de confirmar.');
+        } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID') {
+          setSubmitError('Tu sesión de afiliado cambió. Vuelve al inicio e ingresa nuevamente a la solicitud.');
         } else {
-          setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
+          const reference=error&&error.correlationId?' Referencia: '+String(error.correlationId).slice(0,8).toUpperCase()+'.':'';
+          setSubmitError('No pudimos completar el envío por una falla temporal del servicio. Intenta nuevamente.'+reference);
         }
       } finally { setSubmitting(false); }
     };

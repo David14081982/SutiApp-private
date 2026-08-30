@@ -55,6 +55,7 @@
 | ADR-076 | Las decisiones administrativas de solicitudes financieras usan una bitácora inmutable separada; `program_requests` conserva estado/solicitud, `notes` conserva la nota del solicitante y el expediente actual nunca se presenta como evidencia histórica enviada. | Aceptada / ACTIVE |
 | ADR-077 | Autoservicio documental y Administración usan contratos separados; cada preview privado se autoriza y firma individualmente con auditoría. | Aceptada / ACTIVE |
 | ADR-078 | Catálogo, requisitos, herencia, snapshot y UI documental convergen en una plataforma central; `SERVICE` permanece fail-closed hasta existir entidad productiva. | Aceptada / ACTIVE |
+| ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
 
@@ -620,3 +621,12 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **UI:** `UnifiedDocumentPhase` es el único componente compartido para préstamo, membresía, programas y productos compatibles. El HTML entregado por el propietario es referencia visual/funcional, no fuente de datos; se excluyen su demo local, `DATA`, `localStorage` y base64 persistente.
 - **Legacy:** no cambia Google, Apps Script, reglas financieras, tasas, fondos, cálculos, solicitudes históricas ni semántica `VERIFIED`. El workbench Admin de revisión permanece separado de la fase autoservicio.
 - **Aprobación:** `H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001` e instrucción explícita “hazlo de forma quirúrgica; incluye tomar foto o adjuntar archivo”, propietario, 2026-08-30.
+
+## ADR-079 — Confirmación transaccional compatible y Historial self mínimo
+
+- **Incidente:** `capture_document_requirements_snapshot` llamó `assert_document_requirement_scope`, que rechazaba `auth.uid() is null`. El escritor legítimo `create_validated_financial_program_request` es exclusivamente `service_role`, por lo que toda confirmación alcanzaba el trigger y terminaba `AUTH_REQUIRED`/409 antes de insertar.
+- **Decisión quirúrgica:** `assert_document_requirement_scope` acepta únicamente usuario autenticado o `auth.role()='service_role'`; anónimo continúa denegado. No cambian requisitos, documentos, reglas financieras, cálculos, snapshots, estados ni writers.
+- **Historial:** `list_self_program_request_history()` deriva `get_effective_affiliate_id()` sin aceptar selector cliente y proyecta sólo campos necesarios. No concede `SELECT` amplio ni expone afiliado, control, actor, firma, términos, snapshots o idempotencia.
+- **UX y errores:** la confirmación conserva la pantalla compartida aprobada, folio real y política de movimiento. `Seguir mi solicitud` invalida sólo la proyección en memoria y abre Historial con lectura fresca. Edge devuelve códigos conocidos o fallo temporal con `correlation_id`; logs internos contienen únicamente etapa, código allowlisted y SQLSTATE sanitizado.
+- **Legacy y prueba:** criterios siguen en Supabase (146 reglas/35 fondos/3 programas); Google y Apps Script tuvieron 0 lecturas/escrituras. Las fixtures E2E completas se crearon por la UI real y se eliminaron por identidad exacta; solicitudes reales e historial permanecieron intactos.
+- **Aprobación:** `H-REQUEST-SUBMISSION-E2E-REMEDIATION-001` e instrucción explícita “hazlo de forma quirúrgica”, propietario, 2026-08-30.

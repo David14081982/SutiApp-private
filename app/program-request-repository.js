@@ -5,7 +5,6 @@
   const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
-  const historyFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const mobileFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
@@ -14,7 +13,8 @@
     const quote=row.request_type==='quote',product=row.product||row.program_item||(row.membership&&{name:row.membership.company_raw,price:row.membership.amount})||null,affiliate=row.affiliate||null;
     const productName=product&&product.name||row.program_id;
     const companyName=row.company&&row.company.display_name||'';
-    const amount=product&&(product.price==null?product.price_cash:product.price);
+    const productAmount=product&&(product.price==null?product.price_cash:product.price);
+    const amount=row.program_id==='prestamo'&&row.requested_amount!=null?row.requested_amount:productAmount;
     return Object.freeze(Object.assign({},row,{
       estado:(quote?quoteState:benefitState)[row.status]||row.status,
       productoId:row.product_id||row.program_item_id,
@@ -53,7 +53,7 @@
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listHistory(){
-    const r=await db().from('program_requests').select(historyFields).order('created_at',{ascending:false});
+    const r=await db().rpc('list_self_program_request_history');
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listMobile(){

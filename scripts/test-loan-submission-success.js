@@ -37,7 +37,8 @@ for(const marker of [
 
 assert.match(loan,/setSubmission\(\{folio:request\.folio\|\|request\.request_id,amount:result\.amount\}\)/);
 assert.match(loan,/Success, \{ app, folio:submission\.folio, amount:submission\.amount \}/);
-assert.match(success,/app&&app\.setTab&&app\.setTab\('historial'\)/);
+assert.match(success,/if\(app&&app\.setTab\)app\.setTab\('historial'\)/);
+assert.match(success,/operationsStore&&window\.operationsStore\.invalidate/);
 assert.match(success,/app&&app\.setTab&&app\.setTab\('home'\)/);
 assert.match(success,/window\.MOTION\.reduced\(\)\|\|window\.MOTION\.frozen\(\)/);
 assert.match(success,/Array\.from\(\{length:42\}/);

@@ -28,6 +28,40 @@ function reply(status: number, body: Record<string, unknown>, origin?: string | 
   return new Response(JSON.stringify(body), { status, headers });
 }
 
+const FINANCIAL_WRITER_CODES = [
+  "CONDITIONS_CHANGED", "REQUIRED_DOCUMENTS_MISSING", "PROGRAM_NOT_REQUESTABLE",
+  "IDEMPOTENCY_CONTRACT_MISMATCH", "IDEMPOTENCY_KEY_REQUIRED",
+  "SIGNATURE_AND_TERMS_REQUIRED", "FINANCIAL_REQUEST_TERMS_INVALID",
+  "TERMS_VERSION_REQUIRED", "FINANCIAL_SUBMISSION_CONTRACT_MISMATCH",
+  "AFFILIATE_CONTEXT_DENIED", "IMPERSONATION_CONTEXT_INVALID", "AUTH_ACTOR_REQUIRED",
+  "SERVICE_ROLE_REQUIRED", "AUTH_REQUIRED", "DOCUMENT_SCOPE_NOT_AVAILABLE",
+] as const;
+
+function classifyFinancialWriterError(error: unknown) {
+  const candidate = error && typeof error === "object" ? error as Record<string, unknown> : {};
+  const source = [candidate.message, candidate.details, candidate.hint]
+    .filter((value) => typeof value === "string").join(" ").toUpperCase();
+  const internalCode = FINANCIAL_WRITER_CODES.find((code) => source.includes(code)) || "UNCLASSIFIED_WRITER_FAILURE";
+  const rawPostgresCode = typeof candidate.code === "string" ? candidate.code.toUpperCase() : "";
+  const postgresCode = /^[0-9A-Z]{5}$/.test(rawPostgresCode) ? rawPostgresCode : "UNKNOWN";
+  const publicCodes = new Set([
+    "CONDITIONS_CHANGED", "REQUIRED_DOCUMENTS_MISSING", "PROGRAM_NOT_REQUESTABLE",
+    "IDEMPOTENCY_CONTRACT_MISMATCH", "SIGNATURE_AND_TERMS_REQUIRED",
+    "FINANCIAL_REQUEST_TERMS_INVALID", "TERMS_VERSION_REQUIRED",
+    "FINANCIAL_SUBMISSION_CONTRACT_MISMATCH", "AFFILIATE_CONTEXT_DENIED",
+    "IMPERSONATION_CONTEXT_INVALID",
+  ]);
+  return { internalCode, postgresCode,
+    publicCode: publicCodes.has(internalCode) ? internalCode : "FINANCIAL_REQUEST_CREATE_FAILED" };
+}
+
+function logFinancialSubmissionFailure(correlationId: string, stage: string, error: unknown) {
+  const failure = classifyFinancialWriterError(error);
+  console.error(JSON.stringify({ event: "financial_request_submission_failed", correlation_id: correlationId,
+    stage, internal_code: failure.internalCode, postgres_code: failure.postgresCode }));
+  return failure;
+}
+
 function allowedOrigin(req: Request) {
   const origin = req.headers.get("origin");
   if (!origin) return null;
@@ -445,46 +479,53 @@ async function quoteWithPayroll(userClient: SupabaseClientLike, quote: Record<st
 
 async function confirmPersonalizedLoanSession(
   body: Record<string, unknown>, userClient: SupabaseClientLike, privileged: SupabaseClientLike,
-  context: LoanSessionContext,
+  context: LoanSessionContext, correlationId: string,
 ) {
   const { data: existing, error: existingError } = await privileged.from("program_requests")
-    .select("id,folio,actor_real_auth_user_id,affiliate_id,impersonation_session_id,program_id,program_item_id,requested_amount,requested_term,financial_submission_snapshot")
+    .select("id,folio,status,actor_real_auth_user_id,affiliate_id,impersonation_session_id,program_id,program_item_id,requested_amount,requested_term,financial_submission_snapshot")
     .eq("affiliate_id", context.affiliateId).eq("idempotency_key", String(body.idempotency_key)).maybeSingle();
-  if (existingError) return { status: 500, body: { error: "FINANCIAL_REQUEST_LOOKUP_FAILED" } };
+  if (existingError) {
+    logFinancialSubmissionFailure(correlationId, "idempotency_lookup", existingError);
+    return { status: 500, body: { error: "FINANCIAL_REQUEST_LOOKUP_FAILED", correlation_id: correlationId } };
+  }
   if (existing) {
     const sameContract = existing.actor_real_auth_user_id === context.actorId &&
       String(existing.impersonation_session_id || "") === String(context.impersonationSessionId || "") &&
       existing.program_id === "prestamo" &&
       existing.program_item_id === String(body.program_item_id) && Number(existing.requested_amount) === Number(body.amount) &&
       Number(existing.requested_term) === Number(body.term) && existing.financial_submission_snapshot?.financialResult;
-    if (!sameContract) return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH" } };
-    return { status: 200, body: { data: { request_id: existing.id, folio: existing.folio,
+    if (!sameContract) return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH", correlation_id: correlationId } };
+    return { status: 200, body: { data: { request_id: existing.id, folio: existing.folio, status: existing.status,
+      confirmed_amount: Number(existing.requested_amount), correlation_id: correlationId,
       financialResult: existing.financial_submission_snapshot.financialResult,
       googleResolutionCount: 0, idempotent: true } } };
   }
   const policy = await readTermPolicy(userClient);
   let snapshot: LoanSessionSnapshot;
   try { snapshot = await loadPersonalizedLoanSession(privileged, context, policy, String(body.snapshot_id)); }
-  catch { return { status: 409, body: { error: "CONDITIONS_CHANGED" } }; }
+  catch { return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId } }; }
   let currentRules: CriteriaRule[];
   try { currentRules = await readCriteriaRules(privileged); }
-  catch (error) { return { status: 502, body: { error: error instanceof Error ? error.message : "FINANCIAL_CRITERIA_UNAVAILABLE" } }; }
+  catch (error) {
+    logFinancialSubmissionFailure(correlationId, "criteria_read", error);
+    return { status: 502, body: { error: "FINANCIAL_CRITERIA_UNAVAILABLE", correlation_id: correlationId } };
+  }
   const matched = rulesForProfile(currentRules, context.profile).filter((rule) => rule.payment_count >= policy.customMinTerm);
   const currentSourceFingerprint = await sha256(criteriaFingerprintPayload(matched));
   if (currentSourceFingerprint !== snapshot.criteria_source_fingerprint) {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
-    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
+    return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
   }
   let result: Record<string, unknown>;
   try { result = await resolveQuote(privileged, currentRules, context.profile, body, policy); }
   catch {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
-    return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
+    return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
   }
   const selectedRule = matched.find((rule) => rule.id === String(body.program_id)) ||
     (matched.filter((rule) => rule.program_id === String(body.program_id)).length === 1
       ? matched.find((rule) => rule.program_id === String(body.program_id)) : undefined);
-  if (!selectedRule) return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
+  if (!selectedRule) return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
   const submissionSnapshot = {
     affiliate_id: context.affiliateId,
     actor_real_auth_user_id: context.actorId,
@@ -508,16 +549,16 @@ async function confirmPersonalizedLoanSession(
     p_financial_submission_snapshot: submissionSnapshot,
   });
   if (error || !request) {
-    const code = String(error?.message || "");
-    if (code.includes("CONDITIONS_CHANGED")) {
+    const failure = logFinancialSubmissionFailure(correlationId, "request_writer", error || { code: "PGRST", message: "EMPTY_RESULT" });
+    if (failure.internalCode === "CONDITIONS_CHANGED") {
       await invalidateLoanSession(privileged, snapshot.id, "PROFILE_CHANGED_DURING_CONFIRMATION");
-      return { status: 409, body: { error: "CONDITIONS_CHANGED", googleResolutionCount: 0 } };
+      return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
     }
-    return { status: 409, body: { error: code.includes("REQUIRED_DOCUMENTS") ? "REQUIRED_DOCUMENTS_MISSING" : "FINANCIAL_REQUEST_CREATE_FAILED",
-      googleResolutionCount: 0 } };
+    return { status: 409, body: { error: failure.publicCode, correlation_id: correlationId, googleResolutionCount: 0 } };
   }
   await invalidateLoanSession(privileged, snapshot.id, "REQUEST_CONFIRMED");
-  return { status: 200, body: { data: { request_id: request.id, folio: request.folio,
+  return { status: 200, body: { data: { request_id: request.id, folio: request.folio, status: request.status,
+    confirmed_amount: Number(request.requested_amount), correlation_id: correlationId,
     financialResult: result, googleResolutionCount: 0 } } };
 }
 
@@ -814,7 +855,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const outcome = await confirmPersonalizedLoanSession(body, supabase, privileged, context);
+    const outcome = await confirmPersonalizedLoanSession(body, supabase, privileged, context, crypto.randomUUID());
     return reply(outcome.status, outcome.body, origin || null);
   }
 

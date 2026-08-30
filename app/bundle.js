@@ -5430,7 +5430,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const celebrate = !(window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen()));
     const config = COPY[kind] || COPY.benefit;
     const amountLabel = typeof amount === 'number' && Number.isFinite(amount) ? window.money(amount) : null;
-    const history = () => app && app.setTab && app.setTab('historial');
+    const history = () => {
+      if (window.operationsStore && window.operationsStore.invalidate) window.operationsStore.invalidate();
+      if (app && app.setTab) app.setTab('historial');
+    };
     const home = () => app && app.setTab && app.setTab('home');
     let lead;
     if (kind === 'loan') lead = React.createElement(React.Fragment, null, 'Tu préstamo', amountLabel ? React.createElement(React.Fragment, null, ' por ', React.createElement('strong', null, amountLabel)) : null, ' ya está en revisión. Te avisaremos al avanzar.');else if (kind === 'quote') lead = React.createElement(React.Fragment, null, 'Tu solicitud de cotización', subject ? React.createElement(React.Fragment, null, ' para ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos cuando el presupuesto esté listo.');else if (kind === 'membership') lead = React.createElement(React.Fragment, null, 'Tu solicitud', subject ? React.createElement(React.Fragment, null, ' para ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos al avanzar.');else lead = React.createElement(React.Fragment, null, 'Tu solicitud', subject ? React.createElement(React.Fragment, null, ' de ', React.createElement('strong', null, subject)) : null, ' ya está en revisión. Te avisaremos al avanzar.');
@@ -7625,7 +7628,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
-  const historyFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const mobileFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
@@ -7634,7 +7636,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const quote=row.request_type==='quote',product=row.product||row.program_item||(row.membership&&{name:row.membership.company_raw,price:row.membership.amount})||null,affiliate=row.affiliate||null;
     const productName=product&&product.name||row.program_id;
     const companyName=row.company&&row.company.display_name||'';
-    const amount=product&&(product.price==null?product.price_cash:product.price);
+    const productAmount=product&&(product.price==null?product.price_cash:product.price);
+    const amount=row.program_id==='prestamo'&&row.requested_amount!=null?row.requested_amount:productAmount;
     return Object.freeze(Object.assign({},row,{
       estado:(quote?quoteState:benefitState)[row.status]||row.status,
       productoId:row.product_id||row.program_item_id,
@@ -7673,7 +7676,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listHistory(){
-    const r=await db().from('program_requests').select(historyFields).order('created_at',{ascending:false});
+    const r=await db().rpc('list_self_program_request_history');
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listMobile(){
@@ -13555,8 +13558,17 @@ Object.assign(window, {
           const missing = refreshed ? resolveLoanDocuments(refreshed.requirements, refreshed.documents).missing : [];
           setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
+        } else if (code === 'PROGRAM_NOT_REQUESTABLE') {
+          setSubmitError('Este programa no está disponible para nuevas solicitudes en este momento.');
+        } else if (code === 'SIGNATURE_AND_TERMS_REQUIRED') {
+          setSubmitError('Confirma tu firma y la aceptación de los términos para continuar.');
+        } else if (code === 'TERMS_VERSION_REQUIRED') {
+          setSubmitError('Los términos vigentes cambiaron. Revísalos nuevamente antes de confirmar.');
+        } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID') {
+          setSubmitError('Tu sesión de afiliado cambió. Vuelve al inicio e ingresa nuevamente a la solicitud.');
         } else {
-          setSubmitError('No pudimos enviar tu solicitud. Revisa la información e intenta nuevamente.');
+          const reference = error && error.correlationId ? ' Referencia: ' + String(error.correlationId).slice(0, 8).toUpperCase() + '.' : '';
+          setSubmitError('No pudimos completar el envío por una falla temporal del servicio. Intenta nuevamente.' + reference);
         }
       } finally {
         setSubmitting(false);
@@ -23631,6 +23643,27 @@ Object.assign(window, {
       steps: [step('Cotización solicitada', true, false, new Date(r.created_at).toLocaleDateString('es-MX')), step('Preparación del área responsable', quoted || rejected, !quoted && !rejected), step(quoted ? 'Cotización disponible' : rejected ? 'Cotización cerrada' : 'Respuesta', quoted || rejected, false, quoted && (r.responded_at || r.quoted_at) ? new Date(r.responded_at || r.quoted_at).toLocaleDateString('es-MX') : null)]
     });
   }
+  function loanRow(r) {
+    const state = r.status || 'requires_financial_processing',
+      approved = ['approved', 'completed'].includes(state),
+      rejected = ['rejected', 'cancelled'].includes(state),
+      term = r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : 'Revisi\u00f3n financiera';
+    return Object.freeze({
+      id: r.folio || r.id,
+      sourceId: r.id,
+      ts: new Date(r.created_at).getTime(),
+      kind: 'loan',
+      icon: 'receipt',
+      tipo: r.productoNombre || 'Suti Pr\u00e9stamo',
+      monto: r.requested_amount == null ? r.importe : Number(r.requested_amount),
+      estado: rejected ? 'rechazado' : approved ? 'aprobado' : 'revision',
+      fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
+      plazo: term,
+      subtipo: 'Pr\u00e9stamo',
+      motivo: rejected ? r.company_notes || 'La solicitud fue marcada como no aprobada.' : '',
+      steps: [step('Solicitud enviada', true, false, new Date(r.created_at).toLocaleDateString('es-MX')), step('Revisi\u00f3n de documentos', approved || rejected, !approved && !rejected), step(approved ? 'Autorizaci\u00f3n' : rejected ? 'Solicitud no aprobada' : 'Autorizaci\u00f3n', approved || rejected, false)]
+    });
+  }
   async function load(force) {
     if (promise && !force) return promise;
     phase = 'loading';
@@ -23638,7 +23671,7 @@ Object.assign(window, {
     promise = (async () => {
       try {
         const requests = await window.ProgramRequestRepository.listHistory();
-        rows = requests.map(r => r.request_type === 'quote' ? quoteRow(r) : requestRow(r)).sort((a, b) => b.ts - a.ts);
+        rows = requests.map(r => r.program_id === 'prestamo' ? loanRow(r) : r.request_type === 'quote' ? quoteRow(r) : requestRow(r)).sort((a, b) => b.ts - a.ts);
         phase = 'loaded';
         error = null;
       } catch (e) {
@@ -23658,6 +23691,13 @@ Object.assign(window, {
     }),
     all: () => rows.slice(),
     load,
+    invalidate: () => {
+      promise = null;
+      rows = [];
+      phase = 'idle';
+      error = null;
+      emit();
+    },
     retry: () => {
       promise = null;
       return load(true);

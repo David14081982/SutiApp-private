@@ -66,6 +66,9 @@
     const code = payload && typeof payload.error === 'string' ? payload.error : (error && error.message) || fallback;
     const failure = new Error(code);
     failure.code = code;
+    if (payload && typeof payload.correlation_id === 'string' && /^[0-9a-f-]{36}$/i.test(payload.correlation_id)) {
+      failure.correlationId = payload.correlation_id;
+    }
     throw failure;
   }
   function abortedInvocation() {

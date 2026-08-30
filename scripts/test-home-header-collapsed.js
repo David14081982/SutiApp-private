@@ -80,7 +80,7 @@ assert(adminRepository.includes("status:'DISABLED'"));
 
 assert(sw.includes("'./assets/branding/home-header-collapsed.webp'"));
 require('./verification-helpers').assertPwaVersionSync(root);
-assert(sw.includes("'./app/financial-legacy-repository.js?v=6'"));
+assert(sw.includes("'./app/financial-legacy-repository.js?v=7'"));
 assert(fs.statSync(path.join(root, 'assets/branding/home-header-collapsed.webp')).size > 0);
 
 const memory = {};

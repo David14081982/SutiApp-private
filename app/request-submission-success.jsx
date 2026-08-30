@@ -74,7 +74,7 @@
     const celebrate=!(window.MOTION&&(window.MOTION.reduced()||window.MOTION.frozen()));
     const config=COPY[kind]||COPY.benefit;
     const amountLabel=typeof amount==='number'&&Number.isFinite(amount)?window.money(amount):null;
-    const history=()=>app&&app.setTab&&app.setTab('historial');
+    const history=()=>{if(window.operationsStore&&window.operationsStore.invalidate)window.operationsStore.invalidate();if(app&&app.setTab)app.setTab('historial');};
     const home=()=>app&&app.setTab&&app.setTab('home');
     let lead;
     if(kind==='loan')lead=React.createElement(React.Fragment,null,'Tu préstamo',amountLabel?React.createElement(React.Fragment,null,' por ',React.createElement('strong',null,amountLabel)):null,' ya está en revisión. Te avisaremos al avanzar.');

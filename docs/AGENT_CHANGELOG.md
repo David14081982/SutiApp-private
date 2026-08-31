@@ -1982,3 +1982,23 @@ Unexpected files changed: 0
 Known limitations: procesamiento financiero posterior a aprobación conserva su frontera legacy protegida
 Evidence: docs/qa/H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001-EVIDENCE.md
 ```
+## 2026-08-31 — H-MEMBERSHIP-ENABLED-CUTOVER-001
+
+- Se corrigió la colisión `activo/enabled` que permitía apagar una membresía pero impedía reactivarla. El switch usa ahora un writer dedicado de una sola columna y valida el valor persistido.
+- Admin → Membresías carga su autoridad al entrar directamente; Finanzas continúa consumiendo exclusivamente las filas activas de `membership_offerings`.
+- `Bud Tv Ultra` quedó activa y visible en Finanzas. RLS real, persistencia tras refresh, Chrome desktop/móvil, UI preservada, Phase 4 completa y suite estática 70/70: `PASS`.
+
+```text
+H-MEMBERSHIP-ENABLED-CUTOVER-001 RESULT
+Status: PASS
+Files changed: repository/store de membresías; inicialización Admin; bundle/cache; tests; evidencia; Registry
+Source-of-truth verdict: PASS — public.membership_offerings.enabled permanece como autoridad única
+Invariant verdict: PASS — INV-036 e INV-045 preservadas
+Build: PASS — bundle reproducible desde 92 fuentes; SHA-256 687412036B4592E615E981D948A0A2EA555B11842B1A67FBBE5CCB408EBEBE76
+Tests: PASS — 70/70 static; live focal; Phase 4 live; Chrome desktop y 390x844
+Security: PASS — memberships.write backend; normal/anon DENIED; lectura pública limitada a enabled=true
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0 / financial calculations changed 0
+Unexpected files changed: 0
+Known limitations: 0 dentro del alcance
+Evidence: docs/qa/H-MEMBERSHIP-ENABLED-CUTOVER-001-EVIDENCE.md
+```

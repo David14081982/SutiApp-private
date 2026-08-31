@@ -10,6 +10,7 @@
   function useStore() {
     const [, force] = useState(0);
     useEffect(() => window.membershipStore.subscribe(() => force((n) => n + 1)), []);
+    useEffect(() => { if (window.membershipStore.state().phase === 'idle') window.membershipStore.load(false); }, []);
     return window.membershipStore;
   }
 

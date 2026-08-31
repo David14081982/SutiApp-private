@@ -6,7 +6,7 @@
     state:()=>({phase,error}),load,retry:()=>load(true),all:()=>items.slice(),active:()=>items.filter((m)=>m.activo),get:(id)=>items.find((m)=>m.id===id)||null,
     blank:()=>({empresa:'',concepto:'',logo:'',logo_asset_id:null,monto:0,pagos:2,activo:true,sort_order:items.length+1,_new:true}),
     save:async(m)=>{await window.MembershipRepository.save(m);await load(true);},
-    toggle:async(id)=>{const m=items.find((x)=>x.id===id);if(!m)throw new Error('MEMBERSHIP_NOT_FOUND');await window.MembershipRepository.save(Object.assign({},m,{activo:!m.activo}));await load(true);},
+    toggle:async(id)=>{const m=items.find((x)=>x.id===id);if(!m)throw new Error('MEMBERSHIP_NOT_FOUND');await window.MembershipRepository.setEnabled(m.id,!m.activo);await load(true);},
     remove:async(id)=>{await window.MembershipRepository.remove(id);await load(true);},
     uploadLogo:(file)=>window.MembershipRepository.uploadLogo(file),resetAll:()=>Promise.reject(new Error('NO_PRODUCTIVE_MEMBERSHIP_RESET')),
     subscribe:(fn)=>{listeners.add(fn);return()=>listeners.delete(fn)}

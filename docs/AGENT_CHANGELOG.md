@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-LOAN-DEPOSIT-OPTIONAL-BANK-001
+
+- Se corrigió el gate de Depósito: Banco, tarjeta y CLABE ya no controlan “Continuar”; el celular válido sí. Abrir/completar una cuenta limpia la selección previa y el resumen soporta “No registrada (opcional)”.
+- Guardar una cuenta conserva validación completa; `affiliate_bank_accounts` no cambió. Migración `20260831000300` permite snapshot bancario all-null o all-complete y Edge `financial-legacy` v30 confirma ambas rutas.
+- Suite 69/69, seguridad live y Chrome real con/sin cuenta pasaron en 390/430/768/1280; ambos requests QA llegaron a folio/Historial y se eliminaron, restaurando 6 solicitudes y 0 snapshots.
+
+```text
+H-LOAN-DEPOSIT-OPTIONAL-BANK-001 RESULT
+Status: PASS
+Files changed: LoanScreen; Edge; migration/recovery/apply; bundle/cache; tests; ADR/SOT/mapping/security/evidence; Registry
+Source-of-truth verdict: PASS — affiliate_bank_accounts y affiliates.notification_phone preservados; sin fuente nueva
+Invariant verdict: PASS — INV-134/135/137 preservadas; INV-136 precisada; INV-145 agregada
+Build: PASS — 92 fuentes; SHA-256 C40D9DB9249C612F802EDD4721611F642E185DBF0F440F4498FB6F99638145AA
+Tests: PASS — 69/69; E2E opcional y con cuenta; folios reales; Historial
+Security: PASS — self-only; cross-user/anon/private snapshot DENIED; Edge v30 JWT
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: celular continúa requerido por autoridad vigente
+Evidence: docs/qa/H-LOAN-DEPOSIT-OPTIONAL-BANK-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001
 
 - Se retiró exclusivamente la dependencia `visibleItemIds → SummaryCard`; la tarjeta superior vuelve a conservar permanentemente crédito/préstamo, Mi ahorro, Mi inversión, Ahorrar e Invertir.

@@ -7,6 +7,12 @@ AUDIT → SOURCE OF TRUTH → DEPENDENCIAS → PLAN → RIESGOS
 → BACKUP/RECOVERY → IMPLEMENTACIÓN → TEST → POST-AUDIT
 ```
 
+## Cuenta bancaria opcional en Depósito — ADR-085
+
+Estado: `APPLIED / CERTIFIED — PASS`. `20260831000300` vuelve nullable exclusivamente las cinco columnas bancarias de `loan_request_deposit_snapshots` y agrega una constraint all-null/all-complete; `notification_phone` permanece `NOT NULL`. No cambia filas, autoridades, RLS, grants, cálculos ni tablas bancarias. El mismo RPC service-only delega intacto al writer ADR-081 cuando existe cuenta y usa la rama opcional sólo con `bank_account_id=NULL`.
+
+Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`, preservando seis solicitudes y cero snapshots. El recovery restaura función/nullability anteriores sólo mientras no exista historia opcional; si existe aborta con `RECOVERY_BLOCKED_OPTIONAL_DEPOSIT_HISTORY_EXISTS`. E2E con y sin cuenta creó/eliminó únicamente sus solicitudes QA y restauró seis solicitudes/cero snapshots.
+
 ## Notificaciones reales — ADR-082
 
 Estado: `APPLIED / CERTIFIED — PASS`. `program_requests.seen_at` es nullable y no reinterpreta filas existentes; el índice parcial sólo cubre respuestas de cotización no vistas. `respond_program_request_quote` reinicia el acuse al producir una respuesta real y `mark_marketplace_quote_seen` conserva compatibilidad separada con la tabla histórica anterior al corte. La proyección self-only no reabre grants directos ni crea una tabla de notificaciones.

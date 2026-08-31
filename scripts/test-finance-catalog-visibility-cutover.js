@@ -17,5 +17,5 @@ assert(migration.includes('to authenticated')&&migration.includes('using (true)'
 assert(!migration.includes('insert into')&&!migration.includes('update public.')&&!migration.includes('delete from'),'migration contains DML');
 assert(recovery.includes('drop policy if exists finance_presentation_authenticated_read'),'recovery missing');
 assert(bundle.includes('group.items.filter(item => item.visible !== false).map(item => {')&&!bundle.includes('visibleItemIds')&&bundle.includes("itemId: 'prestamo'"),'bundle/source divergence');
-assert(html.includes('bundle.js?v=176')&&sw.includes("sutiapp-v120")&&sw.includes('bundle.js?v=176'),'cache cutover missing');
+assert(html.includes('bundle.js?v=177')&&sw.includes("sutiapp-v121")&&sw.includes('bundle.js?v=177'),'cache cutover missing');
 console.log(JSON.stringify({status:'PASS',authority:'finance_catalog_presentation',hiddenBeforeEligibility:true,emptySectionsHidden:true,copyProjected:true,orderingProjected:true,summaryIndependent:true,refreshWithoutPolling:true,parallelAuthorities:0,financialCalculationsChanged:0}));

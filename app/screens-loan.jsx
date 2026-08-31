@@ -665,12 +665,12 @@
     const update = (patch) => setValue((current) => Object.assign({}, current, patch));
     const selectAccount = (account) => {
       if (!depositEligible(account)) {
-        update({ adding: true, draft: { id: account.id, bank_name: account.bank_name || '', card_number: account.card_number || '', clabe: account.clabe || '' }, error: '' });
+        update({ selectedId: '', adding: true, draft: { id: account.id, bank_name: account.bank_name || '', card_number: account.card_number || '', clabe: account.clabe || '' }, error: '' });
         return;
       }
       update({ selectedId: account.id, adding: false, draft: null, error: '' });
     };
-    const startAdd = () => update({ adding: true, draft: { bank_name: '', card_number: '', clabe: '' }, error: '' });
+    const startAdd = () => update({ selectedId: '', adding: true, draft: { bank_name: '', card_number: '', clabe: '' }, error: '' });
     const setDraft = (key, next) => setValue((current) => Object.assign({}, current, { draft: Object.assign({}, current.draft, { [key]: next }) }));
     const draft = value.draft || { bank_name: '', card_number: '', clabe: '' };
     const draftValid = String(draft.bank_name || '').trim().length >= 2 && validCardNumber(draft.card_number) && validClabe(draft.clabe);
@@ -716,6 +716,7 @@
           React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
             React.createElement('strong', { style: { fontSize: 14 } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
             value.accounts.length > 0 && React.createElement('button', { type: 'button', onClick: () => update({ adding: false, draft: null, error: '' }), style: { border: 0, background: 'transparent', color: 'var(--ink-3)', fontWeight: 800 } }, 'Cancelar')),
+          React.createElement('div', { 'data-deposit-bank-optional': '', style: { color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 650, lineHeight: 1.4 } }, 'Estos datos son opcionales para continuar. Si deseas guardar la cuenta, completa los tres correctamente.'),
           React.createElement(DepositField, { label: 'Banco', value: draft.bank_name || '', valid: String(draft.bank_name || '').trim().length >= 2, onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
           React.createElement(DepositField, { label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: validCardNumber(draft.card_number), inputMode: 'numeric', maxLength: 19, hint: '16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
           React.createElement(DepositField, { label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: validClabe(draft.clabe), inputMode: 'numeric', maxLength: 22, hint: '18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
@@ -766,7 +767,7 @@
           React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } },
             React.createElement('div', { style: { fontSize: 12, fontWeight: 850 } }, 'Depósito'),
             React.createElement('button', { type: 'button', onClick: onCorrectDeposit, style: { border: 0, background: 'transparent', color: 'var(--guinda)', fontSize: 11.5, fontWeight: 850 } }, 'Cambiar')),
-          [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe], ['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]].map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 11.5 } },
+          (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 11.5 } },
             React.createElement('span', { style: { color: 'var(--ink-3)', fontWeight: 700 } }, row[0]), React.createElement('span', { style: { color: 'var(--ink)', fontWeight: 800, fontFamily: row[0] === 'Banco' ? undefined : 'var(--mono)', textAlign: 'right' } }, row[1]))))),
       !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize:12,fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
       React.createElement(MissingDocumentsNotice,{missing:missingDocuments,onCorrect:onCorrectDocuments}),
@@ -827,7 +828,7 @@
     const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
     const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
     const selectedDepositAccount=deposit.accounts.find((account)=>account.id===deposit.selectedId);
-    const depositReady=deposit.phase==='ready'&&depositEligible(selectedDepositAccount)&&validNotificationPhone(deposit.phone)&&!deposit.saving;
+    const depositReady=deposit.phase==='ready'&&validNotificationPhone(deposit.phone)&&!deposit.saving;
     const canContinue = step === 0 ? !!(simulation && simulation.current)
       : step === 1 ? depositReady
       : step === 2 ? documentsReady
@@ -858,7 +859,7 @@
           term: result.paymentCount,
           termsVersionId: freshDocumentState.terms.id,
           documentIds: freshDocuments.selected.map((document) => document.id),
-          bankAccountId: selectedDepositAccount.id,
+          bankAccountId: selectedDepositAccount ? selectedDepositAccount.id : null,
           notificationPhone: deposit.phone,
         });
         setSubmission({folio:request.folio||request.request_id,amount:result.amount,workflowState:request.workflow_state});

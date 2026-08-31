@@ -13107,6 +13107,7 @@ Object.assign(window, {
     const selectAccount = account => {
       if (!depositEligible(account)) {
         update({
+          selectedId: '',
           adding: true,
           draft: {
             id: account.id,
@@ -13126,6 +13127,7 @@ Object.assign(window, {
       });
     };
     const startAdd = () => update({
+      selectedId: '',
       adding: true,
       draft: {
         bank_name: '',
@@ -13337,7 +13339,15 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontWeight: 800
       }
-    }, 'Cancelar')), React.createElement(DepositField, {
+    }, 'Cancelar')), React.createElement('div', {
+      'data-deposit-bank-optional': '',
+      style: {
+        color: 'var(--ink-3)',
+        fontSize: 11.5,
+        fontWeight: 650,
+        lineHeight: 1.4
+      }
+    }, 'Estos datos son opcionales para continuar. Si deseas guardar la cuenta, completa los tres correctamente.'), React.createElement(DepositField, {
       label: 'Banco',
       value: draft.bank_name || '',
       valid: String(draft.bank_name || '').trim().length >= 2,
@@ -13600,7 +13610,7 @@ Object.assign(window, {
         fontSize: 11.5,
         fontWeight: 850
       }
-    }, 'Cambiar')), [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe], ['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]].map(row => React.createElement('div', {
+    }, 'Cambiar')), (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map(row => React.createElement('div', {
       key: row[0],
       style: {
         display: 'flex',
@@ -13806,7 +13816,7 @@ Object.assign(window, {
     const loanDocumentSelection = resolveLoanDocuments(documentState.requirements, documentState.documents);
     const documentsReady = documentState.phase === 'ready' && loanDocumentSelection.missing.length === 0;
     const selectedDepositAccount = deposit.accounts.find(account => account.id === deposit.selectedId);
-    const depositReady = deposit.phase === 'ready' && depositEligible(selectedDepositAccount) && validNotificationPhone(deposit.phone) && !deposit.saving;
+    const depositReady = deposit.phase === 'ready' && validNotificationPhone(deposit.phone) && !deposit.saving;
     const canContinue = step === 0 ? !!(simulation && simulation.current) : step === 1 ? depositReady : step === 2 ? documentsReady : !!(simulation && simulation.current && depositReady && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
     const continueFlow = async () => {
@@ -13870,7 +13880,7 @@ Object.assign(window, {
           term: result.paymentCount,
           termsVersionId: freshDocumentState.terms.id,
           documentIds: freshDocuments.selected.map(document => document.id),
-          bankAccountId: selectedDepositAccount.id,
+          bankAccountId: selectedDepositAccount ? selectedDepositAccount.id : null,
           notificationPhone: deposit.phone
         });
         setSubmission({

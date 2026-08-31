@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Cuenta bancaria opcional en Depósito — ADR-085
+
+Omitir cuenta no abre acceso bancario: el navegador envía `bank_account_id=NULL` y el writer service-only congela únicamente el celular propio confirmado. Si se proporciona un UUID, la rama ADR-081 revalida cuenta completa y pertenencia al afiliado efectivo antes del alta atómica. La tabla privada conserva RLS habilitada/forzada y cero grants browser; el helper bank-required tampoco es ejecutable directamente por `service_role`.
+
+La matriz live mantiene autoservicio efectivo, cross-user denegado por RLS/RPC, anónimo denegado y snapshot privado denegado. Edge v30 conserva JWT y allowlist; frontend, logs, auditoría y screenshots contienen cero número bancario completo en el flujo opcional.
+
 ## Visibilidad del catálogo financiero — ADR-083
 
 `finance_catalog_presentation` mantiene RLS habilitada y forzada. `authenticated` puede leer la configuración global de presentación; `anon` no tiene grant ni policy. La lectura global no contiene identidad, PII, reglas, tasas, fondos ni resultados financieros. Las escrituras continúan exclusivamente bajo la policy que exige `has_admin_permission('workflow.write')`; ocultar controles en UI no concede autoridad.

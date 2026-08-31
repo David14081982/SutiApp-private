@@ -12,13 +12,13 @@ La pantalla Notificaciones y el badge no tienen tabla maestra propia. Su única 
 
 `program_requests.seen_at` conserva el acuse durable del afiliado para la respuesta de cotización. `mark_marketplace_quote_seen` deriva `get_effective_affiliate_id()`, sólo marca una cotización propia completada y mantiene compatibilidad con la autoridad histórica `marketplace_quote_requests`; anónimo y cross-user quedan denegados. Workflow/tracking, documentos, membresías, solicitudes generales, programas y beneficios fueron inventariados pero no producen avisos mientras no exista en su propia autoridad un contrato durable de evento/visto. No se inventan filas ni se crea una tabla `notifications`.
 
-## Corte ADR-081 — depósito bancario de Suti Préstamo
+## Corte ADR-081/085 — depósito de Suti Préstamo
 
 `affiliate_bank_accounts` permanece como única autoridad mutable de las cuentas del afiliado. `account_number` conserva semántica de cuenta y `card_number` conserva semántica separada de tarjeta; elegir una cuenta para el préstamo no modifica `is_primary`. Depósito lista exclusivamente por `list_current_deposit_accounts()`, que deriva el afiliado efectivo aunque el actor tenga permisos Admin globales. El writer `save_affiliate_deposit_account` deriva el mismo contexto y el titular server-side, valida banco, tarjeta de 16 dígitos y CLABE de 18 dígitos con checksum, y audita sin guardar números completos en metadata.
 
 `affiliates.notification_phone` es el celular actual confirmado. `phone_raw` conserva exclusivamente el perfil histórico/importado y puede proyectarse como sugerencia explícita; nunca se sobrescribe ni funciona como autoridad productiva paralela. Lectura y confirmación pasan por RPC autenticada y auditada.
 
-`program_requests` sigue siendo la autoridad de la solicitud. `loan_request_deposit_snapshots` es evidencia privada e inmutable de banco, titular, tarjeta, CLABE y celular al confirmar; carece de grants browser y se crea atómicamente por el writer service-only. `financial_submission_snapshot` y la auditoría sólo conservan máscaras/últimos cuatro. Una cuenta ajena, incompleta o cambiada falla cerrada y crea cero solicitudes parciales.
+`program_requests` sigue siendo la autoridad de la solicitud. Por decisión owner ADR-085, elegir o capturar una cuenta bancaria es opcional; el celular confirmado continúa requerido. `loan_request_deposit_snapshots` congela atómicamente el celular y, sólo cuando fue elegida una cuenta completa, banco, titular, tarjeta y CLABE. La fila es privada, inmutable y sin grants browser; `financial_submission_snapshot` y auditoría conservan únicamente presencia, máscaras/últimos cuatro o `NULL`. Una cuenta proporcionada ajena, incompleta o cambiada falla cerrada y crea cero solicitudes parciales.
 
 ## Corte ADR-078 — plataforma central de requisitos documentales
 

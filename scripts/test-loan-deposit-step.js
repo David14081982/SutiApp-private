@@ -57,7 +57,7 @@ for(const token of [
   'data-loan-deposit-summary',
   'Completar para depósito',
   'BankAccountRepository.saveNotificationPhone',
-  'bankAccountId: selectedDepositAccount.id',
+  'bankAccountId: selectedDepositAccount ? selectedDepositAccount.id : null',
   'notificationPhone: deposit.phone',
 ]) assert(loan.includes(token),'loan UI contract missing: '+token);
 assert.doesNotMatch(loan,/function StepDestination|Cuéntanos el destino|notes: destination|Destino del préstamo/);

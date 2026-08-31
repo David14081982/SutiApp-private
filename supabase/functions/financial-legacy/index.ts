@@ -498,7 +498,7 @@ async function confirmPersonalizedLoanSession(
     if (!sameContract) return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH", correlation_id: correlationId } };
     const { data: existingDeposit, error: existingDepositError } = await privileged.from("loan_request_deposit_snapshots")
       .select("source_bank_account_id,notification_phone").eq("request_id", existing.id).maybeSingle();
-    if (existingDepositError || !existingDeposit || existingDeposit.source_bank_account_id !== String(body.bank_account_id) ||
+    if (existingDepositError || !existingDeposit || String(existingDeposit.source_bank_account_id || "") !== String(body.bank_account_id || "") ||
         existingDeposit.notification_phone !== String(body.notification_phone || "").replace(/\D/g, "")) {
       return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH", correlation_id: correlationId } };
     }
@@ -546,7 +546,7 @@ async function confirmPersonalizedLoanSession(
     financialResult: result,
     confirmed_at: new Date().toISOString(),
     deposit_selection: {
-      bank_account_id: String(body.bank_account_id || ""),
+      bank_account_id: body.bank_account_id ? String(body.bank_account_id) : null,
       notification_phone: String(body.notification_phone || "").replace(/\D/g, ""),
     },
   };

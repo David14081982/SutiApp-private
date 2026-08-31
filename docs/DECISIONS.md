@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-085 | La cuenta bancaria es opcional en Depósito; el celular permanece requerido y una cuenta proporcionada conserva validación completa. | Aceptada |
 | ADR-082 | Notificaciones y badge derivan sólo eventos reales con visto durable en su autoridad; no existe tabla ni mock de notificaciones. | Aceptada |
 | ADR-081 | El depósito de Suti Préstamo usa cuenta/celular Supabase y congela evidencia privada en la alta atómica. | Aceptada |
 | ADR-001 | `numero_control` es identificador histórico de negocio. | Aceptada |
@@ -347,6 +348,8 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Aprobación:** instrucción `SECTION OWNERSHIP PILOT ENFORCEMENT` del propietario, 2026-08-23.
 ## ADR-081 — Depósito bancario obligatorio e inmutable en Suti Préstamo
 
+La obligatoriedad bancaria de esta decisión queda sustituida únicamente por ADR-085. Autoridad, seguridad, validación de cuentas proporcionadas, celular, snapshot privado y atomicidad permanecen vigentes.
+
 - **UX:** el wizard productivo queda `Monto → Depósito → Documentos → Resumen`. “Destino” y su nota libre dejan de formar parte del flujo; el afiliado selecciona una cuenta registrada o captura banco, tarjeta y CLABE, confirma el celular y revisa exclusivamente valores enmascarados.
 - **Autoridad bancaria:** `affiliate_bank_accounts` sigue siendo la única autoridad mutable. `card_number` se agrega separado de `account_number`; el titular se deriva server-side del afiliado efectivo, la selección no cambia `is_primary` y toda escritura usa RPC autenticada/auditada.
 - **Celular:** `affiliates.notification_phone` conserva el valor actual confirmado. `phone_raw` no cambia y sólo puede presentarse como sugerencia histórica explícita.
@@ -355,6 +358,15 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Legacy:** no cambian elegibilidad, 146 reglas, 35 fondos, 3 programas, tasas, fórmulas, amortización, conciliación, Google ni Apps Script. El handoff posterior a aprobación mantiene su frontera protegida.
 - **Recovery:** `20260830000500_loan_deposit_step_recovery.sql` sólo revierte si no existe historia nueva de depósito/tarjeta/celular; de otro modo falla cerrado y preserva datos.
 - **Aprobación:** `H-LOAN-DEPOSIT-STEP-001`, instrucción quirúrgica y autorización explícita de migración, despliegue Edge, E2E, commit y push, propietario, 2026-08-30.
+
+## ADR-085 — Cuenta bancaria opcional en Depósito de Suti Préstamo
+
+- **Decisión owner:** Banco, número de tarjeta bancaria y CLABE interbancaria no bloquean avanzar ni confirmar. El celular válido para notificaciones continúa requerido.
+- **Cuenta proporcionada:** guardar o elegir una cuenta conserva sin relajación banco, titular server-side, tarjeta de 16 dígitos, CLABE con checksum, ownership y auditoría de ADR-081. Nunca se persiste una cuenta parcial.
+- **Solicitud sin cuenta:** el writer service-only crea atómicamente `program_requests` y `loan_request_deposit_snapshots` con `source_bank_account_id`, banco, titular, tarjeta y CLABE en `NULL`; celular permanece presente. La proyección sólo expone `NULL` y máscara telefónica.
+- **Autoridad y seguridad:** no se crea otra fuente. `affiliate_bank_accounts` sigue siendo la única autoridad bancaria; RLS, autoservicio efectivo, anónimo/cross-user denegados y cero secretos frontend permanecen.
+- **Recovery:** `20260831000300_optional_loan_deposit_account_recovery.sql` restaura la obligatoriedad sólo mientras no exista historia con cuenta omitida; después aborta sin borrar ni reinterpretar solicitudes.
+- **Aprobación:** `H-LOAN-DEPOSIT-OPTIONAL-BANK-001`, instrucción explícita del propietario, 2026-08-31.
 
 ## ADR-082 — Notificaciones derivadas y acuse durable en la autoridad
 

@@ -8,7 +8,7 @@ assert(screen.includes('filter((group) => group.items.length)')&&screen.includes
 assert(store.includes('Number.isInteger(value)?value:fallback')&&!store.includes('r.sort_order||ii'),'sort order zero regression');
 assert(screen.includes('title:gr.label_override||g.title')===false,'screen must consume projected group copy');
 assert(store.includes('title:gr.label_override||g.title')&&store.includes('sub:gr.description_override||g.sub')&&store.includes('label:r.label_override||it.label')&&store.includes('tagline:r.description_override||it.tagline'),'Admin copy projection incomplete');
-assert(screen.includes("visible('prestamo')")&&screen.includes("visible('ahorro')")&&screen.includes("visible('inversion')")&&screen.includes("'data-finance-summary-action': itemId"),'summary shortcuts bypass visibility');
+assert(!screen.includes('visibleItemIds')&&screen.includes("itemId: 'prestamo'")&&screen.includes("itemId: 'ahorro'")&&screen.includes("itemId: 'inversion'")&&screen.includes("'data-finance-summary-action': itemId"),'summary must remain independent from catalog visibility');
 assert(screen.includes("'data-finance-catalog-phase': presentation.phase")&&screen.includes('No se usó ninguna fuente alternativa.')&&store.includes("phase='error'"),'authority failure is not explicit/fail closed');
 assert(store.includes("window.addEventListener('focus',onFocus)")&&store.includes("document.addEventListener('visibilitychange',onVisible)")&&!store.includes('setInterval('),'refresh requires polling or cache clear');
 assert(screen.includes('window.membershipStore.active()'),'memberships authority was removed');
@@ -16,6 +16,6 @@ assert(![store,screen].some((source)=>/localStorage|sessionStorage|DATA\./.test(
 assert(migration.includes('to authenticated')&&migration.includes('using (true)')&&!migration.includes('to anon'),'read policy unsafe');
 assert(!migration.includes('insert into')&&!migration.includes('update public.')&&!migration.includes('delete from'),'migration contains DML');
 assert(recovery.includes('drop policy if exists finance_presentation_authenticated_read'),'recovery missing');
-assert(bundle.includes('group.items.filter(item => item.visible !== false).map(item => {')&&bundle.includes("visible('prestamo')"),'bundle/source divergence');
-assert(html.includes('bundle.js?v=175')&&sw.includes("sutiapp-v119")&&sw.includes('bundle.js?v=175'),'cache cutover missing');
-console.log(JSON.stringify({status:'PASS',authority:'finance_catalog_presentation',hiddenBeforeEligibility:true,emptySectionsHidden:true,copyProjected:true,orderingProjected:true,summaryGated:true,refreshWithoutPolling:true,parallelAuthorities:0,financialCalculationsChanged:0}));
+assert(bundle.includes('group.items.filter(item => item.visible !== false).map(item => {')&&!bundle.includes('visibleItemIds')&&bundle.includes("itemId: 'prestamo'"),'bundle/source divergence');
+assert(html.includes('bundle.js?v=176')&&sw.includes("sutiapp-v120")&&sw.includes('bundle.js?v=176'),'cache cutover missing');
+console.log(JSON.stringify({status:'PASS',authority:'finance_catalog_presentation',hiddenBeforeEligibility:true,emptySectionsHidden:true,copyProjected:true,orderingProjected:true,summaryIndependent:true,refreshWithoutPolling:true,parallelAuthorities:0,financialCalculationsChanged:0}));

@@ -10344,8 +10344,7 @@ Object.assign(window, {
     overview: snapshot.overview
   });
   function SummaryCard({
-    app,
-    visibleItemIds
+    app
   }) {
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : {
       status: 'error',
@@ -10354,25 +10353,6 @@ Object.assign(window, {
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = amount => typeof amount === 'number' ? window.money(amount) : '—';
-    const visible = itemId => visibleItemIds.includes(itemId);
-    const actions = [visible('prestamo') && {
-      itemId: 'prestamo',
-      label: 'préstamo',
-      ariaLabel: 'Solicitar préstamo',
-      icon: 'cash',
-      primary: true,
-      onClick: () => app.push('loan')
-    }, visible('ahorro') && {
-      itemId: 'ahorro',
-      label: 'Ahorrar',
-      icon: 'piggy',
-      onClick: () => app.openFinanceItem('ahorro')
-    }, visible('inversion') && {
-      itemId: 'inversion',
-      label: 'Invertir',
-      trend: true,
-      onClick: () => app.push('investment')
-    }].filter(Boolean);
     return React.createElement('div', {
       style: {
         padding: '4px 16px 0'
@@ -10438,18 +10418,32 @@ Object.assign(window, {
         width: 1,
         background: 'var(--hairline)'
       }
-    }), miniStat('Mi inversión', '—', null, true)), actions.length > 0 && React.createElement('div', {
+    }), miniStat('Mi inversión', '—', null, true)), React.createElement('div', {
       'data-finance-summary-actions': '',
       style: {
         display: 'grid',
-        gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
         gap: 9,
         marginTop: 18
       }
-    }, ...actions.map(action => React.createElement(SummaryAction, {
-      key: action.itemId,
-      ...action
-    })))));
+    }, React.createElement(SummaryAction, {
+      itemId: 'prestamo',
+      label: 'préstamo',
+      ariaLabel: 'Solicitar préstamo',
+      icon: 'cash',
+      primary: true,
+      onClick: () => app.push('loan')
+    }), React.createElement(SummaryAction, {
+      itemId: 'ahorro',
+      label: 'Ahorrar',
+      icon: 'piggy',
+      onClick: () => app.openFinanceItem('ahorro')
+    }), React.createElement(SummaryAction, {
+      itemId: 'inversion',
+      label: 'Invertir',
+      trend: true,
+      onClick: () => app.push('investment')
+    }))));
   }
   function SummaryAction({
     itemId,
@@ -10901,7 +10895,6 @@ Object.assign(window, {
         };
       })
     })).filter(group => group.items.length);
-    const visibleItemIds = groups.flatMap(group => group.items.map(item => item.id));
     const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const nq = norm(q.trim());
     const catOk = id => !cats.length || cats.includes(id);
@@ -10936,8 +10929,7 @@ Object.assign(window, {
         gap: 22
       }
     }, React.createElement(SummaryCard, {
-      app,
-      visibleItemIds
+      app
     }), React.createElement('div', {
       style: {
         padding: '0 16px',

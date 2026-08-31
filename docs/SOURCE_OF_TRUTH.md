@@ -4,7 +4,7 @@
 
 `finance_catalog_presentation` es la única autoridad de presentación administrable para la pantalla Finanzas: habilitación, orden, títulos/subtítulos de sección y label/tagline de producto. `finCatStore` la proyecta sobre la estructura/rutas versionadas en código; no decide elegibilidad, tasas, fondos, reglas, importes ni cálculos.
 
-La pantalla aplica `enabled !== false` antes de la elegibilidad financiera. Un producto oculto no puede reaparecer por perfil, recomendación o acceso rápido; una sección sin productos visibles se omite. Membresías conserva su autoridad separada y explícita. Si la presentación no carga, el catálogo falla cerrado con reintento visible y sin `DATA`, mock, `localStorage` o default productivo.
+El catálogo inferior aplica `enabled !== false` antes de la elegibilidad financiera. Un producto oculto no puede reaparecer abajo por perfil o recomendación y una sección sin productos visibles se omite. La tarjeta superior “Mi Financiera” y sus accesos aprobados son estructura permanente de la pantalla y quedan expresamente fuera de esta autoridad de visibilidad. Membresías conserva su autoridad separada y explícita. Si la presentación no carga, el catálogo falla cerrado con reintento visible y sin `DATA`, mock, `localStorage` o default productivo.
 
 ## Corte ADR-082 — notificaciones derivadas de autoridades reales
 

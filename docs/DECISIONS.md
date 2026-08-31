@@ -670,8 +670,16 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 
 - **Autoridad:** se preserva `finance_catalog_presentation`; no se crea v2, flag local ni tabla paralela. La estructura y rutas continúan versionadas en código y la tabla sólo gobierna presentación.
 - **Precedencia:** visibilidad administrativa se aplica antes de elegibilidad. Elegibilidad puede restringir un producto visible, pero nunca reactivar uno oculto.
-- **Consumo:** `finCatStore` proyecta orden y copy; `FinancieraScreen` filtra productos, secciones vacías, recomendaciones y accesos rápidos. Membresías permanece en `membershipStore` como dominio distinto.
+- **Consumo:** `finCatStore` proyecta orden y copy; `FinancieraScreen` filtra productos, secciones vacías y recomendaciones del catálogo inferior. Conforme a ADR-084, el resumen superior no es consumidor de `enabled`. Membresías permanece en `membershipStore` como dominio distinto.
 - **Fallo/refresh:** el lector falla cerrado con estado y reintento visibles. Focus/visibility y el retorno del writer recargan la autoridad sin polling ni limpieza manual de caché.
 - **Seguridad/migración:** lectura global sólo para `authenticated`; anónimo permanece sin grant y writers siguen bajo `workflow.write`. `20260831000200` agrega únicamente la policy faltante, conserva 6/6 filas y su recovery retira sólo esa policy.
 - **Legacy:** cero cambios en Google, Apps Script, 146 reglas, 35 fondos, 3 programas, elegibilidad, cálculos, préstamo, depósito, documentos, workflow o historial.
 - **Aprobación:** `H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001`, propietario, 2026-08-31.
+
+## ADR-084 — Resumen financiero permanente separado del catálogo
+
+- **Decisión owner:** Mostrar/Ocultar de Admin → Catálogo de Finanzas gobierna exclusivamente secciones y productos del catálogo inferior. No gobierna la tarjeta superior “Mi Financiera”.
+- **Resumen permanente:** crédito/préstamo, “Mi ahorro”, “Mi inversión”, Ahorrar e Invertir permanecen visibles aunque `prestamo`, `ahorro` o `inversion` estén ocultos abajo.
+- **Autoridad:** no se crea otra fuente. El resumen conserva su estructura/rutas versionadas y sus valores siguen viniendo del lector financiero aprobado; `finance_catalog_presentation` continúa intacta para el catálogo inferior.
+- **Alcance:** cero cambios en Admin, store, Supabase, cálculos, Suti Préstamo, Suti Inversión, Ahorro o legacy.
+- **Aprobación:** `H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001`, instrucción explícita del propietario, 2026-08-31.

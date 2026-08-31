@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001
+
+- Se retiró exclusivamente la dependencia `visibleItemIds → SummaryCard`; la tarjeta superior vuelve a conservar permanentemente crédito/préstamo, Mi ahorro, Mi inversión, Ahorrar e Invertir.
+- `finance_catalog_presentation.enabled` continúa gobernando el catálogo inferior: ocultos 0, secciones vacías omitidas, show/hide, orden y copy preservados.
+- Chrome real con sesiones Admin/afiliado separadas ocultó y restauró préstamo, ahorro e inversión; resumen permanente y layouts 390×844/1280×900 pasaron. No se tocó Admin, store, Supabase, cálculos ni legacy.
+
+```text
+H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001 RESULT
+Status: PASS
+Files changed: Financiera consumer; bundle/cache; static/browser tests; ADR/SOT/mapping/evidence; Registry
+Source-of-truth verdict: PASS — catálogo inferior conserva finance_catalog_presentation; resumen estructural permanente separado
+Invariant verdict: PASS — INV-141 corregida; INV-144 permanente; cálculos intactos
+Build: PASS — 92 fuentes; SHA-256 2E420610C30617BD011865934E8E1FECD088C9944FFB1E79E4191470957C01C0
+Tests: PASS — static focal; suite completa; Chrome real móvil/desktop
+Security: NOT APPLICABLE — cero cambios Auth/RLS/grants/backend
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: ninguna dentro del alcance
+Evidence: docs/qa/H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001
 
 - Finanzas consume la visibilidad, orden y copy de `finance_catalog_presentation`; ocultos desaparecen antes de elegibilidad, incluidas secciones vacías, recomendaciones y accesos rápidos.

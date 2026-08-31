@@ -5,17 +5,11 @@
   // identidad: `status` y `overview` no cambian al recotizar.
   const overviewSlice = (snapshot) => ({ status: snapshot.status, overview: snapshot.overview });
 
-  function SummaryCard({ app, visibleItemIds }) {
+  function SummaryCard({ app }) {
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = (amount) => typeof amount === 'number' ? window.money(amount) : '—';
-    const visible = (itemId) => visibleItemIds.includes(itemId);
-    const actions = [
-      visible('prestamo') && { itemId: 'prestamo', label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') },
-      visible('ahorro') && { itemId: 'ahorro', label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') },
-      visible('inversion') && { itemId: 'inversion', label: 'Invertir', trend: true, onClick: () => app.push('investment') },
-    ].filter(Boolean);
     return React.createElement('div', { style: { padding: '4px 16px 0' } },
       React.createElement('div', {
         style: { background: 'var(--surface)', color: 'var(--ink)', borderRadius: 24, padding: 20, boxShadow: 'var(--neo-md)', position: 'relative', overflow: 'hidden' },
@@ -32,8 +26,10 @@
           miniStat('Mi ahorro', value(overview.savings && overview.savings.balance), 'fin.stat.ahorro'),
           React.createElement('div', { style: { width: 1, background: 'var(--hairline)' } }),
           miniStat('Mi inversión', '—', null, true)),
-        actions.length > 0 && React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))`, gap: 9, marginTop: 18 } },
-          ...actions.map((action) => React.createElement(SummaryAction, { key: action.itemId, ...action }))),
+        React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9, marginTop: 18 } },
+          React.createElement(SummaryAction, { itemId: 'prestamo', label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') }),
+          React.createElement(SummaryAction, { itemId: 'ahorro', label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') }),
+          React.createElement(SummaryAction, { itemId: 'inversion', label: 'Invertir', trend: true, onClick: () => app.push('investment') })),
       ),
     );
   }
@@ -153,7 +149,6 @@
       const meta = status === 'AVAILABLE' ? (matches.length + (matches.length === 1 ? ' fondo disponible' : ' fondos disponibles')) : status === 'SCHEDULED' ? 'Tienes una opción próxima' : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Completa categoría y sindicato' : 'Sin opción para tu perfil';
       return { ...item, availabilityStatus: status, meta };
     }) })).filter((group) => group.items.length);
-    const visibleItemIds = groups.flatMap((group) => group.items.map((item) => item.id));
     const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const nq = norm(q.trim());
     const catOk = (id) => !cats.length || cats.includes(id);
@@ -166,7 +161,7 @@
     return React.createElement('div', { className: 'su-route', 'data-finance-catalog-phase': presentation.phase, style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'financiera' }),
       React.createElement('div', { className: 'su-stagger', style: { display: 'flex', flexDirection: 'column', gap: 22 } },
-        React.createElement(SummaryCard, { app, visibleItemIds }),
+        React.createElement(SummaryCard, { app }),
         React.createElement('div', { style: { padding: '0 16px', position: 'relative' } },
           React.createElement(window.SearchBar, { placeholder: 'Busca un beneficio o servicio…', value: q, onChange: setQ, onFilter: () => setFOpen(true) }),
           cats.length > 0 && React.createElement('div', { style: { position: 'absolute', top: -6, right: 12, minWidth: 20, height: 20, borderRadius: 999, background: 'var(--gold)', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'grid', placeItems: 'center', padding: '0 5px', pointerEvents: 'none' } }, cats.length)),

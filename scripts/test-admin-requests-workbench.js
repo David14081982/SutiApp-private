@@ -96,8 +96,8 @@ assert.doesNotMatch(operations,/Promise\.all\(\[window\.MarketplaceRepository\.l
 
 assert.ok(bundle.includes('data-admin-requests-workbench'),'bundle missing requests workbench');
 assert.ok(bundle.includes('listGeneralQueue'),'bundle missing queue repository');
-assert.ok(html.includes('app/bundle.js?v=175'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v119")&&serviceWorker.includes('app/bundle.js?v=175'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=176'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v120")&&serviceWorker.includes('app/bundle.js?v=176'),'service worker cache cutover missing');
 assert.doesNotMatch(screen+'\n'+repository,/localStorage|sessionStorage|IndexedDB/);
 assert.doesNotMatch(screen+'\n'+repository,/\bDATA\b|\bMOCKS?\b|\bmockData\b/);
 

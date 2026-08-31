@@ -21,5 +21,5 @@ assert(recovery.includes('RECOVERY_REQUIRES_SEEN_AT_BACKUP')&&recovery.includes(
 assert(![app,program,market,store].some((source)=>/localStorage|sessionStorage/.test(source)),'browser persistence fallback introduced');
 assert(![app,program,market,migration].some((source)=>/SUPABASE_SERVICE_ROLE_KEY|service_role_key/i.test(source)),'frontend/service secret introduced');
 assert(bundle.includes("const unread = qs ? qs.readyUnseen().length : 0;")&&bundle.includes("rpc('list_self_marketplace_quote_notifications'")&&bundle.includes("rpc('mark_marketplace_quote_seen'"),'bundle/source divergence');
-assert(html.includes('bundle.js?v=175')&&sw.includes("sutiapp-v119")&&sw.includes('bundle.js?v=175'),'cache cutover missing');
+assert(html.includes('bundle.js?v=176')&&sw.includes("sutiapp-v120")&&sw.includes('bundle.js?v=176'),'cache cutover missing');
 console.log(JSON.stringify({status:'PASS',syntheticNotifications:0,mockUnreadBadgeSources:0,realSources:['program_requests:marketplace quote submitted/approved'],seenWriter:'mark_marketplace_quote_seen',newNotificationTables:0,browserStorageFallbacks:0,frontendSecrets:0}));

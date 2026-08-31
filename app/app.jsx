@@ -18,9 +18,9 @@
 
   // ---------- TOP BAR (gradient header + white sheet lip) ----------
   function frostBtn(icon, onClick, badge) {
-    return React.createElement('button', { onClick, style: { position: 'relative', width: 44, height: 44, borderRadius: 15, background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,.22)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } },
+    return React.createElement('button', { onClick, 'aria-label': icon === 'bell' ? 'Notificaciones' : icon, 'data-notifications-trigger': icon === 'bell' ? 'real-authority' : undefined, style: { position: 'relative', width: 44, height: 44, borderRadius: 15, background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,.22)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } },
       React.createElement(I, { name: icon, size: 22, stroke: 2 }),
-      badge > 0 && React.createElement('span', { style: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#fff', color: 'var(--guinda)', fontSize: 11, fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,.2)' } }, badge));
+      badge > 0 && React.createElement('span', { 'data-notifications-unread': String(badge), style: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#fff', color: 'var(--guinda)', fontSize: 11, fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,.2)' } }, badge));
   }
 
   // the white sheet lip with a subtle centered notch (fluid form)
@@ -47,7 +47,7 @@
       typeof window.FinancialLegacyRepository.availableCreditTotal === 'function'
       ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const availableCreditReady = availableCredit !== null;
-    const unread = D().notifs.filter((n) => n.unread).length + (qs ? qs.readyUnseen().length : 0);
+    const unread = qs ? qs.readyUnseen().length : 0;
     const titles = { financiera: 'Mi Financiera', convenios: 'Convenios', historial: 'Mi Historial', credencial: 'Mi Credencial' };
     const subtitles = { financiera: 'Tu dinero, tu sindicato', convenios: 'Descuentos para afiliados', historial: 'Seguimiento de solicitudes', credencial: 'Identidad sindical digital' };
 
@@ -193,20 +193,31 @@
   // ---------- NOTIFICATIONS ----------
   function NotifsScreen({ app }) {
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    // Notificaciones derivadas del flujo de cotización previa
-    const quoteNotifs = (qs ? qs.mine() : []).map((r) => (r.estado === 'cotizada'
-      ? { id: 'q_' + r.id, icon: 'cash', tone: 'green', title: 'Tu cotización está lista', body: r.productoNombre + ' · ' + window.money((r.cotizacion || {}).monto || 0) + ' · ' + r.folio + '. Ya puedes simular tu financiamiento.', time: (r.cotizacion || {}).fechaHora || r.fechaHora, unread: !r.visto, go: () => { qs.markVisto(r.id); app.push('product', { id: r.productoId }); } }
+    const quoteState = qs ? qs.state() : { phase: 'error' };
+    // Avisos derivados exclusivamente de solicitudes de cotización reales.
+    const quoteNotifs = (qs ? qs.mine() : []).filter((r) => r.estado === 'solicitada' || r.estado === 'cotizada').map((r) => (r.estado === 'cotizada'
+      ? { id: 'q_' + r.id, icon: 'cash', tone: 'green', title: 'Tu cotización está lista', body: r.productoNombre + ' · ' + window.money((r.cotizacion || {}).monto || 0) + ' · ' + r.folio + '. Ya puedes simular tu financiamiento.', time: (r.cotizacion || {}).fechaHora || r.fechaHora, unread: !r.visto, go: async () => { try { await qs.markVisto(r.id); app.push('product', { id: r.productoId }); } catch (_) { app.toast('No se pudo marcar la notificación como vista'); } } }
       : { id: 'q_' + r.id, icon: 'clock', tone: 'amber', title: 'Cotización en proceso', body: r.productoNombre + ' · ' + r.folio + ' · ' + (r.empresaNombre || 'Área de Finanzas'), time: r.fechaHora, unread: false }));
-    const items = [...quoteNotifs, ...D().notifs];
+    const items = quoteNotifs;
+    const statusCard = quoteState.phase === 'error'
+      ? React.createElement('div', { 'data-notifications-state': 'error', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center' } },
+        React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' } }, 'No pudimos cargar tus notificaciones'),
+        React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-2)', marginTop: 5 } }, 'Revisa tu conexión e inténtalo de nuevo.'),
+        React.createElement('button', { onClick: () => qs && qs.retry(), style: { marginTop: 12, border: 'none', borderRadius: 12, padding: '9px 14px', background: 'var(--guinda)', color: '#fff', fontWeight: 800, cursor: 'pointer' } }, 'Reintentar'))
+      : quoteState.phase !== 'loaded'
+        ? React.createElement('div', { 'data-notifications-state': 'loading', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'Cargando notificaciones…')
+        : items.length === 0
+          ? React.createElement('div', { 'data-notifications-state': 'empty', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'No tienes notificaciones.')
+          : null;
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
         React.createElement('button', { onClick: app.back, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
         React.createElement('span', { style: { fontSize: 16.5, fontWeight: 800 } }, 'Notificaciones')),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 16 } },
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11 } },
-          items.map((n) => {
+          statusCard || items.map((n) => {
             const tones = { guinda: ['var(--guinda-50)', 'var(--guinda)'], green: ['#E7F6ED', '#13794A'], amber: ['#FFF3DC', '#9A6B16'], blue: ['#E8F0FE', '#2456C7'], red: ['#FDEAEA', '#C0341D'] }[n.tone];
-            return React.createElement('div', { key: n.id, onClick: n.go, className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
+            return React.createElement('div', { key: n.id, onClick: n.go, 'data-notification-id': n.id, 'data-notification-unread': n.unread ? 'true' : 'false', className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
               React.createElement('div', { style: { width: 44, height: 44, borderRadius: 13, background: tones[0], color: tones[1], display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: n.icon, size: 23, stroke: 2 })),
               React.createElement('div', { style: { flex: 1 } },
                 React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, lineHeight: 1.25, color: 'var(--ink)' } }, n.title),

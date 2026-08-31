@@ -48,7 +48,7 @@ assert(adminRequests.includes('detail.workflow_state')&&!adminRequests.includes(
 for(const file of ['app/screens-loan.jsx','app/screens-catalogo.jsx','app/screens-marketplace.jsx','app/screens-membership-application.jsx'])assert(read(file).includes('workflowState:'),`${file} does not pass workflow state to Success`);
 assert(![success,history,flow,admin,repo].some((source)=>/localStorage|sessionStorage/.test(source)),'browser storage fallback introduced');
 assert(![success,history,flow,admin,repo,migration].some((source)=>/SUPABASE_SERVICE_ROLE_KEY|service_role_key/i.test(source)),'service role secret introduced');
-assert(html.includes('bundle.js?v=173')&&html.includes('financial-legacy-repository.js?v=9')&&sw.includes("sutiapp-v117")&&sw.includes('bundle.js?v=173'),'cache cutover missing');
+assert(html.includes('bundle.js?v=174')&&html.includes('financial-legacy-repository.js?v=9')&&sw.includes("sutiapp-v118")&&sw.includes('bundle.js?v=174'),'cache cutover missing');
 assert(bundle.includes('get_self_request_workflow_state')&&bundle.includes('data-request-success-confetti'),'bundle/source divergence');
 
 console.log(JSON.stringify({status:'PASS',hardcodedStageAuthorities:0,productiveRequestMocks:0,localStorageFallbacks:0,serviceRoleFrontend:0,successConfettiPieces:42,googleReads:0,googleWrites:0}));

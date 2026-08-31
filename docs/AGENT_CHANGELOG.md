@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-NOTIFICATIONS-AUTHORITY-CUTOVER-001
+
+- Se retiraron los cinco avisos de `DATA.notifs` y las tres fuentes mock del badge. Pantalla y campana derivan sólo cotizaciones reales en `program_requests`.
+- `seen_at`, el writer `mark_marketplace_quote_seen` y el lector self-only allowlisted hacen durable el acuse sin reabrir `SELECT` directo ni crear tabla de notificaciones.
+- Workflow, documentos, membresías, solicitudes generales y eventos Admin fueron inventariados pero no emiten avisos porque aún no tienen contrato durable de visto; no se inventó ningún evento.
+- Migración/recovery, live multiusuario y Chrome real pasaron; badge 1→0, refresh conservó visto, mobile/desktop sin overflow y fixtures temporales en cero filas. Carga, error backend con reintento y vacío son estados visibles, no avisos.
+
+```text
+H-NOTIFICATIONS-AUTHORITY-CUTOVER-001 RESULT
+Status: PASS
+Files changed: frontend/repositories; bundle/cache; SQL/recovery; apply/tests; ADR/SOT/mapping/evidence; Registry
+Source-of-truth verdict: PASS — program_requests vigente; histórico aislado; DATA.notifs eliminado
+Invariant verdict: PASS — cero avisos inventados; acuse durable; dominios no certificados no se simulan
+Build: PASS — 92 fuentes; SHA-256 DA8AAEAAAC619F5B1C90E45D804DC54D18D15939EEED8CF8E63A23A947308133
+Tests: PASS — static; migration/recovery; live; Chrome 390×844 y 1280×900
+Security: PASS — self-only; direct select revocado; cross-user/anonymous denied; RLS forzada
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: sólo cotizaciones poseen hoy evento/visto durable
+Evidence: docs/qa/H-NOTIFICATIONS-AUTHORITY-CUTOVER-001-EVIDENCE.md
+```
+
 ## 2026-08-30 — H-LOAN-DEPOSIT-STEP-001
 
 - Suti Préstamo reemplazó el paso libre “Destino” por `Depósito`, conectado a cuentas Supabase reales, captura validada de banco/tarjeta/CLABE, celular actual separado del teléfono histórico, selección enmascarada y corrección desde Resumen.

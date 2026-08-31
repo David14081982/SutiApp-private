@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-082 — notificaciones derivadas de autoridades reales
+
+La pantalla Notificaciones y el badge no tienen tabla maestra propia. Su única fuente activa es la proyección self-only `list_self_marketplace_quote_notifications()` sobre cotizaciones reales posteriores al corte en `program_requests`; `DATA.notifs`, mocks y almacenamiento del navegador no participan. Una cotización `submitted` puede mostrarse como estado informativo y una respuesta `approved` es el único evento no leído actual.
+
+`program_requests.seen_at` conserva el acuse durable del afiliado para la respuesta de cotización. `mark_marketplace_quote_seen` deriva `get_effective_affiliate_id()`, sólo marca una cotización propia completada y mantiene compatibilidad con la autoridad histórica `marketplace_quote_requests`; anónimo y cross-user quedan denegados. Workflow/tracking, documentos, membresías, solicitudes generales, programas y beneficios fueron inventariados pero no producen avisos mientras no exista en su propia autoridad un contrato durable de evento/visto. No se inventan filas ni se crea una tabla `notifications`.
+
 ## Corte ADR-081 — depósito bancario de Suti Préstamo
 
 `affiliate_bank_accounts` permanece como única autoridad mutable de las cuentas del afiliado. `account_number` conserva semántica de cuenta y `card_number` conserva semántica separada de tarjeta; elegir una cuenta para el préstamo no modifica `is_primary`. Depósito lista exclusivamente por `list_current_deposit_accounts()`, que deriva el afiliado efectivo aunque el actor tenga permisos Admin globales. El writer `save_affiliate_deposit_account` deriva el mismo contexto y el titular server-side, valida banco, tarjeta de 16 dígitos y CLABE de 18 dígitos con checksum, y audita sin guardar números completos en metadata.

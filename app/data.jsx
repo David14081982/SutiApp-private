@@ -129,14 +129,6 @@
     rechazado: { label: 'No aprobado', tone: 'red', icon: 'close' },
   };
 
-  const notifs = [
-    { id: 1, icon: 'clock', tone: 'amber', title: 'Tu préstamo ya está en revisión', body: 'Solicitud ID-2941 · seguimiento disponible', time: 'Hace 2 h', unread: true },
-    { id: 2, icon: 'handshake', tone: 'guinda', title: 'Nuevo convenio disponible', body: 'Unilíder: 50% en tu primera compra', time: 'Hoy', unread: true },
-    { id: 3, icon: 'doc', tone: 'red', title: 'Te faltan 2 documentos', body: 'Sube tu INE y último talón de pago', time: 'Ayer', unread: true },
-    { id: 4, icon: 'checkCircle', tone: 'green', title: 'Tu membresía fue aprobada', body: 'Ya puedes usar todos los beneficios', time: '2 días', unread: false },
-    { id: 5, icon: 'piggy', tone: 'green', title: 'Ya puedes solicitar ahorro', body: 'Cierre de semestre el 30 de junio', time: '3 días', unread: false },
-  ];
-
   const noticias = [
     { id: 1, tag: 'Asamblea', title: 'Resultados de la Asamblea General de mayo', date: '24 May 2026', hue: 345, read: '3 min' },
     { id: 2, tag: 'Beneficio', title: 'Nuevo convenio con Universidad Kino: becas 2026', date: '22 May 2026', hue: 36, read: '2 min' },
@@ -201,5 +193,5 @@
   const deepFreeze = (o) => { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.freeze(o); Object.keys(o).forEach((k) => deepFreeze(o[k])); } return o; };
   deepFreeze(finanzasGroups); deepFreeze(recommended);
 
-  window.DATA = { user, institucional, finanzasGroups, recommended, conveniosCats, convenios, solicitudes, estadoMeta, notifs, docs, promos, anuncios };
+  window.DATA = { user, institucional, finanzasGroups, recommended, conveniosCats, convenios, solicitudes, estadoMeta, docs, promos, anuncios };
 })();

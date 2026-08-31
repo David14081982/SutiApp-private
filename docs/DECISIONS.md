@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-082 | Notificaciones y badge derivan sólo eventos reales con visto durable en su autoridad; no existe tabla ni mock de notificaciones. | Aceptada |
 | ADR-081 | El depósito de Suti Préstamo usa cuenta/celular Supabase y congela evidencia privada en la alta atómica. | Aceptada |
 | ADR-001 | `numero_control` es identificador histórico de negocio. | Aceptada |
 | ADR-002 | Email no es identificador de negocio. | Aceptada |
@@ -354,6 +355,16 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Legacy:** no cambian elegibilidad, 146 reglas, 35 fondos, 3 programas, tasas, fórmulas, amortización, conciliación, Google ni Apps Script. El handoff posterior a aprobación mantiene su frontera protegida.
 - **Recovery:** `20260830000500_loan_deposit_step_recovery.sql` sólo revierte si no existe historia nueva de depósito/tarjeta/celular; de otro modo falla cerrado y preserva datos.
 - **Aprobación:** `H-LOAN-DEPOSIT-STEP-001`, instrucción quirúrgica y autorización explícita de migración, despliegue Edge, E2E, commit y push, propietario, 2026-08-30.
+
+## ADR-082 — Notificaciones derivadas y acuse durable en la autoridad
+
+- **Autoridad:** no se crea tabla de notificaciones. El único aviso activo se deriva de `program_requests` para cotizaciones Marketplace posteriores al corte; `marketplace_quote_requests` permanece histórico y `DATA.notifs` deja de existir.
+- **Lectura:** `list_self_marketplace_quote_notifications()` deriva el afiliado efectivo sin selector cliente y proyecta sólo folio, destino, estado, respuesta, fechas y `seen_at`. El `SELECT` directo sobre `program_requests` continúa revocado.
+- **Escritura:** `mark_marketplace_quote_seen` es idempotente, acepta únicamente una cotización propia `approved` y conserva el writer del histórico previo. Cada nueva respuesta pone `seen_at=NULL`, por lo que el badge reaparece sólo ante un evento backend nuevo.
+- **Cobertura:** cotización solicitada se muestra como estado real informativo y cotización respondida como evento leído/no leído. Requests generales, workflow/tracking, documentos, membresías, programas y beneficios no emiten avisos hasta tener contrato durable de evento/visto en su autoridad.
+- **Seguridad y UI:** anónimo/cross-user denegados; RLS forzada permanece; cero `service_role` browser. Se preservan header, campana, badge, lista, tarjetas, navegación y responsive sin rediseño.
+- **Recovery:** el lector puede retirarse sin datos. La columna `seen_at` sólo puede retirarse sin acuses o después de backup explícito; el recovery falla cerrado si ya existe historia.
+- **Aprobación:** `H-NOTIFICATIONS-AUTHORITY-CUTOVER-001`, migración/E2E/commit/push solicitados explícitamente por el propietario, 2026-08-31.
 
 ## ADR-047 — Rollout masivo de responsabilidad granular por sección
 

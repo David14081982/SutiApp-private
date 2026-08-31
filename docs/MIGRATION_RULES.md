@@ -7,6 +7,12 @@ AUDIT → SOURCE OF TRUTH → DEPENDENCIAS → PLAN → RIESGOS
 → BACKUP/RECOVERY → IMPLEMENTACIÓN → TEST → POST-AUDIT
 ```
 
+## Notificaciones reales — ADR-082
+
+Estado: `APPLIED / CERTIFIED — PASS`. `program_requests.seen_at` es nullable y no reinterpreta filas existentes; el índice parcial sólo cubre respuestas de cotización no vistas. `respond_program_request_quote` reinicia el acuse al producir una respuesta real y `mark_marketplace_quote_seen` conserva compatibilidad separada con la tabla histórica anterior al corte. La proyección self-only no reabre grants directos ni crea una tabla de notificaciones.
+
+Forward y recovery compilaron dentro de transacciones con `ROLLBACK`; la aplicación preservó seis solicitudes y seis cotizaciones existentes. El recovery retira la proyección y restaura los writers anteriores, pero aborta antes de eliminar `seen_at` cuando existe cualquier acuse durable que requiera backup. Live y Chrome crearon y eliminaron sólo fixtures identificados, con anónimo/cross-user denegados.
+
 ## Gate previo
 
 1. Identificar dominio, autoridad actual/futura, lectores, escritores y propietarios.

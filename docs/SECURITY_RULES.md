@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Notificaciones reales — ADR-082
+
+`list_self_marketplace_quote_notifications()` y `mark_marketplace_quote_seen(uuid)` son `SECURITY DEFINER`, usan `search_path=''` y derivan `get_effective_affiliate_id()` sin aceptar selector de afiliado. El lector expone una proyección allowlisted de cotizaciones propias; el writer sólo acusa una respuesta propia completada. Ambos revocan `anon`; el `SELECT` directo de `program_requests` permanece revocado y su RLS continúa habilitada y forzada.
+
+La UI no contiene secretos, `service_role`, PII de otros usuarios ni autorización basada sólo en estado local. La matriz live confirmó lectura/escritura propia, persistencia e idempotencia; H005_TEST3 no pudo leer ni marcar la cotización de H005_TEST2 y anónimo fue denegado. Los fixtures temporales se eliminaron por ID exacto.
+
 ## Plataforma central de requisitos documentales — ADR-078
 
 `resolve_effective_document_requirements` acepta sólo contexto de entidad validado server-side y requiere Auth. `anon` no ejecuta el resolver. Catálogo y reglas revocan `INSERT/UPDATE/DELETE` directos a `authenticated`; las RPC administrativas vuelven a exigir `documents.write`, usan `SECURITY DEFINER`, `search_path=''`, validan destino/tipo/efecto/orden/motivo y escriben auditoría durable.

@@ -1,5 +1,9 @@
 # Invariantes
 
+- **INV-138:** Notificaciones y badge consumen exclusivamente la proyección self-only de cotizaciones reales `program_requests` en estado `submitted|in_review|approved`. `DATA.notifs`, mocks, JSON y browser storage no son fuente, copia ni fallback; estados terminales no se presentan falsamente como “en proceso”.
+- **INV-139:** Sólo una cotización propia `approved` con `seen_at IS NULL` cuenta como no leída. `mark_marketplace_quote_seen` deriva el afiliado efectivo, es idempotente y persiste el acuse; una respuesta real posterior restablece `seen_at=NULL`. Anónimo y cross-user quedan denegados.
+- **INV-140:** Un dominio sin contrato real de evento y visto durable no emite notificaciones. Carga, error backend con reintento y vacío son estados visibles de pantalla y nunca avisos sintéticos.
+
 - **INV-134:** `affiliate_bank_accounts.account_number` y `card_number` son datos distintos. Una cuenta elegible para depósito de préstamo exige banco, titular derivado server-side, tarjeta normalizada de 16 dígitos y CLABE de 18 dígitos con checksum válido; elegirla no altera `is_primary`.
 - **INV-135:** `affiliates.notification_phone` es el celular actual mutable y auditado de 10 dígitos. `phone_raw` permanece histórico/importado, sólo puede sugerirse explícitamente y nunca es sobrescrito ni usado como segunda autoridad productiva.
 - **INV-136:** Toda solicitud de préstamo congela atómicamente su depósito en `loan_request_deposit_snapshots`, privado, sin grants browser e inmutable. El snapshot público de envío y la auditoría contienen sólo máscaras/últimos cuatro; la confirmación rechaza cuentas ajenas, incompletas o cambiadas y no crea la solicitud parcialmente.

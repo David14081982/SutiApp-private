@@ -6602,47 +6602,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       icon: 'close'
     }
   };
-  const notifs = [{
-    id: 1,
-    icon: 'clock',
-    tone: 'amber',
-    title: 'Tu préstamo ya está en revisión',
-    body: 'Solicitud ID-2941 · seguimiento disponible',
-    time: 'Hace 2 h',
-    unread: true
-  }, {
-    id: 2,
-    icon: 'handshake',
-    tone: 'guinda',
-    title: 'Nuevo convenio disponible',
-    body: 'Unilíder: 50% en tu primera compra',
-    time: 'Hoy',
-    unread: true
-  }, {
-    id: 3,
-    icon: 'doc',
-    tone: 'red',
-    title: 'Te faltan 2 documentos',
-    body: 'Sube tu INE y último talón de pago',
-    time: 'Ayer',
-    unread: true
-  }, {
-    id: 4,
-    icon: 'checkCircle',
-    tone: 'green',
-    title: 'Tu membresía fue aprobada',
-    body: 'Ya puedes usar todos los beneficios',
-    time: '2 días',
-    unread: false
-  }, {
-    id: 5,
-    icon: 'piggy',
-    tone: 'green',
-    title: 'Ya puedes solicitar ahorro',
-    body: 'Cierre de semestre el 30 de junio',
-    time: '3 días',
-    unread: false
-  }];
   const noticias = [{
     id: 1,
     tag: 'Asamblea',
@@ -6786,7 +6745,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     convenios,
     solicitudes,
     estadoMeta,
-    notifs,
     docs,
     promos,
     anuncios
@@ -7478,7 +7436,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function(){
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
-  const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
+  const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,seen_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const mobileFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
@@ -7508,7 +7466,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       nombre:affiliate&&(affiliate.display_name||affiliate.full_name)||'Afiliado',
       usuario:{id:row.affiliate_id,nombre:affiliate&&(affiliate.display_name||affiliate.full_name)||'Afiliado',numAfiliado:row.numero_control,sindicato:'—',categoria:'—'},
       item:productName,
-      visto:false,
+      visto:Boolean(row.seen_at),
       cotizacion:quote&&row.quoted_amount!=null?{monto:Number(row.quoted_amount),nota:row.quote_note||'',vigencia:row.valid_until||'',fechaHora:row.responded_at?new Date(row.responded_at).toLocaleString('es-MX'):'',actor:companyName||'Área responsable'}:null,
     }));
   }
@@ -7775,9 +7733,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function setCompanyFavorite(companyId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('marketplace_company_favorites').upsert({auth_user_id:user.id,company_id:companyId},{onConflict:'auth_user_id,company_id'}):await api.from('marketplace_company_favorites').delete().eq('company_id',companyId);if(r.error)throw r.error;}
   async function createQuote(productId,message,signature,terms,idempotencyKey,documentIds){return window.ProgramRequestRepository.create({productId,quantity:1,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});}
   function projectQuote(r){if(!r)return null;const map={requested:'solicitada',quoted:'cotizada',expired:'vencida',cancelled:'vencida'};return Object.freeze(Object.assign({},r,{estado:map[r.status]||r.status,productoId:r.product_id,empresaId:r.company_id,ts:new Date(r.created_at).getTime(),fechaHora:new Date(r.created_at).toLocaleString('es-MX'),visto:Boolean(r.seen_at),cotizacion:r.status==='quoted'?{monto:Number(r.quoted_amount),nota:r.quote_note||'',vigencia:r.valid_until||'',fechaHora:r.quoted_at?new Date(r.quoted_at).toLocaleString('es-MX'):'',actor:'Proveedor'}:null}));}
-  async function listQuotes(){return window.ProgramRequestRepository.list({programId:'marketplace',requestType:'quote'});}
+  async function listQuotes(){const r=await db().rpc('list_self_marketplace_quote_notifications');if(r.error)throw r.error;return Object.freeze((r.data||[]).map(window.ProgramRequestRepository.project));}
   async function respondQuote(id,amount,note,validUntil){return window.ProgramRequestRepository.respondQuote(id,amount,note,validUntil);}
-  async function markQuoteSeen(){return true;}
+  async function markQuoteSeen(id){const r=await db().rpc('mark_marketplace_quote_seen',{p_quote_id:id});if(r.error)throw r.error;return true;}
   async function createRequest(productId,quantity,message,signature,terms,idempotencyKey,documentIds){return window.ProgramRequestRepository.create({productId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});}
   async function listRequests(){return window.ProgramRequestRepository.list({programId:'marketplace',requestType:'benefit'});}
   async function updateRequest(id,status,notes){const mapped={pendiente:'submitted',revision:'in_review',aprobada:'approved',rechazada:'rejected',entregada:'approved',cancelada:'cancelled'}[status]||status;return window.ProgramRequestRepository.update(id,mapped,notes);}
@@ -57731,6 +57689,8 @@ Object.assign(window, {
   function frostBtn(icon, onClick, badge) {
     return React.createElement('button', {
       onClick,
+      'aria-label': icon === 'bell' ? 'Notificaciones' : icon,
+      'data-notifications-trigger': icon === 'bell' ? 'real-authority' : undefined,
       style: {
         position: 'relative',
         width: 44,
@@ -57750,6 +57710,7 @@ Object.assign(window, {
       size: 22,
       stroke: 2
     }), badge > 0 && React.createElement('span', {
+      'data-notifications-unread': String(badge),
       style: {
         position: 'absolute',
         top: -3,
@@ -57818,7 +57779,7 @@ Object.assign(window, {
     }, [variant, u.id]);
     const availableCredit = homeFinancialUser === u.id && financial.status === 'ready' && window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const availableCreditReady = availableCredit !== null;
-    const unread = D().notifs.filter(n => n.unread).length + (qs ? qs.readyUnseen().length : 0);
+    const unread = qs ? qs.readyUnseen().length : 0;
     const titles = {
       financiera: 'Mi Financiera',
       convenios: 'Convenios',
@@ -58317,8 +58278,11 @@ Object.assign(window, {
     app
   }) {
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    // Notificaciones derivadas del flujo de cotización previa
-    const quoteNotifs = (qs ? qs.mine() : []).map(r => r.estado === 'cotizada' ? {
+    const quoteState = qs ? qs.state() : {
+      phase: 'error'
+    };
+    // Avisos derivados exclusivamente de solicitudes de cotización reales.
+    const quoteNotifs = (qs ? qs.mine() : []).filter(r => r.estado === 'solicitada' || r.estado === 'cotizada').map(r => r.estado === 'cotizada' ? {
       id: 'q_' + r.id,
       icon: 'cash',
       tone: 'green',
@@ -58326,11 +58290,15 @@ Object.assign(window, {
       body: r.productoNombre + ' · ' + window.money((r.cotizacion || {}).monto || 0) + ' · ' + r.folio + '. Ya puedes simular tu financiamiento.',
       time: (r.cotizacion || {}).fechaHora || r.fechaHora,
       unread: !r.visto,
-      go: () => {
-        qs.markVisto(r.id);
-        app.push('product', {
-          id: r.productoId
-        });
+      go: async () => {
+        try {
+          await qs.markVisto(r.id);
+          app.push('product', {
+            id: r.productoId
+          });
+        } catch (_) {
+          app.toast('No se pudo marcar la notificación como vista');
+        }
       }
     } : {
       id: 'q_' + r.id,
@@ -58341,7 +58309,63 @@ Object.assign(window, {
       time: r.fechaHora,
       unread: false
     });
-    const items = [...quoteNotifs, ...D().notifs];
+    const items = quoteNotifs;
+    const statusCard = quoteState.phase === 'error' ? React.createElement('div', {
+      'data-notifications-state': 'error',
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 18,
+        boxShadow: 'var(--neo-sm)',
+        textAlign: 'center'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, 'No pudimos cargar tus notificaciones'), React.createElement('div', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink-2)',
+        marginTop: 5
+      }
+    }, 'Revisa tu conexión e inténtalo de nuevo.'), React.createElement('button', {
+      onClick: () => qs && qs.retry(),
+      style: {
+        marginTop: 12,
+        border: 'none',
+        borderRadius: 12,
+        padding: '9px 14px',
+        background: 'var(--guinda)',
+        color: '#fff',
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, 'Reintentar')) : quoteState.phase !== 'loaded' ? React.createElement('div', {
+      'data-notifications-state': 'loading',
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 18,
+        boxShadow: 'var(--neo-sm)',
+        textAlign: 'center',
+        fontSize: 13,
+        color: 'var(--ink-2)'
+      }
+    }, 'Cargando notificaciones…') : items.length === 0 ? React.createElement('div', {
+      'data-notifications-state': 'empty',
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 18,
+        boxShadow: 'var(--neo-sm)',
+        textAlign: 'center',
+        fontSize: 13,
+        color: 'var(--ink-2)'
+      }
+    }, 'No tienes notificaciones.') : null;
     return React.createElement('div', {
       style: {
         position: 'absolute',
@@ -58394,7 +58418,7 @@ Object.assign(window, {
         flexDirection: 'column',
         gap: 11
       }
-    }, items.map(n => {
+    }, statusCard || items.map(n => {
       const tones = {
         guinda: ['var(--guinda-50)', 'var(--guinda)'],
         green: ['#E7F6ED', '#13794A'],
@@ -58405,6 +58429,8 @@ Object.assign(window, {
       return React.createElement('div', {
         key: n.id,
         onClick: n.go,
+        'data-notification-id': n.id,
+        'data-notification-unread': n.unread ? 'true' : 'false',
         className: n.go ? 'su-press' : '',
         style: {
           display: 'flex',

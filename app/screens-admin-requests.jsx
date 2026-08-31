@@ -55,13 +55,11 @@
 
   function timelineEntries(detail){
     if(!detail)return[];
-    const entries=[{key:'created',label:'Solicitud enviada',date:detail.created_at,kind:'done'}],tracking=detail.tracking,dates=tracking&&tracking.stage_dates||{};
-    if(tracking&&Array.isArray(tracking.stages))tracking.stages.forEach((stage)=>{const raw=dates[stage.id]||dates[stage.name]||null,current=tracking.current_stage_id===stage.id;if(raw||current)entries.push({key:stage.id,label:stage.name,date:raw||tracking.updated_at,description:stage.description,responsible:stage.responsible,kind:current?'active':'done'});});
-    if(entries.length===1&&detail.updated_at&&detail.updated_at!==detail.created_at)entries.push({key:'updated',label:'Estado actual: '+stateLabel(detail.status),date:detail.updated_at,kind:'active'});
-    return entries;
+    const workflow=detail.workflow_state||{};
+    return (workflow.stages||[]).map((stage)=>({key:stage.id,label:stage.label,date:stage.date||null,description:stage.description,responsible:stage.responsible,kind:stage.state==='current'?'active':stage.state}));
   }
 
-  function AdminTimeline({detail}){const entries=timelineEntries(detail);return h('section',{className:'reqwb-section','data-request-timeline':'true'},h('h3',null,h(I,{name:'clock',size:17,stroke:2}),'Actividad registrada'),detail.tracking_available===false&&h('div',{'data-request-tracking-unavailable':'true',className:'reqwb-empty-small'},'El flujo configurado no está disponible con la proyección autorizada actual.'),h('div',{className:'reqwb-timeline'},entries.map((entry)=>h('div',{key:entry.key,className:'reqwb-event '+entry.kind},h('span',{className:'reqwb-event-dot'}),h('div',null,h('strong',null,entry.label),h('time',null,dateTime(entry.date)),entry.responsible&&h('span',null,'Área responsable: '+entry.responsible),entry.description&&h('span',null,entry.description))))));}
+  function AdminTimeline({detail}){const entries=timelineEntries(detail),workflow=detail.workflow_state||{};return h('section',{className:'reqwb-section','data-request-timeline':'true'},h('h3',null,h(I,{name:'clock',size:17,stroke:2}),'Actividad registrada'),detail.tracking_available===false&&h('div',{'data-request-tracking-unavailable':'true',className:'reqwb-empty-small'},workflow.message||'Seguimiento no disponible'),detail.tracking_available!==false&&h('div',{className:'reqwb-timeline'},entries.map((entry)=>h('div',{key:entry.key,className:'reqwb-event '+entry.kind},h('span',{className:'reqwb-event-dot'}),h('div',null,h('strong',null,entry.label),entry.date&&h('time',null,dateTime(entry.date)),entry.responsible&&h('span',null,'Área responsable: '+entry.responsible),entry.description&&h('span',null,entry.description))))));}
 
   function DocumentSummary({detail}){
     const docs=detail.request_documents||[],requirements=detail.requirements||[],byType=new Map(docs.map((doc)=>[doc.document_type&&doc.document_type.id,doc]));

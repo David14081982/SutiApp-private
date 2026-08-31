@@ -268,7 +268,7 @@
             React.createElement('span', { style: { fontSize: 14.5, fontWeight: st.done || st.active ? 800 : 600, color: st.done || st.active ? 'var(--ink)' : 'var(--ink-3)' } }, st.label),
             st.active && React.createElement('span', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '.04em', color: 'var(--guinda)', background: 'var(--guinda-50)', padding: '3px 8px', borderRadius: 999 } }, 'EN CURSO')),
           st.desc && React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.45, marginTop: 3, textWrap: 'pretty' } }, st.desc),
-          (st.date || st.responsable) && React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 4 } }, [st.date, st.responsable && ('Responsable: ' + st.responsable)].filter(Boolean).join(' · ')),
+          (st.date || st.responsable || st.sla != null) && React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 4 } }, [st.date, st.responsable && ('Responsable: ' + st.responsable), st.sla != null && ('Tiempo estimado: ' + st.sla + ' día(s) hábil(es)')].filter(Boolean).join(' · ')),
           st.active && activeNote && React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, marginTop: 9, background: 'var(--surface-2)', borderRadius: 13, padding: '11px 13px', lineHeight: 1.5, boxShadow: 'var(--neo-inset)' } }, activeNote)));
     }));
     return inner;

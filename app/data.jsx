@@ -120,37 +120,7 @@
   ];
 
   // Historial / solicitudes
-  const solicitudes = [
-    {
-      id: 'ID-2941', tipo: 'Suti Préstamo', monto: 35000, icon: 'cash', estado: 'revision',
-      fecha: '26 May 2026', plazo: '24 quincenas',
-      steps: [
-        { label: 'Solicitud enviada', done: true, date: '26 May · 10:14' },
-        { label: 'Validación de documentos', done: true, date: '26 May · 11:40' },
-        { label: 'Autorización', done: false, active: true, date: 'En proceso' },
-        { label: 'Depósito a cuenta', done: false },
-      ],
-    },
-    {
-      id: 'AH-1180', tipo: 'Ahorro Voluntario', monto: 12000, icon: 'piggy', estado: 'aprobado',
-      fecha: '02 May 2026', plazo: 'Semestral',
-      steps: [
-        { label: 'Solicitud enviada', done: true }, { label: 'Validación', done: true },
-        { label: 'Revisión', done: true }, { label: 'Aprobado', done: true, date: '05 May' }, { label: 'Activo', done: true },
-      ],
-    },
-    {
-      id: 'AD-0772', tipo: 'Adelanto de nómina', monto: 6000, icon: 'calendar', estado: 'depositado',
-      fecha: '18 Abr 2026', plazo: '1 quincena',
-      steps: [{ label: 'Solicitud', done: true }, { label: 'Aprobado', done: true }, { label: 'Depositado', done: true, date: '18 Abr' }],
-    },
-    {
-      id: 'TU-0451', tipo: 'Suti Tours · Cancún', monto: 18900, icon: 'plane', estado: 'rechazado',
-      fecha: '01 Abr 2026', plazo: '12 quincenas',
-      steps: [{ label: 'Solicitud', done: true }, { label: 'Validación', done: true }, { label: 'Rechazado', done: true, date: '03 Abr' }],
-      motivo: 'Capacidad de descuento de nómina superada. Liquida un crédito vigente para reintentar.',
-    },
-  ];
+  const solicitudes = []; // Runtime request history is resolved only from Supabase snapshots.
 
   const estadoMeta = {
     revision: { label: 'En revisión', tone: 'amber', icon: 'clock' },

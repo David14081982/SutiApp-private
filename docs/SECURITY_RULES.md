@@ -152,6 +152,12 @@ Para el flujo documental de solicitudes, las RPC de autoservicio son `SECURITY D
 
 La URL del QR se construye localmente desde una ruta validada y un token de 64 caracteres; no usa API externa ni introduce nombre, CURP, número de control, banco o documento. El servicio no admite redirects arbitrarios porque `destination_path` está restringido por constraint y sólo Admin `content.write` puede cambiar la política.
 
+## Timeline versionado de solicitudes — 2026-08-30
+
+Las tablas de workflows y tracking conservan RLS. Un usuario autenticado normal no puede enumerar la configuración global; el afiliado sólo obtiene la proyección de solicitudes propias mediante RPC `SECURITY DEFINER` con `search_path=''` e identidad derivada en backend. Administración requiere `workflow.read` para lectura y `workflow.write` para mutación; la UI no concede autoridad.
+
+`program_requests.workflow_snapshot` es inmutable. Los triggers validan resolución única, etapa inicial, estados canónicos y tracking perteneciente al snapshot. `operational_workflow_change_audit` fuerza RLS y conserva actor real, razón y valores antes/después; `anon` y browser normal no escriben directamente. El frontend no contiene `service_role`, secretos ni una segunda autoridad local.
+
 ## Carga documental desde Admin Afiliados — 2026-08-27
 
 `register_admin_affiliate_document` es `SECURITY DEFINER` con `search_path=''`, exige `documents.write` y deriva al actor desde `auth.uid()`. El UUID del afiliado sólo selecciona el expediente destino después de validación backend; tipo, ruta, owner, MIME, tamaño, hash y motivo se vuelven a validar. El objeto vive únicamente en `private-assets`, entra como `PENDING_REVIEW`, no sustituye un `VERIFIED` y deja auditoría durable sin secretos.

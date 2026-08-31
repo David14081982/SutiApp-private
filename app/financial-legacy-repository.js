@@ -237,7 +237,7 @@
       const value = values || {};
       if (!state.loanSession || !state.loanSession.id) throw Object.assign(new Error('SNAPSHOT_INVALID'), { code: 'SNAPSHOT_INVALID' });
       try {
-        return await invoke({
+        const request=await invoke({
           action: 'loanSessionConfirm', snapshot_id: state.loanSession.id,
           program_id: String(value.programId), amount: Number(value.amount), term: Number(value.term),
           program_item_id: String(value.programItemId), notes: String(value.notes || ''),
@@ -245,6 +245,10 @@
           terms_version_id: String(value.termsVersionId), document_ids: (value.documentIds || []).map(String),
           idempotency_key: String(value.idempotencyKey),
         });
+        const requestId=request.request_id||request.id;
+        if(!requestId||!window.ProgramRequestRepository)throw Object.assign(new Error('REQUEST_WORKFLOW_UNAVAILABLE'),{code:'REQUEST_WORKFLOW_UNAVAILABLE'});
+        const workflow_state=await window.ProgramRequestRepository.getWorkflowState(requestId);
+        return Object.freeze(Object.assign({},request,{workflow_state}));
       } catch (error) {
         const code = error.code || error.message;
         if (code === 'CONDITIONS_CHANGED' || code === 'SNAPSHOT_INVALID') await store.openLoanSession(true);

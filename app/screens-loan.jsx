@@ -691,9 +691,9 @@
       React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
   }
 
-  function Success({ app, folio, amount }) {
+  function Success({ app, folio, amount, workflowState }) {
     return React.createElement(window.RequestSubmissionSuccess, {
-      app, folio, amount, kind: 'loan',
+      app, folio, amount, kind: 'loan', workflowState,
       destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.',
     });
   }
@@ -772,7 +772,7 @@
           termsVersionId: freshDocumentState.terms.id,
           documentIds: freshDocuments.selected.map((document) => document.id),
         });
-        setSubmission({folio:request.folio||request.request_id,amount:result.amount});
+        setSubmission({folio:request.folio||request.request_id,amount:result.amount,workflowState:request.workflow_state});
       } catch (error) {
         const code = error && (error.code || error.message);
         if (code === 'CONDITIONS_CHANGED' || code === 'SNAPSHOT_INVALID') {
@@ -797,7 +797,7 @@
         }
       } finally { setSubmitting(false); }
     };
-    if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount }));
+    if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount, workflowState:submission.workflowState }));
     return React.createElement(Shell, { app, onBack: goBack },
       React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 10.5, fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),

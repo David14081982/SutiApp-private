@@ -158,7 +158,7 @@
         firma, idempotencyKey:idem.current, terminos: { aceptado: true, programa: 'cotizacion', fecha: new Date().toISOString() },
       });setSent(rec);}catch(_){setError('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');sending.current=false;}
     };
-    if (sent) return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'quote',subject:it.label,onBack:onClose,fullScreen:true,destination:(sent.empresaNombre||'El Área de Finanzas')+' recibió tu solicitud y preparará el presupuesto para su revisión.'});
+    if (sent) return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'quote',subject:it.label,workflowState:sent.workflow_state,onBack:onClose,fullScreen:true,destination:(sent.empresaNombre||'El Área de Finanzas')+' recibió tu solicitud y preparará el presupuesto para su revisión.'});
     return React.createElement(window.Sheet, { open, onClose, title: 'Solicitar cotización' },
       React.createElement('div', { style: { display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface-2)', borderRadius: 15, padding: '13px 14px' } },
         React.createElement('div', { style: { width: 44, height: 44, borderRadius: 12, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: it.icon, size: 23, stroke: 2 })),

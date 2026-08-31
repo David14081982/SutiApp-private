@@ -255,6 +255,24 @@ affiliate_documents     → expediente vigente separado → private_assets → U
 
 `request_documents` es la única evidencia de qué archivos acompañaron un envío. Admin puede consultar el expediente vigente del mismo afiliado en una sección separada, pero una solicitud antigua sin vínculos queda explícitamente no reconstruible. Las vistas siguen usando Storage privado y firma temporal bajo permiso documental.
 
+## H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001 — timeline versionado de solicitudes
+
+La configuración operativa vive únicamente en `operational_workflows` y `operational_workflow_stages`. Admin → Finanzas → Etapas y seguimiento lee y escribe esa autoridad con permisos `workflow.read/write`; retirar conserva historia y reordenar usa una RPC atómica. Cada mutación deja auditoría durable con actor real y motivo.
+
+```text
+Admin Etapas y seguimiento
+        ↓ definición versionada
+operational_workflows + operational_workflow_stages
+        ↓ trigger de alta: resolución única y snapshot inmutable
+program_requests.workflow_id/version/snapshot
+        ↓ resolver central + operational_request_tracking
+Éxito ── Mi Historial ── detalle Admin
+```
+
+`resolve_program_request_workflow_state()` es la única semántica de presentación. Una solicitud creada conserva su snapshot aunque la definición cambie; las ediciones sólo afectan altas futuras. El afiliado obtiene exclusivamente sus solicitudes mediante `get_self_request_workflow_state()`/`list_self_program_request_history()`, mientras Admin usa una proyección protegida. Cero coincidencias, ambigüedad, etapa o estado inválidos y lectura no disponible fallan cerrados, sin arrays locales, `DATA`, mocks, `localStorage` ni fallback.
+
+Los cuatro flujos iniciales —préstamo, membresía, cotización y beneficio— cubren toda alta productiva actual. Sus etapas describen seguimiento operativo y no calculan tasas, elegibilidad, saldos, amortización ni resultado financiero; Google y Apps Script permanecen fuera de esta lectura y escritura.
+
 ## H-SUTI-INVERSION-SCREEN-001 — simulador presentacional aislado
 
 ```text

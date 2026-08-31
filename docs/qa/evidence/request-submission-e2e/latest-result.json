@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "reducedMotion": false,
+  "desktop": true,
+  "tablet": false,
+  "workflowCutover": true,
+  "cardinalityMatrix": true,
+  "adminUiEdit": true,
+  "immutableWorkflowSnapshot": true,
+  "workflowUiRestored": true,
+  "realFlow": true,
+  "edge200": true,
+  "realFolio": true,
+  "authoritativeRequest": true,
+  "snapshots": true,
+  "successScreen": true,
+  "confetti": 42,
+  "historyRefresh": true,
+  "loanClassification": true,
+  "fixtureCleanup": true,
+  "successScreenshot": "docs\\qa\\evidence\\request-submission-e2e\\success-1280x900-desktop.png",
+  "historyScreenshot": "docs\\qa\\evidence\\request-submission-e2e\\history-1280x900-desktop.png",
+  "googleWrites": 0,
+  "piiPrinted": false
+}

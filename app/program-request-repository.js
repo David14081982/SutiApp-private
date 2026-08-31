@@ -9,6 +9,8 @@
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
   function key(){return crypto.randomUUID();}
+  async function getWorkflowState(id){const r=await db().rpc('get_self_request_workflow_state',{p_request_id:id});return Object.freeze(r.error?{available:false,reason:'WORKFLOW_PROJECTION_UNAVAILABLE',message:'Seguimiento no disponible temporalmente.'}:r.data||{available:false,message:'Seguimiento no disponible temporalmente.'});}
+  async function withWorkflow(row){const projected=project(row);if(projected.workflow_state)return projected;const workflow_state=await getWorkflowState(projected.id);return Object.freeze(Object.assign({},projected,{workflow_state}));}
   function project(row){
     const quote=row.request_type==='quote',product=row.product||row.program_item||(row.membership&&{name:row.membership.company_raw,price:row.membership.amount})||null,affiliate=row.affiliate||null;
     const productName=product&&product.name||row.program_id;
@@ -40,9 +42,9 @@
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
-    if(r.error)throw r.error;return project(r.data);
+    if(r.error)throw r.error;return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return project(r.data);}
+  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -73,10 +75,9 @@
     if(base.error)throw base.error;
     const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
-    const tracking=db().from('operational_request_tracking').select('request_id,current_stage_id,stage_dates,updated_at,workflow:operational_workflows!workflow_id(id,name,operational_workflow_stages(id,name,description,responsible,status_reference,sort_order))').eq('request_id',id).maybeSingle();
-    const parts=await Promise.all([documents,requirements,tracking]),trackingRow=parts[2].error?null:parts[2].data,workflow=trackingRow&&trackingRow.workflow;
-    const trackingView=trackingRow?Object.freeze(Object.assign({},trackingRow,{workflow_name:workflow&&workflow.name||'',stages:Object.freeze((workflow&&workflow.operational_workflow_stages||[]).slice().sort((a,b)=>a.sort_order-b.sort_order))})):null;
-    return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,tracking:trackingView,tracking_available:!parts[2].error,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
+    const workflow=db().rpc('get_self_request_workflow_state',{p_request_id:id});
+    const parts=await Promise.all([documents,requirements,workflow]),workflowState=parts[2].error?{available:false,message:'Seguimiento no disponible'}:parts[2].data;
+    return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,workflow_state:Object.freeze(workflowState),tracking_available:!parts[2].error&&workflowState.available===true,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
   }
   async function financialDetail(id){
     const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});
@@ -102,5 +103,5 @@
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
 })();

@@ -1853,3 +1853,25 @@ Unexpected files changed: 0
 Known limitations: append Google posterior a aprobación sigue separado y requiere acción autorizada del propietario
 Evidence: docs/qa/H-REQUEST-SUBMISSION-E2E-REMEDIATION-001-EVIDENCE.md
 ```
+
+## 2026-08-30 — H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001
+
+- Se eliminó la doble autoridad que mantenía el editor Admin desconectado y timelines hardcodeados. Admin → Finanzas → Etapas y seguimiento gobierna ahora los cuatro flujos reales de préstamo, membresía, cotización y beneficio.
+- Cada alta congela un `workflow_snapshot` versionado e inmutable; editar textos, orden, responsable, SLA o retirar etapas sólo afecta solicitudes futuras. Éxito, Mi Historial y detalles Admin usan el mismo resolver central y muestran fallo controlado si la proyección no está disponible.
+- La UI Admin realizó una edición y restauración reales; una solicitud de préstamo creada durante el cambio conservó el texto original después de restaurar, demostrando historia inmutable. Folio, monto, pantalla WOW, confeti y CTA a Historial permanecen activos.
+- Migración/recovery, RLS, auditoría actor real, live matrix, Chrome 390/430/768/1280, cardinalidad 3/4/6/8/10 y suite estática 64/64: `PASS`. Fixtures exactas eliminadas; Google reads 0/writes 0 y documentos permanecieron 8.
+
+```text
+H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001 RESULT
+Status: PASS
+Files changed: workflow SQL/recovery; repositories/stores/screens; bundle/cache; E2E/tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — definición Supabase única, snapshot inmutable por solicitud y resolver central
+Invariant verdict: PASS — resolución única, historia preservada, tracking validado y cero fallback local
+Build: PASS — 92 fuentes; node --check; SHA-256 21BB789599B6CCAE14C09FC019F64916E42EFF5DAC563BF0B866DE8C08D3C47A
+Tests: PASS — 64/64 static; migration/recovery; live; E2E 390×844, 430×932 reduced, 768×1024 y 1280×900
+Security: PASS — RLS/RPC; self derivado; Admin workflow.read/write; anónimo/normal denied; auditoría durable
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: procesamiento financiero posterior a aprobación conserva su frontera legacy protegida
+Evidence: docs/qa/H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001-EVIDENCE.md
+```

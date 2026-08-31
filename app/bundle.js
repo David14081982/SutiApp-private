@@ -4783,14 +4783,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
           marginTop: 3,
           textWrap: 'pretty'
         }
-      }, st.desc), (st.date || st.responsable) && React.createElement('div', {
+      }, st.desc), (st.date || st.responsable || st.sla != null) && React.createElement('div', {
         style: {
           fontSize: 12,
           color: 'var(--ink-3)',
           fontWeight: 600,
           marginTop: 4
         }
-      }, [st.date, st.responsable && 'Responsable: ' + st.responsable].filter(Boolean).join(' · ')), st.active && activeNote && React.createElement('div', {
+      }, [st.date, st.responsable && 'Responsable: ' + st.responsable, st.sla != null && 'Tiempo estimado: ' + st.sla + ' día(s) hábil(es)'].filter(Boolean).join(' · ')), st.active && activeNote && React.createElement('div', {
         style: {
           fontSize: 12.5,
           color: 'var(--ink-2)',
@@ -5302,80 +5302,6 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const I = window.Icon;
   const dash = '—';
   const colors = ['#B9003B', '#E2AA3B', '#0E8A61', '#314A7C', '#F0A9BA'];
-  const COPY = {
-    loan: {
-      stages: [{
-        state: 'done',
-        title: 'Solicitud enviada',
-        meta: 'Justo ahora'
-      }, {
-        state: 'current',
-        title: 'Revisión de documentos',
-        badge: 'EN CURSO',
-        detail: 'Recibirás una notificación en cuanto el comité evalúe tu solicitud (máximo 24 hrs.).'
-      }, {
-        state: 'upcoming',
-        title: 'Autorización'
-      }, {
-        state: 'upcoming',
-        title: 'Depósito vía nómina'
-      }]
-    },
-    membership: {
-      stages: [{
-        state: 'done',
-        title: 'Solicitud enviada',
-        meta: 'Justo ahora'
-      }, {
-        state: 'current',
-        title: 'Revisión de documentos',
-        badge: 'EN CURSO',
-        detail: 'Te notificaremos en cuanto el área responsable revise tu solicitud.'
-      }, {
-        state: 'upcoming',
-        title: 'Resolución'
-      }, {
-        state: 'upcoming',
-        title: 'Activación de membresía'
-      }]
-    },
-    quote: {
-      stages: [{
-        state: 'done',
-        title: 'Solicitud enviada',
-        meta: 'Justo ahora'
-      }, {
-        state: 'current',
-        title: 'Preparación de cotización',
-        badge: 'EN CURSO',
-        detail: 'El proveedor preparará el presupuesto con el monto real.'
-      }, {
-        state: 'upcoming',
-        title: 'Cotización disponible'
-      }, {
-        state: 'upcoming',
-        title: 'Simulación de financiamiento'
-      }]
-    },
-    benefit: {
-      stages: [{
-        state: 'done',
-        title: 'Solicitud enviada',
-        meta: 'Justo ahora'
-      }, {
-        state: 'current',
-        title: 'Revisión del área responsable',
-        badge: 'EN CURSO',
-        detail: 'Te notificaremos cuando exista una actualización de tu solicitud.'
-      }, {
-        state: 'upcoming',
-        title: 'Resolución'
-      }, {
-        state: 'upcoming',
-        title: 'Seguimiento'
-      }]
-    }
-  };
   const CSS = `
     .request-success{position:relative;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg)}
     .request-success.is-fullscreen{position:fixed;inset:0;z-index:2600}
@@ -5410,12 +5336,20 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     .request-success-stage-meta{display:block;margin-top:4px;font-size:11px;font-weight:650;color:var(--ink-3)}
     .request-success-badge{display:inline-flex;align-items:center;min-height:20px;padding:3px 9px;border-radius:999px;background:#FCE8EE;color:var(--guinda);font-size:9px;font-weight:900;letter-spacing:.03em}
     .request-success-detail{margin-top:9px;padding:11px 12px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600;line-height:1.45}
+    .request-success-stage-context{display:block;margin-top:4px;font-size:10.5px;font-weight:650;color:var(--ink-3);line-height:1.4}
+    .request-success-unavailable{padding:18px 14px;text-align:center;color:var(--ink-3);font-size:12.5px;font-weight:700;line-height:1.5}
     .request-success-footer{position:relative;z-index:2;padding:8px 22px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,var(--bg) 18%)}
     .request-success-home{display:block;width:100%;height:38px;margin-top:7px;border:0;background:transparent;color:var(--guinda);font:800 13px var(--font);cursor:pointer}
     .request-success button:focus-visible{outline:2px solid var(--guinda);outline-offset:2px}
     @keyframes suti-request-confetti{0%{transform:translate3d(0,-24px,0) rotate(0);opacity:0}9%{opacity:1}100%{transform:translate3d(var(--confetti-drift),105vh,0) rotate(620deg);opacity:0}}
     @media(max-height:760px){.request-success-scroll{padding-top:18px}.request-success-icon{width:76px;height:76px}.request-success h2{margin-top:15px}.request-success-next{margin-top:20px}}
   `;
+  function formatStageDate(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return null;
+    return Date.now() - date.getTime() < 300000 ? 'Justo ahora' : date.toLocaleString('es-MX');
+  }
   function RequestSubmissionSuccess({
     app,
     folio,
@@ -5423,12 +5357,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     kind = 'benefit',
     subject,
     destination,
+    workflowState,
     onBack,
     fullScreen = false,
     membershipSuccessId
   }) {
     const celebrate = !(window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen()));
-    const config = COPY[kind] || COPY.benefit;
+    const stages = workflowState && workflowState.available && Array.isArray(workflowState.stages) ? workflowState.stages : [];
     const amountLabel = typeof amount === 'number' && Number.isFinite(amount) ? window.money(amount) : null;
     const history = () => {
       if (window.operationsStore && window.operationsStore.invalidate) window.operationsStore.invalidate();
@@ -5513,8 +5448,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       stroke: 2.2
     }), '¿Qué sigue?'), React.createElement('ol', {
       className: 'request-success-timeline'
-    }, config.stages.map(stage => React.createElement('li', {
-      key: stage.title,
+    }, stages.length ? stages.map(stage => React.createElement('li', {
+      key: stage.id,
       className: 'request-success-stage',
       'data-state': stage.state
     }, React.createElement('span', {
@@ -5534,13 +5469,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       className: 'request-success-stage-title-row'
     }, React.createElement('span', {
       className: 'request-success-stage-title'
-    }, stage.title), stage.badge && React.createElement('span', {
+    }, stage.label), stage.state === 'current' && React.createElement('span', {
       className: 'request-success-badge'
-    }, stage.badge)), stage.meta && React.createElement('span', {
+    }, 'EN CURSO')), formatStageDate(stage.date) && React.createElement('span', {
       className: 'request-success-stage-meta'
-    }, stage.meta), stage.detail && React.createElement('div', {
+    }, formatStageDate(stage.date)), (stage.responsible || stage.sla_days != null) && React.createElement('span', {
+      className: 'request-success-stage-context'
+    }, [stage.responsible && 'Responsable: ' + stage.responsible, stage.sla_days != null && 'Tiempo estimado: ' + stage.sla_days + ' día(s) hábil(es)'].filter(Boolean).join(' · ')), stage.state === 'current' && stage.description && React.createElement('div', {
       className: 'request-success-detail'
-    }, stage.detail))))))), React.createElement('footer', {
+    }, stage.description)))) : React.createElement('li', {
+      className: 'request-success-unavailable'
+    }, workflowState && workflowState.message || 'Seguimiento no disponible')))), React.createElement('footer', {
       className: 'request-success-footer'
     }, React.createElement(window.Btn, {
       full: true,
@@ -6639,96 +6578,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }];
 
   // Historial / solicitudes
-  const solicitudes = [{
-    id: 'ID-2941',
-    tipo: 'Suti Préstamo',
-    monto: 35000,
-    icon: 'cash',
-    estado: 'revision',
-    fecha: '26 May 2026',
-    plazo: '24 quincenas',
-    steps: [{
-      label: 'Solicitud enviada',
-      done: true,
-      date: '26 May · 10:14'
-    }, {
-      label: 'Validación de documentos',
-      done: true,
-      date: '26 May · 11:40'
-    }, {
-      label: 'Autorización',
-      done: false,
-      active: true,
-      date: 'En proceso'
-    }, {
-      label: 'Depósito a cuenta',
-      done: false
-    }]
-  }, {
-    id: 'AH-1180',
-    tipo: 'Ahorro Voluntario',
-    monto: 12000,
-    icon: 'piggy',
-    estado: 'aprobado',
-    fecha: '02 May 2026',
-    plazo: 'Semestral',
-    steps: [{
-      label: 'Solicitud enviada',
-      done: true
-    }, {
-      label: 'Validación',
-      done: true
-    }, {
-      label: 'Revisión',
-      done: true
-    }, {
-      label: 'Aprobado',
-      done: true,
-      date: '05 May'
-    }, {
-      label: 'Activo',
-      done: true
-    }]
-  }, {
-    id: 'AD-0772',
-    tipo: 'Adelanto de nómina',
-    monto: 6000,
-    icon: 'calendar',
-    estado: 'depositado',
-    fecha: '18 Abr 2026',
-    plazo: '1 quincena',
-    steps: [{
-      label: 'Solicitud',
-      done: true
-    }, {
-      label: 'Aprobado',
-      done: true
-    }, {
-      label: 'Depositado',
-      done: true,
-      date: '18 Abr'
-    }]
-  }, {
-    id: 'TU-0451',
-    tipo: 'Suti Tours · Cancún',
-    monto: 18900,
-    icon: 'plane',
-    estado: 'rechazado',
-    fecha: '01 Abr 2026',
-    plazo: '12 quincenas',
-    steps: [{
-      label: 'Solicitud',
-      done: true
-    }, {
-      label: 'Validación',
-      done: true
-    }, {
-      label: 'Rechazado',
-      done: true,
-      date: '03 Abr'
-    }],
-    motivo: 'Capacidad de descuento de nómina superada. Liquida un crédito vigente para reintentar.'
-  }];
+  const solicitudes = []; // Runtime request history is resolved only from Supabase snapshots.
+
   const estadoMeta = {
     revision: {
       label: 'En revisión',
@@ -7511,11 +7362,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     saveFinancePresentation:(r)=>upsert('finance_catalog_presentation',r,'item_key'),
     listWorkflows:()=>list('operational_workflows','*,operational_workflow_stages(*)',q=>q.order('sort_order').order('sort_order',{referencedTable:'operational_workflow_stages'})),
     saveWorkflow:(r)=>upsert('operational_workflows',r,'id'),
-    deleteWorkflow:(id)=>remove('operational_workflows',id),
+    retireWorkflow:(id)=>run(client().from('operational_workflows').update({enabled:false}).eq('id',id).select()),
     saveStage:(r)=>upsert('operational_workflow_stages',r,'id'),
-    deleteStage:(id)=>remove('operational_workflow_stages',id),
+    retireStage:(id)=>run(client().from('operational_workflow_stages').update({enabled:false}).eq('id',id).select()),
+    reorderStages:(workflowId,stageIds)=>run(client().rpc('reorder_operational_workflow_stages',{p_workflow_id:workflowId,p_stage_ids:stageIds})),
     listTracking:()=>list('operational_request_tracking','*'),
     saveTracking:(r)=>upsert('operational_request_tracking',r,'request_id'),
+    listRequestWorkflowTracking:()=>run(client().rpc('list_admin_request_workflow_tracking')),
     listUnion:()=>Promise.all([
       list('union_screen_content',`screen_key,title,description,published,header_asset_id,header_asset:app_assets!union_screen_content_header_asset_id_fkey(${assetFields})`,q=>q.order('screen_key')),
       list('union_content_blocks',`id,screen_key,block_type,title,body,external_url,asset_id,published,sort_order,audience_mode,union_codes,employment_category_codes,gender_codes,tag_codes,asset:app_assets!union_content_blocks_asset_id_fkey(${assetFields})`,q=>q.order('screen_key').order('sort_order'))]),
@@ -7632,6 +7485,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
   function key(){return crypto.randomUUID();}
+  async function getWorkflowState(id){const r=await db().rpc('get_self_request_workflow_state',{p_request_id:id});return Object.freeze(r.error?{available:false,reason:'WORKFLOW_PROJECTION_UNAVAILABLE',message:'Seguimiento no disponible temporalmente.'}:r.data||{available:false,message:'Seguimiento no disponible temporalmente.'});}
+  async function withWorkflow(row){const projected=project(row);if(projected.workflow_state)return projected;const workflow_state=await getWorkflowState(projected.id);return Object.freeze(Object.assign({},projected,{workflow_state}));}
   function project(row){
     const quote=row.request_type==='quote',product=row.product||row.program_item||(row.membership&&{name:row.membership.company_raw,price:row.membership.amount})||null,affiliate=row.affiliate||null;
     const productName=product&&product.name||row.program_id;
@@ -7663,9 +7518,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
-    if(r.error)throw r.error;return project(r.data);
+    if(r.error)throw r.error;return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return project(r.data);}
+  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -7696,10 +7551,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(base.error)throw base.error;
     const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
-    const tracking=db().from('operational_request_tracking').select('request_id,current_stage_id,stage_dates,updated_at,workflow:operational_workflows!workflow_id(id,name,operational_workflow_stages(id,name,description,responsible,status_reference,sort_order))').eq('request_id',id).maybeSingle();
-    const parts=await Promise.all([documents,requirements,tracking]),trackingRow=parts[2].error?null:parts[2].data,workflow=trackingRow&&trackingRow.workflow;
-    const trackingView=trackingRow?Object.freeze(Object.assign({},trackingRow,{workflow_name:workflow&&workflow.name||'',stages:Object.freeze((workflow&&workflow.operational_workflow_stages||[]).slice().sort((a,b)=>a.sort_order-b.sort_order))})):null;
-    return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,tracking:trackingView,tracking_available:!parts[2].error,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
+    const workflow=db().rpc('get_self_request_workflow_state',{p_request_id:id});
+    const parts=await Promise.all([documents,requirements,workflow]),workflowState=parts[2].error?{available:false,message:'Seguimiento no disponible'}:parts[2].data;
+    return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,workflow_state:Object.freeze(workflowState),tracking_available:!parts[2].error&&workflowState.available===true,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
   }
   async function financialDetail(id){
     const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});
@@ -7725,7 +7579,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
 })();
 })();
 /* @@file document-workflow-repository.js */
@@ -13396,13 +13250,15 @@ Object.assign(window, {
   function Success({
     app,
     folio,
-    amount
+    amount,
+    workflowState
   }) {
     return React.createElement(window.RequestSubmissionSuccess, {
       app,
       folio,
       amount,
       kind: 'loan',
+      workflowState,
       destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.'
     });
   }
@@ -13545,7 +13401,8 @@ Object.assign(window, {
         });
         setSubmission({
           folio: request.folio || request.request_id,
-          amount: result.amount
+          amount: result.amount,
+          workflowState: request.workflow_state
         });
       } catch (error) {
         const code = error && (error.code || error.message);
@@ -13581,7 +13438,8 @@ Object.assign(window, {
     }, React.createElement(Success, {
       app,
       folio: submission.folio,
-      amount: submission.amount
+      amount: submission.amount,
+      workflowState: submission.workflowState
     }));
     return React.createElement(Shell, {
       app,
@@ -14296,6 +14154,7 @@ Object.assign(window, {
       folio: sent.folio,
       kind: 'quote',
       subject: it.label,
+      workflowState: sent.workflow_state,
       onBack: onClose,
       fullScreen: true,
       destination: (sent.empresaNombre || 'El Área de Finanzas') + ' recibió tu solicitud y preparará el presupuesto para su revisión.'
@@ -18295,7 +18154,6 @@ Object.assign(window, {
     // timeline (etapas administrables por tipo de servicio/solicitud)
     function () {
       const steps = s.steps || [];
-      const nota = s.estado === 'revision' ? 'La empresa o proveedor está revisando tu solicitud comercial.' : null;
       return React.createElement('div', {
         style: {
           marginTop: 22
@@ -18303,10 +18161,22 @@ Object.assign(window, {
       }, React.createElement(window.SectionHead, {
         title: 'Línea de tiempo',
         icon: 'clock'
-      }), React.createElement(window.Timeline, {
+      }), s.workflowAvailable ? React.createElement(window.Timeline, {
         steps,
-        activeNote: nota
-      }));
+        activeNote: s.activeNote
+      }) : React.createElement('div', {
+        'data-workflow-unavailable': '',
+        style: {
+          background: 'var(--surface)',
+          borderRadius: 18,
+          padding: 18,
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 700,
+          color: 'var(--ink-3)',
+          boxShadow: 'var(--neo-sm)'
+        }
+      }, s.workflowMessage || 'Seguimiento no disponible'));
     }(), s.estado === 'rechazado' ? React.createElement(window.Btn, {
       full: true,
       size: 'lg',
@@ -23585,7 +23455,7 @@ Object.assign(window, {
 })();
 /* @@file operations-store.jsx */
 (function(){
-/* Phase 5 non-financial operations projection. Supabase is authoritative. */
+/* Request history projection. Supabase workflow snapshots own every timeline. */
 (function () {
   const {
     useState,
@@ -23597,73 +23467,57 @@ Object.assign(window, {
     error = null,
     promise = null;
   const emit = () => listeners.forEach(fn => fn());
-  const step = (label, done, active, date) => ({
-    label,
-    done,
-    active,
-    date
-  });
-  function requestRow(r) {
+  function timeline(r) {
+    const state = r.workflow_state || {};
+    return {
+      available: state.available === true,
+      message: state.message || 'Seguimiento no disponible',
+      activeNote: state.active_note || null,
+      workflowName: state.workflow_name || '',
+      workflowVersion: state.workflow_version || null,
+      steps: (state.stages || []).map(stage => ({
+        id: stage.id,
+        label: stage.label,
+        desc: stage.description || '',
+        responsable: stage.responsible || '',
+        sla: stage.sla_days,
+        date: stage.date ? new Date(stage.date).toLocaleString('es-MX') : null,
+        done: stage.state === 'done',
+        active: stage.state === 'current'
+      }))
+    };
+  }
+  function common(r, kind) {
     const state = r.status || 'submitted',
       approved = ['approved', 'completed'].includes(state),
       rejected = ['rejected', 'cancelled'].includes(state),
-      review = ['review', 'in_review', 'requires_financial_processing'].includes(state);
+      flow = timeline(r),
+      isLoan = kind === 'loan',
+      isQuote = kind === 'quote';
     return Object.freeze({
       id: r.folio || r.id,
       sourceId: r.id,
       ts: new Date(r.created_at).getTime(),
-      kind: 'benefit',
-      icon: 'cart',
-      tipo: r.productoNombre || 'Solicitud de beneficio',
-      monto: r.importe == null ? null : Number(r.importe) * Number(r.quantity || 1),
+      kind,
+      icon: isLoan ? 'receipt' : isQuote ? 'doc' : 'cart',
+      tipo: r.productoNombre || (isLoan ? 'Suti Préstamo' : isQuote ? 'Cotización comercial' : 'Solicitud de beneficio'),
+      monto: isLoan ? r.requested_amount == null ? r.importe : Number(r.requested_amount) : isQuote ? approved && r.quoted_amount != null ? Number(r.quoted_amount) : null : r.importe == null ? null : Number(r.importe) * Number(r.quantity || 1),
       estado: rejected ? 'rechazado' : approved ? 'aprobado' : 'revision',
       fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
-      plazo: state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
-      subtipo: r.empresaNombre || r.program_id || '',
-      motivo: rejected ? r.company_notes || 'El área responsable marcó la solicitud como no aprobada.' : '',
-      steps: [step('Solicitud enviada', true, false, new Date(r.created_at).toLocaleDateString('es-MX')), step(state === 'requires_financial_processing' ? 'Revisión financiera' : 'Revisión del área responsable', approved || rejected, review || !approved && !rejected), step(approved ? 'Solicitud aprobada' : rejected ? 'Solicitud no aprobada' : 'Resolución', approved || rejected, false)]
+      plazo: isLoan && r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : isQuote ? approved ? 'Cotización recibida' : 'Por cotizar' : state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
+      subtipo: isLoan ? 'Préstamo' : r.empresaNombre || r.program_id || '',
+      motivo: rejected ? r.company_notes || 'La solicitud fue cerrada por el área responsable.' : '',
+      steps: flow.steps,
+      workflowAvailable: flow.available,
+      workflowMessage: flow.message,
+      activeNote: flow.activeNote,
+      workflowName: flow.workflowName,
+      workflowVersion: flow.workflowVersion
     });
   }
-  function quoteRow(r) {
-    const quoted = ['quoted', 'approved'].includes(r.status),
-      rejected = ['expired', 'rejected', 'cancelled'].includes(r.status);
-    return Object.freeze({
-      id: r.folio || r.id,
-      sourceId: r.id,
-      ts: new Date(r.created_at).getTime(),
-      kind: 'quote',
-      icon: 'doc',
-      tipo: r.productoNombre || 'Cotización comercial',
-      monto: quoted && r.quoted_amount != null ? Number(r.quoted_amount) : null,
-      estado: rejected ? 'rechazado' : quoted ? 'aprobado' : 'revision',
-      fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
-      plazo: quoted ? 'Cotización recibida' : 'Por cotizar',
-      subtipo: r.empresaNombre || r.program_id || '',
-      motivo: rejected ? 'La cotización fue cerrada.' : '',
-      steps: [step('Cotización solicitada', true, false, new Date(r.created_at).toLocaleDateString('es-MX')), step('Preparación del área responsable', quoted || rejected, !quoted && !rejected), step(quoted ? 'Cotización disponible' : rejected ? 'Cotización cerrada' : 'Respuesta', quoted || rejected, false, quoted && (r.responded_at || r.quoted_at) ? new Date(r.responded_at || r.quoted_at).toLocaleDateString('es-MX') : null)]
-    });
-  }
-  function loanRow(r) {
-    const state = r.status || 'requires_financial_processing',
-      approved = ['approved', 'completed'].includes(state),
-      rejected = ['rejected', 'cancelled'].includes(state),
-      term = r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : 'Revisi\u00f3n financiera';
-    return Object.freeze({
-      id: r.folio || r.id,
-      sourceId: r.id,
-      ts: new Date(r.created_at).getTime(),
-      kind: 'loan',
-      icon: 'receipt',
-      tipo: r.productoNombre || 'Suti Pr\u00e9stamo',
-      monto: r.requested_amount == null ? r.importe : Number(r.requested_amount),
-      estado: rejected ? 'rechazado' : approved ? 'aprobado' : 'revision',
-      fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
-      plazo: term,
-      subtipo: 'Pr\u00e9stamo',
-      motivo: rejected ? r.company_notes || 'La solicitud fue marcada como no aprobada.' : '',
-      steps: [step('Solicitud enviada', true, false, new Date(r.created_at).toLocaleDateString('es-MX')), step('Revisi\u00f3n de documentos', approved || rejected, !approved && !rejected), step(approved ? 'Autorizaci\u00f3n' : rejected ? 'Solicitud no aprobada' : 'Autorizaci\u00f3n', approved || rejected, false)]
-    });
-  }
+  const requestRow = r => common(r, 'benefit'),
+    quoteRow = r => common(r, 'quote'),
+    loanRow = r => common(r, 'loan');
   async function load(force) {
     if (promise && !force) return promise;
     phase = 'loading';
@@ -23720,12 +23574,16 @@ Object.assign(window, {
 })();
 /* @@file flow-store.jsx */
 (function(){
-/* Supabase authority for non-financial workflow definitions and tracking. */
+/* Supabase authority for versioned request workflow definitions and tracking. */
 (function () {
   const repo = window.AdminCutoverRepository,
     listeners = new Set();
   let flows = [],
-    tracks = {};
+    tracks = {},
+    requests = [],
+    phase = 'idle',
+    error = null,
+    initialLoad = null;
   const TIPOS = [{
       id: 'solicitud',
       label: 'Solicitud',
@@ -23759,7 +23617,26 @@ Object.assign(window, {
       tone: 'red',
       icon: 'close'
     }],
-    RESPONSABLES = ['Afiliado', 'Finanzas', 'Sindicato', 'Empresa / proveedor', 'Sistema'];
+    RESPONSABLES = ['Afiliado', 'Finanzas', 'Sindicato', 'Empresa / proveedor', 'Sistema'],
+    REQUEST_STATUSES = [{
+      id: 'submitted',
+      label: 'Enviada'
+    }, {
+      id: 'in_review',
+      label: 'En revisión'
+    }, {
+      id: 'requires_financial_processing',
+      label: 'En revisión financiera'
+    }, {
+      id: 'approved',
+      label: 'Aprobada'
+    }, {
+      id: 'rejected',
+      label: 'No aprobada'
+    }, {
+      id: 'cancelled',
+      label: 'Cancelada'
+    }];
   const mapType = {
       request: 'solicitud',
       agreement: 'convenio',
@@ -23783,8 +23660,8 @@ Object.assign(window, {
       fallo: 'failure'
     };
   const emit = () => listeners.forEach(fn => fn()),
-    fail = e => console.error('Workflow authority error', e),
-    uid = () => crypto.randomUUID();
+    uid = () => crypto.randomUUID(),
+    sorted = a => a.slice().sort((x, y) => (x.orden || 0) - (y.orden || 0) || String(x.id).localeCompare(String(y.id)));
   const stage = s => ({
     id: s.id,
     nombre: s.name,
@@ -23795,7 +23672,8 @@ Object.assign(window, {
     slaDias: s.sla_days,
     registraFecha: s.captures_date,
     servicios: s.service_keys || [],
-    estadoRef: s.status_reference || ''
+    estadoRefs: String(s.status_reference || '').split(',').map(x => x.trim()).filter(Boolean),
+    activo: s.enabled !== false
   });
   const flow = r => ({
     id: r.id,
@@ -23805,11 +23683,15 @@ Object.assign(window, {
     servicios: r.service_keys || [],
     activo: r.enabled,
     orden: r.sort_order,
+    version: r.version,
     etapas: (r.operational_workflow_stages || []).map(stage).sort((a, b) => a.orden - b.orden)
   });
   async function load() {
+    phase = 'loading';
+    error = null;
+    emit();
     try {
-      const out = await Promise.all([repo.listWorkflows(), repo.listTracking()]);
+      const out = await Promise.all([repo.listWorkflows(), repo.listTracking(), repo.listRequestWorkflowTracking()]);
       flows = out[0].map(flow);
       tracks = {};
       out[1].forEach(x => tracks[x.request_id] = {
@@ -23817,14 +23699,38 @@ Object.assign(window, {
         etapaId: x.current_stage_id,
         fechas: x.stage_dates || {}
       });
-      emit();
+      requests = out[2] || [];
+      phase = 'loaded';
     } catch (e) {
-      fail(e);
+      phase = 'error';
+      error = e;
+      console.error('Workflow authority error', e);
     }
+    emit();
+    return store;
   }
-  const sorted = a => a.slice().sort((x, y) => (x.orden || 0) - (y.orden || 0));
   function servicesCatalog() {
-    const out = [];
+    const out = [{
+      id: 'request:loan',
+      label: 'Financiamiento / préstamo',
+      grupo: 'Tipos de solicitud',
+      icon: 'cash'
+    }, {
+      id: 'request:membership',
+      label: 'Membresía',
+      grupo: 'Tipos de solicitud',
+      icon: 'card'
+    }, {
+      id: 'request:quote',
+      label: 'Cotización',
+      grupo: 'Tipos de solicitud',
+      icon: 'doc'
+    }, {
+      id: 'request:benefit',
+      label: 'Beneficio',
+      grupo: 'Tipos de solicitud',
+      icon: 'gift'
+    }];
     (window.finCatStore.groups() || []).forEach(g => g.items.forEach(i => out.push({
       id: i.id,
       label: i.label,
@@ -23837,13 +23743,18 @@ Object.assign(window, {
     TIPOS,
     RESULTADOS,
     RESPONSABLES,
+    REQUEST_STATUSES,
     TIPO: id => TIPOS.find(x => x.id === id) || TIPOS[0],
     RESULTADO: id => RESULTADOS.find(x => x.id === id) || RESULTADOS[0],
+    state: () => ({
+      phase,
+      error
+    }),
     servicesCatalog,
     serviceLabel: id => (servicesCatalog().find(x => x.id === id) || {
       label: id
     }).label,
-    stamp: () => new Date().toLocaleString('es-MX'),
+    stamp: () => new Date().toISOString(),
     subscribe: fn => {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -23855,15 +23766,17 @@ Object.assign(window, {
       const f = store.get(id);
       return f ? sorted(f.etapas) : [];
     },
+    etapasActivas: id => store.etapas(id).filter(e => e.activo),
     count: () => flows.length,
     etapasCount: () => flows.reduce((n, f) => n + f.etapas.length, 0),
+    requests: () => requests.slice(),
     blank: () => ({
       id: null,
       nombre: '',
       descripcion: '',
       tipo: 'solicitud',
       servicios: [],
-      activo: true,
+      activo: false,
       etapas: []
     }),
     blankEtapa: () => ({
@@ -23875,44 +23788,50 @@ Object.assign(window, {
       slaDias: null,
       registraFecha: true,
       servicios: [],
-      estadoRef: ''
+      estadoRefs: [],
+      activo: true
     }),
-    save(f) {
+    async save(f) {
       const id = f.id || uid();
-      repo.saveWorkflow({
+      await repo.saveWorkflow({
         id,
         name: f.nombre,
         description: f.descripcion || '',
         workflow_type: dbType[f.tipo],
         service_keys: f.servicios || [],
-        enabled: f.activo !== false,
+        enabled: f.activo === true,
         sort_order: f.orden || flows.length
-      }).then(load).catch(fail);
+      });
+      await load();
       return id;
     },
-    remove: id => repo.deleteWorkflow(id).then(load).catch(fail),
+    async remove(id) {
+      await repo.retireWorkflow(id);
+      await load();
+    },
     duplicate: id => {
       const f = store.get(id);
       if (!f) return null;
       return store.save(Object.assign({}, f, {
         id: null,
         nombre: f.nombre + ' (copia)',
+        activo: false,
         etapas: []
       }));
     },
-    setActivo: (id, v) => {
+    setActivo: async (id, v) => {
       const f = store.get(id);
-      if (f) store.save(Object.assign({}, f, {
+      if (f) return store.save(Object.assign({}, f, {
         activo: v
       }));
     },
-    moveFlow: (id, dir) => {
+    moveFlow: async (id, dir) => {
       const a = store.all(),
         i = a.findIndex(x => x.id === id),
         j = i + dir;
       if (i < 0 || j < 0 || j >= a.length) return;
       [a[i].orden, a[j].orden] = [j, i];
-      Promise.all([repo.saveWorkflow({
+      await Promise.all([repo.saveWorkflow({
         id: a[i].id,
         name: a[i].nombre,
         description: a[i].descripcion,
@@ -23928,53 +23847,65 @@ Object.assign(window, {
         service_keys: a[j].servicios,
         enabled: a[j].activo,
         sort_order: a[j].orden
-      })]).then(load).catch(fail);
+      })]);
+      await load();
     },
-    saveEtapa: (fid, e) => repo.saveStage({
-      id: e.id || uid(),
-      workflow_id: fid,
-      name: e.nombre,
-      description: e.descripcion || '',
-      responsible: e.responsable || 'Sindicato',
-      outcome: dbResult[e.resultado] || 'process',
-      sla_days: e.slaDias || null,
-      service_keys: e.servicios || [],
-      status_reference: e.estadoRef || null,
-      captures_date: e.registraFecha !== false,
-      sort_order: e.orden == null ? store.etapas(fid).length : e.orden
-    }).then(load).catch(fail),
-    removeEtapa: (fid, id) => repo.deleteStage(id).then(load).catch(fail),
-    moveEtapa: (fid, id, dir) => {
+    async saveEtapa(fid, e) {
+      await repo.saveStage({
+        id: e.id || uid(),
+        workflow_id: fid,
+        name: e.nombre,
+        description: e.descripcion || '',
+        responsible: e.responsable || 'Sindicato',
+        outcome: dbResult[e.resultado] || 'process',
+        sla_days: e.slaDias == null ? null : Number(e.slaDias),
+        service_keys: e.servicios || [],
+        status_reference: (e.estadoRefs || []).join(',') || null,
+        captures_date: e.registraFecha !== false,
+        sort_order: e.orden == null ? store.etapas(fid).length * 10 + 10 : e.orden,
+        enabled: e.activo !== false
+      });
+      await load();
+    },
+    async removeEtapa(fid, id) {
+      await repo.retireStage(id);
+      await load();
+    },
+    moveEtapa: async (fid, id, dir) => {
       const a = store.etapas(fid),
         i = a.findIndex(x => x.id === id),
         j = i + dir;
       if (i < 0 || j < 0 || j >= a.length) return;
-      [a[i].orden, a[j].orden] = [j, i];
-      Promise.all([store.saveEtapa(fid, a[i]), store.saveEtapa(fid, a[j])]);
+      [a[i], a[j]] = [a[j], a[i]];
+      await repo.reorderStages(fid, a.map(x => x.id));
+      await load();
     },
-    flowFor: (sid, tipo) => store.active().find(f => (!tipo || f.tipo === tipo) && f.servicios.includes(sid)) || store.active().find(f => f.tipo === (tipo || 'solicitud')) || null,
-    etapasFor: (fid, sid) => store.etapas(fid).filter(e => !sid || !e.servicios.length || e.servicios.includes(sid)),
+    flowFor: (sid, tipo) => store.active().find(f => (!tipo || f.tipo === tipo) && f.servicios.includes(sid)) || null,
+    etapasFor: (fid, sid) => store.etapasActivas(fid).filter(e => !sid || !e.servicios.length || e.servicios.includes(sid)),
     track: id => tracks[id] || null,
-    setEtapaActual: (id, fid, eid) => repo.saveTracking({
-      request_id: id,
-      workflow_id: fid,
-      current_stage_id: eid,
-      stage_dates: Object.assign({}, (tracks[id] || {}).fechas, {
-        [eid]: new Date().toISOString()
-      })
-    }).then(load).catch(fail),
-    setFecha: (id, eid, date) => {
+    setEtapaActual: async (id, fid, eid) => {
+      await repo.saveTracking({
+        request_id: id,
+        workflow_id: fid,
+        current_stage_id: eid,
+        stage_dates: Object.assign({}, (tracks[id] || {}).fechas, {
+          [eid]: new Date().toISOString()
+        })
+      });
+      await load();
+    },
+    setFecha: async (id, eid, date) => {
       const t = tracks[id] || {},
         d = Object.assign({}, t.fechas || {});
       if (date) d[eid] = date;else delete d[eid];
-      repo.saveTracking({
+      await repo.saveTracking({
         request_id: id,
         workflow_id: t.flujoId,
         current_stage_id: t.etapaId,
         stage_dates: d
-      }).then(load).catch(fail);
+      });
+      await load();
     },
-    clearTrack: () => {},
     steps: (fid, o) => store.etapasFor(fid, o && o.servicioId).map(e => ({
       label: e.nombre,
       desc: e.descripcion,
@@ -23984,36 +23915,15 @@ Object.assign(window, {
       responsable: e.responsable,
       sla: e.slaDias
     })),
-    forSolicitud: s => {
-      if (!s) return null;
-      const sid = s.servicioId || s._fin && (s._fin.productoId || s._fin.itemId),
-        f = store.flowFor(sid, 'solicitud');
-      if (!f) return null;
-      const id = s.id || s.folio,
-        t = tracks[id] || {},
-        es = store.etapasFor(f.id, sid),
-        eid = t.etapaId || (es[0] || {}).id;
-      return {
-        flow: f,
-        refId: id,
-        servicioId: sid,
-        etapaActual: es.find(e => e.id === eid),
-        steps: store.steps(f.id, {
-          servicioId: sid,
-          etapaId: eid,
-          fechas: t.fechas || {}
-        })
-      };
-    },
     restore: () => load()
   };
-  let initialLoad = null;
   const ensureLoaded = () => initialLoad || (initialLoad = load());
   window.flowStore = store;
   window.FLUJOS = {
     TIPOS,
     RESULTADOS,
-    RESPONSABLES
+    RESPONSABLES,
+    REQUEST_STATUSES
   };
   window.useFlowStore = function () {
     const [, f] = React.useState(0);
@@ -36998,18 +36908,26 @@ Object.assign(window, {
   }) {
     const [d, setD] = useState(Object.assign({}, etapa));
     const [todos, setTodos] = useState(!(etapa.servicios || []).length);
+    const [error, setError] = useState('');
     const set = (k, v) => setD(Object.assign({}, d, {
       [k]: v
     }));
-    const estados = window.FINANZAS && window.FINANZAS.ESTADOS || [];
-    const save = () => {
-      S().saveEtapa(flow.id, Object.assign({}, d, {
-        servicios: todos ? [] : d.servicios || []
-      }));
-      onClose();
+    const estados = S().REQUEST_STATUSES || [];
+    const toggleEstado = id => set('estadoRefs', (d.estadoRefs || []).includes(id) ? (d.estadoRefs || []).filter(value => value !== id) : (d.estadoRefs || []).concat(id));
+    const save = async () => {
+      try {
+        setError('');
+        await S().saveEtapa(flow.id, Object.assign({}, d, {
+          servicios: todos ? [] : d.servicios || []
+        }));
+        onClose();
+      } catch (_) {
+        setError('No fue posible guardar: revisa el orden, los estados mapeados y que el flujo conserve etapas activas.');
+      }
     };
     return React.createElement('div', {
       onClick: onClose,
+      'data-workflow-stage-editor': etapa.id || 'new',
       style: {
         position: 'absolute',
         inset: 0,
@@ -37142,6 +37060,36 @@ Object.assign(window, {
         fontSize: 13.5,
         fontWeight: 800
       }
+    }, d.activo !== false ? 'Etapa activa' : 'Etapa retirada'), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 2,
+        lineHeight: 1.4
+      }
+    }, 'Las solicitudes anteriores conservan su snapshot; reactivar solo afecta solicitudes nuevas.')), React.createElement(Toggle, {
+      on: d.activo !== false,
+      onClick: () => set('activo', !(d.activo !== false))
+    })), React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'var(--surface-2)',
+        borderRadius: 14,
+        padding: '12px 14px',
+        marginBottom: 12
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 800
+      }
     }, 'Aplica a todos los servicios del flujo'), React.createElement('div', {
       style: {
         fontSize: 11.5,
@@ -37178,26 +37126,30 @@ Object.assign(window, {
         lineHeight: 1.45,
         marginBottom: 8
       }
-    }, 'Opcional. Vincula la etapa con el estado que hoy maneja el Panel de Finanzas. Al conectar Supabase, aquí se enlazará el estado real.'), React.createElement('div', {
+    }, 'Vincula la etapa con uno o más estados reales de program_requests. El backend valida conflictos.'), React.createElement('div', {
       style: {
         display: 'flex',
         flexWrap: 'wrap',
         gap: 7
       }
-    }, [{
-      id: '',
-      label: 'Sin mapeo'
-    }].concat(estados.map(e => ({
-      id: e.id,
-      label: e.label,
-      icon: e.icon
-    }))).map(o => React.createElement(Chip, {
-      key: o.id || 'none',
-      on: (d.estadoRef || '') === o.id,
+    }, estados.map(o => React.createElement(Chip, {
+      key: o.id,
+      on: (d.estadoRefs || []).includes(o.id),
       label: o.label,
-      icon: o.icon,
-      onClick: () => set('estadoRef', o.id)
-    })))), React.createElement('div', {
+      onClick: () => toggleEstado(o.id)
+    })))), error && React.createElement('div', {
+      role: 'alert',
+      style: {
+        marginBottom: 10,
+        padding: 11,
+        borderRadius: 12,
+        background: '#FDEAEA',
+        color: '#A32921',
+        fontSize: 12,
+        fontWeight: 700,
+        lineHeight: 1.4
+      }
+    }, error), React.createElement('div', {
       style: {
         display: 'flex',
         gap: 12,
@@ -37216,7 +37168,8 @@ Object.assign(window, {
         flex: 2
       },
       disabled: !(d.nombre || '').trim(),
-      onClick: save
+      onClick: save,
+      'data-workflow-stage-save': ''
     }, 'Guardar etapa'))));
   }
 
@@ -37234,18 +37187,24 @@ Object.assign(window, {
     const live = d.id ? store.get(d.id) : null;
     const [etapa, setEtapa] = useState(null);
     const [preview, setPreview] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const set = (k, v) => setD(Object.assign({}, d, {
       [k]: v
     }));
     const etapas = live ? store.etapas(live.id) : d.etapas || [];
-    const guardar = () => {
-      const id = store.save(Object.assign({}, d, {
-        etapas: live ? live.etapas : d.etapas
-      }), 'Admin');
-      toast && toast('Flujo guardado');
-      if (!d.id) setD(Object.assign({}, d, {
-        id
-      }));else onClose();
+    const guardar = async () => {
+      try {
+        setSaveError('');
+        const id = await store.save(Object.assign({}, d, {
+          etapas: live ? live.etapas : d.etapas
+        }), 'Admin');
+        toast && toast('Flujo guardado');
+        if (!d.id) setD(Object.assign({}, d, {
+          id
+        }));else onClose();
+      } catch (_) {
+        setSaveError('No fue posible guardar. Un flujo activo requiere servicios y al menos una etapa válida, sin conflictos de orden o estado.');
+      }
     };
     return React.createElement('div', null, header({
       title: d.id ? 'Editar flujo' : 'Nuevo flujo',
@@ -37356,10 +37315,12 @@ Object.assign(window, {
       const r = store.RESULTADO(e.resultado);
       return React.createElement('div', {
         key: e.id,
+        'data-workflow-stage-id': e.id,
         style: {
           border: '1px solid var(--hairline)',
           borderRadius: 14,
-          padding: 12
+          padding: 12,
+          opacity: e.activo === false ? .62 : 1
         }
       }, React.createElement('div', {
         style: {
@@ -37409,7 +37370,10 @@ Object.assign(window, {
       }, React.createElement(window.Badge, {
         tone: r.tone,
         icon: r.icon
-      }, r.label), React.createElement(window.Badge, {
+      }, r.label), e.activo === false ? React.createElement(window.Badge, {
+        tone: 'gray',
+        icon: 'close'
+      }, 'Retirada') : null, React.createElement(window.Badge, {
         tone: 'blue',
         icon: 'user'
       }, e.responsable), e.slaDias ? React.createElement(window.Badge, {
@@ -37479,6 +37443,7 @@ Object.assign(window, {
         }
       }, React.createElement('button', {
         onClick: () => setEtapa(e),
+        'data-workflow-stage-edit': e.id,
         style: {
           flex: 1,
           height: 34,
@@ -37491,8 +37456,9 @@ Object.assign(window, {
           fontWeight: 800,
           cursor: 'pointer'
         }
-      }, 'Editar'), React.createElement('button', {
+      }, 'Editar'), e.activo !== false && React.createElement('button', {
         onClick: () => store.removeEtapa(live.id, e.id),
+        title: 'Retirar etapa',
         style: {
           width: 44,
           height: 34,
@@ -37503,7 +37469,7 @@ Object.assign(window, {
           cursor: 'pointer'
         }
       }, React.createElement(I, {
-        name: 'trash',
+        name: 'close',
         size: 16,
         stroke: 2
       }))));
@@ -37550,25 +37516,37 @@ Object.assign(window, {
         fontWeight: 600,
         lineHeight: 1.5
       }
-    }, 'Guarda el flujo para poder agregar sus etapas.')), canEdit && React.createElement(window.Btn, {
+    }, 'Guarda el flujo para poder agregar sus etapas.')), saveError && React.createElement('div', {
+      role: 'alert',
+      style: {
+        marginBottom: 10,
+        padding: 11,
+        borderRadius: 12,
+        background: '#FDEAEA',
+        color: '#A32921',
+        fontSize: 12,
+        fontWeight: 700,
+        lineHeight: 1.4
+      }
+    }, saveError), canEdit && React.createElement(window.Btn, {
       full: true,
       size: 'lg',
       icon: 'check',
       success: okSave,
       disabled: !(d.nombre || '').trim(),
       onClick: () => runSave(guardar)
-    }, d.id ? 'Guardar cambios' : 'Crear flujo'), d.id && canEdit && React.createElement(window.Btn, {
+    }, d.id ? 'Guardar cambios' : 'Crear flujo'), d.id && canEdit && d.activo !== false && React.createElement(window.Btn, {
       full: true,
       variant: 'outline',
-      icon: 'trash',
+      icon: 'close',
       style: {
         marginTop: 10
       },
-      onClick: () => {
-        store.remove(d.id, 'Admin');
+      onClick: async () => {
+        await store.remove(d.id, 'Admin');
         onClose();
       }
-    }, 'Eliminar flujo')), etapa && React.createElement(EtapaSheet, {
+    }, 'Retirar flujo')), etapa && React.createElement(EtapaSheet, {
       flow: live || d,
       etapa,
       onClose: () => setEtapa(null)
@@ -37582,7 +37560,7 @@ Object.assign(window, {
     onClose
   }) {
     const store = S();
-    const etapas = store.etapas(flow.id);
+    const etapas = store.etapasActivas(flow.id);
     const mid = Math.min(1, Math.max(0, etapas.length - 1));
     const fechas = {};
     if (etapas[0]) fechas[etapas[0].id] = store.stamp();
@@ -37636,29 +37614,40 @@ Object.assign(window, {
       steps
     })));
   }
-
-  // ── Seguimiento: fechas reales por solicitud ──
   function SeguimientoTab({
     toast
   }) {
     const store = window.useFlowStore();
-    const fin = window.financeStore ? window.financeStore.all() : [];
+    const requests = store.requests();
     const [open, setOpen] = useState(null);
-    if (!fin.length) return React.createElement(window.EmptyState, {
+    if (store.state().phase === 'loading') return React.createElement('div', {
+      style: {
+        padding: 24,
+        textAlign: 'center',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, 'Cargando seguimiento…');
+    if (store.state().phase === 'error') return React.createElement('div', {
+      style: {
+        padding: 24,
+        textAlign: 'center',
+        fontWeight: 700,
+        color: '#A32921'
+      }
+    }, 'No fue posible cargar el seguimiento autorizado.');
+    if (!requests.length) return React.createElement(window.EmptyState, {
       icon: 'clock',
       title: 'Sin solicitudes en seguimiento',
-      sub: 'Cuando un afiliado envíe una solicitud podrás registrar aquí las fechas reales de cada etapa.'
+      sub: 'Cuando un afiliado envíe una solicitud aparecerá aquí con el snapshot que le corresponde.'
     });
-    const r = open ? fin.find(x => x.id === open) : null;
-    if (r) {
-      const servicioId = r.productoId || (r.origen === 'prestamo' ? 'prestamo' : null);
-      const flow = store.flowFor(servicioId, 'solicitud');
-      const etapas = flow ? store.etapasFor(flow.id, servicioId) : [];
-      const requestRef = r.id || r.folio;
-      const t = store.track(requestRef) || {
-        etapaId: null,
-        fechas: {}
-      };
+    const request = open ? requests.find(item => item.id === open) : null;
+    if (request) {
+      const workflow = request.workflow_state || {},
+        stages = workflow.stages || [],
+        tracking = store.track(request.id) || {
+          fechas: {}
+        };
       return React.createElement('div', null, React.createElement('button', {
         onClick: () => setOpen(null),
         style: {
@@ -37692,7 +37681,7 @@ Object.assign(window, {
           fontSize: 16,
           fontWeight: 900
         }
-      }, r.productoNombre || r.programa || 'Suti Préstamo'), React.createElement('div', {
+      }, request.context_label || request.program_id), React.createElement('div', {
         style: {
           fontSize: 12.5,
           color: 'var(--ink-3)',
@@ -37700,27 +37689,36 @@ Object.assign(window, {
           fontFamily: 'var(--mono)',
           marginTop: 2
         }
-      }, r.folio), React.createElement('div', {
+      }, request.folio), React.createElement('div', {
         style: {
           fontSize: 12.5,
           color: 'var(--ink-2)',
           fontWeight: 600,
           marginTop: 8
         }
-      }, 'Flujo aplicado: ', React.createElement('b', null, flow ? flow.nombre : '—'))), React.createElement('div', {
+      }, 'Flujo aplicado: ', React.createElement('b', null, workflow.available ? workflow.workflow_name : 'Seguimiento no disponible'), workflow.workflow_version && ' · versión ' + workflow.workflow_version)), !workflow.available ? React.createElement('div', {
+        'data-admin-workflow-unavailable': '',
+        style: Object.assign({}, card, {
+          padding: 18,
+          textAlign: 'center',
+          fontSize: 13,
+          fontWeight: 700,
+          color: 'var(--ink-3)'
+        })
+      }, workflow.message || 'Seguimiento no disponible') : React.createElement('div', {
         style: {
           display: 'flex',
           flexDirection: 'column',
           gap: 10
         }
-      }, etapas.map((e, i) => {
-        const fecha = (t.fechas || {})[e.id];
-        const actual = t.etapaId === e.id;
+      }, stages.map((stage, index) => {
+        const current = stage.state === 'current',
+          date = tracking.fechas && tracking.fechas[stage.id] || stage.date;
         return React.createElement('div', {
-          key: e.id,
+          key: stage.id,
           style: Object.assign({}, card, {
             padding: 13,
-            border: actual ? '2px solid var(--guinda)' : '2px solid transparent'
+            border: current ? '2px solid var(--guinda)' : '2px solid transparent'
           })
         }, React.createElement('div', {
           style: {
@@ -37740,31 +37738,39 @@ Object.assign(window, {
             fontSize: 12,
             fontWeight: 900
           }
-        }, i + 1), React.createElement('span', {
+        }, index + 1), React.createElement('span', {
           style: {
             flex: 1,
             fontSize: 14,
             fontWeight: 800
           }
-        }, e.nombre), actual && React.createElement(window.Badge, {
+        }, stage.label), current && React.createElement(window.Badge, {
           tone: 'guinda',
           icon: 'clock'
-        }, 'Actual')), React.createElement('div', {
+        }, 'Actual')), stage.description && React.createElement('div', {
+          style: {
+            fontSize: 12,
+            color: 'var(--ink-2)',
+            fontWeight: 600,
+            lineHeight: 1.45,
+            marginTop: 6
+          }
+        }, stage.description), React.createElement('div', {
           style: {
             fontSize: 12,
             color: 'var(--ink-3)',
             fontWeight: 600,
             marginTop: 6
           }
-        }, fecha ? 'Fecha real: ' + fecha : 'Sin fecha registrada'), React.createElement('div', {
+        }, date ? 'Fecha real: ' + new Date(date).toLocaleString('es-MX') : 'Sin fecha registrada'), React.createElement('div', {
           style: {
             display: 'flex',
             gap: 8,
             marginTop: 10
           }
         }, React.createElement('button', {
-          onClick: () => {
-            store.setEtapaActual(requestRef, flow.id, e.id);
+          onClick: async () => {
+            await store.setEtapaActual(request.id, workflow.workflow_id, stage.id);
             toast && toast('Etapa actual actualizada');
           },
           style: {
@@ -37779,8 +37785,9 @@ Object.assign(window, {
             fontWeight: 800,
             cursor: 'pointer'
           }
-        }, 'Marcar como actual'), fecha ? React.createElement('button', {
-          onClick: () => store.setFecha(requestRef, e.id, ''),
+        }, 'Marcar como actual'), date ? React.createElement('button', {
+          onClick: () => store.setFecha(request.id, stage.id, ''),
+          title: 'Quitar fecha',
           style: {
             width: 44,
             height: 34,
@@ -37791,11 +37798,11 @@ Object.assign(window, {
             cursor: 'pointer'
           }
         }, React.createElement(I, {
-          name: 'trash',
+          name: 'close',
           size: 16,
           stroke: 2
         })) : React.createElement('button', {
-          onClick: () => store.setFecha(requestRef, e.id, store.stamp()),
+          onClick: () => store.setFecha(request.id, stage.id, store.stamp()),
           style: {
             flex: 1,
             height: 34,
@@ -37817,13 +37824,12 @@ Object.assign(window, {
         flexDirection: 'column',
         gap: 10
       }
-    }, fin.map(x => {
-      const t = store.track(x.id || x.folio);
-      const flow = store.flowFor(x.productoId || (x.origen === 'prestamo' ? 'prestamo' : null), 'solicitud');
-      const et = t && flow ? store.etapas(flow.id).find(e => e.id === t.etapaId) : null;
+    }, requests.map(request => {
+      const workflow = request.workflow_state || {},
+        current = workflow.current_stage || {};
       return React.createElement('button', {
-        key: x.id,
-        onClick: () => setOpen(x.id),
+        key: request.id,
+        onClick: () => setOpen(request.id),
         style: Object.assign({}, card, {
           textAlign: 'left',
           border: 'none',
@@ -37844,21 +37850,21 @@ Object.assign(window, {
           fontWeight: 800,
           color: 'var(--ink)'
         }
-      }, x.productoNombre || x.programa || 'Suti Préstamo'), React.createElement('span', {
+      }, request.context_label || request.program_id), React.createElement('span', {
         style: {
           fontSize: 11,
           fontWeight: 700,
           color: 'var(--ink-3)',
           fontFamily: 'var(--mono)'
         }
-      }, x.folio)), React.createElement('div', {
+      }, request.folio)), React.createElement('div', {
         style: {
           fontSize: 12,
           color: 'var(--ink-2)',
           fontWeight: 600,
           marginTop: 4
         }
-      }, (flow ? flow.nombre : 'Sin flujo') + ' · ' + (et ? et.nombre : 'Etapa inicial')));
+      }, workflow.available ? workflow.workflow_name + ' · ' + (current.label || 'Sin etapa actual') : 'Seguimiento no disponible'));
     }));
   }
 
@@ -37941,7 +37947,7 @@ Object.assign(window, {
         fontWeight: 600,
         lineHeight: 1.5
       }
-    }, 'Estructura administrable: ', React.createElement('b', null, 'servicio → etapas → orden → estado actual → fechas reales'), '. Las reglas y automatizaciones de cada etapa se definirán al conectar la base de datos.')), tab === 'seguimiento' ? React.createElement(SeguimientoTab, {
+    }, 'Autoridad activa en Supabase: ', React.createElement('b', null, 'servicio → versión → snapshot → estado actual → fechas reales'), '. Los cambios aplican únicamente a solicitudes nuevas; el histórico conserva su versión.')), tab === 'seguimiento' ? React.createElement(SeguimientoTab, {
       toast
     }) : React.createElement(React.Fragment, null, React.createElement('div', {
       style: {
@@ -37955,6 +37961,7 @@ Object.assign(window, {
       const extra = (f.servicios || []).length - servicios.length;
       return React.createElement('div', {
         key: f.id,
+        'data-workflow-id': f.id,
         style: Object.assign({}, card, {
           padding: 14,
           opacity: f.activo === false ? .6 : 1
@@ -38049,6 +38056,7 @@ Object.assign(window, {
         }
       }, React.createElement('button', {
         onClick: () => setEdit(f),
+        'data-workflow-admin': f.id,
         style: {
           flex: 1,
           height: 36,
@@ -38108,9 +38116,9 @@ Object.assign(window, {
       },
       onClick: () => {
         store.restore();
-        toast && toast('Flujos restaurados');
+        toast && toast('Configuración recargada');
       }
-    }, 'Restaurar flujos base'))));
+    }, 'Recargar configuración'))));
   }
   window.FlujosModule = FlujosModule;
 })();
@@ -43929,38 +43937,21 @@ Object.assign(window, {
   }
   function timelineEntries(detail) {
     if (!detail) return [];
-    const entries = [{
-        key: 'created',
-        label: 'Solicitud enviada',
-        date: detail.created_at,
-        kind: 'done'
-      }],
-      tracking = detail.tracking,
-      dates = tracking && tracking.stage_dates || {};
-    if (tracking && Array.isArray(tracking.stages)) tracking.stages.forEach(stage => {
-      const raw = dates[stage.id] || dates[stage.name] || null,
-        current = tracking.current_stage_id === stage.id;
-      if (raw || current) entries.push({
-        key: stage.id,
-        label: stage.name,
-        date: raw || tracking.updated_at,
-        description: stage.description,
-        responsible: stage.responsible,
-        kind: current ? 'active' : 'done'
-      });
-    });
-    if (entries.length === 1 && detail.updated_at && detail.updated_at !== detail.created_at) entries.push({
-      key: 'updated',
-      label: 'Estado actual: ' + stateLabel(detail.status),
-      date: detail.updated_at,
-      kind: 'active'
-    });
-    return entries;
+    const workflow = detail.workflow_state || {};
+    return (workflow.stages || []).map(stage => ({
+      key: stage.id,
+      label: stage.label,
+      date: stage.date || null,
+      description: stage.description,
+      responsible: stage.responsible,
+      kind: stage.state === 'current' ? 'active' : stage.state
+    }));
   }
   function AdminTimeline({
     detail
   }) {
-    const entries = timelineEntries(detail);
+    const entries = timelineEntries(detail),
+      workflow = detail.workflow_state || {};
     return h('section', {
       className: 'reqwb-section',
       'data-request-timeline': 'true'
@@ -43971,14 +43962,14 @@ Object.assign(window, {
     }), 'Actividad registrada'), detail.tracking_available === false && h('div', {
       'data-request-tracking-unavailable': 'true',
       className: 'reqwb-empty-small'
-    }, 'El flujo configurado no está disponible con la proyección autorizada actual.'), h('div', {
+    }, workflow.message || 'Seguimiento no disponible'), detail.tracking_available !== false && h('div', {
       className: 'reqwb-timeline'
     }, entries.map(entry => h('div', {
       key: entry.key,
       className: 'reqwb-event ' + entry.kind
     }, h('span', {
       className: 'reqwb-event-dot'
-    }), h('div', null, h('strong', null, entry.label), h('time', null, dateTime(entry.date)), entry.responsible && h('span', null, 'Área responsable: ' + entry.responsible), entry.description && h('span', null, entry.description))))));
+    }), h('div', null, h('strong', null, entry.label), entry.date && h('time', null, dateTime(entry.date)), entry.responsible && h('span', null, 'Área responsable: ' + entry.responsible), entry.description && h('span', null, entry.description))))));
   }
   function DocumentSummary({
     detail
@@ -50017,6 +50008,7 @@ Object.assign(window, {
       folio: sent.folio,
       kind: 'benefit',
       subject: item.nombre,
+      workflowState: sent.workflow_state,
       onBack: onClose,
       fullScreen: true,
       destination: sent.status === 'requires_financial_processing' ? 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.' : 'Tu solicitud fue enviada al área responsable para su revisión.'
@@ -52920,6 +52912,7 @@ Object.assign(window, {
       folio: sent.folio,
       kind: 'membership',
       subject: offering && offering.concepto,
+      workflowState: sent.workflow_state,
       onBack: app.back,
       fullScreen: true,
       destination: 'Tu solicitud fue enviada al área responsable del sindicato para su revisión.',
@@ -57776,6 +57769,7 @@ Object.assign(window, {
       const active = tab === t.id;
       return React.createElement('button', {
         key: t.id,
+        'data-app-tab': t.id,
         onClick: () => setTab(t.id),
         style: {
           position: 'relative',

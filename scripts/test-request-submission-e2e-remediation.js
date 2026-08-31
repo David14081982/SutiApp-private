@@ -31,7 +31,7 @@ assert.match(repository,/rpc\('list_self_program_request_history'\)/);
 assert.doesNotMatch(repository,/function listHistory\(\)[\s\S]{0,180}from\('program_requests'\)/);
 assert.match(repository,/row\.program_id==='prestamo'&&row\.requested_amount/);
 assert.match(operations,/r\.program_id==='prestamo'\?loanRow\(r\)/);
-assert.match(operations,/kind:'loan'/);
+assert.match(operations,/common\(r,'loan'\)/);
 assert.match(operations,/invalidate:\(\)=>\{promise=null;rows=\[\];phase='idle'/);
 assert.match(success,/operationsStore\.invalidate/);
 assert.match(success,/data-request-success-confetti/);

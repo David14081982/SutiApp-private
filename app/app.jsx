@@ -177,7 +177,7 @@
       React.createElement('div', { ref: indRef, 'aria-hidden': 'true', style: { position: 'absolute', left: 0, top: 0, width: 46, height: 46, borderRadius: 16, background: 'var(--grad-guinda-soft)', boxShadow: 'var(--glow-guinda)', border: '3px solid var(--surface)', opacity: 0, pointerEvents: 'none', zIndex: 0, willChange: 'transform' } }),
       tabs.map((t) => {
         const active = tab === t.id;
-        return React.createElement('button', { key: t.id, onClick: () => setTab(t.id), style: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 } },
+        return React.createElement('button', { key: t.id, 'data-app-tab':t.id, onClick: () => setTab(t.id), style: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 } },
           React.createElement('div', { ref: (el) => { boxes.current[t.id] = el; }, style: {
             display: 'grid', placeItems: 'center', width: active ? 46 : 40, height: active ? 46 : 40,
             borderRadius: active ? 16 : 14,

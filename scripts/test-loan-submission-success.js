@@ -25,18 +25,15 @@ for(const marker of [
   'Tu préstamo',
   'ya está en revisión',
   '¿Qué sigue?',
-  'Solicitud enviada',
   'Justo ahora',
-  'Revisión de documentos',
   'EN CURSO',
-  'Autorización',
-  'Depósito vía nómina',
   'Seguir mi solicitud',
   'Volver al inicio',
 ]) assert.ok((loan+'\n'+success).includes(marker),'loan success contract missing: '+marker);
 
-assert.match(loan,/setSubmission\(\{folio:request\.folio\|\|request\.request_id,amount:result\.amount\}\)/);
-assert.match(loan,/Success, \{ app, folio:submission\.folio, amount:submission\.amount \}/);
+assert.match(loan,/setSubmission\(\{folio:request\.folio\|\|request\.request_id,amount:result\.amount,workflowState:request\.workflow_state\}\)/);
+assert.match(loan,/Success, \{ app, folio:submission\.folio, amount:submission\.amount, workflowState:submission\.workflowState \}/);
+assert.match(success,/workflowState&&workflowState\.available&&Array\.isArray\(workflowState\.stages\)/);
 assert.match(success,/if\(app&&app\.setTab\)app\.setTab\('historial'\)/);
 assert.match(success,/operationsStore&&window\.operationsStore\.invalidate/);
 assert.match(success,/app&&app\.setTab&&app\.setTab\('home'\)/);
@@ -61,4 +58,4 @@ for(const marker of ['REQUIRED_DOCUMENTS_MISSING','data-loan-submission-error','
   assert.ok(bundle.includes(marker),'generated bundle missing document preflight: '+marker);
 }
 
-console.log('Loan submission success static verification PASS: full confirmation, dynamic amount and folio, document preflight, four-stage timeline, three-pass confetti, history/home actions.');
+console.log('Loan submission success static verification PASS: full confirmation, dynamic amount and folio, document preflight, authoritative workflow timeline, three-pass confetti, history/home actions.');

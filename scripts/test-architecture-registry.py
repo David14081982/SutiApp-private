@@ -68,7 +68,7 @@ def main() -> int:
     credential_photo = gen.lookup("fotografía credencial")
     assert credential_photo["domains"] == ["identity"]
     assert "app/ui.jsx" in credential_photo["primary_files"]
-    assert "app/affiliate-repository.js" in credential_photo["primary_files"]
+    assert any(node["name"] == "AffiliateRepository" for node in credential_photo["nodes"])
     assert any(node["name"] == "Avatar" for node in credential_photo["nodes"])
 
     graph = json.loads((OUT / "registry-edges.json").read_text(encoding="utf-8"))

@@ -72,10 +72,10 @@ const mobileMethod=repository.slice(repository.indexOf('async function listMobil
 assert.match(queueMethod,/\.limit\(250\)/);
 assert.doesNotMatch(historyMethod+mobileMethod,/\.limit\(/);
 assert.match(repository,/async function detail\(id\)/);
-['request_documents','operational_request_tracking'].forEach((table)=>assert.ok(repository.includes(`from('${table}')`),table));
+assert.ok(repository.includes("from('request_documents')"),'request_documents');
 assert.match(repository,/document_requirements_snapshot/);
-assert.match(repository,/operational_workflows!workflow_id/);
-assert.match(repository,/Promise\.all\(\[documents,requirements,tracking\]\)/);
+assert.match(repository,/get_self_request_workflow_state/);
+assert.match(repository,/Promise\.all\(\[documents,requirements,workflow\]\)/);
 assert.match(repository,/documents_available:!parts\[0\]\.error/);
 assert.match(repository,/tracking_available:!parts\[2\]\.error/);
 assert.match(screen,/data-request-tracking-unavailable/);
@@ -96,8 +96,8 @@ assert.doesNotMatch(operations,/Promise\.all\(\[window\.MarketplaceRepository\.l
 
 assert.ok(bundle.includes('data-admin-requests-workbench'),'bundle missing requests workbench');
 assert.ok(bundle.includes('listGeneralQueue'),'bundle missing queue repository');
-assert.ok(html.includes('app/bundle.js?v=170'),'HTML cachebuster missing');
-assert.ok(serviceWorker.includes("sutiapp-v114")&&serviceWorker.includes('app/bundle.js?v=170'),'service worker cache cutover missing');
+assert.ok(html.includes('app/bundle.js?v=171'),'HTML cachebuster missing');
+assert.ok(serviceWorker.includes("sutiapp-v115")&&serviceWorker.includes('app/bundle.js?v=171'),'service worker cache cutover missing');
 assert.doesNotMatch(screen+'\n'+repository,/localStorage|sessionStorage|IndexedDB/);
 assert.doesNotMatch(screen+'\n'+repository,/\bDATA\b|\bMOCKS?\b|\bmockData\b/);
 

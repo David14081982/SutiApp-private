@@ -99,10 +99,12 @@
           React.createElement('div', null, React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: '#C0341D' } }, 'Motivo'), React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5, marginTop: 3 } }, s.motivo))),
         // timeline (etapas administrables por tipo de servicio/solicitud)
         (function () {
-          const steps=s.steps||[];const nota=s.estado==='revision'?'La empresa o proveedor está revisando tu solicitud comercial.':null;
+          const steps=s.steps||[];
           return React.createElement('div', { style: { marginTop: 22 } },
             React.createElement(window.SectionHead, { title: 'Línea de tiempo', icon: 'clock' }),
-            React.createElement(window.Timeline, { steps, activeNote: nota }));
+            s.workflowAvailable
+              ? React.createElement(window.Timeline, { steps, activeNote: s.activeNote })
+              : React.createElement('div',{'data-workflow-unavailable':'',style:{background:'var(--surface)',borderRadius:18,padding:18,textAlign:'center',fontSize:13,fontWeight:700,color:'var(--ink-3)',boxShadow:'var(--neo-sm)'}},s.workflowMessage||'Seguimiento no disponible'));
         })(),
         s.estado === 'rechazado'
           ? React.createElement(window.Btn, { full: true, size: 'lg', icon: 'refresh', style: { marginTop: 22 }, onClick: () => { app.back(); app.setTab('convenios'); } }, 'Volver a explorar beneficios')

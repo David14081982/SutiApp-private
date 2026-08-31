@@ -3,32 +3,6 @@
   const I=window.Icon;
   const dash='—';
   const colors=['#B9003B','#E2AA3B','#0E8A61','#314A7C','#F0A9BA'];
-  const COPY={
-    loan:{stages:[
-      {state:'done',title:'Solicitud enviada',meta:'Justo ahora'},
-      {state:'current',title:'Revisión de documentos',badge:'EN CURSO',detail:'Recibirás una notificación en cuanto el comité evalúe tu solicitud (máximo 24 hrs.).'},
-      {state:'upcoming',title:'Autorización'},
-      {state:'upcoming',title:'Depósito vía nómina'},
-    ]},
-    membership:{stages:[
-      {state:'done',title:'Solicitud enviada',meta:'Justo ahora'},
-      {state:'current',title:'Revisión de documentos',badge:'EN CURSO',detail:'Te notificaremos en cuanto el área responsable revise tu solicitud.'},
-      {state:'upcoming',title:'Resolución'},
-      {state:'upcoming',title:'Activación de membresía'},
-    ]},
-    quote:{stages:[
-      {state:'done',title:'Solicitud enviada',meta:'Justo ahora'},
-      {state:'current',title:'Preparación de cotización',badge:'EN CURSO',detail:'El proveedor preparará el presupuesto con el monto real.'},
-      {state:'upcoming',title:'Cotización disponible'},
-      {state:'upcoming',title:'Simulación de financiamiento'},
-    ]},
-    benefit:{stages:[
-      {state:'done',title:'Solicitud enviada',meta:'Justo ahora'},
-      {state:'current',title:'Revisión del área responsable',badge:'EN CURSO',detail:'Te notificaremos cuando exista una actualización de tu solicitud.'},
-      {state:'upcoming',title:'Resolución'},
-      {state:'upcoming',title:'Seguimiento'},
-    ]},
-  };
   const CSS=`
     .request-success{position:relative;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg)}
     .request-success.is-fullscreen{position:fixed;inset:0;z-index:2600}
@@ -63,6 +37,8 @@
     .request-success-stage-meta{display:block;margin-top:4px;font-size:11px;font-weight:650;color:var(--ink-3)}
     .request-success-badge{display:inline-flex;align-items:center;min-height:20px;padding:3px 9px;border-radius:999px;background:#FCE8EE;color:var(--guinda);font-size:9px;font-weight:900;letter-spacing:.03em}
     .request-success-detail{margin-top:9px;padding:11px 12px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600;line-height:1.45}
+    .request-success-stage-context{display:block;margin-top:4px;font-size:10.5px;font-weight:650;color:var(--ink-3);line-height:1.4}
+    .request-success-unavailable{padding:18px 14px;text-align:center;color:var(--ink-3);font-size:12.5px;font-weight:700;line-height:1.5}
     .request-success-footer{position:relative;z-index:2;padding:8px 22px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,var(--bg) 18%)}
     .request-success-home{display:block;width:100%;height:38px;margin-top:7px;border:0;background:transparent;color:var(--guinda);font:800 13px var(--font);cursor:pointer}
     .request-success button:focus-visible{outline:2px solid var(--guinda);outline-offset:2px}
@@ -70,9 +46,11 @@
     @media(max-height:760px){.request-success-scroll{padding-top:18px}.request-success-icon{width:76px;height:76px}.request-success h2{margin-top:15px}.request-success-next{margin-top:20px}}
   `;
 
-  function RequestSubmissionSuccess({app,folio,amount,kind='benefit',subject,destination,onBack,fullScreen=false,membershipSuccessId}){
+  function formatStageDate(value){if(!value)return null;const date=new Date(value);if(!Number.isFinite(date.getTime()))return null;return Date.now()-date.getTime()<300000?'Justo ahora':date.toLocaleString('es-MX');}
+
+  function RequestSubmissionSuccess({app,folio,amount,kind='benefit',subject,destination,workflowState,onBack,fullScreen=false,membershipSuccessId}){
     const celebrate=!(window.MOTION&&(window.MOTION.reduced()||window.MOTION.frozen()));
-    const config=COPY[kind]||COPY.benefit;
+    const stages=workflowState&&workflowState.available&&Array.isArray(workflowState.stages)?workflowState.stages:[];
     const amountLabel=typeof amount==='number'&&Number.isFinite(amount)?window.money(amount):null;
     const history=()=>{if(window.operationsStore&&window.operationsStore.invalidate)window.operationsStore.invalidate();if(app&&app.setTab)app.setTab('historial');};
     const home=()=>app&&app.setTab&&app.setTab('home');
@@ -94,12 +72,13 @@
           React.createElement('p',{className:'request-success-destination'},destination||'Tu solicitud fue enviada al área responsable para su revisión.')),
         React.createElement('section',{className:'request-success-next','aria-labelledby':'request-success-next-title'},
           React.createElement('h3',{id:'request-success-next-title',className:'request-success-next-title'},React.createElement(I,{name:'clock',size:18,stroke:2.2}),'¿Qué sigue?'),
-          React.createElement('ol',{className:'request-success-timeline'},config.stages.map((stage)=>React.createElement('li',{key:stage.title,className:'request-success-stage','data-state':stage.state},
+          React.createElement('ol',{className:'request-success-timeline'},stages.length?stages.map((stage)=>React.createElement('li',{key:stage.id,className:'request-success-stage','data-state':stage.state},
             React.createElement('span',{className:'request-success-dot','aria-hidden':'true'},stage.state==='done'?React.createElement(I,{name:'check',size:18,stroke:3}):stage.state==='current'?React.createElement('span',{className:'request-success-current-dot'}):React.createElement('span',{className:'request-success-upcoming-dot'})),
             React.createElement('div',{className:'request-success-stage-body'},
-              React.createElement('div',{className:'request-success-stage-title-row'},React.createElement('span',{className:'request-success-stage-title'},stage.title),stage.badge&&React.createElement('span',{className:'request-success-badge'},stage.badge)),
-              stage.meta&&React.createElement('span',{className:'request-success-stage-meta'},stage.meta),
-              stage.detail&&React.createElement('div',{className:'request-success-detail'},stage.detail))))))),
+              React.createElement('div',{className:'request-success-stage-title-row'},React.createElement('span',{className:'request-success-stage-title'},stage.label),stage.state==='current'&&React.createElement('span',{className:'request-success-badge'},'EN CURSO')),
+              formatStageDate(stage.date)&&React.createElement('span',{className:'request-success-stage-meta'},formatStageDate(stage.date)),
+              (stage.responsible||stage.sla_days!=null)&&React.createElement('span',{className:'request-success-stage-context'},[stage.responsible&&('Responsable: '+stage.responsible),stage.sla_days!=null&&('Tiempo estimado: '+stage.sla_days+' día(s) hábil(es)')].filter(Boolean).join(' · ')),
+              stage.state==='current'&&stage.description&&React.createElement('div',{className:'request-success-detail'},stage.description)))):React.createElement('li',{className:'request-success-unavailable'},workflowState&&workflowState.message||'Seguimiento no disponible')))),
       React.createElement('footer',{className:'request-success-footer'},
         React.createElement(window.Btn,{full:true,size:'lg',icon:'receipt',onClick:history},'Seguir mi solicitud'),
         React.createElement('button',{type:'button',className:'request-success-home',onClick:home},'Volver al inicio')));

@@ -241,7 +241,7 @@
       setData((current)=>Object.assign({},current,{[field.id]:normalized}));
     };
 
-    if(sent)return h(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'membership',subject:offering&&offering.concepto,onBack:app.back,fullScreen:true,destination:'Tu solicitud fue enviada al área responsable del sindicato para su revisión.',membershipSuccessId:sent.id});
+    if(sent)return h(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'membership',subject:offering&&offering.concepto,workflowState:sent.workflow_state,onBack:app.back,fullScreen:true,destination:'Tu solicitud fue enviada al área responsable del sindicato para su revisión.',membershipSuccessId:sent.id});
 
     const trackerDone=phase==='ready'&&missing===0;
     const ctaCopy=busy?'Enviando…':phase==='loading'?'Consultando requisitos…':missing?'Solicitar · faltan '+missing:'Solicitar';

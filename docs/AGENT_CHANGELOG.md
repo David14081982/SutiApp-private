@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-MEMBERSHIP-DOCUMENT-THUMBNAIL-VIEWER-001
+
+- Las cuatro tarjetas documentales de Solicitud de Membresía muestran ahora la imagen privada real como miniatura completa con `object-fit: cover`; el fondo negro dejó de ser su estado principal.
+- Tap/`Ver` regenera una signed URL de 300 segundos y abre el visor interno; `Reemplazar`, cámara, archivo, nombre y estado se preservaron. Upload continúa releyendo Supabase y la nueva versión reemplaza la miniatura sin refresh manual.
+- Chrome real validó 4/4 imágenes, expiración simulada, refresh, reactividad de reemplazo y layouts 390×844/1280×900. Seguridad live mantuvo cross-user/anónimo denegados, cero URLs en metadatos y cero secretos.
+
+```text
+H-MEMBERSHIP-DOCUMENT-THUMBNAIL-VIEWER-001 RESULT
+Status: PASS
+Files changed: viewer compartido; documentos/membresía UI; bundle/cache; tests; evidencia; Registry
+Source-of-truth verdict: PASS — expediente Supabase/Storage privado preservado; firma temporal sólo en memoria
+Invariant verdict: PASS — UI, versión vigente, firma por intención, privacidad y cero base64 preservados
+Build: PASS — 92 fuentes; SHA-256 D5CBC4CC294790F806D96B080D2755ED6867A15750A7EEDA4FEA2297C1617CC9
+Tests: PASS — 71/71 static; Chrome real 4 documentos móvil/desktop; refresh/expiry/replacement reactivo
+Security: PASS — self-only; cross-user/anon DENIED; TTL 300; listado sin URL/path; cero secretos
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: formatos no renderizables muestran estado documental controlado; reemplazo persistente QA no ejecutado
+Evidence: docs/qa/H-MEMBERSHIP-DOCUMENT-THUMBNAIL-VIEWER-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-LOAN-DEPOSIT-OPTIONAL-BANK-001
 
 - Se corrigió el gate de Depósito: Banco, tarjeta y CLABE ya no controlan “Continuar”; el celular válido sí. Abrir/completar una cuenta limpia la selección previa y el resumen soporta “No registrada (opcional)”.

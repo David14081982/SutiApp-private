@@ -5735,8 +5735,151 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       }
     }, iconButton('arrowL', 'Imagen anterior', () => select(index - 1), index === 0), iconButton('arrowR', 'Imagen siguiente', () => select(index + 1), index === items.length - 1)));
   }
+  function DocumentViewer({
+    source,
+    mimeType = '',
+    title = 'Documento',
+    onClose
+  }) {
+    const [loaded, setLoaded] = useState(false);
+    const mime = String(mimeType || '').toLowerCase();
+    const isImage = mime.startsWith('image/');
+    const isPdf = mime === 'application/pdf';
+    useEffect(() => {
+      const key = event => {
+        if (event.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', key);
+      return () => window.removeEventListener('keydown', key);
+    }, [onClose]);
+    if (!source) return null;
+    if (isImage) return React.createElement(ImageViewer, {
+      sources: [source],
+      alt: title,
+      onClose
+    });
+    return React.createElement('div', {
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': `Visor de ${title}`,
+      'data-document-viewer': isPdf ? 'pdf' : 'unsupported',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 120,
+        background: 'rgba(7,5,6,.96)',
+        display: 'flex',
+        flexDirection: 'column',
+        animation: 'su-fadein .2s ease'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 14px',
+        gap: 10,
+        color: '#fff'
+      }
+    }, React.createElement('div', {
+      style: {
+        minWidth: 0,
+        fontSize: 13,
+        fontWeight: 850,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+      }
+    }, title), React.createElement('button', {
+      type: 'button',
+      onClick: onClose,
+      'aria-label': 'Cerrar visor',
+      style: {
+        width: 42,
+        height: 42,
+        border: 'none',
+        borderRadius: 13,
+        background: 'rgba(255,255,255,.14)',
+        color: '#fff',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, React.createElement(I, {
+      name: 'close',
+      size: 21,
+      stroke: 2.2
+    }))), isPdf ? React.createElement('div', {
+      style: {
+        position: 'relative',
+        flex: 1,
+        minHeight: 0,
+        padding: '0 10px 10px'
+      }
+    }, !loaded && React.createElement('div', {
+      role: 'status',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        display: 'grid',
+        placeItems: 'center',
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 800
+      }
+    }, 'Cargando documento…'), React.createElement('iframe', {
+      src: source,
+      title,
+      onLoad: () => setLoaded(true),
+      style: {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        border: 0,
+        borderRadius: 14,
+        background: '#fff',
+        opacity: loaded ? 1 : 0
+      }
+    })) : React.createElement('div', {
+      style: {
+        flex: 1,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 24,
+        color: '#fff',
+        textAlign: 'center'
+      }
+    }, React.createElement('div', null, React.createElement('div', {
+      style: {
+        width: 68,
+        height: 68,
+        margin: '0 auto 14px',
+        borderRadius: 20,
+        background: 'rgba(255,255,255,.12)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, React.createElement(I, {
+      name: 'doc',
+      size: 32,
+      stroke: 1.8
+    })), React.createElement('div', {
+      style: {
+        fontSize: 15,
+        fontWeight: 850
+      }
+    }, title), React.createElement('div', {
+      style: {
+        maxWidth: 300,
+        marginTop: 7,
+        fontSize: 12,
+        lineHeight: 1.5,
+        opacity: .75
+      }
+    }, 'Este formato no tiene una vista previa integrada. El documento permanece disponible en tu expediente.'))));
+  }
   Object.assign(window, {
     ImageViewer,
+    DocumentViewer,
     openSafeContentUrl
   });
 })();
@@ -20204,11 +20347,14 @@ Object.assign(window, {
       input = useRef(null),
       cameraVideo = useRef(null),
       cameraStream = useRef(null),
+      thumbnailRetries = useRef(new Set()),
       [busy, setBusy] = useState(null),
       [error, setError] = useState(''),
       [origin, setOrigin] = useState(null),
       [camera, setCamera] = useState(null),
-      [cameraError, setCameraError] = useState('');
+      [cameraError, setCameraError] = useState(''),
+      [thumbnails, setThumbnails] = useState({}),
+      [viewer, setViewer] = useState(null);
     const pick = (type, source) => {
       selection.current = {
         type,
@@ -20314,6 +20460,74 @@ Object.assign(window, {
         }
       });
     };
+    useEffect(() => {
+      let active = true;
+      thumbnailRetries.current = new Set();
+      const candidates = (requirements || []).map(req => newest(documents || [], (req.document_type || req).id)).filter(doc => doc && ACCEPTED.has(doc.status) && physicalAvailable(doc) && String(doc.mimeType || '').toLowerCase().startsWith('image/'));
+      const candidateIds = new Set(candidates.map(doc => doc.id));
+      setThumbnails(current => Object.fromEntries(Object.entries(current).filter(([id]) => candidateIds.has(id))));
+      candidates.forEach(async doc => {
+        setThumbnails(current => current[doc.id] ? current : Object.assign({}, current, {
+          [doc.id]: {
+            phase: 'authorizing',
+            url: ''
+          }
+        }));
+        try {
+          const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
+          if (active) setThumbnails(current => Object.assign({}, current, {
+            [doc.id]: {
+              phase: 'ready',
+              url: preview.signedUrl
+            }
+          }));
+        } catch (_) {
+          if (active) setThumbnails(current => Object.assign({}, current, {
+            [doc.id]: {
+              phase: 'error',
+              url: ''
+            }
+          }));
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [requirements, documents, accessPurpose]);
+    const refreshThumbnail = async doc => {
+      if (thumbnailRetries.current.has(doc.id)) {
+        setThumbnails(current => Object.assign({}, current, {
+          [doc.id]: {
+            phase: 'error',
+            url: ''
+          }
+        }));
+        return;
+      }
+      thumbnailRetries.current.add(doc.id);
+      setThumbnails(current => Object.assign({}, current, {
+        [doc.id]: {
+          phase: 'authorizing',
+          url: ''
+        }
+      }));
+      try {
+        const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
+        setThumbnails(current => Object.assign({}, current, {
+          [doc.id]: {
+            phase: 'ready',
+            url: preview.signedUrl
+          }
+        }));
+      } catch (_) {
+        setThumbnails(current => Object.assign({}, current, {
+          [doc.id]: {
+            phase: 'error',
+            url: ''
+          }
+        }));
+      }
+    };
     const open = async (doc, type) => {
       if (!doc) return;
       setError('');
@@ -20321,13 +20535,15 @@ Object.assign(window, {
         id: type.id,
         phase: 'authorizing'
       });
-      const popup = window.open('about:blank', '_blank');
-      if (popup) popup.opener = null;
       try {
         const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
-        if (popup) popup.location.replace(preview.signedUrl);else window.open(preview.signedUrl, '_blank', 'noopener,noreferrer');
+        setViewer({
+          source: preview.signedUrl,
+          mimeType: doc.mimeType || '',
+          title: type.label,
+          documentId: doc.id
+        });
       } catch (e) {
-        if (popup) popup.close();
         const code = e && (e.code || e.message);
         setError(type.label + ': ' + (code === 'DOCUMENT_OBJECT_MISSING' ? 'este documento ya no está disponible. Puedes cargarlo nuevamente.' : 'no fue posible autorizar la vista. Intenta nuevamente.'));
         await onChanged();
@@ -20522,20 +20738,22 @@ Object.assign(window, {
           available = physicalAvailable(doc),
           canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
           preview = accepted && available;
-        const image = !!(preview && doc.signedUrl && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
+        const thumbnail = doc && thumbnails[doc.id],
+          image = !!(preview && thumbnail && thumbnail.phase === 'ready' && thumbnail.url && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
           isBusy = !!(busy && busy.id === type.id);
-        const action = canUpload ? 'upload' : preview ? 'preview' : 'unavailable',
-          actionCopy = canUpload ? doc ? 'Reemplazar' : 'Adjuntar' : state.label,
+        const action = preview ? 'preview' : canUpload ? 'upload' : 'unavailable',
+          actionCopy = doc ? state.label : 'Adjuntar',
           hint = type.description || state.label;
-        const classes = ['mr-doc-tile', accepted && available ? 'is-filled' : '', highlightedId === type.id && (!accepted || !available) ? 'is-highlighted' : '', doc && (['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) || !available) ? 'is-error' : ''].filter(Boolean).join(' ');
+        const classes = ['mr-doc-tile', accepted && available ? 'is-filled' : '', image ? 'has-thumbnail' : '', highlightedId === type.id && (!accepted || !available) ? 'is-highlighted' : '', doc && (['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) || !available) ? 'is-error' : ''].filter(Boolean).join(' ');
         const act = () => {
-          if (canUpload) setOrigin(type);else if (preview) open(doc, type);
+          if (preview) open(doc, type);else if (canUpload) setOrigin(type);
         };
         return h('article', {
           key: type.id,
           className: classes,
           'data-document-type': type.code,
           'data-document-type-id': type.id,
+          'data-document-id': doc && doc.id || '',
           'data-document-status': doc ? doc.status : 'MISSING',
           'data-document-availability': doc && doc.availability || 'MISSING',
           'data-document-required': req.required === false ? 'false' : 'true'
@@ -20545,13 +20763,13 @@ Object.assign(window, {
           disabled: isBusy || action === 'unavailable',
           onClick: act,
           'data-document-action': action,
-          'aria-label': (canUpload ? doc ? 'Reemplazar ' : 'Adjuntar ' : preview ? 'Ver ' : 'Vista no disponible de ') + type.label
+          'aria-label': (preview ? 'Ver ' : canUpload ? doc ? 'Reemplazar ' : 'Adjuntar ' : 'Vista no disponible de ') + type.label
         }, image && h('img', {
           className: 'mr-doc-thumb',
-          src: doc.signedUrl,
-          alt: '',
-          loading: 'lazy'
-        }), accepted && available && h('span', {
+          src: thumbnail.url,
+          alt: 'Miniatura de ' + type.label,
+          onError: () => refreshThumbnail(doc)
+        }), image && h('span', {
           className: 'mr-doc-veil',
           'aria-hidden': 'true'
         }), h('span', {
@@ -20570,10 +20788,10 @@ Object.assign(window, {
         }, h('strong', null, type.label), h('span', {
           className: accepted && available ? 'mr-doc-file' : 'mr-doc-add'
         }, h(I, {
-          name: isBusy ? 'clock' : canUpload ? 'camera' : state.icon,
+          name: isBusy ? 'clock' : doc ? state.icon : canUpload ? 'camera' : state.icon,
           size: 14,
           stroke: 2.1
-        }), isBusy ? phaseLabel(type) : actionCopy + (canUpload ? ' · ' + hint : ''))), verified && available && h('span', {
+        }), isBusy ? phaseLabel(type) : actionCopy + (doc ? '' : canUpload ? ' · ' + hint : ''))), verified && available && h('span', {
           className: 'mr-doc-ok',
           'aria-label': state.label
         }, h(I, {
@@ -20589,15 +20807,26 @@ Object.assign(window, {
           name: 'eye',
           size: 16,
           stroke: 2
-        })), accepted && available && h('span', {
-          className: 'mr-doc-status',
-          style: {
-            color: state.fg
-          }
+        })), preview && canUpload && h('button', {
+          type: 'button',
+          className: 'mr-doc-replace',
+          'aria-label': 'Reemplazar ' + type.label,
+          onClick: () => setOrigin(type)
+        }, h(I, {
+          name: 'camera',
+          size: 13,
+          stroke: 2
+        }), 'Reemplazar'), accepted && available && h('span', {
+          className: 'mr-doc-status'
         }, state.label), doc && doc.review_observation && h('p', {
           className: 'mr-doc-observation'
         }, doc.review_observation));
-      })), originSheet, cameraSheet);
+      })), originSheet, cameraSheet, viewer && h(window.DocumentViewer, {
+        source: viewer.source,
+        mimeType: viewer.mimeType,
+        title: viewer.title,
+        onClose: () => setViewer(null)
+      }));
     }
     return h(React.Fragment, null, hiddenInput, alert, h('div', {
       style: {
@@ -20717,10 +20946,15 @@ Object.assign(window, {
           flexWrap: 'wrap'
         }
       }, cameraAllowed && actionButton('Tomar foto', 'camera', () => pick(type, 'camera'), isBusy, 'camera'), actionButton(doc ? 'Reemplazar' : 'Subir archivo', 'upload', () => pick(type, 'file'), isBusy, 'upload')));
-    })), originSheet, cameraSheet);
+    })), originSheet, cameraSheet, viewer && h(window.DocumentViewer, {
+      source: viewer.source,
+      mimeType: viewer.mimeType,
+      title: viewer.title,
+      onClose: () => setViewer(null)
+    }));
   }
   const UNIFIED_CSS = `
-    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:21px;line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:11.5px;color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:10.5px;font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:14px;font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:11.5px;line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:12.5px;font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:12px;line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:10px;color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center}.mr-doc-status{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:9.5px;font-weight:850;color:#087A50}.mr-doc-observation{font-size:9px;color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
+    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:21px;line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:11.5px;color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:10.5px;font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:14px;font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:11.5px;line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:12.5px;font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{position:relative;overflow:hidden;width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mr-doc-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,8,.68),rgba(10,6,8,.02));pointer-events:none}.mr-doc-badge,.mr-doc-meta{position:relative;z-index:1}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:12px;line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:10px;color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50;z-index:2}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center;z-index:3}.mr-doc-replace{position:absolute;right:8px;bottom:8px;z-index:3;min-height:28px;border:1px solid var(--hairline-strong);border-radius:9px;background:#fff;color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-size:9px;font-weight:850}.mr-doc-status{position:absolute;bottom:8px;left:8px;text-align:center;font-size:9.5px;font-weight:850;color:#087A50;z-index:3}.mr-doc-observation{font-size:9px;color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
   `;
   function UnifiedDocumentPhase({
     requirements,
@@ -53228,24 +53462,27 @@ Object.assign(window, {
     .mr-doc-tile{position:relative;min-width:0}
     .mr-doc-pick{width:100%;aspect-ratio:1/1;max-height:200px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;cursor:pointer;text-align:left;border-radius:18px;padding:12px;background:var(--surface);border:1.5px dashed var(--hairline-strong);box-shadow:var(--neo-sm);font-family:inherit;color:inherit}
     .mr-doc-pick:disabled{cursor:default;opacity:1}
-    .mr-doc-tile.is-filled .mr-doc-pick{background:#14213d;border:none;box-shadow:var(--neo-md)}
+    .mr-doc-tile.is-filled .mr-doc-pick{background:linear-gradient(145deg,#f8f5f6,#ece7e9);border:none;box-shadow:var(--neo-md)}
     .mr-doc-tile.is-highlighted .mr-doc-pick{background:var(--guinda-50);border-color:var(--guinda);box-shadow:inset 0 0 0 2px var(--guinda)}
     .mr-doc-tile.is-error .mr-doc-pick{background:#FCE9EE;border-color:#B3261E}
     .mr-doc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .mr-doc-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,8,.82) 0%,rgba(10,6,8,.28) 46%,rgba(10,6,8,.06) 100%)}
+    .mr-doc-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,8,.68) 0%,rgba(10,6,8,.16) 45%,rgba(10,6,8,.02) 100%)}
     .mr-doc-badge{position:absolute;top:12px;left:12px;width:40px;height:40px;border-radius:12px;background:var(--guinda-50);color:var(--guinda);display:grid;place-items:center}
-    .mr-doc-tile.is-filled .mr-doc-badge{background:rgba(255,255,255,.14);color:#fff}
+    .mr-doc-tile.has-thumbnail .mr-doc-badge{background:rgba(255,255,255,.14);color:#fff}
     .mr-doc-thumb+.mr-doc-veil+.mr-doc-badge{display:none}
     .mr-doc-meta{position:relative;min-width:0;z-index:1}
     .mr-doc-meta strong{display:block;font-size:13.5px;font-weight:800;line-height:1.2;color:var(--ink);overflow-wrap:anywhere}
-    .mr-doc-tile.is-filled .mr-doc-meta strong{color:#fff}
+    .mr-doc-tile.has-thumbnail .mr-doc-meta{margin-top:auto;padding-bottom:25px;text-shadow:0 1px 3px rgba(0,0,0,.58)}
+    .mr-doc-tile.has-thumbnail .mr-doc-meta strong{color:#fff}
     .mr-doc-add,.mr-doc-file{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--guinda);margin-top:3px;line-height:1.25}
-    .mr-doc-file{color:rgba(255,255,255,.82)}
+    .mr-doc-file{color:var(--ink-3)}
+    .mr-doc-tile.has-thumbnail .mr-doc-file{color:rgba(255,255,255,.86)}
     .mr-doc-ok{position:absolute;top:10px;left:10px;width:26px;height:26px;border-radius:50%;background:#13794A;color:#fff;display:grid;place-items:center;box-shadow:0 3px 10px -2px rgba(0,0,0,.5);z-index:2}
     .mr-doc-view{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:transparent;color:#fff;display:grid;place-items:center;cursor:pointer;z-index:3}
     .mr-doc-view:before{content:'';position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(10,6,8,.6)}
     .mr-doc-view svg{position:relative}
-    .mr-doc-status{display:none}
+    .mr-doc-status{position:absolute;left:9px;bottom:8px;z-index:3;border-radius:99px;background:rgba(255,255,255,.92);color:#087A50;padding:4px 7px;font-size:8.5px;font-weight:850;line-height:1}
+    .mr-doc-replace{position:absolute;right:8px;bottom:6px;z-index:4;min-height:27px;border:1px solid rgba(255,255,255,.72);border-radius:9px;background:rgba(255,255,255,.94);color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-family:inherit;font-size:8.5px;font-weight:850;cursor:pointer}
     .mr-doc-observation{font-size:11px;font-weight:700;line-height:1.35;color:#9B2743;margin:6px 4px 0}
     .mr-data{background:var(--surface);border-radius:18px;box-shadow:var(--neo-sm);overflow:hidden}
     .mr-row{padding:13px 15px;border-top:1px solid var(--hairline);transition:background .18s}

@@ -100,5 +100,45 @@
         iconButton('arrowR', 'Imagen siguiente', () => select(index + 1), index === items.length - 1)));
   }
 
-  Object.assign(window, { ImageViewer, openSafeContentUrl });
+  function DocumentViewer({ source, mimeType = '', title = 'Documento', onClose }) {
+    const [loaded, setLoaded] = useState(false);
+    const mime = String(mimeType || '').toLowerCase();
+    const isImage = mime.startsWith('image/');
+    const isPdf = mime === 'application/pdf';
+
+    useEffect(() => {
+      const key = (event) => { if (event.key === 'Escape') onClose(); };
+      window.addEventListener('keydown', key);
+      return () => window.removeEventListener('keydown', key);
+    }, [onClose]);
+
+    if (!source) return null;
+    if (isImage) return React.createElement(ImageViewer, { sources: [source], alt: title, onClose });
+
+    return React.createElement('div', {
+      role: 'dialog', 'aria-modal': 'true', 'aria-label': `Visor de ${title}`,
+      'data-document-viewer': isPdf ? 'pdf' : 'unsupported',
+      style: { position: 'absolute', inset: 0, zIndex: 120, background: 'rgba(7,5,6,.96)', display: 'flex', flexDirection: 'column', animation: 'su-fadein .2s ease' }
+    },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', gap: 10, color: '#fff' } },
+        React.createElement('div', { style: { minWidth: 0, fontSize: 13, fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
+        React.createElement('button', {
+          type: 'button', onClick: onClose, 'aria-label': 'Cerrar visor',
+          style: { width: 42, height: 42, border: 'none', borderRadius: 13, background: 'rgba(255,255,255,.14)', color: '#fff', display: 'grid', placeItems: 'center' }
+        }, React.createElement(I, { name: 'close', size: 21, stroke: 2.2 }))),
+      isPdf
+        ? React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, padding: '0 10px 10px' } },
+          !loaded && React.createElement('div', { role: 'status', style: { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 12, fontWeight: 800 } }, 'Cargando documento…'),
+          React.createElement('iframe', {
+            src: source, title, onLoad: () => setLoaded(true),
+            style: { position: 'relative', width: '100%', height: '100%', border: 0, borderRadius: 14, background: '#fff', opacity: loaded ? 1 : 0 }
+          }))
+        : React.createElement('div', { style: { flex: 1, display: 'grid', placeItems: 'center', padding: 24, color: '#fff', textAlign: 'center' } },
+          React.createElement('div', null,
+            React.createElement('div', { style: { width: 68, height: 68, margin: '0 auto 14px', borderRadius: 20, background: 'rgba(255,255,255,.12)', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'doc', size: 32, stroke: 1.8 })),
+            React.createElement('div', { style: { fontSize: 15, fontWeight: 850 } }, title),
+            React.createElement('div', { style: { maxWidth: 300, marginTop: 7, fontSize: 12, lineHeight: 1.5, opacity: .75 } }, 'Este formato no tiene una vista previa integrada. El documento permanece disponible en tu expediente.'))));
+  }
+
+  Object.assign(window, { ImageViewer, DocumentViewer, openSafeContentUrl });
 })();

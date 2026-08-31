@@ -1,5 +1,15 @@
 # Fuentes de verdad
 
+## Corte ADR-087 — plan universal de pago de productos propios
+
+El producto y su precio autorizado proceden exclusivamente de `program_catalog_items`: un producto fijo usa su `price_cash`; un producto con `requires_quote=true` sólo puede avanzar con la cotización propia, aprobada, vigente y más reciente de `program_requests.quoted_amount`. La ausencia de ese precio falla cerrada y nunca se sustituye con un valor capturado, mock, `DATA`, almacenamiento del navegador o precio Marketplace.
+
+La capacidad financiera reutiliza las autoridades vigentes de Suti Préstamo sin convertirlas en atributos del producto: perfil actual de `affiliates`, criterio activo de Caja Chica en `financial_programs`/`financial_funds`/`financial_rules`, política `loan_term_policy` y resolver certificado `SUTI_LOAN_QUOTE_V1`. `financial_session_snapshots` conserva únicamente una proyección personalizada `PROGRAM_PRODUCT_PAYMENT`, privada, service-only y expirable; no es autoridad ni fallback.
+
+`generate_program_product_payment_schedule` es el único calendario del flujo. Proceso 1/3 genera 15 y 30 —28 en febrero—; JUB genera exactamente un descuento mensual el día 5. En todos los casos el primer pago es la primera fecha válida mayor o igual a la fecha de inicio más 30 días. Por tanto, en JUB seleccionar 12 pagos significa 12 meses de descuento.
+
+La confirmación crea atómicamente una fila en `program_requests`, sus `request_documents` y el snapshot inmutable `PROGRAM_PRODUCT_PAYMENT_V1`, que conserva producto, fuente y precio autorizados, enganche, monto financiado, criterio, resultado, plazo y calendario. Documentos y términos reutilizan las autoridades actuales del programa `prestamo`. La aprobación Admin se ejecuta sólo en Supabase mediante `approve_program_product_payment_request`, termina en `financial_processing_status=completed` y no crea export, llamada ni escritura Google.
+
 ## Corte ADR-083 — visibilidad del catálogo financiero
 
 `finance_catalog_presentation` es la única autoridad de presentación administrable para la pantalla Finanzas: habilitación, orden, títulos/subtítulos de sección y label/tagline de producto. `finCatStore` la proyecta sobre la estructura/rutas versionadas en código; no decide elegibilidad, tasas, fondos, reglas, importes ni cálculos.

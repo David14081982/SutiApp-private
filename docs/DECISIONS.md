@@ -3,6 +3,7 @@
 | ADR | Decisión | Estado |
 |---|---|---|
 | ADR-086 | Los productos propios de programas permanecen en `program_catalog_items`; todo `price_cash` histórico no nulo es precio fijo salvo evidencia específica y el writer Admin escribe la misma autoridad mediante RPC. | Aceptada |
+| ADR-087 | El plan universal de productos deriva precio, cálculo, calendario y solicitud desde las autoridades vigentes; JUB paga una vez al mes el día 5 y la aprobación queda sólo en Supabase. | Aceptada |
 | ADR-085 | La cuenta bancaria es opcional en Depósito; el celular permanece requerido y una cuenta proporcionada conserva validación completa. | Aceptada |
 | ADR-082 | Notificaciones y badge derivan sólo eventos reales con visto durable en su autoridad; no existe tabla ni mock de notificaciones. | Aceptada |
 | ADR-081 | El depósito de Suti Préstamo usa cuenta/celular Supabase y congela evidencia privada en la alta atómica. | Aceptada |
@@ -707,3 +708,16 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Historia y recovery:** los 65 precios se preservan exactamente; procedencia histórica no cambia. La tabla de reconciliación conserva valores previos y timestamp para recovery. Si existe actividad Admin posterior, recovery falla cerrado y nunca elimina historia legítima.
 - **Límites:** no cambia Panel Empresarial, Marketplace, simulador, documentos, Google, Apps Script, tasas, fondos, plazos, reglas ni cálculos financieros.
 - **Aprobación:** `H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001` y autorización productiva explícita del propietario, 2026-08-31.
+
+## ADR-087 — Simulador universal y solicitud de plan de pago de productos propios
+
+- **Autoridad de precio:** `program_catalog_items.price_cash` gobierna productos fijos. Un producto `requires_quote=true` exige la cotización propia aprobada, vigente y más reciente en `program_requests.quoted_amount`; no se inventa un precio para probar la rama cuando no existe cotización válida.
+- **Autoridad financiera:** se reutilizan exclusivamente el perfil actual, el criterio activo de Caja Chica, `loan_term_policy` y el resolver certificado `SUTI_LOAN_QUOTE_V1` de Supabase. El frontend no reproduce tasas, reglas, elegibilidad, totales ni calendario.
+- **Calendario:** la función service-only `generate_program_product_payment_schedule` fija el contrato `PROGRAM_PRODUCT_PAYROLL_CALENDAR_V1`. Procesos 1 y 3 usan 15/30 —28 en febrero—. JUB usa un solo descuento mensual el día 5; el primero es el primer día 5 `>= fecha_inicio + 30 días`, y 12 pagos son 12 meses.
+- **Alta:** `financial-legacy` abre/cotiza/confirma; la confirmación revalida producto, precio, perfil, criterio, plazo, documentos y términos, y llama al writer atómico `create_validated_program_product_payment_request`. El snapshot inmutable `PROGRAM_PRODUCT_PAYMENT_V1` permite reconstruir exactamente la decisión.
+- **Documentos y términos:** se reutiliza el alcance vigente `PROGRAM/prestamo`, `UnifiedDocumentPhase`, expediente privado y versión publicada de términos. No se crea una autoridad documental específica del simulador.
+- **Admin:** `approve_program_product_payment_request` exige `program_requests.write`, es idempotente y auditada, y termina en `approved/completed`. La proyección Admin expone sólo el snapshot financiero sanitizado. Esta ruta no crea handoff ni exportación Google.
+- **Seguridad y recovery:** snapshots de sesión y generadores internos permanecen service-only; RLS, actor real, afiliado efectivo e impersonación se validan backend. Recovery fue verificado antes de actividad legítima y después falla cerrado para preservar historia; no se ejecuta recovery real tras el alta/approval QA.
+- **Límites:** cero cambios a `marketplace_products`, Panel Empresarial, ahorro, préstamos operativos, documentos maestros, Google, Apps Script, tasas, fondos, plazos o fórmulas. La única extensión financiera es el consumidor explícito de autoridades ya certificadas.
+- **Aprobación:** `H-UNIVERSAL-PROGRAM-PRODUCT-PAYMENT-SIMULATOR-001`, precondición `ceec42d90a873fc5f47bec28bce3fa8f2208c1cf` y precisión JUB explícita del propietario, 2026-08-31.
+- **Cierre owner:** el propietario autorizó `PASS_WITH_OWNER_DECISION` con evidencia no destructiva suficiente. Quedan marcados `DEFERRED_PRODUCTIVE_E2E` el recorrido posterior a una cotización productiva real y el reemplazo documental con archivo legítimo autorizado; no se crean cotizaciones, documentos ni datos sintéticos para certificar pruebas.

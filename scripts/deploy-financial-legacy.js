@@ -40,7 +40,8 @@ function env() {
     const response = await fetch(base + slug + '/body', { headers });
     if (!response.ok) throw new Error('SUPABASE_VERIFY_' + response.status);
     const remote = Buffer.from(await response.arrayBuffer());
-    const markers = ['source/index.ts', 'deposit_selection', 'bank_account_id', 'notification_phone', 'create_validated_financial_program_request'];
+    const markers = ['source/index.ts', 'deposit_selection', 'bank_account_id', 'notification_phone', 'create_validated_financial_program_request',
+      'programPaymentSessionOpen', 'generate_program_product_payment_schedule', 'create_validated_program_product_payment_request'];
     const magic = remote.subarray(0, 12).toString('ascii');
     const compiled = magic.startsWith('ESZIP') || remote.includes(Buffer.from('source/index.ts'));
     if (compiled) {

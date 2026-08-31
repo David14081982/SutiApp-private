@@ -263,8 +263,33 @@
     return invoke({ action: 'handoff', request_id: String(requestId) });
   }
   async function approveRequest(requestId, comment) { return invoke({ action: 'approve', request_id: String(requestId), comment: String(comment || '') }); }
+  async function openProgramPaymentSession(programItemId) {
+    const result=await invoke({action:'programPaymentSessionOpen',program_item_id:String(programItemId)});
+    if(!result||!['READY','QUOTE_REQUIRED','NOT_ELIGIBLE'].includes(result.status)||result.googleResolutionCount!==0)throw new Error('PROGRAM_PAYMENT_SESSION_CONTRACT_MISMATCH');
+    if(result.status==='READY'&&(!result.loanSession||!result.program||!(Number(result.authorizedPrice)>0)))throw new Error('PROGRAM_PAYMENT_SESSION_CONTRACT_MISMATCH');
+    return Object.freeze(result);
+  }
+  async function quoteProgramPayment(snapshotId,downPayment,term) {
+    const result=await invoke({action:'programPaymentSessionQuote',snapshot_id:String(snapshotId),down_payment:Number(downPayment),term:Number(term)});
+    if(!result||!result.financialResult||!result.paymentSchedule||result.googleResolutionCount!==0)throw new Error('PROGRAM_PAYMENT_QUOTE_CONTRACT_MISMATCH');
+    assertFinancialSimulationResult(result.financialResult);
+    if(!Array.isArray(result.paymentSchedule.rows)||result.paymentSchedule.rows.length!==Number(result.financialResult.paymentCount))throw new Error('PROGRAM_PAYMENT_SCHEDULE_CONTRACT_MISMATCH');
+    return Object.freeze(result);
+  }
+  async function confirmProgramPayment(values) {
+    const value=values||{};
+    const request=await invoke({action:'programPaymentSessionConfirm',snapshot_id:String(value.snapshotId),
+      program_item_id:String(value.programItemId),down_payment:Number(value.downPayment),term:Number(value.term),
+      notes:String(value.notes||''),signature_data:String(value.signature||''),terms_accepted:value.terms===true,
+      terms_version_id:String(value.termsVersionId),document_ids:(value.documentIds||[]).map(String),
+      idempotency_key:String(value.idempotencyKey)});
+    const requestId=request.request_id||request.id;
+    if(!requestId||!window.ProgramRequestRepository)throw Object.assign(new Error('REQUEST_WORKFLOW_UNAVAILABLE'),{code:'REQUEST_WORKFLOW_UNAVAILABLE'});
+    const workflow_state=await window.ProgramRequestRepository.getWorkflowState(requestId);
+    return Object.freeze(Object.assign({},request,{workflow_state}));
+  }
   window.FinancialLegacyRepository = Object.freeze({
-    invoke, handoffRequest, approveRequest,
+    invoke, handoffRequest, approveRequest,openProgramPaymentSession,quoteProgramPayment,confirmProgramPayment,
     resolveEligibility: () => invoke({ action: 'resolveEligibility' }),
     resolveAvailableFunds: () => invoke({ action: 'resolveAvailableFunds' }),
     resolveSimulation: (programId, amount, term) => invoke({ action: 'resolveSimulation', program_id: String(programId), amount: Number(amount), term: Number(term) }).then(assertFinancialSimulationResult),

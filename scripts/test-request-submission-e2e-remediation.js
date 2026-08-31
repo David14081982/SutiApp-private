@@ -29,7 +29,7 @@ assert.match(recovery,/if auth\.uid\(\) is null then raise exception 'AUTH_REQUI
 
 assert.match(repository,/rpc\('list_self_program_request_history'\)/);
 assert.doesNotMatch(repository,/function listHistory\(\)[\s\S]{0,180}from\('program_requests'\)/);
-assert.match(repository,/row\.program_id==='prestamo'&&row\.requested_amount/);
+assert.match(repository,/row\.financial_processing_status!=null&&row\.requested_amount!=null/);
 assert.match(operations,/r\.program_id==='prestamo'\?loanRow\(r\)/);
 assert.match(operations,/common\(r,'loan'\)/);
 assert.match(operations,/invalidate:\(\)=>\{promise=null;rows=\[\];phase='idle'/);

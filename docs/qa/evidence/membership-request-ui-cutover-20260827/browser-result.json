@@ -1,18 +1,19 @@
 {
   "status": "PASS",
   "browser": "Chrome",
+  "account": "H005_TEST2",
   "membershipSelection": {
     "selectedId": "b5d752fc-7849-4240-8a70-6a0cbb5ba873",
     "offerings": [
       {
         "id": "b5d752fc-7849-4240-8a70-6a0cbb5ba873",
         "company": "Bud Tv Ultra",
-        "termsPublished": false
+        "termsPublished": true
       },
       {
         "id": "ffebe743-7f1c-4657-a6ff-5b39cce13672",
         "company": "RiveraGas",
-        "termsPublished": false
+        "termsPublished": true
       },
       {
         "id": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c",
@@ -45,7 +46,7 @@
     "requirementCount": 4,
     "requiredCount": 4,
     "satisfiedRequired": 4,
-    "termsPublished": false
+    "termsPublished": true
   },
   "current": {
     "viewport": [
@@ -89,7 +90,7 @@
         "action": "preview"
       }
     ],
-    "thumbnailCount": 4,
+    "thumbnailCount": 0,
     "fields": [
       {
         "id": "phone",
@@ -115,9 +116,9 @@
       "Tus datos"
     ],
     "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
-    "termsMissing": true,
-    "submitReady": false,
-    "submitDisabled": true,
+    "termsMissing": false,
+    "submitReady": true,
+    "submitDisabled": false,
     "submitText": "Solicitar",
     "gridColumns": 2,
     "horizontal": true,
@@ -171,7 +172,7 @@
           "action": "preview"
         }
       ],
-      "thumbnailCount": 4,
+      "thumbnailCount": 0,
       "fields": [
         {
           "id": "phone",
@@ -197,9 +198,9 @@
         "Tus datos"
       ],
       "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
-      "termsMissing": true,
-      "submitReady": false,
-      "submitDisabled": true,
+      "termsMissing": false,
+      "submitReady": true,
+      "submitDisabled": false,
       "submitText": "Solicitar",
       "gridColumns": 2,
       "horizontal": true,
@@ -252,7 +253,7 @@
           "action": "preview"
         }
       ],
-      "thumbnailCount": 4,
+      "thumbnailCount": 0,
       "fields": [
         {
           "id": "phone",
@@ -278,9 +279,9 @@
         "Tus datos"
       ],
       "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
-      "termsMissing": true,
-      "submitReady": false,
-      "submitDisabled": true,
+      "termsMissing": false,
+      "submitReady": true,
+      "submitDisabled": false,
       "submitText": "Solicitar",
       "gridColumns": 2,
       "horizontal": true,
@@ -333,7 +334,7 @@
           "action": "preview"
         }
       ],
-      "thumbnailCount": 4,
+      "thumbnailCount": 0,
       "fields": [
         {
           "id": "phone",
@@ -359,9 +360,9 @@
         "Tus datos"
       ],
       "privacy": "Tus documentos viajan cifrados y sólo los ve el comité de validación.",
-      "termsMissing": true,
-      "submitReady": false,
-      "submitDisabled": true,
+      "termsMissing": false,
+      "submitReady": true,
+      "submitDisabled": false,
       "submitText": "Solicitar",
       "gridColumns": 2,
       "horizontal": true,

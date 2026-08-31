@@ -36,7 +36,7 @@
     }
   },
   "queue": {
-    "initialRows": 5,
+    "initialRows": 11,
     "search": true,
     "statusFilter": true,
     "programFilter": true,
@@ -49,13 +49,14 @@
   },
   "detail": {
     "persistent": true,
-    "financialSnapshot": "CONTROLLED_UNAVAILABLE",
+    "financialSnapshot": true,
     "historicalValuesImmutable": true,
     "timeline": true,
     "documents": true,
     "currentAffiliateDocuments": true,
     "termsAcceptance": true,
-    "technicalIdsPrimary": 0
+    "technicalIdsPrimary": 0,
+    "programProductPayment": true
   },
   "actions": {
     "safeActionPersistence": "NOT_LIVE_MUTATED",
@@ -63,7 +64,9 @@
     "refreshPersistence": "READ_ONLY_REFRESH_PASS"
   },
   "history": {
-    "reflection": "N/A_NO_CONTROLLED_OWNER_FINANCIAL_ROW"
+    "folioVisible": true,
+    "matchingOperations": 1,
+    "state": "aprobado"
   },
   "security": {
     "superAdmin": "ALLOWED",
@@ -87,7 +90,7 @@
     "bottomNav": "flex",
     "rootWidth": 430,
     "horizontalOverflow": false,
-    "cards": 5,
+    "cards": 11,
     "cotizacionesTab": true
   },
   "performance": {
@@ -129,11 +132,7 @@
   "consoleErrors": [
     "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
     "Failed to load resource: the server responded with a status of 403 ()",
-    "Failed to load resource: the server responded with a status of 403 ()",
-    "Failed to load resource: the server responded with a status of 403 ()",
     "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector",
-    "Failed to load resource: the server responded with a status of 403 ()",
-    "Failed to load resource: the server responded with a status of 403 ()",
     "Failed to load resource: the server responded with a status of 403 ()"
   ]
 }

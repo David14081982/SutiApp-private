@@ -30,7 +30,7 @@ const files = [
   'screens-admin-convenios.jsx', 'screens-admin-sindicato.jsx', 'screens-admin-finanzas.jsx', 'screens-admin-fondos.jsx', 'screens-admin-fincat.jsx', 'screens-admin-flujos.jsx', 'screens-admin-documents.jsx',
   'fincat-store.jsx',
   'screens-admin-branding.jsx', 'screens-admin-visual-crud.jsx', 'screens-admin-identity.jsx', 'screens-admin-pantallas.jsx', 'screens-admin-requests.jsx', 'screens-admin-data-exports.jsx', 'screens-admin-affiliates.jsx', 'screens-admin.jsx',
-  'company-store.jsx', 'catalog-store.jsx', 'screens-catalogo.jsx',
+  'company-store.jsx', 'catalog-store.jsx', 'screens-program-product-payment.jsx', 'screens-catalogo.jsx',
   'program-catalog-admin-store.jsx', 'screens-admin-program-products.jsx',
   'screens-admin-catalogo.jsx', 'screens-admin-planes.jsx', 'membership-repository.js', 'membership-store.jsx',
   'screens-membresias.jsx', 'screens-membership-application.jsx', 'screens-admin-membresias.jsx',

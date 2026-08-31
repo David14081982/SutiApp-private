@@ -75,6 +75,7 @@
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
     const [requestSheet,setRequestSheet]=useState(false);
+    const [paymentSignal,setPaymentSignal]=useState(0);
 
     const programItem = item.catalogSource === 'program';
     const cotiza = programItem ? Boolean(item.cotiza) : (item.precio == null || item.cotiza);
@@ -95,7 +96,7 @@
     if(item.category_raw)info.push(['Categoría',item.category_raw]);
 
     let cta;
-    if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'plus', onClick: () => setRequestSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
+    if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'cash', onClick: () => { setPaymentSignal((value)=>value+1);setTimeout(()=>{const node=document.querySelector('[data-program-payment-state]');if(node)node.scrollIntoView({behavior:'smooth',block:'center'});},30); } }, 'VER PLAN DE PAGO');
     else if (programItem) cta = React.createElement('button', { disabled: true, style: { flex: 1, height: 54, borderRadius: 16, border: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 14, fontWeight: 800 } }, 'NO DISPONIBLE PARA SOLICITAR');
     else if (!cotiza) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'plus', onClick: () => setRequestSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
     else if (!quoteReady) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, quote && quote.estado === 'solicitada' ? 'SOLICITAR OTRA COTIZACIÓN' : 'SOLICITAR ESTE BENEFICIO');
@@ -122,6 +123,7 @@
                 ? React.createElement('div', { style: { fontSize: 30, fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio))
                 : React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
             quote && React.createElement(QuoteBanner, { quote }),
+            programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true),openSignal:paymentSignal}),
             item.desc && React.createElement('div', { style: { marginTop: 20 } },
               React.createElement(window.SectionHead, { title: 'Descripción' }),
               React.createElement('div', { style: { fontSize: 15, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6 } },
@@ -159,19 +161,20 @@
     const [err,setErr]=useState('');
     const [documentGate,setDocumentGate]=useState({phase:'loading',ready:false,documentIds:[],missing:0});
     const sending=React.useRef(false);const idem=React.useRef(null);
+    const quoteRequest=item.cotiza===true;
     React.useEffect(()=>{if(open){setMsg('');setQty(1);setFirma('');setAccept(false);setSent(null);setErr('');setDocumentGate({phase:'loading',ready:false,documentIds:[],missing:0});sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey();}},[open]);
     const send=async()=>{if(sending.current||!documentGate.ready)return;sending.current=true;try{setBusy(true);const repository=item.catalogSource==='program'?window.ProgramCatalogRepository:window.MarketplaceRepository;const created=await repository.createRequest(item.id,qty,msg.trim(),firma,accept,idem.current,documentGate.documentIds);setSent(created);}catch(_){setErr('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');sending.current=false;}finally{setBusy(false);}};
     if(sent)return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'benefit',subject:item.nombre,workflowState:sent.workflow_state,onBack:onClose,fullScreen:true,destination:sent.status==='requires_financial_processing'?'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.':'Tu solicitud fue enviada al área responsable para su revisión.'});
-    return React.createElement(window.Sheet,{open,onClose,title:'Solicitar beneficio'},
+    return React.createElement(window.Sheet,{open,onClose,title:quoteRequest?'Solicitar cotización':'Solicitar beneficio'},
       React.createElement('div',{style:{fontSize:15,fontWeight:900}},item.nombre),
       React.createElement('label',{style:{display:'block',fontSize:12,fontWeight:800,marginTop:14}},'Cantidad'),
       React.createElement('input',{type:'number',min:1,max:999,value:qty,onChange:(e)=>setQty(Math.max(1,Number(e.target.value)||1)),style:{width:'100%',padding:12,border:'none',borderRadius:12,background:'var(--surface-2)',marginTop:6}}),
       React.createElement('label',{style:{display:'block',fontSize:12,fontWeight:800,marginTop:14}},'Mensaje (opcional)'),
       React.createElement('textarea',{value:msg,onChange:(e)=>setMsg(e.target.value),rows:3,style:{width:'100%',padding:12,border:'none',borderRadius:12,background:'var(--surface-2)',marginTop:6}}),
       React.createElement('div',{style:{marginTop:18}},React.createElement(window.DocumentRequestGate,{scopeType:item.catalogSource==='program'?'PROGRAM':'PRODUCT',scopeKey:item.id,onState:setDocumentGate})),
-      React.createElement(window.SignBlock,{programa:'marketplace',subtitulo:'Solicitud comercial · '+item.nombre,firma,setFirma,accept,setAccept,compact:true}),
+      React.createElement(window.SignBlock,{programa:quoteRequest?'cotizacion':'marketplace',subtitulo:(quoteRequest?'Solicitud de cotización · ':'Solicitud comercial · ')+item.nombre,firma,setFirma,accept,setAccept,compact:true}),
       err&&React.createElement('div',{style:{color:'#C0341D',fontWeight:700,marginTop:10}},err),
-      React.createElement(window.Btn,{full:true,icon:'check',disabled:busy||!accept||!firma||!documentGate.ready,style:{marginTop:14},onClick:send},busy?'Enviando…':documentGate.phase==='loading'?'Consultando documentos…':documentGate.missing?'Faltan '+documentGate.missing+' documentos':'Enviar solicitud'));
+      React.createElement(window.Btn,{full:true,icon:'check',disabled:busy||!accept||!firma||!documentGate.ready,style:{marginTop:14},onClick:send},busy?'Enviando…':documentGate.phase==='loading'?'Consultando documentos…':documentGate.missing?'Faltan '+documentGate.missing+' documentos':quoteRequest?'Enviar cotización':'Enviar solicitud'));
   }
 
   function QuoteBanner({ quote }) {

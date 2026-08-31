@@ -16,7 +16,7 @@
     const productName=product&&product.name||row.program_id;
     const companyName=row.company&&row.company.display_name||'';
     const productAmount=product&&(product.price==null?product.price_cash:product.price);
-    const amount=row.program_id==='prestamo'&&row.requested_amount!=null?row.requested_amount:productAmount;
+    const amount=row.financial_processing_status!=null&&row.requested_amount!=null?row.requested_amount:productAmount;
     return Object.freeze(Object.assign({},row,{
       estado:(quote?quoteState:benefitState)[row.status]||row.status,
       productoId:row.product_id||row.program_item_id,
@@ -103,5 +103,6 @@
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
+  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,approveProductPayment,newIdempotencyKey:key,project});
 })();

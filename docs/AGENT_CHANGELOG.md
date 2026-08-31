@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-UNIVERSAL-PROGRAM-PRODUCT-PAYMENT-SIMULATOR-001
+
+- El detalle de los 65 productos de precio fijo abre un simulador universal preservando el diseño aprobado. Producto, precio, reglas, cálculo, calendario, documentos, términos, solicitud y aprobación se resuelven desde sus autoridades Supabase; el browser no calcula ni conserva una fuente paralela.
+- JUB quedó certificado como un descuento mensual el día 5, con primer pago `>= inicio + 30 días`: 12 pagos producen 12 fechas mensuales. Procesos 1/3 conservaron 15/30 —28 en febrero—.
+- Una solicitud QA controlada fue enviada por el flujo real, resistió doble clic, preservó documentos/firma/términos/snapshot y fue aprobada una sola vez por Admin en Supabase. Quedó como historia legítima; recovery real y borrado fueron deliberadamente omitidos. Google tuvo 0 escrituras.
+
+```text
+H-UNIVERSAL-PROGRAM-PRODUCT-PAYMENT-SIMULATOR-001 RESULT
+Status: PASS_WITH_OWNER_DECISION
+Files changed: simulator UI/repositories/Admin; Edge v31; migrations/recoveries 20260831000500/501; tests/evidence; ADR/SOT/invariants/Registry
+Source-of-truth verdict: PASS — catálogo, cotización, criterios, documentos, términos y solicitudes conservan una autoridad cada uno
+Invariant verdict: PASS — JUB mensual día 5; primer pago +30 días; snapshot/alta/approval atómicos e idempotentes
+Build: PASS — bundle reconstruido y sintaxis válida
+Tests: PASS_WITH_OWNER_DECISION — fijo/real/Admin/JUB/seguridad/regresiones PASS; `DEFERRED_PRODUCTIVE_E2E` para post-cotización y reemplazo documental legítimo
+Security: PASS — service-only/RLS/cross-user/anon/normal-admin denegados; Admin principal auditado
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: `DEFERRED_PRODUCTIVE_E2E` — (1) post-`quoted_amount` con cotización real; (2) reemplazo con archivo legítimo autorizado
+Evidence: docs/UNIVERSAL_PROGRAM_PRODUCT_PAYMENT_SIMULATOR_RESULT.md
+```
+
 ## 2026-08-31 — H-MEMBERSHIP-DOCUMENT-THUMBNAIL-VIEWER-001
 
 - Las cuatro tarjetas documentales de Solicitud de Membresía muestran ahora la imagen privada real como miniatura completa con `object-fit: cover`; el fondo negro dejó de ser su estado principal.

@@ -7593,7 +7593,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const productName=product&&product.name||row.program_id;
     const companyName=row.company&&row.company.display_name||'';
     const productAmount=product&&(product.price==null?product.price_cash:product.price);
-    const amount=row.program_id==='prestamo'&&row.requested_amount!=null?row.requested_amount:productAmount;
+    const amount=row.financial_processing_status!=null&&row.requested_amount!=null?row.requested_amount:productAmount;
     return Object.freeze(Object.assign({},row,{
       estado:(quote?quoteState:benefitState)[row.status]||row.status,
       productoId:row.product_id||row.program_item_id,
@@ -7680,7 +7680,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,newIdempotencyKey:key,project});
+  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,approveProductPayment,newIdempotencyKey:key,project});
 })();
 })();
 /* @@file document-workflow-repository.js */
@@ -24255,19 +24256,20 @@ Object.assign(window, {
       rejected = ['rejected', 'cancelled'].includes(state),
       flow = timeline(r),
       isLoan = kind === 'loan',
-      isQuote = kind === 'quote';
+      isQuote = kind === 'quote',
+      isProductPayment = !isLoan && !isQuote && r.financial_processing_status != null && r.requested_amount != null;
     return Object.freeze({
       id: r.folio || r.id,
       sourceId: r.id,
       ts: new Date(r.created_at).getTime(),
       kind,
-      icon: isLoan ? 'receipt' : isQuote ? 'doc' : 'cart',
+      icon: isLoan ? 'receipt' : isQuote ? 'doc' : isProductPayment ? 'cash' : 'cart',
       tipo: r.productoNombre || (isLoan ? 'Suti Préstamo' : isQuote ? 'Cotización comercial' : 'Solicitud de beneficio'),
-      monto: isLoan ? r.requested_amount == null ? r.importe : Number(r.requested_amount) : isQuote ? approved && r.quoted_amount != null ? Number(r.quoted_amount) : null : r.importe == null ? null : Number(r.importe) * Number(r.quantity || 1),
+      monto: isLoan || isProductPayment ? r.requested_amount == null ? r.importe : Number(r.requested_amount) : isQuote ? approved && r.quoted_amount != null ? Number(r.quoted_amount) : null : r.importe == null ? null : Number(r.importe) * Number(r.quantity || 1),
       estado: rejected ? 'rechazado' : approved ? 'aprobado' : 'revision',
       fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
-      plazo: isLoan && r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : isQuote ? approved ? 'Cotización recibida' : 'Por cotizar' : state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
-      subtipo: isLoan ? 'Préstamo' : r.empresaNombre || r.program_id || '',
+      plazo: (isLoan || isProductPayment) && r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : isQuote ? approved ? 'Cotización recibida' : 'Por cotizar' : state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
+      subtipo: isLoan ? 'Préstamo' : isProductPayment ? 'Producto vía nómina' : r.empresaNombre || r.program_id || '',
       motivo: rejected ? r.company_notes || 'La solicitud fue cerrada por el área responsable.' : '',
       steps: flow.steps,
       workflowAvailable: flow.available,
@@ -33249,6 +33251,10 @@ Object.assign(window, {
       label: 'Entregada a gestión',
       tone: 'green'
     },
+    completed: {
+      label: 'Aprobada en Supabase',
+      tone: 'green'
+    },
     failed: {
       label: 'Envío con error',
       tone: 'red'
@@ -33511,6 +33517,7 @@ Object.assign(window, {
       selected = index >= 0 ? visible[index] : null;
     const actionOptions = React.useMemo(() => {
       if (!detail || !app.admin.has('program_requests.write')) return [];
+      const productPayment = detail.program_id !== 'prestamo';
       const options = [{
         id: 'note',
         label: 'Guardar observación'
@@ -33520,8 +33527,8 @@ Object.assign(window, {
         label: 'Marcar en revisión'
       });
       if (['requires_financial_processing', 'submitted', 'in_review'].includes(detail.status)) options.push({
-        id: 'approve',
-        label: 'Aprobar y enviar a gestión'
+        id: productPayment ? 'approveProduct' : 'approve',
+        label: productPayment ? 'Aprobar en Supabase' : 'Aprobar y enviar a gestión'
       }, {
         id: 'reject',
         label: 'Rechazar solicitud'
@@ -33529,7 +33536,7 @@ Object.assign(window, {
         id: 'cancel',
         label: 'Cancelar solicitud'
       });
-      if (detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.unshift({
+      if (!productPayment && detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.unshift({
         id: 'handoff',
         label: detail.financial_processing_status === 'failed' ? 'Reintentar envío a gestión' : 'Enviar a gestión'
       });
@@ -33577,6 +33584,7 @@ Object.assign(window, {
       }
       const confirmations = {
         approve: '¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y el backend intentará entregarla al historial financiero de Google.',
+        approveProduct: '¿Aprobar este plan de producto en Supabase? No se enviará información a Google.',
         handoff: '¿Enviar esta solicitud aprobada a la gestión financiera de Google?',
         reject: '¿Rechazar esta solicitud financiera?',
         cancel: '¿Cancelar esta solicitud? Esta acción quedará registrada en la bitácora.'
@@ -33605,10 +33613,14 @@ Object.assign(window, {
           const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
           actionAttempts.current.set(fingerprint, actionId);
           persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);
+        } else if (action === 'approveProduct') {
+          const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
+          actionAttempts.current.set(fingerprint, actionId);
+          await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);
         } else if (action === 'approve') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
         const refreshed = await load(true),
           verified = refreshed.find(row => row.id === currentId);
-        let valid = verified && (action === 'review' ? verified.status === 'in_review' : action === 'reject' ? verified.status === 'rejected' : action === 'cancel' ? verified.status === 'cancelled' : action === 'approve' ? verified.status === 'approved' && ['ready_for_handoff', 'in_progress', 'handed_off'].includes(verified.financial_processing_status) : action === 'handoff' ? verified.financial_processing_status === 'handed_off' : true);
+        let valid = verified && (action === 'review' ? verified.status === 'in_review' : action === 'reject' ? verified.status === 'rejected' : action === 'cancel' ? verified.status === 'cancelled' : action === 'approveProduct' ? verified.status === 'approved' && verified.financial_processing_status === 'completed' : action === 'approve' ? verified.status === 'approved' && ['ready_for_handoff', 'in_progress', 'handed_off'].includes(verified.financial_processing_status) : action === 'handoff' ? verified.financial_processing_status === 'handed_off' : true);
         if (valid && persistedEvent) {
           const verifiedDetail = await window.ProgramRequestRepository.financialDetail(currentId);
           valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
@@ -33689,6 +33701,51 @@ Object.assign(window, {
     }, h('span', null, item[0]), h('strong', null, item[1])))) : h('div', {
       className: 'finwb-snapshot-note'
     }, 'Snapshot contractual no disponible. No se recalculan valores históricos con reglas actuales.'));
+    const renderProductPayment = snapshot => {
+      if (!snapshot || snapshot.contract_version !== 'PROGRAM_PRODUCT_PAYMENT_V1') return null;
+      const product = snapshot.product || {},
+        schedule = snapshot.payment_schedule || {},
+        rows = Array.isArray(schedule.rows) ? schedule.rows : [];
+      return h('section', {
+        className: 'finwb-card',
+        'data-financial-product-payment': 'true'
+      }, h('h3', null, h(I, {
+        name: 'receipt',
+        size: 17,
+        stroke: 2
+      }), 'Producto y plan aceptado'), h('div', {
+        className: 'finwb-kv'
+      }, [['Producto', product.name || programLabel(detail)], ['Programa', product.program_key || detail.program_id], ['Origen del precio', snapshot.price_source === 'PRICE_CASH' ? 'Precio publicado' : 'Cotización autorizada'], ['Precio autorizado', moneyValue(snapshot.authorized_price)], ['Enganche', moneyValue(snapshot.down_payment)], ['Monto financiado', moneyValue(snapshot.financed_amount)], ['Plazo', (snapshot.term || detail.requested_term || '—') + ' pagos'], ['Calendario', rows.length ? schedule.first_payment_date + ' → ' + schedule.last_payment_date : 'No disponible']].map(item => h('div', {
+        key: item[0]
+      }, h('span', null, item[0]), h('strong', null, item[1])))), rows.length ? h('details', {
+        style: {
+          marginTop: 11
+        }
+      }, h('summary', {
+        style: {
+          cursor: 'pointer',
+          color: 'var(--guinda)',
+          fontSize: 11.5,
+          fontWeight: 850
+        }
+      }, 'Ver calendario de ' + rows.length + ' descuentos'), h('div', {
+        style: {
+          marginTop: 7,
+          maxHeight: 220,
+          overflow: 'auto'
+        }
+      }, rows.map(row => h('div', {
+        key: row.number,
+        style: {
+          display: 'grid',
+          gridTemplateColumns: '34px 1fr auto',
+          gap: 8,
+          padding: '6px 4px',
+          borderTop: '1px solid var(--hairline)',
+          fontSize: 11.5
+        }
+      }, h('strong', null, row.number), h('span', null, row.date), h('strong', null, moneyValue(row.payment)))))) : null);
+    };
     const renderDocumentRows = (documents, scope) => documents.map(document => {
       const viewKey = scope + ':' + document.id,
         view = documentViews[viewKey] || {},
@@ -33736,6 +33793,7 @@ Object.assign(window, {
       }, 'Selecciona una solicitud para revisar su expediente.');
       const submission = snapshotResult(detail, false),
         approval = snapshotResult(detail, true),
+        productPayment = detail.financial_submission_snapshot && detail.financial_submission_snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1' ? detail.financial_submission_snapshot : null,
         events = timelineEvents(detail);
       return h(React.Fragment, null, h('div', {
         className: 'finwb-detail-head'
@@ -33767,7 +33825,7 @@ Object.assign(window, {
         style: {
           marginTop: 10
         }
-      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {
@@ -44535,7 +44593,8 @@ Object.assign(window, {
     ready_for_handoff: 'Lista para enviar',
     in_progress: 'Enviando a gestión…',
     handed_off: 'Enviada a gestión',
-    failed: 'No se pudo enviar'
+    failed: 'No se pudo enviar',
+    completed: 'Aprobada en Supabase'
   };
   const exportErrorCopy = code => ({
     REQUIRED_PRIVATE_DOCUMENT_MISSING: 'Falta un documento requerido.',
@@ -45186,16 +45245,18 @@ Object.assign(window, {
     const change = async (row, status) => {
       try {
         busy.set(row.id);
-        if (status === 'approved' && row.financial_processing_status != null) {
+        if (status === 'approved' && row.financial_processing_status != null && row.program_id === 'prestamo') {
           await window.FinancialLegacyRepository.approveRequest(row.id);
           app.toast && app.toast('Solicitud aprobada y enviada a gestión.');
+        } else if (status === 'approved' && row.financial_processing_status != null) {
+          throw new Error('PRODUCT_FINANCIAL_APPROVAL_REQUIRES_FINANCE_WORKBENCH');
         } else {
           await window.ProgramRequestRepository.update(row.id, status, row.notes || '');
           app.toast && app.toast('Estado actualizado');
         }
         await load(false);
       } catch (_) {
-        app.toast && app.toast('No se completó el envío. Revisa los datos y documentos requeridos; puedes reintentar sin duplicar la solicitud.');
+        app.toast && app.toast(row.program_id !== 'prestamo' && row.financial_processing_status != null ? 'La aprobación del plan de producto se gestiona en el módulo financiero; no se envió a Google.' : 'No se completó el envío. Revisa los datos y documentos requeridos; puedes reintentar sin duplicar la solicitud.');
       } finally {
         busy.set('');
       }
@@ -50177,6 +50238,926 @@ Object.assign(window, {
   };
 })();
 })();
+/* @@file screens-program-product-payment.jsx */
+(function(){
+/* Universal program-product payment flow. Product, price, Caja Chica and math stay server-authoritative. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    I = window.Icon;
+  const money2 = value => '$' + Number(value || 0).toLocaleString('es-MX', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  const money0 = value => window.money ? window.money(Number(value || 0)) : money2(value);
+  const dateLabel = value => {
+    try {
+      return new Date(String(value) + 'T12:00:00').toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch (_) {
+      return String(value || '—');
+    }
+  };
+  function Field({
+    label,
+    value,
+    accent
+  }) {
+    return h('div', {
+      style: {
+        minWidth: 0
+      }
+    }, h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, label), h('div', {
+      style: {
+        fontSize: 15.5,
+        fontWeight: 900,
+        letterSpacing: '-.02em',
+        marginTop: 3,
+        color: accent ? 'var(--guinda)' : 'var(--ink)',
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, value));
+  }
+  function documentSelection(requirements, documents) {
+    const latest = new Map();
+    (documents || []).forEach(doc => {
+      const current = latest.get(doc.document_type_id);
+      if (!current || new Date(doc.created_at) > new Date(current.created_at)) latest.set(doc.document_type_id, doc);
+    });
+    const required = (requirements || []).filter(r => r.required !== false),
+      selected = [],
+      missing = [];
+    required.forEach(requirement => {
+      const doc = latest.get(requirement.document_type_id);
+      if (doc && doc.available === true && doc.availability === 'AVAILABLE' && ['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED'].includes(doc.status)) selected.push(doc.id);else missing.push(requirement);
+    });
+    return {
+      selected,
+      missing
+    };
+  }
+  function PaymentSchedule({
+    schedule
+  }) {
+    const [open, setOpen] = useState(false),
+      rows = schedule && Array.isArray(schedule.rows) ? schedule.rows : [];
+    if (!rows.length) return null;
+    return h('div', {
+      style: {
+        marginTop: 14,
+        borderTop: '1px solid var(--hairline)',
+        paddingTop: 12
+      }
+    }, h('button', {
+      type: 'button',
+      onClick: () => setOpen(!open),
+      style: {
+        width: '100%',
+        border: 'none',
+        background: 'transparent',
+        padding: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        color: 'var(--ink)'
+      }
+    }, h('span', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 900
+      }
+    }, 'Calendario de descuentos'), h('span', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 800,
+        color: 'var(--guinda)'
+      }
+    }, open ? 'Ocultar' : 'Ver ' + rows.length + ' pagos')), open && h('div', {
+      'data-program-payment-schedule': 'true',
+      style: {
+        marginTop: 10,
+        maxHeight: 300,
+        overflowY: 'auto',
+        border: '1px solid var(--hairline)',
+        borderRadius: 13
+      }
+    }, h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '38px 1fr 1fr',
+        gap: 8,
+        padding: '8px 10px',
+        background: 'var(--surface-2)',
+        fontSize: 10.5,
+        fontWeight: 800,
+        color: 'var(--ink-3)',
+        position: 'sticky',
+        top: 0
+      }
+    }, h('span', null, '#'), h('span', null, 'Fecha'), h('span', {
+      style: {
+        textAlign: 'right'
+      }
+    }, 'Descuento')), rows.map(row => h('div', {
+      key: row.number,
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '38px 1fr 1fr',
+        gap: 8,
+        padding: '9px 10px',
+        borderTop: '1px solid var(--hairline)',
+        fontSize: 11.5,
+        fontWeight: 700
+      }
+    }, h('span', {
+      style: {
+        fontFamily: 'var(--mono)',
+        color: 'var(--ink-3)'
+      }
+    }, String(row.number).padStart(2, '0')), h('span', null, dateLabel(row.date)), h('span', {
+      style: {
+        textAlign: 'right',
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, money2(row.payment))))));
+  }
+  function Application({
+    item,
+    session,
+    quote,
+    onClose,
+    app
+  }) {
+    const [step, setStep] = useState('documents'),
+      [docState, setDocState] = useState({
+        phase: 'loading',
+        requirements: [],
+        documents: [],
+        terms: null
+      }),
+      [signature, setSignature] = useState(''),
+      [accepted, setAccepted] = useState(false),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [sent, setSent] = useState(null),
+      idem = useRef(window.ProgramRequestRepository.newIdempotencyKey());
+    const load = React.useCallback(async () => {
+      setDocState(s => Object.assign({}, s, {
+        phase: 'loading'
+      }));
+      try {
+        const [requirements, documents, terms] = await Promise.all([window.DocumentWorkflowRepository.requirements('prestamo'), window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'), window.ProgramTermsRepository.current('prestamo')]);
+        setDocState({
+          phase: 'ready',
+          requirements: requirements.slice(),
+          documents: documents.slice(),
+          terms
+        });
+      } catch (_) {
+        setDocState({
+          phase: 'error',
+          requirements: [],
+          documents: [],
+          terms: null
+        });
+      }
+    }, []);
+    useEffect(() => {
+      load();
+    }, [load]);
+    const gate = documentSelection(docState.requirements, docState.documents),
+      canSummary = docState.phase === 'ready' && gate.missing.length === 0 && docState.terms;
+    const send = async () => {
+      if (busy || !canSummary || !signature || !accepted) return;
+      setBusy(true);
+      setError('');
+      try {
+        const result = await window.FinancialLegacyRepository.confirmProgramPayment({
+          snapshotId: session.loanSession.id,
+          programItemId: item.id,
+          downPayment: quote.downPayment,
+          term: quote.financialResult.paymentCount,
+          notes: 'Solicitud de producto con descuento vía nómina',
+          signature,
+          terms: true,
+          termsVersionId: docState.terms.id,
+          documentIds: gate.selected,
+          idempotencyKey: idem.current
+        });
+        setSent(result);
+        if (window.operationsStore) window.operationsStore.invalidate();
+      } catch (e) {
+        const code = e.code || e.message;
+        setError(code === 'CONDITIONS_CHANGED' ? 'Las condiciones cambiaron. Cierra y vuelve a simular antes de enviar.' : code === 'REQUIRED_DOCUMENTS_MISSING' ? 'Falta validar uno o más documentos requeridos.' : 'No se pudo registrar la solicitud. Inténtalo nuevamente sin cambiar los datos.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    if (sent) return h(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'benefit',
+      subject: item.nombre,
+      workflowState: sent.workflow_state,
+      onBack: onClose,
+      fullScreen: true,
+      destination: 'Tu solicitud de producto con descuento vía nómina fue enviada al Área de Finanzas para revisión.'
+    });
+    return h('div', {
+      'data-program-payment-application': 'true',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 88,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: 'calc(10px + env(safe-area-inset-top)) 15px 11px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, h('button', {
+      onClick: step === 'summary' ? () => setStep('documents') : onClose,
+      'aria-label': 'Atrás',
+      style: {
+        width: 40,
+        height: 40,
+        border: 'none',
+        borderRadius: 12,
+        background: 'var(--surface-2)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--ink)'
+      }
+    }, h(I, {
+      name: 'arrowL',
+      size: 20,
+      stroke: 2.2
+    })), h('div', {
+      style: {
+        flex: 1
+      }
+    }, h('div', {
+      style: {
+        fontSize: 15,
+        fontWeight: 900
+      }
+    }, step === 'documents' ? 'Documentos' : 'Revisa y firma'), h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, step === 'documents' ? 'Paso 1 de 2 · Expediente vigente' : 'Paso 2 de 2 · Solicitud de producto'))), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px 17px 120px'
+      }
+    }, step === 'documents' ? h(React.Fragment, null, h('div', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink-2)',
+        fontWeight: 600,
+        lineHeight: 1.5,
+        marginBottom: 13
+      }
+    }, 'Usamos los mismos requisitos documentales vigentes de Suti Préstamo. Puedes reutilizar documentos válidos o reemplazarlos aquí.'), h(window.UnifiedDocumentPhase, {
+      requirements: docState.requirements,
+      documents: docState.documents,
+      onChanged: load,
+      phase: docState.phase,
+      error: 'No fue posible consultar los requisitos autorizados.',
+      onRetry: load,
+      accessPurpose: 'SELF_SERVICE_LOAN',
+      title: 'Verifica tus documentos'
+    })) : h(React.Fragment, null, h('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 800,
+        color: 'var(--ink-3)'
+      }
+    }, item.scopeId || item.program_key || 'Programa'), h('div', {
+      style: {
+        fontSize: 17,
+        fontWeight: 900,
+        marginTop: 3
+      }
+    }, item.nombre), h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 13,
+        marginTop: 15
+      }
+    }, h(Field, {
+      label: 'Precio autorizado',
+      value: money2(quote.authorizedPrice)
+    }), h(Field, {
+      label: 'Enganche',
+      value: money2(quote.downPayment)
+    }), h(Field, {
+      label: 'Monto financiado',
+      value: money2(quote.financedAmount)
+    }), h(Field, {
+      label: 'Fondo',
+      value: quote.financialResult.fund
+    }), h(Field, {
+      label: 'Pagos',
+      value: quote.financialResult.paymentCount + ' ' + (quote.financialResult.paymentPeriod === 'mensual' ? 'mensuales' : 'quincenales')
+    }), h(Field, {
+      label: 'Descuento por pago',
+      value: money2(quote.financialResult.paymentPerPeriod),
+      accent: true
+    }), h(Field, {
+      label: 'Intereses',
+      value: money2(quote.financialResult.interest)
+    }), h(Field, {
+      label: 'Gastos administrativos',
+      value: money2(quote.financialResult.administrativeFeeTotal)
+    }), h(Field, {
+      label: 'Total a pagar',
+      value: money2(quote.financialResult.total),
+      accent: true
+    })), h(PaymentSchedule, {
+      schedule: quote.paymentSchedule
+    })), h(window.SignBlock, {
+      programa: 'financiamiento',
+      subtitulo: 'Producto con descuento vía nómina · ' + item.nombre,
+      firma: signature,
+      setFirma: setSignature,
+      accept: accepted,
+      setAccept: setAccepted,
+      termsVersion: docState.terms
+    }), error && h('div', {
+      role: 'alert',
+      style: {
+        marginTop: 12,
+        color: '#A32921',
+        fontSize: 12.5,
+        fontWeight: 800,
+        lineHeight: 1.45
+      }
+    }, error))), h('div', {
+      style: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        padding: '12px 17px calc(14px + env(safe-area-inset-bottom))',
+        background: 'linear-gradient(transparent,var(--surface) 22%)'
+      }
+    }, step === 'documents' ? h(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: 'arrowR',
+      disabled: !canSummary,
+      onClick: () => setStep('summary')
+    }, docState.phase === 'loading' ? 'Consultando documentos…' : docState.phase === 'error' ? 'Reintenta la consulta' : gate.missing.length ? 'Faltan ' + gate.missing.length + ' documentos' : 'Continuar al resumen') : h(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: 'check',
+      disabled: busy || !signature || !accepted,
+      onClick: send
+    }, busy ? 'Enviando solicitud…' : 'Enviar solicitud')));
+  }
+  function ProgramProductPaymentFlow({
+    item,
+    app,
+    onRequestQuote,
+    openSignal
+  }) {
+    const [open, setOpen] = useState(false),
+      [state, setState] = useState({
+        phase: 'loading',
+        data: null,
+        error: ''
+      }),
+      [downTxt, setDownTxt] = useState('0'),
+      [term, setTerm] = useState(1),
+      [quoteState, setQuoteState] = useState({
+        phase: 'idle',
+        data: null,
+        error: ''
+      }),
+      [application, setApplication] = useState(false),
+      sequence = useRef(0);
+    const load = React.useCallback(async () => {
+      setState({
+        phase: 'loading',
+        data: null,
+        error: ''
+      });
+      try {
+        const data = await window.FinancialLegacyRepository.openProgramPaymentSession(item.id);
+        setState({
+          phase: 'ready',
+          data,
+          error: ''
+        });
+        if (data.status === 'READY') {
+          const min = Math.ceil(Number(data.minimumDownPayment || 0) * 100) / 100;
+          setDownTxt(String(min));
+          setTerm(Number(data.program.custom_term && data.program.custom_term.min || 1));
+        }
+      } catch (e) {
+        setState({
+          phase: 'error',
+          data: null,
+          error: e.code || e.message
+        });
+      }
+    }, [item.id]);
+    useEffect(() => {
+      load();
+    }, [load]);
+    useEffect(() => {
+      if (openSignal) {
+        setOpen(true);
+      }
+    }, [openSignal]);
+    const session = state.data,
+      price = Number(session && session.authorizedPrice || 0),
+      down = Math.max(0, Number(downTxt) || 0),
+      maxTerm = Number(session && session.program && session.program.custom_term && session.program.custom_term.max || 1),
+      minDown = Number(session && session.minimumDownPayment || 0);
+    useEffect(() => {
+      if (!session || session.status !== 'READY' || !session.loanSession) return;
+      const current = ++sequence.current;
+      setQuoteState(s => ({
+        phase: 'loading',
+        data: s.data,
+        error: ''
+      }));
+      const timer = setTimeout(() => window.FinancialLegacyRepository.quoteProgramPayment(session.loanSession.id, down, term).then(data => {
+        if (current === sequence.current) setQuoteState({
+          phase: 'ready',
+          data,
+          error: ''
+        });
+      }, e => {
+        if (current === sequence.current) setQuoteState({
+          phase: 'error',
+          data: null,
+          error: e.code || e.message
+        });
+      }), 260);
+      return () => clearTimeout(timer);
+    }, [session && session.loanSession && session.loanSession.id, down, term]);
+    const quote = quoteState.data,
+      period = quote && quote.financialResult.paymentPeriod === 'mensual' ? 'mensual' : 'quincenal';
+    if (state.phase === 'loading') return h('div', {
+      'data-program-payment-state': 'loading',
+      className: 'su-skeleton',
+      style: {
+        height: 72,
+        borderRadius: 18,
+        marginTop: 18
+      }
+    });
+    if (state.phase === 'error') return h('div', {
+      'data-program-payment-state': 'error',
+      style: {
+        marginTop: 18,
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 14,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('div', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 800,
+        color: '#A32921'
+      }
+    }, 'No fue posible consultar el plan de pago.'), h('button', {
+      onClick: load,
+      style: {
+        border: 'none',
+        background: 'none',
+        color: 'var(--guinda)',
+        fontWeight: 900,
+        marginTop: 8,
+        padding: 0
+      }
+    }, 'Reintentar'));
+    if (session.status === 'QUOTE_REQUIRED') return h('div', {
+      'data-program-payment-state': 'quote-required',
+      style: {
+        marginTop: 18,
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        gap: 11,
+        alignItems: 'center'
+      }
+    }, h('div', {
+      style: {
+        width: 42,
+        height: 42,
+        borderRadius: 13,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, h(I, {
+      name: 'doc',
+      size: 20,
+      stroke: 2
+    })), h('div', {
+      style: {
+        flex: 1
+      }
+    }, h('div', {
+      style: {
+        fontSize: 14,
+        fontWeight: 900
+      }
+    }, 'Primero necesitas una cotización'), h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, 'Cuando el precio autorizado esté vigente, aquí aparecerá el mismo simulador.'))), h(window.Btn, {
+      full: true,
+      variant: 'outline',
+      icon: 'doc',
+      style: {
+        marginTop: 12
+      },
+      onClick: onRequestQuote
+    }, 'Solicitar cotización'));
+    if (session.status === 'NOT_ELIGIBLE') return h('div', {
+      'data-program-payment-state': 'not-eligible',
+      style: {
+        marginTop: 18,
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)',
+        fontSize: 12.5,
+        fontWeight: 700,
+        color: 'var(--ink-2)'
+      }
+    }, 'Caja Chica no tiene una regla vigente para tu perfil. El producto sigue visible, pero no puede simularse por nómina.');
+    return h(React.Fragment, null, h('div', {
+      'data-program-payment-state': 'ready',
+      style: {
+        marginTop: 18,
+        background: 'var(--surface)',
+        borderRadius: 20,
+        boxShadow: 'var(--neo-sm)',
+        padding: open ? '16px 16px 18px' : 14
+      }
+    }, !open ? h('button', {
+      onClick: () => setOpen(true),
+      className: 'su-press',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        textAlign: 'left',
+        border: 'none',
+        background: 'transparent',
+        padding: 0,
+        fontFamily: 'inherit'
+      }
+    }, h('div', {
+      style: {
+        width: 44,
+        height: 44,
+        borderRadius: 13,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, h(I, {
+      name: 'cash',
+      size: 22,
+      stroke: 2
+    })), h('div', {
+      style: {
+        flex: 1
+      }
+    }, h('div', {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 900
+      }
+    }, 'Simula tu plan de pago'), h('div', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, quote ? 'Desde ' + money2(quote.financialResult.paymentPerPeriod) + ' ' + period : 'Consulta tu descuento autorizado')), h(I, {
+      name: 'chevR',
+      size: 20,
+      stroke: 2.2,
+      style: {
+        color: 'var(--ink-3)'
+      }
+    })) : h('div', {
+      style: {
+        animation: 'su-fadein .22s ease'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 14
+      }
+    }, h('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, h(I, {
+      name: 'cash',
+      size: 20,
+      stroke: 2
+    })), h('div', {
+      style: {
+        flex: 1
+      }
+    }, h('div', {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 900
+      }
+    }, 'Simula tu plan de pago'), h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, 'Elige tu enganche y número de descuentos')), h('button', {
+      onClick: () => setOpen(false),
+      'aria-label': 'Cerrar simulador',
+      style: {
+        width: 32,
+        height: 32,
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--ink-3)'
+      }
+    }, h(I, {
+      name: 'close',
+      size: 17,
+      stroke: 2.3
+    }))), h('div', {
+      style: {
+        background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))',
+        color: '#fff',
+        borderRadius: 18,
+        padding: '15px 16px',
+        textAlign: 'center'
+      }
+    }, h('div', {
+      style: {
+        fontSize: 11.5,
+        opacity: .82,
+        fontWeight: 700,
+        textTransform: 'uppercase'
+      }
+    }, 'Descuento ' + period), h('div', {
+      style: {
+        fontSize: 34,
+        fontWeight: 800,
+        letterSpacing: '-.03em',
+        lineHeight: 1.14,
+        marginTop: 2
+      }
+    }, quote ? money2(quote.financialResult.paymentPerPeriod) : '—'), h('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 14,
+        marginTop: 11,
+        fontSize: 11.5
+      }
+    }, h('span', null, term + ' pagos'), h('span', null, '·'), h('span', null, quote ? dateLabel(quote.paymentSchedule.first_payment_date) : 'Calculando…'), h('span', null, '·'), h('span', null, quote ? money0(quote.financialResult.total) : '—'))), h('div', {
+      style: {
+        marginTop: 16
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 13,
+        fontWeight: 800,
+        color: 'var(--ink-2)'
+      }
+    }, h('span', null, 'Tu enganche'), h('span', {
+      style: {
+        fontSize: 11,
+        color: 'var(--ink-3)'
+      }
+    }, minDown > 0 ? 'Mínimo ' + money0(minDown) : 'Desde $0')), h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)',
+        borderRadius: 14,
+        padding: '2px 13px',
+        marginTop: 7
+      }
+    }, h('span', {
+      style: {
+        fontSize: 18,
+        fontWeight: 800,
+        color: 'var(--guinda)'
+      }
+    }, '$'), h('input', {
+      type: 'number',
+      inputMode: 'decimal',
+      min: minDown,
+      max: Math.max(minDown, price - .01),
+      step: '0.01',
+      value: downTxt,
+      onChange: e => setDownTxt(e.target.value),
+      style: {
+        flex: 1,
+        border: 'none',
+        background: 'transparent',
+        padding: '11px 0',
+        fontSize: 18,
+        fontWeight: 800,
+        color: 'var(--guinda)',
+        minWidth: 0
+      }
+    })), down < minDown && h('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: '#B3261E',
+        marginTop: 7
+      }
+    }, 'El enganche mínimo para Caja Chica es ' + money0(minDown) + '.')), h('div', {
+      style: {
+        marginTop: 16
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 13,
+        fontWeight: 800,
+        color: 'var(--ink-2)'
+      }
+    }, h('span', null, 'Número de descuentos ' + (session.program.payment_period === 'mensual' ? 'mensuales' : 'permitidos')), h('span', {
+      style: {
+        fontSize: 11,
+        color: 'var(--ink-3)'
+      }
+    }, 'Máximo ' + maxTerm)), h('input', {
+      type: 'range',
+      min: 1,
+      max: maxTerm,
+      step: 1,
+      value: term,
+      onChange: e => setTerm(Number(e.target.value)),
+      className: 'su-range',
+      style: {
+        width: '100%',
+        marginTop: 8,
+        accentColor: 'var(--guinda)'
+      }
+    }), h('div', {
+      style: {
+        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: 900,
+        color: 'var(--guinda)'
+      }
+    }, term + ' ' + (session.program.payment_period === 'mensual' ? 'meses' : 'pagos'))), quote && h(React.Fragment, null, h('div', {
+      style: {
+        marginTop: 16,
+        paddingTop: 15,
+        borderTop: '1px solid var(--hairline)',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 14
+      }
+    }, h(Field, {
+      label: 'Precio autorizado',
+      value: money2(quote.authorizedPrice)
+    }), h(Field, {
+      label: 'Monto a financiar',
+      value: money2(quote.financedAmount)
+    }), h(Field, {
+      label: 'Tasa de interés',
+      value: quote.financialResult.rate + '% ' + period
+    }), h(Field, {
+      label: 'Total de intereses',
+      value: money2(quote.financialResult.interest)
+    }), h(Field, {
+      label: 'Gasto por pago',
+      value: money2(quote.financialResult.administrativeFeePerPayment)
+    }), h(Field, {
+      label: 'Total gastos administrativos',
+      value: money2(quote.financialResult.administrativeFeeTotal)
+    }), h(Field, {
+      label: 'Total a pagar',
+      value: money2(quote.financialResult.total),
+      accent: true
+    })), h(PaymentSchedule, {
+      schedule: quote.paymentSchedule
+    }), h(window.Btn, {
+      full: true,
+      icon: 'arrowR',
+      disabled: quoteState.phase !== 'ready' || down < minDown,
+      style: {
+        marginTop: 14
+      },
+      onClick: () => setApplication(true)
+    }, 'Continuar con esta simulación')), quoteState.phase === 'error' && h('div', {
+      role: 'alert',
+      style: {
+        fontSize: 11.5,
+        fontWeight: 800,
+        color: '#A32921',
+        marginTop: 10
+      }
+    }, quoteState.error === 'DOWN_PAYMENT_OUT_OF_RANGE' ? 'Ajusta el enganche al monto permitido por Caja Chica.' : 'No fue posible actualizar la simulación.'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        marginTop: 12,
+        fontSize: 11,
+        fontWeight: 600,
+        lineHeight: 1.45,
+        color: 'var(--ink-3)'
+      }
+    }, h(I, {
+      name: 'info',
+      size: 14,
+      stroke: 2,
+      style: {
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), h('span', null, 'Precio y reglas validados en Supabase. El primer descuento será al menos 30 días después de formalizar la solicitud.')))), application && quote && h(Application, {
+      item,
+      session,
+      quote,
+      onClose: () => setApplication(false),
+      app
+    }));
+  }
+  window.ProgramProductPaymentFlow = ProgramProductPaymentFlow;
+})();
+})();
 /* @@file screens-catalogo.jsx */
 (function(){
 /* screens-catalogo.jsx — Marketplace del afiliado: rejilla "Disponibles ahora"
@@ -50454,6 +51435,7 @@ Object.assign(window, {
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
     const [requestSheet, setRequestSheet] = useState(false);
+    const [paymentSignal, setPaymentSignal] = useState(0);
     const programItem = item.catalogSource === 'program';
     const cotiza = programItem ? Boolean(item.cotiza) : item.precio == null || item.cotiza;
     // "it" con la forma que esperan los flujos existentes de simulación y cotización
@@ -50482,9 +51464,18 @@ Object.assign(window, {
     if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, {
       full: true,
       size: 'lg',
-      icon: 'plus',
-      onClick: () => setRequestSheet(true)
-    }, 'SOLICITAR ESTE BENEFICIO');else if (programItem) cta = React.createElement('button', {
+      icon: 'cash',
+      onClick: () => {
+        setPaymentSignal(value => value + 1);
+        setTimeout(() => {
+          const node = document.querySelector('[data-program-payment-state]');
+          if (node) node.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }, 30);
+      }
+    }, 'VER PLAN DE PAGO');else if (programItem) cta = React.createElement('button', {
       disabled: true,
       style: {
         flex: 1,
@@ -50652,6 +51643,11 @@ Object.assign(window, {
       }
     }, 'Consulta disponibilidad'), quote && React.createElement(QuoteBanner, {
       quote
+    }), programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
+      item,
+      app,
+      onRequestQuote: () => setRequestSheet(true),
+      openSignal: paymentSignal
     }), item.desc && React.createElement('div', {
       style: {
         marginTop: 20
@@ -50789,6 +51785,7 @@ Object.assign(window, {
     });
     const sending = React.useRef(false);
     const idem = React.useRef(null);
+    const quoteRequest = item.cotiza === true;
     React.useEffect(() => {
       if (open) {
         setMsg('');
@@ -50835,7 +51832,7 @@ Object.assign(window, {
     return React.createElement(window.Sheet, {
       open,
       onClose,
-      title: 'Solicitar beneficio'
+      title: quoteRequest ? 'Solicitar cotización' : 'Solicitar beneficio'
     }, React.createElement('div', {
       style: {
         fontSize: 15,
@@ -50890,8 +51887,8 @@ Object.assign(window, {
       scopeKey: item.id,
       onState: setDocumentGate
     })), React.createElement(window.SignBlock, {
-      programa: 'marketplace',
-      subtitulo: 'Solicitud comercial · ' + item.nombre,
+      programa: quoteRequest ? 'cotizacion' : 'marketplace',
+      subtitulo: (quoteRequest ? 'Solicitud de cotización · ' : 'Solicitud comercial · ') + item.nombre,
       firma,
       setFirma,
       accept,
@@ -50911,7 +51908,7 @@ Object.assign(window, {
         marginTop: 14
       },
       onClick: send
-    }, busy ? 'Enviando…' : documentGate.phase === 'loading' ? 'Consultando documentos…' : documentGate.missing ? 'Faltan ' + documentGate.missing + ' documentos' : 'Enviar solicitud'));
+    }, busy ? 'Enviando…' : documentGate.phase === 'loading' ? 'Consultando documentos…' : documentGate.missing ? 'Faltan ' + documentGate.missing + ' documentos' : quoteRequest ? 'Enviar cotización' : 'Enviar solicitud'));
   }
   function QuoteBanner({
     quote

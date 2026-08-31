@@ -1,5 +1,13 @@
 # Fuentes de verdad
 
+## Corte ADR-081 — depósito bancario de Suti Préstamo
+
+`affiliate_bank_accounts` permanece como única autoridad mutable de las cuentas del afiliado. `account_number` conserva semántica de cuenta y `card_number` conserva semántica separada de tarjeta; elegir una cuenta para el préstamo no modifica `is_primary`. Depósito lista exclusivamente por `list_current_deposit_accounts()`, que deriva el afiliado efectivo aunque el actor tenga permisos Admin globales. El writer `save_affiliate_deposit_account` deriva el mismo contexto y el titular server-side, valida banco, tarjeta de 16 dígitos y CLABE de 18 dígitos con checksum, y audita sin guardar números completos en metadata.
+
+`affiliates.notification_phone` es el celular actual confirmado. `phone_raw` conserva exclusivamente el perfil histórico/importado y puede proyectarse como sugerencia explícita; nunca se sobrescribe ni funciona como autoridad productiva paralela. Lectura y confirmación pasan por RPC autenticada y auditada.
+
+`program_requests` sigue siendo la autoridad de la solicitud. `loan_request_deposit_snapshots` es evidencia privada e inmutable de banco, titular, tarjeta, CLABE y celular al confirmar; carece de grants browser y se crea atómicamente por el writer service-only. `financial_submission_snapshot` y la auditoría sólo conservan máscaras/últimos cuatro. Una cuenta ajena, incompleta o cambiada falla cerrada y crea cero solicitudes parciales.
+
 ## Corte ADR-078 — plataforma central de requisitos documentales
 
 `document_types` es el catálogo único de tipos; `program_document_requirements` continúa como única autoridad de configuración y ahora identifica el destino mediante `scope_type + scope_key` para `PROGRAM`, `COMPANY`, `PRODUCT`, `SERVICE` y `MEMBERSHIP`. No existe otra tabla de requisitos por pantalla. `resolve_effective_document_requirements` valida la entidad server-side y resuelve requisitos propios, herencia `COMPANY → PRODUCT`, adiciones, exclusiones y orden. `SERVICE` está soportado por contrato, pero no expone destinos mientras no exista una entidad productiva de servicio autorizada.

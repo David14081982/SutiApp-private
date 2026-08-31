@@ -635,16 +635,95 @@
         React.createElement('span', null, result ? ('Programa: ' + result.program + ' · Fondo: ' + result.fund) : 'El programa y fondo aplicables aparecerán con el resultado.')));
   }
 
-  function StepDestination({ value, onChange }) {
-    return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+  const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+  const validCardNumber = (value) => /^[0-9]{16}$/.test(onlyDigits(value));
+  const validNotificationPhone = (value) => /^[0-9]{10}$/.test(onlyDigits(value));
+  function validClabe(value) {
+    const normalized = onlyDigits(value);
+    if (!/^[0-9]{18}$/.test(normalized)) return false;
+    const weights = [3, 7, 1];
+    const sum = normalized.slice(0, 17).split('').reduce((total, digit, index) => total + Number(digit) * weights[index % 3], 0);
+    return (10 - (sum % 10)) % 10 === Number(normalized[17]);
+  }
+  const depositEligible = (account) => !!(account && account.data_status === 'COMPLETE' && validCardNumber(account.card_number) && validClabe(account.clabe));
+  const spaced = (value, groups) => {
+    let remaining = onlyDigits(value), result = [];
+    groups.forEach((size) => { if (remaining) { result.push(remaining.slice(0, size)); remaining = remaining.slice(size); } });
+    return result.join(' ');
+  };
+
+  function DepositField({ label, value, onChange, inputMode, maxLength, hint, valid, autoComplete = 'off' }) {
+    return React.createElement('label', { style: { display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--ink)' } }, label,
+      React.createElement('input', {
+        value, onChange, inputMode, maxLength, autoComplete, spellCheck: false,
+        'aria-invalid': value && !valid ? 'true' : undefined,
+        style: { width: '100%', border: '1.5px solid ' + (value && !valid ? '#C0341D' : 'var(--hairline)'), background: 'var(--surface-2)', borderRadius: 13, padding: '12px 13px', font: '700 14px var(--font)', color: 'var(--ink)', marginTop: 6 },
+      }), hint && React.createElement('span', { style: { display: 'block', fontSize: 10.5, fontWeight: 650, color: value && !valid ? '#C0341D' : 'var(--ink-3)', marginTop: 5 } }, hint));
+  }
+
+  function StepDeposit({ value, setValue, reload }) {
+    const update = (patch) => setValue((current) => Object.assign({}, current, patch));
+    const selectAccount = (account) => {
+      if (!depositEligible(account)) {
+        update({ adding: true, draft: { id: account.id, bank_name: account.bank_name || '', card_number: account.card_number || '', clabe: account.clabe || '' }, error: '' });
+        return;
+      }
+      update({ selectedId: account.id, adding: false, draft: null, error: '' });
+    };
+    const startAdd = () => update({ adding: true, draft: { bank_name: '', card_number: '', clabe: '' }, error: '' });
+    const setDraft = (key, next) => setValue((current) => Object.assign({}, current, { draft: Object.assign({}, current.draft, { [key]: next }) }));
+    const draft = value.draft || { bank_name: '', card_number: '', clabe: '' };
+    const draftValid = String(draft.bank_name || '').trim().length >= 2 && validCardNumber(draft.card_number) && validClabe(draft.clabe);
+    const saveAccount = async () => {
+      if (!draftValid || value.saving) return;
+      update({ saving: true, error: '' });
+      try {
+        const saved = await window.BankAccountRepository.saveDeposit(draft);
+        await reload(saved.id);
+      } catch (_) {
+        update({ saving: false, error: 'No pudimos guardar la cuenta. Verifica los datos e intenta nuevamente.' });
+      }
+    };
+    const accountCard = (account) => {
+      const ready = depositEligible(account), selected = value.selectedId === account.id;
+      return React.createElement('button', {
+        key: account.id, type: 'button', onClick: () => selectAccount(account),
+        'data-deposit-account': ready ? 'ready' : 'incomplete', 'aria-pressed': selected,
+        style: { width: '100%', border: '1.5px solid ' + (selected ? 'var(--guinda)' : 'var(--hairline)'), borderRadius: 16, background: selected ? 'var(--guinda-50)' : 'var(--surface)', padding: 14, textAlign: 'left', color: 'var(--ink)', boxShadow: selected ? '0 0 0 2px var(--guinda-100)' : 'var(--neo-sm)' },
+      },
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' } },
+        React.createElement('strong', { style: { fontSize: 14 } }, account.bank_name || 'Banco pendiente'),
+        account.is_primary && React.createElement('span', { style: { fontSize: 9.5, fontWeight: 900, letterSpacing: '.04em', color: 'var(--guinda)' } }, 'PRINCIPAL')),
+      ready ? React.createElement(React.Fragment, null,
+        React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, marginTop: 7 } }, account.maskedCard),
+        React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
+        : React.createElement('div', { style: { color: 'var(--guinda)', fontSize: 11.5, fontWeight: 800, marginTop: 7 } }, 'Completar para depósito'));
+    };
+    return React.createElement('div', { className: 'su-route', 'data-loan-deposit-step': value.phase, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '17px 16px', boxShadow: 'var(--neo-sm)' } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 } },
-          React.createElement(window.IconTile, { icon: 'cash', size: 40 }),
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+          React.createElement(window.IconTile, { icon: 'card', size: 40 }),
           React.createElement('div', null,
-            React.createElement('div', { style: { fontSize: 14, fontWeight: 800 } }, 'Cuéntanos el destino'),
-            React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 2 } }, 'Una descripción breve es suficiente.'))),
-        React.createElement('textarea', { value, onChange: (event) => onChange(event.target.value.slice(0, 500)), rows: 5, placeholder: 'Ej. gastos del hogar, salud o proyecto personal', 'aria-label': 'Destino del préstamo', style: { width: '100%', resize: 'none', border: '1.5px solid var(--hairline)', borderRadius: 15, background: 'var(--surface-2)', color: 'var(--ink)', padding: 14, font: '600 14px/1.5 var(--font)', outline: 'none' } }),
-        React.createElement('div', { style: { textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginTop: 6 } }, value.length + '/500')));
+            React.createElement('div', { style: { fontSize: 14, fontWeight: 850 } }, '¿Dónde quieres recibir tu préstamo?'),
+            React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 2 } }, 'Elige una cuenta registrada o agrega una nueva.')))),
+      value.phase === 'loading' && React.createElement('div', { role: 'status', style: { padding: 18, borderRadius: 18, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 12, fontWeight: 700 } }, 'Consultando tus cuentas bancarias…'),
+      value.phase === 'error' && React.createElement('div', { role: 'alert', className: 'su-err', style: { padding: 14, borderRadius: 15, background: '#FCE9EE', color: '#9B1C31', fontSize: 12, fontWeight: 750 } }, value.error,
+        React.createElement('button', { type: 'button', onClick: () => reload(), style: { display: 'block', border: 0, padding: '8px 0 0', background: 'transparent', color: 'var(--guinda)', fontWeight: 850 } }, 'Reintentar')),
+      value.phase === 'ready' && React.createElement(React.Fragment, null,
+        value.accounts.length > 0 && React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, value.accounts.map(accountCard)),
+        !value.adding && React.createElement(window.Btn, { full: true, variant: 'secondary', icon: 'plus', onClick: startAdd }, value.accounts.length ? 'Agregar nueva cuenta' : 'Agregar cuenta bancaria'),
+        value.adding && React.createElement('div', { 'data-deposit-account-form': '', style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)', display: 'flex', flexDirection: 'column', gap: 13 } },
+          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
+            React.createElement('strong', { style: { fontSize: 14 } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
+            value.accounts.length > 0 && React.createElement('button', { type: 'button', onClick: () => update({ adding: false, draft: null, error: '' }), style: { border: 0, background: 'transparent', color: 'var(--ink-3)', fontWeight: 800 } }, 'Cancelar')),
+          React.createElement(DepositField, { label: 'Banco', value: draft.bank_name || '', valid: String(draft.bank_name || '').trim().length >= 2, onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
+          React.createElement(DepositField, { label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: validCardNumber(draft.card_number), inputMode: 'numeric', maxLength: 19, hint: '16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
+          React.createElement(DepositField, { label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: validClabe(draft.clabe), inputMode: 'numeric', maxLength: 22, hint: '18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
+          React.createElement(window.Btn, { full: true, disabled: !draftValid || value.saving, loading: value.saving, onClick: saveAccount }, value.saving ? 'Guardando…' : 'Guardar cuenta')),
+        React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)' } },
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } }, React.createElement(I, { name: 'phone', size: 18, stroke: 2 }), React.createElement('strong', { style: { fontSize: 14 } }, 'Celular para notificaciones')),
+          React.createElement(DepositField, { label: 'Número celular', value: spaced(value.phone, [3, 3, 4]), valid: validNotificationPhone(value.phone), inputMode: 'tel', maxLength: 12, autoComplete: 'tel-national', hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.', onChange: (event) => update({ phone: onlyDigits(event.target.value).slice(0, 10), error: '' }) })),
+        value.error && React.createElement('div', { role: 'alert', className: 'su-err', style: { color: '#C0341D', fontSize: 12, fontWeight: 750 } }, value.error)));
   }
 
   function MissingDocumentsNotice({ missing, onCorrect }) {
@@ -664,7 +743,7 @@
         React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
   }
 
-  function StepSummary({ simulation, destination, signature, setSignature, accepted, setAccepted, terms, missingDocuments, onCorrectDocuments }) {
+  function StepSummary({ simulation, deposit, signature, setSignature, accepted, setAccepted, terms, missingDocuments, onCorrectDocuments, onCorrectDeposit }) {
     const result = simulation && simulation.result;
     if (!result) return React.createElement(StatusNotice, { state: 'UNAVAILABLE' });
     const rows = [
@@ -683,9 +762,12 @@
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 14, padding: '14px 15px', marginTop: 12, borderRadius: 15, background: 'var(--guinda-50)' } },
           React.createElement('span', { style: { fontSize: 13, fontWeight: 800 } }, 'Total a pagar'),
           React.createElement('span', { style: { fontSize: 20, fontWeight: 900, color: 'var(--guinda)' } }, moneyOrDash(result.total))),
-        React.createElement('div', { style: { marginTop: 13, padding: '12px 13px', borderRadius: 14, background: 'var(--surface-2)' } },
-          React.createElement('div', { style: { fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)' } }, 'Destino'),
-          React.createElement('div', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.45, marginTop: 3 } }, destination))),
+        React.createElement('div', { 'data-loan-deposit-summary': '', style: { marginTop: 13, padding: '12px 13px', borderRadius: 14, background: 'var(--surface-2)' } },
+          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } },
+            React.createElement('div', { style: { fontSize: 12, fontWeight: 850 } }, 'Depósito'),
+            React.createElement('button', { type: 'button', onClick: onCorrectDeposit, style: { border: 0, background: 'transparent', color: 'var(--guinda)', fontSize: 11.5, fontWeight: 850 } }, 'Cambiar')),
+          [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe], ['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]].map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 11.5 } },
+            React.createElement('span', { style: { color: 'var(--ink-3)', fontWeight: 700 } }, row[0]), React.createElement('span', { style: { color: 'var(--ink)', fontWeight: 800, fontFamily: row[0] === 'Banco' ? undefined : 'var(--mono)', textAlign: 'right' } }, row[1]))))),
       !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize:12,fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
       React.createElement(MissingDocumentsNotice,{missing:missingDocuments,onCorrect:onCorrectDocuments}),
       React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
@@ -724,7 +806,7 @@
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null, quote: null, error: 'UNAVAILABLE' };
     const [step, setStep] = React.useState(0);
     const [simulation, setSimulation] = React.useState(null);
-    const [destination, setDestination] = React.useState('');
+    const [deposit, setDeposit] = React.useState({ phase: 'loading', accounts: [], selectedId: '', phone: '', phoneSource: 'NONE', adding: false, draft: null, saving: false, error: '' });
     const [signature, setSignature] = React.useState('');
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
@@ -735,18 +817,23 @@
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
+    const loadDeposit=React.useCallback(async(preferredId)=>{setDeposit((current)=>Object.assign({},current,{phase:'loading',saving:false,error:''}));try{const[accounts,phoneState]=await Promise.all([window.BankAccountRepository.listDeposit(),window.BankAccountRepository.getNotificationPhone()]);setDeposit((current)=>{const eligible=accounts.filter(depositEligible);const requested=preferredId||current.selectedId;const selected=eligible.find((account)=>account.id===requested)||eligible.find((account)=>account.is_primary)||eligible[0]||null;return Object.assign({},current,{phase:'ready',accounts:accounts.slice(),selectedId:selected?selected.id:'',phone:current.phone||phoneState.notification_phone||'',phoneSource:phoneState.source||'NONE',adding:preferredId?false:eligible.length===0,draft:null,saving:false,error:''});});}catch(_){setDeposit((current)=>Object.assign({},current,{phase:'error',accounts:[],selectedId:'',saving:false,error:'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'}));}},[]);
+    React.useEffect(()=>{loadDeposit();},[loadDeposit]);
     const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
     React.useEffect(()=>{loadDocuments();},[loadDocuments]);
     React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
-    const steps = ['Monto', 'Destino', 'Documentos', 'Resumen'];
-    const titles = ['Simula tu préstamo', '¿Para qué lo necesitas?', 'Verifica tus documentos', 'Confirma tu solicitud'];
+    const steps = ['Monto', 'Depósito', 'Documentos', 'Resumen'];
+    const titles = ['Simula tu préstamo', 'Elige dónde recibir tu dinero', 'Verifica tus documentos', 'Confirma tu solicitud'];
     const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
     const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
+    const selectedDepositAccount=deposit.accounts.find((account)=>account.id===deposit.selectedId);
+    const depositReady=deposit.phase==='ready'&&depositEligible(selectedDepositAccount)&&validNotificationPhone(deposit.phone)&&!deposit.saving;
     const canContinue = step === 0 ? !!(simulation && simulation.current)
-      : step === 1 ? !!destination.trim()
+      : step === 1 ? depositReady
       : step === 2 ? documentsReady
-      : !!(simulation && simulation.current && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
+      : !!(simulation && simulation.current && depositReady && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
+    const continueFlow=async()=>{if(step!==1){setStep(step+1);return;}if(!depositReady)return;setDeposit((current)=>Object.assign({},current,{saving:true,error:''}));try{await window.BankAccountRepository.saveNotificationPhone(deposit.phone);setDeposit((current)=>Object.assign({},current,{saving:false,phoneSource:'CURRENT_NOTIFICATION_PHONE'}));setStep(2);}catch(_){setDeposit((current)=>Object.assign({},current,{saving:false,error:'No pudimos confirmar el celular para notificaciones. Intenta nuevamente.'}));}};
     const submit = async () => {
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
       setSubmitting(true); setSubmitError('');
@@ -763,7 +850,7 @@
         const request = await window.financialLegacyStore.confirmLoanSession({
           programItemId: item.id,
           programId: simulation.program.id,
-          notes: destination.trim(),
+          notes: '',
           signature,
           terms: accepted,
           idempotencyKey: idempotencyKey.current,
@@ -771,6 +858,8 @@
           term: result.paymentCount,
           termsVersionId: freshDocumentState.terms.id,
           documentIds: freshDocuments.selected.map((document) => document.id),
+          bankAccountId: selectedDepositAccount.id,
+          notificationPhone: deposit.phone,
         });
         setSubmission({folio:request.folio||request.request_id,amount:result.amount,workflowState:request.workflow_state});
       } catch (error) {
@@ -791,6 +880,9 @@
           setSubmitError('Los términos vigentes cambiaron. Revísalos nuevamente antes de confirmar.');
         } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID') {
           setSubmitError('Tu sesión de afiliado cambió. Vuelve al inicio e ingresa nuevamente a la solicitud.');
+        } else if (code === 'DEPOSIT_ACCOUNT_UNAVAILABLE' || code === 'INVALID_DEPOSIT_ACCOUNT' || code === 'INVALID_NOTIFICATION_PHONE') {
+          await loadDeposit(); setStep(1);
+          setSubmitError('La cuenta o el celular cambiaron antes de confirmar. Revisa nuevamente el depósito.');
         } else {
           const reference=error&&error.correlationId?' Referencia: '+String(error.correlationId).slice(0,8).toUpperCase()+'.':'';
           setSubmitError('No pudimos completar el envío por una falla temporal del servicio. Intenta nuevamente.'+reference);
@@ -804,12 +896,12 @@
       React.createElement('div', { ref: scroller, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '8px 20px 18px' } },
         step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
         step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation }),
-        step === 1 && React.createElement(StepDestination, { value: destination, onChange: setDestination }),
+        step === 1 && React.createElement(StepDeposit, { value: deposit, setValue: setDeposit, reload: loadDeposit }),
         step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),
-        step === 3 && React.createElement(StepSummary, { simulation, destination, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');} })),
+        step === 3 && React.createElement(StepSummary, { simulation, deposit:{account:selectedDepositAccount,phone:deposit.phone}, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');},onCorrectDeposit:()=>{setStep(1);setSubmitError('');} })),
       React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
         submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 12, fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
-        React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : setStep(step + 1) }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));
+        React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting||deposit.saving, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : continueFlow() }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));
   }
 
   window.StepSimulatorV2 = StepSimulatorV2;

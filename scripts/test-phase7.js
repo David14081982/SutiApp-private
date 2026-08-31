@@ -42,7 +42,7 @@ must(dashboard.includes('useFinancialLegacy')&&!dashboard.includes('D().user'),'
 must(market.includes("title: 'Simula tu financiamiento'")&&market.includes('requestQuote(program.id, amount, term)'),'Marketplace resolver integration missing');
 must(!/FIN_RATE|finCalc|financeStore|DATA\.user|tasaMensual/.test(market),'Marketplace local financial prototype remains');
 for(const text of [finance,funds,fincat]) must(text.includes('FINANCIAL_LEGACY_READ_ONLY')&&!text.includes('localStorage'),'browser financial writer remains');
-for(const label of ['Monto','Destino','Documentos','Resumen','Simula tu préstamo','Ver desglose completo']) must(loan.includes(label),'Claude loan structure missing: '+label);
+for(const label of ['Monto','Depósito','Documentos','Resumen','Simula tu préstamo','Ver desglose completo']) must(loan.includes(label),'Claude loan structure missing: '+label);
 for(const retired of ['Impacto en tu quincena','Tu talón de pago','data-payroll-impact','data-payroll-card']) must(!loan.includes(retired),'retired payroll card remains: '+retired);
 must(bundle.includes('FINANCIAL_LEGACY_READ_ONLY')&&bundle.includes('data-step-simulator-v2'),'bundle stale');
 must(edge.includes('readCriteriaRules')&&edge.includes('resolve_suti_loan_quote_contract')&&loanResolver.includes('round(p_amount*v_rate_factor*p_term,2)')&&loanResolver.includes('v_fee_per_payment numeric := 15'),'server-side Google criteria calculation missing');

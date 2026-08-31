@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-081 | El depósito de Suti Préstamo usa cuenta/celular Supabase y congela evidencia privada en la alta atómica. | Aceptada |
 | ADR-001 | `numero_control` es identificador histórico de negocio. | Aceptada |
 | ADR-002 | Email no es identificador de negocio. | Aceptada |
 | ADR-003 | Los usuarios pueden existir sin Auth. | Aceptada |
@@ -343,6 +344,17 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Recovery:** `00502 → 00501 → 00500 → 00400` restaura las policies Phase 2 y elimina foundation/enforcement sin DML; la cadena completa fue validada en una transacción con `ROLLBACK`.
 - **Límite:** las otras nueve secciones permanecen `DESIGN_ONLY`; esta decisión no las activa ni modifica Google, Ahorro, Préstamos, fórmulas, triggers financieros o conciliaciones.
 - **Aprobación:** instrucción `SECTION OWNERSHIP PILOT ENFORCEMENT` del propietario, 2026-08-23.
+## ADR-081 — Depósito bancario obligatorio e inmutable en Suti Préstamo
+
+- **UX:** el wizard productivo queda `Monto → Depósito → Documentos → Resumen`. “Destino” y su nota libre dejan de formar parte del flujo; el afiliado selecciona una cuenta registrada o captura banco, tarjeta y CLABE, confirma el celular y revisa exclusivamente valores enmascarados.
+- **Autoridad bancaria:** `affiliate_bank_accounts` sigue siendo la única autoridad mutable. `card_number` se agrega separado de `account_number`; el titular se deriva server-side del afiliado efectivo, la selección no cambia `is_primary` y toda escritura usa RPC autenticada/auditada.
+- **Celular:** `affiliates.notification_phone` conserva el valor actual confirmado. `phone_raw` no cambia y sólo puede presentarse como sugerencia histórica explícita.
+- **Solicitud:** `loan_request_deposit_snapshots` congela banco, titular, tarjeta, CLABE y celular dentro de la misma transacción service-only que crea `program_requests`. Es evidencia privada, sin acceso browser e inmutable; `financial_submission_snapshot` y la auditoría conservan sólo máscaras/últimos cuatro.
+- **Seguridad:** la cuenta debe pertenecer al afiliado efectivo y seguir completa al confirmar. RLS/RPC niegan lectura/escritura cruzada y anónima; no hay `service_role` en frontend, fallback, mock, estado local autoritativo ni log de datos completos.
+- **Legacy:** no cambian elegibilidad, 146 reglas, 35 fondos, 3 programas, tasas, fórmulas, amortización, conciliación, Google ni Apps Script. El handoff posterior a aprobación mantiene su frontera protegida.
+- **Recovery:** `20260830000500_loan_deposit_step_recovery.sql` sólo revierte si no existe historia nueva de depósito/tarjeta/celular; de otro modo falla cerrado y preserva datos.
+- **Aprobación:** `H-LOAN-DEPOSIT-STEP-001`, instrucción quirúrgica y autorización explícita de migración, despliegue Edge, E2E, commit y push, propietario, 2026-08-30.
+
 ## ADR-047 — Rollout masivo de responsabilidad granular por sección
 
 - **Decisión:** reutilizar sin nueva arquitectura el modelo UUID + `section_key` + acción exacta de ADR-046 en Educación, Tutoriales, Empresas, Convenios, Banners, Popups, Documentos, Minutas, Programas y Marketplace.

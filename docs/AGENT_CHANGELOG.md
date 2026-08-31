@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-30 — H-LOAN-DEPOSIT-STEP-001
+
+- Suti Préstamo reemplazó el paso libre “Destino” por `Depósito`, conectado a cuentas Supabase reales, captura validada de banco/tarjeta/CLABE, celular actual separado del teléfono histórico, selección enmascarada y corrección desde Resumen.
+- La confirmación Edge v29 revalida la cuenta propia y congela un snapshot privado e inmutable dentro de la misma transacción que crea la solicitud; la proyección browser y auditoría conservan sólo máscaras/últimos cuatro.
+- `list_current_deposit_accounts()` separa el autoservicio del lector Admin global: incluso un actor con `bank_accounts.read` sólo ve el afiliado efectivo dentro de Depósito.
+- Migración/recovery, RLS/RPC multiusuario, anónimo denegado, build, estáticos y Chrome real 390/430/768/1280 pasaron. La fixture E2E se eliminó por alcance exacto; Google y Apps Script tuvieron 0 lecturas/escrituras.
+
+```text
+H-LOAN-DEPOSIT-STEP-001 RESULT
+Status: PASS
+Files changed: SQL/recovery; Edge/deploy; banking repository; Loan UI; bundle/cache; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — cuenta/celular Supabase únicos; snapshot de solicitud privado y derivado, sin fallback
+Invariant verdict: PASS — semántica account/card separada; cuenta propia; transacción atómica; historia inmutable
+Build: PASS — 92 fuentes; node --check; bundle SHA-256 78353B76769B24CD8BB5084AF63AAB60E5F1BF36F67800D45A86401DF9F9D5C9
+Tests: PASS — static focal; migration/recovery; live security; E2E real 390×844, 430×932, 768×1024 y 1280×900
+Security: PASS — JWT; RLS/RPC; normal cross-user/anonymous denied; snapshot privado; máscaras; sin secretos browser
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: el HTML standalone citado no estuvo adjunto; fidelidad verificada contra el contrato funcional y la UI vigente, no por comparación pixel-perfect con ese archivo ausente
+Evidence: docs/qa/H-LOAN-DEPOSIT-STEP-001-EVIDENCE.md
+```
+
 ## 2026-08-30 — H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001
 
 - Catálogo, requisitos, herencia, snapshots y vinculación por solicitud convergen en la autoridad documental existente; no se creó una segunda fuente ni se reinterpretó historia.

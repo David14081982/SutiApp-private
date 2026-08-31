@@ -1,5 +1,10 @@
 # Invariantes
 
+- **INV-134:** `affiliate_bank_accounts.account_number` y `card_number` son datos distintos. Una cuenta elegible para depósito de préstamo exige banco, titular derivado server-side, tarjeta normalizada de 16 dígitos y CLABE de 18 dígitos con checksum válido; elegirla no altera `is_primary`.
+- **INV-135:** `affiliates.notification_phone` es el celular actual mutable y auditado de 10 dígitos. `phone_raw` permanece histórico/importado, sólo puede sugerirse explícitamente y nunca es sobrescrito ni usado como segunda autoridad productiva.
+- **INV-136:** Toda solicitud de préstamo congela atómicamente su depósito en `loan_request_deposit_snapshots`, privado, sin grants browser e inmutable. El snapshot público de envío y la auditoría contienen sólo máscaras/últimos cuatro; la confirmación rechaza cuentas ajenas, incompletas o cambiadas y no crea la solicitud parcialmente.
+- **INV-137:** La lectura bancaria de Depósito siempre deriva el afiliado efectivo server-side. Un permiso administrativo global nunca amplía el autoservicio ni permite listar o seleccionar cuentas de otro afiliado; Administración conserva su contrato separado.
+
 - **INV-116:** `public.affiliates` es el único maestro del padrón. Una alta Admin usa la misma tabla con `record_origin=ADMIN_AFFILIATES`, `source_row_ordinal=NULL` y `source_file_hash=NULL`; nunca inventa coordenadas históricas, una tabla paralela, un mock, `DATA` o browser storage.
 - **INV-117:** Alta, edición y cambio de estado de afiliado exigen permiso backend, motivo, validación, versión optimista y auditoría durable. No existe DELETE productivo; una baja conserva documentos, solicitudes, cuenta Auth, historial y `numero_control`.
 - **INV-118:** La cuenta Supabase Auth y el afiliado administrativo son autoridades separadas. Cambiar el padrón no crea, vincula, revoca ni elimina Auth; la asistencia conserva actor real, afiliado contexto, motivo y TTL mediante el mecanismo existente.

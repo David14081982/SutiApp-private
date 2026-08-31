@@ -244,6 +244,8 @@
           signature_data: String(value.signature || ''), terms_accepted: value.terms === true,
           terms_version_id: String(value.termsVersionId), document_ids: (value.documentIds || []).map(String),
           idempotency_key: String(value.idempotencyKey),
+          bank_account_id: String(value.bankAccountId || ''),
+          notification_phone: String(value.notificationPhone || '').replace(/\D/g, ''),
         });
         const requestId=request.request_id||request.id;
         if(!requestId||!window.ProgramRequestRepository)throw Object.assign(new Error('REQUEST_WORKFLOW_UNAVAILABLE'),{code:'REQUEST_WORKFLOW_UNAVAILABLE'});

@@ -20,11 +20,11 @@ TRANSVERSAL_PRIORITY_2: DATA COVERAGE & UI CUTOVER — CATALOG BLOCK PASS / LEGA
 | PHASE 4 | DONE |
 | PHASE 5 | DONE |
 | PHASE 6 | DONE |
-| PHASE 7 | PARTIAL — EDGE v27 + SUPABASE FINANCIAL AUTHORITY ACTIVE; APPS SCRIPT v6 DEPLOYED; AUTHENTICATED SNAPSHOT RPC ACTIVE; LIVE APPEND OWNER ACTION REQUIRED |
+| PHASE 7 | PARTIAL — EDGE v29 + SUPABASE FINANCIAL AUTHORITY ACTIVE; APPS SCRIPT v6 DEPLOYED; AUTHENTICATED SNAPSHOT RPC ACTIVE; LIVE APPEND OWNER ACTION REQUIRED |
 | PHASE 8 | PLANNED |
 
 This file is only the operational queue for the MASTER PLAN. It does not reconstruct historical H tasks.
 
-Phase 7 conserva el writer append-only posterior a aprobación. ADR-065 dejó Supabase como autoridad única de criterios financieros: `financial-legacy` cloud v27 activo con JWT, 146 reglas/35 fondos/3 programas, resolver certificado único y apertura/interacción/confirmación con 0 lecturas Google. v27 añade trazabilidad sanitizada de confirmación y el contrato explícito `request_id/folio/status/confirmed_amount/correlation_id`; no ejecutó un append de prueba. Apps Script deployment v6 sólo conserva el handoff aprobado separado. H-REQUEST-SUBMISSION-E2E-REMEDIATION-001 confirmó tres altas técnicas completas y las eliminó con alcance exacto; quedaron 0 solicitudes QA persistentes y 0 filas Google. No iniciar Phase 8 ni ejecutar el append productivo hasta que el owner autorice una solicitud controlada completa que pueda permanecer en `Historial de solicitudes`.
+Phase 7 conserva el writer append-only posterior a aprobación. ADR-065 dejó Supabase como autoridad única de criterios financieros: `financial-legacy` cloud v29 activo con JWT, 146 reglas/35 fondos/3 programas, resolver certificado único y apertura/interacción/confirmación con 0 lecturas Google. v29 conserva la trazabilidad sanitizada y añade la selección bancaria/celular validada de ADR-081 antes del alta atómica; no ejecutó un append de prueba. Apps Script deployment v6 sólo conserva el handoff aprobado separado. Los E2E completos confirmaron altas técnicas y las eliminaron con alcance exacto; quedaron 0 cuentas, snapshots o solicitudes QA persistentes y 0 filas Google. No iniciar Phase 8 ni ejecutar el append productivo hasta que el owner autorice una solicitud controlada completa que pueda permanecer en `Historial de solicitudes`.
 
 Pendiente no bloqueante: recuperar los originales de `Íconos!B2:B4`. No se autorizan sustitutos ni fallback.

@@ -23,6 +23,20 @@ function readEnv() {
   return result;
 }
 
+async function management(env, query) {
+  const ref = new URL(env.SUPABASE_URL).hostname.split('.')[0];
+  const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'SutiApp-RequiredDocuments/1.0' },
+    body: JSON.stringify({ query }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(`MANAGEMENT_${response.status}:${JSON.stringify(body).slice(0, 300)}`);
+  return body;
+}
+
+const literal = (value) => value === null ? 'null' : `'${String(value).replace(/'/g, "''")}'`;
+
 const freePort = () => new Promise((resolve, reject) => {
   const server = net.createServer();
   server.once('error', reject);
@@ -80,7 +94,18 @@ function connectCdp(url) {
 async function main() {
   let stage = 'start';
   const env = readEnv();
-  const appPort = await freePort();
+  const loanOnly = process.argv.includes('--loan-only');
+  const testAffiliateId = loanOnly ? env.H005_TEST_AFFILIATE_ID : env.H005_TEST2_AFFILIATE_ID;
+  const testEmail = loanOnly ? env.H005_TEST_EMAIL : env.H005_TEST2_EMAIL;
+  const testPassword = loanOnly ? env.H005_TEST_PASSWORD : env.H005_TEST2_PASSWORD;
+  const stamp = String(Date.now());
+  const depositCard = '7' + stamp.padStart(15, '0').slice(-15);
+  const depositClabe = '032180000118359719';
+  const depositPhone = '6621234567';
+  const depositBank = 'Banco Docs E2E ' + stamp.slice(-6);
+  const originalPhoneRow = await management(env, `select notification_phone from public.affiliates where id='${testAffiliateId}'::uuid`);
+  const originalPhone = originalPhoneRow[0] ? originalPhoneRow[0].notification_phone : null;
+  const appPort = 8080;
   const debugPort = await freePort();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'suti-required-docs-'));
   const server = http.createServer((request, response) => {
@@ -148,28 +173,43 @@ async function main() {
       button.click();
       return true;
     })()`);
+    const advanceDeposit = async () => {
+      await waitFor(() => evaluate("Boolean(document.querySelector('[data-loan-flow-step=\"1\"]') && document.querySelector('[data-loan-deposit-step=\"ready\"]'))"), 30000);
+      if (!await evaluate("Boolean(document.querySelector('[data-deposit-account-form]'))")) await click('Agregar nueva cuenta');
+      await waitFor(() => evaluate("Boolean(document.querySelector('[data-deposit-account-form]'))"));
+      await setValue('[data-deposit-account-form] label:nth-of-type(1) input', depositBank);
+      await setValue('[data-deposit-account-form] label:nth-of-type(2) input', depositCard);
+      await setValue('[data-deposit-account-form] label:nth-of-type(3) input', depositClabe);
+      await setValue('input[autocomplete="tel-national"]', depositPhone);
+      await waitFor(() => evaluate("[...document.querySelectorAll('button')].some((button) => button.textContent.includes('Guardar cuenta') && !button.disabled)"));
+      await click('Guardar cuenta');
+      await waitFor(() => evaluate(`Boolean(document.querySelector('[data-loan-deposit-step="ready"]') && !document.querySelector('[data-deposit-account-form]') && document.body.innerText.includes('•••• ${depositCard.slice(-4)}'))`));
+      await click('Continuar');
+    };
 
     await page.call('Page.navigate', { url: `http://localhost:${appPort}/SutiApp.html` });
     await waitFor(() => evaluate("Boolean(document.querySelector('input[type=email]'))"));
-    await setValue('input[type=email]', env.H005_TEST2_EMAIL);
-    await setValue('input[type=password]', env.H005_TEST2_PASSWORD);
+    await setValue('input[type=email]', testEmail);
+    await setValue('input[type=password]', testPassword);
     await evaluate("document.querySelector('button[type=submit]').click()");
     await waitFor(() => evaluate("window.AffiliateAuth?.getState().phase === 'authenticated'"));
 
     if (process.argv.includes('--loan-only')) {
       stage = 'loan_navigation';
-      await click('Finanzas');
-      await waitFor(() => evaluate("window.financialLegacyStore.snapshot().status === 'ready'"));
-      await click('Solicitar préstamo');
+      await evaluate("document.querySelector('[data-app-tab=\"financiera\"]').click()");
+      stage = 'loan_finance_store';
+      await evaluate("window.financialLegacyStore.loadOverview()");
+      const financialState = await waitFor(() => evaluate("(() => { const value=window.financialLegacyStore.snapshot(); return ['ready','error'].includes(value.status)?{status:value.status,error:value.error||null}:null; })()"), 120000);
+      if (financialState.status !== 'ready') throw new Error(`FINANCIAL_STORE_UNAVAILABLE:${JSON.stringify(financialState)}`);
+      stage = 'loan_open';
+      await evaluate(`(() => { const button = document.querySelector('button[aria-label^="Solicitar pr"]'); if (!button) return false; button.click(); return true; })()`);
       stage = 'loan_simulator';
       await waitFor(() => evaluate("Boolean(document.querySelector('[data-step-simulator-v2]'))"));
       stage = 'loan_quote';
       await waitFor(() => evaluate("Boolean(document.querySelector('[data-simulator-result=ready]'))"), 120000);
       await evaluate("document.querySelector('[data-loan-flow-footer] button').click()");
-      stage = 'loan_destination';
-      await waitFor(() => evaluate("Boolean(document.querySelector('[data-loan-flow-step=\"1\"]'))"), 20000);
-      await setValue('textarea', 'Destino de prueba documental');
-      await evaluate("document.querySelector('[data-loan-flow-footer] button').click()");
+      stage = 'loan_deposit';
+      await advanceDeposit();
       stage = 'loan_documents';
       await waitFor(() => evaluate("document.querySelector('[data-loan-flow-step=\"2\"]') && document.querySelectorAll('[data-document-type]').length > 0"));
       const loanExpected = await evaluate("window.DocumentWorkflowRepository.requirements('prestamo').then((items) => items.length)");
@@ -230,16 +270,14 @@ async function main() {
     await waitFor(() => evaluate("!document.querySelector('[data-membership-application]')"));
     await evaluate("window.financialLegacyStore.loadOverview()");
     await waitFor(() => evaluate("window.financialLegacyStore.snapshot().status === 'ready'"));
-    await click('Solicitar préstamo');
+    await evaluate(`(() => { const button = document.querySelector('button[aria-label^="Solicitar pr"]'); if (!button) return false; button.click(); return true; })()`);
     stage = 'loan_simulator';
     await waitFor(() => evaluate("Boolean(document.querySelector('[data-step-simulator-v2]'))"));
     stage = 'loan_quote';
     await waitFor(() => evaluate("Boolean(document.querySelector('[data-simulator-result=ready]'))"), 120000);
     await click('Continuar');
-    stage = 'loan_destination';
-    await waitFor(() => evaluate("document.querySelector('[data-loan-flow-step=\"1\"]')"));
-    await setValue('textarea', 'Destino de prueba documental');
-    await click('Continuar');
+    stage = 'loan_deposit';
+    await advanceDeposit();
     stage = 'loan_documents';
     await waitFor(() => evaluate("document.querySelector('[data-loan-flow-step=\"2\"]') && document.querySelectorAll('[data-document-type]').length > 0"));
     const loanExpected = await evaluate("window.DocumentWorkflowRepository.requirements('prestamo').then((items) => items.length)");
@@ -268,6 +306,9 @@ async function main() {
   } catch (error) {
     throw new Error(`${stage}: ${error.message}`);
   } finally {
+    try {
+      await management(env, `begin; delete from public.affiliate_bank_accounts where affiliate_id='${testAffiliateId}'::uuid and card_number=${literal(depositCard)} and bank_name=${literal(depositBank)}; update public.affiliates set notification_phone=${literal(originalPhone)} where id='${testAffiliateId}'::uuid; commit;`);
+    } catch (_) {}
     if (page) page.close();
     chrome.kill();
     server.closeAllConnections?.();

@@ -11,7 +11,8 @@ const ACTION_KEYS: Record<string, Set<string>> = {
   loanSessionValidate: new Set(["action", "snapshot_id"]),
   loanSessionQuote: new Set(["action", "snapshot_id", "program_id", "amount", "term"]),
   loanSessionConfirm: new Set(["action", "snapshot_id", "program_id", "amount", "term", "program_item_id",
-    "notes", "signature_data", "terms_accepted", "terms_version_id", "document_ids", "idempotency_key"]),
+    "notes", "signature_data", "terms_accepted", "terms_version_id", "document_ids", "idempotency_key",
+    "bank_account_id", "notification_phone"]),
   overview: new Set(["action"]),
   resolveEligibility: new Set(["action"]),
   resolveAvailableFunds: new Set(["action"]),
@@ -495,6 +496,12 @@ async function confirmPersonalizedLoanSession(
       existing.program_item_id === String(body.program_item_id) && Number(existing.requested_amount) === Number(body.amount) &&
       Number(existing.requested_term) === Number(body.term) && existing.financial_submission_snapshot?.financialResult;
     if (!sameContract) return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH", correlation_id: correlationId } };
+    const { data: existingDeposit, error: existingDepositError } = await privileged.from("loan_request_deposit_snapshots")
+      .select("source_bank_account_id,notification_phone").eq("request_id", existing.id).maybeSingle();
+    if (existingDepositError || !existingDeposit || existingDeposit.source_bank_account_id !== String(body.bank_account_id) ||
+        existingDeposit.notification_phone !== String(body.notification_phone || "").replace(/\D/g, "")) {
+      return { status: 409, body: { error: "IDEMPOTENCY_CONTRACT_MISMATCH", correlation_id: correlationId } };
+    }
     return { status: 200, body: { data: { request_id: existing.id, folio: existing.folio, status: existing.status,
       confirmed_amount: Number(existing.requested_amount), correlation_id: correlationId,
       financialResult: existing.financial_submission_snapshot.financialResult,
@@ -538,6 +545,10 @@ async function confirmPersonalizedLoanSession(
     criterion_identity: selectedRule.criterion_identity,
     financialResult: result,
     confirmed_at: new Date().toISOString(),
+    deposit_selection: {
+      bank_account_id: String(body.bank_account_id || ""),
+      notification_phone: String(body.notification_phone || "").replace(/\D/g, ""),
+    },
   };
   const { data: request, error } = await privileged.rpc("create_validated_financial_program_request", {
     p_actor_real_auth_user_id: context.actorId, p_affiliate_id: context.affiliateId,

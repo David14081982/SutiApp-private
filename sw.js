@@ -1,10 +1,10 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v115';
+const CACHE = 'sutiapp-v117';
 const CORE = [
   './',
   './SutiApp.html',
-  './app/bundle.js?v=171',
-  './app/financial-legacy-repository.js?v=8',
+  './app/bundle.js?v=173',
+  './app/financial-legacy-repository.js?v=9',
   './app/payroll-declaration-repository.js',
   './manifest.webmanifest',
   './icon-192.png',

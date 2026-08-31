@@ -10,7 +10,7 @@ const news=read('app/screens-admin-news.jsx');
 
 const ready=(screen.match(/ready: true/g)||[]).length;
 const pending=(screen.match(/ready: false/g)||[]).length;
-assert.strictEqual(ready,15,'exactly fifteen authority-backed Admin cards must be enabled');
+assert.strictEqual(ready,16,'exactly sixteen authority-backed Admin cards must be enabled');
 assert.strictEqual(pending,0,'generic pending state must not remain');
 assert.strictEqual((screen.match(/classification: 'PRODUCTIVE_/g)||[]).length,13,'thirteen classified modules have productive authority after the financial read-only cutover');
 assert.strictEqual((screen.match(/classification: '(?:BLOCKED_|OWNER_)/g)||[]).length,0,'no generic blocked Admin card remains');
@@ -27,4 +27,4 @@ assert(plans.includes("'data-company-plans-state': 'loading'")&&plans.includes("
 
 for(const source of [branding,visual,news])assert(!/PENDING BACKEND|Supabase Auth \+ RLS|Supabase \+ Storage \+ RLS|Sin permiso assets\.write/.test(source));
 assert(news.includes('segmentación por perfil aún no está disponible'));
-console.log('Admin productization static verification PASS: fifteen authority-backed cards active, financial legacy remains read-only.');
+console.log('Admin productization static verification PASS: sixteen authority-backed cards active, financial legacy remains read-only.');

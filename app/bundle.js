@@ -7921,11 +7921,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }));
     return urls;
   }
-  async function listItems(){
+  async function listItems(options){
+    const admin=Boolean(options&&options.admin);
+    if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db();
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    if(!admin)itemQuery=itemQuery.eq('enabled',true);
     const [rows,links]=await Promise.all([
-      api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal').eq('enabled',true).order('sort_order',{ascending:true}),
-      api.from('program_catalog_item_assets').select(`item_id,role,sort_order,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).order('sort_order',{ascending:true}),
+      itemQuery,
+      api.from('program_catalog_item_assets').select(`id,item_id,public_asset_id,private_asset_id,role,sort_order,enabled,source_column,source_column_letter,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).eq('enabled',true).order('sort_order',{ascending:true}),
     ]);
     if(rows.error)throw rows.error;
     if(links.error)throw links.error;
@@ -7933,9 +7937,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}
     const projected=[];
     for(const row of rows.data||[]){
-      const urls=(byItem.get(row.id)||[]).map((link)=>assetUrls.get(link)).filter(Boolean);
+      const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
+      const imageAssets=itemLinks.map((link)=>Object.freeze({link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null}));
       const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
-      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:[],catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
+      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
   }
@@ -7944,7 +7949,34 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function listFavorites(){const r=await db().from('program_catalog_favorites').select('item_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>row.item_id));}
   async function setFavorite(itemId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('program_catalog_favorites').upsert({auth_user_id:user.id,item_id:itemId},{onConflict:'auth_user_id,item_id'}):await api.from('program_catalog_favorites').delete().eq('item_id',itemId);if(r.error)throw r.error;}
-  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,listFavorites,setFavorite});
+  function assertAdminWrite(){if(!window.AdminRepository||!window.AdminRepository.has('program_catalog.write'))throw new Error('PROGRAM_CATALOG_WRITE_REQUIRED');}
+  async function digest(file){const bytes=await file.arrayBuffer();return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map((x)=>x.toString(16).padStart(2,'0')).join('');}
+  async function uploadAdminAsset(file,altText){
+    assertAdminWrite();
+    const extensions={'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp'};
+    if(!file||!extensions[file.type]||file.size<1||file.size>10485760)throw new Error('PROGRAM_CATALOG_ASSET_INVALID');
+    const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');
+    const sha=await digest(file),path=`program-products/${user.id}/${sha}.${extensions[file.type]}`;
+    const stored=await api.storage.from('app-assets').upload(path,file,{upsert:false,contentType:file.type});
+    if(stored.error&&String(stored.error.message||'').toLowerCase().indexOf('already exists')<0)throw stored.error;
+    const registered=await api.rpc('register_program_catalog_asset',{p_storage_path:path,p_mime_type:file.type,p_file_size:file.size,p_content_sha256:sha,p_alt_text:String(altText||'').trim()||null});
+    if(registered.error){if(!stored.error)await api.storage.from('app-assets').remove([path]);throw registered.error;}
+    const publicUrl=api.storage.from('app-assets').getPublicUrl(path,{transform:{width:640,height:640,resize:'cover',quality:82}}).data.publicUrl;
+    return Object.freeze({public_asset_id:registered.data,path,url:publicUrl,uploaded:true});
+  }
+  async function discardAdminAsset(asset){
+    if(!asset||!asset.public_asset_id||!asset.uploaded)return;
+    const api=db();if(asset.path)await api.storage.from('app-assets').remove([asset.path]);
+    const out=await api.rpc('discard_unlinked_program_catalog_asset',{p_asset_id:asset.public_asset_id});if(out.error)throw out.error;
+  }
+  async function saveAdminItem(item,assets){
+    assertAdminWrite();
+    const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:Boolean(item.cotiza),enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
+    const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
+    const out=await db().rpc('save_program_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links});if(out.error)throw out.error;return Object.freeze(out.data||{});
+  }
+  async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
+  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
 })();
 })();
 /* @@file popup-proposal-repository.js */
@@ -47058,6 +47090,12 @@ Object.assign(window, {
     desc: 'Secciones y productos de Finanzas',
     classification: 'PRODUCTIVE_HYBRID'
   }, {
+    id: 'program_products',
+    label: 'Programas · Productos',
+    icon: 'cart',
+    desc: 'Productos propios, precios e imágenes',
+    ready: true
+  }, {
     id: 'flujos',
     label: 'Etapas y seguimiento',
     icon: 'clock',
@@ -47193,6 +47231,7 @@ Object.assign(window, {
     noticias: 'news.read',
     education: 'content.read',
     marketplace: 'marketplace.read',
+    program_products: 'program_catalog.read',
     membresias: 'memberships.read',
     planes: 'company_portal.read',
     requests: 'program_requests.read',
@@ -47231,7 +47270,7 @@ Object.assign(window, {
     id: 'finance',
     label: 'Finanzas',
     icon: 'finance',
-    modules: ['finanzas', 'fondos', 'fincat', 'flujos', 'membresias']
+    modules: ['program_products', 'finanzas', 'fondos', 'fincat', 'flujos', 'membresias']
   }, {
     id: 'commerce',
     label: 'Empresas y convenios',
@@ -49178,6 +49217,10 @@ Object.assign(window, {
       onBack: () => setView('menu'),
       header: headerFn,
       canEdit: app.admin.has('marketplace.create') || app.admin.has('marketplace.update')
+    });else if (view === 'program_products') body = React.createElement(window.ProgramProductsModule, {
+      app,
+      onBack: () => setView('menu'),
+      header: headerFn
     });else if (view === 'membresias') body = React.createElement(window.MembresiasModule, {
       app,
       onBack: () => setView('menu'),
@@ -50949,6 +50992,906 @@ Object.assign(window, {
     CatalogGrid,
     CatalogItemScreen
   });
+})();
+})();
+/* @@file program-catalog-admin-store.jsx */
+(function(){
+/* Admin-only in-memory projection over ProgramCatalogRepository. */
+(function () {
+  const {
+      useEffect,
+      useState
+    } = React,
+    listeners = new Set();
+  let items = [],
+    phase = 'idle',
+    error = null,
+    promise = null;
+  const labels = Object.freeze({
+    aires: 'Aires acondicionados',
+    auto: 'Autos',
+    casa: 'Casa',
+    computo: 'Cómputo',
+    donativos: 'Donativos',
+    farma: 'Suti Farma',
+    prestamo: 'Suti Préstamo',
+    puertas: 'Puertas de seguridad',
+    renta: 'Renta de vehículos',
+    solar: 'Paneles solares',
+    terrenos: 'Terrenos',
+    tours: 'Tours'
+  });
+  const icons = Object.freeze({
+    aires: 'snow',
+    auto: 'car',
+    casa: 'home',
+    computo: 'laptop',
+    donativos: 'heart',
+    farma: 'health',
+    prestamo: 'cash',
+    puertas: 'shield',
+    renta: 'car',
+    solar: 'sun',
+    terrenos: 'pin',
+    tours: 'plane'
+  });
+  const emit = () => listeners.forEach(fn => fn());
+  async function load(force) {
+    if (promise && !force) return promise;
+    phase = 'loading';
+    error = null;
+    emit();
+    promise = (async () => {
+      try {
+        items = (await window.ProgramCatalogRepository.listItems({
+          admin: true
+        })).slice();
+        phase = 'loaded';
+      } catch (e) {
+        phase = 'error';
+        error = e;
+      }
+      emit();
+      return store;
+    })();
+    return promise;
+  }
+  async function refreshConsumers() {
+    await load(true);
+    if (window.catalogStore) await window.catalogStore.retry();
+  }
+  const store = {
+    bootstrap: () => load(false),
+    retry: () => {
+      promise = null;
+      return load(true);
+    },
+    state: () => ({
+      phase,
+      error
+    }),
+    all: () => items.slice(),
+    programs: () => Array.from(new Set(items.map(x => x.program_key))).sort((a, b) => (labels[a] || a).localeCompare(labels[b] || b)).map(key => {
+      const rows = items.filter(x => x.program_key === key);
+      return {
+        key,
+        label: labels[key] || key,
+        icon: icons[key] || 'grid',
+        count: rows.length,
+        active: rows.filter(x => x.activo !== false).length,
+        fixed: rows.filter(x => x.precio != null && !x.cotiza).length,
+        quote: rows.filter(x => x.cotiza).length
+      };
+    }),
+    byProgram: key => items.filter(x => x.program_key === key).sort((a, b) => (a.orden || 0) - (b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre))),
+    get: id => items.find(x => x.id === id) || null,
+    blank: programKey => ({
+      id: null,
+      program_key: programKey,
+      scope: 'fin',
+      scopeId: programKey,
+      nombre: '',
+      desc: '',
+      category_raw: '',
+      precio: null,
+      cotiza: true,
+      activo: true,
+      orden: store.byProgram(programKey).length + 1,
+      record_origin: 'ADMIN_PROGRAM_CATALOG',
+      requestMode: 'supabase',
+      source_sheet: null,
+      source_row_ordinal: null,
+      imagenAssets: [],
+      imagenes: []
+    }),
+    save: async (item, media) => {
+      const uploaded = [],
+        assets = [];
+      try {
+        for (const entry of media || []) {
+          if (entry.kind === 'pending') {
+            const asset = await window.ProgramCatalogRepository.uploadAdminAsset(entry.file, item.nombre);
+            uploaded.push(asset);
+            assets.push(asset);
+          } else assets.push(entry.asset || entry);
+        }
+        const saved = await window.ProgramCatalogRepository.saveAdminItem(item, assets);
+        await refreshConsumers();
+        return saved;
+      } catch (e) {
+        await Promise.all(uploaded.map(asset => window.ProgramCatalogRepository.discardAdminAsset(asset).catch(() => null)));
+        throw e;
+      }
+    },
+    toggle: async id => {
+      const item = store.get(id);
+      if (!item) return;
+      await store.save(Object.assign({}, item, {
+        activo: item.activo === false
+      }), (item.imagenAssets || []).map(asset => ({
+        kind: 'existing',
+        asset
+      })));
+    },
+    move: async (id, direction) => {
+      const item = store.get(id);
+      if (!item) return;
+      const rows = store.byProgram(item.program_key),
+        from = rows.findIndex(x => x.id === id),
+        to = from + direction;
+      if (from < 0 || to < 0 || to >= rows.length) return;
+      const reordered = rows.slice(),
+        picked = reordered.splice(from, 1)[0];
+      reordered.splice(to, 0, picked);
+      await window.ProgramCatalogRepository.reorderAdminItems(item.program_key, reordered.map(x => x.id));
+      await refreshConsumers();
+    },
+    subscribe: fn => {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }
+  };
+  window.programCatalogAdminStore = store;
+  window.useProgramCatalogAdminStore = function () {
+    const [, render] = useState(0);
+    useEffect(() => store.subscribe(() => render(n => n + 1)), []);
+    useEffect(() => {
+      store.bootstrap();
+    }, []);
+    return store;
+  };
+})();
+})();
+/* @@file screens-admin-program-products.jsx */
+(function(){
+/* H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001: Admin CRUD lógico over program_catalog_items only. */
+(function () {
+  const {
+      useEffect,
+      useState,
+      useRef
+    } = React,
+    I = window.Icon;
+  const field = {
+    width: '100%',
+    border: 'none',
+    outline: 'none',
+    background: 'var(--surface-2)',
+    boxShadow: 'var(--neo-inset)',
+    borderRadius: 12,
+    padding: '11px 13px',
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: 'inherit',
+    color: 'var(--ink)',
+    boxSizing: 'border-box'
+  };
+  const label = {
+    fontSize: 12,
+    fontWeight: 800,
+    color: 'var(--ink-2)',
+    display: 'block',
+    marginBottom: 6
+  };
+  const chip = (text, tone) => React.createElement('span', {
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '4px 8px',
+      borderRadius: 999,
+      fontSize: 10,
+      fontWeight: 900,
+      letterSpacing: '.03em',
+      background: tone === 'green' ? '#E5F6EC' : tone === 'amber' ? '#FFF3DC' : 'var(--surface-2)',
+      color: tone === 'green' ? '#13794A' : tone === 'amber' ? '#8A5C00' : 'var(--ink-3)'
+    }
+  }, text);
+  function iconButton(icon, onClick, disabled, labelText) {
+    return React.createElement('button', {
+      onClick,
+      disabled,
+      'aria-label': labelText,
+      style: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        border: 'none',
+        background: 'var(--surface-2)',
+        color: 'var(--ink-2)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? .35 : 1
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 16,
+      stroke: 2.2
+    }));
+  }
+  function ProgramProductsModule({
+    app,
+    onBack,
+    header
+  }) {
+    const store = window.useProgramCatalogAdminStore(),
+      [program, setProgram] = useState(null),
+      [editing, setEditing] = useState(null);
+    const canWrite = app.admin.has('program_catalog.write');
+    useEffect(() => {
+      store.retry();
+    }, []);
+    if (store.state().phase === 'loading' && store.all().length === 0) return React.createElement('div', null, header({
+      title: 'Programas · Productos',
+      sub: 'Cargando catálogo autoritativo',
+      onBack
+    }), React.createElement('div', {
+      style: {
+        padding: 16
+      }
+    }, React.createElement(window.Skeleton, {
+      h: 220,
+      r: 18
+    })));
+    if (store.state().phase === 'error') return React.createElement('div', null, header({
+      title: 'Programas · Productos',
+      sub: 'Fuente autoritativa no disponible',
+      onBack
+    }), React.createElement('div', {
+      style: {
+        padding: 16
+      }
+    }, React.createElement(window.EmptyState, {
+      icon: 'alert',
+      title: 'No pudimos cargar los productos',
+      sub: 'No se usó Marketplace ni una fuente alternativa.',
+      action: React.createElement(window.Btn, {
+        onClick: store.retry
+      }, 'Reintentar')
+    })));
+    const programs = store.programs(),
+      rows = program ? store.byProgram(program.key) : [];
+    return React.createElement('div', null, header({
+      title: program ? program.label : 'Programas · Productos',
+      sub: program ? `${rows.length} productos · ${rows.filter(x => x.activo !== false).length} activos` : `${programs.length} programas · ${store.all().length} productos`,
+      onBack: program ? () => setProgram(null) : onBack
+    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
+      className: 'su-app-scroll su-stagger',
+      style: {
+        padding: '16px 16px 28px'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 650,
+        color: 'var(--ink-3)',
+        lineHeight: 1.5,
+        marginBottom: 14
+      }
+    }, program ? 'Edita exclusivamente el catálogo propio de este programa. Los cambios se reflejan en la app desde program_catalog_items.' : 'Selecciona un programa para ver claramente sus productos, precios, modalidad, imágenes, estado y orden.'), !program && React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))',
+        gap: 11
+      }
+    }, programs.map(p => React.createElement('button', {
+      key: p.key,
+      'data-program-key': p.key,
+      onClick: () => setProgram(p),
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        textAlign: 'left',
+        width: '100%',
+        border: 'none',
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 14,
+        boxShadow: 'var(--neo-sm)',
+        cursor: 'pointer',
+        fontFamily: 'inherit'
+      }
+    }, React.createElement(window.IconTile, {
+      icon: p.icon,
+      size: 42
+    }), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        textAlign: 'left'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 900,
+        color: 'var(--ink)'
+      }
+    }, p.label), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 650,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, `${p.count} productos · ${p.active} activos`), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 6,
+        marginTop: 7,
+        flexWrap: 'wrap'
+      }
+    }, chip(`${p.fixed} precio fijo`, 'green'), p.quote ? chip(`${p.quote} cotización`, 'amber') : null)), React.createElement(I, {
+      name: 'chevR',
+      size: 19,
+      stroke: 2.2,
+      style: {
+        color: 'var(--ink-3)'
+      }
+    })))), program && React.createElement(React.Fragment, null, canWrite && React.createElement('button', {
+      'data-program-product-add': program.key,
+      onClick: () => setEditing(store.blank(program.key)),
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        width: '100%',
+        height: 46,
+        borderRadius: 13,
+        border: 'none',
+        background: 'var(--grad-guinda-soft)',
+        color: '#fff',
+        fontFamily: 'inherit',
+        fontSize: 14,
+        fontWeight: 850,
+        cursor: 'pointer',
+        marginBottom: 14
+      }
+    }, React.createElement(I, {
+      name: 'plus',
+      size: 18,
+      stroke: 2.6
+    }), 'Agregar producto'), rows.length === 0 ? React.createElement(window.EmptyState, {
+      icon: 'cart',
+      title: 'Sin productos',
+      sub: 'Este programa todavía no tiene productos.'
+    }) : React.createElement(ProductRows, {
+      rows,
+      store,
+      canWrite,
+      onEdit: setEditing
+    }))), editing && React.createElement(ProductEditor, {
+      item: editing,
+      programs,
+      onClose: () => setEditing(null),
+      onSaved: () => setEditing(null)
+    }));
+  }
+  function ProductRows({
+    rows,
+    store,
+    canWrite,
+    onEdit
+  }) {
+    const ref = useRef(null);
+    window.useFlipRows(ref);
+    return React.createElement('div', {
+      ref,
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, rows.map((p, index) => React.createElement('div', {
+      key: p.id,
+      'data-flip-key': p.id,
+      'data-program-product': p.id,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        background: 'var(--surface)',
+        borderRadius: 15,
+        padding: 11,
+        boxShadow: 'var(--neo-sm)',
+        opacity: p.activo === false ? .55 : 1
+      }
+    }, React.createElement('button', {
+      onClick: () => onEdit(p),
+      style: {
+        width: 54,
+        height: 54,
+        borderRadius: 12,
+        overflow: 'hidden',
+        border: 'none',
+        padding: 0,
+        background: 'var(--surface-2)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--ink-3)',
+        cursor: 'pointer',
+        flexShrink: 0
+      }
+    }, p.imagenes && p.imagenes[0] ? React.createElement('img', {
+      src: p.imagenes[0],
+      alt: '',
+      style: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+      }
+    }) : React.createElement(I, {
+      name: 'image',
+      size: 22
+    })), React.createElement('button', {
+      onClick: () => onEdit(p),
+      style: {
+        flex: 1,
+        minWidth: 0,
+        textAlign: 'left',
+        border: 'none',
+        background: 'none',
+        padding: 0,
+        cursor: 'pointer',
+        fontFamily: 'inherit'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14,
+        fontWeight: 850,
+        color: 'var(--ink)',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, p.nombre), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 650,
+        color: 'var(--ink-3)',
+        marginTop: 3,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, `${p.category_raw || 'Sin categoría'} · Orden ${p.orden} · ${(p.imagenes || []).length} img`), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 6,
+        marginTop: 7,
+        flexWrap: 'wrap'
+      }
+    }, p.cotiza ? chip('REQUIERE COTIZACIÓN', 'amber') : chip(window.money(p.precio), 'green'), p.activo === false ? chip('INACTIVO') : null)), canWrite && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 4,
+        flexShrink: 0
+      }
+    }, iconButton('chevD', () => store.move(p.id, -1), index === 0, 'Subir'), iconButton('chevD', () => store.move(p.id, 1), index === rows.length - 1, 'Bajar'), React.createElement(window.Toggle, {
+      on: p.activo !== false,
+      size: 'lg',
+      onClick: () => store.toggle(p.id),
+      'aria-label': 'Activar o desactivar'
+    })))));
+  }
+  function ProductEditor({
+    item,
+    programs,
+    onClose,
+    onSaved
+  }) {
+    const store = window.programCatalogAdminStore,
+      [draft, setDraft] = useState(() => Object.assign({}, item)),
+      [media, setMedia] = useState(() => (item.imagenAssets || []).map(asset => ({
+        kind: 'existing',
+        asset,
+        url: asset.url
+      }))),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [preview, setPreview] = useState(null);
+    const set = (key, value) => setDraft(old => Object.assign({}, old, {
+      [key]: value
+    }));
+    const addFiles = event => {
+      const files = Array.from(event.target.files || []),
+        room = Math.max(0, 8 - media.length);
+      setMedia(old => old.concat(files.slice(0, room).map(file => ({
+        kind: 'pending',
+        file,
+        url: URL.createObjectURL(file)
+      }))));
+      event.target.value = '';
+    };
+    const remove = index => setMedia(old => {
+      const next = old.slice(),
+        entry = next.splice(index, 1)[0];
+      if (entry && entry.kind === 'pending') URL.revokeObjectURL(entry.url);
+      return next;
+    });
+    const move = (index, delta) => setMedia(old => {
+      const to = index + delta;
+      if (to < 0 || to >= old.length) return old;
+      const next = old.slice(),
+        entry = next.splice(index, 1)[0];
+      next.splice(to, 0, entry);
+      return next;
+    });
+    const save = async () => {
+      if (!String(draft.nombre || '').trim()) {
+        setError('Escribe el nombre.');
+        return;
+      }
+      if (!draft.program_key) {
+        setError('Selecciona el programa.');
+        return;
+      }
+      if (!draft.cotiza && !(Number(draft.precio) > 0)) {
+        setError('Precio fijo requiere un importe mayor a cero.');
+        return;
+      }
+      if (!(Number(draft.orden) >= 1)) {
+        setError('El orden debe ser mayor a cero.');
+        return;
+      }
+      setBusy(true);
+      setError('');
+      try {
+        await store.save(draft, media);
+        media.filter(x => x.kind === 'pending').forEach(x => URL.revokeObjectURL(x.url));
+        onSaved();
+      } catch (e) {
+        setError('No se pudo guardar en el catálogo autoritativo. Revisa permisos y datos.');
+        setBusy(false);
+      }
+    };
+    return React.createElement('div', {
+      'data-program-product-editor': item.id || 'new',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 82,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 12px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('button', {
+      onClick: onClose,
+      'aria-label': 'Cerrar',
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        border: 'none',
+        background: 'transparent',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: 'var(--ink)'
+      }
+    }, React.createElement(I, {
+      name: 'close',
+      size: 22,
+      stroke: 2
+    })), React.createElement('span', {
+      style: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: 850
+      }
+    }, item.id ? 'Editar producto' : 'Nuevo producto')), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: 16
+      }
+    }, React.createElement('label', {
+      style: label
+    }, 'Imágenes'), React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(96px,1fr))',
+        gap: 9,
+        marginBottom: 8
+      }
+    }, media.map((entry, index) => React.createElement('div', {
+      key: entry.url || index,
+      style: {
+        position: 'relative',
+        aspectRatio: '4/3',
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)'
+      }
+    }, React.createElement('button', {
+      onClick: () => setPreview(index),
+      style: {
+        position: 'absolute',
+        inset: 0,
+        border: 'none',
+        padding: 0,
+        background: 'none',
+        cursor: 'zoom-in'
+      }
+    }, React.createElement('img', {
+      src: entry.url,
+      alt: '',
+      style: {
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+      }
+    })), index === 0 && React.createElement('span', {
+      style: {
+        position: 'absolute',
+        left: 5,
+        bottom: 5,
+        fontSize: 9,
+        fontWeight: 900,
+        background: 'rgba(0,0,0,.62)',
+        color: '#fff',
+        padding: '3px 7px',
+        borderRadius: 999
+      }
+    }, 'PORTADA'), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        right: 4,
+        top: 4,
+        display: 'flex',
+        gap: 3
+      }
+    }, iconButton('chevD', () => move(index, -1), index === 0, 'Mover antes'), iconButton('chevD', () => move(index, 1), index === media.length - 1, 'Mover después'), iconButton('close', () => remove(index), false, 'Quitar')))), media.length < 8 && React.createElement('label', {
+      style: {
+        position: 'relative',
+        aspectRatio: '4/3',
+        borderRadius: 12,
+        border: '1.5px dashed var(--hairline-strong)',
+        background: 'var(--surface)',
+        cursor: 'pointer',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)'
+      }
+    }, React.createElement(I, {
+      name: 'plus',
+      size: 24,
+      stroke: 2.6
+    }), React.createElement('input', {
+      'data-program-product-image-input': 'true',
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/gif,image/webp',
+      multiple: true,
+      onChange: addFiles,
+      style: {
+        display: 'none'
+      }
+    }))), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 650,
+        color: 'var(--ink-3)',
+        lineHeight: 1.45,
+        marginBottom: 15
+      }
+    }, 'La primera imagen es la portada. Puedes ampliar, reordenar o quitar sin borrar la procedencia histórica del asset.'), React.createElement('label', {
+      style: label
+    }, 'Programa'), React.createElement('select', {
+      'data-program-product-field': 'program_key',
+      value: draft.program_key || '',
+      onChange: e => set('program_key', e.target.value),
+      style: Object.assign({}, field, {
+        marginBottom: 12,
+        appearance: 'auto'
+      })
+    }, programs.map(p => React.createElement('option', {
+      key: p.key,
+      value: p.key
+    }, p.label))), React.createElement('label', {
+      style: label
+    }, 'Nombre'), React.createElement('input', {
+      'data-program-product-field': 'name',
+      value: draft.nombre || '',
+      maxLength: 180,
+      onChange: e => set('nombre', e.target.value),
+      style: Object.assign({}, field, {
+        marginBottom: 12
+      })
+    }), React.createElement('label', {
+      style: label
+    }, 'Categoría'), React.createElement('input', {
+      'data-program-product-field': 'category',
+      value: draft.category_raw || '',
+      maxLength: 240,
+      onChange: e => set('category_raw', e.target.value),
+      placeholder: 'Opcional',
+      style: Object.assign({}, field, {
+        marginBottom: 12
+      })
+    }), React.createElement('label', {
+      style: label
+    }, 'Descripción'), React.createElement('textarea', {
+      'data-program-product-field': 'description',
+      value: draft.desc || '',
+      rows: 5,
+      onChange: e => set('desc', e.target.value),
+      style: Object.assign({}, field, {
+        marginBottom: 12,
+        resize: 'vertical',
+        lineHeight: 1.5
+      })
+    }), React.createElement('label', {
+      style: label
+    }, 'Modalidad'), React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 9,
+        marginBottom: 12
+      }
+    }, [['fixed', 'PRECIO FIJO', 'Precio visible en la app'], ['quote', 'REQUIERE COTIZACIÓN', 'La app muestra “Se cotiza”']].map(([mode, title, sub]) => {
+      const on = mode === 'quote' ? draft.cotiza : !draft.cotiza;
+      return React.createElement('button', {
+        key: mode,
+        'data-program-product-mode': mode,
+        onClick: () => set('cotiza', mode === 'quote'),
+        style: {
+          textAlign: 'left',
+          border: on ? '2px solid var(--guinda)' : '1px solid var(--hairline)',
+          borderRadius: 13,
+          padding: 11,
+          background: on ? 'var(--guinda-50)' : 'var(--surface)',
+          fontFamily: 'inherit',
+          cursor: 'pointer'
+        }
+      }, React.createElement('div', {
+        style: {
+          fontSize: 11.5,
+          fontWeight: 900,
+          color: on ? 'var(--guinda)' : 'var(--ink)'
+        }
+      }, title), React.createElement('div', {
+        style: {
+          fontSize: 10.5,
+          fontWeight: 600,
+          color: 'var(--ink-3)',
+          marginTop: 3,
+          lineHeight: 1.35
+        }
+      }, sub));
+    })), React.createElement('label', {
+      style: label
+    }, draft.cotiza ? 'Precio importado/referencial (opcional)' : 'Precio fijo obligatorio'), React.createElement('input', {
+      'data-program-product-field': 'price',
+      type: 'number',
+      min: 0,
+      step: '0.01',
+      value: draft.precio == null ? '' : draft.precio,
+      onChange: e => set('precio', e.target.value === '' ? null : Number(e.target.value)),
+      style: Object.assign({}, field, {
+        marginBottom: 12
+      })
+    }), React.createElement('label', {
+      style: label
+    }, 'Orden'), React.createElement('input', {
+      'data-program-product-field': 'order',
+      type: 'number',
+      min: 1,
+      max: 10000,
+      value: draft.orden || 1,
+      onChange: e => set('orden', Number(e.target.value)),
+      style: Object.assign({}, field, {
+        marginBottom: 12
+      })
+    }), React.createElement('div', {
+      'data-program-product-active-control': 'true',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '12px 15px',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14,
+        fontWeight: 850
+      }
+    }, 'Activo en la app'), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, 'Desactivar conserva el producto y su historia.')), React.createElement(window.Toggle, {
+      on: draft.activo !== false,
+      size: 'lg',
+      onClick: () => set('activo', draft.activo === false)
+    })), React.createElement('div', {
+      style: {
+        background: 'var(--surface-2)',
+        borderRadius: 13,
+        padding: 12,
+        marginBottom: 14,
+        fontSize: 11.5,
+        fontWeight: 650,
+        color: 'var(--ink-3)',
+        lineHeight: 1.55
+      }
+    }, React.createElement('div', null, React.createElement('b', null, 'Origen: '), draft.record_origin || 'ADMIN_PROGRAM_CATALOG'), React.createElement('div', null, React.createElement('b', null, 'Modo de solicitud: '), draft.requestMode || draft.request_mode || 'supabase'), draft.source_sheet && React.createElement('div', null, React.createElement('b', null, 'Procedencia: '), draft.source_sheet, ' · fila ', draft.source_row_ordinal)), error && React.createElement('div', {
+      style: {
+        color: '#C0341D',
+        fontSize: 12.5,
+        fontWeight: 750,
+        marginBottom: 12
+      }
+    }, error), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 10
+      }
+    }, React.createElement(window.Btn, {
+      variant: 'outline',
+      style: {
+        flex: 1
+      },
+      onClick: onClose
+    }, 'Cancelar'), React.createElement(window.Btn, {
+      'data-program-product-save': 'true',
+      icon: 'check',
+      style: {
+        flex: 2
+      },
+      disabled: busy,
+      onClick: save
+    }, busy ? 'Guardando…' : 'Guardar'))), preview != null && React.createElement(window.ImageViewer, {
+      sources: media.map(x => x.url),
+      startIndex: preview,
+      alt: 'Imagen del producto',
+      onClose: () => setPreview(null)
+    }));
+  }
+  window.ProgramProductsModule = ProgramProductsModule;
 })();
 })();
 /* @@file screens-admin-catalogo.jsx */

@@ -458,7 +458,14 @@ def build_registry(facts: dict[str, dict], fps: dict[str, str], overrides: dict)
     for item in node_list:
         types[item["type"]] += 1; domains[item["domain"]][item["type"]] += 1
     repo_hash, schema_hash = aggregate_hash(fps), aggregate_hash(fps, "supabase/migrations/")
-    latest = max((int((ROOT / file).stat().st_mtime) for file in fps), default=0)
+    latest = 0
+    for file in fps:
+        try:
+            latest = max(latest, int((ROOT / file).stat().st_mtime))
+        except FileNotFoundError:
+            # Incremental removal can race with OneDrive/AV propagation on Windows.
+            # The missing path is already absent from the next discovery pass.
+            continue
     main = {
         "metadata": {
             "registry_version": REGISTRY_VERSION, "generator_version": GENERATOR_VERSION,

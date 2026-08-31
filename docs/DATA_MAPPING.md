@@ -125,7 +125,7 @@ La tabla siguiente completa, para cada dominio de la matriz, los campos normativ
 
 ## H-DATA-CUTOVER-001 — reconciliación vigente 2026-08-22
 
-Los renglones 14–24 anteriores se conservan como evidencia de H-DATA-001. El estado vigente para el catálogo maestro autorizado es `ProgramCatalogRepository → program_catalog_items/program_catalog_item_assets → Storage`: 134/134 filas y 268/268 assets. Solicitudes y campos financieros continúan en sus adaptadores/hojas legacy. Suti Market/Balam, Rifas, Cirugías y la equivalencia de la pantalla dedicada Terrenos permanecen `UNRESOLVED/LEGACY/UI_NOT_CONNECTED`; ver `DATA_COVERAGE_UI_CUTOVER_REPORT.md`.
+Los renglones 14–24 anteriores se conservan como evidencia de H-DATA-001. El estado vigente para el catálogo maestro autorizado es `ProgramCatalogRepository → program_catalog_items/program_catalog_item_assets → Storage`: 135 filas vigentes (134 históricas + 1 target técnico de Préstamo) y 268 vínculos de assets habilitados. Admin escribe la misma autoridad mediante RPC; 65 precios históricos no nulos quedaron reconciliados como fijos sin cambiar importes. Solicitudes y campos financieros continúan en sus adaptadores/hojas legacy. Suti Market/Balam, Rifas, Cirugías y la equivalencia de la pantalla dedicada Terrenos permanecen `UNRESOLVED/LEGACY/UI_NOT_CONNECTED`; ver `DATA_COVERAGE_UI_CUTOVER_REPORT.md`.
 
 ## Contratos autoritativos por dominio
 

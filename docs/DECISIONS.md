@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-086 | Los productos propios de programas permanecen en `program_catalog_items`; todo `price_cash` histórico no nulo es precio fijo salvo evidencia específica y el writer Admin escribe la misma autoridad mediante RPC. | Aceptada |
 | ADR-085 | La cuenta bancaria es opcional en Depósito; el celular permanece requerido y una cuenta proporcionada conserva validación completa. | Aceptada |
 | ADR-082 | Notificaciones y badge derivan sólo eventos reales con visto durable en su autoridad; no existe tabla ni mock de notificaciones. | Aceptada |
 | ADR-081 | El depósito de Suti Préstamo usa cuenta/celular Supabase y congela evidencia privada en la alta atómica. | Aceptada |
@@ -695,3 +696,14 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Autoridad:** no se crea otra fuente. El resumen conserva su estructura/rutas versionadas y sus valores siguen viniendo del lector financiero aprobado; `finance_catalog_presentation` continúa intacta para el catálogo inferior.
 - **Alcance:** cero cambios en Admin, store, Supabase, cálculos, Suti Préstamo, Suti Inversión, Ahorro o legacy.
 - **Aprobación:** `H-FINANCE-SUMMARY-ACTIONS-SEPARATION-001`, instrucción explícita del propietario, 2026-08-31.
+
+## ADR-086 — Catálogo administrativo de productos propios por programa
+
+- **Autoridad:** `program_catalog_items` y `program_catalog_item_assets` permanecen como única autoridad de productos propios SutiApp. `marketplace_products` conserva su dominio empresarial separado y recibió cero escrituras.
+- **Precio:** para los históricos, `price_cash IS NOT NULL` implica por defecto `requires_quote=false`; sólo evidencia específica de cotización obligatoria puede conservar la combinación contraria. La matriz aprobada contenía 65 conflictos y ninguna excepción demostrable.
+- **Writer:** Admin usa `ProgramCatalogRepository → save_program_catalog_item/reorder_program_catalog_items → program_catalog_items`. No reutiliza `MarketplaceRepository`, no acepta procedencia desde browser y registra antes/después en `admin_audit_log`.
+- **Assets:** las imágenes reutilizan `program_catalog_item_assets`, `app_assets` y `app-assets`. Altas nuevas quedan bajo `program-products/<actor>/`; el trigger de ownership impide enlazar el asset de otro actor y la baja del vínculo es lógica.
+- **Seguridad:** `program_catalog.read/write` son permisos específicos; lectura afiliada incluye sólo productos activos, escritura directa queda revocada y los RPC/Storage exigen permiso backend. Anónimo permanece denegado.
+- **Historia y recovery:** los 65 precios se preservan exactamente; procedencia histórica no cambia. La tabla de reconciliación conserva valores previos y timestamp para recovery. Si existe actividad Admin posterior, recovery falla cerrado y nunca elimina historia legítima.
+- **Límites:** no cambia Panel Empresarial, Marketplace, simulador, documentos, Google, Apps Script, tasas, fondos, plazos, reglas ni cálculos financieros.
+- **Aprobación:** `H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001` y autorización productiva explícita del propietario, 2026-08-31.

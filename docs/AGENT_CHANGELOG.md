@@ -2023,3 +2023,25 @@ Unexpected files changed: 0
 Known limitations: 0 dentro del alcance
 Evidence: docs/qa/H-MEMBERSHIP-ENABLED-CUTOVER-001-EVIDENCE.md
 ```
+
+## 2026-08-31 — H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001
+
+- Admin incorpora `Programas · Productos` agrupado por 12 programas y escribe exclusivamente `program_catalog_items` mediante RPC; Marketplace permanece separado.
+- La decisión owner reconcilió 65/65 filas con precio a `requires_quote=false` sin cambiar ningún `price_cash`; Aires 16/16 y todos los demás catálogos con precio quedaron certificados.
+- Alta, edición, precio fijo/cotización, imagen, orden y activar/desactivar pasaron en Chrome real hasta el frontend afiliado. La fixture y su objeto Storage se eliminaron exactamente.
+- RLS/RPC/Storage, guard cross-actor, migración, recovery dry-run previo a actividad, bundle, UI preservation y suite estática 72/72: `PASS`. Google, Apps Script, finanzas, documentos, simulador y Panel Empresarial: cero cambios.
+
+```text
+H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001 RESULT
+Status: PASS
+Files changed: catálogo Admin/repository/store; SQL/recovery; bundle/cache; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — program_catalog_items/program_catalog_item_assets permanecen autoridad única
+Invariant verdict: PASS — INV-059–062 e INV-146–149 preservadas
+Build: PASS — bundle reproducible desde 94 fuentes; node --check PASS
+Tests: PASS — 72/72 static; migration/recovery; live reconciliation; Chrome E2E real
+Security: PASS — RPC/RLS/Storage mínimo privilegio; anon/no autorizado denied; cross-actor denied; secretos browser 0
+Legacy impact: NOT APPLICABLE / Google read 0 / write 0 / Apps Script change 0 / financial rules changed 0
+Unexpected files changed: 0
+Known limitations: recovery productivo queda fail-closed después de historia Admin; no se ejecutó tras el E2E
+Evidence: docs/qa/H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001-EVIDENCE.md
+```

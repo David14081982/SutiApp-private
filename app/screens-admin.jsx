@@ -36,6 +36,7 @@
     { id: 'finanzas', label: 'Finanzas · Solicitudes', icon: 'finance', desc: 'Solicitudes de financiamiento', classification: 'PRODUCTIVE_HYBRID' },
     { id: 'fondos', label: 'Fondos y reglas', icon: 'finance', desc: 'Visibilidad SutiApp por criterio', classification: 'PRODUCTIVE_GOOGLE_CONTROLLED' },
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet', desc: 'Secciones y productos de Finanzas', classification: 'PRODUCTIVE_HYBRID' },
+    { id: 'program_products', label: 'Programas · Productos', icon: 'cart', desc: 'Productos propios, precios e imágenes', ready: true },
     { id: 'flujos', label: 'Etapas y seguimiento', icon: 'clock', desc: 'Etapas por servicio y fechas reales', classification: 'PRODUCTIVE_HYBRID' },
     { id: 'marketplace', label: 'Marketplace', icon: 'cart', desc: 'Productos, imágenes y precios por servicio', ready: true },
     { id: 'aprobaciones', label: 'Aprobación de Pop-ups', icon: 'checkCircle', desc: 'Pop-ups de empresas por revisar', classification: 'PRODUCTIVE_SUPABASE' },
@@ -61,12 +62,12 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
-    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
+    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','fincat','flujos','membresias'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','fondos','fincat','flujos','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
     { id:'settings', label:'Acceso y configuración', icon:'settings', modules:['catalogos','roles','pantallas','secciones','menus','formularios','branding'] },
@@ -486,6 +487,7 @@
     else if (view === 'branding') body = React.createElement(window.BrandingModule, { app, onBack: () => setView('menu'), header: headerFn, canEdit: app.admin.has('assets.write') });
     else if (view === 'noticias') body = React.createElement(window.NewsModule, { app, onBack: () => setView('menu'), header: headerFn });
     else if(view==='marketplace')body=React.createElement(window.MarketplaceModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('marketplace.create')||app.admin.has('marketplace.update')});
+    else if(view==='program_products')body=React.createElement(window.ProgramProductsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='membresias')body=React.createElement(window.MembresiasModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='documents_admin')body=React.createElement(window.DocumentsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='planes')body=React.createElement(window.PlanesModule,{app,onBack:()=>setView('menu'),header:headerFn});

@@ -10344,7 +10344,8 @@ Object.assign(window, {
     overview: snapshot.overview
   });
   function SummaryCard({
-    app
+    app,
+    visibleItemIds
   }) {
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : {
       status: 'error',
@@ -10353,6 +10354,25 @@ Object.assign(window, {
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = amount => typeof amount === 'number' ? window.money(amount) : '—';
+    const visible = itemId => visibleItemIds.includes(itemId);
+    const actions = [visible('prestamo') && {
+      itemId: 'prestamo',
+      label: 'préstamo',
+      ariaLabel: 'Solicitar préstamo',
+      icon: 'cash',
+      primary: true,
+      onClick: () => app.push('loan')
+    }, visible('ahorro') && {
+      itemId: 'ahorro',
+      label: 'Ahorrar',
+      icon: 'piggy',
+      onClick: () => app.openFinanceItem('ahorro')
+    }, visible('inversion') && {
+      itemId: 'inversion',
+      label: 'Invertir',
+      trend: true,
+      onClick: () => app.push('investment')
+    }].filter(Boolean);
     return React.createElement('div', {
       style: {
         padding: '4px 16px 0'
@@ -10418,31 +10438,21 @@ Object.assign(window, {
         width: 1,
         background: 'var(--hairline)'
       }
-    }), miniStat('Mi inversión', '—', null, true)), React.createElement('div', {
+    }), miniStat('Mi inversión', '—', null, true)), actions.length > 0 && React.createElement('div', {
       'data-finance-summary-actions': '',
       style: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))`,
         gap: 9,
         marginTop: 18
       }
-    }, React.createElement(SummaryAction, {
-      label: 'préstamo',
-      ariaLabel: 'Solicitar préstamo',
-      icon: 'cash',
-      primary: true,
-      onClick: () => app.push('loan')
-    }), React.createElement(SummaryAction, {
-      label: 'Ahorrar',
-      icon: 'piggy',
-      onClick: () => app.openFinanceItem('ahorro')
-    }), React.createElement(SummaryAction, {
-      label: 'Invertir',
-      trend: true,
-      onClick: () => app.push('investment')
-    }))));
+    }, ...actions.map(action => React.createElement(SummaryAction, {
+      key: action.itemId,
+      ...action
+    })))));
   }
   function SummaryAction({
+    itemId,
     label,
     ariaLabel,
     icon,
@@ -10455,6 +10465,7 @@ Object.assign(window, {
       onClick,
       className: 'su-press',
       'aria-label': ariaLabel || label,
+      'data-finance-summary-action': itemId,
       style: {
         minWidth: 0,
         minHeight: 80,
@@ -10560,7 +10571,10 @@ Object.assign(window, {
     app
   }) {
     const fs = window.finCatStore;
-    const list = fs && fs.recsLive ? fs.recsLive() : [];
+    const list = fs && fs.recsLive ? fs.recsLive().filter(r => {
+      const item = fs.findItem(r.itemId);
+      return item && item.visible !== false;
+    }) : [];
     if (!list.length) return null;
     return React.createElement('div', null, React.createElement('div', {
       style: {
@@ -10645,6 +10659,8 @@ Object.assign(window, {
       UNAVAILABLE: 'NO DISPONIBLE'
     }[availability];
     return React.createElement('button', {
+      'data-finance-item': it.id,
+      'data-admin-visible': it.visible !== false ? 'true' : 'false',
       onClick,
       className: 'su-press',
       style: {
@@ -10723,6 +10739,7 @@ Object.assign(window, {
       amber: '#9A6B16'
     }[g.tone];
     return React.createElement('div', {
+      'data-finance-group': g.id,
       style: {
         padding: '0 20px'
       }
@@ -10741,6 +10758,7 @@ Object.assign(window, {
         background: toneColor
       }
     }), React.createElement('div', null, React.createElement('h3', {
+      'data-finance-section-title': g.id,
       style: {
         fontSize: 16.5,
         fontWeight: 800,
@@ -10749,6 +10767,7 @@ Object.assign(window, {
         color: 'var(--ink)'
       }
     }, g.title), React.createElement('div', {
+      'data-finance-section-subtitle': g.id,
       style: {
         fontSize: 12.5,
         color: 'var(--ink-3)',
@@ -10862,9 +10881,13 @@ Object.assign(window, {
     const overview = financial.overview || {};
     const resolvedPrograms = Array.isArray(overview.programs) ? overview.programs : [];
     const liquidityIds = ['prestamo', 'nomina', 'caja'];
-    const groups = (window.finCatStore ? window.finCatStore.groupsLive() : []).map(group => ({
+    const presentation = window.finCatStore ? window.finCatStore.state() : {
+      phase: 'error'
+    };
+    const presentationReady = presentation.phase === 'loaded' || presentation.phase === 'refreshing';
+    const groups = (presentationReady ? window.finCatStore.groupsLive() : []).map(group => ({
       ...group,
-      items: group.items.map(item => {
+      items: group.items.filter(item => item.visible !== false).map(item => {
         if (!liquidityIds.includes(item.id)) return item;
         const matches = resolvedPrograms.filter(program => program.program_id === item.id);
         const available = matches.some(program => program.status === 'AVAILABLE');
@@ -10877,7 +10900,8 @@ Object.assign(window, {
           meta
         };
       })
-    }));
+    })).filter(group => group.items.length);
+    const visibleItemIds = groups.flatMap(group => group.items.map(item => item.id));
     const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const nq = norm(q.trim());
     const catOk = id => !cats.length || cats.includes(id);
@@ -10897,6 +10921,7 @@ Object.assign(window, {
     })));
     return React.createElement('div', {
       className: 'su-route',
+      'data-finance-catalog-phase': presentation.phase,
       style: {
         paddingBottom: 18
       }
@@ -10911,7 +10936,8 @@ Object.assign(window, {
         gap: 22
       }
     }, React.createElement(SummaryCard, {
-      app
+      app,
+      visibleItemIds
     }), React.createElement('div', {
       style: {
         padding: '0 16px',
@@ -10984,11 +11010,27 @@ Object.assign(window, {
     }), window.MembresiasSection && React.createElement(window.MembresiasSection, {
       app,
       items: membresias
-    }), ...shownGroups.map(g => React.createElement(Group, {
+    }), !presentationReady && React.createElement('div', {
+      'data-finance-catalog-state': presentation.phase,
+      style: {
+        padding: '0 20px'
+      }
+    }, React.createElement(window.EmptyState, presentation.phase === 'error' ? {
+      icon: 'warning',
+      title: 'No pudimos cargar el catálogo',
+      sub: 'No se usó ninguna fuente alternativa.',
+      action: React.createElement(window.Btn, {
+        onClick: () => window.finCatStore.retry()
+      }, 'Reintentar')
+    } : {
+      icon: 'clock',
+      title: 'Cargando catálogo',
+      sub: 'Consultando la presentación vigente.'
+    })), ...shownGroups.map(g => React.createElement(Group, {
       key: g.id,
       g,
       app
-    })), filtering && total === 0 && React.createElement('div', {
+    })), presentationReady && filtering && total === 0 && React.createElement('div', {
       style: {
         padding: '0 20px'
       }
@@ -40792,7 +40834,11 @@ Object.assign(window, {
   const FINANCIAL_LEGACY_READ_ONLY = 'FINANCIAL_LEGACY_READ_ONLY';
   const repo = window.AdminCutoverRepository,
     listeners = new Set();
-  let rows = [];
+  let rows = [],
+    phase = 'idle',
+    error = null,
+    loadVersion = 0,
+    loadPromise = null;
   const base = [{
     id: 'liquidez',
     title: 'Liquidez inmediata',
@@ -40934,16 +40980,38 @@ Object.assign(window, {
     }]
   }];
   const emit = () => listeners.forEach(fn => fn()),
-    fail = e => console.error('Finance presentation authority error', e),
     row = k => rows.find(x => x.item_key === k);
-  async function load() {
-    try {
-      rows = await repo.listFinancePresentation();
-      emit();
-    } catch (e) {
-      fail(e);
-    }
+  function fail(e) {
+    rows = [];
+    phase = 'error';
+    error = e;
+    emit();
+    console.error('Finance presentation authority error', e);
   }
+  function load() {
+    if (loadPromise) return loadPromise;
+    const version = ++loadVersion;
+    phase = phase === 'loaded' || phase === 'refreshing' ? 'refreshing' : 'loading';
+    error = null;
+    emit();
+    loadPromise = (async () => {
+      try {
+        const next = await repo.listFinancePresentation();
+        if (version !== loadVersion) return rows;
+        rows = next;
+        phase = 'loaded';
+        emit();
+        return rows;
+      } catch (e) {
+        if (version === loadVersion) fail(e);
+        return [];
+      } finally {
+        if (version === loadVersion) loadPromise = null;
+      }
+    })();
+    return loadPromise;
+  }
+  const configuredOrder = (value, fallback) => Number.isInteger(value) ? value : fallback;
   function groups() {
     return base.map((g, gi) => {
       const gr = row('group:' + g.id) || {};
@@ -40956,22 +41024,30 @@ Object.assign(window, {
             label: r.label_override || it.label,
             tagline: r.description_override || it.tagline,
             visible: r.enabled !== false,
-            order: r.sort_order || ii
+            order: configuredOrder(r.sort_order, ii)
           });
-        }).sort((a, b) => a.order - b.order),
-        order: gr.sort_order || gi
+        }).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)),
+        order: configuredOrder(gr.sort_order, gi)
       });
-    }).sort((a, b) => a.order - b.order);
+    }).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
   }
-  const save = (key, gid, p) => repo.saveFinancePresentation({
+  const payload = (key, gid, p) => ({
     item_key: key,
     group_key: gid,
     label_override: p.label_override || null,
     description_override: p.description_override || null,
     enabled: p.enabled !== false,
-    sort_order: p.sort_order || 0
-  }).then(load).catch(fail);
+    sort_order: Number.isInteger(p.sort_order) ? p.sort_order : 0
+  });
+  const write = (key, gid, p) => repo.saveFinancePresentation(payload(key, gid, p));
+  const save = (key, gid, p) => write(key, gid, p).then(load).catch(fail);
   const store = {
+    state: () => ({
+      phase,
+      error
+    }),
+    refresh: load,
+    retry: load,
     groups,
     groupsLive: () => groups(),
     allItems: () => groups().flatMap(g => g.items),
@@ -40981,7 +41057,7 @@ Object.assign(window, {
     getRec: () => null,
     saveGroup: (id, p) => {
       const g = groups().find(x => x.id === id);
-      save('group:' + id, id, {
+      return save('group:' + id, id, {
         label_override: p.title == null ? g.title : p.title,
         description_override: p.sub == null ? g.sub : p.sub,
         enabled: true,
@@ -40990,7 +41066,7 @@ Object.assign(window, {
     },
     saveItem: (gid, id, p) => {
       const it = store.findItem(id);
-      save(id, gid, {
+      return save(id, gid, {
         label_override: p.label == null ? it.label : p.label,
         description_override: p.tagline == null ? it.tagline : p.tagline,
         enabled: p.visible == null ? it.visible : p.visible,
@@ -40999,7 +41075,7 @@ Object.assign(window, {
     },
     toggleItem: (gid, id) => {
       const it = store.findItem(id);
-      store.saveItem(gid, id, {
+      return store.saveItem(gid, id, {
         visible: it.visible === false
       });
     },
@@ -41007,22 +41083,22 @@ Object.assign(window, {
       const g = groups().find(x => x.id === gid),
         i = g.items.findIndex(x => x.id === id),
         j = i + dir;
-      if (i < 0 || j < 0 || j >= g.items.length) return;
+      if (i < 0 || j < 0 || j >= g.items.length) return Promise.resolve();
       const a = g.items[i],
         b = g.items[j];
-      Promise.all([save(a.id, gid, {
+      return Promise.all([write(a.id, gid, {
         label_override: a.label,
         description_override: a.tagline,
         enabled: a.visible,
         sort_order: j
-      }), save(b.id, gid, {
+      }), write(b.id, gid, {
         label_override: b.label,
         description_override: b.tagline,
         enabled: b.visible,
         sort_order: i
-      })]);
+      })]).then(load).catch(fail);
     },
-    resetAll: () => Promise.all(rows.map(r => window.SutiSupabase.getClient().from('finance_catalog_presentation').delete().eq('item_key', r.item_key))).then(load),
+    resetAll: () => Promise.all(rows.map(r => window.SutiSupabase.getClient().from('finance_catalog_presentation').delete().eq('item_key', r.item_key))).then(load).catch(fail),
     blankRec: () => null,
     saveRec: () => {},
     removeRec: () => {},
@@ -41041,6 +41117,18 @@ Object.assign(window, {
     React.useEffect(() => store.subscribe(() => f(n => n + 1)), []);
     React.useEffect(() => {
       ensureLoaded();
+    }, []);
+    React.useEffect(() => {
+      const onFocus = () => load();
+      const onVisible = () => {
+        if (document.visibilityState === 'visible') load();
+      };
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisible);
+      return () => {
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisible);
+      };
     }, []);
     return store;
   };

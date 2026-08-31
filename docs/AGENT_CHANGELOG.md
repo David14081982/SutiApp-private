@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001
+
+- Finanzas consume la visibilidad, orden y copy de `finance_catalog_presentation`; ocultos desaparecen antes de elegibilidad, incluidas secciones vacías, recomendaciones y accesos rápidos.
+- Se añadió sólo la policy de lectura `authenticated` faltante. Writers continúan bajo `workflow.write`, anónimo y autenticado sin rol quedan denegados; 6/6 filas se preservaron.
+- Chrome real confirmó hide/show, hidden-but-eligible, visible-but-ineligible, orden/copy y layouts 390×844/1280×900. La fixture de presentación se restauró exactamente; Google/Apps Script y cálculos tuvieron cero interacción.
+
+```text
+H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001 RESULT
+Status: PASS
+Files changed: finCat store; Finanzas UI; bundle/cache; SQL/recovery; apply/tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — finance_catalog_presentation preservada; estructura/rutas en código; elegibilidad separada
+Invariant verdict: PASS — oculto domina elegibilidad; fallo cerrado; cero autoridad paralela
+Build: PASS — 92 fuentes; SHA-256 BFD90AF0B37E32FD3858D1EF3216C188E878889728DF43D3735E5EBE3B9D0EF8
+Tests: PASS — static; migration/recovery; live security; Chrome móvil/desktop
+Security: PASS — authenticated read; workflow.write writer; anon/unprivileged denied; RLS forzada
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: ninguna dentro del alcance; el E2E usó el origen local allowlisted y consumió el Edge financiero real
+Evidence: docs/qa/H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-NOTIFICATIONS-AUTHORITY-CUTOVER-001
 
 - Se retiraron los cinco avisos de `DATA.notifs` y las tres fuentes mock del badge. Pantalla y campana derivan sólo cotizaciones reales en `program_requests`.

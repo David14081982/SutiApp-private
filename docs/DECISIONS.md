@@ -665,3 +665,13 @@ No se infieren autoridades para los demás dominios. Registrar nuevas decisiones
 - **Legacy:** cero lecturas/escrituras Google, cero cambios Apps Script y cero modificación de reglas, tasas, fondos, elegibilidad, cálculo, amortización o conciliación financiera.
 - **Recovery:** `20260830000400_request_workflow_timeline_cutover_recovery.sql` restaura el predecesor sólo si no existe historia posterior incompatible; de lo contrario falla cerrado y conserva datos. La protección aditiva/reversible `20260830000410` impide publicar dos workflows habilitados para el mismo contexto.
 - **Aprobación:** `H-REQUEST-WORKFLOW-TIMELINE-CUTOVER-001` e instrucción explícita “hazlo de forma quirúrgica”, propietario, 2026-08-30.
+
+## ADR-083 — Catálogo financiero visible gobernado por Admin
+
+- **Autoridad:** se preserva `finance_catalog_presentation`; no se crea v2, flag local ni tabla paralela. La estructura y rutas continúan versionadas en código y la tabla sólo gobierna presentación.
+- **Precedencia:** visibilidad administrativa se aplica antes de elegibilidad. Elegibilidad puede restringir un producto visible, pero nunca reactivar uno oculto.
+- **Consumo:** `finCatStore` proyecta orden y copy; `FinancieraScreen` filtra productos, secciones vacías, recomendaciones y accesos rápidos. Membresías permanece en `membershipStore` como dominio distinto.
+- **Fallo/refresh:** el lector falla cerrado con estado y reintento visibles. Focus/visibility y el retorno del writer recargan la autoridad sin polling ni limpieza manual de caché.
+- **Seguridad/migración:** lectura global sólo para `authenticated`; anónimo permanece sin grant y writers siguen bajo `workflow.write`. `20260831000200` agrega únicamente la policy faltante, conserva 6/6 filas y su recovery retira sólo esa policy.
+- **Legacy:** cero cambios en Google, Apps Script, 146 reglas, 35 fondos, 3 programas, elegibilidad, cálculos, préstamo, depósito, documentos, workflow o historial.
+- **Aprobación:** `H-FINANCE-CATALOG-VISIBILITY-CUTOVER-001`, propietario, 2026-08-31.

@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('assert').strict,fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),id='20260831000200_finance_catalog_visibility_cutover';
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/'+id+'.sql'),'utf8');
+const recovery=fs.readFileSync(path.join(root,'supabase/recovery/'+id+'_recovery.sql'),'utf8');
+function env(){const out={};for(const raw of fs.readFileSync(path.join(root,'supabase.env'),'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const line=raw.trim(),at=line.indexOf('=');if(at>0&&!line.startsWith('#'))out[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}return out;}
+async function sql(values,query){const ref=new URL(values.SUPABASE_URL).hostname.split('.')[0],response=await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`,{method:'POST',headers:{Authorization:'Bearer '+values.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json','User-Agent':'SutiApp-FinCat-Cutover/1.0'},body:JSON.stringify({query})});const data=await response.json().catch(()=>null);if(!response.ok)throw new Error('MANAGEMENT_SQL_'+response.status+':'+JSON.stringify(data).slice(0,500));return data;}
+const body=(text)=>text.replace(/^\s*begin;\s*/i,'').replace(/\s*commit;\s*$/i,'');
+const checks=`do $verify$ begin
+  if not (select relrowsecurity and relforcerowsecurity from pg_class where oid='public.finance_catalog_presentation'::regclass) then raise exception 'RLS_NOT_FORCED'; end if;
+  if not has_table_privilege('authenticated','public.finance_catalog_presentation','select') then raise exception 'AUTH_SELECT_GRANT_MISSING'; end if;
+  if has_table_privilege('anon','public.finance_catalog_presentation','select') then raise exception 'ANON_SELECT_REOPENED'; end if;
+  if not exists(select 1 from pg_policies where schemaname='public' and tablename='finance_catalog_presentation' and policyname='finance_presentation_authenticated_read' and 'authenticated'=any(roles) and cmd='SELECT' and qual='true') then raise exception 'AUTH_READ_POLICY_MISSING'; end if;
+  if not exists(select 1 from pg_policies where schemaname='public' and tablename='finance_catalog_presentation' and cmd in ('ALL','UPDATE') and coalesce(qual,'') like '%workflow.write%') then raise exception 'ADMIN_WRITE_POLICY_MISSING'; end if;
+end $verify$;`;
+async function snapshot(values){return (await sql(values,"select count(*)::int rows,coalesce(md5(string_agg(item_key||'|'||group_key||'|'||coalesce(label_override,'')||'|'||coalesce(description_override,'')||'|'||enabled||'|'||sort_order,';' order by item_key)),md5('')) hash from public.finance_catalog_presentation"))[0];}
+async function main(){const values=env();assert(values.SUPABASE_URL&&values.SUPABASE_ACCESS_TOKEN,'Supabase management configuration missing');const before=await snapshot(values),applied=(await sql(values,"select exists(select 1 from pg_policies where schemaname='public' and tablename='finance_catalog_presentation' and policyname='finance_presentation_authenticated_read') applied"))[0].applied===true;
+  if(process.argv.includes('--apply')){if(!applied)await sql(values,migration);await sql(values,'begin;'+checks+'rollback;');const after=await snapshot(values);assert.deepEqual(after,before,'policy migration changed presentation rows');console.log(JSON.stringify({status:'PASS',mode:applied?'VERIFY_APPLIED':'APPLIED',migration:id,rowsChanged:0,rowCount:after.rows}));return;}
+  if(applied){await sql(values,'begin;'+checks+'rollback;');console.log(JSON.stringify({status:'PASS',mode:'VERIFY_APPLIED',migration:id,rowsChanged:0,rowCount:before.rows}));return;}
+  await sql(values,'begin;'+body(migration)+checks+body(recovery)+"do $v$ begin if exists(select 1 from pg_policies where schemaname='public' and tablename='finance_catalog_presentation' and policyname='finance_presentation_authenticated_read') then raise exception 'RECOVERY_FAILED'; end if; end $v$; rollback;");const after=await snapshot(values);assert.deepEqual(after,before);console.log(JSON.stringify({status:'PASS',mode:'DRY_RUN_FORWARD_RECOVERY',migration:id,rowsChanged:0,rowCount:before.rows}));}
+main().catch((error)=>{console.error(JSON.stringify({status:'FAIL',error:error.message}));process.exitCode=1;});

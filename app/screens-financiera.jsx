@@ -5,11 +5,17 @@
   // identidad: `status` y `overview` no cambian al recotizar.
   const overviewSlice = (snapshot) => ({ status: snapshot.status, overview: snapshot.overview });
 
-  function SummaryCard({ app }) {
+  function SummaryCard({ app, visibleItemIds }) {
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = (amount) => typeof amount === 'number' ? window.money(amount) : '—';
+    const visible = (itemId) => visibleItemIds.includes(itemId);
+    const actions = [
+      visible('prestamo') && { itemId: 'prestamo', label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') },
+      visible('ahorro') && { itemId: 'ahorro', label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') },
+      visible('inversion') && { itemId: 'inversion', label: 'Invertir', trend: true, onClick: () => app.push('investment') },
+    ].filter(Boolean);
     return React.createElement('div', { style: { padding: '4px 16px 0' } },
       React.createElement('div', {
         style: { background: 'var(--surface)', color: 'var(--ink)', borderRadius: 24, padding: 20, boxShadow: 'var(--neo-md)', position: 'relative', overflow: 'hidden' },
@@ -26,16 +32,14 @@
           miniStat('Mi ahorro', value(overview.savings && overview.savings.balance), 'fin.stat.ahorro'),
           React.createElement('div', { style: { width: 1, background: 'var(--hairline)' } }),
           miniStat('Mi inversión', '—', null, true)),
-        React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9, marginTop: 18 } },
-          React.createElement(SummaryAction, { label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') }),
-          React.createElement(SummaryAction, { label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') }),
-          React.createElement(SummaryAction, { label: 'Invertir', trend: true, onClick: () => app.push('investment') })),
+        actions.length > 0 && React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: `repeat(${actions.length}, minmax(0, 1fr))`, gap: 9, marginTop: 18 } },
+          ...actions.map((action) => React.createElement(SummaryAction, { key: action.itemId, ...action }))),
       ),
     );
   }
-  function SummaryAction({ label, ariaLabel, icon, trend, primary, onClick }) {
+  function SummaryAction({ itemId, label, ariaLabel, icon, trend, primary, onClick }) {
     return React.createElement('button', {
-      type: 'button', onClick, className: 'su-press', 'aria-label': ariaLabel || label,
+      type: 'button', onClick, className: 'su-press', 'aria-label': ariaLabel || label, 'data-finance-summary-action': itemId,
       style: { minWidth: 0, minHeight: 80, padding: '12px 4px 11px', border: 'none', borderRadius: 16, background: primary ? 'linear-gradient(to bottom right, #E1334A 0%, #991E23 100%)' : '#F6F8FC', color: primary ? '#fff' : 'var(--navy)', boxShadow: primary ? '0 8px 14px rgba(153,30,35,.18), 0 16px 26px rgba(224,192,198,.60), 0 24px 38px rgba(248,240,242,.38)' : 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, textTransform: primary ? 'capitalize' : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 },
     },
       React.createElement('span', { style: { width: 34, height: 34, borderRadius: 11, display: 'grid', placeItems: 'center', background: primary ? 'rgba(255,255,255,.18)' : 'var(--surface)', color: primary ? '#fff' : 'var(--guinda)', boxShadow: primary ? 'none' : 'var(--neo-sm)' } },
@@ -59,7 +63,7 @@
 
   function Recommended({ app }) {
     const fs = window.finCatStore;
-    const list = fs && fs.recsLive ? fs.recsLive() : [];
+    const list = fs && fs.recsLive ? fs.recsLive().filter((r) => { const item = fs.findItem(r.itemId); return item && item.visible !== false; }) : [];
     if (!list.length) return null;
     return React.createElement('div', null,
       React.createElement('div', { style: { padding: '0 20px' } }, React.createElement(window.SectionHead, { title: 'Recomendado para ti', icon: 'sparkle' })),
@@ -83,6 +87,7 @@
     const availability = it.availabilityStatus;
     const stateLabel = { AVAILABLE: 'DISPONIBLE', SCHEDULED: 'PRÓXIMAMENTE', NOT_ELIGIBLE: 'NO ELEGIBLE', UNAVAILABLE: 'NO DISPONIBLE' }[availability];
     return React.createElement('button', {
+      'data-finance-item': it.id, 'data-admin-visible': it.visible !== false ? 'true' : 'false',
       onClick, className: 'su-press',
       style: { display: 'flex', alignItems: 'center', gap: 13, width: '100%', textAlign: 'left', border: 'none', background: 'var(--surface)', borderRadius: 18, padding: '13px 14px', cursor: 'pointer', boxShadow: 'var(--neo-md)' },
     },
@@ -101,12 +106,12 @@
 
   function Group({ g, app }) {
     const toneColor = { guinda: 'var(--guinda)', green: '#13794A', blue: '#2456C7', amber: '#9A6B16' }[g.tone];
-    return React.createElement('div', { style: { padding: '0 20px' } },
+    return React.createElement('div', { 'data-finance-group': g.id, style: { padding: '0 20px' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, margin: '0 0 12px' } },
         React.createElement('div', { style: { width: 6, height: 24, borderRadius: 999, background: toneColor } }),
         React.createElement('div', null,
-          React.createElement('h3', { style: { fontSize: 16.5, fontWeight: 800, margin: 0, letterSpacing: '-.01em', color: 'var(--ink)' } }, g.title),
-          React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 500 } }, g.sub))),
+          React.createElement('h3', { 'data-finance-section-title': g.id, style: { fontSize: 16.5, fontWeight: 800, margin: 0, letterSpacing: '-.01em', color: 'var(--ink)' } }, g.title),
+          React.createElement('div', { 'data-finance-section-subtitle': g.id, style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 500 } }, g.sub))),
       React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
         g.items.map((it) => React.createElement(FinanceItem, { key: it.id, it, onClick: () => app.openFinanceItem(it.id) }))),
     );
@@ -137,7 +142,9 @@
     const overview = financial.overview || {};
     const resolvedPrograms = Array.isArray(overview.programs) ? overview.programs : [];
     const liquidityIds = ['prestamo', 'nomina', 'caja'];
-    const groups = (window.finCatStore ? window.finCatStore.groupsLive() : []).map((group) => ({ ...group, items: group.items.map((item) => {
+    const presentation = window.finCatStore ? window.finCatStore.state() : { phase: 'error' };
+    const presentationReady = presentation.phase === 'loaded' || presentation.phase === 'refreshing';
+    const groups = (presentationReady ? window.finCatStore.groupsLive() : []).map((group) => ({ ...group, items: group.items.filter((item) => item.visible !== false).map((item) => {
       if (!liquidityIds.includes(item.id)) return item;
       const matches = resolvedPrograms.filter((program) => program.program_id === item.id);
       const available = matches.some((program) => program.status === 'AVAILABLE');
@@ -145,7 +152,8 @@
       const status = overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'UNAVAILABLE' : available ? 'AVAILABLE' : scheduled ? 'SCHEDULED' : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE' : 'UNAVAILABLE';
       const meta = status === 'AVAILABLE' ? (matches.length + (matches.length === 1 ? ' fondo disponible' : ' fondos disponibles')) : status === 'SCHEDULED' ? 'Tienes una opción próxima' : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Completa categoría y sindicato' : 'Sin opción para tu perfil';
       return { ...item, availabilityStatus: status, meta };
-    }) }));
+    }) })).filter((group) => group.items.length);
+    const visibleItemIds = groups.flatMap((group) => group.items.map((item) => item.id));
     const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const nq = norm(q.trim());
     const catOk = (id) => !cats.length || cats.includes(id);
@@ -155,10 +163,10 @@
     const filtering = !!nq || cats.length > 0;
     const total = membresias.length + shownGroups.reduce((s, g) => s + g.items.length, 0);
     const options = [{ id: 'membresias', title: 'Membresías' }].concat(groups.map((g) => ({ id: g.id, title: g.title })));
-    return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
+    return React.createElement('div', { className: 'su-route', 'data-finance-catalog-phase': presentation.phase, style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'financiera' }),
       React.createElement('div', { className: 'su-stagger', style: { display: 'flex', flexDirection: 'column', gap: 22 } },
-        React.createElement(SummaryCard, { app }),
+        React.createElement(SummaryCard, { app, visibleItemIds }),
         React.createElement('div', { style: { padding: '0 16px', position: 'relative' } },
           React.createElement(window.SearchBar, { placeholder: 'Busca un beneficio o servicio…', value: q, onChange: setQ, onFilter: () => setFOpen(true) }),
           cats.length > 0 && React.createElement('div', { style: { position: 'absolute', top: -6, right: 12, minWidth: 20, height: 20, borderRadius: 999, background: 'var(--gold)', color: '#fff', fontSize: 11.5, fontWeight: 800, display: 'grid', placeItems: 'center', padding: '0 5px', pointerEvents: 'none' } }, cats.length)),
@@ -167,8 +175,12 @@
           React.createElement('button', { onClick: () => { setQ(''); setCats([]); }, style: { display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, background: 'var(--surface-2)', color: 'var(--guinda)', boxShadow: 'var(--neo-inset)' } }, React.createElement(I, { name: 'close', size: 13, stroke: 2.4 }), 'Limpiar')),
         !filtering && React.createElement(Recommended, { app }),
         window.MembresiasSection && React.createElement(window.MembresiasSection, { app, items: membresias }),
+        !presentationReady && React.createElement('div', { 'data-finance-catalog-state': presentation.phase, style: { padding: '0 20px' } },
+          React.createElement(window.EmptyState, presentation.phase === 'error'
+            ? { icon: 'warning', title: 'No pudimos cargar el catálogo', sub: 'No se usó ninguna fuente alternativa.', action: React.createElement(window.Btn, { onClick: () => window.finCatStore.retry() }, 'Reintentar') }
+            : { icon: 'clock', title: 'Cargando catálogo', sub: 'Consultando la presentación vigente.' })),
         ...shownGroups.map((g) => React.createElement(Group, { key: g.id, g, app })),
-        filtering && total === 0 && React.createElement('div', { style: { padding: '0 20px' } },
+        presentationReady && filtering && total === 0 && React.createElement('div', { style: { padding: '0 20px' } },
           React.createElement(window.EmptyState, { icon: 'search', title: 'Sin resultados', sub: 'No encontramos beneficios ni membresías con ese criterio. Ajusta la búsqueda o los filtros.' })),
       ),
       React.createElement(FilterSheet, { open: fOpen, onClose: () => setFOpen(false), options, cats, setCats }),

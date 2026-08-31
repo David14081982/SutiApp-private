@@ -96,3 +96,9 @@ Recovery: `20260830000100_loan_document_context_isolation_recovery.sql` retira e
 Estado: `APPLIED / CERTIFIED — PASS`. `00200` evoluciona la autoridad existente, agrega capacidades de carga, scopes, herencia/exclusión, auditoría y snapshot de requisitos sin copiar ni reescribir documentos o solicitudes. `00210` elimina la sobrecarga de upload que no declaraba `CAMERA|FILE`; `00220` corrige únicamente dos definiciones de función para usar la columna canónica `membership_offerings.concept`.
 
 Los tres forward y recovery se validaron dentro de transacciones con `ROLLBACK`. La aplicación conservó 32 reglas configuradas, 13 tipos, 3,425 documentos, cinco solicitudes históricas sin reinterpretar, cero `request_documents` y 146/35/3 filas financieras. La recuperación principal falla cerrada si ya existe auditoría/configuración/snapshot que pudiera perderse; la recuperación del hotfix mantiene deliberadamente la última definición válida porque restaurar la referencia a una columna inexistente rompería membresías.
+
+## 20260831000200 — lectura autenticada de presentación financiera
+
+Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega únicamente `finance_presentation_authenticated_read` sobre la tabla existente `finance_catalog_presentation`; no crea tablas/columnas, no ejecuta DML, no cambia grants ni writers y preservó el hash de sus 6 filas. `authenticated` lee configuración global, `anon` permanece sin acceso y UPDATE sigue exigiendo `workflow.write`.
+
+Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`. El recovery elimina sólo la policy nueva y no toca filas, histórico ni autoridad financiera. No modifica reglas, fondos, programas, cálculos o Google legacy.

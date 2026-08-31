@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-083 — visibilidad del catálogo financiero
+
+`finance_catalog_presentation` es la única autoridad de presentación administrable para la pantalla Finanzas: habilitación, orden, títulos/subtítulos de sección y label/tagline de producto. `finCatStore` la proyecta sobre la estructura/rutas versionadas en código; no decide elegibilidad, tasas, fondos, reglas, importes ni cálculos.
+
+La pantalla aplica `enabled !== false` antes de la elegibilidad financiera. Un producto oculto no puede reaparecer por perfil, recomendación o acceso rápido; una sección sin productos visibles se omite. Membresías conserva su autoridad separada y explícita. Si la presentación no carga, el catálogo falla cerrado con reintento visible y sin `DATA`, mock, `localStorage` o default productivo.
+
 ## Corte ADR-082 — notificaciones derivadas de autoridades reales
 
 La pantalla Notificaciones y el badge no tienen tabla maestra propia. Su única fuente activa es la proyección self-only `list_self_marketplace_quote_notifications()` sobre cotizaciones reales posteriores al corte en `program_requests`; `DATA.notifs`, mocks y almacenamiento del navegador no participan. Una cotización `submitted` puede mostrarse como estado informativo y una respuesta `approved` es el único evento no leído actual.

@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Visibilidad del catálogo financiero — ADR-083
+
+`finance_catalog_presentation` mantiene RLS habilitada y forzada. `authenticated` puede leer la configuración global de presentación; `anon` no tiene grant ni policy. La lectura global no contiene identidad, PII, reglas, tasas, fondos ni resultados financieros. Las escrituras continúan exclusivamente bajo la policy que exige `has_admin_permission('workflow.write')`; ocultar controles en UI no concede autoridad.
+
+La prueba live confirmó dos lectores autenticados, anónimo denegado, identidad autenticada sin rol con UPDATE de cero filas y writer Admin autorizado. El frontend no contiene Secret Key, `service_role` ni segunda autoridad local.
+
 ## Notificaciones reales — ADR-082
 
 `list_self_marketplace_quote_notifications()` y `mark_marketplace_quote_seen(uuid)` son `SECURITY DEFINER`, usan `search_path=''` y derivan `get_effective_affiliate_id()` sin aceptar selector de afiliado. El lector expone una proyección allowlisted de cotizaciones propias; el writer sólo acusa una respuesta propia completada. Ambos revocan `anon`; el `SELECT` directo de `program_requests` permanece revocado y su RLS continúa habilitada y forzada.

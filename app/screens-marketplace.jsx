@@ -61,12 +61,12 @@
 
     return React.createElement(React.Fragment, null,
       React.createElement(HeroShell, { app, item: it, hue, fav, onFav: () => setFav(!fav) },
-        React.createElement('div', { style: { padding: '18px 20px 120px' } },
+        React.createElement('div', { style: { position: 'relative', zIndex: 1, overflow: 'visible', padding: isListing ? '18px 20px 30px' : '18px 20px 120px' } },
           // title block
-          React.createElement('div', { style: { display: 'flex', gap: 13, alignItems: 'flex-start' } },
-            React.createElement('div', { style: { marginTop: -46, flexShrink: 0, width: 64, height: 64, borderRadius: 18, background: 'var(--surface)', boxShadow: 'var(--neo-md)', display: 'grid', placeItems: 'center', color: 'var(--guinda)' } },
+          React.createElement('div', { style: { display: 'flex', gap: 13, alignItems: 'flex-start', minWidth: 0 } },
+            React.createElement('div', { 'data-category-header-icon': 'true', style: { position: 'relative', zIndex: 2, marginTop: -46, flexShrink: 0, width: 64, height: 64, borderRadius: 18, background: 'var(--surface)', boxShadow: 'var(--neo-md)', display: 'grid', placeItems: 'center', color: 'var(--guinda)' } },
               React.createElement(I, { name: it.icon, size: 32, stroke: 1.8 })),
-            React.createElement('div', { style: { flex: 1, paddingTop: 2 } },
+            React.createElement('div', { style: { flex: 1, minWidth: 0, paddingTop: 2 } },
               React.createElement('h1', { style: { fontSize: 23, fontWeight: 800, letterSpacing: '-.02em', margin: 0 } }, it.label),
               React.createElement('div', { style: { fontSize: 13.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } },
                 React.createElement('span', { style: { color: 'var(--guinda)' } }, 'SutiApp'), ' / ' + it.label))),
@@ -95,7 +95,7 @@
         ),
       ),
       // sticky CTA (si requiere cotización, el simulador solo se habilita con cotización lista)
-      React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } },
+      !isListing && React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } },
         !needsQuote
           ? React.createElement(window.Btn, { full: true, size: 'lg', icon: isListing ? 'plus' : 'cash', onClick: () => isListing ? app.toast('Selecciona un producto en “Disponibles ahora”') : setSheet(true) }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora')
           : !quoteReady

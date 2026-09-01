@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-PROGRAM-PRODUCT-FLOW-UI-POLISH-001
+
+- Las categorías de productos propios ya no presentan el CTA genérico inferior; el detalle conserva únicamente la card accesible `Simula tu plan de pago`.
+- El ícono flotante del shell compartido queda completo y sin colisión. Documentos mantiene cards, ojos, badges y reemplazo detrás del footer, con clearance real al final del scroll.
+- Chrome productivo no destructivo pasó en Aires, Puertas, Autos, Casa, Cómputo y Solar, además de 390/430/escritorio y Resumen. Terrenos quedó `NOT APPLICABLE` por decisión explícita del propietario y conserva su experiencia propia intacta.
+
+```text
+H-PROGRAM-PRODUCT-FLOW-UI-POLISH-001 RESULT
+Status: PASS
+Files changed: shell categoría; detalle producto; flujo Documentos; bundle/cache; tests/evidencia
+Source-of-truth verdict: PASS — program_catalog_items preservado; cero fallback o autoridad nueva
+Invariant verdict: PASS — INV-015, INV-036, INV-059–062 e INV-146–153 preservadas
+Build: PASS — 95 fuentes; bundle y sintaxis válidos
+Tests: PASS — seis programas; 390/430/desktop; catálogo/cutover/simulador
+Security: PASS — requestSubmitted=false; evidencia documental redactada; secretos/PII 0
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: Terrenos OWNER EXCLUDED; Success heredado del E2E previo sin crear otra solicitud
+Evidence: docs/PROGRAM_PRODUCT_FLOW_UI_POLISH_RESULT.md
+```
+
 ## 2026-08-31 — H-UNIVERSAL-PROGRAM-PRODUCT-PAYMENT-SIMULATOR-001
 
 - El detalle de los 65 productos de precio fijo abre un simulador universal preservando el diseño aprobado. Producto, precio, reglas, cálculo, calendario, documentos, términos, solicitud y aprobación se resuelven desde sus autoridades Supabase; el browser no calcula ni conserva una fuente paralela.

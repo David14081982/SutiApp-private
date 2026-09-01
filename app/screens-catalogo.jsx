@@ -75,7 +75,6 @@
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
     const [requestSheet,setRequestSheet]=useState(false);
-    const [paymentSignal,setPaymentSignal]=useState(0);
 
     const programItem = item.catalogSource === 'program';
     const cotiza = programItem ? Boolean(item.cotiza) : (item.precio == null || item.cotiza);
@@ -96,7 +95,7 @@
     if(item.category_raw)info.push(['Categoría',item.category_raw]);
 
     let cta;
-    if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'cash', onClick: () => { setPaymentSignal((value)=>value+1);setTimeout(()=>{const node=document.querySelector('[data-program-payment-state]');if(node)node.scrollIntoView({behavior:'smooth',block:'center'});},30); } }, 'VER PLAN DE PAGO');
+    if (programItem && item.requestMode === 'supabase') cta = null;
     else if (programItem) cta = React.createElement('button', { disabled: true, style: { flex: 1, height: 54, borderRadius: 16, border: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 14, fontWeight: 800 } }, 'NO DISPONIBLE PARA SOLICITAR');
     else if (!cotiza) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'plus', onClick: () => setRequestSheet(true) }, 'SOLICITAR ESTE BENEFICIO');
     else if (!quoteReady) cta = React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, quote && quote.estado === 'solicitada' ? 'SOLICITAR OTRA COTIZACIÓN' : 'SOLICITAR ESTE BENEFICIO');
@@ -111,7 +110,7 @@
             React.createElement(Gallery, { item, hue, icon: it.icon, onZoom: (i) => setZoom(i) }),
             React.createElement('button', { onClick: app.back, 'aria-label': 'Atrás', style: { position: 'absolute', top: 12, left: 10, width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.32)', backdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
             React.createElement(window.FavHeart,{on:catalog&&catalog.isFavorite(item.id),onClick:()=>catalog.toggleFavorite(item.id).catch(()=>app.toast&&app.toast('No se pudo actualizar el favorito')),style:{top:58,right:10}})),
-          React.createElement('div', { style: { padding: '20px 20px 130px' } },
+          React.createElement('div', { style: { padding: programItem && item.requestMode === 'supabase' ? '20px 20px 30px' : '20px 20px 130px' } },
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 700, color: 'var(--ink-3)' } },
               React.createElement(I, { name: it.icon, size: 15, stroke: 2.2, style: { color: 'var(--guinda)' } }), ctx.label || ''),
             React.createElement('h1', { style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.15, margin: '8px 0 0', textWrap: 'pretty' } }, item.nombre),
@@ -123,7 +122,7 @@
                 ? React.createElement('div', { style: { fontSize: 30, fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio))
                 : React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
             quote && React.createElement(QuoteBanner, { quote }),
-            programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true),openSignal:paymentSignal}),
+            programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true)}),
             item.desc && React.createElement('div', { style: { marginTop: 20 } },
               React.createElement(window.SectionHead, { title: 'Descripción' }),
               React.createElement('div', { style: { fontSize: 15, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6 } },
@@ -144,7 +143,7 @@
                   : cotiza
                     ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.'
                     : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))),
-        React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } }, cta)),
+        cta && React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } }, cta)),
       zoom != null && React.createElement(Lightbox, { imgs: item.imagenes || [], start: zoom, onClose: () => setZoom(null) }),
       window.FinanceSimSheet && React.createElement(window.FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing: true, producto: item, quote: quoteReady ? quote : null }),
       window.QuoteRequestSheet && React.createElement(window.QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app, producto: item }),

@@ -14397,7 +14397,10 @@ Object.assign(window, {
       onFav: () => setFav(!fav)
     }, React.createElement('div', {
       style: {
-        padding: '18px 20px 120px'
+        position: 'relative',
+        zIndex: 1,
+        overflow: 'visible',
+        padding: isListing ? '18px 20px 30px' : '18px 20px 120px'
       }
     },
     // title block
@@ -14405,10 +14408,14 @@ Object.assign(window, {
       style: {
         display: 'flex',
         gap: 13,
-        alignItems: 'flex-start'
+        alignItems: 'flex-start',
+        minWidth: 0
       }
     }, React.createElement('div', {
+      'data-category-header-icon': 'true',
       style: {
+        position: 'relative',
+        zIndex: 2,
         marginTop: -46,
         flexShrink: 0,
         width: 64,
@@ -14427,6 +14434,7 @@ Object.assign(window, {
     })), React.createElement('div', {
       style: {
         flex: 1,
+        minWidth: 0,
         paddingTop: 2
       }
     }, React.createElement('h1', {
@@ -14557,7 +14565,7 @@ Object.assign(window, {
       sub: 'Esta sección conserva su lugar mientras se reconcilian los datos productivos.'
     })))),
     // sticky CTA (si requiere cotización, el simulador solo se habilita con cotización lista)
-    React.createElement('div', {
+    !isListing && React.createElement('div', {
       style: {
         position: 'absolute',
         left: 0,
@@ -50482,10 +50490,13 @@ Object.assign(window, {
     });
     return h('div', {
       'data-program-payment-application': 'true',
+      'data-program-payment-step': step,
       style: {
         position: 'absolute',
         inset: 0,
         zIndex: 88,
+        isolation: 'isolate',
+        overflow: 'hidden',
         background: 'var(--bg)',
         display: 'flex',
         flexDirection: 'column'
@@ -50532,11 +50543,15 @@ Object.assign(window, {
         color: 'var(--ink-3)'
       }
     }, step === 'documents' ? 'Paso 1 de 2 · Expediente vigente' : 'Paso 2 de 2 · Solicitud de producto'))), h('div', {
+      'data-program-payment-scroll': 'true',
       className: 'su-app-scroll',
       style: {
+        position: 'relative',
+        zIndex: 0,
         flex: 1,
         overflowY: 'auto',
-        padding: '16px 17px 120px'
+        overscrollBehavior: 'contain',
+        padding: '16px 17px calc(144px + env(safe-area-inset-bottom))'
       }
     }, step === 'documents' ? h(React.Fragment, null, h('div', {
       style: {
@@ -50630,13 +50645,15 @@ Object.assign(window, {
         lineHeight: 1.45
       }
     }, error))), h('div', {
+      'data-program-payment-footer': 'true',
       style: {
         position: 'absolute',
+        zIndex: 10,
         left: 0,
         right: 0,
         bottom: 0,
-        padding: '12px 17px calc(14px + env(safe-area-inset-bottom))',
-        background: 'linear-gradient(transparent,var(--surface) 22%)'
+        padding: '24px 17px calc(14px + env(safe-area-inset-bottom))',
+        background: 'linear-gradient(transparent 0,var(--surface) 24px)'
       }
     }, step === 'documents' ? h(window.Btn, {
       full: true,
@@ -50655,8 +50672,7 @@ Object.assign(window, {
   function ProgramProductPaymentFlow({
     item,
     app,
-    onRequestQuote,
-    openSignal
+    onRequestQuote
   }) {
     const [open, setOpen] = useState(false),
       [state, setState] = useState({
@@ -50702,11 +50718,6 @@ Object.assign(window, {
     useEffect(() => {
       load();
     }, [load]);
-    useEffect(() => {
-      if (openSignal) {
-        setOpen(true);
-      }
-    }, [openSignal]);
     const session = state.data,
       price = Number(session && session.authorizedPrice || 0),
       down = Math.max(0, Number(downTxt) || 0),
@@ -50849,6 +50860,8 @@ Object.assign(window, {
         padding: open ? '16px 16px 18px' : 14
       }
     }, !open ? h('button', {
+      'data-program-payment-open': 'true',
+      'aria-label': 'Abrir simulador de plan de pago',
       onClick: () => setOpen(true),
       className: 'su-press',
       style: {
@@ -50860,7 +50873,8 @@ Object.assign(window, {
         border: 'none',
         background: 'transparent',
         padding: 0,
-        fontFamily: 'inherit'
+        fontFamily: 'inherit',
+        cursor: 'pointer'
       }
     }, h('div', {
       style: {
@@ -51435,7 +51449,6 @@ Object.assign(window, {
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
     const [requestSheet, setRequestSheet] = useState(false);
-    const [paymentSignal, setPaymentSignal] = useState(0);
     const programItem = item.catalogSource === 'program';
     const cotiza = programItem ? Boolean(item.cotiza) : item.precio == null || item.cotiza;
     // "it" con la forma que esperan los flujos existentes de simulación y cotización
@@ -51461,21 +51474,7 @@ Object.assign(window, {
     if (item.presentation_raw) info.push(['Presentación', item.presentation_raw]);
     if (item.category_raw) info.push(['Categoría', item.category_raw]);
     let cta;
-    if (programItem && item.requestMode === 'supabase') cta = React.createElement(window.Btn, {
-      full: true,
-      size: 'lg',
-      icon: 'cash',
-      onClick: () => {
-        setPaymentSignal(value => value + 1);
-        setTimeout(() => {
-          const node = document.querySelector('[data-program-payment-state]');
-          if (node) node.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }, 30);
-      }
-    }, 'VER PLAN DE PAGO');else if (programItem) cta = React.createElement('button', {
+    if (programItem && item.requestMode === 'supabase') cta = null;else if (programItem) cta = React.createElement('button', {
       disabled: true,
       style: {
         flex: 1,
@@ -51575,7 +51574,7 @@ Object.assign(window, {
       }
     })), React.createElement('div', {
       style: {
-        padding: '20px 20px 130px'
+        padding: programItem && item.requestMode === 'supabase' ? '20px 20px 30px' : '20px 20px 130px'
       }
     }, React.createElement('div', {
       style: {
@@ -51646,8 +51645,7 @@ Object.assign(window, {
     }), programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
       item,
       app,
-      onRequestQuote: () => setRequestSheet(true),
-      openSignal: paymentSignal
+      onRequestQuote: () => setRequestSheet(true)
     }), item.desc && React.createElement('div', {
       style: {
         marginTop: 20
@@ -51727,7 +51725,7 @@ Object.assign(window, {
         fontWeight: 600,
         lineHeight: 1.5
       }
-    }, programItem ? item.requestMode === 'supabase' ? item.legacyBoundary ? 'Tu solicitud quedará registrada de inmediato. Si después requiere una revisión financiera, el área responsable continuará el proceso sin que tengas que enviarla de nuevo.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), React.createElement('div', {
+    }, programItem ? item.requestMode === 'supabase' ? item.legacyBoundary ? 'Tu solicitud quedará registrada de inmediato. Si después requiere una revisión financiera, el área responsable continuará el proceso sin que tengas que enviarla de nuevo.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), cta && React.createElement('div', {
       style: {
         position: 'absolute',
         left: 0,

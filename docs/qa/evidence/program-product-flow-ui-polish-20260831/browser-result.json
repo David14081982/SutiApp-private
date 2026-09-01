@@ -1,0 +1,148 @@
+{
+  "status": "PASS",
+  "categories": [
+    {
+      "label": "Puertas de Seguridad",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 171.03140258789062,
+        "bottom": 235.03140258789062,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-puertas-430.png"
+    },
+    {
+      "label": "Suti Auto",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 174,
+        "bottom": 238,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-auto-430.png"
+    },
+    {
+      "label": "Suti Casa",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 166.34759521484375,
+        "bottom": 230.34759521484375,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-casa-430.png"
+    },
+    {
+      "label": "Equipos de Cómputo",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 174,
+        "bottom": 238,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-computo-430.png"
+    },
+    {
+      "label": "Paneles Solares",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 174,
+        "bottom": 238,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-solar-430.png"
+    },
+    {
+      "label": "Aires Acondicionados",
+      "icon": {
+        "width": 64,
+        "height": 64,
+        "top": 174,
+        "bottom": 238,
+        "visible": true
+      },
+      "titleCollision": false,
+      "duplicateCategoryCta": false,
+      "horizontal": true,
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/category-aires-430.png"
+    }
+  ],
+  "product": {
+    "cardCount": 1,
+    "sticky": false,
+    "accessible": "Abrir simulador de plan de pago",
+    "horizontal": true,
+    "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/product-detail-430.png"
+  },
+  "responsive": [
+    {
+      "viewport": "390",
+      "step": "documents",
+      "zIndex": 10,
+      "atEnd": true,
+      "footerOwnsPoint": true,
+      "lastDocumentFullyVisible": true,
+      "tileCount": 8,
+      "bottomPadding": 144,
+      "horizontal": true,
+      "errors": [],
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/documents-390.png"
+    },
+    {
+      "viewport": "430",
+      "step": "documents",
+      "zIndex": 10,
+      "atEnd": true,
+      "footerOwnsPoint": true,
+      "lastDocumentFullyVisible": true,
+      "tileCount": 8,
+      "bottomPadding": 144,
+      "horizontal": true,
+      "errors": [],
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/documents-430.png"
+    },
+    {
+      "viewport": "desktop",
+      "step": "documents",
+      "zIndex": 10,
+      "atEnd": true,
+      "footerOwnsPoint": true,
+      "lastDocumentFullyVisible": true,
+      "tileCount": 8,
+      "bottomPadding": 144,
+      "horizontal": true,
+      "errors": [],
+      "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/documents-desktop.png"
+    }
+  ],
+  "summary": {
+    "visible": true,
+    "footer": true,
+    "horizontal": true,
+    "errors": [],
+    "screenshot": "docs/qa/evidence/program-product-flow-ui-polish-20260831/summary-430.png"
+  },
+  "requestSubmitted": false,
+  "backendChanged": false,
+  "supabaseSchemaChanged": false,
+  "documentContractChanged": false
+}

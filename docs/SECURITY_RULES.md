@@ -1,5 +1,9 @@
 # Reglas de seguridad
 
+## Bootstrap vacío de Suti Cirugías — ADR-088
+
+`create_first_cirugias_program_catalog_item` es `SECURITY DEFINER` con `search_path=''`, exige `auth.uid()` y `program_catalog.write`, limita campos y `program_key`, y usa un advisory lock antes de comprobar que Cirugías siga vacío. `anon` no ejecuta; `authenticated` sólo alcanza una escritura efectiva si el permiso backend pasa. DML directo continúa revocado y el writer general no cambió. La matriz real confirmó anónimo, afiliado sin permiso y DML directo denegados, sin crear productos.
+
 ## Cuenta bancaria opcional en Depósito — ADR-085
 
 Omitir cuenta no abre acceso bancario: el navegador envía `bank_account_id=NULL` y el writer service-only congela únicamente el celular propio confirmado. Si se proporciona un UUID, la rama ADR-081 revalida cuenta completa y pertenencia al afiliado efectivo antes del alta atómica. La tabla privada conserva RLS habilitada/forzada y cero grants browser; el helper bank-required tampoco es ejecutable directamente por `service_role`.

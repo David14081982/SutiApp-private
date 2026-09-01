@@ -721,3 +721,13 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Límites:** cero cambios a `marketplace_products`, Panel Empresarial, ahorro, préstamos operativos, documentos maestros, Google, Apps Script, tasas, fondos, plazos o fórmulas. La única extensión financiera es el consumidor explícito de autoridades ya certificadas.
 - **Aprobación:** `H-UNIVERSAL-PROGRAM-PRODUCT-PAYMENT-SIMULATOR-001`, precondición `ceec42d90a873fc5f47bec28bce3fa8f2208c1cf` y precisión JUB explícita del propietario, 2026-08-31.
 - **Cierre owner:** el propietario autorizó `PASS_WITH_OWNER_DECISION` con evidencia no destructiva suficiente. Quedan marcados `DEFERRED_PRODUCTIVE_E2E` el recorrido posterior a una cotización productiva real y el reemplazo documental con archivo legítimo autorizado; no se crean cotizaciones, documentos ni datos sintéticos para certificar pruebas.
+
+## ADR-088 — Bootstrap administrativo vacío de Suti Cirugías
+
+- **Decisión owner:** Suti Cirugías debe aparecer en `Programas · Productos` aunque todavía no tenga productos. Market, Rifas y Terrenos quedan fuera de este cambio.
+- **Autoridad:** la tarjeta vacía es estructura versionada; no es un producto ni una fuente paralela. Todo producto futuro existe exclusivamente en `program_catalog_items` y sus assets en `program_catalog_item_assets`/Storage.
+- **Primer alta:** `create_first_cirugias_program_catalog_item` es una RPC dedicada que sólo acepta `program_key=cirugias`, exige `program_catalog.write`, bloquea concurrencia, valida la misma allowlist contractual, registra auditoría y crea procedencia `ADMIN_PROGRAM_CATALOG` sin hoja, ordinal o hash falsos. Después de la primera fila, el writer general vigente vuelve a ser el único writer CRUD.
+- **Historia:** la activación agrega cero productos, cero assets y cero auditorías. La fuente histórica de Cirugías continúa sin demostrarse; no se inventa ni se importa contenido.
+- **Recovery:** puede retirar únicamente la RPC dedicada mientras no exista fila ni auditoría de Cirugías; después aborta para preservar actividad administrativa legítima.
+- **Límites:** cero cambios en Market, Rifas, Terrenos, `marketplace_products`, Google, Apps Script, documentos, tasas, fondos, plazos, cálculos o solicitudes.
+- **Aprobación:** instrucción explícita del propietario “Sí, hazlo sólo para Cirugías”, 2026-08-31.

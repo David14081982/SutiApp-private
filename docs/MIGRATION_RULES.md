@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260831000600 — bootstrap vacío de Suti Cirugías
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración agrega exclusivamente `create_first_cirugias_program_catalog_item`; no reemplaza el writer general, no crea productos/assets/auditorías y no cambia tablas, RLS o policies. La RPC exige `program_catalog.write`, sólo acepta `cirugias`, serializa la primera alta con advisory lock, conserva la allowlist y registra procedencia administrativa y auditoría.
+
+Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`. La aplicación conservó 135 productos, 268 vínculos, 65 precios fijos, tres Terrenos y cero productos Cirugías. El recovery retira sólo la RPC mientras no exista fila ni auditoría Cirugías; después aborta con `RECOVERY_BLOCKED_CIRUGIAS_ADMIN_HISTORY_EXISTS`.
+
 No ejecutar una migración por intuición. El protocolo obligatorio es:
 
 ```text

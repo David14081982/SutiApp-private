@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-PROGRAM-CATALOG-CIRUGIAS-BOOTSTRAP-001
+
+- Cirugías aparece como programa vacío en Admin y puede abrir el editor para su primera alta real; no se insertaron productos sintéticos.
+- Una RPC exclusiva de bootstrap conserva el writer general intacto, exige `program_catalog.write`, limita la clave a `cirugias`, serializa concurrencia y audita procedencia `ADMIN_PROGRAM_CATALOG`.
+- Aplicación, recovery dry-run, navegador 430x932, seguridad y regresiones quedaron `PASS`; Market, Rifas y Terrenos permanecieron fuera del cambio.
+
+```text
+H-PROGRAM-CATALOG-CIRUGIAS-BOOTSTRAP-001 RESULT
+Status: PASS
+Files changed: Admin store/repository; bundle/cache; migration/recovery; tests; ADR/SOT/invariantes/evidencia
+Source-of-truth verdict: PASS — program_catalog_items único; programa vacío estructural
+Invariant verdict: PASS — INV-146–154; sin procedencia histórica inventada
+Build: PASS — 95 fuentes; bundle y sintaxis válidos
+Tests: PASS — forward/recovery/apply, navegador, seguridad y regresiones
+Security: PASS — writer general intacto; anon/afiliado/DML directo denegados
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: fuente histórica Cirugías UNRESOLVED; se permiten sólo altas administrativas reales
+Evidence: docs/PROGRAM_CATALOG_CIRUGIAS_BOOTSTRAP_RESULT.md
+```
+
 ## 2026-08-31 — H-PROGRAM-PRODUCT-FLOW-UI-POLISH-001
 
 - Las categorías de productos propios ya no presentan el CTA genérico inferior; el detalle conserva únicamente la card accesible `Simula tu plan de pago`.

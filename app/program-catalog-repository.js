@@ -73,7 +73,11 @@
     assertAdminWrite();
     const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:Boolean(item.cotiza),enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
-    const out=await db().rpc('save_program_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links});if(out.error)throw out.error;return Object.freeze(out.data||{});
+    const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
+    const out=bootstrap
+      ?await db().rpc('create_first_cirugias_program_catalog_item',{p_payload:payload,p_asset_links:links})
+      :await db().rpc('save_program_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links});
+    if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
   window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});

@@ -638,6 +638,7 @@
   const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
   const validCardNumber = (value) => /^[0-9]{16}$/.test(onlyDigits(value));
   const validNotificationPhone = (value) => /^[0-9]{10}$/.test(onlyDigits(value));
+  const validDepositBank = (value) => String(value || '').trim().length >= 2;
   function validClabe(value) {
     const normalized = onlyDigits(value);
     if (!/^[0-9]{18}$/.test(normalized)) return false;
@@ -645,15 +646,15 @@
     const sum = normalized.slice(0, 17).split('').reduce((total, digit, index) => total + Number(digit) * weights[index % 3], 0);
     return (10 - (sum % 10)) % 10 === Number(normalized[17]);
   }
-  const depositEligible = (account) => !!(account && account.data_status === 'COMPLETE' && validCardNumber(account.card_number) && validClabe(account.clabe));
+  const depositEligible = (account) => !!(account && validDepositBank(account.bank_name) && (validCardNumber(account.card_number) || validClabe(account.clabe)));
   const spaced = (value, groups) => {
     let remaining = onlyDigits(value), result = [];
     groups.forEach((size) => { if (remaining) { result.push(remaining.slice(0, size)); remaining = remaining.slice(size); } });
     return result.join(' ');
   };
 
-  function DepositField({ label, value, onChange, inputMode, maxLength, hint, valid, autoComplete = 'off' }) {
-    return React.createElement('label', { style: { display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--ink)' } }, label,
+  function DepositField({ label, value, onChange, inputMode, maxLength, hint, valid, autoComplete = 'off', field }) {
+    return React.createElement('label', { 'data-deposit-field': field, style: { display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--ink)' } }, label,
       React.createElement('input', {
         value, onChange, inputMode, maxLength, autoComplete, spellCheck: false,
         'aria-invalid': value && !valid ? 'true' : undefined,
@@ -673,15 +674,34 @@
     const startAdd = () => update({ selectedId: '', adding: true, draft: { bank_name: '', card_number: '', clabe: '' }, error: '' });
     const setDraft = (key, next) => setValue((current) => Object.assign({}, current, { draft: Object.assign({}, current.draft, { [key]: next }) }));
     const draft = value.draft || { bank_name: '', card_number: '', clabe: '' };
-    const draftValid = String(draft.bank_name || '').trim().length >= 2 && validCardNumber(draft.card_number) && validClabe(draft.clabe);
+    const hasCard = onlyDigits(draft.card_number).length > 0;
+    const hasClabe = onlyDigits(draft.clabe).length > 0;
+    const cardValid = validCardNumber(draft.card_number);
+    const clabeValid = validClabe(draft.clabe);
+    const draftValid = validDepositBank(draft.bank_name)
+      && (cardValid || clabeValid)
+      && (!hasCard || cardValid)
+      && (!hasClabe || clabeValid);
+    const saveErrorMessage = (error) => {
+      const code = [error && error.code, error && error.message, error && error.details, error && error.hint]
+        .filter(Boolean)
+        .join(' ');
+      if (code.includes('INVALID_DEPOSIT_BANK')) return 'Ingresa el nombre del banco.';
+      if (code.includes('DEPOSIT_INSTRUMENT_REQUIRED')) return 'Ingresa una tarjeta o una CLABE válida.';
+      if (code.includes('INVALID_DEPOSIT_CARD')) return 'La tarjeta debe tener exactamente 16 dígitos.';
+      if (code.includes('INVALID_DEPOSIT_CLABE')) return 'La CLABE debe tener 18 dígitos y un dígito verificador válido.';
+      if (code.includes('BANK_ACCOUNT_NOT_FOUND')) return 'La cuenta ya no está disponible. Recarga e intenta nuevamente.';
+      if (code.includes('ACCOUNT_HOLDER_REQUIRED')) return 'Tu perfil no tiene un titular válido para registrar la cuenta.';
+      return 'No pudimos guardar la cuenta. Verifica los datos e intenta nuevamente.';
+    };
     const saveAccount = async () => {
       if (!draftValid || value.saving) return;
       update({ saving: true, error: '' });
       try {
         const saved = await window.BankAccountRepository.saveDeposit(draft);
         await reload(saved.id);
-      } catch (_) {
-        update({ saving: false, error: 'No pudimos guardar la cuenta. Verifica los datos e intenta nuevamente.' });
+      } catch (error) {
+        update({ saving: false, error: saveErrorMessage(error) });
       }
     };
     const accountCard = (account) => {
@@ -695,8 +715,8 @@
         React.createElement('strong', { style: { fontSize: 14 } }, account.bank_name || 'Banco pendiente'),
         account.is_primary && React.createElement('span', { style: { fontSize: 9.5, fontWeight: 900, letterSpacing: '.04em', color: 'var(--guinda)' } }, 'PRINCIPAL')),
       ready ? React.createElement(React.Fragment, null,
-        React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, marginTop: 7 } }, account.maskedCard),
-        React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
+        validCardNumber(account.card_number) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, marginTop: 7 } }, account.maskedCard),
+        validClabe(account.clabe) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
         : React.createElement('div', { style: { color: 'var(--guinda)', fontSize: 11.5, fontWeight: 800, marginTop: 7 } }, 'Completar para depósito'));
     };
     return React.createElement('div', { className: 'su-route', 'data-loan-deposit-step': value.phase, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
@@ -716,14 +736,16 @@
           React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
             React.createElement('strong', { style: { fontSize: 14 } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
             value.accounts.length > 0 && React.createElement('button', { type: 'button', onClick: () => update({ adding: false, draft: null, error: '' }), style: { border: 0, background: 'transparent', color: 'var(--ink-3)', fontWeight: 800 } }, 'Cancelar')),
-          React.createElement('div', { 'data-deposit-bank-optional': '', style: { color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 650, lineHeight: 1.4 } }, 'Estos datos son opcionales para continuar. Si deseas guardar la cuenta, completa los tres correctamente.'),
-          React.createElement(DepositField, { label: 'Banco', value: draft.bank_name || '', valid: String(draft.bank_name || '').trim().length >= 2, onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
-          React.createElement(DepositField, { label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: validCardNumber(draft.card_number), inputMode: 'numeric', maxLength: 19, hint: '16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
-          React.createElement(DepositField, { label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: validClabe(draft.clabe), inputMode: 'numeric', maxLength: 22, hint: '18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
-          React.createElement(window.Btn, { full: true, disabled: !draftValid || value.saving, loading: value.saving, onClick: saveAccount }, value.saving ? 'Guardando…' : 'Guardar cuenta')),
+          React.createElement('div', { 'data-deposit-account-rule': '', style: { color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 650, lineHeight: 1.4 } }, 'Para guardar, indica el banco y al menos una opción válida: tarjeta o CLABE.'),
+          React.createElement(DepositField, { field: 'bank', label: 'Banco', value: draft.bank_name || '', valid: validDepositBank(draft.bank_name), hint: 'Obligatorio', onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
+          React.createElement(DepositField, { field: 'card', label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: cardValid, inputMode: 'numeric', maxLength: 19, hint: 'Opcional si proporcionas CLABE · 16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
+          React.createElement(DepositField, { field: 'clabe', label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: clabeValid, inputMode: 'numeric', maxLength: 22, hint: 'Opcional si proporcionas tarjeta · 18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
+          React.createElement(window.Btn, { full: true, 'data-deposit-save': '', disabled: !draftValid || value.saving, loading: value.saving, onClick: saveAccount }, value.saving ? 'Guardando…' : 'Guardar cuenta')),
         React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)' } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } }, React.createElement(I, { name: 'phone', size: 18, stroke: 2 }), React.createElement('strong', { style: { fontSize: 14 } }, 'Celular para notificaciones')),
-          React.createElement(DepositField, { label: 'Número celular', value: spaced(value.phone, [3, 3, 4]), valid: validNotificationPhone(value.phone), inputMode: 'tel', maxLength: 12, autoComplete: 'tel-national', hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.', onChange: (event) => update({ phone: onlyDigits(event.target.value).slice(0, 10), error: '' }) })),
+          React.createElement(DepositField, { field: 'phone', label: 'Número celular', value: spaced(value.phone, [3, 3, 4]), valid: validNotificationPhone(value.phone), inputMode: 'tel', maxLength: 12, autoComplete: 'tel-national', hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.', onChange: (event) => update({ phone: onlyDigits(event.target.value).slice(0, 10), error: '' }) })),
+        (!depositEligible(value.accounts.find((account) => account.id === value.selectedId)) || !validNotificationPhone(value.phone)) && React.createElement('div', { 'data-deposit-continue-help': '', role: 'status', style: { padding: '11px 13px', borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-2)', fontSize: 11.5, fontWeight: 700, lineHeight: 1.45 } },
+          !depositEligible(value.accounts.find((account) => account.id === value.selectedId)) ? 'Selecciona una cuenta válida para recibir tu préstamo.' : 'Captura un celular válido de 10 dígitos.'),
         value.error && React.createElement('div', { role: 'alert', className: 'su-err', style: { color: '#C0341D', fontSize: 12, fontWeight: 750 } }, value.error)));
   }
 
@@ -807,7 +829,7 @@
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null, quote: null, error: 'UNAVAILABLE' };
     const [step, setStep] = React.useState(0);
     const [simulation, setSimulation] = React.useState(null);
-    const [deposit, setDeposit] = React.useState({ phase: 'loading', accounts: [], selectedId: '', phone: '', phoneSource: 'NONE', adding: false, draft: null, saving: false, error: '' });
+    const [deposit, setDeposit] = React.useState({ phase: 'loading', accounts: [], selectedId: '', phone: '', persistedPhone: '', phoneSource: 'NONE', adding: false, draft: null, saving: false, error: '' });
     const [signature, setSignature] = React.useState('');
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
@@ -818,7 +840,7 @@
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
-    const loadDeposit=React.useCallback(async(preferredId)=>{setDeposit((current)=>Object.assign({},current,{phase:'loading',saving:false,error:''}));try{const[accounts,phoneState]=await Promise.all([window.BankAccountRepository.listDeposit(),window.BankAccountRepository.getNotificationPhone()]);setDeposit((current)=>{const eligible=accounts.filter(depositEligible);const requested=preferredId||current.selectedId;const selected=eligible.find((account)=>account.id===requested)||eligible.find((account)=>account.is_primary)||eligible[0]||null;return Object.assign({},current,{phase:'ready',accounts:accounts.slice(),selectedId:selected?selected.id:'',phone:current.phone||phoneState.notification_phone||'',phoneSource:phoneState.source||'NONE',adding:preferredId?false:eligible.length===0,draft:null,saving:false,error:''});});}catch(_){setDeposit((current)=>Object.assign({},current,{phase:'error',accounts:[],selectedId:'',saving:false,error:'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'}));}},[]);
+    const loadDeposit=React.useCallback(async(preferredId)=>{setDeposit((current)=>Object.assign({},current,{phase:'loading',saving:false,error:''}));try{const[accounts,phoneState]=await Promise.all([window.BankAccountRepository.listDeposit(),window.BankAccountRepository.getNotificationPhone()]);setDeposit((current)=>{const eligible=accounts.filter(depositEligible);const requested=preferredId||current.selectedId;const selected=eligible.find((account)=>account.id===requested)||eligible.find((account)=>account.is_primary)||eligible[0]||null;return Object.assign({},current,{phase:'ready',accounts:accounts.slice(),selectedId:selected?selected.id:'',phone:current.phone||phoneState.notification_phone||'',persistedPhone:phoneState.source==='CURRENT_NOTIFICATION_PHONE'?(phoneState.notification_phone||''):'',phoneSource:phoneState.source||'NONE',adding:preferredId?false:eligible.length===0,draft:null,saving:false,error:''});});}catch(_){setDeposit((current)=>Object.assign({},current,{phase:'error',accounts:[],selectedId:'',saving:false,error:'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'}));}},[]);
     React.useEffect(()=>{loadDeposit();},[loadDeposit]);
     const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
     React.useEffect(()=>{loadDocuments();},[loadDocuments]);
@@ -828,13 +850,13 @@
     const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
     const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
     const selectedDepositAccount=deposit.accounts.find((account)=>account.id===deposit.selectedId);
-    const depositReady=deposit.phase==='ready'&&validNotificationPhone(deposit.phone)&&!deposit.saving;
+    const depositReady=deposit.phase==='ready'&&depositEligible(selectedDepositAccount)&&validNotificationPhone(deposit.phone)&&!deposit.saving;
     const canContinue = step === 0 ? !!(simulation && simulation.current)
       : step === 1 ? depositReady
       : step === 2 ? documentsReady
       : !!(simulation && simulation.current && depositReady && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
-    const continueFlow=async()=>{if(step!==1){setStep(step+1);return;}if(!depositReady)return;setDeposit((current)=>Object.assign({},current,{saving:true,error:''}));try{await window.BankAccountRepository.saveNotificationPhone(deposit.phone);setDeposit((current)=>Object.assign({},current,{saving:false,phoneSource:'CURRENT_NOTIFICATION_PHONE'}));setStep(2);}catch(_){setDeposit((current)=>Object.assign({},current,{saving:false,error:'No pudimos confirmar el celular para notificaciones. Intenta nuevamente.'}));}};
+    const continueFlow=async()=>{if(step!==1){setStep(step+1);return;}if(!depositReady||!depositEligible(selectedDepositAccount))return;setDeposit((current)=>Object.assign({},current,{saving:true,error:''}));try{if(onlyDigits(deposit.phone)!==onlyDigits(deposit.persistedPhone))await window.BankAccountRepository.saveNotificationPhone(deposit.phone);setDeposit((current)=>Object.assign({},current,{saving:false,persistedPhone:onlyDigits(current.phone),phoneSource:'CURRENT_NOTIFICATION_PHONE'}));setStep(2);}catch(_){setDeposit((current)=>Object.assign({},current,{saving:false,error:'No pudimos confirmar el celular para notificaciones. Intenta nuevamente.'}));}};
     const submit = async () => {
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
       setSubmitting(true); setSubmitError('');

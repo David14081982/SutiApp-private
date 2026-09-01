@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-092 | Depósito registra y reutiliza una cuenta con Banco + (Tarjeta válida OR CLABE válida); si ambas se capturan, ambas validan. Continuar exige cuenta válida seleccionada y celular de 10 dígitos. | Aceptada / ACTIVE |
 | ADR-091 | El writer de productos propios valida por delta: preserva exactamente estados históricos ya aceptados sin permitir nuevas infracciones ni crecimiento; recuperación exacta se bloquea después de actividad Admin. | Aceptada / ACTIVE |
 | ADR-090 | Todo reemplazo de expediente usa `UnifiedDocumentPhase → DocumentRequirementList → DocumentWorkflowRepository`; todo fullscreen de imagen usa el viewer o comportamiento modal compartido con safe-area, cierre por overlay/Escape, foco y scroll restaurables. | Aceptada / ACTIVE |
 | ADR-086 | Los productos propios de programas permanecen en `program_catalog_items`; todo `price_cash` histórico no nulo es precio fijo salvo evidencia específica y el writer Admin escribe la misma autoridad mediante RPC. | Aceptada |
@@ -760,3 +761,14 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Recovery:** backup privado conserva IDs, hash y definiciones previas de ambos writers. Recovery aborta ante filas, contenido, modalidad, vendido o historia Admin posterior y se verificó con `ROLLBACK`; no debe ejecutarse después de actividad Admin legítima.
 - **Límites:** cero cambios en Marketplace, Panel Empresarial, Google, Apps Script, fórmulas, JUB/Proceso, fondos, tasas, plazos, amortización, documentos, resumen, firma, éxito o Historial.
 - **Aprobación:** autorización productiva explícita del propietario para `H-PROGRAM-PRODUCT-COMMERCIAL-MODE-AND-SOLD-001` con el alcance completo de 135 filas, 2026-08-31.
+
+## ADR-092 — Tarjeta OR CLABE y gate de Depósito
+
+- **Decisión owner:** guardar exige Banco + (Tarjeta de 16 dígitos OR CLABE de 18 dígitos con checksum). Si el usuario proporciona ambas, ambas deben ser válidas. Un campo alternativo vacío no es error.
+- **Autoridad:** `affiliate_bank_accounts` continúa como maestro único; `card_number` y `clabe` permanecen separados. `BankAccountRepository.saveDeposit → save_affiliate_deposit_account` es el único writer de esta pantalla y nunca inventa ni convierte dígitos.
+- **Historia:** las 504 filas conservaron clasificación y datos. Seis históricas ya demuestran Banco + CLABE válida y la UI las reconoce sin backfill ni reclasificación; las otras 498 siguen como incompletas.
+- **Continuar:** Depósito → Documentos exige cuenta elegible seleccionada y `affiliates.notification_phone` válido. El teléfono sólo se escribe cuando cambió. ADR-092 supersede ADR-085 exclusivamente en este gate UI; por alcance owner, el writer/snapshot final de solicitud no fue modificado.
+- **Seguridad y recovery:** la RPC deriva afiliado/titular server-side; anónimo y cross-user continúan denegados. `20260901000100` no hace DML de negocio, conserva definición/constraint previos en backup privado y su recovery aborta después de actividad bancaria legítima.
+- **Prueba:** backend productivo pasó Card-only, CLABE-only, rechazo Banco-only, errores específicos, lista inmediata, nueva sesión y teléfono con cleanup exacto. El E2E UI A–J pasó aislado en Chrome; el recorrido híbrido no se declaró porque el simulador productivo previo a Depósito devolvió `error` en ambos afiliados QA.
+- **Límites:** cero cambios en simulador, fondos, cálculos, documentos, resumen, solicitud, `program_catalog_items`, Marketplace o Google legacy.
+- **Aprobación:** `H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001`, regla explícita del propietario, 2026-09-01.

@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Tarjeta OR CLABE en Depósito — ADR-092
+
+`save_affiliate_deposit_account` conserva `SECURITY DEFINER`, `search_path=''` e identidad derivada mediante `auth.uid()`/`get_effective_affiliate_id()`. El browser no elige afiliado ni titular: acepta únicamente Banco + Tarjeta válida o Banco + CLABE válida y valida ambas cuando ambas se proporcionan. `card_number` y `clabe` permanecen separados; la auditoría registra sólo presencia, nunca números completos.
+
+La función revoca ejecución a `anon` y mantiene `authenticated` exclusivamente detrás de la validación backend. `affiliate_bank_accounts` conserva RLS habilitada/forzada y el listado de Depósito sigue limitado al afiliado efectivo, incluso para un actor con permisos Admin globales. La matriz productiva confirmó propietario permitido, cross-user/anónimo denegados, snapshot privado denegado y cero residuos de fixtures. El respaldo técnico de `20260901000100` tiene RLS habilitada/forzada y cero grants browser.
+
 ## Contrato delta-aware de guardado — ADR-091
 
 La migración preparada mantiene `SECURITY DEFINER`, `search_path=''`, `auth.uid()`, `program_catalog.write`, allowlist, auditoría y DML directo revocado. `anon` no ejecuta; `authenticated` sólo cruza el writer si el permiso backend pasa. El respaldo de migración tiene RLS habilitada/forzada y cero grants para browser.

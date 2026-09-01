@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-09-01 — H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001
+
+- `save_affiliate_deposit_account` y Depósito aceptan Banco + Tarjeta o Banco + CLABE, validan ambas cuando ambas existen y conservan los campos separados. Las 504 filas históricas quedaron intactas; seis CLABE válidas ahora se reconocen sin reclasificación.
+- Continuar exige cuenta válida seleccionada + celular de 10 dígitos y el celular sólo se guarda si cambió. Forward/apply/security/recovery dry-run pasaron; no se ejecutará recovery real tras la auditoría QA legítima.
+- Backend productivo pasó persistencia/nueva sesión y cleanup exacto. Chrome aislado pasó A–J y cuatro viewports con 0 writes. El E2E híbrido quedó como limitación demostrada porque el simulador productivo previo devolvió `error` en ambos afiliados QA y estaba fuera de alcance.
+- Verificación final: bundle 95 fuentes, suite estática 78/78, preservación Claude, Registry `FRESH`, `git diff --check` y secret/PII preflight `PASS`. El `sutiapp-architect-reviewer` emitió `APPROVED`; `WORK_QUEUE_HISTORY.md` no existe y no se inició otra H.
+
+```text
+H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001 RESULT
+Status: PASS
+Files changed: Deposit UI/bundle/cache; migration/recovery; tests; ADR/SOT/invariants/evidence; Registry derived
+Source-of-truth verdict: PASS — affiliate_bank_accounts and affiliates.notification_phone remain unique authorities
+Invariant verdict: PASS — Bank + (Card OR CLABE), strict both-provided validation, historical preservation
+Build: PASS — 95 sources; bundle v187/PWA v131
+Tests: PASS — static; productive RPC persistence/new session; security; recovery dry-run; isolated Chrome A–J
+Security: PASS — effective-affiliate-only; cross-user/anonymous denied; backup private with forced RLS
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: uninterrupted productive browser E2E blocked before Deposit by excluded simulator state=error; productive backend and isolated UI certified separately
+Evidence: docs/qa/H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001-EVIDENCE.md
+```
+
 ## 2026-09-01 — H-PROGRAM-PRODUCTS-SAVE-CONTRACT-AUDIT-001
 
 - La auditoría global confirmó que el payload completo del editor choca con reglas de alta: 54 filas históricas quedan bloqueadas por campos no tocados (3 Autos/9 imágenes, 50 Farma/precio nulo, 1 Préstamo/orden 0).

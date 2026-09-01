@@ -6,12 +6,12 @@ const edge=read('supabase/functions/financial-legacy/index.ts');
 const migration=read('supabase/migrations/20260831000300_optional_loan_deposit_account.sql');
 const recovery=read('supabase/recovery/20260831000300_optional_loan_deposit_account_recovery.sql');
 
-assert.match(loan,/const depositReady=deposit\.phase==='ready'&&validNotificationPhone\(deposit\.phone\)&&!deposit\.saving/,'bank account still gates Continue');
+assert.match(loan,/const depositReady=deposit\.phase==='ready'&&depositEligible\(selectedDepositAccount\)&&validNotificationPhone\(deposit\.phone\)&&!deposit\.saving/,'valid selected account does not gate Continue');
 assert.match(loan,/bankAccountId: selectedDepositAccount \? selectedDepositAccount\.id : null/,'optional bank id not submitted explicitly');
-assert.match(loan,/data-deposit-bank-optional/,'optional bank guidance missing');
+assert.match(loan,/data-deposit-account-rule/,'deposit account contract guidance missing');
 assert.match(loan,/No registrada \(opcional\)/,'summary cannot render without an account');
 assert.match(loan,/selectedId: '', adding: true/,'editing an incomplete/new account must clear the prior selection');
-assert.match(loan,/const draftValid = String\(draft\.bank_name/,'saved accounts lost strict validation');
+assert.match(loan,/const draftValid = validDepositBank\(draft\.bank_name\)[\s\S]{0,180}\(cardValid \|\| clabeValid\)/,'saved accounts lost card-or-clabe validation');
 assert.match(loan,/disabled: !draftValid \|\| value\.saving/,'invalid partial account can be persisted');
 assert.match(edge,/bank_account_id: body\.bank_account_id \? String\(body\.bank_account_id\) : null/,'Edge does not preserve optionality');
 assert.match(edge,/String\(existingDeposit\.source_bank_account_id \|\| ""\)/,'Edge idempotency does not support null bank');
@@ -30,4 +30,4 @@ assert.doesNotMatch(migration,/grant execute[\s\S]{0,300}to (?:anon|authenticate
 assert.match(recovery,/RECOVERY_BLOCKED_OPTIONAL_DEPOSIT_HISTORY_EXISTS/,'recovery may destroy optional-bank history');
 assert.match(recovery,/alter column source_bank_account_id set not null/,'recovery does not restore previous contract');
 assert(!/localStorage|sessionStorage|window\.DATA/.test(loan),'parallel frontend authority introduced');
-console.log(JSON.stringify({status:'PASS',bankFieldsRequiredForContinue:false,phoneRequired:true,strictAccountSave:true,optionalSnapshot:true,financialCalculationsChanged:0,parallelAuthorities:0}));
+console.log(JSON.stringify({status:'PASS',submissionSnapshotContractUnchanged:true,validSelectedAccountRequiredForDepositContinue:true,phoneRequired:true,financialCalculationsChanged:0,parallelAuthorities:0}));

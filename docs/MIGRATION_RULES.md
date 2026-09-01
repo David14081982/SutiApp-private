@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260901000100 — validación Tarjeta OR CLABE en Depósito
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración no modificó ninguna de las 504 cuentas: amplía sólo el constraint para admitir altas CLABE-only y reemplaza `save_affiliate_deposit_account` con Banco + (Tarjeta OR CLABE), validando ambos cuando ambos existen. El backup técnico privado conserva definición y constraint previos.
+
+Forward, matriz funcional, seguridad y recovery dry-run pasaron antes de actividad. La prueba productiva posterior creó y retiró dos cuentas QA por UUID exacto, restauró el celular y conservó la auditoría; por ello no se ejecutará recovery real. Seis filas históricas ya tienen Banco + CLABE válida y 498 permanecen incompletas, sin backfill ni reclasificación.
+
 ## 20260831000800 — contrato delta-aware de guardado de productos
 
 Estado: `APPLIED / VERIFIED — PASS`. No modificó filas. Amplía únicamente el constraint de `program_key` para hacer efectiva la alta ya autorizada de `cirugias`, reemplaza los dos writers por validación específica y delta-aware, y guarda las definiciones/constraint/hashes exactos para recuperación.

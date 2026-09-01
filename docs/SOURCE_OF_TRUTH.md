@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-092 — cuenta de Depósito por Tarjeta OR CLABE
+
+`affiliate_bank_accounts` permanece como autoridad única. `save_affiliate_deposit_account` acepta exclusivamente Banco + Tarjeta de 16 dígitos o Banco + CLABE válida; si ambas llegan, ambas se validan. `card_number` y `clabe` nunca se mezclan, derivan ni completan entre sí. Las 504 filas históricas quedaron intactas: seis ya demuestran el contrato Banco + CLABE y se proyectan elegibles sin alterar `data_status`; 498 siguen incompletas.
+
+`affiliates.notification_phone` sigue siendo la autoridad del celular confirmado. En la transición Depósito → Documentos, la UI exige cuenta elegible seleccionada y celular de 10 dígitos, y sólo persiste el celular cuando cambió. Esta decisión no modifica el writer/snapshot final de `program_requests`, documentos ni cálculos financieros.
+
 ## Corte ADR-091 — contrato global de guardado de productos
 
 `public.program_catalog_items` y `public.program_catalog_item_assets` siguen siendo las únicas autoridades de productos propios e imágenes vinculadas. `ProgramCatalogRepository` conserva un único payload completo; el writer preparado lo valida de forma delta-aware: una edición puede conservar o reducir un estado histórico ya aceptado, pero no crear ni ampliar una infracción. Esto no crea una segunda fuente, no normaliza filas y no cambia `record_origin`.
@@ -44,7 +50,7 @@ La pantalla Notificaciones y el badge no tienen tabla maestra propia. Su única 
 
 ## Corte ADR-081/085 — depósito de Suti Préstamo
 
-`affiliate_bank_accounts` permanece como única autoridad mutable de las cuentas del afiliado. `account_number` conserva semántica de cuenta y `card_number` conserva semántica separada de tarjeta; elegir una cuenta para el préstamo no modifica `is_primary`. Depósito lista exclusivamente por `list_current_deposit_accounts()`, que deriva el afiliado efectivo aunque el actor tenga permisos Admin globales. El writer `save_affiliate_deposit_account` deriva el mismo contexto y el titular server-side, valida banco, tarjeta de 16 dígitos y CLABE de 18 dígitos con checksum, y audita sin guardar números completos en metadata.
+`affiliate_bank_accounts` permanece como única autoridad mutable de las cuentas del afiliado. `account_number` conserva semántica de cuenta y `card_number` conserva semántica separada de tarjeta; elegir una cuenta para el préstamo no modifica `is_primary`. Depósito lista exclusivamente por `list_current_deposit_accounts()`, que deriva el afiliado efectivo aunque el actor tenga permisos Admin globales. Por ADR-092, `save_affiliate_deposit_account` deriva el mismo contexto y el titular server-side y valida Banco + (Tarjeta de 16 dígitos OR CLABE de 18 dígitos con checksum); si ambas llegan, ambas validan. La auditoría no guarda números completos en metadata.
 
 `affiliates.notification_phone` es el celular actual confirmado. `phone_raw` conserva exclusivamente el perfil histórico/importado y puede proyectarse como sugerencia explícita; nunca se sobrescribe ni funciona como autoridad productiva paralela. Lectura y confirmación pasan por RPC autenticada y auditada.
 

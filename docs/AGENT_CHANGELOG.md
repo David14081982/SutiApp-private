@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-09-01 — H-SAVINGS-LEGACY-SYSTEM-FORENSIC-AUDIT-001
+
+- La auditoría forense read-only cubrió las nueve hojas live de Ahorro, fórmulas, identidad agregada contra `public.affiliates`, el Apps Script ligado identificable y evidencia Drive de Glide/PDF/backups. Google, Supabase, Glide y Make tuvieron cero escrituras; no se ejecutaron triggers ni conciliaciones.
+- `Saldo (HOY)` deriva de proyección esperada + ajuste manual - retiros, no de un ledger confirmado. Se detectaron 21/363 diferencias contra `Reporte Ahorro`, cinco Folios ambiguos frente a afiliados, un Folio huérfano, calendario JUB incompatible y 87 cambios con riesgo retroactivo.
+- Glide, Make y triggers instalables no pudieron inventariarse por completo. La recomendación objetivo es migrar autoridad transaccional a Supabase sólo después de resolver identidad, saldo, reglas y equivalencia; implementar ahora queda bloqueado.
+- Revisión arquitectónica independiente: `OWNER_DECISION_REQUIRED` (estado constitucional `DECISION REQUIRED`). El informe forense es suficiente y no requiere corrección; cualquier migración requiere resolver las decisiones bloqueantes y una nueva autorización, conforme a ADR-036.
+
+```text
+H-SAVINGS-LEGACY-SYSTEM-FORENSIC-AUDIT-001 RESULT
+Status: DECISION REQUIRED — forensic deliverable PARTIAL_EVIDENCE; migration unsafe now
+Files changed: forensic audit report and agent changelog only
+Source-of-truth verdict: SOURCE OF TRUTH CONFLICT for automatic Folio→affiliate join; current balance UNRESOLVED
+Invariant verdict: PASS for read-only/no second authority; financial equivalence NOT DEMONSTRATED
+Build: NOT APPLICABLE — documentation-only audit
+Tests: PASS read-only formulas/counts/algebra; WRITE_TEST_DEFERRED; external configuration PARTIAL
+Security: PASS for zero writes/minimal Supabase SELECT; PII absent from evidence; legacy PDF/backups risks recorded
+Legacy impact: READ ONLY — Google write 0 / Supabase write 0 / scripts with writes 0 / triggers invoked 0
+Unexpected files changed: 0
+Known limitations: Glide actions, Make scenario, standalone Apps Script and installable/time triggers not fully accessible
+Evidence: docs/audits/H-SAVINGS-LEGACY-SYSTEM-FORENSIC-AUDIT-001.md
+```
+
 ## 2026-09-01 — H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001
 
 - `save_affiliate_deposit_account` y Depósito aceptan Banco + Tarjeta o Banco + CLABE, validan ambas cuando ambas existen y conservan los campos separados. Las 504 filas históricas quedaron intactas; seis CLABE válidas ahora se reconocen sin reclasificación.

@@ -1,0 +1,32 @@
+# PROGRAM PRODUCT COMMERCIAL MODE AND SOLD RESULT
+
+- Canonical authority: `program_catalog_items` / PASS
+- Commercial modes: 3 / PASS
+- Fixed-price: PASS
+- Quote-required: PASS
+- Direct-contact: PASS
+- Direct-contact price visible: PASS
+- Direct-contact simulator blocked: PASS
+- Direct-contact financial request blocked server-side: PASS
+- Sold field: PASS
+- Sold independent from enabled: PASS
+- Sold independent from modality: PASS
+- Sold badge frontend: PASS
+- Sold simulator blocked: PASS
+- Sold quote/request blocked: PASS
+- Sold backend enforcement: PASS
+- Unsold restores original modality: PASS
+- Admin editable: PASS
+- Casa direct-contact: 35/35 applied
+- Other programs: PASS — 80 fixed / 20 quote preserved
+- Financial formulas changed: NO
+- Documents changed: NO
+- Marketplace touched: NO
+- Panel Empresarial touched: NO
+- Google writes: 0
+- Data loss: 0
+- Security: PASS
+- Commit: registrado en el handoff final
+- origin/main: registrado en el handoff final
+- Push: PASS
+- Final verdict: PASS

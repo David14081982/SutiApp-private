@@ -528,12 +528,14 @@ async function readProgramProductContext(
   privileged: SupabaseClientLike, context: LoanSessionContext, programItemId: string,
 ): Promise<ProgramProductContext> {
   const { data: item, error } = await privileged.from("program_catalog_items")
-    .select("id,program_key,name,price_cash,requires_quote,request_mode,enabled,updated_at")
+    .select("id,program_key,name,price_cash,requires_quote,commercial_mode,sold,request_mode,enabled,updated_at")
     .eq("id", programItemId).maybeSingle();
   if (error) throw new Error("PROGRAM_PRODUCT_LOOKUP_FAILED");
   if (!item || item.enabled !== true || item.request_mode !== "supabase" || item.program_key === "prestamo") {
     throw new Error("PROGRAM_PRODUCT_NOT_FINANCEABLE");
   }
+  if (item.sold === true) throw new Error("PROGRAM_PRODUCT_SOLD");
+  if (item.commercial_mode === "DIRECT_CONTACT") throw new Error("PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY");
   let quote: Record<string, unknown> | null = null;
   let authorizedPrice: number | null = null;
   let priceSource: ProgramProductContext["priceSource"] = null;
@@ -554,7 +556,8 @@ async function readProgramProductContext(
   } else throw new Error("AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE");
   const fingerprint = await sha256({
     item: { id: item.id, program_key: item.program_key, name: item.name, price_cash: item.price_cash,
-      requires_quote: item.requires_quote, request_mode: item.request_mode, enabled: item.enabled, updated_at: item.updated_at },
+      requires_quote: item.requires_quote, commercial_mode: item.commercial_mode, sold: item.sold,
+      request_mode: item.request_mode, enabled: item.enabled, updated_at: item.updated_at },
     price_source: priceSource, authorized_price: authorizedPrice,
     quote: quote ? { id: quote.id, quoted_amount: quote.quoted_amount, valid_until: quote.valid_until,
       responded_at: quote.responded_at, updated_at: quote.updated_at } : null,
@@ -1086,7 +1089,8 @@ Deno.serve(async (req) => {
         ) }, origin || null);
       } catch (error) {
         const code = error instanceof Error ? error.message : "PROGRAM_PAYMENT_SESSION_OPEN_FAILED";
-        const status = code === "PROGRAM_PRODUCT_NOT_FINANCEABLE" ? 404
+        const status = ["PROGRAM_PRODUCT_NOT_FINANCEABLE", "PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY"].includes(code) ? 404
+          : code === "PROGRAM_PRODUCT_SOLD" ? 409
           : code === "AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE" ? 409 : 502;
         return reply(status, { error: code }, origin || null);
       }

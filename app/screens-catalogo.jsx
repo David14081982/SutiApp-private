@@ -23,7 +23,8 @@
         cover
           ? React.createElement('img', { src: cover, alt: l.nombre, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })
           : React.createElement('div', { style: { position: 'absolute', right: -6, bottom: -10, opacity: .2 } }, React.createElement(I, { name: icon || (r && r.icon), size: 70, stroke: 1, style: { color: '#fff' } })),
-        l.badge && React.createElement('div', { style: { position: 'absolute', top: 8, left: 8 } }, React.createElement(window.Badge, { tone: 'gold', solid: true }, l.badge))),
+        l.badge && React.createElement('div', { style: { position: 'absolute', top: 8, left: 8 } }, React.createElement(window.Badge, { tone: 'gold', solid: true }, l.badge)),
+        l.sold && React.createElement('div', { 'data-program-product-sold-badge': 'card', style: { position: 'absolute', top: 8, right: 8, background: 'rgba(126,18,43,.94)',color:'#fff',fontSize:10,fontWeight:900,letterSpacing:'.08em',padding:'5px 8px',borderRadius:999 } }, 'VENDIDO')),
       React.createElement('div', { style: { padding: '10px 12px 12px' } },
         React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, lineHeight: 1.2 } }, l.nombre),
         l.ficha && React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } }, l.ficha),
@@ -62,6 +63,18 @@
     return React.createElement(window.ImageViewer, { sources: imgs, startIndex: start || 0, alt: 'Imagen del producto', onClose });
   }
 
+  function DirectContactPanel({item,app}) {
+    const [state,setState]=useState({phase:'loading',data:null});
+    React.useEffect(()=>{let active=true;setState({phase:'loading',data:null});window.ProgramCatalogRepository.getDirectContact(item).then((data)=>{if(active)setState({phase:'ready',data});},()=>{if(active)setState({phase:'error',data:null});});return()=>{active=false;};},[item.id,item.updated_at]);
+    const contact=state.data,open=(url)=>{if(url)window.open(url,'_blank','noopener,noreferrer');};
+    return React.createElement('div',{'data-program-direct-contact':'true',style:{marginTop:18,background:'var(--surface)',borderRadius:18,padding:15,boxShadow:'var(--neo-sm)'}},
+      React.createElement('div',{style:{display:'flex',gap:11,alignItems:'center'}},React.createElement('div',{style:{width:42,height:42,borderRadius:13,background:'var(--guinda-50)',color:'var(--guinda)',display:'grid',placeItems:'center'}},React.createElement(I,{name:'message',size:20,stroke:2})),React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{fontSize:14,fontWeight:900}},'Contacto directo'),React.createElement('div',{style:{fontSize:11.5,fontWeight:700,color:'var(--ink-3)',marginTop:2}},'Precio informativo · sin financiamiento SutiApp'))),
+      state.phase==='loading'&&React.createElement('div',{style:{fontSize:12,fontWeight:700,color:'var(--ink-3)',marginTop:12}},'Consultando contacto autorizado…'),
+      state.phase==='error'&&React.createElement('div',{role:'alert',style:{fontSize:12,fontWeight:750,color:'#A32921',marginTop:12}},'No fue posible consultar el contacto. Inténtalo nuevamente.'),
+      state.phase==='ready'&&contact&&contact.status==='READY'&&React.createElement('div',{style:{display:'flex',gap:9,marginTop:12}},contact.whatsappUrl&&React.createElement(window.Btn,{full:true,icon:'message',onClick:()=>open(contact.whatsappUrl)},'Mensaje'),contact.phoneUrl&&React.createElement(window.Btn,{full:true,variant:contact.whatsappUrl?'outline':'primary',icon:'phone',onClick:()=>{window.location.href=contact.phoneUrl;}},'Llamar'),!contact.whatsappUrl&&!contact.phoneUrl&&React.createElement(window.Btn,{full:true,icon:'arrowR',onClick:()=>open(contact.primaryUrl)},contact.primaryLabel||'Contactar')),
+      state.phase==='ready'&&(!contact||contact.status!=='READY')&&React.createElement('div',{style:{fontSize:12,fontWeight:750,color:'var(--ink-3)',marginTop:12}},'El contacto de este programa no está configurado.'));
+  }
+
   // ── Detalle del producto ──
   // params: { item, ctx } — ctx: { id, label, icon, hue } de la categoría o convenio
   function CatalogItemScreen({ app, params }) {
@@ -77,7 +90,9 @@
     const [requestSheet,setRequestSheet]=useState(false);
 
     const programItem = item.catalogSource === 'program';
-    const cotiza = programItem ? Boolean(item.cotiza) : (item.precio == null || item.cotiza);
+    const commercialMode=programItem?(item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED')):null;
+    const sold=programItem&&item.sold===true;
+    const cotiza = programItem ? commercialMode==='PAYROLL_QUOTE' : (item.precio == null || item.cotiza);
     // "it" con la forma que esperan los flujos existentes de simulación y cotización
     const it = { id: item.id, label: item.nombre, icon: ctx.icon || 'cart', tagline: item.ficha || '', meta: ctx.label || '' };
     const quote = !programItem && qs ? qs.latestFor(item.id) : null;
@@ -121,8 +136,10 @@
               : item.precio != null
                 ? React.createElement('div', { style: { fontSize: 30, fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio))
                 : React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
+            sold&&React.createElement('div',{'data-program-product-sold-badge':'detail',style:{display:'inline-flex',alignItems:'center',gap:6,marginTop:12,background:'#FCE8E6',color:'#B3261E',fontSize:12,fontWeight:950,letterSpacing:'.08em',padding:'7px 11px',borderRadius:999}},React.createElement(I,{name:'close',size:14,stroke:2.4}),'VENDIDO'),
             quote && React.createElement(QuoteBanner, { quote }),
-            programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true)}),
+            programItem&&!sold&&commercialMode==='DIRECT_CONTACT'&&React.createElement(DirectContactPanel,{item,app}),
+            programItem&&!sold&&commercialMode!=='DIRECT_CONTACT'&&item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true)}),
             item.desc && React.createElement('div', { style: { marginTop: 20 } },
               React.createElement(window.SectionHead, { title: 'Descripción' }),
               React.createElement('div', { style: { fontSize: 15, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6 } },
@@ -137,8 +154,12 @@
               React.createElement(I, { name: 'shield', size: 18, stroke: 2, style: { color: 'var(--guinda)', flexShrink: 0, marginTop: 1 } }),
               React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } },
                 programItem
-                  ? item.requestMode === 'supabase'
-                    ? (item.legacyBoundary ? 'Tu solicitud quedará registrada de inmediato. Si después requiere una revisión financiera, el área responsable continuará el proceso sin que tengas que enviarla de nuevo.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.')
+                  ? sold
+                    ? 'Este artículo permanece visible como referencia, pero ya no está disponible para nuevas solicitudes, cotizaciones o contacto de adquisición.'
+                    : commercialMode==='DIRECT_CONTACT'
+                      ? 'Este precio es informativo. La atención y cualquier forma de pago se acuerdan directamente con el área responsable; SutiApp no ofrece financiamiento para este artículo.'
+                      : item.requestMode === 'supabase'
+                    ? (item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.')
                     : 'Este beneficio no está disponible para nuevas solicitudes en este momento.'
                   : cotiza
                     ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.'
@@ -147,7 +168,7 @@
       zoom != null && React.createElement(Lightbox, { imgs: item.imagenes || [], start: zoom, onClose: () => setZoom(null) }),
       window.FinanceSimSheet && React.createElement(window.FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing: true, producto: item, quote: quoteReady ? quote : null }),
       window.QuoteRequestSheet && React.createElement(window.QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app, producto: item }),
-      React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));
+      !sold&&commercialMode!=='DIRECT_CONTACT'&&React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));
   }
 
   function BenefitRequestSheet({ open, onClose, item, app }) {

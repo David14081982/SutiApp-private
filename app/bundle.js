@@ -7905,6 +7905,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   function db(){return window.SutiSupabase.getClient();}
   const publicFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const privateFields='id,storage_bucket,storage_path,mime_type,status';
+  const contactCategories=Object.freeze({aires:'Aires Acondicionados',auto:'Suti Auto',casa:'Suti Casa',cirugias:'Suti Cirugías',computo:'Equipos de Computo',farma:'Suti Farma',prestamo:'Suti Prestamo',puertas:'Puertas de Seguridad',renta:'Suti Renta',solar:'Paneles Solares',terrenos:'Suti Terrenos',tours:'Suti Tours'});
+  function safeContactUrl(value){const raw=String(value||'').trim();return /^(https?:\/\/|tel:|mailto:)/i.test(raw)?raw:null;}
   async function resolveAssetUrls(links){
     const urls=new Map(),privateByBucket=new Map();
     for(const link of links){
@@ -7926,7 +7928,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db();
-    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
     const [rows,links]=await Promise.all([
       itemQuery,
@@ -7941,12 +7943,24 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
       const imageAssets=itemLinks.map((link)=>Object.freeze({link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null}));
       const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
-      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
+      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
   }
   async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
     return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
+  }
+  async function getDirectContact(item){
+    const direct=safeContactUrl(item&&item.contact_url_raw);
+    if(direct)return Object.freeze({status:'READY',primaryUrl:direct,primaryLabel:'Contactar',phoneUrl:direct.startsWith('tel:')?direct:null,whatsappUrl:null,source:'PROGRAM_CATALOG_ITEM'});
+    const category=contactCategories[item&&(item.program_key||item.scopeId)];
+    if(!category)return Object.freeze({status:'UNAVAILABLE',primaryUrl:null,phoneUrl:null,whatsappUrl:null,source:'NO_CONTACT_CONTRACT'});
+    const out=await db().from('institutional_programs').select('id,category,phone_raw,whatsapp_raw,whatsapp_url').eq('enabled',true).eq('category',category).limit(2);
+    if(out.error)throw out.error;
+    if((out.data||[]).length!==1)return Object.freeze({status:'UNAVAILABLE',primaryUrl:null,phoneUrl:null,whatsappUrl:null,source:'INSTITUTIONAL_PROGRAM_NOT_UNIQUE'});
+    const row=out.data[0],phone=String(row.phone_raw||'').replace(/\D/g,''),whatsapp=String(row.whatsapp_raw||'').replace(/\D/g,''),configuredWhatsapp=safeContactUrl(row.whatsapp_url);
+    const phoneUrl=phone?'tel:'+phone:null,whatsappUrl=configuredWhatsapp||(whatsapp?'https://wa.me/52'+whatsapp.replace(/^52/,''):null),primaryUrl=whatsappUrl||phoneUrl;
+    return Object.freeze({status:primaryUrl?'READY':'UNAVAILABLE',primaryUrl,primaryLabel:whatsappUrl?'Enviar mensaje':'Llamar',phoneUrl,whatsappUrl,source:'INSTITUTIONAL_PROGRAMS',category:row.category});
   }
   async function listFavorites(){const r=await db().from('program_catalog_favorites').select('item_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>row.item_id));}
   async function setFavorite(itemId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('program_catalog_favorites').upsert({auth_user_id:user.id,item_id:itemId},{onConflict:'auth_user_id,item_id'}):await api.from('program_catalog_favorites').delete().eq('item_id',itemId);if(r.error)throw r.error;}
@@ -7972,7 +7986,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function saveAdminItem(item,assets){
     assertAdminWrite();
-    const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:Boolean(item.cotiza),enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
+    const mode=item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED');
+    const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
     const out=bootstrap
@@ -7981,7 +7996,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
 })();
 })();
 /* @@file popup-proposal-repository.js */
@@ -50678,6 +50693,7 @@ Object.assign(window, {
     app,
     onRequestQuote
   }) {
+    const acquisitionBlocked = item.sold === true || item.commercialMode === 'DIRECT_CONTACT' || item.commercial_mode === 'DIRECT_CONTACT';
     const [open, setOpen] = useState(false),
       [state, setState] = useState({
         phase: 'loading',
@@ -50694,6 +50710,7 @@ Object.assign(window, {
       [application, setApplication] = useState(false),
       sequence = useRef(0);
     const load = React.useCallback(async () => {
+      if (acquisitionBlocked) return;
       setState({
         phase: 'loading',
         data: null,
@@ -50718,17 +50735,17 @@ Object.assign(window, {
           error: e.code || e.message
         });
       }
-    }, [item.id]);
+    }, [item.id, acquisitionBlocked]);
     useEffect(() => {
-      load();
-    }, [load]);
+      if (!acquisitionBlocked) load();
+    }, [load, acquisitionBlocked]);
     const session = state.data,
       price = Number(session && session.authorizedPrice || 0),
       down = Math.max(0, Number(downTxt) || 0),
       maxTerm = Number(session && session.program && session.program.custom_term && session.program.custom_term.max || 1),
       minDown = Number(session && session.minimumDownPayment || 0);
     useEffect(() => {
-      if (!session || session.status !== 'READY' || !session.loanSession) return;
+      if (acquisitionBlocked || !session || session.status !== 'READY' || !session.loanSession) return;
       const current = ++sequence.current;
       setQuoteState(s => ({
         phase: 'loading',
@@ -50749,9 +50766,10 @@ Object.assign(window, {
         });
       }), 260);
       return () => clearTimeout(timer);
-    }, [session && session.loanSession && session.loanSession.id, down, term]);
+    }, [acquisitionBlocked, session && session.loanSession && session.loanSession.id, down, term]);
     const quote = quoteState.data,
       period = quote && quote.financialResult.paymentPeriod === 'mensual' ? 'mensual' : 'quincenal';
+    if (acquisitionBlocked) return null;
     if (state.phase === 'loading') return h('div', {
       'data-program-payment-state': 'loading',
       className: 'su-skeleton',
@@ -51253,7 +51271,21 @@ Object.assign(window, {
     }, React.createElement(window.Badge, {
       tone: 'gold',
       solid: true
-    }, l.badge))), React.createElement('div', {
+    }, l.badge)), l.sold && React.createElement('div', {
+      'data-program-product-sold-badge': 'card',
+      style: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        background: 'rgba(126,18,43,.94)',
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 900,
+        letterSpacing: '.08em',
+        padding: '5px 8px',
+        borderRadius: 999
+      }
+    }, 'VENDIDO')), React.createElement('div', {
       style: {
         padding: '10px 12px 12px'
       }
@@ -51431,6 +51463,129 @@ Object.assign(window, {
       onClose
     });
   }
+  function DirectContactPanel({
+    item,
+    app
+  }) {
+    const [state, setState] = useState({
+      phase: 'loading',
+      data: null
+    });
+    React.useEffect(() => {
+      let active = true;
+      setState({
+        phase: 'loading',
+        data: null
+      });
+      window.ProgramCatalogRepository.getDirectContact(item).then(data => {
+        if (active) setState({
+          phase: 'ready',
+          data
+        });
+      }, () => {
+        if (active) setState({
+          phase: 'error',
+          data: null
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [item.id, item.updated_at]);
+    const contact = state.data,
+      open = url => {
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      };
+    return React.createElement('div', {
+      'data-program-direct-contact': 'true',
+      style: {
+        marginTop: 18,
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 11,
+        alignItems: 'center'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 42,
+        height: 42,
+        borderRadius: 13,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, React.createElement(I, {
+      name: 'message',
+      size: 20,
+      stroke: 2
+    })), React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14,
+        fontWeight: 900
+      }
+    }, 'Contacto directo'), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, 'Precio informativo · sin financiamiento SutiApp'))), state.phase === 'loading' && React.createElement('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 12
+      }
+    }, 'Consultando contacto autorizado…'), state.phase === 'error' && React.createElement('div', {
+      role: 'alert',
+      style: {
+        fontSize: 12,
+        fontWeight: 750,
+        color: '#A32921',
+        marginTop: 12
+      }
+    }, 'No fue posible consultar el contacto. Inténtalo nuevamente.'), state.phase === 'ready' && contact && contact.status === 'READY' && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        marginTop: 12
+      }
+    }, contact.whatsappUrl && React.createElement(window.Btn, {
+      full: true,
+      icon: 'message',
+      onClick: () => open(contact.whatsappUrl)
+    }, 'Mensaje'), contact.phoneUrl && React.createElement(window.Btn, {
+      full: true,
+      variant: contact.whatsappUrl ? 'outline' : 'primary',
+      icon: 'phone',
+      onClick: () => {
+        window.location.href = contact.phoneUrl;
+      }
+    }, 'Llamar'), !contact.whatsappUrl && !contact.phoneUrl && React.createElement(window.Btn, {
+      full: true,
+      icon: 'arrowR',
+      onClick: () => open(contact.primaryUrl)
+    }, contact.primaryLabel || 'Contactar')), state.phase === 'ready' && (!contact || contact.status !== 'READY') && React.createElement('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 750,
+        color: 'var(--ink-3)',
+        marginTop: 12
+      }
+    }, 'El contacto de este programa no está configurado.'));
+  }
 
   // ── Detalle del producto ──
   // params: { item, ctx } — ctx: { id, label, icon, hue } de la categoría o convenio
@@ -51454,7 +51609,9 @@ Object.assign(window, {
     const [qSheet, setQSheet] = useState(false);
     const [requestSheet, setRequestSheet] = useState(false);
     const programItem = item.catalogSource === 'program';
-    const cotiza = programItem ? Boolean(item.cotiza) : item.precio == null || item.cotiza;
+    const commercialMode = programItem ? item.commercialMode || item.commercial_mode || (item.cotiza ? 'PAYROLL_QUOTE' : 'PAYROLL_FIXED') : null;
+    const sold = programItem && item.sold === true;
+    const cotiza = programItem ? commercialMode === 'PAYROLL_QUOTE' : item.precio == null || item.cotiza;
     // "it" con la forma que esperan los flujos existentes de simulación y cotización
     const it = {
       id: item.id,
@@ -51644,9 +51801,31 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 12
       }
-    }, 'Consulta disponibilidad'), quote && React.createElement(QuoteBanner, {
+    }, 'Consulta disponibilidad'), sold && React.createElement('div', {
+      'data-program-product-sold-badge': 'detail',
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 12,
+        background: '#FCE8E6',
+        color: '#B3261E',
+        fontSize: 12,
+        fontWeight: 950,
+        letterSpacing: '.08em',
+        padding: '7px 11px',
+        borderRadius: 999
+      }
+    }, React.createElement(I, {
+      name: 'close',
+      size: 14,
+      stroke: 2.4
+    }), 'VENDIDO'), quote && React.createElement(QuoteBanner, {
       quote
-    }), programItem && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
+    }), programItem && !sold && commercialMode === 'DIRECT_CONTACT' && React.createElement(DirectContactPanel, {
+      item,
+      app
+    }), programItem && !sold && commercialMode !== 'DIRECT_CONTACT' && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
       item,
       app,
       onRequestQuote: () => setRequestSheet(true)
@@ -51729,7 +51908,7 @@ Object.assign(window, {
         fontWeight: 600,
         lineHeight: 1.5
       }
-    }, programItem ? item.requestMode === 'supabase' ? item.legacyBoundary ? 'Tu solicitud quedará registrada de inmediato. Si después requiere una revisión financiera, el área responsable continuará el proceso sin que tengas que enviarla de nuevo.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), cta && React.createElement('div', {
+    }, programItem ? sold ? 'Este artículo permanece visible como referencia, pero ya no está disponible para nuevas solicitudes, cotizaciones o contacto de adquisición.' : commercialMode === 'DIRECT_CONTACT' ? 'Este precio es informativo. La atención y cualquier forma de pago se acuerdan directamente con el área responsable; SutiApp no ofrece financiamiento para este artículo.' : item.requestMode === 'supabase' ? item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), cta && React.createElement('div', {
       style: {
         position: 'absolute',
         left: 0,
@@ -51759,7 +51938,7 @@ Object.assign(window, {
       it,
       app,
       producto: item
-    }), React.createElement(BenefitRequestSheet, {
+    }), !sold && commercialMode !== 'DIRECT_CONTACT' && React.createElement(BenefitRequestSheet, {
       open: requestSheet,
       onClose: () => setRequestSheet(false),
       item,
@@ -52081,8 +52260,10 @@ Object.assign(window, {
         icon: icons[key] || 'grid',
         count: rows.length,
         active: rows.filter(x => x.activo !== false).length,
-        fixed: rows.filter(x => x.precio != null && !x.cotiza).length,
-        quote: rows.filter(x => x.cotiza).length
+        fixed: rows.filter(x => x.commercialMode === 'PAYROLL_FIXED').length,
+        quote: rows.filter(x => x.commercialMode === 'PAYROLL_QUOTE').length,
+        direct: rows.filter(x => x.commercialMode === 'DIRECT_CONTACT').length,
+        sold: rows.filter(x => x.sold === true).length
       };
     }),
     byProgram: key => items.filter(x => x.program_key === key).sort((a, b) => (a.orden || 0) - (b.orden || 0) || String(a.nombre).localeCompare(String(b.nombre))),
@@ -52097,6 +52278,8 @@ Object.assign(window, {
       category_raw: '',
       precio: null,
       cotiza: true,
+      commercialMode: 'PAYROLL_QUOTE',
+      sold: false,
       activo: true,
       orden: store.byProgram(programKey).length + 1,
       record_origin: 'ADMIN_PROGRAM_CATALOG',
@@ -52205,8 +52388,8 @@ Object.assign(window, {
       fontSize: 10,
       fontWeight: 900,
       letterSpacing: '.03em',
-      background: tone === 'green' ? '#E5F6EC' : tone === 'amber' ? '#FFF3DC' : 'var(--surface-2)',
-      color: tone === 'green' ? '#13794A' : tone === 'amber' ? '#8A5C00' : 'var(--ink-3)'
+      background: tone === 'green' ? '#E5F6EC' : tone === 'amber' ? '#FFF3DC' : tone === 'red' ? '#FCE8E6' : 'var(--surface-2)',
+      color: tone === 'green' ? '#13794A' : tone === 'amber' ? '#8A5C00' : tone === 'red' ? '#B3261E' : 'var(--ink-3)'
     }
   }, text);
   function iconButton(icon, onClick, disabled, labelText) {
@@ -52344,7 +52527,7 @@ Object.assign(window, {
         marginTop: 7,
         flexWrap: 'wrap'
       }
-    }, chip(`${p.fixed} precio fijo`, 'green'), p.quote ? chip(`${p.quote} cotización`, 'amber') : null)), React.createElement(I, {
+    }, p.fixed ? chip(`${p.fixed} precio fijo`, 'green') : null, p.quote ? chip(`${p.quote} cotización`, 'amber') : null, p.direct ? chip(`${p.direct} contacto`) : null, p.sold ? chip(`${p.sold} vendidos`, 'red') : null)), React.createElement(I, {
       name: 'chevR',
       size: 19,
       stroke: 2.2,
@@ -52485,7 +52668,7 @@ Object.assign(window, {
         marginTop: 7,
         flexWrap: 'wrap'
       }
-    }, p.cotiza ? chip('REQUIERE COTIZACIÓN', 'amber') : chip(window.money(p.precio), 'green'), p.activo === false ? chip('INACTIVO') : null)), canWrite && React.createElement('div', {
+    }, p.commercialMode === 'PAYROLL_QUOTE' ? chip('REQUIERE COTIZACIÓN', 'amber') : p.commercialMode === 'DIRECT_CONTACT' ? chip('CONTACTO DIRECTO') : chip(p.precio == null ? 'PRECIO FIJO' : window.money(p.precio), 'green'), p.sold ? chip('VENDIDO', 'red') : null, p.activo === false ? chip('INACTIVO') : null)), canWrite && React.createElement('div', {
       style: {
         display: 'flex',
         gap: 4,
@@ -52550,7 +52733,7 @@ Object.assign(window, {
         setError('Selecciona el programa.');
         return;
       }
-      if (!draft.cotiza && !(Number(draft.precio) > 0)) {
+      if (draft.commercialMode === 'PAYROLL_FIXED' && !(Number(draft.precio) > 0)) {
         setError('Precio fijo requiere un importe mayor a cero.');
         return;
       }
@@ -52760,34 +52943,39 @@ Object.assign(window, {
     }, 'Modalidad'), React.createElement('div', {
       style: {
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 9,
+        gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
+        gap: 8,
         marginBottom: 12
       }
-    }, [['fixed', 'PRECIO FIJO', 'Precio visible en la app'], ['quote', 'REQUIERE COTIZACIÓN', 'La app muestra “Se cotiza”']].map(([mode, title, sub]) => {
-      const on = mode === 'quote' ? draft.cotiza : !draft.cotiza;
+    }, [['PAYROLL_FIXED', 'fixed', 'PRECIO FIJO', 'Precio visible en la app'], ['PAYROLL_QUOTE', 'quote', 'REQUIERE COTIZACIÓN', 'La app muestra “Se cotiza”'], ['DIRECT_CONTACT', 'direct', 'CONTACTO DIRECTO', 'Precio informativo · sin financiamiento SutiApp']].map(([value, mode, title, sub]) => {
+      const on = draft.commercialMode === value;
       return React.createElement('button', {
         key: mode,
         'data-program-product-mode': mode,
-        onClick: () => set('cotiza', mode === 'quote'),
+        onClick: () => setDraft(old => Object.assign({}, old, {
+          commercialMode: value,
+          cotiza: value === 'PAYROLL_QUOTE'
+        })),
         style: {
           textAlign: 'left',
           border: on ? '2px solid var(--guinda)' : '1px solid var(--hairline)',
           borderRadius: 13,
-          padding: 11,
+          padding: 10,
           background: on ? 'var(--guinda-50)' : 'var(--surface)',
           fontFamily: 'inherit',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          minWidth: 0
         }
       }, React.createElement('div', {
         style: {
-          fontSize: 11.5,
+          fontSize: 10.5,
           fontWeight: 900,
-          color: on ? 'var(--guinda)' : 'var(--ink)'
+          color: on ? 'var(--guinda)' : 'var(--ink)',
+          overflowWrap: 'anywhere'
         }
       }, title), React.createElement('div', {
         style: {
-          fontSize: 10.5,
+          fontSize: 9.5,
           fontWeight: 600,
           color: 'var(--ink-3)',
           marginTop: 3,
@@ -52796,7 +52984,7 @@ Object.assign(window, {
       }, sub));
     })), React.createElement('label', {
       style: label
-    }, draft.cotiza ? 'Precio importado/referencial (opcional)' : 'Precio fijo obligatorio'), React.createElement('input', {
+    }, draft.commercialMode === 'PAYROLL_FIXED' ? 'Precio fijo obligatorio' : draft.commercialMode === 'DIRECT_CONTACT' ? 'Precio informativo (opcional)' : 'Precio importado/referencial (opcional)'), React.createElement('input', {
       'data-program-product-field': 'price',
       type: 'number',
       min: 0,
@@ -52850,6 +53038,38 @@ Object.assign(window, {
       on: draft.activo !== false,
       size: 'lg',
       onClick: () => set('activo', draft.activo === false)
+    })), React.createElement('div', {
+      'data-program-product-sold-control': 'true',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '12px 15px',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14,
+        fontWeight: 850
+      }
+    }, 'Vendido'), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, 'Marca el artículo como no disponible para nuevas solicitudes.')), React.createElement(window.Toggle, {
+      on: draft.sold === true,
+      size: 'lg',
+      onClick: () => set('sold', draft.sold !== true)
     })), React.createElement('div', {
       style: {
         background: 'var(--surface-2)',

@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260831000700 — modalidad comercial y Vendido
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración agrega `commercial_mode`, `sold`, `sold_at` y `sold_by`, dos constraints, un guard central de solicitudes y evoluciona los dos writers Admin. El backfill explícito dejó 80 `PAYROLL_FIXED`, 20 `PAYROLL_QUOTE` y 35 Casa `DIRECT_CONTACT`; `sold=false` en las 135 filas. Conservó 65 precios con hash `2ba16e15407a83d630a6294469ff68b3`, 135 productos, assets, solicitudes y Marketplace.
+
+Forward/runtime/recovery compilaron en transacciones separadas con `ROLLBACK`. Las pruebas transaccionales activaron y quitaron Vendido, desactivaron/reactivaron y comprobaron que la modalidad original no cambia; los intentos de insertar solicitudes vendidas o directas fueron denegados. El recovery compara IDs y hash completo, restaura definiciones exactas de writers y aborta ante cualquier cambio o auditoría Admin posterior. No ejecutar recovery real después de actividad administrativa legítima.
+
 ## 20260831000600 — bootstrap vacío de Suti Cirugías
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración agrega exclusivamente `create_first_cirugias_program_catalog_item`; no reemplaza el writer general, no crea productos/assets/auditorías y no cambia tablas, RLS o policies. La RPC exige `program_catalog.write`, sólo acepta `cirugias`, serializa la primera alta con advisory lock, conserva la allowlist y registra procedencia administrativa y auditoría.

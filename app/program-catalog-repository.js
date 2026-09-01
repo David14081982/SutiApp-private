@@ -4,6 +4,8 @@
   function db(){return window.SutiSupabase.getClient();}
   const publicFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const privateFields='id,storage_bucket,storage_path,mime_type,status';
+  const contactCategories=Object.freeze({aires:'Aires Acondicionados',auto:'Suti Auto',casa:'Suti Casa',cirugias:'Suti Cirugías',computo:'Equipos de Computo',farma:'Suti Farma',prestamo:'Suti Prestamo',puertas:'Puertas de Seguridad',renta:'Suti Renta',solar:'Paneles Solares',terrenos:'Suti Terrenos',tours:'Suti Tours'});
+  function safeContactUrl(value){const raw=String(value||'').trim();return /^(https?:\/\/|tel:|mailto:)/i.test(raw)?raw:null;}
   async function resolveAssetUrls(links){
     const urls=new Map(),privateByBucket=new Map();
     for(const link of links){
@@ -25,7 +27,7 @@
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db();
-    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
     const [rows,links]=await Promise.all([
       itemQuery,
@@ -40,12 +42,24 @@
       const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
       const imageAssets=itemLinks.map((link)=>Object.freeze({link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null}));
       const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
-      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
+      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
   }
   async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
     return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
+  }
+  async function getDirectContact(item){
+    const direct=safeContactUrl(item&&item.contact_url_raw);
+    if(direct)return Object.freeze({status:'READY',primaryUrl:direct,primaryLabel:'Contactar',phoneUrl:direct.startsWith('tel:')?direct:null,whatsappUrl:null,source:'PROGRAM_CATALOG_ITEM'});
+    const category=contactCategories[item&&(item.program_key||item.scopeId)];
+    if(!category)return Object.freeze({status:'UNAVAILABLE',primaryUrl:null,phoneUrl:null,whatsappUrl:null,source:'NO_CONTACT_CONTRACT'});
+    const out=await db().from('institutional_programs').select('id,category,phone_raw,whatsapp_raw,whatsapp_url').eq('enabled',true).eq('category',category).limit(2);
+    if(out.error)throw out.error;
+    if((out.data||[]).length!==1)return Object.freeze({status:'UNAVAILABLE',primaryUrl:null,phoneUrl:null,whatsappUrl:null,source:'INSTITUTIONAL_PROGRAM_NOT_UNIQUE'});
+    const row=out.data[0],phone=String(row.phone_raw||'').replace(/\D/g,''),whatsapp=String(row.whatsapp_raw||'').replace(/\D/g,''),configuredWhatsapp=safeContactUrl(row.whatsapp_url);
+    const phoneUrl=phone?'tel:'+phone:null,whatsappUrl=configuredWhatsapp||(whatsapp?'https://wa.me/52'+whatsapp.replace(/^52/,''):null),primaryUrl=whatsappUrl||phoneUrl;
+    return Object.freeze({status:primaryUrl?'READY':'UNAVAILABLE',primaryUrl,primaryLabel:whatsappUrl?'Enviar mensaje':'Llamar',phoneUrl,whatsappUrl,source:'INSTITUTIONAL_PROGRAMS',category:row.category});
   }
   async function listFavorites(){const r=await db().from('program_catalog_favorites').select('item_id');if(r.error)throw r.error;return Object.freeze((r.data||[]).map((row)=>row.item_id));}
   async function setFavorite(itemId,on){const api=db(),user=(await api.auth.getUser()).data.user;if(!user)throw new Error('AUTH_REQUIRED');const r=on?await api.from('program_catalog_favorites').upsert({auth_user_id:user.id,item_id:itemId},{onConflict:'auth_user_id,item_id'}):await api.from('program_catalog_favorites').delete().eq('item_id',itemId);if(r.error)throw r.error;}
@@ -71,7 +85,8 @@
   }
   async function saveAdminItem(item,assets){
     assertAdminWrite();
-    const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:Boolean(item.cotiza),enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
+    const mode=item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED');
+    const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
     const out=bootstrap
@@ -80,5 +95,5 @@
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
 })();

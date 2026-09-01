@@ -2087,6 +2087,27 @@ Known limitations: 0 dentro del alcance
 Evidence: docs/qa/H-MEMBERSHIP-ENABLED-CUTOVER-001-EVIDENCE.md
 ```
 
+## 2026-08-31 — H-PROGRAM-PRODUCT-COMMERCIAL-MODE-AND-SOLD-001
+
+- `program_catalog_items` incorpora tres modalidades comerciales explícitas y un estado Vendido independiente, sin duplicar catálogo ni sobrecargar `requires_quote`.
+- Los 35 productos Casa quedaron `DIRECT_CONTACT` conservando 35/35 precios, procedencia y assets; los otros productos preservaron 80 fijos y 20 de cotización. Edge v32 y el trigger central deniegan contacto directo/vendido server-side.
+- Chrome real validó Casa con precio y contacto sin simulador, VENDIDO en tarjeta/detalle sin acciones y el editor Admin con tres modos y ambos switches. Todas las pruebas de vendido fueron transaccionales o aisladas; no se alteró evidencia productiva.
+
+```text
+H-PROGRAM-PRODUCT-COMMERCIAL-MODE-AND-SOLD-001 RESULT
+Status: PASS
+Files changed: schema/recovery; repository/store/screens; Edge; bundle/cache; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — program_catalog_items permanece autoridad única
+Invariant verdict: PASS — modalidad, vendido y enabled independientes; 65 precios preservados
+Build: PASS — bundle reproducible desde 95 fuentes; Edge v32 ACTIVE y bundle remoto verificado
+Tests: PASS — migration/runtime/recovery/live/browser focal; suite estática 75/75
+Security: PASS focal — trigger/Edge/RPC/RLS; direct DML denied; sold_by hidden
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: no se inventó cotización real para repetir el E2E ADR-087; su evidencia vigente se preserva
+Evidence: docs/qa/H-PROGRAM-PRODUCT-COMMERCIAL-MODE-AND-SOLD-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001
 
 - Admin incorpora `Programas · Productos` agrupado por 12 programas y escribe exclusivamente `program_catalog_items` mediante RPC; Marketplace permanece separado.

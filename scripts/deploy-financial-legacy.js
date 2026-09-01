@@ -42,6 +42,7 @@ function env() {
     const remote = Buffer.from(await response.arrayBuffer());
     const markers = ['source/index.ts', 'deposit_selection', 'bank_account_id', 'notification_phone', 'create_validated_financial_program_request',
       'programPaymentSessionOpen', 'generate_program_product_payment_schedule', 'create_validated_program_product_payment_request'];
+    markers.push('PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY', 'PROGRAM_PRODUCT_SOLD', 'commercial_mode');
     const magic = remote.subarray(0, 12).toString('ascii');
     const compiled = magic.startsWith('ESZIP') || remote.includes(Buffer.from('source/index.ts'));
     if (compiled) {

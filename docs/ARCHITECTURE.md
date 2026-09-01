@@ -1,5 +1,26 @@
 # Arquitectura
 
+## Productos propios: modalidad comercial y disponibilidad — ADR-089
+
+```text
+Admin Programas · Productos
+  → ProgramCatalogRepository
+  → save_program_catalog_item (program_catalog.write + auditoría)
+  → program_catalog_items {commercial_mode, sold, enabled}
+
+Afiliado
+  enabled=false                         → oculto
+  enabled=true + sold=true              → detalle VENDIDO, cero adquisición
+  PAYROLL_FIXED                         → simulador universal
+  PAYROLL_QUOTE                         → cotización → simulador universal
+  DIRECT_CONTACT                        → contact_url_raw / institutional_programs
+
+program_requests BEFORE INSERT + financial-legacy
+  → vuelven a validar modalidad y vendido server-side
+```
+
+La prioridad anterior es común a todos los programas y no depende de Casa. `requires_quote` sigue siendo compatibilidad financiera bajo constraint, no enum comercial. `admin_audit_log` conserva trazabilidad de vendido/reactivado, mientras `sold_at/sold_by` sólo representan el estado vigente. Marketplace, Panel Empresarial y motores financieros permanecen en sus fronteras previas.
+
 ## Admin Afiliados — ADR-071
 
 ```text

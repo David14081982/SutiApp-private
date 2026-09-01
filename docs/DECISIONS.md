@@ -731,3 +731,14 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Recovery:** puede retirar únicamente la RPC dedicada mientras no exista fila ni auditoría de Cirugías; después aborta para preservar actividad administrativa legítima.
 - **Límites:** cero cambios en Market, Rifas, Terrenos, `marketplace_products`, Google, Apps Script, documentos, tasas, fondos, plazos, cálculos o solicitudes.
 - **Aprobación:** instrucción explícita del propietario “Sí, hazlo sólo para Cirugías”, 2026-08-31.
+
+## ADR-089 — Modalidad comercial y estado Vendido de productos propios
+
+- **Autoridad:** se extiende `program_catalog_items`; no se crea tabla de productos, copia Marketplace ni autoridad de UI. La representación mínima es `commercial_mode` con `PAYROLL_FIXED`, `PAYROLL_QUOTE` y `DIRECT_CONTACT`.
+- **Semántica:** fijo conserva precio y plan universal; cotización conserva `requires_quote=true` y exige `quoted_amount` válido antes del mismo plan; contacto directo puede mostrar precio, pero carece de nómina, plazo, enganche, simulador y `program_request`.
+- **Vendido:** `sold` es ortogonal a modalidad y `enabled`. Una fila activa sigue visible con badge y detalle, pero todas las acciones quedan bloqueadas. `sold_at/sold_by` conservan estado actual y `admin_audit_log` conserva transiciones y reactivaciones sin alterar `record_origin`.
+- **Casa:** la auditoría de 35/35 filas demostró inmuebles de venta/renta con pago contado o crédito ajeno a SutiApp. Se clasificaron `DIRECT_CONTACT` conservando exactamente precio, procedencia, assets y disponibilidad; el contacto se resuelve por el contrato institucional existente de Suti Casa.
+- **Backend:** un trigger `BEFORE INSERT` sobre `program_requests` deniega vendido/contacto directo y exige el snapshot `PROGRAM_PRODUCT_PAYMENT_V1` para una solicitud financiera. `financial-legacy` repite el bloqueo antes de crear sesión. Admin conserva el único writer RPC allowlisted.
+- **Recovery:** backup privado conserva IDs, hash y definiciones previas de ambos writers. Recovery aborta ante filas, contenido, modalidad, vendido o historia Admin posterior y se verificó con `ROLLBACK`; no debe ejecutarse después de actividad Admin legítima.
+- **Límites:** cero cambios en Marketplace, Panel Empresarial, Google, Apps Script, fórmulas, JUB/Proceso, fondos, tasas, plazos, amortización, documentos, resumen, firma, éxito o Historial.
+- **Aprobación:** autorización productiva explícita del propietario para `H-PROGRAM-PRODUCT-COMMERCIAL-MODE-AND-SOLD-001` con el alcance completo de 135 filas, 2026-08-31.

@@ -9,6 +9,8 @@ const excluded = new Set([
   'test-static-suite.js',
   'test-google-service-account-webapp-auth.js',
   'test-google-user-oauth-webapp-scope.js',
+  // Productive Admin-resume verification performs authenticated network/RPC calls.
+  'test-universal-program-product-payment-simulator-admin-resume.js',
 ]);
 const tests = fs.readdirSync(__dirname)
   .filter((name) => /^test-.*\.js$/.test(name))

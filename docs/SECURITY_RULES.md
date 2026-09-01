@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Modalidad comercial y Vendido — ADR-089
+
+`commercial_mode`, `sold` y `sold_at` son lectura autenticada; `sold_by` permanece oculto al browser. DML directo sobre `program_catalog_items` sigue revocado y toda mutación Admin usa `save_program_catalog_item`, `program_catalog.write`, allowlist y auditoría antes/después. Ni modalidad ni vendido permiten editar `record_origin`, hoja, ordinal, hash o payload histórico.
+
+`program_requests_catalog_requestability` protege toda inserción, incluso si un cliente evita la UI: vendido devuelve `PROGRAM_PRODUCT_SOLD`, contacto directo devuelve `PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY`, cotización sólo admite su solicitud inicial y un beneficio financiero exige `PROGRAM_PRODUCT_PAYMENT_V1`. `financial-legacy` v32 repite vendido/contacto antes de abrir sesión. La matriz live confirmó DML directo Admin denegado, `sold_by` no legible y solicitud/Edge de Casa denegados; no se expone `service_role`.
+
 ## Bootstrap vacío de Suti Cirugías — ADR-088
 
 `create_first_cirugias_program_catalog_item` es `SECURITY DEFINER` con `search_path=''`, exige `auth.uid()` y `program_catalog.write`, limita campos y `program_key`, y usa un advisory lock antes de comprobar que Cirugías siga vacío. `anon` no ejecuta; `authenticated` sólo alcanza una escritura efectiva si el permiso backend pasa. DML directo continúa revocado y el writer general no cambió. La matriz real confirmó anónimo, afiliado sin permiso y DML directo denegados, sin crear productos.

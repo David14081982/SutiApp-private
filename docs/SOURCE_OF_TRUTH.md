@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-090 — UX documental e imágenes global
+
+La autoridad documental no cambia: `document_types` define capacidades y MIME; `program_document_requirements` define requisitos; `affiliate_documents` + `private_assets` + `private-assets` conservan el expediente/versionado; `request_documents` conserva la evidencia enviada. `UnifiedDocumentPhase` y `DocumentRequirementList` son la única superficie de autoservicio para préstamo, membresías, expediente, productos y gates documentales. No existe uploader, store, mock, base64 o copia local por pantalla.
+
+Las signed URLs son derivados temporales y se solicitan al abrir mediante `document-access`; `ImageViewer`/`DocumentViewer` sólo presentan la URL ya autorizada. El viewer, miniatura y selector nunca se convierten en autoridad ni escritor. Los workbenches Admin mantienen lectura/revisión separada y no adquieren reemplazo por esta H.
+
 ## Corte ADR-089 — modalidad comercial y disponibilidad de productos propios
 
 `public.program_catalog_items` continúa como única autoridad de cada producto propio. `commercial_mode` expresa exclusivamente cómo puede adquirirse: `PAYROLL_FIXED` usa `price_cash` y el plan universal, `PAYROLL_QUOTE` exige primero una cotización válida y después usa el mismo plan, y `DIRECT_CONTACT` permite mostrar el precio como referencia pero prohíbe financiamiento y solicitudes SutiApp. `requires_quote` conserva su significado financiero y nunca representa contacto directo.

@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-08-31 — H-GLOBAL-DOCUMENT-IMAGE-UX-CONSISTENCY-001
+
+- El reemplazo documental quedó unificado por capacidades reales en `DocumentRequirementList`: Documento, Préstamo, Membresías, producto y gates usan la misma acción y el mismo selector cámara/archivo.
+- El visor global quedó fixed sobre el shell, con safe-area, capa única, tap fuera protegido contra gestos, Escape, foco y scroll restaurables. Admin móvil dejó de abrir signed URLs crudas y usa el viewer interno; los inspectores conservaron navegación/revisión.
+- No hubo migración, despliegue Edge ni escritura documental. Chrome aislado pasó 390/430/desktop con 0 writes; el contrato productivo de privacidad/cross-user permanece respaldado por ADR-077 y su matriz live vigente.
+- El `sutiapp-architect-reviewer` contrastó solicitud, diff, autoridades, seguridad, legacy y evidencia real y emitió `APPROVED`; `WORK_QUEUE_HISTORY.md` no existe y no se avanzó otra H.
+
+```text
+H-GLOBAL-DOCUMENT-IMAGE-UX-CONSISTENCY-001 RESULT
+Status: PASS_WITH_LIMITATION
+Files changed: viewer/document UI compartidos; Admin preview; bundle/cache; tests; ADR/SOT/invariantes/evidencia; Registry
+Source-of-truth verdict: PASS — autoridades documentales preservadas; cero uploader o store paralelo
+Invariant verdict: PASS — INV-159–162; reemplazo versionado y viewer seguro
+Build: PASS — 95 fuentes; bundle v185 y sintaxis válidos
+Tests: PASS — 76/76 static; Chrome 390/430/desktop; cámara/archivo/fallo/thumbnail; 0 writes
+Security: PASS — document-access/RLS sin cambios; cross-user y anónimo permanecen DENIED
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0
+Known limitations: Safari/iOS físico no disponible; safe-area certificada por CSS + viewports iPhone, sin inset no-cero en CDP
+Evidence: docs/qa/H-GLOBAL-DOCUMENT-IMAGE-UX-CONSISTENCY-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-PROGRAM-CATALOG-CIRUGIAS-BOOTSTRAP-001
 
 - Cirugías aparece como programa vacío en Admin y puede abrir el editor para su primera alta real; no se insertaron productos sintéticos.

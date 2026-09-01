@@ -5508,6 +5508,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     useState
   } = React;
   const I = window.Icon;
+  const MEDIA_VIEWER_LAYER = 10000;
+  const VIEWER_CSS = `.su-media-viewer button:focus-visible{outline:3px solid #fff;outline-offset:2px}`;
+  const viewerHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 'max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 12px max(14px, env(safe-area-inset-left))',
+    gap: 10,
+    color: '#fff',
+    flexShrink: 0
+  };
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
@@ -5524,6 +5535,57 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       return false;
     }
   }
+  function useMediaViewerDialog(open, onClose) {
+    const dialogRef = useRef(null),
+      closeButtonRef = useRef(null),
+      openerRef = useRef(null),
+      closeRef = useRef(onClose);
+    closeRef.current = onClose;
+    useEffect(() => {
+      if (!open) return undefined;
+      const body = document.body,
+        html = document.documentElement;
+      const previous = {
+        bodyOverflow: body.style.overflow,
+        htmlOverflow: html.style.overflow
+      };
+      openerRef.current = document.activeElement;
+      body.style.overflow = 'hidden';
+      html.style.overflow = 'hidden';
+      const key = event => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeRef.current && closeRef.current();
+        }
+      };
+      window.addEventListener('keydown', key);
+      const frame = window.requestAnimationFrame(() => {
+        if (closeButtonRef.current) closeButtonRef.current.focus();else if (dialogRef.current) dialogRef.current.focus();
+      });
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.removeEventListener('keydown', key);
+        body.style.overflow = previous.bodyOverflow;
+        html.style.overflow = previous.htmlOverflow;
+        const opener = openerRef.current;
+        if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus({
+          preventScroll: true
+        });
+      };
+    }, [open]);
+    const close = () => {
+      if (closeRef.current) closeRef.current();
+    };
+    const backdropClick = event => {
+      if (event.target === event.currentTarget) close();
+    };
+    return {
+      dialogRef,
+      closeButtonRef,
+      close,
+      backdropClick
+    };
+  }
   function ImageViewer({
     sources,
     startIndex = 0,
@@ -5537,8 +5599,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       x: 0,
       y: 0
     });
-    const points = useRef(new Map());
+    const points = useRef(new Map()),
+      moved = useRef(false),
+      startedOnBackdrop = useRef(false);
     const gesture = useRef(null);
+    const dialog = useMediaViewerDialog(items.length > 0, onClose);
     const reset = () => setView({
       scale: 1,
       x: 0,
@@ -5555,7 +5620,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }));
     useEffect(() => {
       const key = event => {
-        if (event.key === 'Escape') onClose();else if (event.key === 'ArrowLeft' && index > 0) select(index - 1);else if (event.key === 'ArrowRight' && index < items.length - 1) select(index + 1);
+        if (event.key === 'ArrowLeft' && index > 0) select(index - 1);else if (event.key === 'ArrowRight' && index < items.length - 1) select(index + 1);
       };
       window.addEventListener('keydown', key);
       return () => window.removeEventListener('keydown', key);
@@ -5567,12 +5632,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       y: (a.y + b.y) / 2
     });
     const begin = event => {
+      if (points.current.size === 0) {
+        moved.current = false;
+        startedOnBackdrop.current = event.target === event.currentTarget;
+      }
       event.currentTarget.setPointerCapture && event.currentTarget.setPointerCapture(event.pointerId);
       points.current.set(event.pointerId, {
         x: event.clientX,
         y: event.clientY
       });
       const values = Array.from(points.current.values());
+      if (values.length > 1) moved.current = true;
       gesture.current = values.length > 1 ? {
         kind: 'pinch',
         distance: distance(values[0], values[1]),
@@ -5593,7 +5663,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       const values = Array.from(points.current.values()),
         start = gesture.current;
       if (!start) return;
+      if (start.kind === 'pan' && values[0] && Math.hypot(values[0].x - start.point.x, values[0].y - start.point.y) > 6) moved.current = true;
       if (values.length > 1) {
+        moved.current = true;
         if (start.kind !== 'pinch') {
           gesture.current = {
             kind: 'pinch',
@@ -5627,7 +5699,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         view
       } : null;
     };
-    const iconButton = (name, label, action, disabled) => React.createElement('button', {
+    const closeFromCanvas = event => {
+      const shouldClose = startedOnBackdrop.current && event.target === event.currentTarget && !moved.current;
+      startedOnBackdrop.current = false;
+      moved.current = false;
+      if (shouldClose) dialog.close();
+    };
+    const iconButton = (name, label, action, disabled, buttonRef) => React.createElement('button', {
+      ref: buttonRef,
+      type: 'button',
       onClick: event => {
         event.stopPropagation();
         action();
@@ -5635,16 +5715,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       disabled,
       'aria-label': label,
       style: {
-        width: 42,
-        height: 42,
+        width: 48,
+        height: 48,
         border: 'none',
-        borderRadius: 13,
+        borderRadius: 14,
         background: 'rgba(255,255,255,.14)',
         color: '#fff',
         display: 'grid',
         placeItems: 'center',
         cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? .35 : 1
+        opacity: disabled ? .35 : 1,
+        flexShrink: 0
       }
     }, name === 'minus' ? React.createElement('span', {
       'aria-hidden': 'true',
@@ -5659,29 +5740,26 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       stroke: 2.2
     }));
     return React.createElement('div', {
+      ref: dialog.dialogRef,
       role: 'dialog',
       'aria-modal': 'true',
       'aria-label': 'Visor de imagen',
+      tabIndex: -1,
+      className: 'su-media-viewer',
       'data-image-viewer': 'open',
-      onClick: onClose,
+      onClick: dialog.backdropClick,
       style: {
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        zIndex: 120,
+        zIndex: MEDIA_VIEWER_LAYER,
         background: 'rgba(7,5,6,.96)',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'su-fadein .2s ease'
+        animation: 'su-fadein .2s ease',
+        overscrollBehavior: 'contain'
       }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 14px',
-        gap: 10,
-        color: '#fff'
-      }
+    }, React.createElement('style', null, VIEWER_CSS), React.createElement('div', {
+      style: viewerHeaderStyle
     }, React.createElement('div', {
       style: {
         fontSize: 12,
@@ -5693,8 +5771,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         display: 'flex',
         gap: 7
       }
-    }, iconButton('minus', 'Alejar', () => zoomTo(view.scale - .5), view.scale <= 1), iconButton('search', 'Restablecer zoom', reset, view.scale === 1 && view.x === 0 && view.y === 0), iconButton('plus', 'Acercar', () => zoomTo(view.scale + .5), view.scale >= 5), iconButton('close', 'Cerrar', onClose))), React.createElement('div', {
-      onClick: event => event.stopPropagation(),
+    }, iconButton('minus', 'Alejar', () => zoomTo(view.scale - .5), view.scale <= 1), iconButton('search', 'Restablecer zoom', reset, view.scale === 1 && view.x === 0 && view.y === 0), iconButton('plus', 'Acercar', () => zoomTo(view.scale + .5), view.scale >= 5), iconButton('close', 'Cerrar', dialog.close, false, dialog.closeButtonRef))), React.createElement('div', {
+      onClick: closeFromCanvas,
       onPointerDown: begin,
       onPointerMove: move,
       onPointerUp: end,
@@ -5745,13 +5823,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const mime = String(mimeType || '').toLowerCase();
     const isImage = mime.startsWith('image/');
     const isPdf = mime === 'application/pdf';
-    useEffect(() => {
-      const key = event => {
-        if (event.key === 'Escape') onClose();
-      };
-      window.addEventListener('keydown', key);
-      return () => window.removeEventListener('keydown', key);
-    }, [onClose]);
+    const dialog = useMediaViewerDialog(!!source && !isImage, onClose);
     if (!source) return null;
     if (isImage) return React.createElement(ImageViewer, {
       sources: [source],
@@ -5759,28 +5831,26 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       onClose
     });
     return React.createElement('div', {
+      ref: dialog.dialogRef,
       role: 'dialog',
       'aria-modal': 'true',
       'aria-label': `Visor de ${title}`,
+      tabIndex: -1,
+      className: 'su-media-viewer',
+      onClick: dialog.backdropClick,
       'data-document-viewer': isPdf ? 'pdf' : 'unsupported',
       style: {
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        zIndex: 120,
+        zIndex: MEDIA_VIEWER_LAYER,
         background: 'rgba(7,5,6,.96)',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'su-fadein .2s ease'
+        animation: 'su-fadein .2s ease',
+        overscrollBehavior: 'contain'
       }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 14px',
-        gap: 10,
-        color: '#fff'
-      }
+    }, React.createElement('style', null, VIEWER_CSS), React.createElement('div', {
+      style: viewerHeaderStyle
     }, React.createElement('div', {
       style: {
         minWidth: 0,
@@ -5791,29 +5861,32 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         whiteSpace: 'nowrap'
       }
     }, title), React.createElement('button', {
+      ref: dialog.closeButtonRef,
       type: 'button',
-      onClick: onClose,
+      onClick: dialog.close,
       'aria-label': 'Cerrar visor',
       style: {
-        width: 42,
-        height: 42,
+        width: 48,
+        height: 48,
         border: 'none',
-        borderRadius: 13,
+        borderRadius: 14,
         background: 'rgba(255,255,255,.14)',
         color: '#fff',
         display: 'grid',
-        placeItems: 'center'
+        placeItems: 'center',
+        flexShrink: 0
       }
     }, React.createElement(I, {
       name: 'close',
       size: 21,
       stroke: 2.2
     }))), isPdf ? React.createElement('div', {
+      onClick: dialog.backdropClick,
       style: {
         position: 'relative',
         flex: 1,
         minHeight: 0,
-        padding: '0 10px 10px'
+        padding: '0 max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))'
       }
     }, !loaded && React.createElement('div', {
       role: 'status',
@@ -5840,11 +5913,12 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         opacity: loaded ? 1 : 0
       }
     })) : React.createElement('div', {
+      onClick: dialog.backdropClick,
       style: {
         flex: 1,
         display: 'grid',
         placeItems: 'center',
-        padding: 24,
+        padding: '24px max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left))',
         color: '#fff',
         textAlign: 'center'
       }
@@ -5880,7 +5954,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   Object.assign(window, {
     ImageViewer,
     DocumentViewer,
-    openSafeContentUrl
+    openSafeContentUrl,
+    useMediaViewerDialog,
+    MEDIA_VIEWER_LAYER
   });
 })();
 })();
@@ -20393,6 +20469,16 @@ Object.assign(window, {
   const ACCEPTED = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
   const newest = (docs, typeId) => docs.filter(d => d.document_type_id === typeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
   const physicalAvailable = doc => !!(doc && doc.available !== false && doc.availability !== 'OBJECT_MISSING' && doc.availability !== 'ASSET_METADATA_MISSING' && doc.availability !== 'ASSET_DISABLED');
+  const sourceCapabilities = type => {
+    const mime = type && type.accepted_mime_types || [];
+    const camera = !!(type && type.camera_allowed !== false && mime.some(value => String(value).startsWith('image/'))),
+      file = !!(type && type.file_upload_allowed !== false);
+    return {
+      camera,
+      file,
+      any: camera || file
+    };
+  };
   function DocumentRequirementList({
     requirements,
     documents,
@@ -20630,22 +20716,24 @@ Object.assign(window, {
         marginBottom: 9
       }
     }, error);
+    const originType = origin && origin.type,
+      originCapabilities = sourceCapabilities(originType);
     const originSheet = h(window.Sheet, {
       open: !!origin,
       onClose: () => setOrigin(null),
-      title: origin ? 'Agregar ' + origin.label : 'Agregar documento'
-    }, origin && h(React.Fragment, null, h('p', {
+      title: originType ? (origin.replacing ? 'Reemplazar ' : 'Agregar ') + originType.label : 'Agregar documento'
+    }, originType && h(React.Fragment, null, h('p', {
       style: {
         fontSize: 13,
         color: 'var(--ink-3)',
         lineHeight: 1.5,
         margin: '0 0 12px'
       }
-    }, 'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'), origin.camera_allowed !== false && h('button', {
+    }, origin.replacing ? 'Elige cómo quieres reemplazarlo. El documento actual permanecerá intacto hasta completar la nueva carga.' : 'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'), originCapabilities.camera && h('button', {
       type: 'button',
       'data-document-origin': 'camera',
       onClick: () => {
-        const type = origin;
+        const type = originType;
         setOrigin(null);
         openCamera(type);
       },
@@ -20667,11 +20755,11 @@ Object.assign(window, {
       name: 'camera',
       size: 20,
       stroke: 2
-    }), 'Tomar foto'), origin.file_upload_allowed !== false && h('button', {
+    }), 'Tomar foto'), originCapabilities.file && h('button', {
       type: 'button',
       'data-document-origin': 'file',
       onClick: () => {
-        const type = origin;
+        const type = originType;
         setOrigin(null);
         pick(type, 'file');
       },
@@ -20796,7 +20884,8 @@ Object.assign(window, {
         const verified = !!(doc && doc.status === 'VERIFIED'),
           accepted = !!(doc && ACCEPTED.has(doc.status)),
           available = physicalAvailable(doc),
-          canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
+          capabilities = sourceCapabilities(type),
+          canUpload = capabilities.any && (!!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status)),
           preview = accepted && available;
         const thumbnail = doc && thumbnails[doc.id],
           image = !!(preview && thumbnail && thumbnail.phase === 'ready' && thumbnail.url && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
@@ -20806,7 +20895,10 @@ Object.assign(window, {
           hint = type.description || state.label;
         const classes = ['mr-doc-tile', accepted && available ? 'is-filled' : '', image ? 'has-thumbnail' : '', highlightedId === type.id && (!accepted || !available) ? 'is-highlighted' : '', doc && (['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status) || !available) ? 'is-error' : ''].filter(Boolean).join(' ');
         const act = () => {
-          if (preview) open(doc, type);else if (canUpload) setOrigin(type);
+          if (preview) open(doc, type);else if (canUpload) setOrigin({
+            type,
+            replacing: !!doc
+          });
         };
         return h('article', {
           key: type.id,
@@ -20871,7 +20963,10 @@ Object.assign(window, {
           type: 'button',
           className: 'mr-doc-replace',
           'aria-label': 'Reemplazar ' + type.label,
-          onClick: () => setOrigin(type)
+          onClick: () => setOrigin({
+            type,
+            replacing: true
+          })
         }, h(I, {
           name: 'camera',
           size: 13,
@@ -20912,8 +21007,8 @@ Object.assign(window, {
           label: 'Documento requerido',
           icon: 'upload'
         },
-        canUpload = !!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status),
-        cameraAllowed = (type.accepted_mime_types || []).some(mime => String(mime).startsWith('image/')),
+        capabilities = sourceCapabilities(type),
+        canUpload = capabilities.any && (!!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status)),
         isBusy = !!(busy && busy.id === type.id),
         canView = accepted && available;
       return h('div', {
@@ -21005,7 +21100,10 @@ Object.assign(window, {
           marginTop: 10,
           flexWrap: 'wrap'
         }
-      }, cameraAllowed && actionButton('Tomar foto', 'camera', () => pick(type, 'camera'), isBusy, 'camera'), actionButton(doc ? 'Reemplazar' : 'Subir archivo', 'upload', () => pick(type, 'file'), isBusy, 'upload')));
+      }, actionButton(doc ? 'Reemplazar' : 'Adjuntar', 'upload', () => setOrigin({
+        type,
+        replacing: !!doc
+      }), isBusy, doc ? 'replace' : 'upload')));
     })), originSheet, cameraSheet, viewer && h(window.DocumentViewer, {
       source: viewer.source,
       mimeType: viewer.mimeType,
@@ -39200,15 +39298,7 @@ Object.assign(window, {
     }, h(I, {
       name: mime === 'application/pdf' ? 'doc' : 'folder',
       size: 42
-    }), h('b', null, current && current.previewUnavailable ? 'No se pudo autorizar la vista previa' : 'Vista previa no disponible para este formato'), current && current.signedUrl && h('a', {
-      href: current.signedUrl,
-      target: '_blank',
-      rel: 'noopener noreferrer',
-      style: {
-        color: 'var(--guinda)',
-        fontWeight: 850
-      }
-    }, 'Abrir documento'));
+    }), h('b', null, current && current.previewUnavailable ? 'No se pudo autorizar la vista previa' : 'Vista previa no disponible para este formato'));
     return h('section', {
       'data-document-preview-panel': 'true',
       className: 'docwb-preview',
@@ -39332,19 +39422,15 @@ Object.assign(window, {
         borderRadius: 10,
         padding: 9
       }
-    }, h('b', null, 'Observación anterior: '), row.review_observation), current && current.signedUrl && h('a', {
-      href: current.signedUrl,
-      target: '_blank',
-      rel: 'noopener noreferrer',
+    }, h('b', null, 'Observación anterior: '), row.review_observation), current && current.signedUrl && h('div', {
       style: {
         gridColumn: '1 / -1',
         textAlign: 'center',
-        color: 'var(--guinda)',
+        color: 'var(--ink-3)',
         fontSize: 11.5,
-        fontWeight: 850,
-        textDecoration: 'none'
+        fontWeight: 800
       }
-    }, 'Abrir original en otra pestaña')));
+    }, 'Vista autorizada dentro de SutiApp')));
   }
   function DesktopReview(props) {
     const {
@@ -40757,7 +40843,12 @@ Object.assign(window, {
       style: {
         marginTop: 14
       }
-    }, 'Guardar política QR'))));
+    }, 'Guardar política QR'))), props.mobilePreview && h(window.DocumentViewer, {
+      source: props.mobilePreview.signedUrl,
+      mimeType: props.mobilePreview.mimeType,
+      title: props.mobilePreview.title,
+      onClose: () => props.setMobilePreview(null)
+    }));
   }
   function DocumentsAdminModule({
     app,
@@ -40796,6 +40887,7 @@ Object.assign(window, {
       [previewPhase, setPreviewPhase] = React.useState('idle'),
       [previewError, setPreviewError] = React.useState(''),
       [previewNonce, setPreviewNonce] = React.useState(0),
+      [mobilePreview, setMobilePreview] = React.useState(null),
       [statusFilter, setStatusFilter] = React.useState(''),
       [typeFilter, setTypeFilter] = React.useState(''),
       [affiliateFilter, setAffiliateFilter] = React.useState(initialAffiliateId || ''),
@@ -40955,13 +41047,13 @@ Object.assign(window, {
     };
     const mobileOpen = async document => {
       setBusy(document.id);
-      const popup = window.open('about:blank', '_blank');
-      if (popup) popup.opener = null;
       try {
         const previewResult = await window.DocumentWorkflowRepository.adminPreview(document.id, document.affiliate_id, 'ADMIN_DOCUMENT_REVIEW');
-        if (popup) popup.location.replace(previewResult.signedUrl);else window.open(previewResult.signedUrl, '_blank', 'noopener,noreferrer');
+        setMobilePreview(Object.assign({}, previewResult, {
+          mimeType: previewResult.mimeType || document.mimeType || '',
+          title: businessLabel(document.document_type)
+        }));
       } catch (_) {
-        if (popup) popup.close();
         app.toast && app.toast('No fue posible autorizar la vista');
       } finally {
         setBusy('');
@@ -41079,6 +41171,8 @@ Object.assign(window, {
       saveQr,
       mobileReview,
       mobileOpen,
+      mobilePreview,
+      setMobilePreview,
       createType
     };
     if (!desktop) return h(MobileDocuments, common);
@@ -43069,6 +43163,7 @@ Object.assign(window, {
     onReview,
     canReview
   }) {
+    const dialog = window.useMediaViewerDialog(!!entry, onClose);
     if (!entry || !entry.doc) return null;
     const doc = entry.doc,
       total = entry.items.length,
@@ -43113,21 +43208,24 @@ Object.assign(window, {
       }
     }, 'Este formato se abre en su visor original.'));
     return React.createElement('div', {
+      ref: dialog.dialogRef,
       role: 'dialog',
       'aria-modal': 'true',
       'aria-label': 'Vista previa del documento',
+      tabIndex: -1,
+      className: 'su-media-viewer',
       'data-document-inspector': 'true',
-      onClick: onClose,
+      onClick: dialog.backdropClick,
       style: {
         position: 'fixed',
         inset: 0,
-        zIndex: 10000,
+        zIndex: window.MEDIA_VIEWER_LAYER,
         background: 'rgba(10,17,30,.72)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 16
+        padding: 'max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))'
       }
     }, React.createElement('div', {
       onClick: e => e.stopPropagation(),
@@ -43168,32 +43266,21 @@ Object.assign(window, {
         color: state ? state.color : 'var(--ink-3)',
         marginTop: 2
       }
-    }, state ? state.label : (doc.expedienteClassification || doc.sourceColumn || 'Histórico') + (doc.created_at || doc.createdAt ? ' · ' + new Date(doc.created_at || doc.createdAt).toLocaleDateString('es-MX') : ''))), doc.signedUrl && React.createElement('a', {
-      href: doc.signedUrl,
-      target: '_blank',
-      rel: 'noopener noreferrer',
-      style: {
-        textDecoration: 'none',
-        fontSize: 11.5,
-        fontWeight: 850,
-        color: 'var(--guinda)',
-        padding: '8px 10px',
-        borderRadius: 10,
-        background: 'var(--surface-2)'
-      }
-    }, 'Abrir original'), React.createElement('button', {
+    }, state ? state.label : (doc.expedienteClassification || doc.sourceColumn || 'Histórico') + (doc.created_at || doc.createdAt ? ' · ' + new Date(doc.created_at || doc.createdAt).toLocaleDateString('es-MX') : ''))), React.createElement('button', {
+      ref: dialog.closeButtonRef,
       type: 'button',
-      onClick: onClose,
+      onClick: dialog.close,
       'aria-label': 'Cerrar vista previa',
       style: {
-        width: 36,
-        height: 36,
+        width: 48,
+        height: 48,
         border: 0,
-        borderRadius: 11,
+        borderRadius: 13,
         background: 'var(--surface-2)',
         display: 'grid',
         placeItems: 'center',
-        color: 'var(--ink)'
+        color: 'var(--ink)',
+        flexShrink: 0
       }
     }, '×')), React.createElement('div', {
       style: {

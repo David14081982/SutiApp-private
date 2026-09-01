@@ -1,5 +1,10 @@
 # Invariantes
 
+- **INV-159:** Todo consumidor de autoservicio documental usa `UnifiedDocumentPhase`/`DocumentRequirementList` y resuelve cámara/archivo exclusivamente desde `document_types.camera_allowed`, `file_upload_allowed` y MIME admitidos; no existen uploaders por préstamo o membresía.
+- **INV-160:** Reemplazar nunca elimina primero el documento vigente. La versión nueva se registra por el writer canónico con `replaces_document_id`; si selección, preparación, Storage o RPC fallan, la UI conserva la fila y miniatura anteriores.
+- **INV-161:** Todo fullscreen de imagen usa `position: fixed`, la capa `MEDIA_VIEWER_LAYER`, safe areas superiores/laterales, cierre accesible de al menos 44 px, Escape, focus return y scroll lock reversible. Tap fuera cierra por igualdad `target/currentTarget`; una interacción iniciada sobre imagen o un gesto no cierra accidentalmente.
+- **INV-162:** Una miniatura/documento privado obtiene una firma temporal nueva al abrir mediante `document-access`; no abre URL cruda, pestaña externa, JSON ni `InvalidJWT`. Autoservicio, Admin y cross-user conservan los contratos backend separados de ADR-077.
+
 - **INV-138:** Notificaciones y badge consumen exclusivamente la proyección self-only de cotizaciones reales `program_requests` en estado `submitted|in_review|approved`. `DATA.notifs`, mocks, JSON y browser storage no son fuente, copia ni fallback; estados terminales no se presentan falsamente como “en proceso”.
 - **INV-139:** Sólo una cotización propia `approved` con `seen_at IS NULL` cuenta como no leída. `mark_marketplace_quote_seen` deriva el afiliado efectivo, es idempotente y persiste el acuse; una respuesta real posterior restablece `seen_at=NULL`. Anónimo y cross-user quedan denegados.
 - **INV-140:** Un dominio sin contrato real de evento y visto durable no emite notificaciones. Carga, error backend con reintento y vacío son estados visibles de pantalla y nunca avisos sintéticos.

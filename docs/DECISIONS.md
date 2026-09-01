@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-090 | Todo reemplazo de expediente usa `UnifiedDocumentPhase → DocumentRequirementList → DocumentWorkflowRepository`; todo fullscreen de imagen usa el viewer o comportamiento modal compartido con safe-area, cierre por overlay/Escape, foco y scroll restaurables. | Aceptada / ACTIVE |
 | ADR-086 | Los productos propios de programas permanecen en `program_catalog_items`; todo `price_cash` histórico no nulo es precio fijo salvo evidencia específica y el writer Admin escribe la misma autoridad mediante RPC. | Aceptada |
 | ADR-087 | El plan universal de productos deriva precio, cálculo, calendario y solicitud desde las autoridades vigentes; JUB paga una vez al mes el día 5 y la aprobación queda sólo en Supabase. | Aceptada |
 | ADR-085 | La cuenta bancaria es opcional en Depósito; el celular permanece requerido y una cuenta proporcionada conserva validación completa. | Aceptada |
@@ -63,6 +64,14 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-090 — Contrato global de reemplazo documental y visor de imagen
+
+- **Decisión:** préstamo, membresías, expediente, solicitudes de productos y gates documentales reutilizan el mismo selector por capacidades; un documento reemplazable muestra una sola acción que ofrece únicamente cámara y/o archivo cuando `document_types` lo permite.
+- **Integridad:** la UI no elimina la versión vigente. `DocumentWorkflowRepository.upload` conserva el writer transaccional existente, que crea una fila nueva con `replaces_document_id`; un fallo previo al registro deja intacto el documento anterior.
+- **Viewer:** `ImageViewer`/`DocumentViewer` son fixed, usan una capa global, safe areas, touch target de 48 px, Escape, bloqueo reversible de scroll y devolución de foco. Tap fuera cierra sólo si el gesto comienza y termina en el overlay; tocar, mover, ampliar o pellizcar la imagen no cierra.
+- **Administración:** los workbenches de sólo lectura/revisión no adquieren capacidad de reemplazo. Sus previews móviles permanecen internos y los inspectores reutilizan el comportamiento modal global.
+- **Aprobación:** propietario, `H-GLOBAL-DOCUMENT-IMAGE-UX-CONSISTENCY-001`, 2026-08-31.
 
 ### ADR-038 — Solicitud inicial Supabase, procesamiento financiero separado
 

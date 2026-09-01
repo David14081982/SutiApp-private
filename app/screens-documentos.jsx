@@ -15,6 +15,7 @@
   const ACCEPTED=new Set(['PENDING_REVIEW','UNDER_REVIEW','VERIFIED']);
   const newest=(docs,typeId)=>docs.filter((d)=>d.document_type_id===typeId).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)||String(b.id).localeCompare(String(a.id)))[0]||null;
   const physicalAvailable=(doc)=>!!(doc&&doc.available!==false&&doc.availability!=='OBJECT_MISSING'&&doc.availability!=='ASSET_METADATA_MISSING'&&doc.availability!=='ASSET_DISABLED');
+  const sourceCapabilities=(type)=>{const mime=(type&&type.accepted_mime_types)||[];const camera=!!(type&&type.camera_allowed!==false&&mime.some((value)=>String(value).startsWith('image/'))),file=!!(type&&type.file_upload_allowed!==false);return{camera,file,any:camera||file};};
 
   function DocumentRequirementList({requirements,documents,onChanged,compact,variant,highlightedId,editable,accessPurpose}){
     const selection=useRef(null),input=useRef(null),cameraVideo=useRef(null),cameraStream=useRef(null),thumbnailRetries=useRef(new Set()),[busy,setBusy]=useState(null),[error,setError]=useState(''),[origin,setOrigin]=useState(null),[camera,setCamera]=useState(null),[cameraError,setCameraError]=useState(''),[thumbnails,setThumbnails]=useState({}),[viewer,setViewer]=useState(null);
@@ -93,10 +94,11 @@
     };
     const hiddenInput=h('input',{ref:input,type:'file',style:{display:'none'},onChange:upload,'aria-hidden':'true',tabIndex:-1});
     const alert=error&&h('div',{role:'alert',style:{fontSize:12,fontWeight:700,color:'#A32921',marginBottom:9}},error);
-    const originSheet=h(window.Sheet,{open:!!origin,onClose:()=>setOrigin(null),title:origin?'Agregar '+origin.label:'Agregar documento'},origin&&h(React.Fragment,null,
-      h('p',{style:{fontSize:13,color:'var(--ink-3)',lineHeight:1.5,margin:'0 0 12px'}},'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'),
-      origin.camera_allowed!==false&&h('button',{type:'button','data-document-origin':'camera',onClick:()=>{const type=origin;setOrigin(null);openCamera(type);},style:{width:'100%',minHeight:52,border:'1px solid var(--hairline-strong)',borderRadius:14,background:'#fff',color:'var(--guinda)',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9,marginBottom:9}},h(I,{name:'camera',size:20,stroke:2}),'Tomar foto'),
-      origin.file_upload_allowed!==false&&h('button',{type:'button','data-document-origin':'file',onClick:()=>{const type=origin;setOrigin(null);pick(type,'file');},style:{width:'100%',minHeight:52,border:0,borderRadius:14,background:'var(--guinda)',color:'#fff',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9}},h(I,{name:'upload',size:20,stroke:2}),'Adjuntar archivo')));
+    const originType=origin&&origin.type,originCapabilities=sourceCapabilities(originType);
+    const originSheet=h(window.Sheet,{open:!!origin,onClose:()=>setOrigin(null),title:originType?(origin.replacing?'Reemplazar ':'Agregar ')+originType.label:'Agregar documento'},originType&&h(React.Fragment,null,
+      h('p',{style:{fontSize:13,color:'var(--ink-3)',lineHeight:1.5,margin:'0 0 12px'}},origin.replacing?'Elige cómo quieres reemplazarlo. El documento actual permanecerá intacto hasta completar la nueva carga.':'Elige cómo quieres agregar este documento. Se guardará en tu expediente privado.'),
+      originCapabilities.camera&&h('button',{type:'button','data-document-origin':'camera',onClick:()=>{const type=originType;setOrigin(null);openCamera(type);},style:{width:'100%',minHeight:52,border:'1px solid var(--hairline-strong)',borderRadius:14,background:'#fff',color:'var(--guinda)',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9,marginBottom:9}},h(I,{name:'camera',size:20,stroke:2}),'Tomar foto'),
+      originCapabilities.file&&h('button',{type:'button','data-document-origin':'file',onClick:()=>{const type=originType;setOrigin(null);pick(type,'file');},style:{width:'100%',minHeight:52,border:0,borderRadius:14,background:'var(--guinda)',color:'#fff',fontWeight:850,display:'flex',alignItems:'center',justifyContent:'center',gap:9}},h(I,{name:'upload',size:20,stroke:2}),'Adjuntar archivo')));
     const cameraSheet=h(window.Sheet,{open:!!camera,onClose:()=>setCamera(null),title:camera?'Tomar foto · '+camera.label:'Tomar foto'},camera&&h(React.Fragment,null,
       h('video',{ref:cameraVideo,'data-document-live-camera':'true',playsInline:true,muted:true,style:{display:cameraError?'none':'block',width:'100%',maxHeight:'52vh',objectFit:'cover',borderRadius:15,background:'#111'}}),
       cameraError&&h('div',{role:'alert',style:{padding:13,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize:12,fontWeight:750}},cameraError),
@@ -110,11 +112,11 @@
         alert,
         h('div',{className:'mr-doc-grid','data-document-grid':'membership'},requirements.map((req)=>{
           const type=req.document_type||req,doc=newest(documents,type.id),state=documentState(doc)||{fg:'#B0002A',bg:'#FCE9EE',label:'Pendiente',icon:'upload'};
-          const verified=!!(doc&&doc.status==='VERIFIED'),accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),preview=accepted&&available;
+          const verified=!!(doc&&doc.status==='VERIFIED'),accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),capabilities=sourceCapabilities(type),canUpload=capabilities.any&&(!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)),preview=accepted&&available;
           const thumbnail=doc&&thumbnails[doc.id],image=!!(preview&&thumbnail&&thumbnail.phase==='ready'&&thumbnail.url&&String(doc.mimeType||'').toLowerCase().startsWith('image/')),isBusy=!!(busy&&busy.id===type.id);
           const action=preview?'preview':canUpload?'upload':'unavailable',actionCopy=doc?state.label:'Adjuntar',hint=type.description||state.label;
           const classes=['mr-doc-tile',accepted&&available?'is-filled':'',image?'has-thumbnail':'',highlightedId===type.id&&(!accepted||!available)?'is-highlighted':'',doc&&(['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)||!available)?'is-error':''].filter(Boolean).join(' ');
-          const act=()=>{if(preview)open(doc,type);else if(canUpload)setOrigin(type);};
+          const act=()=>{if(preview)open(doc,type);else if(canUpload)setOrigin({type,replacing:!!doc});};
           return h('article',{key:type.id,className:classes,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-id':doc&&doc.id||'','data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING','data-document-required':req.required===false?'false':'true'},
             h('button',{type:'button',className:'mr-doc-pick',disabled:isBusy||action==='unavailable',onClick:act,'data-document-action':action,'aria-label':(preview?'Ver ':canUpload?(doc?'Reemplazar ':'Adjuntar '):'Vista no disponible de ')+type.label},
               image&&h('img',{className:'mr-doc-thumb',src:thumbnail.url,alt:'Miniatura de '+type.label,onError:()=>refreshThumbnail(doc)}),
@@ -123,7 +125,7 @@
               h('span',{className:'mr-doc-meta'},h('strong',null,type.label),h('span',{className:accepted&&available?'mr-doc-file':'mr-doc-add'},h(I,{name:isBusy?'clock':doc?state.icon:canUpload?'camera':state.icon,size:14,stroke:2.1}),isBusy?phaseLabel(type):actionCopy+(doc?'':canUpload?' · '+hint:''))),
               verified&&available&&h('span',{className:'mr-doc-ok','aria-label':state.label},h(I,{name:'checkCircle',size:15,stroke:2.3}))),
             preview&&h('button',{type:'button',className:'mr-doc-view','aria-label':'Ver '+type.label,onClick:()=>open(doc,type)},h(I,{name:'eye',size:16,stroke:2})),
-            preview&&canUpload&&h('button',{type:'button',className:'mr-doc-replace','aria-label':'Reemplazar '+type.label,onClick:()=>setOrigin(type)},h(I,{name:'camera',size:13,stroke:2}),'Reemplazar'),
+            preview&&canUpload&&h('button',{type:'button',className:'mr-doc-replace','aria-label':'Reemplazar '+type.label,onClick:()=>setOrigin({type,replacing:true})},h(I,{name:'camera',size:13,stroke:2}),'Reemplazar'),
             accepted&&available&&h('span',{className:'mr-doc-status'},state.label),
             doc&&doc.review_observation&&h('p',{className:'mr-doc-observation'},doc.review_observation));
         })),originSheet,cameraSheet,viewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
@@ -133,7 +135,7 @@
       hiddenInput,
       alert,
       h('div',{style:{display:'flex',flexDirection:'column',gap:compact?9:11}},requirements.map((req)=>{
-        const type=req.document_type||req,doc=newest(documents,type.id),available=physicalAvailable(doc),accepted=!!(doc&&ACCEPTED.has(doc.status)),missingObject=!!(doc&&!available),baseState=documentState(doc),state=missingObject?{fg:'#B0002A',bg:'#FCE9EE',label:'Archivo no disponible',icon:'info'}:baseState||{fg:'#B0002A',bg:'#FCE9EE',label:'Documento requerido',icon:'upload'},canUpload=!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status),cameraAllowed=(type.accepted_mime_types||[]).some((mime)=>String(mime).startsWith('image/')),isBusy=!!(busy&&busy.id===type.id),canView=accepted&&available;
+        const type=req.document_type||req,doc=newest(documents,type.id),available=physicalAvailable(doc),accepted=!!(doc&&ACCEPTED.has(doc.status)),missingObject=!!(doc&&!available),baseState=documentState(doc),state=missingObject?{fg:'#B0002A',bg:'#FCE9EE',label:'Archivo no disponible',icon:'info'}:baseState||{fg:'#B0002A',bg:'#FCE9EE',label:'Documento requerido',icon:'upload'},capabilities=sourceCapabilities(type),canUpload=capabilities.any&&(!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)),isBusy=!!(busy&&busy.id===type.id),canView=accepted&&available;
         return h('div',{key:type.id,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING',style:{background:'var(--surface)',borderRadius:16,padding:compact?'11px 12px':'13px 14px',boxShadow:'var(--neo-sm)'}},
           h('div',{style:{display:'flex',alignItems:'center',gap:12}},
             h('div',{style:{width:44,height:44,borderRadius:13,background:state.bg,color:state.fg,display:'grid',placeItems:'center',flexShrink:0}},h(I,{name:type.icon||'doc',size:22,stroke:1.9})),
@@ -142,7 +144,7 @@
               h('div',{style:{display:'flex',alignItems:'center',gap:5,fontSize:11.8,fontWeight:700,color:state.fg,marginTop:2}},h(I,{name:isBusy?'clock':state.icon,size:13,stroke:2.1}),isBusy?phaseLabel(type):state.label),
               doc&&doc.review_observation&&h('div',{style:{fontSize:11,color:'#9B2743',marginTop:3}},doc.review_observation)),
             canView&&h('button',{type:'button','aria-label':'Ver '+type.label,disabled:isBusy,onClick:()=>open(doc,type),style:{width:38,height:38,borderRadius:11,border:'1px solid var(--hairline-strong)',background:'#fff',display:'grid',placeItems:'center',color:'var(--ink-3)'}},h(I,{name:'eye',size:18,stroke:2}))),
-          canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},cameraAllowed&&actionButton('Tomar foto','camera',()=>pick(type,'camera'),isBusy,'camera'),actionButton(doc?'Reemplazar':'Subir archivo','upload',()=>pick(type,'file'),isBusy,'upload')));
+          canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},actionButton(doc?'Reemplazar':'Adjuntar','upload',()=>setOrigin({type,replacing:!!doc}),isBusy,doc?'replace':'upload')));
       })),originSheet,cameraSheet,viewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
   }
 

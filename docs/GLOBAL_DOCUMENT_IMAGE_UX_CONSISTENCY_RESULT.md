@@ -1,0 +1,31 @@
+# GLOBAL DOCUMENT IMAGE UX CONSISTENCY RESULT
+
+- Shared replace contract: PASS
+- Suti Préstamo replace: PASS
+- Membership replace: PASS
+- Other document consumers audited: Documentos, Product Payment, request gates, Admin Documents, Admin Identity, Admin Finance
+- Camera: PASS
+- File upload: PASS
+- Failed replacement preserves old document: PASS
+- Thumbnail refresh: PASS
+- Shared fullscreen viewer: PASS
+- iPhone safe-area close: PASS_WITH_LIMITATION — CSS/viewport certified; no physical Safari harness
+- Close button visible: PASS
+- Overlay tap closes: PASS
+- Tap image does not close: PASS
+- Escape closes: PASS
+- Back navigation: NOT APPLICABLE — viewer is modal, not a history route
+- Scroll lock restore: PASS
+- Signed URL refresh: PASS — current backend contract preserved
+- Cross-user: DENIED — current backend contract and prior live matrix preserved
+- 390px: PASS
+- 430px: PASS
+- iPhone safe-area: PASS_WITH_LIMITATION
+- Desktop: PASS
+- Financial logic changed: NO
+- Product catalog changed: NO
+- Backend document contract changed: NO
+- Data loss: 0
+- Unexpected files: 0
+- Commit/origin/main/push: recorded in final handoff
+- Final verdict: PASS_WITH_LIMITATION

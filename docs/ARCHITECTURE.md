@@ -1,5 +1,21 @@
 # Arquitectura
 
+## UX documental e imágenes global — ADR-090
+
+```text
+Documentos / Préstamo / Membresías / Producto
+  → UnifiedDocumentPhase
+  → DocumentRequirementList
+  → DocumentWorkflowRepository
+  → RPC + private-assets + versión enlazada
+
+Miniatura → autorización fresca document-access → DocumentViewer
+Imagen pública/autorizada → ImageViewer
+Admin read-only → adminPreview / inspector → comportamiento modal compartido
+```
+
+`document_types` decide si cámara y/o archivo están permitidos; ninguna pantalla codifica una excepción para membresía o préstamo. El viewer global se fija al viewport por encima del shell, calcula su chrome con safe areas, diferencia overlay de imagen/gesto y restaura foco y overflow al cerrar. Los inspectores administrativos conservan navegación y revisión propias, pero reutilizan el mismo contrato de modal; no reciben writer de reemplazo.
+
 ## Productos propios: modalidad comercial y disponibilidad — ADR-089
 
 ```text

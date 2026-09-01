@@ -20,7 +20,7 @@ assert.match(documents,/este documento ya no está disponible\. Puedes cargarlo 
 assert.match(documents,/setAttribute\('capture','environment'\)/);
 assert.match(documents,/source==='camera'\?'image\/\*'/);
 assert.match(documents,/Tomar foto/);
-assert.match(documents,/Subir archivo/);
+assert.match(documents,/Adjuntar archivo/);
 
 // Case 6: replacement creates a new linked row and never updates VERIFIED.
 assert.match(migration,/add column replaces_document_id/);

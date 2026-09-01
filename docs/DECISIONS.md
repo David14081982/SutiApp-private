@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-091 | El writer de productos propios valida por delta: preserva exactamente estados históricos ya aceptados sin permitir nuevas infracciones ni crecimiento; recuperación exacta se bloquea después de actividad Admin. | Aceptada / ACTIVE |
 | ADR-090 | Todo reemplazo de expediente usa `UnifiedDocumentPhase → DocumentRequirementList → DocumentWorkflowRepository`; todo fullscreen de imagen usa el viewer o comportamiento modal compartido con safe-area, cierre por overlay/Escape, foco y scroll restaurables. | Aceptada / ACTIVE |
 | ADR-086 | Los productos propios de programas permanecen en `program_catalog_items`; todo `price_cash` histórico no nulo es precio fijo salvo evidencia específica y el writer Admin escribe la misma autoridad mediante RPC. | Aceptada |
 | ADR-087 | El plan universal de productos deriva precio, cálculo, calendario y solicitud desde las autoridades vigentes; JUB paga una vez al mes el día 5 y la aprobación queda sólo en Supabase. | Aceptada |
@@ -64,6 +65,14 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-091 — Validación delta-aware del catálogo de productos
+
+- **Contexto:** el editor envía el registro completo. El writer anterior aplicaba reglas de alta a campos no tocados y bloqueaba 54 filas que ya existen legítimamente: tres galerías de nueve, 50 precios fijos históricos nulos y un orden técnico 0. Además, el constraint no incluía `cirugias` aunque su bootstrap ya estaba autorizado.
+- **Decisión:** validar toda alta estrictamente; en edición, permitir únicamente conservar exactamente o corregir un valor previo fuera del contrato. El límite ordinario de galería es ocho y el techo temporal de una fila histórica es su conteo actual. Los errores se codifican por causa y la procedencia continúa inmutable.
+- **Recuperación:** respaldar definiciones exactas, constraint y hashes; restaurar sólo sin actividad Admin posterior ni diferencias en catálogo/assets.
+- **Estado:** `20260831000800` aplicado y verificado el 2026-09-01; recovery dry-run previo a la primera auditoría Admin `PASS`; recovery real posterior prohibido.
+- **Aprobación:** propietario, `H-PROGRAM-PRODUCTS-SAVE-CONTRACT-AUDIT-001`, 2026-08-31.
 
 ### ADR-090 — Contrato global de reemplazo documental y visor de imagen
 

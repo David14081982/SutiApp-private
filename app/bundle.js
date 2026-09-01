@@ -52502,6 +52502,29 @@ Object.assign(window, {
       stroke: 2.2
     }));
   }
+  function saveErrorMessage(error) {
+    const value = [error && error.message, error && error.code, error && error.details, error && error.hint].filter(Boolean).join(' ').toUpperCase();
+    if (value.includes('PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED')) return 'La galería supera el límite permitido. Puedes conservar o reducir imágenes históricas, pero no aumentar su cantidad.';
+    if (value.includes('PROGRAM_CATALOG_PRICE_REQUIRED')) return 'La modalidad Precio fijo requiere un importe mayor a cero. Un precio histórico vacío puede conservarse sólo si no lo modificas.';
+    if (value.includes('PROGRAM_CATALOG_PRICE_INVALID')) return 'El precio no es válido. Usa cero o un importe positivo según la modalidad.';
+    if (value.includes('PROGRAM_CATALOG_MODE_QUOTE_MISMATCH')) return 'La modalidad y la opción de cotización no coinciden.';
+    if (value.includes('PROGRAM_CATALOG_MODE_INVALID')) return 'Selecciona una modalidad comercial válida.';
+    if (value.includes('PROGRAM_CATALOG_ORDER_INVALID')) return 'El orden debe estar entre 1 y 10,000. Un orden histórico fuera del rango puede conservarse si no lo modificas.';
+    if (value.includes('PROGRAM_CATALOG_ASSET_NOT_OWNED')) return 'Una imagen pertenece a otra sesión administrativa y no puede vincularse.';
+    if (value.includes('PROGRAM_CATALOG_ASSET_DUPLICATE')) return 'La misma imagen aparece más de una vez en la galería.';
+    if (value.includes('PROGRAM_CATALOG_ASSET_LINK_INVALID') || value.includes('PROGRAM_CATALOG_ASSET_LINK_NOT_FOUND') || value.includes('PROGRAM_CATALOG_PUBLIC_ASSET_INVALID') || value.includes('PROGRAM_CATALOG_ASSET_INVALID')) return 'Una imagen ya no es válida o no pertenece a este producto. Recarga el catálogo e inténtalo de nuevo.';
+    if (value.includes('PROGRAM_CATALOG_WRITE_REQUIRED') || value.includes('42501') || value.includes('PERMISSION')) return 'Tu sesión no tiene permiso para editar Programas · Productos.';
+    if (value.includes('PROGRAM_CATALOG_PROGRAM_INVALID')) return 'El programa seleccionado no admite productos desde este editor.';
+    if (value.includes('PROGRAM_CATALOG_NAME_INVALID')) return 'El nombre debe tener entre 2 y 180 caracteres.';
+    if (value.includes('PROGRAM_CATALOG_DESCRIPTION_TOO_LONG')) return 'La descripción supera el máximo permitido.';
+    if (value.includes('PROGRAM_CATALOG_CATEGORY_TOO_LONG')) return 'La categoría supera el máximo permitido.';
+    if (value.includes('PROGRAM_CATALOG_FIELD_NOT_EDITABLE')) return 'El guardado intentó modificar un campo histórico protegido.';
+    if (value.includes('CIRUGIAS_PROGRAM_ALREADY_BOOTSTRAPPED')) return 'Cirugías ya tiene su primer producto. Recarga el catálogo para continuar.';
+    if (value.includes('PROGRAM_CATALOG_ITEM_NOT_FOUND')) return 'El producto ya no existe o cambió. Recarga el catálogo.';
+    if (value.includes('PROGRAM_PRODUCT_SOLD')) return 'El producto está vendido y no admite nuevas solicitudes.';
+    if (value.includes('PROGRAM_CATALOG_CONTRACT_INVALID') || value.includes('PROGRAM_CATALOG_PAYLOAD_INVALID')) return 'Los datos no cumplen el contrato del catálogo. Revisa nombre, modalidad, precio, orden e imágenes.';
+    return 'No se pudo guardar en el catálogo autoritativo. Inténtalo nuevamente; si continúa, revisa tu sesión.';
+  }
   function ProgramProductsModule({
     app,
     onBack,
@@ -52784,12 +52807,14 @@ Object.assign(window, {
       [busy, setBusy] = useState(false),
       [error, setError] = useState(''),
       [preview, setPreview] = useState(null);
+    const originalImageCount = (item.imagenAssets || []).length,
+      imageLimit = item.id ? Math.max(8, originalImageCount) : 8;
     const set = (key, value) => setDraft(old => Object.assign({}, old, {
       [key]: value
     }));
     const addFiles = event => {
       const files = Array.from(event.target.files || []),
-        room = Math.max(0, 8 - media.length);
+        room = Math.max(0, imageLimit - media.length);
       setMedia(old => old.concat(files.slice(0, room).map(file => ({
         kind: 'pending',
         file,
@@ -52812,6 +52837,13 @@ Object.assign(window, {
       return next;
     });
     const save = async () => {
+      const price = value => value == null ? null : Number(value),
+        draftPrice = price(draft.precio),
+        originalPrice = price(item.precio),
+        draftOrder = Number(draft.orden),
+        originalOrder = Number(item.orden),
+        legacyPricePreserved = !!(item.id && item.commercialMode === 'PAYROLL_FIXED' && !(originalPrice > 0) && draft.commercialMode === 'PAYROLL_FIXED' && draftPrice === originalPrice),
+        legacyOrderPreserved = !!(item.id && !(originalOrder >= 1 && originalOrder <= 10000) && draftOrder === originalOrder);
       if (!String(draft.nombre || '').trim()) {
         setError('Escribe el nombre.');
         return;
@@ -52820,12 +52852,22 @@ Object.assign(window, {
         setError('Selecciona el programa.');
         return;
       }
-      if (draft.commercialMode === 'PAYROLL_FIXED' && !(Number(draft.precio) > 0)) {
-        setError('Precio fijo requiere un importe mayor a cero.');
+      if (draft.commercialMode === 'PAYROLL_FIXED' && !(draftPrice > 0) && !legacyPricePreserved) {
+        setError(saveErrorMessage({
+          message: 'PROGRAM_CATALOG_PRICE_REQUIRED'
+        }));
         return;
       }
-      if (!(Number(draft.orden) >= 1)) {
-        setError('El orden debe ser mayor a cero.');
+      if (!(draftOrder >= 1 && draftOrder <= 10000) && !legacyOrderPreserved) {
+        setError(saveErrorMessage({
+          message: 'PROGRAM_CATALOG_ORDER_INVALID'
+        }));
+        return;
+      }
+      if (media.length > imageLimit) {
+        setError(saveErrorMessage({
+          message: 'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED'
+        }));
         return;
       }
       setBusy(true);
@@ -52835,7 +52877,7 @@ Object.assign(window, {
         media.filter(x => x.kind === 'pending').forEach(x => URL.revokeObjectURL(x.url));
         onSaved();
       } catch (e) {
-        setError('No se pudo guardar en el catálogo autoritativo. Revisa permisos y datos.');
+        setError(saveErrorMessage(e));
         setBusy(false);
       }
     };
@@ -52946,7 +52988,7 @@ Object.assign(window, {
         display: 'flex',
         gap: 3
       }
-    }, iconButton('chevD', () => move(index, -1), index === 0, 'Mover antes'), iconButton('chevD', () => move(index, 1), index === media.length - 1, 'Mover después'), iconButton('close', () => remove(index), false, 'Quitar')))), media.length < 8 && React.createElement('label', {
+    }, iconButton('chevD', () => move(index, -1), index === 0, 'Mover antes'), iconButton('chevD', () => move(index, 1), index === media.length - 1, 'Mover después'), iconButton('close', () => remove(index), false, 'Quitar')))), media.length < imageLimit && React.createElement('label', {
       style: {
         position: 'relative',
         aspectRatio: '4/3',
@@ -52979,7 +53021,7 @@ Object.assign(window, {
         lineHeight: 1.45,
         marginBottom: 15
       }
-    }, 'La primera imagen es la portada. Puedes ampliar, reordenar o quitar sin borrar la procedencia histórica del asset.'), React.createElement('label', {
+    }, originalImageCount > 8 ? `Galería histórica de ${originalImageCount} imágenes: puedes conservarla, reordenarla, reemplazar sin crecer o reducirla. Nuevos productos admiten hasta 8.` : 'La primera imagen es la portada. Puedes ampliar, reordenar o quitar sin borrar la procedencia histórica del asset.'), React.createElement('label', {
       style: label
     }, 'Programa'), React.createElement('select', {
       'data-program-product-field': 'program_key',
@@ -53088,7 +53130,7 @@ Object.assign(window, {
       type: 'number',
       min: 1,
       max: 10000,
-      value: draft.orden || 1,
+      value: draft.orden == null ? '' : draft.orden,
       onChange: e => set('orden', Number(e.target.value)),
       style: Object.assign({}, field, {
         marginBottom: 12
@@ -53202,6 +53244,7 @@ Object.assign(window, {
     }));
   }
   window.ProgramProductsModule = ProgramProductsModule;
+  window.ProgramProductSaveErrorMessage = saveErrorMessage;
 })();
 })();
 /* @@file screens-admin-catalogo.jsx */

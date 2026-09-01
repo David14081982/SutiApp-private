@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-09-01 — H-PROGRAM-PRODUCTS-SAVE-CONTRACT-AUDIT-001
+
+- La auditoría global confirmó que el payload completo del editor choca con reglas de alta: 54 filas históricas quedan bloqueadas por campos no tocados (3 Autos/9 imágenes, 50 Farma/precio nulo, 1 Préstamo/orden 0).
+- Se aplicaron writer delta-aware, error mapping y ajuste de constraint Cirugías con backup/recuperación exactos. La migración no modificó filas; forward/runtime/security/recovery dry-run pasaron contra producción.
+- Los 54 casos aceptaron una edición no relacionada transaccional. Chrome guardó y recargó un Auto real de nueve imágenes y el frontend afiliado reflejó la misma fila; los 65 precios y todos sus campos de negocio quedaron idénticos. Sólo permanece una auditoría Admin legítima y no se ejecutará recovery real.
+
+```text
+H-PROGRAM-PRODUCTS-SAVE-CONTRACT-AUDIT-001 RESULT
+Status: PASS
+Files changed: Admin editor; migration/recovery prepared; scripts/tests; ADR/SOT/invariants/evidence
+Source-of-truth verdict: PASS — program_catalog_items/assets remain unique authority
+Invariant verdict: PASS — preservation is exact/delta-aware; no new invalid growth
+Build: PASS — 95 fuentes; bundle v186/PWA v130 y sintaxis válidos
+Tests: PASS — 77/77 static; 54/54 live transaccional; Chrome Admin→Supabase→reload→afiliado; recovery dry-run
+Security: PASS — backend permission, anon denial, direct DML denial and asset ownership preserved
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0
+Unexpected files changed: 0 — sólo UI/bundle/cache, migración/recovery, pruebas, gobierno/evidencia y Registry derivado
+Known limitations: recovery real queda prohibido/bloqueado después de la auditoría Admin legítima
+Evidence: docs/qa/H-PROGRAM-PRODUCTS-SAVE-CONTRACT-AUDIT-001-EVIDENCE.md
+```
+
 ## 2026-08-31 — H-GLOBAL-DOCUMENT-IMAGE-UX-CONSISTENCY-001
 
 - El reemplazo documental quedó unificado por capacidades reales en `DocumentRequirementList`: Documento, Préstamo, Membresías, producto y gates usan la misma acción y el mismo selector cámara/archivo.

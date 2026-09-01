@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-091 — contrato global de guardado de productos
+
+`public.program_catalog_items` y `public.program_catalog_item_assets` siguen siendo las únicas autoridades de productos propios e imágenes vinculadas. `ProgramCatalogRepository` conserva un único payload completo; el writer preparado lo valida de forma delta-aware: una edición puede conservar o reducir un estado histórico ya aceptado, pero no crear ni ampliar una infracción. Esto no crea una segunda fuente, no normaliza filas y no cambia `record_origin`.
+
+La auditoría productiva identificó 54 filas afectadas por el contrato anterior: tres Autos con nueve imágenes, 50 Farma `PAYROLL_FIXED` con precio histórico nulo y un Préstamo técnico con orden 0. Los 135 productos, 65 precios no nulos y 268 vínculos permanecen intactos. La migración `20260831000800` está `APPLIED / VERIFIED — PASS`; el writer delta-aware es el contrato productivo vigente.
+
 ## Corte ADR-090 — UX documental e imágenes global
 
 La autoridad documental no cambia: `document_types` define capacidades y MIME; `program_document_requirements` define requisitos; `affiliate_documents` + `private_assets` + `private-assets` conservan el expediente/versionado; `request_documents` conserva la evidencia enviada. `UnifiedDocumentPhase` y `DocumentRequirementList` son la única superficie de autoservicio para préstamo, membresías, expediente, productos y gates documentales. No existe uploader, store, mock, base64 o copia local por pantalla.

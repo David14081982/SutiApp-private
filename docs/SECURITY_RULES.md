@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Contrato delta-aware de guardado — ADR-091
+
+La migración preparada mantiene `SECURITY DEFINER`, `search_path=''`, `auth.uid()`, `program_catalog.write`, allowlist, auditoría y DML directo revocado. `anon` no ejecuta; `authenticated` sólo cruza el writer si el permiso backend pasa. El respaldo de migración tiene RLS habilitada/forzada y cero grants para browser.
+
+La tolerancia histórica es por fila y campo exactos, no una relajación global: sólo permite conservar el valor previo inválido o reducirlo. Assets nuevos siguen sujetos al trigger de ownership `program-products/<actor_real>/`. La matriz live confirmó RPC sin identidad denegada, DML directo cerrado, RLS forzada, grants mínimos, policies Storage, errores específicos y cero persistencia transaccional. `20260831000800` está activo y auditado.
+
 ## Modalidad comercial y Vendido — ADR-089
 
 `commercial_mode`, `sold` y `sold_at` son lectura autenticada; `sold_by` permanece oculto al browser. DML directo sobre `program_catalog_items` sigue revocado y toda mutación Admin usa `save_program_catalog_item`, `program_catalog.write`, allowlist y auditoría antes/después. Ni modalidad ni vendido permiten editar `record_origin`, hoja, ordinal, hash o payload histórico.

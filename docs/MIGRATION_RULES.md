@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260831000800 — contrato delta-aware de guardado de productos
+
+Estado: `APPLIED / VERIFIED — PASS`. No modificó filas. Amplía únicamente el constraint de `program_key` para hacer efectiva la alta ya autorizada de `cirugias`, reemplaza los dos writers por validación específica y delta-aware, y guarda las definiciones/constraint/hashes exactos para recuperación.
+
+Forward, matriz de 54 casos, denegaciones, seguridad y recovery dry-run pasaron: 135 productos, 268 vínculos y 65 precios intactos. Se permiten 9→9, 9→8 y 8→8; se rechazan 8→9 y 9→10. Chrome certificó un save no-op real sobre un Auto de nueve imágenes y dejó una auditoría legítima. No ejecutar recovery real: ahora debe abortar ante esa historia administrativa.
+
 ## 20260831000700 — modalidad comercial y Vendido
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración agrega `commercial_mode`, `sold`, `sold_at` y `sold_by`, dos constraints, un guard central de solicitudes y evoluciona los dos writers Admin. El backfill explícito dejó 80 `PAYROLL_FIXED`, 20 `PAYROLL_QUOTE` y 35 Casa `DIRECT_CONTACT`; `sold=false` en las 135 filas. Conservó 65 precios con hash `2ba16e15407a83d630a6294469ff68b3`, 135 productos, assets, solicitudes y Marketplace.

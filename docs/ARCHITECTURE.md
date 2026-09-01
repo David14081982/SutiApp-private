@@ -1,5 +1,19 @@
 # Arquitectura
 
+## Guardado global de productos propios — ADR-091
+
+```text
+Admin Programas · Productos
+  → ProgramCatalogAdminStore (media completa)
+  → ProgramCatalogRepository (payload completo + vínculos completos)
+  → save_program_catalog_item
+       permiso + allowlist + validación delta-aware
+       → program_catalog_items / program_catalog_item_assets
+       → admin_audit_log
+```
+
+El frontend conserva la pantalla Claude existente y sólo añade límite contextual y traducción de errores. El backend compara el payload con la fila bloqueada: valida estrictamente toda alta y todo crecimiento, mientras una edición ajena al defecto puede preservar el valor histórico exacto. La migración está aplicada; forward, matriz live, Chrome y recovery dry-run están certificados.
+
 ## UX documental e imágenes global — ADR-090
 
 ```text

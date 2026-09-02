@@ -78,9 +78,11 @@ async function main() {
   assert.equal(active.yield_calculated, false);
   assert.equal(active.mismatches_block_ui, false);
   assert(active.participant && active.participant.identity_status === 'RESOLVED', 'ACTIVE_PARTICIPANT_MISSING');
+  assert.equal(active.participant.legacy_folio, '5685', 'ACTIVE_FOLIO_5685_REQUIRED');
   assert(active.source_batch && /^[A-F0-9]{64}$/.test(active.source_batch.manifest_sha256), 'CERTIFIED_BATCH_HASH_MISSING');
   assert(active.balances && active.balances.total_source === 'LEGACY_REPORTED_BALANCE_Q', 'Q_NOT_DISPLAY_BALANCE');
   assert.strictEqual(active.balances.total, active.balances.legacy_reported_balance_Q);
+  assert.strictEqual(active.balances.total, 8000, 'FOLIO_5685_Q_MUST_BE_8000');
   assert.equal(active.balances.canonical, false);
   assert(active.enrollment && active.enrollment.status && active.enrollment.enrollment_started_at, 'ENROLLMENT_EVIDENCE_INCOMPLETE');
   assert(active.enrollment.historical_process || active.enrollment.current_process, 'PROCESS_MISSING');
@@ -91,7 +93,10 @@ async function main() {
   assert(active.history.every((row) => row.cell_kind !== 'MANUAL' || row.recorded_amount !== null), 'MANUAL_NOT_RECORDED');
   assert(Array.isArray(active.annual) && active.annual.length > 0, 'DP_DW_HISTORY_MISSING');
   assert(active.annual.every((row) => Object.hasOwn(row, 'capital') && Object.hasOwn(row, 'yield')), 'DP_DW_COMPONENTS_MISSING');
+  const annual2026 = active.annual.find((row) => String(row.year).startsWith('2026'));
+  assert(annual2026 && annual2026.capital === 44000 && annual2026.yield === 5315.2, 'FOLIO_5685_2026_HISTORY_INVALID');
   assert(Array.isArray(active.withdrawals) && active.withdrawals.length > 0, 'WITHDRAWALS_MISSING');
+  assert(active.withdrawals.some((row) => row.amount === 49315.2), 'FOLIO_5685_COMPLETE_WITHDRAWAL_MISSING');
   assert(Object.values(active.actions).every((value) => value === false), 'ACTION_AVAILABILITY_EXPECTED_DISABLED');
   assert.deepStrictEqual(active.write_capabilities, { requests: false, beneficiaries: false });
   assert.equal(empty.authority, 'GOOGLE_LEGACY_AUTHORITY');
@@ -107,7 +112,7 @@ async function main() {
   assert.deepStrictEqual(after, before, 'SAVINGS_ROWS_CHANGED_DURING_READ_TEST');
   console.log(JSON.stringify({
     status: 'PASS', mode: 'LIVE_READ_ONLY', activeParticipant: true, noSavingsParticipant: true,
-    authority: active.authority, projection: active.projection, qIsDisplayedTotal: true, qReported: active.balances.legacy_reported_balance_Q !== null,
+    authority: active.authority, projection: active.projection, qIsDisplayedTotal: true, qReported: active.balances.legacy_reported_balance_Q !== null, folio5685Q: active.balances.total,
     historyRows: active.history.length, annualPeriods: active.annual.length, withdrawals: active.withdrawals.length,
     planChanges: active.plan_changes.length, beneficiaries: active.beneficiaries.length,
     allActionsDisabled: true, anonymousDenied: true, crossUserDenied: true, targetParameterRejected: true,

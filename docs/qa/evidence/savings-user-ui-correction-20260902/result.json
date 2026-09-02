@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "legacy_read_only": {
+    "workbook": "SutiApp Final",
+    "folio": 5685,
+    "legacy_reported_balance_Q": 8000,
+    "annual_2026": {
+      "savings": 44000,
+      "yield": 5315.2,
+      "subtotal": 49315.2
+    },
+    "google_writes": 0
+  },
+  "focused_ui": {
+    "login": true,
+    "finance_to_savings": true,
+    "balance": 8000,
+    "annual_2026_correct": true,
+    "html_contract_conformant": true,
+    "back": true,
+    "refresh": true,
+    "cross_user_denied": true,
+    "viewports": [
+      "390x844",
+      "430x932"
+    ]
+  },
+  "out_of_scope": {
+    "document_preview": "OUT_OF_SCOPE",
+    "production_comparison_not_retried_by_owner_instruction": true,
+    "savings_impact": false
+  }
+}

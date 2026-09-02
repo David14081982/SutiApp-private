@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const migration = read('supabase/migrations/20260902000100_savings_shadow_foundation.sql');
 const recovery = read('supabase/recovery/20260902000100_savings_shadow_foundation_recovery.sql');
+const correction = read('supabase/migrations/20260902000400_savings_user_ui_correction.sql');
 const user = read('app/screens-savings.jsx');
 const admin = read('app/screens-admin-savings.jsx');
 const repo = read('app/savings-repository.js');
@@ -80,10 +81,11 @@ for (const file of ['savings-repository.js', 'savings-store.jsx', 'screens-savin
   assert.ok(bundle.includes(`/* @@file ${file} */`), `bundle missing ${file}`);
 }
 
-for (const marker of ['data-savings-screen', 'data-savings-total', 'data-savings-capital', 'data-savings-yield', 'data-savings-year', 'data-savings-upcoming', 'data-savings-history', 'data-savings-withdrawals', 'data-savings-action']) assert.ok(user.includes(marker), `user marker missing ${marker}`);
-for (const copy of ['Saldo actual total · Q', 'Detalle por año', 'Mi ahorro', 'Próximos registros', 'Histórico AA:DO', 'Retiros', 'Cambios de monto', 'Beneficiarios', 'Darme de baja']) assert.ok(user.includes(copy), `visual contract missing ${copy}`);
+for (const marker of ['data-savings-screen', 'data-savings-total', 'data-savings-capital', 'data-savings-yield', 'data-savings-year', 'data-savings-year-subtotal', 'data-savings-history', 'data-savings-withdrawals', 'data-savings-action', 'data-savings-detail']) assert.ok(user.includes(marker), `user marker missing ${marker}`);
+for (const copy of ['Saldo actual', 'Detalle por año', 'Subtotal ', 'Tu ahorro', 'Retirar ahorro', 'Modificar monto', 'Historial', 'Retiros', 'Beneficiarios', 'Más detalles']) assert.ok(user.includes(copy), `visual contract missing ${copy}`);
 assert.ok(user.includes('canWriteRequests') && user.includes('disabled: !enabled') && user.includes("data-savings-enabled': String(enabled)"), 'disabled savings actions must remain visible and disabled');
-assert.ok(repo.includes('get_self_savings_live_readonly') && user.includes('No reportado en Q'), 'live SHADOW Q read contract missing');
+assert.ok(repo.includes('get_self_savings_live_readonly') && correction.includes('v_balance_evidence') && correction.includes("#>>'{legacy_reported_balance,value}'"), 'certified Q reader correction missing');
+for (const forbiddenCopy of ['No reportado en Q', 'Google legacy', 'SHADOW certificado', 'DP:DW', 'AA:DO', 'Identidad legacy', 'PROCESS histórico', 'PROCESS actual', 'FORMULA', 'MANUAL', 'Supabase', 'evidencia legacy']) assert.ok(!user.includes(forbiddenCopy), `technical user copy leaked: ${forbiddenCopy}`);
 for (const section of ['summary', 'participants', 'contributions', 'calendar', 'amount_changes', 'withdrawals', 'terminations', 'beneficiaries', 'yields', 'omissions', 'holds', 'process', 'identity', 'documents', 'reports', 'audit', 'config']) assert.ok(admin.includes(`['${section}'`), `admin section missing ${section}`);
 for (const forbiddenValue of ['$48,315.20', '$43,000.00', '$5,315.20', '12.3% anual']) assert.ok(!user.includes(forbiddenValue), `visual mock value leaked: ${forbiddenValue}`);
 

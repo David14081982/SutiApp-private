@@ -320,8 +320,8 @@
     const editorial = window.useEditorialContent();
     const admin = window.useAdminAuth();
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(auth.affiliateView ? 'home' : 'admin');
-    const [stack, setStack] = useState([]); // [{name, params}]
+    const [tab, setTabState] = useState(auth.affiliateView ? (window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin');
+    const [stack, setStack] = useState(() => window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null);   // pop-ups administrables mostrándose
     const [outgoing, setOutgoing] = useState(null);       // ruta saliendo (capa de presencia · A)
@@ -355,6 +355,7 @@
       if (!st.length) return;
       const leaving = st[st.length - 1];
       setOutgoing({ name: leaving.name, params: leaving.params, depth: st.length, id: ++outIdRef.current });
+      if (leaving.name === 'savings' && window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search);
       setStack((s) => s.slice(0, -1));
     }, []);
     // QA / DEV ONLY · override de movimiento y duración espacial (por defecto
@@ -366,11 +367,11 @@
       window.MOTION.qa.setSpatial(Number(t.qaSpatial) || 420);
     }, [t.qaMotion, t.qaSpatial]);
 
-    const push = useCallback((name, params = {}) => { setOutgoing(null); setStack((s) => [...s, { name, params }]); }, []);
+    const push = useCallback((name, params = {}) => { setOutgoing(null); if (name === 'savings') history.replaceState(history.state, '', '#/savings'); setStack((s) => [...s, { name, params }]); }, []);
     const back = useCallback(() => popOne(), [popOne]);
-    const setTab = useCallback((id) => { setOutgoing(null); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
+    const setTab = useCallback((id) => { setOutgoing(null); if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
     const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); }, []);
-  const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
+  const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
 
     const app = { push, back, setTab, toast: showToast, openFinanceItem, logout: auth.signOut, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
 
@@ -434,7 +435,7 @@
       articulo: window.ArticuloScreen, convenio: window.ConvenioDetail, tracking: window.TrackingScreen,
       catitem: window.CatalogItemScreen,
       documentos: window.DocumentosScreen, membership: window.MembershipApplicationScreen, notifs: NotifsScreen, perfil: PerfilScreen, terreno: window.TerrenoScreen,
-      investment: window.InvestmentScreen,
+      investment: window.InvestmentScreen, savings: window.SavingsScreen,
     };
     const PushedScreen = top ? ROUTES[top.name] : null;
     const pushAllowed = !top || gate(top.name) || (top.name === 'loan' && !!auth.impersonation);

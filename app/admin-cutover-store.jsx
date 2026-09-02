@@ -20,13 +20,21 @@
     if(id==='planes'||id==='membresias')return'memberships';
     if(id==='popups')return'popups'; if(id==='banners')return'banners';
     if(id==='finanzas')return'program_requests';
+    if(id==='savings'||id==='savings_approvals'||id==='savings_config'||id==='savings_reports'||id==='savings_identity')return'savings';
     if(id==='fondos')return'financial_criteria.visibility';
     if(id==='secciones'||id==='menus'||id==='formularios'||id.indexOf('scr_')===0)return'content';
     return'content';
   };
+  const specialPermissions=Object.freeze({
+    savings:{read:'savings.read',write:'savings.write'},
+    savings_approvals:{read:'savings.read',write:'savings.approve'},
+    savings_config:{read:'savings.read',write:'savings.config'},
+    savings_reports:{read:'savings.read',write:'savings.reports'},
+    savings_identity:{read:'savings.read',write:'savings.identity_review'},
+  });
   function uiPerms(permissionList){
     const out={}; (window.ADMIN.ALL_RESOURCE_IDS||[]).forEach(id=>{
-      const base=resourcePermission(id),extra=id==='convenios'?'segmentation':null,read=permissionList.includes(base+'.read')&&(!extra||permissionList.includes(extra+'.read')),write=permissionList.includes(base+'.write')&&(!extra||permissionList.includes(extra+'.write'));
+      const base=resourcePermission(id),special=specialPermissions[id],extra=id==='convenios'?'segmentation':null,read=permissionList.includes(special?special.read:base+'.read')&&(!extra||permissionList.includes(extra+'.read')),write=permissionList.includes(special?special.write:base+'.write')&&(!extra||permissionList.includes(extra+'.write'));
       out[id]={ver:read||write,crear:write,editar:write,eliminar:write,reordenar:write};
     }); return out;
   }
@@ -76,7 +84,7 @@
   store.blankRole=()=>({id:null,name:'',desc:'',system:false,perms:uiPerms([])});
   store.roleActionCount=r=>Object.values(r.perms||{}).reduce((n,p)=>n+Object.values(p).filter(Boolean).length,0);
   store.can=(action,resource)=>{const r=store.actingRole(),p=r.perms&&r.perms[resource];return!!(p&&p[action]);};
-  function technicalPermissions(role){const out=new Set();Object.keys(role.perms||{}).forEach(id=>{const p=role.perms[id],bases=[resourcePermission(id)].concat(id==='convenios'?['segmentation']:[]);bases.forEach(base=>{if(p.ver)out.add(base+'.read');if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(base+'.read');out.add(base+'.write');}});});return Array.from(out);}
+  function technicalPermissions(role){const out=new Set();Object.keys(role.perms||{}).forEach(id=>{const p=role.perms[id],special=specialPermissions[id];if(special){if(p.ver)out.add(special.read);if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(special.read);out.add(special.write);}return;}const bases=[resourcePermission(id)].concat(id==='convenios'?['segmentation']:[]);bases.forEach(base=>{if(p.ver)out.add(base+'.read');if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(base+'.read');out.add(base+'.write');}});});return Array.from(out);}
   store.saveRole=role=>repo.saveRole({id:role.id,name:role.name,desc:role.desc,permissions:technicalPermissions(role)}).then(load).catch(fail);
   store.removeRole=id=>repo.deleteRole(id).then(load).catch(fail);
   store.duplicateRole=id=>{const r=store.getRole(id);if(r)repo.saveRole({id:null,name:r.name+' (copia)',desc:r.desc,permissions:r._permissions||technicalPermissions(r)}).then(load).catch(fail);};

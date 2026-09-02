@@ -1,5 +1,19 @@
 # Reglas de migración
 
+## 20260902000300 — lector self Ahorro live read-only
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración agrega exclusivamente `get_self_savings_live_readonly()` y su grant autenticado; no crea ni altera tablas, filas, triggers, writers, ledger, rendimientos o datos importados. El lector deriva identidad efectiva, no acepta objetivo y proyecta Q/AA:DO/DP:DW/retiros/cambios/beneficiarios desde la evidencia SHADOW certificada.
+
+Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`; la aplicación productiva dejó idénticos los conteos de las 17 tablas y cero filas modificadas. La matriz live confirmó self, no-savings, anónimo/cross-user/target denegados y cero DML. Recovery `20260902000300_savings_user_ui_live_readonly_recovery.sql` revoca/elimina sólo esta función; no fue ejecutada en producción.
+
+## 20260902000100 — fundación Ahorro SHADOW
+
+Estado: `MIGRATION_OBJECTS_PRESENT / TRACKING_RECORD_PENDING / RAW_SHADOW_IMPORT_APPLIED / VERIFIED — PASS`. La migración aditiva fue ejecutada con autorización separada y sus 17 tablas `savings_*`, RPCs self/Admin/importación, seis permisos mínimos, RLS forzada, ledger/evidencia append-only y evento de revisión están físicamente presentes. El 2026-09-02 se aplicó el batch RAW SHADOW certificado `9b20b0cc-456b-4ad7-8058-c8ebe551dc31`: 363 participantes `PENDING_REVIEW`, 42,229 evidencias y un evento de auditoría. Las otras 13 tablas continúan en cero; no se reaplicó el schema ni se corrigió su tracking, no hubo cutover y el rendimiento productivo permanece bloqueado.
+
+Forward, matriz funcional y recovery se ejecutaron juntos contra el backend dentro de `BEGIN + SAVEPOINT + ROLLBACK`. Se comprobaron componentes de saldo, retenciones, calendarios JUB/Proceso, override global/participante, aislamiento entre afiliados, lectura Admin, importador certificado en dry-run y rechazo de mutación del ledger. Resultado: 17 tablas verificadas y cero filas persistidas.
+
+Recovery de schema: `supabase/recovery/20260902000100_savings_shadow_foundation_recovery.sql` sólo puede retirar una instalación vacía y ahora queda bloqueada por la historia importada. Recovery del batch: `supabase/recovery/20260902000200_savings_raw_shadow_import_recovery.sql` está fijada al SHA autorizado, aborta si encuentra entidades canónicas y elimina únicamente ese batch/participantes/evidencias/auditoría; no fue ejecutada porque el postflight pasó. Revertir historia o activar cutover requieren autorización separada.
+
 ## 20260901000200 — archivo reversible de afiliados y Expediente Digital Admin
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración agregó metadata de archivo sobre la misma fila de `public.affiliates`, RPC auditadas de archivo/restauración/listado, exclusión de identidad efectiva e impersonación, guard backend de nuevas solicitudes y reemplazo documental versionado. No archivó afiliados, no modificó filas de negocio y preservó 947 afiliados, 3,434 documentos, 15 solicitudes y 5 eventos administrativos.

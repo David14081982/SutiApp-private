@@ -12,7 +12,7 @@ const ready=(screen.match(/ready: true/g)||[]).length;
 const pending=(screen.match(/ready: false/g)||[]).length;
 assert.strictEqual(ready,16,'exactly sixteen authority-backed Admin cards must be enabled');
 assert.strictEqual(pending,0,'generic pending state must not remain');
-assert.strictEqual((screen.match(/classification: 'PRODUCTIVE_/g)||[]).length,13,'thirteen classified modules have productive authority after the financial read-only cutover');
+assert.strictEqual((screen.match(/classification: 'PRODUCTIVE_/g)||[]).length,14,'fourteen classified modules include the savings shadow foundation after the financial read-only cutover');
 assert.strictEqual((screen.match(/classification: '(?:BLOCKED_|OWNER_)/g)||[]).length,0,'no generic blocked Admin card remains');
 assert(/const productive\s*=\s*m\.ready\s*\|\|\s*String\(m\.classification\s*\|\|\s*''\)\.startsWith\('PRODUCTIVE_'\)/.test(screen));
 assert(screen.includes("'data-admin-status': m.classification|| (usable?'PRODUCTIVE_SUPABASE':'DENIED')"));

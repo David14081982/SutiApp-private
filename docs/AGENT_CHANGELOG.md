@@ -1,5 +1,131 @@
 # Bitácora de agentes
 
+## 2026-09-02 - H-SAVINGS-USER-UI-LIVE-READONLY-001
+
+- Finanzas → Ahorrar abre `#/savings`, Back vuelve a Finanzas y refresh conserva la vista. La pantalla adopta el contrato visual owner —tarjeta granate de saldo, resumen histórico y detalle por año— sin copiar sus datos simulados; Q `NULL` se muestra honestamente como “No reportado en Q”.
+- `get_self_savings_live_readonly()` proyecta sólo evidencia SHADOW certificada del afiliado efectivo: identidad/plan, Q, AA:DO, retiros/cambios, DP:DW y beneficiarios. Anónimo, cross-user y parámetro objetivo quedaron denegados; 17 tablas y filas permanecieron intactas.
+- Chrome live pasó cuenta activa y sin ahorro en 390/430/768/1366, ruta/back/refresh, cuatro acciones deshabilitadas y cero fixtures/writes. La regresión global pasó local y GitHub Pages con assets, foto, documentos, PDF, galerías, fullscreen, refresh y service worker; Google runtime reads/writes 0.
+
+```text
+H-SAVINGS-USER-UI-LIVE-READONLY-001 RESULT
+Status: PASS
+Files changed: Savings UI/routing/repository; RPC/recovery/tests; bundle/cache; gobierno/Registry/evidencia
+Source-of-truth verdict: PASS — Google autoritativo; Supabase SHADOW_MIRROR read-only; HTML sólo visual
+Invariant verdict: PASS — INV-174..185
+Build: PASS — bundle/sintaxis
+Tests: PASS — backend live; Chrome responsive; global image local/Pages
+Security: PASS — self-only; anon/cross-user/target denegados; secretos browser 0
+Legacy impact: READ ONLY — Google reads runtime 0 / writes 0 / Apps Script 0
+Unexpected files changed: 0 atribuibles a esta H; cambios previos preservados
+Known limitations: Q no reportado en cuenta activa; acciones backend 0; sin cutover/ledger/yield credit
+Evidence: docs/audits/H-SAVINGS-USER-UI-LIVE-READONLY-001.md
+```
+
+## 2026-09-02 - H-SAVINGS-LEDGER-RECONCILIATION-DRY-RUN-001
+
+- Dos capturas `GET` del batch SHADOW certificado produjeron el mismo SHA `E378B0F41C0D4C20D2EF88E5A69B94A4A5291B97461A66716DCA8C3981335C49`; las 17 tablas conservaron exactamente sus conteos y Google no fue consultado.
+- La reconstrucción privada por Folio produjo 343 `EXACT_MATCH`, 0 `ROUNDING_MATCH`, 20 `MISMATCH` y 0 insuficientes: 4,049 aportaciones candidatas corroboradas, 226 retiros, 393 rendimientos y 419 segmentos de plan. Los 20 casos y sus montos permanecen sólo en `tmp/`; 0 fueron corregidos o causalmente cerrados.
+- No existe evidencia `HIGH`: 0 `CERTIFIABLE_NOW`, 343 `PENDING_REVIEW`, 20 `BLOCKED`. Transacciones, yield credits, Google/Supabase writes y cutover: `0/NO`; Supabase sigue SHADOW y Google legacy permanece autoritativo.
+
+```text
+H-SAVINGS-LEDGER-RECONCILIATION-DRY-RUN-001 RESULT
+Status: PASS
+Files changed: capturador/reconciliador/test read-only; auditoría/changelog; PII sólo en tmp ignorado
+Source-of-truth verdict: PASS - Google productivo; Supabase/evidencia local sólo SHADOW derivado
+Invariant verdict: PASS - Q/reportes/candidatos no promovidos; historia sin reescritura
+Build: NOT APPLICABLE - frontend intacto
+Tests: PASS - doble captura estable; determinismo, totales, hashes, 20 desajustes y zero-write guards
+Security: PASS - backend GET-only; secretos/PII no versionados; RLS/tablas intactas
+Legacy impact: NO GOOGLE ACCESS / writes 0 / Apps Script change 0
+Unexpected files changed: 0 atribuibles a esta H fuera de alcance
+Known limitations: 0 HIGH; 20 casos sin resolución causal; Reporte Ahorro no confirmado como ledger
+Evidence: docs/audits/H-SAVINGS-LEDGER-RECONCILIATION-DRY-RUN-001.md
+```
+
+## 2026-09-02 - H-SAVINGS-RAW-SHADOW-IMPORT-001
+
+- Se aplicó en producción el único batch RAW SHADOW `9b20b0cc-456b-4ad7-8058-c8ebe551dc31`, ligado al baseline SHA `3552A321C0864460A9B202AB0783750166935078C604BFF88DD90B9D9D9275B1`: 363 participantes `PENDING_REVIEW`, 42,229 evidencias y un evento de auditoría.
+- Identidad: 356 resueltos, 5 ambiguos y 2 huérfanos; el Folio TEST conserva 101 evidencias y no crea participante. AA:DO 33,852; DP:DW 1,092; Reporte Ahorro 4,049/317 Folios; Reporte RH 320/320.
+- Preflight/postflight, RLS forzada, conteos, hashes, duplicados y reaplicación idempotente `ALREADY_APPLIED/writes=0`: `PASS`. Ledger, enrollments, plans, requests, yield credits, acciones, Google writes y cutover: `0/NO`. Recovery exacta preparada y no ejecutada.
+
+```text
+H-SAVINGS-RAW-SHADOW-IMPORT-001 RESULT
+Status: PASS
+Files changed: builder/importers/verifier/test/recovery; auditoría y documentos de autoridad
+Source-of-truth verdict: PASS - Google productivo; Supabase sólo historia SHADOW
+Invariant verdict: PASS - Q/evidencia sin promoción; ledger/yields/actions/cutover en cero
+Build: NOT APPLICABLE - frontend intacto
+Tests: PASS - determinismo, preflight, apply, postflight, idempotencia
+Security: PASS - service_role local; RLS forzada; navegador sin DML; PII no versionada
+Legacy impact: Google READ ONLY / writes 0
+Unexpected files changed: 0 atribuibles a esta H fuera de alcance
+Known limitations: participantes PENDING_REVIEW; sin saldo canónico ni operación activa
+Evidence: docs/audits/H-SAVINGS-RAW-SHADOW-IMPORT-001.md
+```
+
+## 2026-09-02 - H-SAVINGS-CURRENT-SOURCE-CERTIFIED-BASELINE-001
+
+- Dos capturas `READ ONLY` de las nueve hojas de Ahorro produjeron el mismo hash financiero `AF10C2D8FC591E430AA70EE9BBBD8BFF9DC1236FF298CEBF93D76874FD3821D6`: 364 Folios, 33,852 valores AA:DO, 1,092 registros DP:DW y 5,465 filas operativas.
+- El alcance forense celda-por-celda se redujo por orden del propietario. El baseline conserva valores, procedencia `FORMULA/MANUAL/EMPTY` y hashes, pero cero textos de formula; se eliminaron 29,349,106 bytes de intermedios y quedaron 6,938,309 bytes privados ignorados. Dos lecturas dirigidas confirmaron equivalencia visible de Folio `364/364`.
+- Supabase antes/despues mantuvo 947 identidades con el mismo hash y seleccion exclusivamente de `public.affiliates.id/numero_control`. Se corrigio y retiro antes del cierre una lectura intermedia mas amplia que la autorizacion; no hubo mutacion externa. Google/Supabase writes, importacion, reapply, cutover, commit y push: 0/NO.
+
+```text
+H-SAVINGS-CURRENT-SOURCE-CERTIFIED-BASELINE-001 RESULT
+Status: PASS
+Files changed: scripts read-only; Registry derivado; auditoria/changelog; manifest PII solo en tmp ignorado
+Source-of-truth verdict: PASS - Google continua autoritativo; manifest es evidencia derivada
+Invariant verdict: PASS - sin autoridad duplicada, fallback o mutacion historica
+Build: NOT APPLICABLE - frontend/runtime intactos
+Tests: PASS - captura 2/2 identica, manifest/PII/zero-write guards
+Security: PASS - PII privada; secretos persistidos 0
+Legacy impact: READ ONLY - formulas/triggers/Apps Script sin cambios
+Unexpected files changed: 0 por esta H fuera del alcance declarado
+Known limitations: excepciones de identidad/fecha/PROCESS preservadas; Conciliacion sin filas actuales; no autoriza import/cutover
+Evidence: docs/audits/H-SAVINGS-CURRENT-SOURCE-CERTIFIED-BASELINE-001.md
+```
+
+## 2026-09-02 — H-SAVINGS-SHADOW-IMPORT-CERTIFIED-DRY-RUN-001
+
+- La lectura acotada real de nueve hojas de `SutiApp Final` produjo el fingerprint `49D6AF5E14329677D8AD32842BE2756746D8859EC75AFC914726AB6843BDFFED`. El source cambió desde la auditoría: 364 Folios encontrados, 363 importables, 356 resueltos, 5 ambiguos, 2 huérfanos y un Folio TEST inválido.
+- El manifest conserva 4,049 aportaciones, 226 retiros y 395 rendimientos como candidatos/evidencia; autoriza 0 ledger, 0 planes, 0 solicitudes y 0 créditos. La conciliación aritmética actual es 343 MATCH / 20 MISMATCH; el set previo de 21 no estaba retenido y no se asumió continuidad.
+- Dos builds y dos dry-runs produjeron bytes, conteos y hashes idénticos. El guard `ready_for_apply=false` rechazó `--apply`; Supabase confirmó 0 tablas `savings_*` y RPC ausente. Suite estática 83/83; Google/Supabase/Storage/Auth/commit/push writes 0.
+
+```text
+H-SAVINGS-SHADOW-IMPORT-CERTIFIED-DRY-RUN-001 RESULT
+Status: PASS — dry-run certificado; importación productiva no autorizada
+Files changed: builder/importer/tests; auditoría/changelog; Registry derivado; manifest sensible sólo en tmp ignorado
+Source-of-truth verdict: PASS READ ONLY — Google productivo; manifest derivado
+Invariant verdict: PASS — INV-174..182; Q/candidatos no se promovieron a ledger
+Build: NOT APPLICABLE — frontend intacto; node --check PASS
+Tests: PASS — dry-run 2/2, idempotencia, apply guard, foundation y static 83/83
+Security: PASS — secretos/PII pública 0; GET/SELECT-only
+Legacy impact: READ ONLY — Google writes 0; fórmulas/triggers sin cambios
+Unexpected files changed: 0 por esta H fuera del alcance actualizado
+Known limitations: source cambió; balance/aportación UNRESOLVED; ready_for_apply=false
+Evidence: docs/audits/H-SAVINGS-SHADOW-IMPORT-CERTIFIED-DRY-RUN-001.md
+```
+
+## 2026-09-02 — H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001
+
+- Finanzas → Ahorrar abre la pantalla Ahorro completa con jerarquía Claude Design preservada, balance por capital/rendimiento/disponible/retenido, detalle anual, inscripción, calendario, movimientos, acciones backend, solicitudes y beneficiarios. Administración incorpora 17 secciones operativas y 10 KPI sobre la misma fundación.
+- La migración prepara 17 tablas `savings_*`, ledger/evidencia append-only, calendario JUB/Proceso, solicitudes/retenciones/aprobaciones, revisión de cambio de proceso, RLS/RPC y seis permisos mínimos. Google Ahorro continúa productivo; Supabase queda SHADOW, importación real 0 y rendimiento productivo deshabilitado.
+- Forward, funcional y recovery pasaron contra Supabase dentro de `ROLLBACK`; 82/82 pruebas estáticas, Chrome responsive self/Admin, Registry FRESH y regresión global de imágenes local/Pages cerraron PASS sin mutaciones productivas.
+
+```text
+H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001 RESULT
+Status: PASS — preparado, no aplicado a producción
+Files changed: Savings UI/repository/store/Admin; SQL/recovery/importador; bundle/cache; tests; gobierno/Registry/evidencia
+Source-of-truth verdict: PASS — Google productivo; Supabase SHADOW; no fallback
+Invariant verdict: PASS — INV-174..182
+Build: PASS — 99 fuentes; 7927349EC241A850592CB68C49B1803A022FFFCD64821315AD449B732FA797EF
+Tests: PASS — 82/82 static; SQL dry-run; Chrome; imágenes local/Pages
+Security: PASS preparado — RLS/RPC/grants/aislamiento; service_role fuera del bundle
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script 0 / fórmulas 0
+Unexpected files changed: 0 por esta H; cambios preexistentes preservados y detallados en la auditoría
+Known limitations: apply/import/cutover pendientes; rendimiento y regla JUB automática requieren decisión owner
+Evidence: docs/audits/H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001.md
+```
+
 ## 2026-09-01 — H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001
 
 - Forense Git identificó `dfa9d9016531f2175c78a15b26e2e6925a0135cc`, `app/affiliate-repository.js:73` y el RPC obligatorio `get_current_affiliate_access_state` como causa exacta. La H de Archivo debía bloquear autoservicio archivado en la identidad compartida, pero Pages desplegó el consumidor mientras la migración seguía preparada/no aplicada.
@@ -19,6 +145,27 @@ Legacy impact: NO INTERACTION
 Unexpected files changed: 0
 Known limitations: none for requested Login/Auth matrix
 Evidence: docs/qa/H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001-EVIDENCE.md
+```
+
+## 2026-09-01 — H-GLOBAL-IMAGE-REGRESSION-ROOT-CAUSE-001
+
+- Navegador real sobre build local y GitHub Pages confirmó cero superficies rotas: 147/147 `app_assets`, 248/248 imágenes de programas, perfil, Admin Afiliados, documentos privados imagen/PDF, Membership, Préstamo, Marketplace, fullscreen, galería, refresh y perfil fresco sin service worker quedaron `PASS`.
+- El bisect lógico `0d06e8c → dfa9d901 → 8281317 → 053d49a8` demostró que los repositories/resolvers/viewer visuales no cambiaron. `dfa9d901` añadió archivo de identidad y proyección Admin sin modificar firma, TTL, `document-access`, Storage ni RLS; no existe commit causante demostrable.
+- No se tocaron datos, URLs, assets, documentos, buckets, ownership ni policies. Se agregó la matriz protegida, `INV-173` y su guard estático obligatorio.
+
+```text
+H-GLOBAL-IMAGE-REGRESSION-ROOT-CAUSE-001 RESULT
+Status: PASS
+Files changed: matriz browser; guard estático; AGENTS/invariante; evidencia/changelog
+Source-of-truth verdict: PASS — cada familia conservó su autoridad; no se creó fallback ni copia
+Invariant verdict: PASS — INV-173 agrega protección sin cambiar contratos runtime
+Build: PENDING FINAL VERIFICATION
+Tests: PASS — matriz real local + GitHub Pages; static guard focal
+Security: PASS — signed URLs/RLS/document-access; cero secretos, URLs crudas o PII en salida
+Legacy impact: READ ONLY / Google 0 / Apps Script 0 / financial logic 0
+Unexpected files changed: 0
+Known limitations: el síntoma histórico no contiene telemetría suficiente para atribuir un evento transitorio a un commit
+Evidence: docs/qa/H-GLOBAL-IMAGE-REGRESSION-ROOT-CAUSE-001-EVIDENCE.md
 ```
 
 ## 2026-09-01 — H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 productivo

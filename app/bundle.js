@@ -8152,6 +8152,139 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.PayrollDeclarationRepository = Object.freeze({ get, save, assertDeclaration });
 })();
 })();
+/* @@file savings-repository.js */
+(function(){
+/* Savings SHADOW + NEW FOUNDATION boundary. Never reads Google, mocks, DATA,
+   localStorage or the visual-reference HTML. All projections and mutations are
+   server RPCs protected by identity, RLS and technical permissions. */
+(function () {
+  'use strict';
+
+  const db = () => window.SutiSupabase.getClient();
+  const key = () => crypto.randomUUID();
+
+  async function rpc(name, values) {
+    const result = await db().rpc(name, values || {});
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  const api = {
+    newIdempotencyKey: key,
+    getSelfDashboard: () => rpc('get_self_savings_live_readonly'),
+    getAdminDashboard: (participantId) => rpc('get_admin_savings_dashboard', { p_participant_id: participantId || null }),
+    submitRequest: (values) => {
+      const input = values || {};
+      return rpc('submit_self_savings_request', {
+        p_request_type: input.requestType,
+        p_amount: input.amount == null ? null : Number(input.amount),
+        p_component: input.component || null,
+        p_withdrawal_kind: input.withdrawalKind || null,
+        p_new_contribution_amount: input.newContributionAmount == null ? null : Number(input.newContributionAmount),
+        p_continue_saving: input.continueSaving == null ? null : Boolean(input.continueSaving),
+        p_effective_from: input.effectiveFrom || null,
+        p_reason: input.reason || '',
+        p_supporting_document_id: input.supportingDocumentId || null,
+        p_idempotency_key: input.idempotencyKey || key(),
+      });
+    },
+    replaceBeneficiaries: (beneficiaries, idempotencyKey) => rpc('replace_self_savings_beneficiaries', {
+      p_beneficiaries: beneficiaries || [], p_idempotency_key: idempotencyKey || key(),
+    }),
+    setActionAvailability: (values) => {
+      const input = values || {};
+      return rpc('admin_set_savings_action', {
+        p_action_code: input.actionCode,
+        p_enabled: Boolean(input.enabled),
+        p_scope_type: input.scopeType || 'GLOBAL',
+        p_participant_id: input.participantId || null,
+        p_reason: input.reason || '',
+        p_effective_from: input.effectiveFrom || null,
+        p_effective_to: input.effectiveTo || null,
+      });
+    },
+    overrideContribution: (values) => {
+      const input = values || {};
+      return rpc('admin_override_savings_contribution', {
+        p_enrollment_id: input.enrollmentId,
+        p_contribution_date: input.contributionDate,
+        p_actual_amount: Number(input.actualAmount),
+        p_reason: input.reason || '',
+        p_client_action_id: input.clientActionId || key(),
+      });
+    },
+    reviewRequest: (values) => {
+      const input = values || {};
+      return rpc('admin_review_savings_request', {
+        p_request_id: input.requestId,
+        p_decision: input.decision,
+        p_reason: input.reason || '',
+        p_effective_from: input.effectiveFrom || null,
+        p_first_expected_contribution_date: input.firstExpectedContributionDate || null,
+        p_process: input.process || null,
+      });
+    },
+    recordRequestApproval: (values) => {
+      const input = values || {};
+      return rpc('admin_record_savings_request_approval', {
+        p_request_id: input.requestId,
+        p_approval_role: input.approvalRole,
+        p_decision: input.decision,
+        p_reason: input.reason || '',
+      });
+    },
+    settleRequest: (values) => {
+      const input = values || {};
+      return rpc('admin_settle_savings_request', {
+        p_request_id: input.requestId,
+        p_capital_amount: Number(input.capitalAmount || 0),
+        p_yield_amount: Number(input.yieldAmount || 0),
+        p_reason: input.reason || '',
+        p_client_action_id: input.clientActionId || key(),
+      });
+    },
+    createHold: (values) => {
+      const input = values || {};
+      return rpc('admin_create_savings_hold', {
+        p_participant_id: input.participantId,
+        p_enrollment_id: input.enrollmentId || null,
+        p_component: input.component,
+        p_amount: Number(input.amount),
+        p_reason: input.reason || '',
+      });
+    },
+    releaseHold: (holdId, reason) => rpc('admin_release_savings_hold', { p_hold_id: holdId, p_reason: reason || '' }),
+    recordProcessChange: (participantId, process, reason) => rpc('admin_record_savings_process_change', {
+      p_participant_id: participantId, p_new_process: process, p_reason: reason || '',
+    }),
+    reviewProcessChange: (values) => {
+      const input = values || {};
+      return rpc('admin_review_savings_process_change', {
+        p_event_id: input.eventId,
+        p_decision: input.decision,
+        p_effective_from: input.effectiveFrom || null,
+        p_reason: input.reason || '',
+      });
+    },
+    saveYieldPeriod: (values) => {
+      const input = values || {};
+      return rpc('admin_save_savings_yield_period', {
+        p_period_year: Number(input.year), p_semester: Number(input.semester),
+        p_starts_on: input.startsOn, p_ends_on: input.endsOn,
+        p_rate: input.rate == null || input.rate === '' ? null : Number(input.rate),
+        p_eligibility_policy: input.eligibilityPolicy || {}, p_exclusion_policy: input.exclusionPolicy || {},
+        p_status: input.status || 'DRAFT',
+      });
+    },
+    creditYieldPeriod: (periodId) => rpc('admin_credit_savings_yield_period', { p_yield_period_id: periodId }),
+    resolveIdentity: (participantId, affiliateId, reason) => rpc('admin_resolve_savings_identity', {
+      p_participant_id: participantId, p_affiliate_id: affiliateId, p_reason: reason || '',
+    }),
+  };
+
+  window.SavingsRepository = Object.freeze(api);
+})();
+})();
 /* @@file institutional-repositories.js */
 (function(){
 /* Sole Supabase data-access boundaries for H-007 public institutional content. */
@@ -10728,6 +10861,7 @@ Object.assign(window, {
     }), React.createElement(SummaryAction, {
       itemId: 'ahorro',
       label: 'Ahorrar',
+      ariaLabel: 'Abrir mi ahorro',
       icon: 'piggy',
       onClick: () => app.openFinanceItem('ahorro')
     }), React.createElement(SummaryAction, {
@@ -11331,6 +11465,353 @@ Object.assign(window, {
     }));
   }
   window.FinancieraScreen = FinancieraScreen;
+})();
+})();
+/* @@file screens-savings.jsx */
+(function(){
+/* User Savings read-only experience. The approved Claude Design hierarchy is
+   preserved while every value comes from the certified Supabase SHADOW reader. */
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  const I = window.Icon;
+  const ACTION_LABELS = {
+    JOIN: 'Ingresar al ahorro',
+    CHANGE_AMOUNT: 'Modificar monto',
+    WITHDRAW: 'Retirar ahorro',
+    TERMINATE: 'Darme de baja'
+  };
+  const ACTION_ORDER = ['WITHDRAW', 'CHANGE_AMOUNT', 'TERMINATE', 'JOIN'];
+  const ACTION_ICONS = {
+    JOIN: 'checkCircle',
+    CHANGE_AMOUNT: 'edit',
+    WITHDRAW: 'cash',
+    TERMINATE: 'refresh'
+  };
+  const CSS = `
+    .su-savings{--sav-wine:#8a1538;--sav-wine-dark:#65102a;--sav-red:#8a1538;--sav-pink:#f8edf1;--sav-ink:#171719;--sav-muted:#8a8a90;--sav-line:#ededf0;--sav-bg:#f3f3f5;position:absolute;inset:0;display:flex;flex-direction:column;background:var(--sav-bg);color:var(--sav-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}.su-savings *{box-sizing:border-box}
+    .sav-scroll{flex:1;min-height:0;overflow:auto;scrollbar-width:none}.sav-scroll::-webkit-scrollbar{display:none}.sav-hero{position:sticky;top:0;z-index:5;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;background:#fff;color:var(--sav-ink);border-bottom:1px solid var(--sav-line)}.sav-hero:after{display:none}
+    .sav-head{display:flex;align-items:center;gap:8px;min-height:48px}.sav-back,.sav-info{height:40px;border:0;background:transparent;color:var(--sav-wine);display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer}.sav-back{width:40px}.sav-info{width:38px}.sav-head-copy{flex:1;min-width:0;text-align:center}.sav-head-copy b{display:block;font-size:17px;font-weight:750}.sav-head-copy span{display:none}.sav-head-actions{display:flex;gap:0}.sav-source{display:none}.sav-provenance{margin:10px 2px 0;color:#8f8f95;font-size:9.5px;font-weight:650;text-align:center;line-height:1.35}
+    .sav-body{position:relative;padding:16px 16px 40px}.sav-balance{background:var(--sav-wine);color:#fff;border-radius:20px;padding:18px;box-shadow:0 16px 26px -18px rgba(138,21,56,.8)}.sav-balance-top{display:block}.sav-kicker{font-size:10.5px;font-weight:750;color:var(--sav-muted);text-transform:uppercase;letter-spacing:.07em}.sav-balance .sav-kicker{color:#ebcbd6}.sav-total{font-size:34px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin-top:8px;font-variant-numeric:tabular-nums}.sav-state{display:none}.sav-split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.sav-split>div{min-width:0;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.12)}.sav-split>div+div{border:0;padding-left:11px}.sav-split span{display:block;font-size:9.5px;font-weight:650;color:#e6c2cf}.sav-split b{display:block;font-size:16px;font-weight:780;margin-top:3px;font-variant-numeric:tabular-nums}.sav-split>div:last-child b{color:#56e09a}.sav-availability{display:none}
+    .sav-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}.sav-action{width:100%;min-height:48px;border:1px solid #dedee2;border-radius:14px;padding:12px 15px;background:#fff;color:#4b4b50;font:700 13px inherit;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}.sav-action:disabled{opacity:.58;cursor:not-allowed}.sav-action>span{width:auto;height:auto;background:transparent;color:currentColor;display:grid;place-items:center}.sav-action[data-primary=true]{background:var(--sav-wine);border-color:var(--sav-wine);color:#fff;opacity:.68}.sav-action[data-primary=true]>span{background:transparent;color:#fff}
+    .sav-section{margin-top:18px}.sav-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 2px 10px}.sav-section-title b{font-size:11px;font-weight:750;color:#99999f;letter-spacing:.075em;text-transform:uppercase}.sav-section-title span{font-size:10px;font-weight:650;color:#a0a0a6;text-align:right}.sav-card,.sav-year{background:#fff;border:1px solid #e6e6e9;border-radius:18px;padding:15px 16px;box-shadow:0 5px 16px -13px rgba(0,0,0,.35)}.sav-year-list{display:flex;flex-direction:column;gap:12px}.sav-year-head{display:flex;justify-content:space-between;align-items:center}.sav-year-head b{font-size:18px;font-weight:780}.sav-year-head span{padding:5px 10px;border-radius:999px;background:#edf8f1;color:#157f4a;font-size:9px;font-weight:750}.sav-year-head span[data-current=true]{background:#fff2d9;color:#9a6813}.sav-year-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:14px}.sav-year-grid>div{padding-right:12px}.sav-year-grid>div+div{padding-left:14px;padding-right:0;border-left:1px solid var(--sav-line)}.sav-year-grid span{display:block;font-size:10px;font-weight:600;color:#9a9aa0}.sav-year-grid b{display:block;font-size:18px;font-weight:780;margin-top:3px}.sav-year-grid>div:last-child{text-align:left}.sav-year-grid>div:last-child b{color:#008b50}
+    .sav-enroll-head{display:flex;gap:11px;align-items:center}.sav-icon{width:39px;height:39px;border-radius:12px;display:grid;place-items:center;background:var(--sav-pink);color:var(--sav-wine);flex-shrink:0}.sav-enroll-head>div{flex:1;min-width:0}.sav-enroll-head b{display:block;font-size:14px;font-weight:900}.sav-enroll-head span{font-size:11px;font-weight:750;color:var(--sav-muted)}.sav-rows{margin-top:10px}.sav-row{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-top:1px solid var(--sav-line);font-size:11.5px}.sav-row span{color:var(--sav-muted);font-weight:750}.sav-row b{text-align:right;font-weight:850;overflow-wrap:anywhere}
+    .sav-next{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--sav-line)}.sav-next:first-child,.sav-tx:first-child{border-top:0}.sav-date{width:43px;text-align:center;border-radius:11px;padding:6px 3px;background:#f3f5f8}.sav-date b{display:block;font-size:14px;font-weight:900}.sav-date span{font-size:8.5px;font-weight:850;color:var(--sav-muted);text-transform:uppercase}.sav-next-copy{flex:1;min-width:0}.sav-next-copy b{display:block;font-size:12px}.sav-next-copy span{font-size:10px;color:var(--sav-muted);font-weight:700}.sav-next>strong{font-size:13px;color:var(--sav-wine)}
+    .sav-history-tabs{display:flex;gap:7px;overflow:auto;margin-bottom:10px}.sav-history-tabs button{border:0;border-radius:999px;padding:7px 11px;background:#e9edf3;color:#67738a;font:800 10.5px inherit;white-space:nowrap;cursor:pointer}.sav-history-tabs button[aria-pressed=true]{background:var(--sav-wine);color:#fff}.sav-tx{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--sav-line)}.sav-tx-icon{width:36px;height:36px;border-radius:11px;background:#edf8f3;color:#087a50;display:grid;place-items:center}.sav-tx-icon[data-debit=true]{background:var(--sav-pink);color:var(--sav-wine)}.sav-tx b{display:block;font-size:12px}.sav-tx span{font-size:10px;color:var(--sav-muted);font-weight:700}.sav-tx strong{font-size:12.5px;color:#087a50}.sav-tx strong[data-debit=true]{color:var(--sav-wine)}
+    .sav-alert{border-radius:13px;padding:10px 12px;background:#efeff1;color:#6f6f75;font-size:10.5px;font-weight:650;line-height:1.45;margin-top:10px}.sav-error{margin:20px 16px;padding:16px;border-radius:17px;background:#fff;color:#9a1834;box-shadow:0 8px 24px -14px rgba(23,35,61,.3);font-size:12px;font-weight:750}.sav-retry,.sav-primary{border:0;border-radius:14px;padding:12px 15px;background:var(--sav-wine);color:#fff;font:750 13px inherit;cursor:pointer}.sav-primary{width:100%;min-height:48px}.sav-primary:disabled{opacity:.5;cursor:default}.sav-empty{padding:28px 18px;text-align:center;background:#fff;color:var(--sav-ink);border:1px solid #e6e6e9;box-shadow:none}.sav-empty .sav-icon{margin:0 auto}.sav-empty h2{font-size:19px;margin:13px 0 5px}.sav-empty p{font-size:12.5px;line-height:1.5;color:var(--sav-muted);margin:0 auto 16px;max-width:300px}
+    .sav-overlay{position:fixed;inset:0;z-index:92;background:rgba(14,18,28,.52);display:flex;align-items:flex-end;justify-content:center}.sav-sheet{width:min(100%,520px);background:#fff;border-radius:25px 25px 0 0;padding:9px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -20px 50px rgba(0,0,0,.18)}.sav-handle{width:42px;height:4px;background:#d7dce5;border-radius:999px;margin:2px auto 15px}.sav-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.sav-sheet h2{font-size:20px;margin:0}.sav-sheet p{font-size:12px;color:var(--sav-muted);font-weight:650;line-height:1.5}.sav-close{width:38px;height:38px;border:0;border-radius:12px;background:#f0f2f6;display:grid;place-items:center;color:var(--sav-ink);cursor:pointer}
+    @media(min-width:700px){.sav-body,.sav-head{width:min(430px,100%);margin-left:auto;margin-right:auto}.sav-hero{padding-left:max(16px,calc((100% - 430px)/2));padding-right:max(16px,calc((100% - 430px)/2))}}@media(max-width:390px){.sav-body{padding-left:13px;padding-right:13px}.sav-total{font-size:30px}.sav-action{font-size:12px}}
+  `;
+  function icon(name, size) {
+    return h(I, {
+      name,
+      size: size || 18,
+      stroke: 2,
+      'aria-hidden': 'true'
+    });
+  }
+  function money(value) {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2
+    }).format(Number(value || 0));
+  }
+  function moneyOrDash(value) {
+    return value == null ? '—' : money(value);
+  }
+  function shortDate(value) {
+    return value ? new Date(value + (String(value).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }) : 'Por confirmar';
+  }
+  function Sheet({
+    title,
+    children,
+    onClose
+  }) {
+    return h('div', {
+      className: 'sav-overlay',
+      onMouseDown: event => {
+        if (event.target === event.currentTarget) onClose();
+      },
+      role: 'presentation'
+    }, h('section', {
+      className: 'sav-sheet',
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title
+    }, h('div', {
+      className: 'sav-handle'
+    }), h('div', {
+      className: 'sav-sheet-head'
+    }, h('h2', null, title), h('button', {
+      type: 'button',
+      className: 'sav-close',
+      onClick: onClose,
+      'aria-label': 'Cerrar'
+    }, icon('close', 18))), children));
+  }
+  function SavingsScreen({
+    app
+  }) {
+    const store = window.useSavingsStore('self'),
+      state = store.state(),
+      dashboard = state.self;
+    const [sheet, setSheet] = React.useState(''),
+      [historyYear, setHistoryYear] = React.useState('all');
+    const reload = () => store.loadSelf(true);
+    if (state.selfPhase === 'loading' || state.selfPhase === 'idle') return h('div', {
+      className: 'su-savings',
+      'data-savings-screen': '',
+      'data-savings-phase': 'loading'
+    }, h('style', null, CSS), h('div', {
+      className: 'sav-error'
+    }, 'Cargando tu ahorro desde el backend…'));
+    if (state.selfPhase === 'error' || !dashboard) return h('div', {
+      className: 'su-savings',
+      'data-savings-screen': '',
+      'data-savings-phase': 'error'
+    }, h('style', null, CSS), h('header', {
+      className: 'sav-hero'
+    }, h('div', {
+      className: 'sav-head'
+    }, h('button', {
+      className: 'sav-back',
+      onClick: app.back,
+      'aria-label': 'Atrás'
+    }, icon('arrowL', 20)), h('div', {
+      className: 'sav-head-copy'
+    }, h('b', null, 'Ahorro'), h('span', null, 'Mi Financiera')))), h('div', {
+      className: 'sav-error',
+      role: 'alert'
+    }, 'No fue posible consultar Ahorro. No mostramos saldos de respaldo.', h('div', {
+      style: {
+        marginTop: 12
+      }
+    }, h('button', {
+      className: 'sav-retry',
+      onClick: reload
+    }, 'Reintentar'))));
+    const participant = dashboard.participant,
+      enrollment = dashboard.enrollment,
+      balance = dashboard.balances,
+      years = dashboard.annual || [];
+    const historyYears = Array.from(new Set((dashboard.history || []).map(item => String(item.effective_date || '').slice(0, 4)).filter(Boolean)));
+    const history = (dashboard.history || []).filter(item => historyYear === 'all' || String(item.effective_date || '').startsWith(historyYear));
+    const canWriteRequests = Boolean(dashboard.write_capabilities && dashboard.write_capabilities.requests),
+      canWriteBeneficiaries = Boolean(dashboard.write_capabilities && dashboard.write_capabilities.beneficiaries);
+    const detailRow = (label, value) => h('div', {
+      className: 'sav-row',
+      key: label
+    }, h('span', null, label), h('b', null, value == null || value === '' ? 'Por confirmar' : value));
+    const section = (title, note, content) => h('section', {
+      className: 'sav-section'
+    }, h('div', {
+      className: 'sav-section-title'
+    }, h('b', null, title), h('span', null, note)), content);
+    return h('div', {
+      className: 'su-savings',
+      'data-savings-screen': '',
+      'data-savings-authority': dashboard.authority,
+      'data-savings-projection': dashboard.projection,
+      'data-savings-cutover': dashboard.cutover_status
+    }, h('style', null, CSS), h('div', {
+      className: 'sav-scroll'
+    }, h('header', {
+      className: 'sav-hero'
+    }, h('div', {
+      className: 'sav-head'
+    }, h('button', {
+      type: 'button',
+      className: 'sav-back',
+      onClick: app.back,
+      'aria-label': 'Atrás'
+    }, icon('arrowL', 20)), h('div', {
+      className: 'sav-head-copy'
+    }, h('b', null, 'Ahorro'), h('span', null, 'Tu ahorro, claro y en un solo lugar')), h('div', {
+      className: 'sav-head-actions'
+    }, h('button', {
+      type: 'button',
+      className: 'sav-info',
+      onClick: reload,
+      'aria-label': 'Actualizar ahorro',
+      'data-savings-refresh': ''
+    }, icon('refresh', 17)), h('button', {
+      type: 'button',
+      className: 'sav-info',
+      onClick: () => setSheet('INFO'),
+      'aria-label': 'Información'
+    }, icon('info', 17))))), h('main', {
+      className: 'sav-body'
+    }, participant ? h(React.Fragment, null, h('section', {
+      className: 'sav-balance',
+      'aria-label': 'Resumen de ahorro'
+    }, h('div', {
+      className: 'sav-balance-top'
+    }, h('div', null, h('div', {
+      className: 'sav-kicker'
+    }, 'Saldo actual total · Q'), h('div', {
+      className: 'sav-total',
+      'data-savings-total': balance && balance.total != null ? String(balance.total) : ''
+    }, balance && balance.total != null ? money(balance.total) : 'No reportado en Q')), h('span', {
+      className: 'sav-state'
+    }, enrollment && enrollment.status || 'LEGACY')), h('div', {
+      className: 'sav-split'
+    }, h('div', null, h('span', null, 'AHORRADO HISTÓRICO'), h('b', {
+      'data-savings-capital': balance && balance.capital != null ? String(balance.capital) : ''
+    }, balance ? moneyOrDash(balance.capital) : '—')), h('div', null, h('span', null, 'RENDIMIENTO HISTÓRICO'), h('b', {
+      'data-savings-yield': balance && balance.yield != null ? String(balance.yield) : ''
+    }, balance ? moneyOrDash(balance.yield) : '—'))), h('div', {
+      className: 'sav-availability'
+    }, h('div', {
+      className: 'sav-chip'
+    }, 'Saldo mostrado', h('b', null, 'Columna Q')), h('div', {
+      className: 'sav-chip'
+    }, 'Capital / rendimiento', h('b', null, 'DP:DW directo')))), h('div', {
+      className: 'sav-provenance',
+      'data-savings-provenance': ''
+    }, 'Google legacy · SHADOW certificado · saldo Q · DP:DW directo'), section('Detalle por año', years.length + ' periodos históricos', years.length ? h('div', {
+      className: 'sav-year-list'
+    }, years.map((item, index) => h('article', {
+      className: 'sav-year',
+      key: item.year + '-' + index,
+      'data-savings-year': item.year
+    }, h('div', {
+      className: 'sav-year-head'
+    }, h('b', null, item.year), h('span', {
+      'data-current': Number(String(item.year).slice(0, 4)) === new Date().getFullYear()
+    }, Number(String(item.year).slice(0, 4)) === new Date().getFullYear() ? 'EN CURSO' : 'DISPONIBLE')), h('div', {
+      className: 'sav-year-grid'
+    }, h('div', null, h('span', null, 'Ahorro'), h('b', null, moneyOrDash(item.capital)), h('span', null, item.capital_cell_kind)), h('div', null, h('span', null, 'Rendimiento'), h('b', null, moneyOrDash(item.yield)), h('span', null, item.yield_cell_kind)))))) : h('div', {
+      className: 'sav-card'
+    }, h('span', {
+      className: 'sav-kicker'
+    }, 'No hay periodos DP:DW atribuibles a este Folio.'))), h('div', {
+      className: 'sav-actions',
+      'data-savings-actions': ''
+    }, ACTION_ORDER.map(action => {
+      const enabled = Boolean(dashboard.actions && dashboard.actions[action] && canWriteRequests);
+      return h('button', {
+        type: 'button',
+        key: action,
+        className: 'sav-action',
+        'data-primary': action === 'WITHDRAW',
+        disabled: !enabled,
+        'aria-disabled': String(!enabled),
+        onClick: enabled ? () => setSheet(action) : undefined,
+        'data-savings-action': action,
+        'data-savings-enabled': String(enabled)
+      }, h('span', null, icon(ACTION_ICONS[action], 17)), ACTION_LABELS[action]);
+    })), h('div', {
+      className: 'sav-alert',
+      'data-savings-readonly': ''
+    }, 'Consulta de sólo lectura. Las solicitudes no están habilitadas para tu cuenta en este momento.'), section('Mi ahorro', 'Identidad legacy', h('div', {
+      className: 'sav-card',
+      'data-savings-enrollment': ''
+    }, enrollment ? h(React.Fragment, null, h('div', {
+      className: 'sav-enroll-head'
+    }, h('span', {
+      className: 'sav-icon'
+    }, icon('calendar', 19)), h('div', null, h('b', null, enrollment.status || 'Estado por confirmar'), h('span', null, 'Folio legacy ' + (participant.legacy_folio || 'por confirmar')))), h('div', {
+      className: 'sav-rows'
+    }, detailRow('Fecha de inicio', shortDate(enrollment.enrollment_started_at)), detailRow('Monto vigente', enrollment.current_contribution_amount == null ? null : money(enrollment.current_contribution_amount)), detailRow('PROCESS histórico', enrollment.historical_process), detailRow('PROCESS actual', enrollment.current_process), detailRow('Frecuencia inferida', enrollment.frequency === 'MONTHLY' ? 'Mensual' : enrollment.frequency === 'TWICE_MONTHLY' ? 'Quincenal' : null), detailRow('Tipo de celda del monto', enrollment.amount_cell_kind))) : h('span', {
+      className: 'sav-kicker'
+    }, 'Sin evidencia de inscripción vinculada.'))), section('Próximos registros', 'AA:DO · evidencia esperada', h('div', {
+      className: 'sav-card',
+      'data-savings-upcoming': ''
+    }, (dashboard.upcoming || []).length ? dashboard.upcoming.slice(0, 8).map((item, index) => {
+      const date = new Date(item.contribution_date + 'T12:00:00');
+      return h('div', {
+        className: 'sav-next',
+        key: item.contribution_date + '-' + index
+      }, h('div', {
+        className: 'sav-date'
+      }, h('b', null, date.getDate()), h('span', null, date.toLocaleDateString('es-MX', {
+        month: 'short'
+      }))), h('div', {
+        className: 'sav-next-copy'
+      }, h('b', null, 'Monto esperado'), h('span', null, item.cell_kind + (item.process_snapshot ? ' · ' + item.process_snapshot : ''))), h('strong', null, money(item.expected_amount)));
+    }) : h('span', {
+      className: 'sav-kicker'
+    }, 'No hay fechas futuras con valor en AA:DO.'))), section('Histórico AA:DO', 'Evidencia legacy · no es ledger', h(React.Fragment, null, h('div', {
+      className: 'sav-history-tabs'
+    }, h('button', {
+      type: 'button',
+      'aria-pressed': historyYear === 'all',
+      onClick: () => setHistoryYear('all')
+    }, 'Todos'), historyYears.map(year => h('button', {
+      type: 'button',
+      key: year,
+      'aria-pressed': historyYear === year,
+      onClick: () => setHistoryYear(year)
+    }, year))), h('div', {
+      className: 'sav-card',
+      'data-savings-history': ''
+    }, history.length ? history.map(item => {
+      const manual = item.cell_kind === 'MANUAL';
+      return h('div', {
+        className: 'sav-tx',
+        key: item.id
+      }, h('span', {
+        className: 'sav-tx-icon',
+        'data-debit': manual
+      }, icon(manual ? 'edit' : 'check', 16)), h('div', null, h('b', null, manual ? 'Monto registrado manual' : 'Monto esperado'), h('span', null, shortDate(item.effective_date) + ' · ' + item.cell_kind)), h('strong', null, money(item.amount)));
+    }) : h('span', {
+      className: 'sav-kicker'
+    }, 'No hay evidencia AA:DO en este filtro.')))), section('Retiros', (dashboard.withdrawals || []).length + ' registros', h('div', {
+      className: 'sav-card',
+      'data-savings-withdrawals': ''
+    }, (dashboard.withdrawals || []).length ? dashboard.withdrawals.map(item => h('div', {
+      className: 'sav-tx',
+      key: item.id
+    }, h('span', {
+      className: 'sav-tx-icon',
+      'data-debit': true
+    }, icon('cash', 16)), h('div', null, h('b', null, item.withdrawal_kind || 'Retiro'), h('span', null, shortDate(item.effective_date) + (item.status ? ' · ' + item.status : ''))), h('strong', {
+      'data-debit': true
+    }, '−' + money(item.amount)))) : h('span', {
+      className: 'sav-kicker'
+    }, 'No hay retiros vinculados a este Folio.'))), section('Cambios de monto', (dashboard.plan_changes || []).length + ' registros', h('div', {
+      className: 'sav-card',
+      'data-savings-plan-changes': ''
+    }, (dashboard.plan_changes || []).length ? dashboard.plan_changes.map(item => h('div', {
+      className: 'sav-tx',
+      key: item.id
+    }, h('span', {
+      className: 'sav-tx-icon'
+    }, icon('edit', 16)), h('div', null, h('b', null, moneyOrDash(item.old_amount) + ' → ' + moneyOrDash(item.new_amount)), h('span', null, shortDate(item.effective_date) + (item.applied ? ' · ' + item.applied : ''))))) : h('span', {
+      className: 'sav-kicker'
+    }, 'No hay solicitudes de cambio vinculadas a este Folio.'))), section('Beneficiarios', (dashboard.beneficiaries || []).length + ' registrados', h('div', {
+      className: 'sav-card',
+      'data-savings-beneficiaries': ''
+    }, (dashboard.beneficiaries || []).length ? dashboard.beneficiaries.map(item => detailRow(item.full_name, (item.relationship || 'Sin parentesco') + ' · ' + Number(item.percentage || 0).toFixed(2) + '%')) : h(React.Fragment, null, h('span', {
+      className: 'sav-kicker'
+    }, 'No hay beneficiarios registrados en el SHADOW.'), h('button', {
+      type: 'button',
+      className: 'sav-primary',
+      disabled: !canWriteBeneficiaries,
+      style: {
+        marginTop: 12
+      }
+    }, 'Registrar beneficiarios'))))) : h('section', {
+      className: 'sav-balance sav-empty',
+      'data-savings-empty': ''
+    }, h('span', {
+      className: 'sav-icon'
+    }, icon('cash', 22)), h('h2', null, 'Ahorro no encontrado'), h('p', null, 'No encontramos un Folio de ahorro legacy vinculado de forma resuelta a tu cuenta.'), h('div', {
+      className: 'sav-alert'
+    }, 'Las solicitudes de inscripción no están habilitadas en esta etapa de sólo lectura.')))), sheet === 'INFO' && h(Sheet, {
+      title: 'Acerca de Ahorro',
+      onClose: () => setSheet('')
+    }, h('p', null, 'La pantalla lee el espejo SHADOW certificado. Google legacy continúa como autoridad hasta un cutover futuro.'), h('div', {
+      className: 'sav-alert'
+    }, 'El saldo mostrado es Q. Capital y rendimiento histórico provienen directamente de DP:DW; no se calculan ni acreditan rendimientos y no se usa un ledger canónico.')));
+  }
+  window.SavingsScreen = SavingsScreen;
 })();
 })();
 /* @@file screens-inversion.jsx */
@@ -21593,6 +22074,12 @@ Object.assign(window, {
     group: 'Pantallas internas',
     nav: 'push'
   }, {
+    id: 'savings',
+    label: 'Mi Ahorro',
+    icon: 'piggy',
+    group: 'Pantallas internas',
+    nav: 'push'
+  }, {
     id: 'product',
     label: 'Detalle de producto',
     icon: 'grid',
@@ -21710,6 +22197,26 @@ Object.assign(window, {
     id: 'finanzas',
     label: 'Finanzas · Solicitudes',
     icon: 'finance'
+  }, {
+    id: 'savings',
+    label: 'Caja de Ahorro',
+    icon: 'piggy'
+  }, {
+    id: 'savings_approvals',
+    label: 'Ahorro · Aprobaciones',
+    icon: 'checkCircle'
+  }, {
+    id: 'savings_config',
+    label: 'Ahorro · Configuración',
+    icon: 'settings'
+  }, {
+    id: 'savings_reports',
+    label: 'Ahorro · Reportes legacy',
+    icon: 'download'
+  }, {
+    id: 'savings_identity',
+    label: 'Ahorro · Identidad pendiente',
+    icon: 'users'
   }, {
     id: 'fondos',
     label: 'Fondos y reglas de financiamiento',
@@ -23176,17 +23683,41 @@ Object.assign(window, {
     if (id === 'popups') return 'popups';
     if (id === 'banners') return 'banners';
     if (id === 'finanzas') return 'program_requests';
+    if (id === 'savings' || id === 'savings_approvals' || id === 'savings_config' || id === 'savings_reports' || id === 'savings_identity') return 'savings';
     if (id === 'fondos') return 'financial_criteria.visibility';
     if (id === 'secciones' || id === 'menus' || id === 'formularios' || id.indexOf('scr_') === 0) return 'content';
     return 'content';
   };
+  const specialPermissions = Object.freeze({
+    savings: {
+      read: 'savings.read',
+      write: 'savings.write'
+    },
+    savings_approvals: {
+      read: 'savings.read',
+      write: 'savings.approve'
+    },
+    savings_config: {
+      read: 'savings.read',
+      write: 'savings.config'
+    },
+    savings_reports: {
+      read: 'savings.read',
+      write: 'savings.reports'
+    },
+    savings_identity: {
+      read: 'savings.read',
+      write: 'savings.identity_review'
+    }
+  });
   function uiPerms(permissionList) {
     const out = {};
     (window.ADMIN.ALL_RESOURCE_IDS || []).forEach(id => {
       const base = resourcePermission(id),
+        special = specialPermissions[id],
         extra = id === 'convenios' ? 'segmentation' : null,
-        read = permissionList.includes(base + '.read') && (!extra || permissionList.includes(extra + '.read')),
-        write = permissionList.includes(base + '.write') && (!extra || permissionList.includes(extra + '.write'));
+        read = permissionList.includes(special ? special.read : base + '.read') && (!extra || permissionList.includes(extra + '.read')),
+        write = permissionList.includes(special ? special.write : base + '.write') && (!extra || permissionList.includes(extra + '.write'));
       out[id] = {
         ver: read || write,
         crear: write,
@@ -23278,7 +23809,16 @@ Object.assign(window, {
     const out = new Set();
     Object.keys(role.perms || {}).forEach(id => {
       const p = role.perms[id],
-        bases = [resourcePermission(id)].concat(id === 'convenios' ? ['segmentation'] : []);
+        special = specialPermissions[id];
+      if (special) {
+        if (p.ver) out.add(special.read);
+        if (p.crear || p.editar || p.eliminar || p.reordenar) {
+          out.add(special.read);
+          out.add(special.write);
+        }
+        return;
+      }
+      const bases = [resourcePermission(id)].concat(id === 'convenios' ? ['segmentation'] : []);
       bases.forEach(base => {
         if (p.ver) out.add(base + '.read');
         if (p.crear || p.editar || p.eliminar || p.reordenar) {
@@ -24258,6 +24798,113 @@ Object.assign(window, {
     useEffect(() => {
       store.bootstrap();
     }, []);
+    return store;
+  };
+})();
+})();
+/* @@file savings-store.jsx */
+(function(){
+/* Observable savings state. Backend failures remain visible; there is no local
+   financial fallback and previous users' data is never reused. */
+(function () {
+  'use strict';
+
+  const {
+    useEffect,
+    useState
+  } = React;
+  const listeners = new Set();
+  let self = null,
+    admin = null,
+    selfPhase = 'idle',
+    adminPhase = 'idle',
+    selfError = null,
+    adminError = null;
+  let selfPromise = null,
+    adminPromise = null,
+    adminParticipant = null;
+  const emit = () => listeners.forEach(fn => fn());
+  async function loadSelf(force) {
+    if (selfPromise && !force) return selfPromise;
+    selfPhase = 'loading';
+    selfError = null;
+    self = null;
+    emit();
+    selfPromise = window.SavingsRepository.getSelfDashboard().then(value => {
+      self = Object.freeze(value || {});
+      selfPhase = 'ready';
+      return self;
+    }).catch(error => {
+      self = null;
+      selfError = error;
+      selfPhase = 'error';
+      throw error;
+    }).finally(() => {
+      selfPromise = null;
+      emit();
+    });
+    return selfPromise;
+  }
+  async function loadAdmin(participantId, force) {
+    const normalized = participantId || null;
+    if (adminPromise && !force && normalized === adminParticipant) return adminPromise;
+    adminParticipant = normalized;
+    adminPhase = 'loading';
+    adminError = null;
+    emit();
+    adminPromise = window.SavingsRepository.getAdminDashboard(normalized).then(value => {
+      admin = Object.freeze(value || {});
+      adminPhase = 'ready';
+      return admin;
+    }).catch(error => {
+      admin = null;
+      adminError = error;
+      adminPhase = 'error';
+      throw error;
+    }).finally(() => {
+      adminPromise = null;
+      emit();
+    });
+    return adminPromise;
+  }
+  const store = {
+    state: () => ({
+      self,
+      admin,
+      selfPhase,
+      adminPhase,
+      selfError,
+      adminError,
+      adminParticipant
+    }),
+    loadSelf: force => loadSelf(Boolean(force)),
+    loadAdmin: (participantId, force) => loadAdmin(participantId, Boolean(force)),
+    clearSelf: () => {
+      self = null;
+      selfPhase = 'idle';
+      selfError = null;
+      emit();
+    },
+    clearAdmin: () => {
+      admin = null;
+      adminPhase = 'idle';
+      adminError = null;
+      adminParticipant = null;
+      emit();
+    },
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }
+  };
+  window.savingsStore = store;
+  window.useSavingsStore = function (mode, participantId) {
+    const [, force] = useState(0);
+    useEffect(() => store.subscribe(() => force(value => value + 1)), []);
+    useEffect(() => {
+      const request = mode === 'admin' ? store.loadAdmin(participantId) : store.loadSelf();
+      request.catch(() => {});
+    }, [mode, participantId]);
     return store;
   };
 })();
@@ -46792,7 +47439,13 @@ Object.assign(window, {
       onClick: () => onOpenModule('finanzas', {
         affiliateId: p.id
       })
-    }, 'Solicitudes financieras')));else if (tab === 'access') {
+    }, 'Solicitudes financieras'), app.admin.has('savings.read') && h('button', {
+      'data-affiliate-open-savings': 'true',
+      className: 'aff-secondary',
+      onClick: () => onOpenModule('savings', {
+        affiliateId: p.id
+      })
+    }, 'Caja de Ahorro')));else if (tab === 'access') {
       const auth = authMeta(p);
       content = h('div', null, h('div', {
         className: 'aff-access-card'
@@ -47291,6 +47944,738 @@ Object.assign(window, {
   window.AffiliatesAdminModule = AffiliatesModule;
 })();
 })();
+/* @@file screens-admin-savings.jsx */
+(function(){
+/* Complete Savings administration workbench. All sections read/write through
+   permission-gated RPCs; no Google, DATA, mocks or direct table writes. */
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  const I = window.Icon;
+  const TABS = [['summary', 'Resumen'], ['participants', 'Participantes'], ['contributions', 'Aportaciones'], ['calendar', 'Calendario'], ['amount_changes', 'Cambios de monto'], ['withdrawals', 'Retiros'], ['terminations', 'Bajas'], ['beneficiaries', 'Beneficiarios'], ['yields', 'Rendimientos'], ['omissions', 'Omisiones'], ['holds', 'Retenciones'], ['process', 'Cambios de PROCESS'], ['identity', 'Identidad pendiente'], ['documents', 'Documentos'], ['reports', 'Reportes'], ['audit', 'Auditoría'], ['config', 'Configuración']];
+  const CSS = `
+    .sava-root{min-height:100%;color:var(--ink)}.sava-page{padding:14px 16px 34px!important}.sava-banner{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border:1px solid #efd39a;border-radius:13px;background:#fff6df;color:#6f4c0e;font-size:11px;font-weight:750;line-height:1.45;margin-bottom:12px}.sava-banner svg{flex-shrink:0}
+    .sava-kpis{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:9px;margin-bottom:12px}.sava-kpi{padding:12px;border:1px solid var(--hairline);border-radius:15px;background:#fff;box-shadow:var(--neo-sm)}.sava-kpi span{display:block;color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase}.sava-kpi b{display:block;margin-top:4px;font-size:20px;font-weight:950}.sava-kpi:first-child{background:var(--grad-guinda-soft);color:#fff}.sava-kpi:first-child span{color:rgba(255,255,255,.82)}
+    .sava-toolbar{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid var(--hairline);border-radius:15px;background:#fff;box-shadow:var(--neo-sm)}.sava-search{flex:1;display:flex;align-items:center;gap:7px;min-width:180px;padding:0 10px;height:39px;border-radius:11px;background:var(--surface-2)}.sava-search input{width:100%;border:0;outline:0;background:transparent;font:700 12px var(--font);color:var(--ink)}.sava-toolbar select,.sava-input,.sava-select,.sava-textarea{border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:700 11.5px var(--font);outline:none}.sava-toolbar select{max-width:270px}.sava-button{border:0;border-radius:10px;padding:9px 12px;background:var(--surface-2);color:var(--ink);font:850 11px var(--font);cursor:pointer}.sava-button.is-primary{background:var(--grad-guinda-soft);color:#fff}.sava-button.is-danger{background:#fce9ee;color:#a00027}.sava-button:disabled{opacity:.45;cursor:not-allowed}
+    .sava-tabs{display:flex;gap:5px;overflow:auto;padding:10px 1px 8px;scrollbar-width:thin}.sava-tabs button{border:0;border-radius:999px;padding:8px 11px;background:#e9edf3;color:var(--ink-3);font:850 9.5px var(--font);white-space:nowrap;cursor:pointer}.sava-tabs button[aria-current=page]{background:var(--guinda);color:#fff}.sava-workbench{display:grid;grid-template-columns:minmax(245px,.72fr) minmax(0,1.8fr);gap:11px;min-height:570px}.sava-panel{min-width:0;overflow:hidden;border:1px solid var(--hairline);border-radius:16px;background:#fff;box-shadow:var(--neo-sm)}.sava-panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 13px;border-bottom:1px solid var(--hairline)}.sava-panel-head h2{margin:0;font-size:14px}.sava-panel-head span{font-size:9px;font-weight:850;color:var(--ink-3)}.sava-list{max-height:610px;overflow:auto}.sava-person{width:100%;display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border:0;border-bottom:1px solid var(--hairline);background:#fff;text-align:left;font-family:var(--font);cursor:pointer}.sava-person[aria-selected=true]{background:#fff3f6;box-shadow:inset 3px 0 var(--guinda)}.sava-person b,.sava-person span{display:block}.sava-person b{font-size:11.5px}.sava-person span{margin-top:2px;color:var(--ink-3);font-size:9.5px}.sava-person strong{font-size:10px;color:var(--guinda)}
+    .sava-content{padding:13px;max-height:650px;overflow:auto}.sava-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.sava-card{min-width:0;padding:12px;border:1px solid var(--hairline);border-radius:13px;background:#fff}.sava-card h3{display:flex;align-items:center;gap:7px;margin:0 0 9px;font-size:12.5px}.sava-card p{margin:4px 0;color:var(--ink-3);font-size:10.5px;font-weight:650;line-height:1.45}.sava-value{font-size:19px;font-weight:950;color:var(--guinda)}.sava-facts{display:grid;grid-template-columns:1fr 1fr;gap:7px}.sava-fact{padding:8px;border-radius:9px;background:var(--surface-2)}.sava-fact span,.sava-field label{display:block;color:var(--ink-3);font-size:8.5px;font-weight:850;text-transform:uppercase}.sava-fact b{display:block;margin-top:3px;font-size:10.5px;overflow-wrap:anywhere}.sava-badge{display:inline-flex;padding:4px 7px;border-radius:999px;background:#eef1f5;color:#69748a;font-size:8.5px;font-weight:900}.sava-badge[data-tone=ok]{background:#e5f7ef;color:#087a50}.sava-badge[data-tone=warn]{background:#fff3d8;color:#8a5a00}.sava-badge[data-tone=danger]{background:#fce9ee;color:#a00027}
+    .sava-table{width:100%;border-collapse:collapse;font-size:10px}.sava-table th{position:sticky;top:0;z-index:1;padding:8px;background:#f3f5f8;color:var(--ink-3);text-align:left;font-size:8px;text-transform:uppercase}.sava-table td{padding:9px 8px;border-top:1px solid var(--hairline);font-weight:700;vertical-align:top}.sava-table td:last-child{text-align:right}.sava-empty{display:grid;place-items:center;min-height:190px;padding:24px;text-align:center;color:var(--ink-3);font-size:11px;font-weight:700}.sava-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:11px;margin-bottom:11px;border-radius:12px;background:var(--surface-2)}.sava-field{display:flex;flex-direction:column;gap:4px}.sava-field.is-wide{grid-column:span 2}.sava-input,.sava-select,.sava-textarea{width:100%;box-sizing:border-box;background:#fff}.sava-textarea{min-height:58px;resize:vertical}.sava-form-actions{display:flex;align-items:end}.sava-note{padding:10px;border-radius:10px;background:#fff6df;color:#765316;font-size:10px;font-weight:750;line-height:1.45;margin-bottom:10px}.sava-error{padding:10px;border-radius:10px;background:#fce9ee;color:#a00027;font-size:10px;font-weight:800;margin-bottom:10px}.sava-success{padding:10px;border-radius:10px;background:#e5f7ef;color:#087a50;font-size:10px;font-weight:800;margin-bottom:10px}.sava-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.sava-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px}.sava-section-title h2{margin:0;font-size:15px}.sava-section-title span{font-size:9px;color:var(--ink-3);font-weight:800}.sava-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.sava-setting{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;padding:11px;border:1px solid var(--hairline);border-radius:12px}.sava-setting b,.sava-setting span{display:block}.sava-setting b{font-size:11px}.sava-setting span{font-size:9px;color:var(--ink-3)}
+    @media(max-width:1279px){.sava-kpis{grid-template-columns:repeat(3,1fr)}.sava-grid{grid-template-columns:repeat(2,1fr)}.sava-form{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:1023px){.sava-page{padding:12px 12px 90px!important}.sava-kpis{display:flex;overflow:auto}.sava-kpi{min-width:128px}.sava-toolbar{align-items:stretch;flex-direction:column}.sava-toolbar select{max-width:none}.sava-workbench{grid-template-columns:1fr}.sava-list{max-height:260px}.sava-content{max-height:none}.sava-grid,.sava-settings{grid-template-columns:1fr}.sava-form{grid-template-columns:1fr}.sava-field.is-wide{grid-column:auto}}
+  `;
+  const money = value => new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2
+  }).format(Number(value || 0));
+  const date = value => value ? new Date(value + (String(value).length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-MX', {
+    dateStyle: 'medium'
+  }) : '—';
+  const badgeTone = value => /MATCH|ACTIVE|APPROVED|CERTIFIED|SETTLED|APPLIED/.test(value || '') ? 'ok' : /MISMATCH|REJECT|MISSING/.test(value || '') ? 'danger' : 'warn';
+  const Badge = ({
+    children
+  }) => h('span', {
+    className: 'sava-badge',
+    'data-tone': badgeTone(String(children))
+  }, children || '—');
+  const Empty = ({
+    text
+  }) => h('div', {
+    className: 'sava-empty'
+  }, text || 'Sin datos para esta sección.');
+  function errorText(error) {
+    const raw = String(error && (error.message || error.code) || '');
+    if (/42501|DENIED/.test(raw)) return 'Tu rol no tiene el permiso técnico requerido.';
+    if (/FIRST_EXPECTED/.test(raw)) return 'Debes indicar PROCESS y primera aportación esperada.';
+    if (/YIELD_PRODUCTIVE_DISABLED/.test(raw)) return 'La acreditación productiva de rendimiento está deshabilitada por diseño.';
+    return 'No se completó la operación. Revisa los datos y vuelve a intentar.';
+  }
+  function Table({
+    columns,
+    rows,
+    renderActions
+  }) {
+    if (!rows || !rows.length) return h(Empty, {});
+    return h('table', {
+      className: 'sava-table'
+    }, h('thead', null, h('tr', null, columns.map(column => h('th', {
+      key: column[0]
+    }, column[1])), renderActions && h('th', null, 'Acciones'))), h('tbody', null, rows.map((row, index) => h('tr', {
+      key: row.id || row.folio || index
+    }, columns.map(column => h('td', {
+      key: column[0]
+    }, column[2] ? column[2](row) : row[column[0]] == null ? '—' : String(row[column[0]]))), renderActions && h('td', null, renderActions(row))))));
+  }
+  function RequestSection({
+    rows,
+    reload,
+    app
+  }) {
+    const [busy, setBusy] = React.useState(''),
+      [error, setError] = React.useState('');
+    async function review(row, decision) {
+      const reason = window.prompt(decision === 'APPROVE' ? 'Motivo de aprobación (mínimo 3 caracteres)' : 'Motivo del rechazo (mínimo 3 caracteres)');
+      if (!reason) return;
+      let first = null,
+        process = null,
+        effective = row.effective_from || null;
+      if (decision === 'APPROVE' && row.request_type === 'JOIN') {
+        process = window.prompt('PROCESS: JUB, PROCESS_1 o PROCESS_3');
+        first = window.prompt('Primera aportación esperada (AAAA-MM-DD)');
+      }
+      if (decision === 'APPROVE' && row.request_type === 'CHANGE_AMOUNT') effective = window.prompt('Fecha futura de aplicación (AAAA-MM-DD)', effective || '');
+      setBusy(row.id);
+      setError('');
+      try {
+        await window.SavingsRepository.reviewRequest({
+          requestId: row.id,
+          decision,
+          reason,
+          process,
+          firstExpectedContributionDate: first,
+          effectiveFrom: effective
+        });
+        app.toast && app.toast('Solicitud actualizada');
+        await reload();
+      } catch (failure) {
+        setError(errorText(failure));
+      } finally {
+        setBusy('');
+      }
+    }
+    async function dual(row, role, decision) {
+      const reason = window.prompt('Motivo de la decisión (mínimo 3 caracteres)');
+      if (!reason) return;
+      setBusy(row.id);
+      setError('');
+      try {
+        await window.SavingsRepository.recordRequestApproval({
+          requestId: row.id,
+          approvalRole: role,
+          decision,
+          reason
+        });
+        await reload();
+      } catch (failure) {
+        setError(errorText(failure));
+      } finally {
+        setBusy('');
+      }
+    }
+    async function settle(row) {
+      const capital = window.prompt('Capital a liquidar', row.requested_capital_amount || row.requested_amount || '0');
+      if (capital == null) return;
+      const yieldAmount = window.prompt('Rendimiento a liquidar', row.requested_yield_amount || '0');
+      if (yieldAmount == null) return;
+      const reason = window.prompt('Motivo de liquidación');
+      if (!reason) return;
+      setBusy(row.id);
+      setError('');
+      try {
+        await window.SavingsRepository.settleRequest({
+          requestId: row.id,
+          capitalAmount: capital,
+          yieldAmount,
+          reason
+        });
+        await reload();
+      } catch (failure) {
+        setError(errorText(failure));
+      } finally {
+        setBusy('');
+      }
+    }
+    return h(React.Fragment, null, error && h('div', {
+      className: 'sava-error'
+    }, error), h(Table, {
+      rows,
+      columns: [['folio', 'Folio'], ['request_type', 'Tipo'], ['status', 'Estado', row => h(Badge, null, row.status)], ['requested_amount', 'Monto', row => row.requested_amount == null ? '—' : money(row.requested_amount)], ['new_contribution_amount', 'Nueva aportación', row => row.new_contribution_amount == null ? '—' : money(row.new_contribution_amount)], ['effective_from', 'Vigencia', row => date(row.effective_from)], ['submitted_at', 'Enviada', row => date(row.submitted_at)]],
+      renderActions: row => h('div', {
+        className: 'sava-actions'
+      }, row.request_type === 'EXTRAORDINARY_WITHDRAWAL' && ['SUBMITTED', 'UNDER_REVIEW'].includes(row.status) ? h(React.Fragment, null, h('button', {
+        className: 'sava-button',
+        disabled: busy === row.id,
+        onClick: () => dual(row, 'GENERAL_SECRETARY', 'APPROVE')
+      }, 'Sec. General'), h('button', {
+        className: 'sava-button',
+        disabled: busy === row.id,
+        onClick: () => dual(row, 'FINANCE_SECRETARY', 'APPROVE')
+      }, 'Finanzas')) : ['SUBMITTED', 'UNDER_REVIEW'].includes(row.status) && h(React.Fragment, null, h('button', {
+        className: 'sava-button is-primary',
+        disabled: busy === row.id,
+        onClick: () => review(row, 'APPROVE')
+      }, 'Aprobar'), h('button', {
+        className: 'sava-button is-danger',
+        disabled: busy === row.id,
+        onClick: () => review(row, 'REJECT')
+      }, 'Rechazar')), row.status === 'APPROVED' && ['WITHDRAW', 'EXTRAORDINARY_WITHDRAWAL', 'TERMINATE'].includes(row.request_type) && h('button', {
+        className: 'sava-button is-primary',
+        disabled: busy === row.id,
+        onClick: () => settle(row)
+      }, 'Liquidar'))
+    }));
+  }
+  function SavingsAdminModule({
+    app,
+    onBack,
+    header,
+    initialAffiliateId
+  }) {
+    const [globalData, setGlobalData] = React.useState(null),
+      [detailData, setDetailData] = React.useState(null),
+      [phase, setPhase] = React.useState('loading'),
+      [error, setError] = React.useState('');
+    const [selectedId, setSelectedId] = React.useState(''),
+      [tab, setTab] = React.useState('summary'),
+      [query, setQuery] = React.useState('');
+    const [feedback, setFeedback] = React.useState(''),
+      [busy, setBusy] = React.useState(false);
+    const loadGlobal = React.useCallback(async () => {
+      setPhase('loading');
+      setError('');
+      try {
+        const value = await window.SavingsRepository.getAdminDashboard(null);
+        setGlobalData(value);
+        const candidates = value.participants || [];
+        const initial = candidates.find(row => row.affiliate_id === initialAffiliateId) || candidates.find(row => row.id === selectedId) || candidates[0];
+        if (initial) setSelectedId(initial.id);
+        setPhase('ready');
+        return value;
+      } catch (failure) {
+        setError(errorText(failure));
+        setPhase('error');
+        return null;
+      }
+    }, [initialAffiliateId]);
+    React.useEffect(() => {
+      loadGlobal();
+    }, [loadGlobal]);
+    React.useEffect(() => {
+      if (!selectedId) {
+        setDetailData(null);
+        return;
+      }
+      let active = true;
+      window.SavingsRepository.getAdminDashboard(selectedId).then(value => {
+        if (active) setDetailData(value);
+      }).catch(failure => {
+        if (active) setFeedback(errorText(failure));
+      });
+      return () => {
+        active = false;
+      };
+    }, [selectedId]);
+    const reload = async () => {
+      const value = await loadGlobal();
+      if (selectedId) setDetailData(await window.SavingsRepository.getAdminDashboard(selectedId));
+      return value;
+    };
+    const data = detailData || globalData || {};
+    const allParticipants = globalData && globalData.participants || [];
+    const visible = allParticipants.filter(row => [row.display_name, row.legacy_folio, row.identity_status].join(' ').toLocaleLowerCase('es').includes(query.trim().toLocaleLowerCase('es')));
+    const selected = allParticipants.find(row => row.id === selectedId) || null;
+    const kpis = globalData && globalData.kpis || {};
+    async function run(task, success) {
+      setBusy(true);
+      setFeedback('');
+      try {
+        await task();
+        setFeedback(success);
+        await reload();
+      } catch (failure) {
+        setFeedback(errorText(failure));
+      } finally {
+        setBusy(false);
+      }
+    }
+    function summary() {
+      if (!selected) return h(Empty, {
+        text: 'Selecciona un participante.'
+      });
+      return h('div', null, h('div', {
+        className: 'sava-section-title'
+      }, h('h2', null, selected.display_name || selected.legacy_folio), h(Badge, null, selected.data_classification)), h('div', {
+        className: 'sava-grid'
+      }, h('article', {
+        className: 'sava-card'
+      }, h('h3', null, h(I, {
+        name: 'cash',
+        size: 16
+      }), 'Saldo por ledger'), h('div', {
+        className: 'sava-value'
+      }, money(selected.total)), h('p', null, 'Capital ', money(selected.capital), ' · Rendimiento ', money(selected.yield))), h('article', {
+        className: 'sava-card'
+      }, h('h3', null, h(I, {
+        name: 'shield',
+        size: 16
+      }), 'Disponible / retenido'), h('div', {
+        className: 'sava-value'
+      }, money(selected.available)), h('p', null, 'Retenido ', money(selected.held))), h('article', {
+        className: 'sava-card'
+      }, h('h3', null, h(I, {
+        name: 'refresh',
+        size: 16
+      }), 'Q legacy'), h('div', {
+        className: 'sava-value'
+      }, selected.legacy_reported_balance == null ? '—' : money(selected.legacy_reported_balance)), h(Badge, null, selected.legacy_balance_status)), h('article', {
+        className: 'sava-card'
+      }, h('h3', null, 'Identidad'), h('div', {
+        className: 'sava-facts'
+      }, [['Folio', selected.legacy_folio], ['Vínculo afiliado', selected.affiliate_id], ['Tipo', selected.participant_type], ['Estado', selected.identity_status], ['Certificación', selected.certification_status]].map(pair => h('div', {
+        className: 'sava-fact',
+        key: pair[0]
+      }, h('span', null, pair[0]), h('b', null, pair[1] || '—'))))), h('article', {
+        className: 'sava-card'
+      }, h('h3', null, 'Inscripción'), h('div', {
+        className: 'sava-facts'
+      }, [['Estado', selected.enrollment_status], ['Secuencia', selected.sequence_number], ['Inicio', date(selected.enrollment_started_at)], ['Primera esperada', date(selected.first_expected_contribution_date)], ['Primera real', date(selected.first_actual_contribution_date)], ['Frecuencia', selected.frequency === 'MONTHLY' ? 'Mensual' : selected.frequency === 'TWICE_MONTHLY' ? 'Quincenal' : '—']].map(pair => h('div', {
+        className: 'sava-fact',
+        key: pair[0]
+      }, h('span', null, pair[0]), h('b', null, pair[1] || '—'))))), h('article', {
+        className: 'sava-card'
+      }, h('h3', null, 'Plan actual'), h('div', {
+        className: 'sava-value'
+      }, selected.current_contribution_amount == null ? '—' : money(selected.current_contribution_amount)), h('p', null, (selected.process_snapshot || selected.current_process || 'Sin PROCESS') + ' · sólo vigencia actual'))), h('div', {
+        className: 'sava-section-title',
+        style: {
+          marginTop: 14
+        }
+      }, h('h2', null, 'Movimientos recientes'), h('span', null, 'Ledger · sólo realizados')), h(Table, {
+        rows: (data.history || []).slice(0, 12),
+        columns: [['effective_date', 'Fecha', row => date(row.effective_date)], ['transaction_type', 'Concepto'], ['component', 'Componente'], ['direction', 'Dirección'], ['amount', 'Monto', row => money(row.amount)], ['data_classification', 'Clasificación', row => h(Badge, null, row.data_classification)]]
+      }));
+    }
+    function participants() {
+      return h(Table, {
+        rows: visible,
+        columns: [['legacy_folio', 'Folio'], ['display_name', 'Nombre'], ['participant_type', 'Tipo'], ['identity_status', 'Identidad', row => h(Badge, null, row.identity_status)], ['certification_status', 'Certificación', row => h(Badge, null, row.certification_status)], ['current_process', 'PROCESS'], ['total', 'Saldo', row => money(row.total)], ['legacy_balance_status', 'Q vs ledger', row => h(Badge, null, row.legacy_balance_status)]],
+        renderActions: row => h('button', {
+          className: 'sava-button',
+          onClick: () => {
+            setSelectedId(row.id);
+            setTab('summary');
+          }
+        }, 'Abrir')
+      });
+    }
+    function contributions() {
+      const rows = data.contributions || [];
+      return h('div', null, app.admin.has('savings.write') && selected && selected.enrollment_id && h(ContributionForm, {
+        selected,
+        busy,
+        run
+      }), h(Table, {
+        rows,
+        columns: [['contribution_date', 'Fecha', row => date(row.contribution_date)], ['expected_amount', 'Esperado', row => money(row.expected_amount)], ['actual_amount', 'Real', row => money(row.actual_amount)], ['difference', 'Diferencia', row => money(Number(row.actual_amount) - Number(row.expected_amount))], ['status', 'Estado', row => h(Badge, null, Number(row.actual_amount) === 0 && Number(row.expected_amount) > 0 ? 'MISSING' : Number(row.actual_amount) < Number(row.expected_amount) ? 'PARTIAL' : 'MATCH')], ['origin', 'Origen', () => 'ADMIN_OVERRIDE'], ['version_number', 'Versión'], ['editor_auth_user_id', 'Editado por'], ['reason', 'Motivo'], ['created_at', 'Fecha edición', row => date(row.created_at)]]
+      }));
+    }
+    function ContributionForm({
+      selected: participant,
+      busy: isBusy,
+      run: execute
+    }) {
+      const [day, setDay] = React.useState(''),
+        [actual, setActual] = React.useState(''),
+        [reason, setReason] = React.useState('');
+      return h('div', {
+        className: 'sava-form'
+      }, h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Fecha esperada'), h('input', {
+        className: 'sava-input',
+        type: 'date',
+        value: day,
+        onChange: e => setDay(e.target.value)
+      })), h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Monto real (acepta 0)'), h('input', {
+        className: 'sava-input',
+        type: 'number',
+        min: '0',
+        step: '.01',
+        value: actual,
+        onChange: e => setActual(e.target.value)
+      })), h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Motivo obligatorio'), h('input', {
+        className: 'sava-input',
+        value: reason,
+        onChange: e => setReason(e.target.value)
+      })), h('div', {
+        className: 'sava-form-actions'
+      }, h('button', {
+        className: 'sava-button is-primary',
+        disabled: isBusy || !day || actual === '' || reason.trim().length < 3,
+        onClick: () => execute(() => window.SavingsRepository.overrideContribution({
+          enrollmentId: participant.enrollment_id,
+          contributionDate: day,
+          actualAmount: actual,
+          reason
+        }), 'Aportación real registrada con nueva versión.')
+      }, 'Guardar real')));
+    }
+    function calendar() {
+      return h(React.Fragment, null, h('div', {
+        className: 'sava-note'
+      }, 'Calendario generado bajo demanda. No se persisten columnas por año y la primera fecha esperada nunca se infiere.'), h(Table, {
+        rows: data.calendar || [],
+        columns: [['contribution_date', 'Fecha', row => date(row.contribution_date)], ['expected_amount', 'Esperado', row => money(row.expected_amount)], ['process_snapshot', 'PROCESS'], ['plan_id', 'Plan']]
+      }));
+    }
+    function beneficiaries() {
+      const rows = (data.beneficiaries || []).flatMap(version => (version.items || []).map(item => Object.assign({}, item, {
+        version_number: version.version.version_number,
+        version_status: version.version.status
+      })));
+      return h(Table, {
+        rows,
+        columns: [['version_number', 'Versión'], ['version_status', 'Estado', row => h(Badge, null, row.version_status)], ['full_name', 'Nombre'], ['relationship', 'Parentesco'], ['percentage', 'Porcentaje', row => Number(row.percentage).toFixed(2) + '%']]
+      });
+    }
+    function omissions() {
+      return h(React.Fragment, null, h('div', {
+        className: 'sava-note'
+      }, 'MISSING: esperado > 0 y real = 0. PARTIAL: real entre 0 y esperado. No se crea deuda automática. La regla de cuatro omisiones JUB está DESHABILITADA.'), h(Table, {
+        rows: data.omissions || [],
+        columns: [['contribution_date', 'Fecha', row => date(row.contribution_date)], ['expected_amount', 'Esperado', row => money(row.expected_amount)], ['actual_amount', 'Real', row => money(row.actual_amount)], ['difference', 'Diferencia', row => money(row.difference)], ['status', 'Estado', row => h(Badge, null, row.status)], ['reason', 'Motivo']]
+      }));
+    }
+    function holds() {
+      const [component, setComponent] = React.useState('CAPITAL'),
+        [amount, setAmount] = React.useState(''),
+        [reason, setReason] = React.useState('');
+      return h('div', null, app.admin.has('savings.write') && selected && h('div', {
+        className: 'sava-form'
+      }, h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Componente'), h('select', {
+        className: 'sava-select',
+        value: component,
+        onChange: e => setComponent(e.target.value)
+      }, h('option', {
+        value: 'CAPITAL'
+      }, 'Capital'), h('option', {
+        value: 'YIELD'
+      }, 'Rendimiento'))), h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Monto'), h('input', {
+        className: 'sava-input',
+        type: 'number',
+        min: '0',
+        value: amount,
+        onChange: e => setAmount(e.target.value)
+      })), h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Motivo'), h('input', {
+        className: 'sava-input',
+        value: reason,
+        onChange: e => setReason(e.target.value)
+      })), h('div', {
+        className: 'sava-form-actions'
+      }, h('button', {
+        className: 'sava-button is-primary',
+        disabled: busy || !Number(amount) || reason.trim().length < 3,
+        onClick: () => run(() => window.SavingsRepository.createHold({
+          participantId: selected.id,
+          enrollmentId: selected.enrollment_id,
+          component,
+          amount,
+          reason
+        }), 'Retención creada.')
+      }, 'Retener'))), h(Table, {
+        rows: data.holds || [],
+        columns: [['component', 'Componente'], ['amount', 'Monto', row => money(row.amount)], ['status', 'Estado', row => h(Badge, null, row.status)], ['reason', 'Motivo'], ['created_at', 'Creada', row => date(row.created_at)]],
+        renderActions: row => row.status === 'ACTIVE' && app.admin.has('savings.write') && h('button', {
+          className: 'sava-button',
+          onClick: () => {
+            const why = window.prompt('Motivo de liberación');
+            if (why) run(() => window.SavingsRepository.releaseHold(row.id, why), 'Retención liberada.');
+          }
+        }, 'Liberar')
+      }));
+    }
+    function processChanges() {
+      const [process, setProcess] = React.useState(selected && selected.current_process || 'PROCESS_1'),
+        [reason, setReason] = React.useState('');
+      return h('div', null, h('div', {
+        className: 'sava-note'
+      }, 'Los cambios de categoría hechos en Admin Afiliados aparecen automáticamente aquí. El plan histórico nunca se reescribe.'), app.admin.has('savings.write') && app.admin.has('affiliates.write') && selected && h('div', {
+        className: 'sava-form'
+      }, h('div', {
+        className: 'sava-field'
+      }, h('label', null, 'Nuevo PROCESS'), h('select', {
+        className: 'sava-select',
+        value: process,
+        onChange: e => setProcess(e.target.value)
+      }, ['JUB', 'PROCESS_1', 'PROCESS_3'].map(value => h('option', {
+        key: value
+      }, value)))), h('div', {
+        className: 'sava-field is-wide'
+      }, h('label', null, 'Motivo'), h('input', {
+        className: 'sava-input',
+        value: reason,
+        onChange: e => setReason(e.target.value)
+      })), h('div', {
+        className: 'sava-form-actions'
+      }, h('button', {
+        className: 'sava-button is-primary',
+        disabled: busy || reason.trim().length < 3,
+        onClick: () => run(() => window.SavingsRepository.recordProcessChange(selected.id, process, reason), 'Evento de revisión PROCESS creado.')
+      }, 'Registrar cambio'))), h(Table, {
+        rows: data.process_changes || [],
+        columns: [['legacy_folio', 'Folio'], ['old_process', 'Anterior'], ['new_process', 'Nuevo'], ['current_plan_snapshot', 'Plan vigente', row => row.current_plan_snapshot && row.current_plan_snapshot.amount ? money(row.current_plan_snapshot.amount) + ' · ' + row.current_plan_snapshot.process_snapshot : '—'], ['status', 'Impacto / estado', row => h(Badge, null, row.status)], ['effective_from', 'Vigencia', row => date(row.effective_from)], ['reason', 'Motivo'], ['created_at', 'Creado', row => date(row.created_at)]],
+        renderActions: row => row.status === 'SAVINGS_PROCESS_CHANGE_REVIEW_REQUIRED' && app.admin.has('savings.approve') && h('div', {
+          className: 'sava-actions'
+        }, h('button', {
+          className: 'sava-button is-primary',
+          onClick: () => {
+            const effective = window.prompt('Vigencia futura (AAAA-MM-DD)');
+            const why = window.prompt('Motivo de aprobación');
+            if (effective && why) run(() => window.SavingsRepository.reviewProcessChange({
+              eventId: row.id,
+              decision: 'APPLY',
+              effectiveFrom: effective,
+              reason: why
+            }), 'Cambio PROCESS aplicado sólo a futuro.');
+          }
+        }, 'Aplicar'), h('button', {
+          className: 'sava-button',
+          onClick: () => {
+            const why = window.prompt('Motivo para descartar el impacto');
+            if (why) run(() => window.SavingsRepository.reviewProcessChange({
+              eventId: row.id,
+              decision: 'DISMISS',
+              effectiveFrom: null,
+              reason: why
+            }), 'Impacto PROCESS descartado; evento preservado.');
+          }
+        }, 'Descartar'))
+      }));
+    }
+    function yields() {
+      const [year, setYear] = React.useState(String(new Date().getFullYear())),
+        [semester, setSemester] = React.useState('1'),
+        [rate, setRate] = React.useState(''),
+        [starts, setStarts] = React.useState(''),
+        [ends, setEnds] = React.useState('');
+      return h('div', null, h('div', {
+        className: 'sava-note'
+      }, 'Fundación semestral preparada. productive_enabled = false: no existe acreditación automática ni fórmula productiva autorizada.'), app.admin.has('savings.config') && h('div', {
+        className: 'sava-form'
+      }, [['Año', year, setYear, 'number'], ['Semestre', semester, setSemester, 'number'], ['Inicio', starts, setStarts, 'date'], ['Cierre', ends, setEnds, 'date'], ['Tasa informada', rate, setRate, 'number']].map(field => h('div', {
+        className: 'sava-field',
+        key: field[0]
+      }, h('label', null, field[0]), h('input', {
+        className: 'sava-input',
+        type: field[3],
+        value: field[1],
+        onChange: e => field[2](e.target.value)
+      }))), h('div', {
+        className: 'sava-form-actions'
+      }, h('button', {
+        className: 'sava-button is-primary',
+        disabled: busy || !starts || !ends,
+        onClick: () => run(() => window.SavingsRepository.saveYieldPeriod({
+          year,
+          semester,
+          startsOn: starts,
+          endsOn: ends,
+          rate,
+          status: 'DRAFT'
+        }), 'Periodo guardado sin activar rendimiento.')
+      }, 'Guardar borrador'))), h(Table, {
+        rows: data.yield_periods || [],
+        columns: [['period_year', 'Año'], ['semester', 'Semestre'], ['starts_on', 'Inicio', row => date(row.starts_on)], ['ends_on', 'Cierre', row => date(row.ends_on)], ['rate', 'Tasa'], ['status', 'Estado', row => h(Badge, null, row.status)], ['productive_enabled', 'Productivo', row => row.productive_enabled ? 'Sí' : 'NO']]
+      }));
+    }
+    function identity() {
+      return h(Table, {
+        rows: data.pending_identity || [],
+        columns: [['legacy_folio', 'Folio'], ['identity_status', 'Estado', row => h(Badge, null, row.identity_status)], ['possible_matches_count', 'Coincidencias exactas'], ['financial_record_exists', 'Expediente financiero', row => row.financial_record_exists ? 'Sí' : 'No'], ['participant_type', 'Tipo'], ['data_classification', 'Clasificación']],
+        renderActions: row => app.admin.has('savings.identity_review') && h('button', {
+          className: 'sava-button',
+          onClick: () => {
+            const affiliate = window.prompt('UUID exacto del afiliado con el mismo numero_control');
+            const why = window.prompt('Motivo de la vinculación');
+            if (affiliate && why) run(() => window.SavingsRepository.resolveIdentity(row.id, affiliate, why), 'Identidad vinculada; movimientos sin alterar.');
+          }
+        }, 'Vincular')
+      });
+    }
+    function configuration() {
+      const latest = {};
+      (data.configuration || []).forEach(row => {
+        const key = row.action_code + ':' + row.scope_type + ':' + (row.participant_id || '');
+        if (!latest[key]) latest[key] = row;
+      });
+      const settings = ['JOIN', 'CHANGE_AMOUNT', 'WITHDRAW', 'TERMINATE'].flatMap(action => ['GLOBAL', 'PARTICIPANT'].map(scope => {
+        const participantId = scope === 'PARTICIPANT' ? selectedId : null;
+        const item = latest[action + ':' + scope + ':' + (participantId || '')];
+        const toggle = () => {
+          const why = window.prompt('Motivo de configuración');
+          if (why) run(() => window.SavingsRepository.setActionAvailability({
+            actionCode: action,
+            enabled: !(item && item.enabled),
+            scopeType: scope,
+            participantId,
+            reason: why
+          }), 'Disponibilidad actualizada.');
+        };
+        return h('div', {
+          className: 'sava-setting',
+          key: action + scope
+        }, h('div', null, h('b', null, action + ' · ' + scope), h('span', null, item ? (item.enabled ? 'Habilitada' : 'Deshabilitada') + ' · ' + item.reason : 'Sin configuración · fail closed')), h('button', {
+          className: 'sava-button',
+          disabled: busy || !app.admin.has('savings.config') || scope === 'PARTICIPANT' && !selectedId,
+          onClick: toggle
+        }, item && item.enabled ? 'Deshabilitar' : 'Habilitar'));
+      }));
+      return h('div', null, h('div', {
+        className: 'sava-note'
+      }, 'El backend resuelve primero la excepción individual vigente y después la regla global. Sin regla, la acción queda deshabilitada.'), h('div', {
+        className: 'sava-settings'
+      }, settings));
+    }
+    const holdsView = holds();
+    const processView = processChanges();
+    const yieldsView = yields();
+    function content() {
+      if (tab === 'summary') return summary();
+      if (tab === 'participants') return participants();
+      if (tab === 'contributions') return contributions();
+      if (tab === 'calendar') return calendar();
+      if (tab === 'amount_changes') return h(RequestSection, {
+        rows: data.amount_changes || [],
+        reload,
+        app
+      });
+      if (tab === 'withdrawals') return h(RequestSection, {
+        rows: data.withdrawals || [],
+        reload,
+        app
+      });
+      if (tab === 'terminations') return h(RequestSection, {
+        rows: data.terminations || [],
+        reload,
+        app
+      });
+      if (tab === 'beneficiaries') return beneficiaries();
+      if (tab === 'yields') return yieldsView;
+      if (tab === 'omissions') return omissions();
+      if (tab === 'holds') return holdsView;
+      if (tab === 'process') return processView;
+      if (tab === 'identity') return identity();
+      if (tab === 'documents') return h(Table, {
+        rows: data.documents || [],
+        columns: [['folio', 'Solicitud'], ['participant_id', 'Participante'], ['document_id', 'Documento'], ['status', 'Estado', row => h(Badge, null, row.status)]]
+      });
+      if (tab === 'reports') return h(React.Fragment, null, h('div', {
+        className: 'sava-note'
+      }, 'Los lotes requieren snapshot certificado, SHA-256 y service_role fuera del navegador. Esta pantalla no ejecuta importaciones.'), h(Table, {
+        rows: data.reports || [],
+        columns: [['source_workbook_name', 'Origen'], ['source_snapshot_sha256', 'Hash'], ['certification_status', 'Certificación', row => h(Badge, null, row.certification_status)], ['status', 'Estado', row => h(Badge, null, row.status)], ['row_counts', 'Conteos', row => JSON.stringify(row.row_counts)], ['started_at', 'Fecha', row => date(row.started_at)]]
+      }));
+      if (tab === 'audit') return h(Table, {
+        rows: data.audit || [],
+        columns: [['created_at', 'Fecha', row => date(row.created_at)], ['resource', 'Recurso'], ['action', 'Acción'], ['target_id', 'Objetivo'], ['actor_real_auth_user_id', 'Actor real'], ['usuario_contexto_affiliate_id', 'Usuario contexto'], ['reason', 'Motivo']]
+      });
+      if (tab === 'config') return configuration();
+      return h(Empty, {});
+    }
+    return h('div', {
+      className: 'sava-root',
+      'data-admin-savings': phase,
+      'data-savings-authority': globalData && globalData.authority,
+      'data-savings-cutover': globalData && globalData.cutover_status
+    }, header({
+      title: 'Caja de Ahorro',
+      sub: 'SHADOW + NEW FOUNDATION · sin cutover',
+      onBack
+    }), h('style', null, CSS), h('div', {
+      className: 'su-app-scroll sava-page'
+    }, h('div', {
+      className: 'sava-banner'
+    }, h(I, {
+      name: 'info',
+      size: 17
+    }), h('div', null, h('b', null, 'Google continúa como autoridad histórica/productiva.'), h('br'), 'Esta consola administra únicamente la fundación shadow. Los valores Q se comparan con el ledger y nunca sustituyen el saldo.')), phase === 'error' ? h('div', {
+      className: 'sava-error'
+    }, error, h('button', {
+      className: 'sava-button',
+      onClick: loadGlobal,
+      style: {
+        marginLeft: 10
+      }
+    }, 'Reintentar')) : h(React.Fragment, null, h('div', {
+      className: 'sava-kpis'
+    }, [['Participantes activos', kpis.active_enrollments || 0], ['Capital total', money(kpis.capital_total)], ['Rendimientos', money(kpis.yield_total)], ['Saldo total', money(kpis.balance_total)], ['Saldo retenido', money(kpis.held_total)], ['Retiros pendientes', kpis.pending_withdrawals || 0], ['Cambios de monto', kpis.pending_amount_changes || 0], ['PROCESS por revisar', kpis.process_reviews || 0], ['Identidades ambiguas', kpis.ambiguous_identity || 0], ['Identidades huérfanas', kpis.orphan_identity || 0]].map(item => h('div', {
+      className: 'sava-kpi',
+      key: item[0]
+    }, h('span', null, item[0]), h('b', null, item[1])))), h('div', {
+      className: 'sava-toolbar'
+    }, h('label', {
+      className: 'sava-search'
+    }, h(I, {
+      name: 'search',
+      size: 16
+    }), h('input', {
+      value: query,
+      onChange: event => setQuery(event.target.value),
+      placeholder: 'Buscar folio, nombre o estado…'
+    })), h('select', {
+      value: selectedId,
+      onChange: event => setSelectedId(event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Todos / sin selección'), allParticipants.map(row => h('option', {
+      key: row.id,
+      value: row.id
+    }, (row.legacy_folio || 'Sin folio') + ' · ' + (row.display_name || row.identity_status)))), h('button', {
+      className: 'sava-button',
+      onClick: reload,
+      disabled: busy
+    }, 'Actualizar')), feedback && h('div', {
+      className: /No se|permiso|completó/.test(feedback) ? 'sava-error' : 'sava-success',
+      style: {
+        marginTop: 10
+      }
+    }, feedback), h('nav', {
+      className: 'sava-tabs',
+      'aria-label': 'Secciones de Ahorro'
+    }, TABS.map(item => h('button', {
+      key: item[0],
+      'aria-current': tab === item[0] ? 'page' : undefined,
+      onClick: () => setTab(item[0]),
+      'data-savings-admin-tab': item[0]
+    }, item[1]))), h('div', {
+      className: 'sava-workbench'
+    }, h('aside', {
+      className: 'sava-panel'
+    }, h('div', {
+      className: 'sava-panel-head'
+    }, h('h2', null, 'Participantes'), h('span', null, visible.length + ' visibles')), h('div', {
+      className: 'sava-list'
+    }, visible.length ? visible.map(row => h('button', {
+      className: 'sava-person',
+      key: row.id,
+      'aria-selected': selectedId === row.id,
+      onClick: () => setSelectedId(row.id)
+    }, h('span', null, h('b', null, row.display_name || 'Identidad sin resolver'), h('span', null, (row.legacy_folio || 'Sin folio') + ' · ' + row.identity_status)), h('strong', null, money(row.total)))) : h(Empty, {
+      text: 'Sin coincidencias.'
+    }))), h('section', {
+      className: 'sava-panel'
+    }, h('div', {
+      className: 'sava-panel-head'
+    }, h('h2', null, (TABS.find(item => item[0] === tab) || [null, tab])[1]), h('span', null, selected ? selected.legacy_folio : 'Vista global')), h('div', {
+      className: 'sava-content'
+    }, phase === 'loading' ? h(Empty, {
+      text: 'Cargando Ahorro desde Supabase…'
+    }) : content()))))));
+  }
+  window.SavingsAdminModule = SavingsAdminModule;
+})();
+})();
 /* @@file screens-admin.jsx */
 (function(){
 /* screens-admin.jsx — Panel Administrativo: gate de acceso, menú de módulos
@@ -47445,6 +48830,12 @@ Object.assign(window, {
     icon: 'finance',
     desc: 'Solicitudes de financiamiento',
     classification: 'PRODUCTIVE_HYBRID'
+  }, {
+    id: 'savings',
+    label: 'Caja de Ahorro',
+    icon: 'piggy',
+    desc: 'Participantes, ledger, solicitudes y control',
+    classification: 'PRODUCTIVE_SHADOW'
   }, {
     id: 'fondos',
     label: 'Fondos y reglas',
@@ -47604,6 +48995,7 @@ Object.assign(window, {
     planes: 'company_portal.read',
     requests: 'program_requests.read',
     finanzas: 'program_requests.read',
+    savings: 'savings.read',
     fondos: 'financial_criteria.visibility.read',
     aprobaciones: 'popups.read',
     sindicato: 'union_content.read',
@@ -47638,7 +49030,7 @@ Object.assign(window, {
     id: 'finance',
     label: 'Finanzas',
     icon: 'finance',
-    modules: ['program_products', 'finanzas', 'fondos', 'fincat', 'flujos', 'membresias']
+    modules: ['program_products', 'finanzas', 'savings', 'fondos', 'fincat', 'flujos', 'membresias']
   }, {
     id: 'commerce',
     label: 'Empresas y convenios',
@@ -47665,6 +49057,7 @@ Object.assign(window, {
     PRODUCTIVE_GOOGLE_CONTROLLED: 'ACTIVO',
     PRODUCTIVE_GOOGLE_READONLY: 'SOLO LECTURA',
     PRODUCTIVE_HYBRID: 'ACTIVO',
+    PRODUCTIVE_SHADOW: 'SHADOW',
     BLOCKED_FINANCIAL_LEGACY: 'NO DISPONIBLE',
     BLOCKED_EXTERNAL_SOURCE: 'FUENTE EXTERNA',
     OWNER_DECISION_REQUIRED: 'DECISIÓN REQUERIDA'
@@ -49608,6 +51001,11 @@ Object.assign(window, {
       header: headerFn,
       initialAffiliateId: affiliateContext && affiliateContext.affiliateId
     });else if (view === 'finanzas') body = React.createElement(window.FinanzasModule, {
+      app,
+      onBack: backFromAffiliateLink,
+      header: headerFn,
+      initialAffiliateId: affiliateContext && affiliateContext.affiliateId
+    });else if (view === 'savings') body = React.createElement(window.SavingsAdminModule, {
       app,
       onBack: backFromAffiliateLink,
       header: headerFn,
@@ -61692,8 +63090,11 @@ Object.assign(window, {
     const editorial = window.useEditorialContent();
     const admin = window.useAdminAuth();
     if (window.useAdminStore) window.useAdminStore(); // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(auth.affiliateView ? 'home' : 'admin');
-    const [stack, setStack] = useState([]); // [{name, params}]
+    const [tab, setTabState] = useState(auth.affiliateView ? window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin');
+    const [stack, setStack] = useState(() => window.location.hash === '#/savings' && auth.affiliateView ? [{
+      name: 'savings',
+      params: {}
+    }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null); // pop-ups administrables mostrándose
     const [outgoing, setOutgoing] = useState(null); // ruta saliendo (capa de presencia · A)
@@ -61732,6 +63133,7 @@ Object.assign(window, {
         depth: st.length,
         id: ++outIdRef.current
       });
+      if (leaving.name === 'savings' && window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search);
       setStack(s => s.slice(0, -1));
     }, []);
     // QA / DEV ONLY · override de movimiento y duración espacial (por defecto
@@ -61744,6 +63146,7 @@ Object.assign(window, {
     }, [t.qaMotion, t.qaSpatial]);
     const push = useCallback((name, params = {}) => {
       setOutgoing(null);
+      if (name === 'savings') history.replaceState(history.state, '', '#/savings');
       setStack(s => [...s, {
         name,
         params
@@ -61752,6 +63155,7 @@ Object.assign(window, {
     const back = useCallback(() => popOne(), [popOne]);
     const setTab = useCallback(id => {
       setOutgoing(null);
+      if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search);
       if (window.MOTION) window.MOTION.shared.clear();
       setStack([]);
       setTabState(id);
@@ -61762,6 +63166,7 @@ Object.assign(window, {
     }, []);
     const openFinanceItem = useCallback(id => {
       if (id === 'prestamo') return push('loan');
+      if (id === 'ahorro') return push('savings');
       if (id === 'terrenos') return push('terreno');
       push('product', {
         id
@@ -61872,7 +63277,8 @@ Object.assign(window, {
       notifs: NotifsScreen,
       perfil: PerfilScreen,
       terreno: window.TerrenoScreen,
-      investment: window.InvestmentScreen
+      investment: window.InvestmentScreen,
+      savings: window.SavingsScreen
     };
     const PushedScreen = top ? ROUTES[top.name] : null;
     const pushAllowed = !top || gate(top.name) || top.name === 'loan' && !!auth.impersonation;

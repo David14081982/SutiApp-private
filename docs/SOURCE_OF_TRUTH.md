@@ -1,5 +1,15 @@
 # Fuentes de verdad
 
+## Corte ADR-095 — Ahorro SHADOW y nueva fundación
+
+Google Sheets + Apps Script continúan como autoridad histórica y productiva vigente de Ahorro hasta un cutover posterior expresamente autorizado. La importación RAW SHADOW del 2026-09-02 no consultó ni escribió Google y no modificó fórmulas, triggers, conciliaciones ni saldos legacy.
+
+Las 17 tablas `public.savings_*` son una fundación separada: autoridad de nuevas solicitudes SHADOW, configuración, auditoría e historia importada únicamente cuando un manifest certificado conserva procedencia y hash. No son un cutover ni una réplica productiva automática. Cada fila declara `LEGACY`, `SHADOW`, `PENDING_REVIEW` o `CANONICAL`; ninguna importación adquiere `CANONICAL` por defecto. El futuro balance canónico se deriva exclusivamente del ledger append-only `savings_transactions`, separando capital, rendimiento y retenciones; el saldo Q legacy nunca se transforma en movimiento ni fuente de ese ledger.
+
+Mientras Google siga siendo autoridad y no exista cutover, la pantalla de afiliado usa exclusivamente `get_self_savings_live_readonly()` como espejo certificado: muestra literalmente Q como `legacy_reported_balance` —incluido `NULL` como “No reportado en Q”— y DP:DW como capital/rendimiento histórico directo. AA:DO conserva valor y `FORMULA|MANUAL|EMPTY`. Esta proyección no concilia, corrige, materializa ledger, calcula rendimiento ni habilita writers; su procedencia visible es `GOOGLE_LEGACY_AUTHORITY / SHADOW_MIRROR`.
+
+`SavingsRepository` consume únicamente RPC Supabase. El HTML owner SHA-256 `4D7685F2E399D52DED4542BC9AF177556832DE7245CF601562BD0FA691ED94AC` es contrato visual, nunca fuente de datos o reglas. `DATA`, mocks, JSON, `localStorage`, caché y Google quedan prohibidos como fallback runtime. El batch certificado `9b20b0cc-456b-4ad7-8058-c8ebe551dc31` contiene 363 participantes `PENDING_REVIEW` (356 resueltos, 5 ambiguos, 2 huérfanos) y 42,229 evidencias; las otras 13 tablas permanecen vacías. El Folio TEST existe sólo como evidencia. No hay ledger, solicitudes operativas, rendimientos acreditados, acciones habilitadas ni cutover.
+
 ## Corte ADR-092 — cuenta de Depósito por Tarjeta OR CLABE
 
 `affiliate_bank_accounts` permanece como autoridad única. `save_affiliate_deposit_account` acepta exclusivamente Banco + Tarjeta de 16 dígitos o Banco + CLABE válida; si ambas llegan, ambas se validan. `card_number` y `clabe` nunca se mezclan, derivan ni completan entre sí. Las 504 filas históricas quedaron intactas: seis ya demuestran el contrato Banco + CLABE y se proyectan elegibles sin alterar `data_status`; 498 siguen incompletas.

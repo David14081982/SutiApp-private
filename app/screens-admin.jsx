@@ -34,6 +34,7 @@
     { id: 'sindicato', label: 'Tu Sindicato', icon: 'fist', desc: 'Contenido de las 9 pantallas', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'requests', label: 'Solicitudes', icon: 'receipt', desc: 'Trámites de programas y productos', ready: true },
     { id: 'finanzas', label: 'Finanzas · Solicitudes', icon: 'finance', desc: 'Solicitudes de financiamiento', classification: 'PRODUCTIVE_HYBRID' },
+    { id: 'savings', label: 'Caja de Ahorro', icon: 'piggy', desc: 'Participantes, ledger, solicitudes y control', classification: 'PRODUCTIVE_SHADOW' },
     { id: 'fondos', label: 'Fondos y reglas', icon: 'finance', desc: 'Visibilidad SutiApp por criterio', classification: 'PRODUCTIVE_GOOGLE_CONTROLLED' },
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet', desc: 'Secciones y productos de Finanzas', classification: 'PRODUCTIVE_HYBRID' },
     { id: 'program_products', label: 'Programas · Productos', icon: 'cart', desc: 'Productos propios, precios e imágenes', ready: true },
@@ -62,18 +63,18 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
-    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
+    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','fondos','fincat','flujos','membresias'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','savings','fondos','fincat','flujos','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
     { id:'settings', label:'Acceso y configuración', icon:'settings', modules:['catalogos','roles','pantallas','secciones','menus','formularios','branding'] },
     { id:'data', label:'Datos y respaldos', icon:'download', modules:['data_exports'] },
   ]);
-  const MODULE_BADGE = Object.freeze({PRODUCTIVE_SUPABASE:'ACTIVO',PRODUCTIVE_GOOGLE_CONTROLLED:'ACTIVO',PRODUCTIVE_GOOGLE_READONLY:'SOLO LECTURA',PRODUCTIVE_HYBRID:'ACTIVO',BLOCKED_FINANCIAL_LEGACY:'NO DISPONIBLE',BLOCKED_EXTERNAL_SOURCE:'FUENTE EXTERNA',OWNER_DECISION_REQUIRED:'DECISIÓN REQUERIDA'});
+  const MODULE_BADGE = Object.freeze({PRODUCTIVE_SUPABASE:'ACTIVO',PRODUCTIVE_GOOGLE_CONTROLLED:'ACTIVO',PRODUCTIVE_GOOGLE_READONLY:'SOLO LECTURA',PRODUCTIVE_HYBRID:'ACTIVO',PRODUCTIVE_SHADOW:'SHADOW',BLOCKED_FINANCIAL_LEGACY:'NO DISPONIBLE',BLOCKED_EXTERNAL_SOURCE:'FUENTE EXTERNA',OWNER_DECISION_REQUIRED:'DECISIÓN REQUERIDA'});
 
   function adminModuleAccess(app) {
     const assignment=app.admin.assignment||{permissions:[],sectionActions:[]};
@@ -493,6 +494,7 @@
     else if(view==='planes')body=React.createElement(window.PlanesModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
+    else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(context||null);setView(id);}});

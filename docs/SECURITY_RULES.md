@@ -1,5 +1,15 @@
 # Reglas de seguridad
 
+## Ahorro SHADOW — ADR-095
+
+Las 17 tablas `savings_*` habilitan y fuerzan RLS; `anon` y `authenticated` no reciben DML directo. Autoservicio usa tres RPC `SECURITY DEFINER` con `search_path=''`, deriva `get_effective_affiliate_id()` y nunca acepta un afiliado objetivo. Administración usa RPC separadas y permisos mínimos `savings.read|write|approve|config|reports|identity_review`; ningún rol se concede desde la UI.
+
+Toda solicitud conserva `actor_real_auth_user_id`, `usuario_contexto_affiliate_id` e idempotencia. Retiros validan disponible por componente server-side; extraordinarios exigen documento y doble aprobación; cambios de proceso sólo crean/revisan una cola. El ledger, evidencia, beneficiarios y aprobaciones protegidos rechazan UPDATE/DELETE. La prueba transaccional confirmó aislamiento self entre dos cuentas, lectura Admin autorizada, tablas browser no expuestas y permisos del importador limitados a `service_role`.
+
+El importador Node permanece fuera del navegador, valida hash/certificación y necesita una confirmación explícita adicional para `--apply`. Secret Key, Access Token y `service_role` no se incorporan a `app/bundle.js`. Un fallo RPC deja estado visible y cerrado, sin Google, mocks o almacenamiento del navegador como sustituto.
+
+`get_self_savings_live_readonly()` es una RPC `STABLE SECURITY DEFINER` con `search_path=''`, revocada a `public/anon` y concedida sólo a `authenticated`. Deriva `get_effective_affiliate_id()` y no acepta afiliado, folio ni `numero_control`; por ello un cliente no puede ampliar su alcance. La matriz live confirmó propietario permitido, segundo usuario sin datos ajenos, parámetro objetivo rechazado, anónimo denegado y las 17 tablas sin cambios. El RPC no contiene DML ni concede acceso directo browser a evidencia o tablas.
+
 ## Archivo reversible y Expediente Digital Admin — ADR-093
 
 `archive_admin_affiliate` y `restore_admin_affiliate` son RPC `SECURITY DEFINER` con `search_path=''`, `auth.uid()`, `affiliates.write`, motivo y versión optimista. `anon` no ejecuta. La tabla técnica de recuperación fuerza RLS y no concede lectura al browser. El padrón normal y “Eliminados” son proyecciones separadas sobre `public.affiliates`; no existe tabla paralela ni `DELETE` de identidad o historia.

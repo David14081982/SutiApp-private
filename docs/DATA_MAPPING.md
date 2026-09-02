@@ -1,5 +1,29 @@
 # Data Mapping autoritativo
 
+## Ahorro SHADOW — ADR-095
+
+```text
+DOMAIN: Ahorro
+Productive/historical authority: Google Sheets + Apps Script (unchanged; no runtime connection in this H)
+New foundation: public.savings_*; SHADOW/new requests only, not cutover
+Historical business key: numero_control / legacy_folio; email is never identity
+Identity link: savings_participants.affiliate_id nullable; AMBIGUOUS/ORPHAN must remain null
+Certified import: external manifest + source/evidence SHA-256; service_role backend loader; dry-run default
+Future canonical balances after cutover: savings_transactions append-only → capital + yield; active savings_holds → held/available
+Pre-cutover user displayed total: Q exact from savings_participants.legacy_reported_balance; NULL remains not reported; never ledger
+AA:DO live history: certified savings_legacy_evidence → date/value/cell_kind FORMULA|MANUAL|EMPTY
+DP:DW live history: certified savings_legacy_evidence → direct capital/yield/subtotal/cell_kind; no calculation or credit
+Expected calendar: contribution_plans + overrides + generate_savings_schedule
+Actual contribution: savings_transactions; never inferred from expected dates
+User reader: get_self_savings_live_readonly / authenticated self-only RPC with effective affiliate and no target parameter
+Future user writers: authenticated idempotent RPCs with effective affiliate; availability defaults false and current batch enables none
+Admin reader/writers: get_admin_savings_dashboard / permission-gated savings.* RPCs
+Actions: savings_action_availability; participant scope overrides global scope; default false
+Yield: modeled in savings_yield_periods/allocations; productive_enabled is constrained false
+Fallback/cache: NONE; no DATA, HTML, JSON, localStorage or Google runtime fallback
+Current import/application: batch 9b20b0cc-456b-4ad7-8058-c8ebe551dc31 APPLIED; 363 participants PENDING_REVIEW + 42,229 legacy evidence + 1 audit; 0 ledger/enrollments/plans/requests/yields/actions; no cutover
+```
+
 ## PROFILE PHOTO CUTOVER
 
 ```text

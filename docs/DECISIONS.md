@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-095 | Ahorro se implementa como `SHADOW + NEW FOUNDATION`; Google conserva autoridad productiva hasta cutover separado, el ledger Supabase separa capital/rendimiento y toda importación exige snapshot certificado. | Aceptada / RAW_SHADOW_IMPORT_APPLIED / NO_CUTOVER |
 | ADR-092 | Depósito registra y reutiliza una cuenta con Banco + (Tarjeta válida OR CLABE válida); si ambas se capturan, ambas validan. Continuar exige cuenta válida seleccionada y celular de 10 dígitos. | Aceptada / ACTIVE |
 | ADR-091 | El writer de productos propios valida por delta: preserva exactamente estados históricos ya aceptados sin permitir nuevas infracciones ni crecimiento; recuperación exacta se bloquea después de actividad Admin. | Aceptada / ACTIVE |
 | ADR-090 | Todo reemplazo de expediente usa `UnifiedDocumentPhase → DocumentRequirementList → DocumentWorkflowRepository`; todo fullscreen de imagen usa el viewer o comportamiento modal compartido con safe-area, cierre por overlay/Escape, foco y scroll restaurables. | Aceptada / ACTIVE |
@@ -784,6 +785,25 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Legacy y límites:** los 5 Folios ambiguos y el huérfano de Ahorro quedan intactos. Cero cambios a Google, Apps Script, fórmulas, tasas, fondos, préstamo, ahorro, Marketplace, Panel Empresarial, workflows o autoridad documental.
 - **Estado:** `ACTIVE / APPLIED / VERIFIED — PASS`. Forward, RLS/permisos, matriz de archivo/restauración y recovery dry-run pasaron sin escrituras de prueba persistentes; 947 afiliados, 3,434 documentos, 15 solicitudes, 5 eventos y 0 archivados quedaron intactos. Login público sobre el frontend desplegado llegó a `authenticated` sin error. E2E con archivo documental legítimo permanece diferido hasta disponer de un insumo autorizado; no se inventaron datos ni se reemplazó evidencia real.
 - **Aprobación:** `H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001`, decisión owner adjunta, 2026-09-01.
+
+## ADR-095 — Ahorro SHADOW y nueva fundación Supabase
+
+- **Autoridad:** Google Sheets + Apps Script siguen siendo la autoridad histórica/productiva de Ahorro. `public.savings_*` recibe sólo datos SHADOW, nueva operación preparada y evidencia certificada; no existe cutover en esta H.
+- **Balance:** capital y rendimiento se registran por separado en un ledger append-only. Retenciones reducen disponible sin alterar saldo; Q legacy se conserva como evidencia de conciliación y nunca se transforma en movimiento.
+- **Operación:** altas, cambios de monto, retiros parciales/totales/extraordinarios, baja, beneficiarios, aportaciones esperadas/reales y cambio de proceso se resuelven server-side, con idempotencia, revisión y auditoría. La UI sólo muestra acciones habilitadas por backend.
+- **Calendario:** la primera fecha esperada siempre la fija Administración. JUB usa día 5; Proceso 1/3 usa día 15 y día 30 o último día del mes. Una ausencia no crea deuda automática.
+- **Decisiones pendientes:** rendimiento productivo y regla de cuatro omisiones consecutivas JUB permanecen deshabilitados; cualquier regla automática exige nueva autorización. Aplicar migración, importar snapshot y un eventual cutover son órdenes separadas.
+- **Importación/recuperación:** sólo `service_role` procesa un manifest certificado con hash coincidente; dry-run es el modo predeterminado. El batch RAW SHADOW del 2026-09-02 conserva 42,229 evidencias y 363 participantes `PENDING_REVIEW`, sin ledger ni cutover. La recuperación exacta del batch sólo procede ante falla verificada; nunca retira schema u otra historia.
+- **Aprobación:** solicitud owner `H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001`, 2026-09-02.
+
+### ADR-095A — pantalla Ahorro live read-only antes del cutover
+
+- **Lectura:** `get_self_savings_live_readonly()` deriva el afiliado efectivo y expone únicamente su evidencia certificada. No acepta afiliado/folio objetivo; `anon` y cross-user quedan denegados.
+- **Saldo visible:** el total es exactamente Q (`legacy_reported_balance`). Si Q es `NULL`, la UI indica “No reportado en Q”; no inventa `$0.00`, no usa candidatos ni materializa ledger.
+- **Histórico:** AA:DO preserva fecha, valor y `FORMULA|MANUAL|EMPTY`; DP:DW se presenta directamente como capital y rendimiento histórico, sin cálculo o acreditación nueva.
+- **Visual:** `Ahorro por año.html`, SHA-256 `4D7685F2E399D52DED4542BC9AF177556832DE7245CF601562BD0FA691ED94AC`, gobierna jerarquía y estilo. Sus montos, porcentajes, handlers y datos de muestra no tienen autoridad.
+- **Acciones y límites:** el batch vigente tiene cero disponibilidades y todas las acciones se muestran deshabilitadas. Google writes, Supabase DML de negocio, importación, ledger, yield credit y cutover permanecen en cero/no.
+- **Aprobación:** instrucción owner `H-SAVINGS-USER-UI-LIVE-READONLY-001` y contrato visual posterior, 2026-09-02.
 
 ## ADR-094 — Compatibilidad backend obligatoria antes de desplegar Auth
 

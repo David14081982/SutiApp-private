@@ -1,5 +1,27 @@
 # Arquitectura
 
+## H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001 — Ahorro SHADOW
+
+```text
+Finanzas → Ahorrar → SavingsScreen → SavingsStore → SavingsRepository
+                                                     ↓ RPC self-only
+                                      get_self_savings_live_readonly()
+                                                     ↓
+                         Supabase savings_* (SHADOW certificado, read-only)
+
+Administración → Ahorro → AdminSavingsScreen → SavingsRepository
+                                                     ↓ RPC savings.*
+                 participantes · aportaciones · retiros · beneficiarios
+                 rendimiento deshabilitado · identidad · auditoría · configuración
+
+snapshot certificado → import-savings-raw-shadow-batched.js → RPC service_role → evidencia RAW SHADOW
+Google Ahorro / Apps Script ── autoridad productiva vigente; sin conexión en runtime
+```
+
+La ruta `#/savings` vive dentro del shell, se abre desde Finanzas → Ahorrar, respeta Back y sobrevive refresh; no introduce iframe ni segunda aplicación. El HTML owner gobierna jerarquía, navegación y estilo, pero ninguna cifra o fórmula de demostración. La vista del afiliado recibe una sola proyección self-only: Q literal, identidad/estado/plan legacy, AA:DO, retiros, cambios, DP:DW y beneficiarios. Las acciones se renderizan con disponibilidad backend y hoy permanecen deshabilitadas. Administración conserva su proyección permission-gated separada.
+
+El ledger, las versiones de beneficiarios/aprobaciones/evidencia y la auditoría preservan historia. La proyección live no consume ni materializa ledger: sólo lee evidencia del batch aplicado. Solicitudes, overrides, retenciones, cambios de proceso y periodos de rendimiento expresan workflow futuro sin reescribir movimientos previos. La nueva fundación no reemplaza Google hasta una decisión/cutover independientes.
+
 ## Guardado global de productos propios — ADR-091
 
 ```text

@@ -4,7 +4,7 @@
   "domain_rules": [
     {"domain": "identity", "patterns": ["credencial", "affiliate", "auth", "expediente", "profile photo", "private assets"]},
     {"domain": "agreements", "patterns": ["convenios", "companies repository", "company benefits"]},
-    {"domain": "finance", "patterns": ["loan", "prestamo", "financial legacy", "payroll declaration", "loan term"]},
+    {"domain": "finance", "patterns": ["loan", "prestamo", "financial legacy", "payroll declaration", "loan term", "savings", "ahorro"]},
     {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
   ],
   "nodes": [
@@ -16,6 +16,10 @@
     {"type": "screen", "name": "ConveniosScreen", "file": "app/screens-convenios.jsx", "domain": "agreements", "aliases": ["Convenios", "Acuerdos", "Directorio de empresas"], "source_of_truth": "SUPABASE"},
     {"type": "admin_screen", "name": "ConveniosModule", "file": "app/screens-admin-convenios.jsx", "domain": "agreements", "aliases": ["Admin Convenios", "Administrar convenios"], "source_of_truth": "SUPABASE"},
     {"type": "screen", "name": "LoanScreen", "file": "app/screens-loan.jsx", "domain": "finance", "aliases": ["Suti Préstamo", "Préstamo", "Loan", "Simula tu préstamo"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"protected_boundary": "Financial legacy read-only adapter; Supabase only for authorized supporting domains"}},
+    {"type": "screen", "name": "SavingsScreen", "file": "app/screens-savings.jsx", "domain": "finance", "aliases": ["Ahorro", "Ahorrar", "Mi ahorro", "Savings"], "source_of_truth": "SUPABASE_SHADOW", "properties": {"protected_boundary": "Google Savings remains productive; Supabase is SHADOW + NEW FOUNDATION"}},
+    {"type": "admin_screen", "name": "AdminSavingsScreen", "file": "app/screens-admin-savings.jsx", "domain": "finance", "aliases": ["Admin Ahorro", "Administrar ahorro"], "source_of_truth": "SUPABASE_SHADOW"},
+    {"type": "repository", "name": "SavingsRepository", "file": "app/savings-repository.js", "domain": "finance", "aliases": ["Repositorio de ahorro"], "source_of_truth": "SUPABASE_SHADOW"},
+    {"type": "table", "name": "public.savings_transactions", "domain": "finance", "aliases": ["ledger de ahorro", "capital y rendimiento"], "source_of_truth": "SUPABASE_SHADOW"},
     {"type": "table", "name": "public.affiliates", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["afiliados"]},
     {"type": "table", "name": "public.affiliate_files", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["documentos de afiliado", "foto de perfil"]},
     {"type": "table", "name": "public.private_assets", "domain": "identity", "source_of_truth": "SUPABASE"},
@@ -23,7 +27,8 @@
     {"type": "table", "name": "public.companies", "domain": "agreements", "source_of_truth": "SUPABASE", "aliases": ["empresas", "convenios"]},
     {"type": "table", "name": "public.company_benefits", "domain": "agreements", "source_of_truth": "SUPABASE"},
     {"type": "edge_function", "name": "financial-legacy", "domain": "finance", "source_of_truth": "DERIVED", "properties": {"upstream_authority": "GOOGLE_LEGACY + authorized Supabase context"}},
-    {"type": "external_legacy_source", "name": "Google Criterios de fondos", "domain": "finance", "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED"}}
+    {"type": "external_legacy_source", "name": "Google Criterios de fondos", "domain": "finance", "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED"}},
+    {"type": "external_legacy_source", "name": "Google Ahorro", "domain": "finance", "aliases": ["Ahorro legacy"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED_PRODUCTIVE"}}
   ],
   "relationships": [
     {"from_type": "screen", "from": "CredencialScreen", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
@@ -39,6 +44,10 @@
     {"from_type": "admin_screen", "from": "ConveniosModule", "to_type": "screen", "to": "ConveniosScreen", "type": "REFLECTS_IN"},
     {"from_type": "screen", "from": "LoanScreen", "to_type": "repository", "to": "FinancialLegacyRepository", "type": "USES"},
     {"from_type": "repository", "from": "FinancialLegacyRepository", "to_type": "edge_function", "to": "financial-legacy", "type": "CALLS"},
-    {"from_type": "edge_function", "from": "financial-legacy", "to_type": "external_legacy_source", "to": "Google Criterios de fondos", "type": "READS"}
+    {"from_type": "edge_function", "from": "financial-legacy", "to_type": "external_legacy_source", "to": "Google Criterios de fondos", "type": "READS"},
+    {"from_type": "screen", "from": "SavingsScreen", "to_type": "repository", "to": "SavingsRepository", "type": "USES"},
+    {"from_type": "admin_screen", "from": "AdminSavingsScreen", "to_type": "repository", "to": "SavingsRepository", "type": "USES"},
+    {"from_type": "repository", "from": "SavingsRepository", "to_type": "table", "to": "public.savings_transactions", "type": "READS_VIA_RPC"},
+    {"from_type": "external_legacy_source", "from": "Google Ahorro", "to_type": "table", "to": "public.savings_transactions", "type": "NOT_CONNECTED_SHADOW_BOUNDARY"}
   ]
 }

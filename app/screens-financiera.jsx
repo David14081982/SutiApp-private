@@ -28,7 +28,7 @@
           miniStat('Mi inversión', '—', null, true)),
         React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9, marginTop: 18 } },
           React.createElement(SummaryAction, { itemId: 'prestamo', label: 'préstamo', ariaLabel: 'Solicitar préstamo', icon: 'cash', primary: true, onClick: () => app.push('loan') }),
-          React.createElement(SummaryAction, { itemId: 'ahorro', label: 'Ahorrar', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') }),
+          React.createElement(SummaryAction, { itemId: 'ahorro', label: 'Ahorrar', ariaLabel: 'Abrir mi ahorro', icon: 'piggy', onClick: () => app.openFinanceItem('ahorro') }),
           React.createElement(SummaryAction, { itemId: 'inversion', label: 'Invertir', trend: true, onClick: () => app.push('investment') })),
       ),
     );

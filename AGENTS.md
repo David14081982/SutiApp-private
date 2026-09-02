@@ -10,6 +10,8 @@ Para toda implementación, corrección, auditoría o modificación, activar auto
 
 Toda H que toque una pantalla existente debe usar `claude-ui-preservation-guardian` antes del cierre. Migrar datos no autoriza simplificar, eliminar ni rediseñar la experiencia Claude Design; los datos aún no conectados conservan su componente mediante estados explícitos.
 
+Toda H que modifique `AssetRepository`, `DocumentWorkflowRepository`, `app_assets`, `private_assets`, políticas Storage, URLs firmadas, `app/bundle.js`, `sw.js` o el viewer compartido debe ejecutar `scripts/test-global-image-regression-production-live.js` contra el build local y GitHub Pages. No puede declarar `PASS` si sello/Login, foto de perfil, Admin Afiliados, documentos imagen/PDF, Membership, Préstamo, catálogo de programas/galería, Marketplace, fullscreen, refresh o la comparación con/sin service worker no quedan `PASS` con assets legítimos y sin reescritura de datos.
+
 Cuando el propietario ordena reproducir completo un diseño Claude aprobado, ese diseño define el resultado visual y funcional: todos sus componentes deben existir y funcionar. Preservar arquitectura no prohíbe crear la infraestructura mínima faltante cuando sea necesaria, segura y no duplique autoridad. No se declara `PASS` con componentes `PENDING`, `DISABLED`, `PLACEHOLDER` o `NO_CONNECTED` salvo decisión explícita del propietario.
 
 Después de cerrar una H, usar `sutiapp-architect-reviewer` para contrastar el resultado con evidencia real y generar la instrucción siguiente; la Skill no sustituye la autorización de `task-orchestrator`.

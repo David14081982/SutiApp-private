@@ -11687,7 +11687,7 @@ Object.assign(window, {
         className: 'sav-year-head'
       }, h('b', null, item.year), h('span', {
         'data-current': current
-      }, current ? 'PERIODO CERRADO' : 'DISPONIBLE')), h('div', {
+      }, 'PERIODO CERRADO')), h('div', {
         className: 'sav-year-grid'
       }, h('div', null, h('span', null, 'Ahorro'), h('b', {
         'data-savings-year-capital': item.capital == null ? '' : String(item.capital)
@@ -11695,7 +11695,7 @@ Object.assign(window, {
         'data-savings-year-yield': item.yield == null ? '' : String(item.yield)
       }, moneyOrDash(item.yield)))), h('div', {
         className: 'sav-year-subtotal'
-      }, h('span', null, 'Subtotal a Junio ' + item.year), h('b', {
+      }, h('span', null, (current ? 'Subtotal a Junio ' : 'Subtotal hasta ') + item.year), h('b', {
         'data-savings-year-subtotal': subtotal == null ? '' : String(subtotal)
       }, moneyOrDash(subtotal))));
     })) : h('div', {

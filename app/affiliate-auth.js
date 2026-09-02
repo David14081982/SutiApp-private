@@ -72,15 +72,18 @@
       state.session && state.session.user && state.session.user.id === session.user.id;
     if (!preservesAuthenticatedApp) publish({ phase: 'loading', session });
     try {
+      let archivedIdentity = false;
       const affiliatePromise = (async () => {
         let affiliate = null;
         try { affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user); }
         catch (error) {
+          if (error && error.code === 'AFFILIATE_ARCHIVED') { archivedIdentity = true; return null; }
           if (!error || error.code !== 'AUTH_IDENTITY_WITHOUT_AFFILIATE') throw error;
           try {
             await window.AffiliateRepository.claimCurrentIdentity();
             affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user);
           } catch (claimError) {
+            if (claimError && claimError.code === 'AFFILIATE_ARCHIVED') { archivedIdentity = true; return null; }
             if (!claimError || claimError.code !== 'SOURCE_ERROR') throw claimError;
           }
         }
@@ -94,7 +97,7 @@
       const isAdmin = Boolean((adminContext.technical_permissions||[]).length||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion) return;
       if (!affiliate && !isAdmin) {
-        await rejectUnusableSession('unlinked', 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
+        await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;
       }
       if (affiliate && affiliate.auth_user_id !== session.user.id && !affiliate._impersonation) {
@@ -275,6 +278,7 @@
   }
 
   function messageFor(stateValue) {
+    if (stateValue.phase === 'archived') return 'Tu afiliación está archivada. No puedes iniciar nuevas operaciones; solicita una restauración administrativa.';
     if (stateValue.phase === 'unlinked') return 'Tu cuenta no está vinculada con un afiliado habilitado.';
     if (stateValue.phase === 'ineligible') return 'Tu afiliación no está habilitada para iniciar sesión.';
     if (stateValue.errorCode === 'INVALID_CREDENTIALS') return 'Correo o contraseña incorrectos.';
@@ -344,7 +348,7 @@
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('recover'), style: { width: '100%', marginTop: 12, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Olvidé mi contraseña'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('activate'), style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Activar mi cuenta'),
           mode !== 'login' && mode !== 'reset' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
-          (auth.phase === 'error' || auth.phase === 'unlinked' || auth.phase === 'ineligible') && React.createElement('button', { type: 'button', onClick: auth.retry, style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Intentar nuevamente')),
+          (auth.phase === 'error' || auth.phase === 'unlinked' || auth.phase === 'ineligible' || auth.phase === 'archived') && React.createElement('button', { type: 'button', onClick: auth.retry, style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Intentar nuevamente')),
         React.createElement('p', { style: { margin: '18px 12px 0', textAlign: 'center', color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 } }, 'Si todavía no activas tu cuenta, tu registro de afiliación permanece intacto.')));
   }
 

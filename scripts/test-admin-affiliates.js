@@ -22,6 +22,10 @@ const storageGuardMigration=read('supabase/migrations/20260827001310_admin_affil
 const storageGuardRecovery=read('supabase/recovery/20260827001310_admin_affiliate_document_storage_path_recovery.sql');
 const cleanupGuardMigration=read('supabase/migrations/20260827001320_admin_affiliate_document_cleanup_guard.sql');
 const cleanupGuardRecovery=read('supabase/recovery/20260827001320_admin_affiliate_document_cleanup_guard_recovery.sql');
+const archiveMigration=read('supabase/migrations/20260901000200_admin_affiliate_archive_and_digital_file.sql');
+const archiveRecovery=read('supabase/recovery/20260901000200_admin_affiliate_archive_and_digital_file_recovery.sql');
+const affiliateRepository=read('app/affiliate-repository.js');
+const affiliateAuth=read('app/affiliate-auth.js');
 
 [screen,repository,admin,documents,requests,finances,builder].forEach((source)=>new vm.Script(source));
 
@@ -29,9 +33,9 @@ const cleanupGuardRecovery=read('supabase/recovery/20260827001320_admin_affiliat
   'data-admin-affiliates','data-admin-affiliate-detail','data-affiliate-row',
   'Padrón de afiliados','Buscar nombre, control, correo, teléfono, RFC o CURP',
   'Exportar Excel','Nuevo afiliado','Editar información','Cambiar estado',
-  'Cargar documento','Eliminar usuario','Baja administrativa reversible',
+  'Cargar o reemplazar','Eliminados','Archivar afiliado','Restaurar afiliado',
   'Datos generales','Afiliación','Expediente','Solicitudes','Acceso','Auditoría',
-  'No se borrarán documentos, solicitudes, Auth ni historial',
+  'Auth, expediente, solicitudes e historial permanecerán intactos',
   'La afiliación administrativa y la cuenta Auth son autoridades separadas',
   '@media(max-width:1023px)'
 ].forEach((contract)=>assert.ok(screen.includes(contract),contract));
@@ -41,20 +45,25 @@ assert.match(screen,/onOpenModule\('documents_admin'/);
 assert.match(screen,/onOpenModule\('requests'/);
 assert.match(screen,/onOpenModule\('finanzas'/);
 assert.match(screen,/data-admin-affiliate-upload/);
-assert.match(screen,/data-affiliate-delete/);
-assert.match(screen,/mode:'deactivate'/);
+assert.match(screen,/data-affiliate-archive/);
+assert.match(screen,/data-affiliate-archive-confirm/);
+assert.match(screen,/DocumentViewer/);
+assert.doesNotMatch(screen,/Eliminar usuario|mode:'deactivate'|data-affiliate-delete/);
 assert.match(screen,/data-affiliate-actions':'header'/);
 assert.doesNotMatch(screen,/h\('aside',\{className:'aff-actions'/);
 
 [
   'list_admin_affiliates','get_admin_affiliate_workbench','find_admin_affiliate_duplicates',
-  'create_admin_affiliate','update_admin_affiliate','change_admin_affiliate_status'
+  'create_admin_affiliate','update_admin_affiliate','change_admin_affiliate_status',
+  'list_admin_archived_affiliates','archive_admin_affiliate','restore_admin_affiliate'
 ].forEach((rpc)=>assert.ok(repository.includes(rpc),rpc));
 assert.match(repository,/register_admin_affiliate_document/);
 assert.match(repository,/requirePermission\('documents\.write'\)/);
 assert.match(repository,/storage\.from\('private-assets'\)\.upload/);
 assert.match(repository,/crypto\.subtle\.digest\('SHA-256'/);
 assert.match(repository,/cleanup_storage_path/);
+assert.match(repository,/DocumentWorkflowRepository\.listAdminDocuments/);
+assert.match(repository,/DocumentWorkflowRepository\.adminPreview/);
 assert.match(repository,/requirePermission\('affiliates\.read'\)/);
 assert.match(repository,/requirePermission\('affiliates\.write'\)/);
 assert.match(repository,/requirePermission\('data_exports\.read'\)/);
@@ -109,5 +118,26 @@ assert.match(cleanupGuardMigration,/security definer/);
 assert.match(cleanupGuardMigration,/not exists\(\s*select 1 from public\.private_assets/);
 assert.match(cleanupGuardMigration,/can_delete_unreferenced_affiliate_document_object\(name\)/);
 assert.match(cleanupGuardRecovery,/drop function public\.can_delete_unreferenced_affiliate_document_object/);
+
+assert.match(archiveMigration,/add column is_archived boolean not null default false/);
+assert.match(archiveMigration,/check\(action in \('CREATE','UPDATE','STATUS_CHANGE','ARCHIVE','RESTORE'\)\)/);
+assert.match(archiveMigration,/create function public\.archive_admin_affiliate/);
+assert.match(archiveMigration,/create function public\.restore_admin_affiliate/);
+assert.match(archiveMigration,/where not a\.is_archived/);
+assert.match(archiveMigration,/program_requests_guard_archived_affiliate/);
+assert.match(archiveMigration,/raise exception 'AFFILIATE_ARCHIVED'/);
+assert.match(archiveMigration,/match_state.*ARCHIVED_MATCH/s);
+assert.match(archiveMigration,/replaces_document_id/);
+assert.match(archiveMigration,/ADMIN_REPLACEMENT_UPLOAD/);
+assert.match(archiveMigration,/force row level security/);
+assert.doesNotMatch(archiveMigration,/delete from public\.(affiliates|affiliate_documents|program_requests)/);
+assert.doesNotMatch(archiveMigration,/marketplace|google|apps_script/i);
+assert.match(archiveRecovery,/ARCHIVE_RECOVERY_BLOCKED_BY_LIFECYCLE_ACTIVITY/);
+assert.match(archiveRecovery,/ARCHIVE_RECOVERY_BLOCKED_BY_POST_MIGRATION_ACTIVITY/);
+assert.match(archiveRecovery,/prior_function_definitions/);
+assert.match(affiliateRepository,/get_current_affiliate_access_state/);
+assert.match(affiliateRepository,/AFFILIATE_ARCHIVED/);
+assert.match(affiliateAuth,/archivedIdentity/);
+assert.match(affiliateAuth,/phase === 'archived'/);
 
 console.log('Admin affiliates productive workbench static contract PASS');

@@ -618,11 +618,11 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Recuperación:** revertir el cambio de código puede volver a conectar la tabla existente; ninguna recuperación exige restaurar filas ni ejecutar SQL.
 - **Aprobación:** solicitud explícita del propietario “elimina el botón y sus funciones de editar texto”, confirmada para continuar el 2026-08-27.
 
-## ADR-073 — Edición, baja reversible y carga documental en Admin Afiliados
+## ADR-073 — Edición, baja reversible y carga documental en Admin Afiliados (semántica de eliminación supersedida por ADR-093)
 
-- **Identidad:** editar continúa sobre `public.affiliates` mediante `update_admin_affiliate`, con `affiliates.write`, versión optimista, motivo y auditoría. “Eliminar usuario” significa baja administrativa reversible mediante el writer de estado existente; no existe DELETE físico ni se alteran Auth, documentos, solicitudes o historia.
+- **Identidad histórica:** editar continúa sobre `public.affiliates` mediante `update_admin_affiliate`, con `affiliates.write`, versión optimista, motivo y auditoría. La antigua etiqueta “Eliminar usuario” ejecutaba una baja administrativa; ADR-093 retira esa equivalencia y separa Cambio de estado de Archivo reversible. Nunca existe DELETE físico ni se alteran Auth, documentos, solicitudes o historia.
 - **Documentos:** el perfil permite cargar a `affiliate_documents`/`private_assets` y `private-assets` mediante `register_admin_affiliate_document`. Exige `documents.write`, archivo máximo 10 MB, MIME allowlisted, SHA-256, ruta bajo el UUID objetivo, owner igual al actor y motivo; el alta queda `PENDING_REVIEW`.
-- **Inmutabilidad:** un `VERIFIED` no se reemplaza. Duplicación por hash reutiliza el asset canónico y el frontend intenta limpiar el objeto no referenciado; ningún fallo activa Storage público, fallback local o segunda autoridad.
+- **Inmutabilidad:** un `VERIFIED` no se sobrescribe ni elimina. ADR-075/093 permiten registrar una nueva versión enlazada conservando la fila verificada anterior. Duplicación por hash reutiliza el asset canónico y el frontend intenta limpiar el objeto no referenciado; ningún fallo activa Storage público, fallback local o segunda autoridad.
 - **Seguridad Storage:** `can_admin_upload_affiliate_document_path` sólo devuelve un booleano para permiso + UUID existente. `can_delete_unreferenced_affiliate_document_object` verifica referencias fuera del filtrado RLS antes de permitir cleanup. Ninguno otorga lectura directa ni expone PII; normal, anónimo y el borrado de objetos referenciados quedan denegados.
 - **Migración/recovery:** `20260827001300–01320` son aditivas; forward y recovery pasaron en rollback y aplicación sin filas de negocio. Los recovery preservan todo documento registrado.
 - **Aprobación:** solicitud explícita del propietario de editar, eliminar y cargar documentos guardados en Supabase desde Afiliados, 2026-08-27.
@@ -772,3 +772,15 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Prueba:** backend productivo pasó Card-only, CLABE-only, rechazo Banco-only, errores específicos, lista inmediata, nueva sesión y teléfono con cleanup exacto. El E2E UI A–J pasó aislado en Chrome; el recorrido híbrido no se declaró porque el simulador productivo previo a Depósito devolvió `error` en ambos afiliados QA.
 - **Límites:** cero cambios en simulador, fondos, cálculos, documentos, resumen, solicitud, `program_catalog_items`, Marketplace o Google legacy.
 - **Aprobación:** `H-LOAN-DEPOSIT-ACCOUNT-VALIDATION-AND-CONTINUE-001`, regla explícita del propietario, 2026-09-01.
+
+## ADR-093 — Archivo reversible de afiliados y Expediente Digital Admin
+
+- **Autoridad:** `public.affiliates` permanece como único maestro. `is_archived` y su metadata representan archivo lógico; “Eliminados” es una vista/RPC del mismo padrón, no una tabla, copia, papelera física ni fuente alterna.
+- **Separación semántica:** `affiliate_status_raw` conserva baja/reactivación laboral o sindical. Archivar es una acción explícita distinta que retira al afiliado de operación futura sin cambiar su estado histórico, ID, `numero_control`, Auth, documentos, solicitudes, snapshots, workflow, ahorro ni auditoría.
+- **Bloqueo:** `get_effective_affiliate_id` sólo resuelve afiliados no archivados; claim, búsqueda y sesión asistida excluyen archivados. Un trigger adicional sobre nuevas `program_requests` falla cerrado aun ante writers privilegiados. Administración e historia mantienen sus permisos separados.
+- **Identidad:** duplicate detection clasifica `ACTIVE_MATCH|ARCHIVED_MATCH`. Una coincidencia archivada bloquea alta y exige revisión/restauración; nombre, email y teléfono nunca fusionan ni sustituyen `numero_control`/UUID.
+- **Expediente:** Admin reutiliza `affiliate_documents`, `document_types`, `private_assets`, Storage privado, `list_admin_affiliate_documents`, `document-access` y los viewers compartidos. Carga/reemplazo respeta capacidades del tipo y crea una nueva versión `PENDING_REVIEW` con `replaces_document_id`; un `VERIFIED` anterior no se modifica ni elimina.
+- **Auditoría y recovery:** `ARCHIVE|RESTORE` son eventos append-only con actor, fecha, razón y valores before/after. `20260901000200` guarda definiciones previas y baselines en una tabla sin grants browser; recovery aborta tras cualquier actividad legítima y nunca borra historia para poder revertir.
+- **Legacy y límites:** los 5 Folios ambiguos y el huérfano de Ahorro quedan intactos. Cero cambios a Google, Apps Script, fórmulas, tasas, fondos, préstamo, ahorro, Marketplace, Panel Empresarial, workflows o autoridad documental.
+- **Estado:** implementación, build y dry-run forward/recovery/matriz PASS; aplicación productiva y E2E con archivos reales requieren autorización posterior del propietario.
+- **Aprobación:** `H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001`, decisión owner adjunta, 2026-09-01.

@@ -1,5 +1,13 @@
 # Reglas de seguridad
 
+## Archivo reversible y Expediente Digital Admin — ADR-093
+
+`archive_admin_affiliate` y `restore_admin_affiliate` son RPC `SECURITY DEFINER` con `search_path=''`, `auth.uid()`, `affiliates.write`, motivo y versión optimista. `anon` no ejecuta. La tabla técnica de recuperación fuerza RLS y no concede lectura al browser. El padrón normal y “Eliminados” son proyecciones separadas sobre `public.affiliates`; no existe tabla paralela ni `DELETE` de identidad o historia.
+
+`get_effective_affiliate_id()` excluye archivados tanto para Auth directo como para impersonación. El inicio y la consulta de impersonación también los excluyen, y `program_requests_guard_archived_affiliate` deniega toda alta nueva incluso si otro writer intenta omitir la UI. La cuenta Auth se conserva; un administrador técnico puede seguir entrando a Administración, pero un afiliado archivado no obtiene identidad funcional de autoservicio. Restaurar no concede elegibilidad nueva: vuelve a aplicar el contrato vigente.
+
+El Expediente Digital usa `list_admin_affiliate_documents` y `document-access` con objetivo y propósito explícitos. No devuelve rutas ni URLs en el listado; cada thumbnail/visor firma temporalmente un solo objeto privado. Reemplazo Admin crea versión enlazada, conserva la anterior y registra actor/motivo. El dry-run productivo verificó permisos, RLS, exclusión, `ARCHIVED_MATCH`, bloqueo de impersonación y recovery con `ROLLBACK`; 947 afiliados, 3,434 documentos, 15 solicitudes y 4 eventos quedaron idénticos.
+
 ## Tarjeta OR CLABE en Depósito — ADR-092
 
 `save_affiliate_deposit_account` conserva `SECURITY DEFINER`, `search_path=''` e identidad derivada mediante `auth.uid()`/`get_effective_affiliate_id()`. El browser no elige afiliado ni titular: acepta únicamente Banco + Tarjeta válida o Banco + CLABE válida y valida ambas cuando ambas se proporcionan. `card_number` y `clabe` permanecen separados; la auditoría registra sólo presencia, nunca números completos.

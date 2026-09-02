@@ -70,6 +70,14 @@
       try {
         const client = provideClient();
         await getAuthenticatedUser(client, knownUser);
+        const access = await client.rpc('get_current_affiliate_access_state');
+        if (access.error) throw access.error;
+        if (access.data === 'ARCHIVED') {
+          throw new AffiliateRepositoryError('AFFILIATE_ARCHIVED', 'Affiliate self-service is archived');
+        }
+        if (access.data !== 'ACTIVE') {
+          throw new AffiliateRepositoryError('AUTH_IDENTITY_WITHOUT_AFFILIATE', 'Authenticated principal has no linked affiliate');
+        }
         const effective = await client.rpc('get_effective_affiliate_id');
         if (effective.error) throw effective.error;
         if (!effective.data) {

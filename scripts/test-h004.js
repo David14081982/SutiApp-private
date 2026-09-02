@@ -25,6 +25,7 @@ function queryClient(rows, authUser = { id: 'auth-1' }) {
     auth: { getUser: async () => ({ data: { user: authUser }, error: null }) },
     rpc: async (name) => {
       calls.push(['rpc', name]);
+      if (name === 'get_current_affiliate_access_state') return { data: rows[0] ? 'ACTIVE' : 'UNLINKED', error: null };
       if (name === 'get_effective_affiliate_id') return { data: rows[0] && rows[0].id || null, error: null };
       if (name === 'get_impersonation_context') return { data: [], error: null };
       return { data: null, error: null };

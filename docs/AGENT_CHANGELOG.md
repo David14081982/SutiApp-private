@@ -2216,3 +2216,25 @@ Unexpected files changed: 0
 Known limitations: recovery productivo queda fail-closed después de historia Admin; no se ejecutó tras el E2E
 Evidence: docs/qa/H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001-EVIDENCE.md
 ```
+
+## 2026-09-01 — H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001
+
+- Se separó la baja administrativa del archivo reversible: `public.affiliates` sigue siendo el único maestro y “Eliminados” es una proyección del mismo UUID/control.
+- El backend excluye archivados de identidad efectiva, claim e impersonación y protege nuevas `program_requests`; Auth e historia permanecen intactos.
+- Admin Afiliados conserva su pantalla y responsive, agrega Archivo/Restauración y convierte Expediente en galería privada con versión, procedencia, thumbnail, visor y reemplazo no destructivo.
+- Forward, recovery y matriz archivo/restauración pasaron contra producción dentro de `ROLLBACK`: 947 afiliados, 3,434 documentos, 15 solicitudes y 4 eventos quedaron idénticos; persistencia 0.
+
+```text
+H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 RESULT
+Status: PASS_WITH_OWNER_DECISION — implementación preparada; apply productivo pendiente de autorización
+Files changed: identidad/Admin repositories; pantalla y bundle; SQL/recovery; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — public.affiliates único; documentos y Auth conservan autoridades existentes
+Invariant verdict: PASS — archivo reversible, historia preservada, bloqueo backend y versionado no destructivo
+Build: PASS — bundle reproducible desde 95 fuentes; SHA-256 BDA114074AEAFCB7EF81B403E0808956F245C707737D13508C1E768725F32A0C
+Tests: PASS — 78/78 static; forward/recovery/lifecycle dry-run productivo; 0 persistencia
+Security: PASS preparado — RLS/RPC, anon denied, identidad efectiva y trigger central; E2E posterior al apply pendiente
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / Apps Script change 0 / financial logic change 0
+Unexpected files changed: 0
+Known limitations: migración y E2E productivo con archivo legítimo requieren autorización posterior
+Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
+```

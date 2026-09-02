@@ -1,7 +1,7 @@
 # H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001 — Evidencia
 
 Fecha: 2026-09-01
-Estado de implementación: `LOCAL_RELEASE_CANDIDATE_PASS / PUBLICATION_PENDING`
+Estado: `PASS / DEPLOYED / VERIFIED`
 
 ## Alcance
 
@@ -102,27 +102,37 @@ Los runners leen credenciales controladas únicamente desde `supabase.env` ignor
 
 | Caso | Release candidate local contra Auth productivo | GitHub Pages público |
 |---|---:|---:|
-| Login válido | PASS | PENDING DEPLOY |
-| Credenciales inválidas / copy correcto | PASS | PENDING DEPLOY |
-| Servicio no disponible / error controlado | PASS | PENDING DEPLOY |
-| Refresh | PASS | PENDING DEPLOY |
-| Sesión persistente | PASS | PENDING DEPLOY |
-| Logout + reload | PASS | PENDING DEPLOY |
-| 390 / 430 / desktop | PASS | PENDING DEPLOY |
+| Login válido | PASS | PASS |
+| Credenciales inválidas / copy correcto | PASS | PASS |
+| Servicio no disponible / error controlado | PASS | PASS |
+| Refresh | PASS | PASS |
+| Sesión persistente | PASS | PASS |
+| Logout + reload | PASS | PASS |
+| 390 / 430 / desktop | PASS | PASS |
 
-## Cierre provisional
+### GitHub Pages productivo
+
+- Commit local y remoto: `053d49a8ba57436b51c094ea6c1b01e789858a20`.
+- Workflow: `33584782213`, conclusión `success`.
+- Los pasos `Verify Auth backend compatibility`, build, upload y deploy finalizaron `success` en ese SHA.
+
+```json
+{"status":"PASS","target":"GITHUB_PAGES_PRODUCTION","validLogin":true,"invalidCredentials":{"errorCode":"INVALID_CREDENTIALS","controlledMessage":true},"unavailableService":{"errorCode":"CONNECTION_ERROR","controlledMessage":true,"retryVisible":true},"refresh":true,"session":true,"logout":true,"viewports":[{"width":390,"validLogin":true,"layout":true,"refresh":true,"session":true,"logout":true,"pageErrors":0},{"width":430,"validLogin":true,"layout":true,"refresh":null,"session":null,"logout":null,"pageErrors":0},{"width":1280,"validLogin":true,"layout":true,"refresh":null,"session":null,"logout":null,"pageErrors":0}]}
+```
+
+## Cierre
 
 ```text
 H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001 RESULT
-Status: BLOCKED — publicación del commit corregido y repetición en GitHub Pages requeridas
+Status: PASS
 Files changed: Auth UI state, bundle/cache, deployment gate, regression/live tests, architecture/governance evidence
 Source-of-truth verdict: PASS — Supabase Auth + public.affiliates remain authoritative; no fallback
 Invariant verdict: PASS — deployment-order invariant enforced before Pages
-Build: PASS — corrected local release artifact
-Tests: PASS local/integration/live-backend; public Pages post-deploy pending
+Build: PASS — GitHub Pages workflow 33584782213 on 053d49a8
+Tests: PASS — 80/80 static; repository integration; backend contract; public E2E full matrix
 Security: PASS — required RPCs present and anon denied; no privileged secret in gate/frontend
 Legacy impact: NO INTERACTION
-Unexpected files changed: 0 at provisional review
-Known limitations: public GitHub Pages matrix cannot certify new bundle until this commit is published
+Unexpected files changed: 0
+Known limitations: none for the requested Login/Auth matrix
 Evidence: this file
 ```

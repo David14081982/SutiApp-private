@@ -4,20 +4,20 @@
 
 - Forense Git identificó `dfa9d9016531f2175c78a15b26e2e6925a0135cc`, `app/affiliate-repository.js:73` y el RPC obligatorio `get_current_affiliate_access_state` como causa exacta. La H de Archivo debía bloquear autoservicio archivado en la identidad compartida, pero Pages desplegó el consumidor mientras la migración seguía preparada/no aplicada.
 - Se agregó un gate predeploy que exige los cuatro RPC Auth y denegación anónima, más pruebas que cargan el repository real y fallan ante schema ausente o exposición accidental. La UI conserva diseño/copy y ahora muestra también el fallo de red ocurrido durante submit con reintento visible.
-- Chrome contra el build corregido y Auth productivo pasó login válido, inválido, indisponibilidad controlada, refresh, sesión, logout y 390/430/1280 sin errores de página ni escrituras de negocio. Publicación y repetición sobre GitHub Pages permanecen pendientes del commit de release.
+- Chrome contra el build corregido y, después, contra GitHub Pages productivo pasó login válido, inválido, indisponibilidad controlada, refresh, sesión, logout y 390/430/1280 sin errores de página ni escrituras de negocio. Workflow `33584782213` desplegó `053d49a8ba57436b51c094ea6c1b01e789858a20`; su gate Auth, build y deploy finalizaron `success`.
 
 ```text
 H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001 RESULT
-Status: BLOCKED — awaiting publication and public Pages verification
+Status: PASS
 Files changed: Auth state/UI, bundle/cache, deploy gate, tests and governance/evidence
 Source-of-truth verdict: PASS — Supabase Auth + public.affiliates; no fallback
 Invariant verdict: PASS — backend compatibility is now a predeploy condition
-Build: PASS local release candidate
-Tests: PASS local/integration/production-backend; GitHub Pages post-deploy pending
+Build: PASS — GitHub Pages workflow 33584782213 on 053d49a8
+Tests: PASS — 80/80 static, real repository, production backend and public Pages matrix
 Security: PASS — four RPCs present, anon denied, public-key-only gate
 Legacy impact: NO INTERACTION
 Unexpected files changed: 0
-Known limitations: public bundle still requires deployment
+Known limitations: none for requested Login/Auth matrix
 Evidence: docs/qa/H-AUTH-LOGIN-REGRESSION-ROOT-CAUSE-AND-GUARD-001-EVIDENCE.md
 ```
 

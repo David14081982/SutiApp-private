@@ -784,3 +784,13 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Legacy y límites:** los 5 Folios ambiguos y el huérfano de Ahorro quedan intactos. Cero cambios a Google, Apps Script, fórmulas, tasas, fondos, préstamo, ahorro, Marketplace, Panel Empresarial, workflows o autoridad documental.
 - **Estado:** `ACTIVE / APPLIED / VERIFIED — PASS`. Forward, RLS/permisos, matriz de archivo/restauración y recovery dry-run pasaron sin escrituras de prueba persistentes; 947 afiliados, 3,434 documentos, 15 solicitudes, 5 eventos y 0 archivados quedaron intactos. Login público sobre el frontend desplegado llegó a `authenticated` sin error. E2E con archivo documental legítimo permanece diferido hasta disponer de un insumo autorizado; no se inventaron datos ni se reemplazó evidencia real.
 - **Aprobación:** `H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001`, decisión owner adjunta, 2026-09-01.
+
+## ADR-094 — Compatibilidad backend obligatoria antes de desplegar Auth
+
+- **Problema demostrado:** `dfa9d9016531f2175c78a15b26e2e6925a0135cc` agregó `get_current_affiliate_access_state` a la resolución obligatoria de sesión mientras `20260901000200` seguía `MIGRATION_PREPARED_NOT_APPLIED`. El push a `main` desplegó Pages automáticamente y produjo `PGRST202`, convertido de forma controlada en `CONNECTION_ERROR`, para toda sesión válida.
+- **Orden de despliegue:** una dependencia nueva de Auth sólo puede llegar a Pages cuando el backend productivo ya satisface el contrato. El workflow consulta con la configuración pública los cuatro RPC de sesión; sólo acepta existencia demostrada más denegación `401/403` al rol `anon`. Función ausente, respuesta inesperada o ejecución anónima bloquean el deploy.
+- **Regresión:** la prueba de sesión carga `app/affiliate-repository.js` real y no sustituye `getCurrentAffiliate` por un mock. Debe cubrir RPCs, login válido, credenciales inválidas, servicio no disponible, sesión restaurada, refresh y logout. El E2E de release repite el contrato en 390, 430 y desktop.
+- **UI:** un fallo de red al enviar credenciales conserva `phase=unauthenticated`, publica `CONNECTION_ERROR`, muestra el mensaje institucional existente y deja disponible reintento. No introduce fallback, mock ni una segunda autoridad.
+- **Seguridad:** el gate usa únicamente URL y publishable key ya públicas; nunca requiere Access Token, Secret Key, DB password o `service_role`. Una respuesta exitosa para `anon` se considera fallo de seguridad.
+- **Alcance:** Auth, AffiliateRepository y despliegue Pages. Cero cambios de schema, datos, documentos, Google, Apps Script, ahorro, préstamos, Marketplace o Panel Empresarial.
+- **Aprobación:** corrección y análisis causal solicitados expresamente por el propietario, 2026-09-01.

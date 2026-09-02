@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-09-01 — H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 productivo
+
+- Con autorización explícita se aplicó `20260901000200_admin_affiliate_archive_and_digital_file.sql` en Supabase productivo. Se conservaron 947 afiliados, 3,434 documentos, 15 solicitudes y 5 eventos; quedaron 0 archivados y 0 escrituras de prueba persistentes.
+- Forward, RLS/permisos, archivo/restauración, `ARCHIVED_MATCH`, bloqueo de impersonación y recovery completo pasaron con las matrices funcionales dentro de `ROLLBACK`. No se ejecutó recovery real.
+- GitHub Pages run `33578359153` desplegó `dfa9d9016531f2175c78a15b26e2e6925a0135cc`; Chrome productivo confirmó `phase=authenticated`, `errorCode=null` y cero errores de página. El error de acceso causado por la RPC aún no aplicada quedó resuelto.
+- Google, Apps Script, ahorro, cálculos financieros, Marketplace y Panel Empresarial: cero interacción. No se archivó una persona real ni se reemplazó un documento legítimo sólo para probar.
+
+```text
+H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 RESULT
+Status: PASS
+Files changed: estado normativo/evidencia y runners de verificación; schema productivo por migración autorizada
+Source-of-truth verdict: PASS — public.affiliates permanece autoridad única
+Invariant verdict: PASS — mismo ID/control/Auth/historia; archivo lógico reversible y bloqueo backend
+Build: PASS vigente — bundle desplegado desde dfa9d901
+Tests: PASS — apply, matriz live, recovery dry-run y login GitHub Pages productivo
+Security: PASS — RLS/grants/RPC; anónimo y cross-user denegados; secretos expuestos 0
+Legacy impact: NO INTERACTION — Google read/write 0; Apps Script 0
+Unexpected files changed: 0
+Known limitations: E2E persistente con archivo/restauración real y reemplazo documental legítimo diferido hasta contar con insumos autorizados
+Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
+```
+
 ## 2026-09-01 — H-SAVINGS-LEGACY-SYSTEM-FORENSIC-AUDIT-001
 
 - La auditoría forense read-only cubrió las nueve hojas live de Ahorro, fórmulas, identidad agregada contra `public.affiliates`, el Apps Script ligado identificable y evidencia Drive de Glide/PDF/backups. Google, Supabase, Glide y Make tuvieron cero escrituras; no se ejecutaron triggers ni conciliaciones.

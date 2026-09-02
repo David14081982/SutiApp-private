@@ -1,15 +1,15 @@
 # H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 — Evidence
 
 Fecha: 2026-09-01
-Estado de implementación: `PASS_WITH_OWNER_DECISION`
-Estado productivo: `MIGRATION_PREPARED_NOT_APPLIED`
+Estado de implementación: `PASS`
+Estado productivo: `APPLIED_VERIFIED`
 
 ## AUDIT → AUTHORITY → PLAN → RISK
 
 - Architecture Navigator confirmó que Admin Afiliados usa `AdminAffiliatesRepository` y las RPC de `20260827001200`; el expediente vigente usa `affiliate_documents`, `document_types`, `private_assets/private-assets`, `DocumentWorkflowRepository` y `document-access`.
-- Consulta productiva agregada y sin PII: 947 afiliados, 3 Auth vinculados, 3,434 documentos, 15 solicitudes, 4 eventos Admin, RLS activa y 0 columnas de archivo antes de esta H.
+- Consulta productiva agregada y sin PII: 947 afiliados, 3 Auth vinculados, 3,434 documentos, 15 solicitudes, 5 eventos Admin al aplicar, RLS activa y 0 archivados.
 - Autoridad canónica: `public.affiliates`. “Eliminados” es una proyección, no una tabla. Auth, documentos, solicitudes, workflows, snapshots, ahorro e historia conservan sus autoridades existentes.
-- Alcance de escritura productiva durante la H: 0. Google/Apps Script: 0 lecturas, 0 escrituras, 0 cambios.
+- Escritura productiva autorizada: infraestructura de `20260901000200`; DML de negocio y escrituras de prueba persistentes: 0. Google/Apps Script: 0 lecturas, 0 escrituras, 0 cambios.
 - Riesgo: alto por identidad y control de acceso. Mitigación: migración aditiva, control optimista, RPC/RLS, identidad efectiva central, trigger de altas, eventos append-only y recovery fail-closed.
 
 ## IMPLEMENT
@@ -74,6 +74,17 @@ La matriz transaccional certificó:
 
 No se creó afiliado, documento, solicitud, ahorro ni movimiento sintético. No se modificó evidencia productiva legítima.
 
+### Apply, recovery posterior y login público
+
+```json
+{"status":"PASS","mode":"APPLIED","migration":"20260901000200","before":{"applied":false,"affiliates":947,"documents":3434,"requests":15,"events":5,"archived":0},"after":{"applied":true,"affiliates":947,"documents":3434,"requests":15,"events":5,"archived":0},"persistentTestWrites":0}
+{"status":"PASS","mode":"RECOVERY_DRY_RUN_APPLIED_STATE_PRESERVED","migration":"20260901000200","before":{"applied":true,"affiliates":947,"documents":3434,"requests":15,"events":5,"archived":0},"after":{"applied":true,"affiliates":947,"documents":3434,"requests":15,"events":5,"archived":0},"persistentWrites":0}
+{"status":"PASS","mode":"VERIFY_APPLIED","migration":"20260901000200","state":{"applied":true,"affiliates":947,"documents":3434,"requests":15,"events":5,"archived":0},"persistentTestWrites":0}
+{"status":"PASS","target":"GITHUB_PAGES_PRODUCTION","phase":"authenticated","errorCode":null,"adminOnly":false,"pageErrors":[]}
+```
+
+GitHub Actions run `33578359153` desplegó correctamente el commit `dfa9d9016531f2175c78a15b26e2e6925a0135cc`. El E2E mínimo productivo confirmó que el desfase frontend–RPC quedó cerrado y el acceso llega a `authenticated` sin el mensaje genérico de conexión.
+
 ### Secret / PII preflight
 
 - 22 archivos cambiados o nuevos, todos dentro del alcance declarado.
@@ -94,17 +105,16 @@ PASS generation freshness stale lookup screen table column reverse admin permiss
 
 ## Architect review
 
-`OWNER_DECISION_REQUIRED` exclusivamente para aplicar `20260901000200_admin_affiliate_archive_and_digital_file.sql` en producción y ejecutar los E2E reales posteriores. La implementación local, autoridad, migración/recovery, RLS, bloqueo central, UI preservada, expediente versionado, pruebas y límites legacy quedan `APPROVED`; no se encontró corrección pendiente ni ampliación de alcance.
+Revisión posterior al apply: `APPROVED`. Autoridad, migración/recovery, RLS, bloqueo central, login productivo, UI preservada, expediente versionado y límites legacy coinciden con la autorización; no se encontró una segunda autoridad ni una escritura persistente de prueba.
 
 ## Recovery
 
 `20260901000200_admin_affiliate_archive_and_digital_file_recovery.sql` restaura las definiciones exactas capturadas al aplicar y elimina sólo objetos aditivos. Aborta si encuentra un archivo/restauración, evento, documento, solicitud, sesión de impersonación o cualquier otro conteo legítimo posterior distinto del baseline. No debe ejecutarse después de actividad administrativa real.
 
-## Limitaciones / decisión requerida
+## Limitaciones
 
-- La migración no está aplicada en producción porque esta H exige autorización productiva posterior.
-- Por esa razón no se ejecutó el E2E browser productivo de archivo real, login archivado ni viewers sobre archivos legítimos. El script browser quedó preparado para ejecutarse después del apply.
-- No se inventaron datos ni se reemplazaron documentos reales para cerrar estas pruebas.
+- No se archivó/restauró una persona real de forma persistente ni se reemplazó un documento legítimo sólo para certificar; ambas rutas quedaron probadas transaccionalmente con `ROLLBACK`.
+- El E2E con archivo documental legítimo permanece diferido hasta disponer de un insumo autorizado. No se inventaron datos ni se alteró evidencia real.
 
 ## ADMIN AFFILIATE ARCHIVE AND DIGITAL FILE RESULT
 
@@ -113,7 +123,7 @@ Canonical affiliate authority: public.affiliates
 Archive model: SOFT_DELETE / ARCHIVE
 Second affiliate table: NO
 Hard delete: NO
-Archived screen: PASS (local/build; productive E2E pending authorization)
+Archived screen: PASS (local/build + backend productivo)
 Archive action: PASS (transactional rollback)
 Restore: PASS (transactional rollback)
 Same affiliate_id preserved: PASS
@@ -126,22 +136,22 @@ Archived self-service blocked: PASS — central backend contract
 Backend enforcement: PASS
 Archived duplicate detection: PASS
 Active duplicate detection: PASS
-Digital expediente: PASS (local/build; productive file E2E pending authorization)
-Image thumbnails: PASS (implementation/static; productive file E2E pending authorization)
-Image viewer: PASS (shared viewer/static; productive file E2E pending authorization)
-PDF viewer: PASS (shared viewer/static; productive file E2E pending authorization)
+Digital expediente: PASS (local/build + backend productivo; archivo legítimo diferido)
+Image thumbnails: PASS (implementation/static; archivo legítimo diferido)
+Image viewer: PASS (shared viewer/static; archivo legítimo diferido)
+PDF viewer: PASS (shared viewer/static; archivo legítimo diferido)
 Document upload: PASS (existing authority preserved)
 Document replacement: PASS (writer/recovery dry-run; legitimate-file E2E pending authorization)
 Audit trail: PASS
-RLS/security: PASS dry-run
+RLS/security: PASS applied/live
 Cross-user: DENIED by existing separate admin/self document contracts
 Data loss: 0
 Google writes: 0
 Unexpected files: 0
-Migration required: YES — 20260901000200
-Production authorization required: YES
+Migration required: APPLIED — 20260901000200
+Production authorization required: NO — authorization consumed for exact migration
 Commit: see final handoff SHA
 origin/main: see final handoff SHA
 Push: see final handoff
-Final verdict: PASS_WITH_OWNER_DECISION
+Final verdict: PASS
 ```

@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260901000200 — archivo reversible de afiliados y Expediente Digital Admin
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración agregó metadata de archivo sobre la misma fila de `public.affiliates`, RPC auditadas de archivo/restauración/listado, exclusión de identidad efectiva e impersonación, guard backend de nuevas solicitudes y reemplazo documental versionado. No archivó afiliados, no modificó filas de negocio y preservó 947 afiliados, 3,434 documentos, 15 solicitudes y 5 eventos administrativos.
+
+Forward, RLS/permisos, matriz de archivo/restauración y recovery completo pasaron en transacciones con `ROLLBACK`; las pruebas persistentes quedaron en cero. GitHub Pages sobre `dfa9d9016531f2175c78a15b26e2e6925a0135cc` autenticó correctamente contra producción después del apply. El recovery restaura las definiciones previas y retira sólo objetos aditivos mientras no exista actividad posterior; no debe ejecutarse después de un archivo, restauración, reemplazo documental u otra actividad administrativa legítima.
+
 ## 20260901000100 — validación Tarjeta OR CLABE en Depósito
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración no modificó ninguna de las 504 cuentas: amplía sólo el constraint para admitir altas CLABE-only y reemplaza `save_affiliate_deposit_account` con Banco + (Tarjeta OR CLABE), validando ambos cuando ambos existen. El backup técnico privado conserva definición y constraint previos.

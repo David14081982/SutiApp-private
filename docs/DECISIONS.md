@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-097 | La administración global reutiliza roles/asignaciones y responsabilidades existentes; altas Admin resuelven email confirmado a UUID, la cuenta principal queda protegida y la impersonación vuelve a exigir `affiliates.impersonate` ligado a sesión Auth. | Aceptada / ACTIVE |
 | ADR-095 | Ahorro se implementa como `SHADOW + NEW FOUNDATION`; Google conserva autoridad productiva hasta cutover separado, el ledger Supabase separa capital/rendimiento y toda importación exige snapshot certificado. | Aceptada / RAW_SHADOW_IMPORT_APPLIED / NO_CUTOVER |
 | ADR-092 | Depósito registra y reutiliza una cuenta con Banco + (Tarjeta válida OR CLABE válida); si ambas se capturan, ambas validan. Continuar exige cuenta válida seleccionada y celular de 10 dígitos. | Aceptada / ACTIVE |
 | ADR-091 | El writer de productos propios valida por delta: preserva exactamente estados históricos ya aceptados sin permitir nuevas infracciones ni crecimiento; recuperación exacta se bloquea después de actividad Admin. | Aceptada / ACTIVE |
@@ -67,6 +68,16 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-097 — Acceso administrativo global e impersonación por capacidad explícita
+
+- **Contexto:** el Panel ya tenía autoridad de roles/asignaciones, 11 responsabilidades de sección con enforcement y sesiones de impersonación, pero faltaban superficies globales de operación. Una redefinición posterior había ampliado el inicio de asistencia a cualquier administrador, contradiciendo el permiso específico de ADR-015/028.
+- **Decisión:** reutilizar las autoridades existentes. Agregar un administrador resuelve exactamente una cuenta Auth confirmada por email y persiste su UUID con el rol `principal_admin`; una asignación principal preexistente queda protegida. Roles personalizados administran `affiliates.impersonate` como capacidad independiente. Las responsabilidades se enumeran desde `admin_section_definitions` y escriben acciones exactas en `admin_section_responsibilities`.
+- **Impersonación:** iniciar exige `affiliates.impersonate`, motivo operativo de al menos 8 caracteres, afiliado activo, una sola sesión, TTL máximo 30 minutos y coincidencia con el `session_id` del JWT. La UI acota el motivo a 500 caracteres. Revocar asignación o permiso cierra y audita la sesión. `actor_real_auth_user_id`, `usuario_contexto_affiliate_id`, sesión y motivo nunca se mezclan.
+- **Seguridad/UI:** menú, sidebar y vista interna ocultan lo no autorizado, pero RPC/RLS son la barrera. RPC administrativas no conceden ejecución a `anon`; emails privilegiados, contraseñas del afiliado, `service_role` frontend, mocks y fallbacks quedan prohibidos.
+- **Límite:** no se cambian Ahorro, Préstamos, Google, Apps Script, fórmulas, tasas, saldos o amortizaciones. Las superficies de identidad no seguras para una adaptación estrecha se clasifican y permanecen sin cambio.
+- **Recuperación:** se conservan definiciones previas de las RPC; el recovery sólo procede sin auditoría administrativa o de impersonación posterior al despliegue.
+- **Aprobación:** propietario, `H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001`, 2026-09-02. Supersede únicamente la concesión de impersonación a “cualquier administrador” en ADR-051/INV-090.
 
 ### ADR-091 — Validación delta-aware del catálogo de productos
 
@@ -437,11 +448,11 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Seguridad:** tablas sin acceso directo; RLS forzada; RPC autenticadas; `auth.uid()` se vincula a `affiliates`; edición durante impersonación denegada; actor real auditado; control de versión evita sobrescritura.
 - **Recuperación:** la migración es removible únicamente cuando no existan declaraciones. Si existen, el recovery falla cerrado y exige export/backup antes de eliminar la autoridad.
 
-## ADR-051 — Plazos flexibles y solicitud asistida de préstamo (autoridad supersedida por ADR-065)
+## ADR-051 — Plazos flexibles y solicitud asistida de préstamo (autoridad de acceso supersedida por ADR-097; autoridad financiera supersedida por ADR-065)
 
 - **Contexto:** el propietario ordenó las tarjetas 6/12/18/24/“Otro” del diseño aprobado y autorizó que cualquier administrador activo tramite un préstamo para un afiliado, especialmente en atención a personas mayores.
 - **Decisión:** Supabase conserva sólo la política de selección de plazo. Google `Criterios de fondos` conserva fondo, tasa, monto máximo, máximo de pagos y reglas financieras. La Edge Function intersecta ambas autoridades y calcula server-side; el navegador sólo representa respuestas completas.
-- **Asistencia:** cualquier asignación y rol administrativos habilitados pueden iniciar un contexto de 30 minutos con motivo obligatorio. Solicitudes y nómina asistida conservan actor real, afiliado contexto, sesión y motivo.
+- **Asistencia (supersedida por ADR-097):** ya no basta cualquier asignación administrativa. Se exige `affiliates.impersonate`; se conservan actor real, afiliado contexto, sesión, motivo y TTL.
 - **Nómina:** sustituye únicamente la prohibición de escritura impersonada de ADR-050/INV-086. Una sesión válida permite capturar la declaración Supabase del afiliado; no crea talón oficial ni modifica Google.
 - **Solicitud:** `program_requests` continúa como autoridad única del alta inicial. El ítem `prestamo` sólo enruta y no replica tasas ni cálculos.
 - **Seguridad:** sin credenciales del afiliado, sin anidamiento, con RLS/RPC backend. La excepción visual sólo permite `loan` bajo contexto activo.

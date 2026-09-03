@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-09-02 — H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001
+
+- Se añadieron tres superficies focales al Panel: Administradores con alta total por email Auth confirmado, Permisos por pantalla desde las 11 definiciones backend `ENFORCED` y Tomar control por permiso explícito.
+- `admin_assignments` conserva UUID, rol, asignador, fecha y revocación; revocar no sobrescribe la metadata de asignación y la asignación principal inicial queda protegida. No se creó un sistema paralelo de roles.
+- Impersonación exige `affiliates.impersonate`, motivo y `session_id` Auth; revocar permiso/asignación cierra y audita la sesión. El banner identifica al afiliado contexto y ofrece salida explícita.
+- Menú móvil, sidebar y vista interna filtran acceso; RPC/RLS siguen siendo barrera real. Forward/recovery y matriz A–H pasaron en transacción; migración aplicada y reconciliada; Chrome real verificó desktop/móvil y denegación de usuario normal.
+- Google, Apps Script, Ahorro, Préstamos, tasas, saldos, amortización y fórmulas: `NO INTERACTION`.
+
+```text
+H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001 RESULT
+Status: PASS
+Files changed: autorización/identidad Admin; UI focal; migration/recovery; bundle/cache; tests; gobierno/evidencia; Registry
+Source-of-truth verdict: PASS — roles/asignaciones, secciones e impersonation_sessions permanecen autoridades únicas
+Invariant verdict: PASS — actor/contexto separados, permiso explícito, TTL, no anidamiento y principal protegido
+Build: PASS — bundle reproducible desde 100 fuentes; node --check PASS
+Tests: PASS — 38 contratos; forward/recovery; matriz A–H; apply reconciliation; Chrome desktop/móvil
+Security: PASS — RPC/RLS backend, sesión Auth ligada, anon y usuario normal denegados
+Legacy impact: NO INTERACTION / Google 0 / Apps Script 0 / lógica financiera 0
+Unexpected files changed: 0
+Known limitations: favoritos Marketplace y writers financieros fuera de contrato no se adaptaron
+Evidence: docs/qa/H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001-EVIDENCE.md
+```
+
 ## 2026-09-02 - H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001 / H-REQUEST-SUBMISSION-PERMANENT-GUARD-001
 
 - Se demostró que ADR-092 aceptaba Card-only/CLABE-only al guardar, mientras el writer final todavía exigía ambos. El incidente `FC8763BA` llegó a `request_writer` y PostgreSQL devolvió `DEPOSIT_ACCOUNT_UNAVAILABLE`; no creó fila parcial.

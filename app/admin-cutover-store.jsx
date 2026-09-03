@@ -38,7 +38,7 @@
       out[id]={ver:read||write,crear:write,editar:write,eliminar:write,reordenar:write};
     }); return out;
   }
-  function projectRole(r){const p=(r.admin_role_permissions||[]).map(x=>x.permission);return{id:r.id,name:r.name,desc:r.description,system:r.system_role,all:false,perms:uiPerms(p),_permissions:p};}
+  function projectRole(r){const p=(r.admin_role_permissions||[]).map(x=>x.permission);return{id:r.id,name:r.name,desc:r.description,system:r.system_role,all:r.code==='principal_admin',impersonate:p.includes('affiliates.impersonate'),perms:uiPerms(p),_permissions:p};}
   // Cada dominio se resuelve por separado: un fallo aislado no puede dejar el
   // panel completo en blanco (regresión real: un embed inválido vaciaba roles,
   // catálogos, convenios y acceso a pantallas a la vez).
@@ -81,10 +81,10 @@
   store.actingRoleId=()=>acting;
   store.actingRole=()=>roles.find(r=>r.id===acting)||roles[0]||{name:'Sin rol',perms:{}};
   store.setActingRole=id=>{acting=id;emit();};
-  store.blankRole=()=>({id:null,name:'',desc:'',system:false,perms:uiPerms([])});
+  store.blankRole=()=>({id:null,name:'',desc:'',system:false,all:false,impersonate:false,perms:uiPerms([])});
   store.roleActionCount=r=>Object.values(r.perms||{}).reduce((n,p)=>n+Object.values(p).filter(Boolean).length,0);
   store.can=(action,resource)=>{const r=store.actingRole(),p=r.perms&&r.perms[resource];return!!(p&&p[action]);};
-  function technicalPermissions(role){const out=new Set();Object.keys(role.perms||{}).forEach(id=>{const p=role.perms[id],special=specialPermissions[id];if(special){if(p.ver)out.add(special.read);if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(special.read);out.add(special.write);}return;}const bases=[resourcePermission(id)].concat(id==='convenios'?['segmentation']:[]);bases.forEach(base=>{if(p.ver)out.add(base+'.read');if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(base+'.read');out.add(base+'.write');}});});return Array.from(out);}
+  function technicalPermissions(role){const out=new Set();Object.keys(role.perms||{}).forEach(id=>{const p=role.perms[id],special=specialPermissions[id];if(special){if(p.ver)out.add(special.read);if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(special.read);out.add(special.write);}return;}const bases=[resourcePermission(id)].concat(id==='convenios'?['segmentation']:[]);bases.forEach(base=>{if(p.ver)out.add(base+'.read');if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(base+'.read');out.add(base+'.write');}});});if(role.impersonate)out.add('affiliates.impersonate');return Array.from(out);}
   store.saveRole=role=>repo.saveRole({id:role.id,name:role.name,desc:role.desc,permissions:technicalPermissions(role)}).then(load).catch(fail);
   store.removeRole=id=>repo.deleteRole(id).then(load).catch(fail);
   store.duplicateRole=id=>{const r=store.getRole(id);if(r)repo.saveRole({id:null,name:r.name+' (copia)',desc:r.desc,permissions:r._permissions||technicalPermissions(r)}).then(load).catch(fail);};

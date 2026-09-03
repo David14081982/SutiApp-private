@@ -14,13 +14,13 @@
   function ActingBanner({ onManage }) {
     const store = useStore();
     const r = store.actingRole();
-    if (r.id === 'superadmin') return null;
+    if (r.all) return null;
     return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, background: '#FFF3DC', borderBottom: '1px solid #f0e2c2', padding: '9px 14px' } },
       React.createElement('div', { style: { width: 28, height: 28, borderRadius: 8, background: '#9A6B16', color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: 'eye', size: 16, stroke: 2 })),
       React.createElement('div', { style: { flex: 1, minWidth: 0 } },
         React.createElement('div', { style: { fontSize: 12.5, fontWeight: 800, color: '#7a5410' } }, 'Vista previa como: ' + r.name),
         React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: '#9A6B16' } }, 'El panel se limita a sus permisos')),
-      React.createElement('button', { onClick: () => store.setActingRole('superadmin'), style: { border: 'none', background: '#9A6B16', color: '#fff', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, padding: '7px 12px', borderRadius: 9, cursor: 'pointer', flexShrink: 0 } }, 'Salir'));
+      React.createElement('button', { onClick: () => {const principal=store.roles().find(x=>x.all);if(principal)store.setActingRole(principal.id);}, style: { border: 'none', background: '#9A6B16', color: '#fff', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, padding: '7px 12px', borderRadius: 9, cursor: 'pointer', flexShrink: 0 } }, 'Salir'));
   }
   window.ActingBanner = ActingBanner;
 
@@ -137,6 +137,10 @@
         React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 14 } },
           A().ACTIONS.map((a) => React.createElement('span', { key: a.id, style: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: 'var(--ink-3)' } },
             React.createElement('span', { style: { width: 22, height: 22, borderRadius: 7, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', color: 'var(--ink-2)' } }, React.createElement(I, { name: a.icon, size: 13, stroke: 2 })), a.label))),
+
+        React.createElement('label',{'data-role-impersonation-permission':d.impersonate?'enabled':'disabled',style:{display:'flex',alignItems:'center',gap:11,marginBottom:14,padding:'13px 14px',borderRadius:14,background:'var(--surface)',boxShadow:'var(--neo-sm)',fontSize:13,fontWeight:800,color:'var(--ink)'}},
+          React.createElement('input',{type:'checkbox',checked:locked||Boolean(d.impersonate),disabled:locked,onChange:e=>setD(p=>Object.assign({},p,{impersonate:e.target.checked}))}),
+          React.createElement('span',null,'Tomar control de una cuenta',React.createElement('small',{style:{display:'block',marginTop:3,color:'var(--ink-3)',fontWeight:600}},'Permiso independiente · requiere motivo y dura máximo 30 minutos'))),
 
         A().RESOURCE_GROUPS.map((g) => {
           const on = openGroups[g.group];

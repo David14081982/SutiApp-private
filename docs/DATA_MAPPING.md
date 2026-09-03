@@ -239,6 +239,10 @@ Open questions: scripts, triggers, propietarios, conciliación y equivalencia fi
 
 ADR-065 mueve la autoridad financiera a Supabase: `loan_term_policy` aporta las sugerencias 6/12/18/24 y el plazo personalizado desde 1 pago; Edge/RPC intersectan esa política con el batch activo de `financial_rules`. ADR-043 conserva `financial_session_snapshots` como caché derivado filtrado por perfil, ligado a afiliado/actor/impersonación, TTL 15 minutos y sin acceso directo browser. No existe cálculo financiero frontend ni fallback Google. `program_requests` registra el alta confirmada y conserva su propio snapshot contractual inmutable.
 
+## H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001
+
+Admin `Administradores` → `AdminCutoverRepository` → `set_total_admin_by_email` → email Auth confirmado y único → UUID durable en `admin_assignments` con rol `principal_admin`, asignador y fecha. Admin `Permisos por pantalla` → registro backend `admin_section_definitions` → acciones exactas en `admin_section_responsibilities`; no existe catálogo frontend paralelo. Admin `Tomar control` → `search_affiliates_for_impersonation`/`start_affiliate_impersonation` → `impersonation_sessions` ligada a actor y `session_id` Auth → `get_effective_affiliate_id`; auditoría en `identity_audit_log`. Revocar asignación o `affiliates.impersonate` cierra la sesión. Email nunca reemplaza `numero_control` ni se convierte en autoridad de negocio.
+
 ```text
 DOMAIN: Préstamos
 Frontend: LoanScreen, Historial/Tracking, Admin Finanzas, Panel Empresa

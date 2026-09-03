@@ -304,14 +304,16 @@
   // ---------- ROOT APP ----------
   function ImpersonationBanner({ auth, onLoan }) {
     const context=auth.impersonation;
+    const affiliate=auth.affiliateView||{};
+    const affiliateName=affiliate.name||affiliate.displayName||affiliate.fullName||'el afiliado';
     const [busy,setBusy]=useState(false);
     if(!context)return null;
     const stop=async()=>{setBusy(true);try{await window.AdminRepository.stopImpersonation();}finally{setBusy(false);}};
     return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize:12,fontWeight:800,zIndex:60}},
-      React.createElement('span',null,'Contexto de afiliado activo · actor real auditado'),
+      React.createElement('span',null,'Estás viendo SutiApp como ',affiliateName,' · actor real auditado'),
       React.createElement('div',{style:{display:'flex',gap:6,alignItems:'center'}},
         React.createElement('button',{type:'button',onClick:onLoan,disabled:busy,'data-assisted-loan-cta':'',style:{border:'none',borderRadius:9,padding:'7px 10px',background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},'Solicitar préstamo'),
-        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'7px 10px',background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir')));
+        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'7px 10px',background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')));
   }
 
   function App({ auth }) {

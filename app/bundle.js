@@ -7273,11 +7273,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
-  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[];publish(permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice())})}:{phase:'denied'});return state;}
+  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access);publish(fullAccess||permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode:value.role_code||null})}:{phase:'denied'});return state;}
   function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
   function clearAccessContext(){promise=null;publish({phase:'denied'});}
-  function technical(permission) { return state.phase === 'authorized' && state.assignment.permissions.includes(permission); }
-  function sectionAction(section,action) { return state.phase === 'authorized' && state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action); }
+  function technical(permission) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.permissions.includes(permission)); }
+  function sectionAction(section,action) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action)); }
   function has(permission) {
     if(state.phase!=='authorized')return false;
     if(technical(permission))return true;
@@ -7481,18 +7481,19 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function getNewsSettings(){requirePermission('news.read');const result=await client().from('news_settings').select('id,responsible_name,responsible_title').eq('id','primary').single();if(result.error)throw result.error;return result.data;}
   async function updateNewsSettings(values){requirePermission('news.update');const result=await client().from('news_settings').update(clean(values,['responsible_name','responsible_title'])).eq('id','primary').select('id').single();if(result.error)throw result.error;return result.data;}
   async function resolveSectionResponsibility(email){requirePermission('authorization.write');const result=await client().rpc('resolve_section_responsibility_user',{p_email:String(email||'').trim()});if(result.error)throw result.error;return (result.data||[])[0]||null;}
-  async function listSectionResponsibilities(section){requirePermission('authorization.read');const result=await client().rpc('list_section_responsibilities',{p_section_key:section});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function listSectionDefinitions(){requirePermission('authorization.read');const result=await client().rpc('list_admin_section_definitions');if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function listSectionResponsibilities(section){requirePermission('authorization.read');const result=await client().rpc('list_section_responsibility_groups',{p_section_key:section});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
   async function setSectionResponsibilities(email,section,actions){requirePermission('authorization.write');const result=await client().rpc('set_section_responsibilities',{p_email:String(email||'').trim(),p_section_key:section,p_actions:actions});if(result.error)throw result.error;return result.data;}
   async function revokeSectionResponsibilities(authUserId,section){requirePermission('authorization.write');const result=await client().rpc('revoke_section_responsibilities',{p_auth_user_id:authUserId,p_section_key:section});if(result.error)throw result.error;return true;}
   async function listSectionResponsibilityAudit(section){requirePermission('authorization.read');const result=await client().rpc('list_section_responsibility_audit',{p_section_key:section});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
-  async function searchAffiliates(query){if(state.phase!=='authorized')throw new Error('ADMIN_DENIED');const result=await client().rpc('search_affiliates_for_impersonation',{p_query:String(query||'').trim()});if(result.error)throw result.error;const rows=result.data||[];if(!has('assets.read')||!window.AffiliateRepository)return Object.freeze(rows);const enriched=await Promise.all(rows.map(async(row)=>{try{const photo=await window.AffiliateRepository.getProfilePhoto(row.id);return Object.freeze(Object.assign({},row,{profilePhotoUrl:photo&&photo.signedUrl||null}));}catch(_){return Object.freeze(Object.assign({},row,{profilePhotoUrl:null}));}}));return Object.freeze(enriched);}
+  async function searchAffiliates(query){requirePermission('affiliates.impersonate');const result=await client().rpc('search_affiliates_for_impersonation',{p_query:String(query||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
   async function getAffiliateProfile(affiliateId){requirePermission('affiliates.read');const result=await client().rpc('get_affiliate_admin_profile',{p_affiliate_id:String(affiliateId)});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function updateAffiliateProfile(affiliateId,expectedVersion,patch,reason){requirePermission('affiliates.write');const result=await client().rpc('update_affiliate_admin_profile',{p_affiliate_id:String(affiliateId),p_expected_version:Number(expectedVersion),p_patch:patch||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
-  async function startImpersonation(affiliateId,reason){if(state.phase!=='authorized')throw new Error('ADMIN_DENIED');const result=await client().rpc('start_affiliate_impersonation',{p_affiliate_id:affiliateId,p_reason:String(reason||'').trim()});if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return (result.data||[])[0]||null;}
+  async function startImpersonation(affiliateId,reason){requirePermission('affiliates.impersonate');const result=await client().rpc('start_affiliate_impersonation',{p_affiliate_id:affiliateId,p_reason:String(reason||'').trim()});if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return (result.data||[])[0]||null;}
   async function stopImpersonation(){const result=await client().rpc('stop_affiliate_impersonation');if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return Boolean(result.data);}
 
   function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{bootstrap();},[]);return Object.assign({},snapshot,{retry,has});}
-  window.AdminRepository=Object.freeze({bootstrap,retry,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
+  window.AdminRepository=Object.freeze({bootstrap,retry,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionDefinitions,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
   window.useAdminAuth=useAdminAuth;
 })();
 })();
@@ -7514,6 +7515,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     saveRole:async(r)=>{const x=await run(client().rpc('save_admin_role',{p_role_id:r.id||null,p_name:r.name,p_description:r.desc||'',p_permissions:r.permissions||[]}));return x;},
     deleteRole:(id)=>run(client().rpc('delete_admin_role',{p_role_id:id})),
     assignRole:(authId,roleId,enabled)=>run(client().rpc('assign_admin_role',{p_auth_user_id:authId,p_role_id:roleId,p_enabled:enabled!==false})),
+    listAdminAssignments:()=>run(client().rpc('list_admin_assignments')),
+    addTotalAdmin:(email)=>run(client().rpc('set_total_admin_by_email',{p_email:String(email||'').trim()})),
+    revokeAdmin:(authId)=>run(client().rpc('revoke_admin_assignment',{p_auth_user_id:authId})),
     listSegments:()=>list('segmentation_catalog_entries','id,catalog_type,code,label,enabled,sort_order,source_sheet,source_range,source_snapshot_hash',q=>q.order('catalog_type').order('sort_order')),
     saveSegment:(r)=>upsert('segmentation_catalog_entries',r,'catalog_type,code'),
     deleteSegment:(id)=>remove('segmentation_catalog_entries',id),
@@ -23701,7 +23705,8 @@ Object.assign(window, {
       name: r.name,
       desc: r.description,
       system: r.system_role,
-      all: false,
+      all: r.code === 'principal_admin',
+      impersonate: p.includes('affiliates.impersonate'),
       perms: uiPerms(p),
       _permissions: p
     };
@@ -23763,6 +23768,8 @@ Object.assign(window, {
     name: '',
     desc: '',
     system: false,
+    all: false,
+    impersonate: false,
     perms: uiPerms([])
   });
   store.roleActionCount = r => Object.values(r.perms || {}).reduce((n, p) => n + Object.values(p).filter(Boolean).length, 0);
@@ -23793,6 +23800,7 @@ Object.assign(window, {
         }
       });
     });
+    if (role.impersonate) out.add('affiliates.impersonate');
     return Array.from(out);
   }
   store.saveRole = role => repo.saveRole({
@@ -26891,20 +26899,22 @@ Object.assign(window, {
   };
   function SectionResponsibilityPanel({
     sectionKey,
+    sectionName,
     allowedActions,
-    app
+    app,
+    expanded
   }) {
     const effectiveActions = [...new Set((allowedActions || []).concat('export'))];
-    const A = window.AdminRepository;
-    const canRead = A.has('authorization.read');
-    const canWrite = A.has('authorization.write');
+    const A = window.AdminRepository,
+      canRead = A.has('authorization.read'),
+      canWrite = A.has('authorization.write');
     const [email, setEmail] = React.useState('');
     const [resolved, setResolved] = React.useState(null);
     const [actions, setActions] = React.useState(['read']);
     const [rows, setRows] = React.useState([]);
     const [audit, setAudit] = React.useState([]);
     const [busy, setBusy] = React.useState(false);
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = React.useState(Boolean(expanded));
     const load = async () => {
       if (!canRead) return;
       const pair = await Promise.all([A.listSectionResponsibilities(sectionKey), A.listSectionResponsibilityAudit(sectionKey)]);
@@ -26924,7 +26934,7 @@ Object.assign(window, {
         setActions(found ? found.actions : ['read']);
       } catch (_) {
         setResolved(null);
-        app.toast('No se encontró una cuenta Auth confirmada');
+        app.toast('No se encontró una cuenta confirmada');
       } finally {
         setBusy(false);
       }
@@ -26936,7 +26946,7 @@ Object.assign(window, {
         await load();
         setResolved(null);
         setEmail('');
-        app.toast('Responsabilidad guardada por UUID');
+        app.toast('Responsabilidad guardada');
       } catch (_) {
         app.toast('No fue posible asignar la responsabilidad');
       } finally {
@@ -26949,6 +26959,8 @@ Object.assign(window, {
         await A.revokeSectionResponsibilities(id, sectionKey);
         await load();
         app.toast('Responsabilidad revocada');
+      } catch (_) {
+        app.toast('No fue posible revocar la responsabilidad');
       } finally {
         setBusy(false);
       }
@@ -26971,9 +26983,10 @@ Object.assign(window, {
         background: 'transparent',
         textAlign: 'left',
         fontWeight: 900,
-        color: 'var(--ink)'
+        color: 'var(--ink)',
+        cursor: 'pointer'
       }
-    }, 'Responsable de la sección · ', sectionKey.toUpperCase()), open && React.createElement('div', {
+    }, 'Responsables · ', sectionName || sectionKey), open && React.createElement('div', {
       style: {
         marginTop: 12
       }
@@ -26996,12 +27009,12 @@ Object.assign(window, {
       disabled: busy || !email.includes('@'),
       onClick: resolve
     }, 'Buscar')), resolved && React.createElement('div', {
-      'data-resolved-auth-uuid': resolved.auth_user_id,
+      'data-resolved-account': resolved.auth_user_id,
       style: {
         marginTop: 10,
         fontSize: 12
       }
-    }, React.createElement('b', null, resolved.email), ' · UUID verificado', React.createElement('div', {
+    }, React.createElement('b', null, resolved.email), React.createElement('div', {
       style: {
         display: 'flex',
         flexWrap: 'wrap',
@@ -27009,7 +27022,12 @@ Object.assign(window, {
         marginTop: 9
       }
     }, effectiveActions.map(action => React.createElement('label', {
-      key: action
+      key: action,
+      style: {
+        display: 'inline-flex',
+        gap: 4,
+        alignItems: 'center'
+      }
     }, React.createElement('input', {
       type: 'checkbox',
       checked: actions.includes(action),
@@ -27027,14 +27045,26 @@ Object.assign(window, {
         display: 'flex',
         gap: 8,
         alignItems: 'center',
-        padding: '7px 0',
-        fontSize: 12
+        padding: '9px 0',
+        fontSize: 12,
+        borderTop: '1px solid var(--line)'
       }
     }, React.createElement('span', {
       style: {
         flex: 1
       }
-    }, row.email, ' · ', (row.actions || []).join(', ')), canWrite && React.createElement('button', {
+    }, React.createElement('b', null, row.display_name || row.email), React.createElement('div', {
+      style: {
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, row.email, ' · ', (row.actions || []).map(a => labels[a] || a).join(', ')), React.createElement('div', {
+      style: {
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, 'Asignado ', new Date(row.assigned_at).toLocaleDateString(), ' por ', row.assigned_by_email || 'migración histórica')), canWrite && React.createElement('button', {
+      disabled: busy,
       onClick: () => revoke(row.auth_user_id)
     }, 'Revocar'))), !rows.length && React.createElement('div', {
       style: {
@@ -27079,7 +27109,7 @@ Object.assign(window, {
   }) {
     const store = useStore();
     const r = store.actingRole();
-    if (r.id === 'superadmin') return null;
+    if (r.all) return null;
     return React.createElement('div', {
       style: {
         display: 'flex',
@@ -27122,7 +27152,10 @@ Object.assign(window, {
         color: '#9A6B16'
       }
     }, 'El panel se limita a sus permisos')), React.createElement('button', {
-      onClick: () => store.setActingRole('superadmin'),
+      onClick: () => {
+        const principal = store.roles().find(x => x.all);
+        if (principal) store.setActingRole(principal.id);
+      },
       style: {
         border: 'none',
         background: '#9A6B16',
@@ -27703,7 +27736,36 @@ Object.assign(window, {
       name: a.icon,
       size: 13,
       stroke: 2
-    })), a.label))), A().RESOURCE_GROUPS.map(g => {
+    })), a.label))), React.createElement('label', {
+      'data-role-impersonation-permission': d.impersonate ? 'enabled' : 'disabled',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        marginBottom: 14,
+        padding: '13px 14px',
+        borderRadius: 14,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        fontSize: 13,
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: locked || Boolean(d.impersonate),
+      disabled: locked,
+      onChange: e => setD(p => Object.assign({}, p, {
+        impersonate: e.target.checked
+      }))
+    }), React.createElement('span', null, 'Tomar control de una cuenta', React.createElement('small', {
+      style: {
+        display: 'block',
+        marginTop: 3,
+        color: 'var(--ink-3)',
+        fontWeight: 600
+      }
+    }, 'Permiso independiente · requiere motivo y dura máximo 30 minutos'))), A().RESOURCE_GROUPS.map(g => {
       const on = openGroups[g.group];
       return React.createElement('div', {
         key: g.group,
@@ -48692,6 +48754,407 @@ Object.assign(window, {
   window.SavingsAdminModule = SavingsAdminModule;
 })();
 })();
+/* @@file screens-admin-access.jsx */
+(function(){
+/* Focused administration for total admins, enforced screen actions and impersonation. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    I = window.Icon;
+  const card = {
+    background: 'var(--surface)',
+    borderRadius: 18,
+    padding: 16,
+    boxShadow: 'var(--neo-sm)'
+  };
+  const input = {
+    width: '100%',
+    boxSizing: 'border-box',
+    minHeight: 44,
+    border: '1px solid var(--line)',
+    borderRadius: 12,
+    padding: '10px 12px',
+    background: 'var(--surface)',
+    color: 'var(--ink)',
+    fontFamily: 'inherit',
+    fontSize: 13
+  };
+  function page(header, title, sub, onBack, children) {
+    return h('div', null, header({
+      title,
+      sub,
+      onBack
+    }), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 18
+      }
+    }, children));
+  }
+  function message(text, tone) {
+    return text && h('div', {
+      role: tone === 'error' ? 'alert' : 'status',
+      style: {
+        marginTop: 11,
+        padding: '10px 12px',
+        borderRadius: 11,
+        background: tone === 'error' ? '#FDEAEA' : '#E7F6ED',
+        color: tone === 'error' ? '#A32921' : '#13794A',
+        fontSize: 12.5,
+        fontWeight: 750
+      }
+    }, text);
+  }
+  function assignmentCard(row, canWrite, busy, revoke) {
+    return h('article', {
+      key: row.assignment_id,
+      'data-admin-assignment': row.enabled ? 'active' : 'revoked',
+      style: Object.assign({}, card, {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 9,
+        opacity: row.enabled ? 1 : .62
+      })
+    }, h('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        display: 'grid',
+        placeItems: 'center',
+        background: row.protected_assignment ? 'var(--guinda-50)' : 'var(--surface-2)',
+        color: 'var(--guinda)'
+      }
+    }, h(I, {
+      name: row.protected_assignment ? 'shield' : 'users',
+      size: 20
+    })), h('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, h('strong', {
+      style: {
+        display: 'block',
+        fontSize: 13.5
+      }
+    }, row.display_name || row.email), h('span', {
+      style: {
+        display: 'block',
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, row.email, ' · ', row.role_name, row.enabled ? ' · Activo' : ' · Revocado'), h('span', {
+      style: {
+        display: 'block',
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, 'Asignado ', new Date(row.assigned_at).toLocaleDateString(), ' por ', row.assigned_by_email || 'migración histórica', !row.enabled && row.revoked_at ? ' · Revocado ' + new Date(row.revoked_at).toLocaleDateString() : '')), canWrite && row.enabled && !row.protected_assignment && h('button', {
+      disabled: busy,
+      onClick: () => revoke(row),
+      style: {
+        border: 'none',
+        borderRadius: 10,
+        padding: '8px 10px',
+        background: '#FDEAEA',
+        color: '#A32921',
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, 'Revocar'));
+  }
+  function AdministratorsModule({
+    app,
+    onBack,
+    header
+  }) {
+    const [email, setEmail] = React.useState(''),
+      [rows, setRows] = React.useState([]),
+      [busy, setBusy] = React.useState(false),
+      [note, setNote] = React.useState(''),
+      [error, setError] = React.useState('');
+    const canWrite = app.admin.has('authorization.write'),
+      repo = window.AdminCutoverRepository;
+    const load = React.useCallback(async () => {
+      setError('');
+      try {
+        setRows(await repo.listAdminAssignments());
+      } catch (_) {
+        setError('No fue posible consultar las asignaciones administrativas.');
+      }
+    }, []);
+    React.useEffect(() => {
+      load();
+    }, [load]);
+    const add = async () => {
+      setBusy(true);
+      setError('');
+      setNote('');
+      try {
+        await repo.addTotalAdmin(email);
+        setEmail('');
+        setNote('Administrador agregado con acceso total.');
+        await load();
+      } catch (e) {
+        const t = String(e && e.message || e);
+        setError(t.includes('SELF_ASSIGNMENT') ? 'No puedes modificar tu propia asignación.' : t.includes('NOT_FOUND') ? 'No existe una cuenta confirmada con ese correo.' : 'No fue posible agregar al administrador.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const revoke = async row => {
+      setBusy(true);
+      setError('');
+      setNote('');
+      try {
+        await repo.revokeAdmin(row.auth_user_id);
+        setNote('Acceso administrativo revocado.');
+        await load();
+      } catch (e) {
+        const t = String(e && e.message || e);
+        setError(t.includes('PROTECTED') ? 'La cuenta principal protegida no se puede revocar.' : t.includes('SELF_ASSIGNMENT') ? 'No puedes revocar tu propia cuenta.' : 'No fue posible revocar el acceso.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const form = h('section', {
+      'data-admin-assignment-form': 'total',
+      style: card
+    }, h('strong', {
+      style: {
+        fontSize: 15,
+        color: 'var(--ink)'
+      }
+    }, 'Agregar administrador'), h('p', {
+      style: {
+        fontSize: 12.5,
+        lineHeight: 1.5,
+        color: 'var(--ink-3)'
+      }
+    }, 'El correo se usa solamente para localizar una cuenta confirmada. La asignación queda vinculada de forma durable a esa cuenta.'), canWrite && h('div', {
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, h('input', {
+      value: email,
+      onChange: e => setEmail(e.target.value),
+      onKeyDown: e => {
+        if (e.key === 'Enter' && email.includes('@')) add();
+      },
+      placeholder: 'correo@dominio',
+      'aria-label': 'Correo del nuevo administrador',
+      style: input
+    }), h(window.Btn, {
+      onClick: add,
+      disabled: busy || !email.includes('@')
+    }, busy ? 'Guardando…' : 'Agregar')), message(error, 'error'), message(note, 'ok'));
+    const list = h('section', {
+      style: {
+        marginTop: 16
+      }
+    }, h('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 900,
+        color: 'var(--ink-3)',
+        letterSpacing: '.06em',
+        marginBottom: 9
+      }
+    }, 'ASIGNACIONES'), rows.map(row => assignmentCard(row, canWrite, busy, revoke)), !rows.length && !error && h('div', {
+      style: {
+        color: 'var(--ink-3)',
+        fontSize: 12
+      }
+    }, 'Sin asignaciones.'));
+    return page(header, 'Administradores', 'Acceso total resuelto por cuenta Auth confirmada', onBack, h(React.Fragment, null, form, list));
+  }
+  function ScreenPermissionsModule({
+    app,
+    onBack,
+    header
+  }) {
+    const [definitions, setDefinitions] = React.useState([]),
+      [selected, setSelected] = React.useState(''),
+      [error, setError] = React.useState('');
+    React.useEffect(() => {
+      window.AdminRepository.listSectionDefinitions().then(rows => {
+        setDefinitions(rows);
+        setSelected(current => current || rows[0] && rows[0].section_key || '');
+      }).catch(() => setError('No fue posible consultar el registro de pantallas protegido.'));
+    }, []);
+    const definition = definitions.find(row => row.section_key === selected);
+    const picker = h('section', {
+      'data-admin-screen-permissions': 'backend-registry',
+      style: card
+    }, h('label', {
+      style: {
+        display: 'block',
+        fontSize: 12,
+        fontWeight: 850,
+        color: 'var(--ink-3)',
+        marginBottom: 7
+      }
+    }, 'Pantalla o sección'), h('select', {
+      value: selected,
+      onChange: e => setSelected(e.target.value),
+      style: input
+    }, definitions.map(row => h('option', {
+      key: row.section_key,
+      value: row.section_key
+    }, row.display_name))), definition && h('p', {
+      style: {
+        fontSize: 11.5,
+        lineHeight: 1.45,
+        color: 'var(--ink-3)',
+        marginBottom: 0
+      }
+    }, 'Límite de datos: ', definition.data_boundary), message(error, 'error'));
+    const panel = definition && h('div', {
+      style: {
+        marginTop: 14
+      }
+    }, h(window.SectionResponsibilityPanel, {
+      key: definition.section_key,
+      sectionKey: definition.section_key,
+      sectionName: definition.display_name,
+      allowedActions: definition.allowed_actions,
+      expanded: true,
+      app
+    }));
+    return page(header, 'Permisos por pantalla', 'Acciones exactas sobre secciones con enforcement backend', onBack, h(React.Fragment, null, picker, panel));
+  }
+  function affiliateResult(row, selected, setSelected) {
+    return h('button', {
+      key: row.id,
+      onClick: () => setSelected(row),
+      'aria-pressed': selected && selected.id === row.id,
+      style: {
+        display: 'flex',
+        gap: 10,
+        alignItems: 'center',
+        padding: 11,
+        border: selected && selected.id === row.id ? '2px solid var(--guinda)' : '1px solid var(--line)',
+        borderRadius: 12,
+        background: 'var(--surface)',
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        cursor: 'pointer'
+      }
+    }, h(I, {
+      name: 'users',
+      size: 20
+    }), h('span', null, h('strong', {
+      style: {
+        display: 'block'
+      }
+    }, row.display_name || row.full_name || 'Afiliado'), h('small', {
+      style: {
+        color: 'var(--ink-3)'
+      }
+    }, 'Control ', row.numero_control || 'sin dato', row.email ? ' · ' + row.email : '')));
+  }
+  function ImpersonationModule({
+    app,
+    onBack,
+    header
+  }) {
+    const [query, setQuery] = React.useState(''),
+      [rows, setRows] = React.useState([]),
+      [selected, setSelected] = React.useState(null),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [note, setNote] = React.useState('');
+    const search = async () => {
+      setBusy(true);
+      setError('');
+      try {
+        setRows(await window.AdminRepository.searchAffiliates(query));
+        setSelected(null);
+      } catch (_) {
+        setError('No fue posible buscar afiliados con este permiso.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const start = async () => {
+      setBusy(true);
+      setError('');
+      setNote('');
+      try {
+        await window.AdminRepository.startImpersonation(selected.id, reason);
+        setNote('Tomar control está activo. Usa la navegación principal para ver SutiApp como ' + (selected.display_name || selected.full_name || 'el afiliado') + '.');
+        setReason('');
+      } catch (e) {
+        setError(String(e && e.message || e).includes('ALREADY_ACTIVE') ? 'Ya existe una sesión activa. Ciérrala desde el aviso superior.' : 'No fue posible iniciar la sesión. Verifica el permiso y el motivo.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const results = h('div', {
+      style: {
+        display: 'grid',
+        gap: 8,
+        marginTop: 12
+      }
+    }, rows.map(row => affiliateResult(row, selected, setSelected)));
+    const controls = selected && h(React.Fragment, null, h('textarea', {
+      value: reason,
+      onChange: e => setReason(e.target.value),
+      maxLength: 500,
+      placeholder: 'Motivo operativo (mínimo 8 caracteres)',
+      style: Object.assign({}, input, {
+        minHeight: 82,
+        resize: 'vertical',
+        marginTop: 13
+      })
+    }), h(window.Btn, {
+      full: true,
+      onClick: start,
+      disabled: busy || reason.trim().length < 8,
+      style: {
+        marginTop: 9
+      }
+    }, busy ? 'Activando…' : 'Tomar control'));
+    const body = h('section', {
+      'data-admin-impersonation': 'explicit-permission',
+      style: card
+    }, h('p', {
+      style: {
+        fontSize: 12.5,
+        lineHeight: 1.5,
+        color: 'var(--ink-3)'
+      }
+    }, 'Busca por nombre, número de control o correo. Nunca se solicita ni se cambia la contraseña del afiliado.'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, h('input', {
+      value: query,
+      onChange: e => setQuery(e.target.value),
+      onKeyDown: e => {
+        if (e.key === 'Enter' && query.trim().length >= 2) search();
+      },
+      placeholder: 'Nombre, control o correo',
+      style: input
+    }), h(window.Btn, {
+      onClick: search,
+      disabled: busy || query.trim().length < 2
+    }, 'Buscar')), results, controls, message(error, 'error'), message(note, 'ok'));
+    return page(header, 'Tomar control', 'Actor real auditado · motivo obligatorio · máximo 30 minutos', onBack, body);
+  }
+  window.AdministratorsModule = AdministratorsModule;
+  window.ScreenPermissionsModule = ScreenPermissionsModule;
+  window.ImpersonationModule = ImpersonationModule;
+})();
+})();
 /* @@file screens-admin.jsx */
 (function(){
 /* screens-admin.jsx — Panel Administrativo: gate de acceso, menú de módulos
@@ -48811,6 +49274,24 @@ Object.assign(window, {
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [{
+    id: 'administrators',
+    label: 'Administradores',
+    icon: 'shield',
+    desc: 'Altas, asignaciones y revocación',
+    ready: true
+  }, {
+    id: 'screen_permissions',
+    label: 'Permisos por pantalla',
+    icon: 'lock',
+    desc: 'Responsables y acciones exactas',
+    ready: true
+  }, {
+    id: 'impersonation',
+    label: 'Tomar control',
+    icon: 'eye',
+    desc: 'Atención temporal como afiliado',
+    ready: true
+  }, {
     id: 'affiliates',
     label: 'Afiliados',
     icon: 'users',
@@ -48994,6 +49475,9 @@ Object.assign(window, {
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    administrators: 'authorization.read',
+    screen_permissions: 'authorization.read',
+    impersonation: 'affiliates.impersonate',
     affiliates: 'affiliates.read',
     data_exports: 'data_exports.read',
     branding: 'assets.read',
@@ -49038,6 +49522,11 @@ Object.assign(window, {
     marketplace: 'marketplace'
   });
   const ADMIN_DESKTOP_GROUPS = Object.freeze([{
+    id: 'access_control',
+    label: 'Acceso y control',
+    icon: 'shield',
+    modules: ['administrators', 'screen_permissions', 'impersonation']
+  }, {
     id: 'people',
     label: 'Personas y operación',
     icon: 'users',
@@ -49085,26 +49574,29 @@ Object.assign(window, {
     };
     const sectionActions = assignment.sectionActions || [];
     const sectionOnly = (assignment.permissions || []).length === 0 && sectionActions.length > 0;
-    const candidates = sectionOnly ? MODULES.filter(m => m.id === 'data_exports' ? sectionActions.some(x => x.action === 'export') : [].concat(SECTION_MODULE[m.id] || []).some(key => app.admin.has(key + '.read'))) : MODULES;
+    const candidates = MODULES;
     const stateFor = m => {
       let permission = MODULE_PERMISSION[m.id];
       if (m.id === 'education' && sectionOnly) permission = app.admin.has('education.read') ? 'education.read' : 'tutorials.read';
       if (m.id === 'convenios' && sectionOnly) permission = 'agreements.read';
+      const sectionKeys = [].concat(SECTION_MODULE[m.id] || []);
+      const sectionAccess = sectionKeys.some(key => sectionActions.some(entry => entry.section_key === key));
       const sectionExport = m.id === 'data_exports' && sectionActions.some(x => x.action === 'export');
       const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
-      const canView = sectionExport || (permission ? app.admin.has(permission) : productive);
+      const canView = sectionExport || sectionAccess || (permission ? app.admin.has(permission) : productive);
       const usable = productive && canView;
-      const desktopCanView = sectionExport || (permission ? app.admin.has(permission) : productive);
+      const desktopCanView = canView;
       const desktopUsable = productive && desktopCanView;
       return {
         permission,
+        sectionAccess,
         sectionExport,
         productive,
         canView,
         usable,
         desktopCanView,
         desktopUsable,
-        openable: usable || Boolean(m.classification),
+        openable: usable,
         badge: MODULE_BADGE[m.classification]
       };
     };
@@ -49112,7 +49604,7 @@ Object.assign(window, {
       assignment,
       sectionOnly,
       stateFor,
-      mobileModules: candidates,
+      mobileModules: candidates.filter(m => stateFor(m).canView),
       desktopModules: candidates.filter(m => stateFor(m).desktopUsable)
     };
   }
@@ -50956,6 +51448,11 @@ Object.assign(window, {
       return null;
     }
     const access = adminModuleAccess(app);
+    const activeModule = MODULES.find(m => m.id === view);
+    if (activeModule && !access.stateFor(activeModule).canView) {
+      setView('menu');
+      return null;
+    }
     const headerFn = props => React.createElement(desktop ? AdminDesktopHeader : AdminHeader, props);
     const openView = id => {
       setViewContext(null);
@@ -50967,7 +51464,19 @@ Object.assign(window, {
     };
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
-    if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, {
+    if (view === 'administrators') body = React.createElement(window.AdministratorsModule, {
+      app,
+      onBack: () => openView('menu'),
+      header: headerFn
+    });else if (view === 'screen_permissions') body = React.createElement(window.ScreenPermissionsModule, {
+      app,
+      onBack: () => openView('menu'),
+      header: headerFn
+    });else if (view === 'impersonation') body = React.createElement(window.ImpersonationModule, {
+      app,
+      onBack: () => openView('menu'),
+      header: headerFn
+    });else if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, {
       app,
       initialAffiliateId: affiliateContext && affiliateContext.affiliateId,
       onBack: () => openView('menu'),
@@ -63040,6 +63549,8 @@ Object.assign(window, {
     onLoan
   }) {
     const context = auth.impersonation;
+    const affiliate = auth.affiliateView || {};
+    const affiliateName = affiliate.name || affiliate.displayName || affiliate.fullName || 'el afiliado';
     const [busy, setBusy] = useState(false);
     if (!context) return null;
     const stop = async () => {
@@ -63066,7 +63577,7 @@ Object.assign(window, {
         fontWeight: 800,
         zIndex: 60
       }
-    }, React.createElement('span', null, 'Contexto de afiliado activo · actor real auditado'), React.createElement('div', {
+    }, React.createElement('span', null, 'Estás viendo SutiApp como ', affiliateName, ' · actor real auditado'), React.createElement('div', {
       style: {
         display: 'flex',
         gap: 6,
@@ -63103,7 +63614,7 @@ Object.assign(window, {
         fontWeight: 850,
         cursor: 'pointer'
       }
-    }, busy ? 'Cerrando…' : 'Salir')));
+    }, busy ? 'Cerrando…' : 'Salir de tomar control')));
   }
   function App({
     auth

@@ -28,6 +28,9 @@
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [
+    { id: 'administrators', label: 'Administradores', icon: 'shield', desc: 'Altas, asignaciones y revocación', ready: true },
+    { id: 'screen_permissions', label: 'Permisos por pantalla', icon: 'lock', desc: 'Responsables y acciones exactas', ready: true },
+    { id: 'impersonation', label: 'Tomar control', icon: 'eye', desc: 'Atención temporal como afiliado', ready: true },
     { id: 'affiliates', label: 'Afiliados', icon: 'users', desc: 'Padrón, expedientes y solicitudes', ready: true },
     { id: 'data_exports', label: 'Datos y respaldos', icon: 'download', desc: 'XLSX y CSV por dominio autorizado', ready: true },
     { id: 'popups', label: 'Pop-ups por pantalla', icon: 'message', desc: 'Anuncios y avisos configurables', ready: true },
@@ -63,10 +66,12 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
     affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
+    { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','savings','fondos','fincat','flujos','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
@@ -80,20 +85,22 @@
     const assignment=app.admin.assignment||{permissions:[],sectionActions:[]};
     const sectionActions=assignment.sectionActions||[];
     const sectionOnly=(assignment.permissions||[]).length===0&&sectionActions.length>0;
-    const candidates=sectionOnly?MODULES.filter((m)=>m.id==='data_exports'?sectionActions.some((x)=>x.action==='export'):[].concat(SECTION_MODULE[m.id]||[]).some((key)=>app.admin.has(key+'.read'))):MODULES;
+    const candidates=MODULES;
     const stateFor=(m)=>{
       let permission=MODULE_PERMISSION[m.id];
       if(m.id==='education'&&sectionOnly)permission=app.admin.has('education.read')?'education.read':'tutorials.read';
       if(m.id==='convenios'&&sectionOnly)permission='agreements.read';
+      const sectionKeys=[].concat(SECTION_MODULE[m.id]||[]);
+      const sectionAccess=sectionKeys.some((key)=>sectionActions.some((entry)=>entry.section_key===key));
       const sectionExport=m.id==='data_exports'&&sectionActions.some((x)=>x.action==='export');
       const productive=m.ready||String(m.classification||'').startsWith('PRODUCTIVE_');
-      const canView=sectionExport||(permission?app.admin.has(permission):productive);
+      const canView=sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
       const usable=productive&&canView;
-      const desktopCanView=sectionExport||(permission?app.admin.has(permission):productive);
+      const desktopCanView=canView;
       const desktopUsable=productive&&desktopCanView;
-      return {permission,sectionExport,productive,canView,usable,desktopCanView,desktopUsable,openable:usable||Boolean(m.classification),badge:MODULE_BADGE[m.classification]};
+      return {permission,sectionAccess,sectionExport,productive,canView,usable,desktopCanView,desktopUsable,openable:usable,badge:MODULE_BADGE[m.classification]};
     };
-    return {assignment,sectionOnly,stateFor,mobileModules:candidates,desktopModules:candidates.filter((m)=>stateFor(m).desktopUsable)};
+    return {assignment,sectionOnly,stateFor,mobileModules:candidates.filter((m)=>stateFor(m).canView),desktopModules:candidates.filter((m)=>stateFor(m).desktopUsable)};
   }
 
   function AdminMenu({ app, onOpen, desktop, modules, header }) {
@@ -477,13 +484,18 @@
     if (!allowedViews.includes(view)) { setView('menu'); return null; }
 
     const access=adminModuleAccess(app);
+    const activeModule=MODULES.find((m)=>m.id===view);
+    if(activeModule&&!access.stateFor(activeModule).canView){setView('menu');return null;}
     const headerFn = (props) => React.createElement(desktop?AdminDesktopHeader:AdminHeader, props);
     const openView=(id)=>{setViewContext(null);setView(id);};
     const affiliateContext=viewContext&&viewContext.from==='affiliates'?viewContext:null;
     const backFromAffiliateLink=()=>{if(affiliateContext)setView('affiliates');else openView('menu');};
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
-    if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, { app, initialAffiliateId:affiliateContext&&affiliateContext.affiliateId, onBack: () => openView('menu'), header: headerFn, onOpenModule:(id,context)=>{setViewContext(context||null);setView(id);} });
+    if (view === 'administrators') body = React.createElement(window.AdministratorsModule, { app, onBack: () => openView('menu'), header: headerFn });
+    else if (view === 'screen_permissions') body = React.createElement(window.ScreenPermissionsModule, { app, onBack: () => openView('menu'), header: headerFn });
+    else if (view === 'impersonation') body = React.createElement(window.ImpersonationModule, { app, onBack: () => openView('menu'), header: headerFn });
+    else if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, { app, initialAffiliateId:affiliateContext&&affiliateContext.affiliateId, onBack: () => openView('menu'), header: headerFn, onOpenModule:(id,context)=>{setViewContext(context||null);setView(id);} });
     else if (view === 'data_exports') body = React.createElement(window.DataExportsModule, { app, onBack: () => setView('menu'), header: headerFn });
     else if (view === 'branding') body = React.createElement(window.BrandingModule, { app, onBack: () => setView('menu'), header: headerFn, canEdit: app.admin.has('assets.write') });
     else if (view === 'noticias') body = React.createElement(window.NewsModule, { app, onBack: () => setView('menu'), header: headerFn });

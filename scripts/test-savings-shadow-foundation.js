@@ -81,8 +81,10 @@ for (const file of ['savings-repository.js', 'savings-store.jsx', 'screens-savin
   assert.ok(bundle.includes(`/* @@file ${file} */`), `bundle missing ${file}`);
 }
 
-for (const marker of ['data-savings-screen', 'data-savings-total', 'data-savings-capital', 'data-savings-yield', 'data-savings-year', 'data-savings-year-subtotal', 'data-savings-history', 'data-savings-withdrawals', 'data-savings-action', 'data-savings-detail']) assert.ok(user.includes(marker), `user marker missing ${marker}`);
+for (const marker of ['data-savings-screen', 'data-savings-total', 'data-savings-year', 'data-savings-year-subtotal', 'data-savings-history', 'data-savings-withdrawals', 'data-savings-action', 'data-savings-detail']) assert.ok(user.includes(marker), `user marker missing ${marker}`);
 for (const copy of ['Saldo actual', 'Detalle por año', 'PERIODO CERRADO', 'Subtotal a Junio ', 'Subtotal hasta ', 'Tu ahorro', 'Retirar ahorro', 'Modificar monto', 'Historial', 'Retiros', 'Beneficiarios', 'Más detalles']) assert.ok(user.includes(copy), `visual contract missing ${copy}`);
+assert.ok(user.includes("className: 'sav-balance sav-balance-summary'") && user.includes('text-align:center') && user.includes('font-size:clamp(36px,10vw,42px)'), 'balance-only card must be centered with an enlarged total');
+assert.ok(!user.includes("className: 'sav-split'") && !user.includes('data-savings-capital') && !user.includes('data-savings-yield'), 'top balance card must not repeat capital or yield');
 assert.ok(user.includes('canWriteRequests') && user.includes('disabled: !enabled') && user.includes("data-savings-enabled': String(enabled)"), 'disabled savings actions must remain visible and disabled');
 assert.ok(repo.includes('get_self_savings_live_readonly') && correction.includes('v_balance_evidence') && correction.includes("#>>'{legacy_reported_balance,value}'"), 'certified Q reader correction missing');
 for (const forbiddenCopy of ['No reportado en Q', 'Google legacy', 'SHADOW certificado', 'DP:DW', 'AA:DO', 'Identidad legacy', 'PROCESS histórico', 'PROCESS actual', 'FORMULA', 'MANUAL', 'Supabase', 'evidencia legacy']) assert.ok(!user.includes(forbiddenCopy), `technical user copy leaked: ${forbiddenCopy}`);

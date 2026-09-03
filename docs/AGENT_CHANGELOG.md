@@ -190,6 +190,29 @@ Known limitations: E2E persistente con archivo/restauración real y reemplazo do
 Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
 ```
 
+## 2026-09-02 — H-SAVINGS-BALANCE-CARD-VISUAL-001
+
+- La card superior de Ahorrar muestra únicamente Saldo actual y el monto, centrados y con importe responsivo mayor; el detalle anual conserva Ahorro/Rendimiento.
+- Fuente, bundle, cache-buster y pruebas focales fueron actualizados sin tocar repositorio, RPC, datos, Google ni cálculos.
+- Build, autoridad read-only, Chrome local en cuatro viewports y matriz global de GitHub Pages pasaron. El cierre queda bloqueado porque la matriz global local repite `DOCUMENT_PREVIEW_UNAVAILABLE` en una frontera documental ajena al cambio.
+
+```text
+H-SAVINGS-BALANCE-CARD-VISUAL-001 RESULT
+Status: BLOCKED
+Files changed: pantalla Ahorro; bundle/cache; pruebas; evidencia
+Source-of-truth verdict: PASS — saldo Q y get_self_savings_live_readonly intactos
+Invariant verdict: PASS focal; INV-173 global local bloqueado
+Build: PASS — 99 fuentes
+Tests: PASS focal y GitHub Pages; FAIL matriz global local por DOCUMENT_PREVIEW_UNAVAILABLE
+Security: NOT APPLICABLE al cambio; controles self/cross-user PASS
+Legacy impact: NO INTERACTION / Google read 0 / write 0 / cálculos 0
+Unexpected files changed: 0
+Known limitations: no se debilitó ni amplió la frontera documental para forzar el gate
+Evidence: docs/qa/H-SAVINGS-BALANCE-CARD-VISUAL-001-EVIDENCE.md
+```
+
+Revisión arquitectónica independiente: `BLOCKED`. La implementación visual, autoridad y pruebas focales son correctas, pero INV-173 impide cerrar `PASS` mientras la matriz global del build local repita `DOCUMENT_PREVIEW_UNAVAILABLE`; GitHub Pages permanece `PASS`. No requiere decisión del propietario ni autoriza relajar seguridad documental.
+
 ## 2026-09-01 — H-SAVINGS-LEGACY-SYSTEM-FORENSIC-AUDIT-001
 
 - La auditoría forense read-only cubrió las nueve hojas live de Ahorro, fórmulas, identidad agregada contra `public.affiliates`, el Apps Script ligado identificable y evidencia Drive de Glide/PDF/backups. Google, Supabase, Glide y Make tuvieron cero escrituras; no se ejecutaron triggers ni conciliaciones.

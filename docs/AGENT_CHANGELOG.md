@@ -1,5 +1,26 @@
 # Bitácora de agentes
 
+## 2026-09-02 - H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001 / H-REQUEST-SUBMISSION-PERMANENT-GUARD-001
+
+- Se demostró que ADR-092 aceptaba Card-only/CLABE-only al guardar, mientras el writer final todavía exigía ambos. El incidente `FC8763BA` llegó a `request_writer` y PostgreSQL devolvió `DEPOSIT_ACCOUNT_UNAVAILABLE`; no creó fila parcial.
+- La migración productiva alineó únicamente writer/snapshot, sin DML de negocio. Edge v33 clasifica el error y un probe público sin PII bloquea incompatibilidades antes del deploy; Pages comprueba repository/success/backend después.
+- E2E real local y Pages pasaron con solicitud, folio `SR-2026-000079`, success, 42 confetti, doble clic/retry/refresh idempotentes, error 409 controlado, self-only y cleanup exacto. Membership y productos usan writers distintos.
+
+```text
+H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001 RESULT
+Status: PASS
+Files changed: migración/recovery focal; clasificación Edge; guards/tests focales; workflow; gobierno/Registry/evidencia
+Source-of-truth verdict: PASS — program_requests/affiliate_bank_accounts/snapshots permanecen autoridades únicas
+Invariant verdict: PASS — contrato Banco+(Tarjeta OR CLABE), atomicidad, self-only e idempotencia
+Build: PASS — sintaxis, artefacto Pages y contrato publicado
+Tests: PASS — E2E local/producción, error real, doble clic, retry, refresh, guard pre/post deploy
+Security: PASS — writer service-only; RLS/actor efectivo; CI sólo publishable key; sin detalle SQL
+Legacy impact: NOT APPLICABLE — Google reads/writes 0; fórmulas, triggers, saldos y Apps Script intactos
+Unexpected files changed: 0
+Known limitations: el E2E transaccional usa runner release local porque Actions no almacena credenciales QA ni token privilegiado
+Evidence: docs/qa/H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001-EVIDENCE.md
+```
+
 ## 2026-09-02 - H-SAVINGS-USER-UI-LIVE-READONLY-001
 
 - Finanzas → Ahorrar abre `#/savings`, Back vuelve a Finanzas y refresh conserva la vista. La pantalla adopta el contrato visual owner —tarjeta granate de saldo, resumen histórico y detalle por año— sin copiar sus datos simulados; Q `NULL` se muestra honestamente como “No reportado en Q”.

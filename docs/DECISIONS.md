@@ -814,3 +814,14 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Seguridad:** el gate usa únicamente URL y publishable key ya públicas; nunca requiere Access Token, Secret Key, DB password o `service_role`. Una respuesta exitosa para `anon` se considera fallo de seguridad.
 - **Alcance:** Auth, AffiliateRepository y despliegue Pages. Cero cambios de schema, datos, documentos, Google, Apps Script, ahorro, préstamos, Marketplace o Panel Empresarial.
 - **Aprobación:** corrección y análisis causal solicitados expresamente por el propietario, 2026-09-01.
+
+## ADR-096 — Contrato final de Depósito y guard crítico de solicitudes
+
+- **Causa demostrada:** ADR-092 habilitó Banco + (Tarjeta OR CLABE) en `save_affiliate_deposit_account`, pero `create_validated_financial_program_request_bank_required` y `loan_deposit_optional_bank_coherence` conservaron el contrato anterior Banco + Tarjeta + CLABE. El incidente `fc8763ba-47c7-42e9-8cc1-9c52cf8e373f` llegó a `request_writer`, SQLSTATE `42501`, detalle interno `DEPOSIT_ACCOUNT_UNAVAILABLE`; la cuenta real era `CARD_ONLY` y la transacción no creó solicitud parcial.
+- **Corrección:** el writer y el snapshot final aceptan Banco + al menos un instrumento válido. Si tarjeta o CLABE están presentes, cada uno se valida de forma independiente. No se reescriben cuentas, solicitudes ni historia.
+- **Autoridad e idempotencia:** `program_requests` conserva la solicitud y `loan_request_deposit_snapshots` su snapshot privado. `loanSessionConfirm` sigue siendo la frontera Edge y `create_validated_financial_program_request` el writer service-only. La unicidad `(affiliate_id,idempotency_key)` impide duplicados por doble clic, reintento o refresh.
+- **Guard:** `get_request_submission_backend_contract()` expone sólo metadata no sensible del contrato. GitHub Pages bloquea antes del deploy si backend, snapshot, writer, respuesta o idempotencia no coinciden, y comprueba después del deploy el repository y success contract publicados. El E2E de release autenticado crea y limpia únicamente su solicitud QA controlada.
+- **Seguridad:** el guard CI usa sólo URL y publishable key; no incorpora `service_role`, password DB ni Access Token. Anónimo/autenticado continúan sin ejecutar el writer. El usuario efectivo y RLS/backend deciden el afiliado; el payload no puede elegir otro.
+- **Impacto:** todas las variantes de Suti Préstamo que comparten `loanSessionConfirm` quedan corregidas. Membership, `ProgramRequestRepository.create` y pagos reales de `program_catalog_items` usan writers distintos y no estaban afectados.
+- **Límites:** cero rediseño, cero cambio de cálculos/fondos/documentos/Marketplace/Google, cero suites globales. `request-submission-success.jsx` y su confeti se preservan.
+- **Aprobación:** `H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001` y `H-REQUEST-SUBMISSION-PERMANENT-GUARD-001`, instrucción explícita del propietario, 2026-09-02.

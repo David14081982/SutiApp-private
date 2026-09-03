@@ -30,6 +30,12 @@ jobs:
           SUTIAPP_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUTIAPP_SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/verify-auth-deployment-contract-live.js
 
+      - name: Verify critical request backend compatibility
+        env:
+          SUTIAPP_SUPABASE_URL: ${{ secrets.SUTIAPP_SUPABASE_URL }}
+          SUTIAPP_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUTIAPP_SUPABASE_PUBLISHABLE_KEY }}
+        run: node scripts/verify-request-submission-deployment-contract-live.js
+
       - name: Build public artifact
         env:
           SUTIAPP_SUPABASE_URL: ${{ secrets.SUTIAPP_SUPABASE_URL }}
@@ -47,3 +53,9 @@ jobs:
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify critical request production deployment
+        env:
+          SUTIAPP_SUPABASE_URL: ${{ secrets.SUTIAPP_SUPABASE_URL }}
+          SUTIAPP_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUTIAPP_SUPABASE_PUBLISHABLE_KEY }}
+        run: node scripts/verify-request-submission-production-live.js "${{ steps.deployment.outputs.page_url }}"

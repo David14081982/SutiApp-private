@@ -13,6 +13,10 @@ const operations=read('app/operations-store.jsx');
 const success=read('app/request-submission-success.jsx');
 const loan=read('app/screens-loan.jsx');
 const financial=read('app/financial-legacy-repository.js');
+const criticalMigration=read('supabase/migrations/20260903000100_request_submission_deposit_contract.sql');
+const deployGuard=read('scripts/verify-request-submission-deployment-contract-live.js');
+const productionGuard=read('scripts/verify-request-submission-production-live.js');
+const workflow=read('.github/workflows/deploy-pages.yml');
 
 assert.match(migration,/auth\.uid\(\) is null and coalesce\(auth\.role\(\),''\)<>'service_role'/);
 assert.match(migration,/create or replace function public\.list_self_program_request_history\(\)/);
@@ -42,9 +46,20 @@ assert.match(edge,/stage, internal_code: failure\.internalCode, postgres_code: f
 assert.match(edge,/confirmed_amount: Number\(request\.requested_amount\)/);
 assert.match(edge,/status: request\.status/);
 assert.match(edge,/googleResolutionCount: 0/);
+for(const code of ['DEPOSIT_ACCOUNT_UNAVAILABLE','INVALID_DEPOSIT_ACCOUNT','INVALID_NOTIFICATION_PHONE'])assert.match(edge,new RegExp(code));
 const confirmBoundary=edge.slice(edge.indexOf('async function confirmPersonalizedLoanSession'),edge.indexOf('async function approveRequest'));
 assert.doesNotMatch(confirmBoundary,/body: \{ error: error instanceof Error \? error\.message/);
 assert.match(financial,/failure\.correlationId = payload\.correlation_id/);
+assert.match(criticalMigration,/BANK_AND_CARD_OR_CLABE/);
+assert.match(criticalMigration,/card_number is null or card_number ~/);
+assert.match(criticalMigration,/clabe is null or public\.is_valid_clabe\(clabe\)/);
+assert.match(criticalMigration,/affiliate_id\+idempotency_key/);
+assert.match(deployGuard,/get_request_submission_backend_contract/);
+assert.match(workflow,/verify-request-submission-deployment-contract-live\.js/);
+assert.match(productionGuard,/financial-legacy-repository\.js/);
+assert.match(productionGuard,/RequestSubmissionSuccess/);
+assert.match(productionGuard,/backendCompatibility/);
+assert.match(workflow,/verify-request-submission-production-live\.js/);
 assert.doesNotMatch(loan,/No pudimos enviar tu solicitud\. Revisa la información e intenta nuevamente\./);
 assert.match(loan,/falla temporal del servicio/);
 

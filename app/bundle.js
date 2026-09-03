@@ -62070,6 +62070,7 @@ Object.assign(window, {
   let resolutionPromise = null;
   let resolutionUserId = null;
   let blockedPhase = null;
+  let recoveryActive = false;
   let state = Object.freeze({
     phase: 'loading',
     session: null,
@@ -62129,6 +62130,23 @@ Object.assign(window, {
     return requestedAuthFlow() === 'activation' || Boolean(session && session.user && session.user.user_metadata && session.user.user_metadata.sutiapp_activation === true);
   }
 
+  function recoveryRequested() {
+    return requestedAuthFlow() === 'recovery';
+  }
+
+  function holdPasswordRecovery(session, errorCode) {
+    const nextSession = session || state.session || null;
+    if (!recoveryActive) {
+      recoveryActive = true;
+      // A normal resolution may already be awaiting repositories when the
+      // recovery callback arrives. Invalidate it so it cannot publish an
+      // authenticated state after PASSWORD_RECOVERY.
+      resolutionVersion += 1;
+    }
+    if (state.phase === 'recovering' && !errorCode) return;
+    publish({ phase: 'password_recovery', session: nextSession, errorCode: errorCode || null });
+  }
+
   function clearAuthFlowUrl() {
     try {
       const url = new URL(window.location.href);
@@ -62153,6 +62171,10 @@ Object.assign(window, {
 
   async function resolveSessionOnce(session) {
     const version = ++resolutionVersion;
+    if ((recoveryActive || recoveryRequested()) && session && session.user) {
+      holdPasswordRecovery(session);
+      return;
+    }
     if (!session || !session.user) {
       publish({ phase: blockedPhase || 'unauthenticated' });
       return;
@@ -62189,7 +62211,7 @@ Object.assign(window, {
       const adminContext=adminResult.data||{};
       if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
       const isAdmin = Boolean(adminContext.role_code||adminContext.full_access||(adminContext.section_actions||[]).length);
-      if (version !== resolutionVersion) return;
+      if (version !== resolutionVersion || recoveryActive) return;
       if (!affiliate && !isAdmin) {
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;
@@ -62221,6 +62243,10 @@ Object.assign(window, {
   }
 
   function resolveSession(session) {
+    if ((recoveryActive || recoveryRequested()) && session && session.user) {
+      holdPasswordRecovery(session);
+      return Promise.resolve();
+    }
     const userId = session && session.user && session.user.id || null;
     if (userId && resolutionPromise && resolutionUserId === userId) return resolutionPromise;
     const current = resolveSessionOnce(session);
@@ -62233,9 +62259,13 @@ Object.assign(window, {
   function listenForAuthChanges(authClient) {
     if (authSubscription) return;
     const result = authClient.auth.onAuthStateChange((event, session) => {
+      const recoveryLockedAtDelivery = recoveryActive || recoveryRequested() || event === 'PASSWORD_RECOVERY';
       setTimeout(() => {
         if (event === 'SIGNED_OUT') {
           resolutionVersion += 1;
+          const wasRecovering = recoveryActive;
+          recoveryActive = false;
+          if (wasRecovering) clearAuthFlowUrl();
           if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
           // A recovery update publishes its success notice immediately after
           // signOut. Preserve it when Supabase delivers SIGNED_OUT on the next
@@ -62246,12 +62276,13 @@ Object.assign(window, {
         if (event === 'INITIAL_SESSION') {
           if (state.phase === 'loading') {
             if (session && isActivationSession(session)) publish({ phase: 'activation_password', session });
+            else if (session && recoveryLockedAtDelivery) holdPasswordRecovery(session);
             else resolveSession(session);
           }
           return;
         }
         if (event === 'PASSWORD_RECOVERY') {
-          publish({ phase: 'password_recovery', session });
+          holdPasswordRecovery(session);
           return;
         }
         if (event === 'SIGNED_IN' && session && isActivationSession(session)) {
@@ -62260,6 +62291,10 @@ Object.assign(window, {
         }
         if (event === 'USER_UPDATED' && (state.phase === 'activation_password' || state.phase === 'activating_password')) return;
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (recoveryLockedAtDelivery && session) {
+            if (recoveryActive || recoveryRequested()) holdPasswordRecovery(session);
+            return;
+          }
           resolveSession(session);
         }
       }, 0);
@@ -62277,6 +62312,7 @@ Object.assign(window, {
         if (result.error) throw result.error;
         const session = result.data && result.data.session;
         if (session && isActivationSession(session)) publish({ phase: 'activation_password', session });
+        else if (session && recoveryRequested()) holdPasswordRecovery(session);
         else await resolveSession(session);
       } catch (error) {
         publish({ phase: 'error', errorCode: controlledErrorCode(error) });
@@ -62409,11 +62445,16 @@ Object.assign(window, {
   }
 
   async function updateRecoveredPassword(password) {
-    publish({ phase: 'recovering', session: state.session });
+    const recoverySession = state.session;
+    recoveryActive = true;
+    publish({ phase: 'recovering', session: recoverySession });
     const result = await provideClient().auth.updateUser({ password: String(password || '') });
-    if (result.error) { publish({ phase: 'password_recovery', session: state.session, errorCode: 'PASSWORD_UPDATE_FAILED' }); return false; }
+    if (result.error) { holdPasswordRecovery(recoverySession, 'PASSWORD_UPDATE_FAILED'); return false; }
+    const signedOut = await provideClient().auth.signOut();
+    if (signedOut.error) { holdPasswordRecovery(recoverySession, 'LOGOUT_FAILED'); return false; }
+    recoveryActive = false;
+    resolutionVersion += 1;
     clearAuthFlowUrl();
-    await signOut();
     publish({ phase: 'unauthenticated', notice: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
     return true;
   }
@@ -62447,6 +62488,7 @@ Object.assign(window, {
     if (stateValue.errorCode === 'ACTIVATION_CALLBACK_INVALID') return 'El enlace de activación no es válido o expiró. Solicita uno nuevo.';
     if (stateValue.errorCode === 'ACTIVATION_PASSWORD_FAILED') return 'No fue posible definir la contraseña. Revisa los datos e intenta nuevamente.';
     if (stateValue.errorCode === 'ACTIVATION_LINK_FAILED') return 'La cuenta se confirmó, pero no pudo vincularse al padrón. Contacta a soporte.';
+    if (stateValue.errorCode === 'PASSWORD_UPDATE_FAILED') return 'No fue posible actualizar la contraseña. Revisa los datos e intenta nuevamente.';
     if (stateValue.errorCode === 'NOT_CONFIGURED' || stateValue.errorCode === 'CLIENT_UNAVAILABLE') return 'El acceso no está configurado en este dispositivo.';
     if (stateValue.errorCode === 'LOGOUT_FAILED') return 'No fue posible cerrar la sesión. Revisa tu conexión e intenta nuevamente.';
     if (stateValue.errorCode === 'CONNECTION_ERROR') return 'No pudimos conectar con el servicio de acceso. Intenta nuevamente.';

@@ -11,8 +11,15 @@ function createHarness(options = {}) {
   let session = options.session || null;
   let signOutCalls = 0;
   let otpCalls = 0;
+  let updateUserCalls = 0;
+  let authStateListener = null;
+  let releaseRepository = null;
+  const repositoryGate = options.delayRepository ? new Promise((resolve) => { releaseRepository = resolve; }) : null;
   const auth = {
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+    onAuthStateChange: (listener) => {
+      authStateListener = listener;
+      return { data: { subscription: { unsubscribe() {} } } };
+    },
     getSession: async () => ({ data: { session }, error: null }),
     signInWithPassword: async ({ email, password }) => {
       if (password !== 'correct') return { data: {}, error: { code: 'invalid_credentials', status: 400 } };
@@ -27,7 +34,10 @@ function createHarness(options = {}) {
       return { data: { user: null, session: null }, error: null };
     },
     resetPasswordForEmail: async () => ({ data: {}, error: options.recoveryError || null }),
-    updateUser: async () => ({ data: { user: session && session.user }, error: options.updateError || null }),
+    updateUser: async () => {
+      updateUserCalls += 1;
+      return { data: { user: session && session.user }, error: options.updateError || null };
+    },
     signOut: async () => {
       signOutCalls += 1;
       session = null;
@@ -38,6 +48,7 @@ function createHarness(options = {}) {
     clearProfilePhotoCache() {},
     getProfilePhoto: async () => null,
     getCurrentAffiliate: async () => {
+      if (repositoryGate) await repositoryGate;
       if (options.repositoryError) throw options.repositoryError;
       if (options.unlinked) {
         const error = new Error('unlinked');
@@ -57,6 +68,11 @@ function createHarness(options = {}) {
       throw error;
     },
   };
+  const location = {
+    origin: 'https://example.test',
+    pathname: '/SutiApp/',
+    href: options.activationCallback ? 'https://example.test/SutiApp/?auth_flow=activation' : options.recoveryCallback ? 'https://example.test/SutiApp/?auth_flow=recovery' : 'https://example.test/SutiApp/',
+  };
   const context = {
     console,
     URL,
@@ -69,8 +85,12 @@ function createHarness(options = {}) {
         return { data: { technical_permissions: [], section_actions: [] }, error: null };
       }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) },
       AffiliateRepository: repository,
-      location: { origin: 'https://example.test', pathname: '/SutiApp/', href: options.activationCallback ? 'https://example.test/SutiApp/?auth_flow=activation' : 'https://example.test/SutiApp/' },
-      history: { replaceState() {} },
+      location,
+      history: { replaceState(_state, _title, nextUrl) {
+        const next = new URL(nextUrl, location.origin);
+        location.href = next.toString();
+        location.pathname = next.pathname;
+      } },
     },
     React: {
       useState() { throw new Error('React hook not expected in controller test'); },
@@ -85,8 +105,17 @@ function createHarness(options = {}) {
     controller: context.window.AffiliateAuth,
     getSignOutCalls: () => signOutCalls,
     getOtpCalls: () => otpCalls,
+    getUpdateUserCalls: () => updateUserCalls,
+    emitAuthState: (event, nextSession = session) => {
+      session = nextSession;
+      assert(authStateListener, 'Auth state listener is not registered');
+      authStateListener(event, nextSession);
+    },
+    releaseRepository: () => { if (releaseRepository) releaseRepository(); },
   };
 }
+
+const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 (async () => {
   const empty = createHarness();
@@ -158,6 +187,46 @@ function createHarness(options = {}) {
   const metadataCallback = createHarness({ session: { user: { id: 'auth-2', email: 'owner@example.test', user_metadata: { sutiapp_activation: true } } }, claimSucceeds: true });
   await metadataCallback.controller.bootstrap();
   assert.equal(metadataCallback.controller.getState().phase, 'activation_password');
+
+  const recoverySession = { user: { id: 'auth-1', email: 'owner@example.test' } };
+  const recovery = createHarness({ session: recoverySession, recoveryCallback: true });
+  await recovery.controller.bootstrap();
+  assert.equal(recovery.controller.getState().phase, 'password_recovery');
+  for (const event of ['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED']) {
+    recovery.emitAuthState(event, recoverySession);
+    await flushAuthEvents();
+    assert.equal(recovery.controller.getState().phase, 'password_recovery', `${event} bypassed recovery`);
+  }
+  assert.equal(await recovery.controller.updateRecoveredPassword('NewPassword!123'), true);
+  assert.equal(recovery.getUpdateUserCalls(), 1);
+  assert.equal(recovery.getSignOutCalls(), 1);
+  assert.equal(recovery.controller.getState().phase, 'unauthenticated');
+  assert.match(recovery.controller.getState().notice, /Contraseña actualizada/);
+
+  const queuedRecovery = createHarness({ session: recoverySession, recoveryCallback: true });
+  await queuedRecovery.controller.bootstrap();
+  queuedRecovery.emitAuthState('TOKEN_REFRESHED', recoverySession);
+  assert.equal(await queuedRecovery.controller.updateRecoveredPassword('NewPassword!123'), true);
+  await flushAuthEvents();
+  assert.equal(queuedRecovery.controller.getState().phase, 'unauthenticated', 'queued recovery event reopened the app after completion');
+
+  const failedRecovery = createHarness({ session: recoverySession, recoveryCallback: true, updateError: { code: 'weak_password', status: 422 } });
+  await failedRecovery.controller.bootstrap();
+  assert.equal(await failedRecovery.controller.updateRecoveredPassword('weakpass'), false);
+  assert.equal(failedRecovery.controller.getState().phase, 'password_recovery');
+  assert.equal(failedRecovery.controller.getState().errorCode, 'PASSWORD_UPDATE_FAILED');
+  assert.equal(failedRecovery.getSignOutCalls(), 0);
+
+  const racingRecovery = createHarness({ session: recoverySession, delayRepository: true });
+  const racingBootstrap = racingRecovery.controller.bootstrap();
+  await flushAuthEvents();
+  racingRecovery.emitAuthState('PASSWORD_RECOVERY', recoverySession);
+  await flushAuthEvents();
+  assert.equal(racingRecovery.controller.getState().phase, 'password_recovery');
+  racingRecovery.releaseRepository();
+  await racingBootstrap;
+  await flushAuthEvents();
+  assert.equal(racingRecovery.controller.getState().phase, 'password_recovery', 'in-flight session resolution bypassed recovery');
 
   console.log('H-005 local Auth tests: PASS');
 })().catch((error) => {

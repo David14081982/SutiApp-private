@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+## 2026-09-03 — H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001
+
+- Admin → Finanzas → Solicitudes consume ahora el workflow inmutable real de cada solicitud, comunica actual/completadas/pendientes/siguiente/responsable y usa acciones explícitas con confirmación y read-back.
+- Supabase mantiene status, tracking y auditoría en una transición atómica e idempotente; préstamo/producto conservan sus writers certificados. La asignación futura distingue préstamo por programa de cotización por tipo sin alterar snapshots históricos.
+- Imágenes y PDF se autorizan automáticamente al abrir; otros documentos muestran nombre y acción. Los objetos siguen privados y las URLs firmadas sólo viven en memoria.
+- El alcance fue focal: préstamo, membresía, cotización y beneficio; sin Marketplace, service worker, suite global, reglas financieras ni Google legacy.
+
 ## 2026-09-03 — H-ADMIN-VISIBILITY-ACCESS-GATE-001
 
 - Admin se muestra únicamente cuando el contexto protegido devuelve una asignación activa o al menos una responsabilidad efectiva de sección; cualquier ausencia, error o revocación falla cerrado.

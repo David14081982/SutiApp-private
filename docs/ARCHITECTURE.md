@@ -1,5 +1,22 @@
 # Arquitectura
 
+## H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 — bandeja workflow-aware
+
+```text
+Admin → Finanzas → Solicitudes
+       ↓ list/get RPC con program_requests.read
+program_requests.workflow_snapshot → resolve_program_request_workflow_state()
+       ↓ acción explícita + confirmación
+transition_program_request_workflow() → status + tracking + evento, una transacción
+       ↓ relectura
+Admin actualizado                     Mi Historial / usuario actualizado
+
+request_documents / affiliate_documents → document-access → URL firmada efímera
+                                                        → thumbnail / PDF / abrir
+```
+
+La bandeja reúne los tipos que realmente viven en `program_requests` sin crear otro workflow. El trigger de estado mantiene tracking para cualquier writer vigente; el RPC genérico avanza o rechaza etapas no financieras, mientras aprobación de préstamo/producto conserva su frontera certificada. `financial_processing_status` se muestra sólo como procesamiento posterior, nunca como etapa operativa.
+
 ## H-SAVINGS-SHADOW-FOUNDATION-USER-UI-AND-ADMIN-001 — Ahorro SHADOW
 
 ```text

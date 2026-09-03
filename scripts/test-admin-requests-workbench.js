@@ -79,7 +79,7 @@ assert.match(repository,/Promise\.all\(\[documents,requirements,workflow\]\)/);
 assert.match(repository,/documents_available:!parts\[0\]\.error/);
 assert.match(repository,/tracking_available:!parts\[2\]\.error/);
 assert.match(screen,/data-request-tracking-unavailable/);
-assert.match(repository,/listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update/);
+['listGeneralQueue','listHistory','listMobile','listFinancialMobile','listFinancialQueue','detail','financialDetail','update'].forEach((method)=>assert.match(repository,new RegExp('Object\\.freeze\\(\\{[^}]*'+method)));
 assert.match(screen,/ProgramRequestRepository\.update\(selected\.id,status,detail\.notes\|\|''\)/);
 
 assert.match(requestMigration,/status text not null default 'submitted'/);

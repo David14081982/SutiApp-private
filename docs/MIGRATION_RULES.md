@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260903000140 — corrección focal de workflow en Admin Finanzas
+
+La migración es aditiva y no reescribe solicitudes ni snapshots históricos: agrega referencias de etapa a la bitácora, RPC de lectura/transición, sincronización continua de tracking y validación estado/etapa. Corrige únicamente la prioridad para altas futuras: membresía por offering, préstamo por `program_id=prestamo`, cotización no-préstamo por tipo y beneficio como rama restante; las claves configuradas específicas siguen teniendo precedencia.
+
+Forward y recovery deben compilar juntos dentro de `ROLLBACK`; la matriz de préstamo, membresía, cotización y beneficio también se ejecuta transaccionalmente y debe restaurar conteos exactos. El recovery restaura las funciones anteriores y queda bloqueado desde la primera transición con historia de etapa; nunca borra eventos para facilitar rollback.
+
 ## 20260903000130 — corte documental de Tu sindicato
 
 Estado: `APPLIED / VERIFIED — PASS`. El corte reconcilió exactamente 8 filas históricas de `SutiApp Final` (`Normas y Reglamentos`: 2; `Descargas2`: 6) contra `institutional_documents`, comprobó `app_assets` `READY`, bucket `documents`, objeto físico, MIME PDF, tamaño, SHA-256 y procedencia privada. No descargó ni subió copias nuevas porque los 7 binarios únicos ya estaban correctamente evacuados; reutilizarlos evita duplicados.

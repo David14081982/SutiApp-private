@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "mode": "LOCAL_FOCAL",
+  "types": {
+    "loan": {
+      "flow": true,
+      "current": true,
+      "stages": true,
+      "actions": true,
+      "history": true
+    },
+    "membership": {
+      "flow": true,
+      "current": true,
+      "stages": true,
+      "actions": true,
+      "history": true
+    },
+    "quote": {
+      "flow": true,
+      "current": true,
+      "stages": true,
+      "actions": true,
+      "history": true
+    },
+    "benefit": {
+      "flow": true,
+      "current": true,
+      "stages": true,
+      "actions": true,
+      "history": true
+    }
+  },
+  "documents": {
+    "loan": {
+      "rows": 17,
+      "ready": 0,
+      "failed": 17,
+      "automatic": false,
+      "manualPrepare": false
+    },
+    "membership": {
+      "rows": 15,
+      "ready": 0,
+      "failed": 15,
+      "automatic": false,
+      "manualPrepare": false
+    },
+    "quote": {
+      "rows": 9,
+      "ready": 0,
+      "failed": 9,
+      "automatic": false,
+      "manualPrepare": false
+    },
+    "benefit": {
+      "rows": 17,
+      "ready": 0,
+      "failed": 17,
+      "automatic": false,
+      "manualPrepare": false
+    },
+    "signedPreviewCalls": 47
+  },
+  "layout": {
+    "mobile": {
+      "workbench": true,
+      "columns": 1,
+      "overflow": false
+    },
+    "desktop": {
+      "columns": 2,
+      "filterColumns": 7,
+      "overflow": false
+    }
+  },
+  "security": {
+    "transitionWrites": 0
+  },
+  "directGoogleRequests": 0,
+  "pageErrors": []
+}

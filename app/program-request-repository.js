@@ -70,6 +70,10 @@
     const r=await db().rpc('list_admin_financial_request_queue');
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
+  async function listAdminFlowQueue(){
+    const r=await db().rpc('list_admin_finance_request_flow_queue');
+    if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
+  }
   async function detail(id){
     const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
@@ -79,18 +83,18 @@
     const parts=await Promise.all([documents,requirements,workflow]),workflowState=parts[2].error?{available:false,message:'Seguimiento no disponible'}:parts[2].data;
     return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,workflow_state:Object.freeze(workflowState),tracking_available:!parts[2].error&&workflowState.available===true,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
   }
-  async function financialDetail(id){
-    const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});
-    if(base.error)throw base.error;
-    const row=base.data;
+  async function hydrateAdminDetail(row){
+    const id=row.id;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
     const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
     const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
+    const currentById=new Map(currentRows.map((document)=>[document.id,document]));
+    const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
     return Object.freeze(Object.assign({},project(row),{
-      request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),
+      request_documents:Object.freeze(requestRows),
       documents_available:!parts[0].error,
       terms_version:parts[1].error?null:parts[1].data||null,
       terms_available:!parts[1].error,
@@ -100,9 +104,12 @@
       admin_events_available:!parts[3].error,
     }));
   }
+  async function financialDetail(id){const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
+  async function adminFlowDetail(id){const base=await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
   async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,approveProductPayment,newIdempotencyKey:key,project});
+  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;return Object.freeze(r.data);}
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
 })();

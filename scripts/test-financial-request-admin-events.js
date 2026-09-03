@@ -57,7 +57,7 @@ assert.match(desktop,/MARK_IN_REVIEW/);
 assert.match(desktop,/REJECT/);
 assert.match(desktop,/CANCEL/);
 assert.match(desktop,/COMMENT/);
-assert.match(desktop,/admin_events\.some\(\(event\) => event\.id === persistedEvent\.id\)/);
+assert.match(desktop,/admin_events\.some\(\(event\)=>event\.id===persistedEvent\.id\)/);
 assert.match(desktop,/actionAttempts\.current/);
 assert.match(desktop,/current_affiliate_documents/);
 assert.match(desktop,/request_documents/);

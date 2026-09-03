@@ -7751,6 +7751,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const r=await db().rpc('list_admin_financial_request_queue');
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
+  async function listAdminFlowQueue(){
+    const r=await db().rpc('list_admin_finance_request_flow_queue');
+    if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
+  }
   async function detail(id){
     const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
@@ -7760,18 +7764,18 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const parts=await Promise.all([documents,requirements,workflow]),workflowState=parts[2].error?{available:false,message:'Seguimiento no disponible'}:parts[2].data;
     return Object.freeze(Object.assign({},project(row),{request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),documents_available:!parts[0].error,workflow_state:Object.freeze(workflowState),tracking_available:!parts[2].error&&workflowState.available===true,requirements:Object.freeze(parts[1].error?[]:parts[1].data||[]),requirements_available:!parts[1].error,terms_version:null}));
   }
-  async function financialDetail(id){
-    const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});
-    if(base.error)throw base.error;
-    const row=base.data;
+  async function hydrateAdminDetail(row){
+    const id=row.id;
     const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
     const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
     const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
+    const currentById=new Map(currentRows.map((document)=>[document.id,document]));
+    const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
     return Object.freeze(Object.assign({},project(row),{
-      request_documents:Object.freeze(parts[0].error?[]:parts[0].data||[]),
+      request_documents:Object.freeze(requestRows),
       documents_available:!parts[0].error,
       terms_version:parts[1].error?null:parts[1].data||null,
       terms_available:!parts[1].error,
@@ -7781,11 +7785,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       admin_events_available:!parts[3].error,
     }));
   }
+  async function financialDetail(id){const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
+  async function adminFlowDetail(id){const base=await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
   async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
   async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
-  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,detail,financialDetail,update,recordAdminAction,respondQuote,approveProductPayment,newIdempotencyKey:key,project});
+  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;return Object.freeze(r.data);}
+  window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
 })();
 })();
 /* @@file document-workflow-repository.js */
@@ -34146,7 +34153,7 @@ Object.assign(window, {
       tone: 'gray'
     }
   });
-  const FINANCIAL_STAGE = Object.freeze({
+  const FINANCIAL_PROCESSING = Object.freeze({
     pending: {
       label: 'Validación financiera',
       tone: 'amber'
@@ -34186,20 +34193,26 @@ Object.assign(window, {
   });
   const ADMIN_EVENT_LABELS = Object.freeze({
     COMMENT: 'Observación administrativa',
-    MARK_IN_REVIEW: 'Marcada en revisión',
-    REJECT: 'Solicitud rechazada',
+    MARK_IN_REVIEW: 'Revisión iniciada',
+    REJECT: 'Etapa rechazada',
     CANCEL: 'Solicitud cancelada',
-    APPROVE: 'Financiamiento aprobado'
+    APPROVE: 'Etapa aprobada',
+    ADVANCE_STAGE: 'Avance de etapa'
   });
-  const programLabel = row => row && row.program_item && row.program_item.name || PROGRAM_LABELS[row && row.program_id] || 'Financiamiento';
+  const programLabel = row => row && row.program_item && row.program_item.name || row && row.product && row.product.name || row && row.membership && [row.membership.company_raw, row.membership.concept].filter(Boolean).join(' · ') || row && row.company && row.company.display_name || PROGRAM_LABELS[row && row.program_id] || row && row.program_id || 'Solicitud';
+  const requestTypeLabel = row => row && row.program_id === 'prestamo' ? 'Préstamo' : row && row.membership_offering_id ? 'Membresía' : row && row.request_type === 'quote' ? 'Cotización' : 'Programa / producto';
   const statusMeta = status => REQUEST_STATUS[status] || {
     label: 'Estado no reconocido',
     tone: 'gray'
   };
-  const stageMeta = stage => FINANCIAL_STAGE[stage] || {
-    label: 'Etapa no disponible',
+  const processingMeta = stage => FINANCIAL_PROCESSING[stage] || {
+    label: 'Sin procesamiento financiero',
     tone: 'gray'
   };
+  const workflowOf = row => row && row.workflow_state || {};
+  const currentStage = row => workflowOf(row).current_stage || null;
+  const nextStage = row => (workflowOf(row).stages || []).find(stage => stage.state === 'upcoming') || null;
+  const stageLabel = row => currentStage(row) && currentStage(row).label || 'Seguimiento no disponible';
   const numberValue = value => value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
   const moneyValue = value => numberValue(value) == null ? '—' : money(Number(value)).replace(/\.00$/, '');
   const dateValue = value => value ? new Date(value).toLocaleString('es-MX', {
@@ -34250,16 +34263,18 @@ Object.assign(window, {
       .finwb-panel{background:var(--surface);border-radius:17px;box-shadow:var(--neo-sm);min-width:0;min-height:0;overflow:hidden}
       .finwb-queue{display:flex;flex-direction:column}.finwb-queue-head{display:grid;grid-template-columns:82px minmax(118px,1fr) 100px 112px 48px;gap:6px;padding:10px 9px;border-bottom:1px solid var(--hairline);font-size:9.5px;color:var(--ink-3);font-weight:900;letter-spacing:.03em;text-transform:uppercase}
       .finwb-queue-body{overflow:auto;min-height:0}.finwb-row{width:100%;display:grid;grid-template-columns:82px minmax(118px,1fr) 100px 112px 48px;gap:6px;align-items:center;padding:11px 9px;border:0;border-bottom:1px solid var(--hairline);background:transparent;text-align:left;font-family:inherit;cursor:pointer;color:var(--ink)}.finwb-row>span{display:block;min-width:0}
-      .finwb-row[aria-selected=true]{background:#F8EDF1;box-shadow:inset 3px 0 0 var(--guinda)}.finwb-row:focus-visible{outline:2px solid var(--guinda);outline-offset:-2px}.finwb-folio{font:800 10.5px/1.35 var(--mono);color:var(--guinda);overflow-wrap:anywhere}.finwb-person{font-size:12.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-sub{font-size:10.5px;color:var(--ink-3);font-weight:650;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-amount{font-size:12.5px;font-weight:850}.finwb-age{font:800 11px var(--mono);color:var(--guinda)}
+      .finwb-row[aria-selected=true]{background:#F8EDF1;box-shadow:inset 3px 0 0 var(--guinda)}.finwb-row:focus-visible{outline:2px solid var(--guinda);outline-offset:-2px}.finwb-folio{font:800 10.5px/1.35 var(--mono);color:var(--guinda);overflow-wrap:anywhere}.finwb-person{font-size:12.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-sub{font-size:10.5px;color:var(--ink-3);font-weight:650;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-row .finwb-sub{display:block;max-width:100%}.finwb-amount{font-size:12.5px;font-weight:850}.finwb-age{font:800 11px var(--mono);color:var(--guinda)}
       .finwb-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:850;line-height:1.2}.finwb-stage{font-size:10.5px;color:var(--ink-3);font-weight:750;margin-top:4px}
       .finwb-empty{display:grid;place-items:center;align-content:center;gap:8px;min-height:240px;padding:24px;text-align:center;color:var(--ink-3);font-size:12.5px;font-weight:700}
-      .finwb-detail{display:flex;flex-direction:column}.finwb-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid var(--hairline);background:#F8F9FC}.finwb-detail-head strong{font:850 12px var(--mono);overflow-wrap:anywhere}.finwb-detail-scroll{overflow:auto;min-height:0;padding:12px 12px 104px}.finwb-card{border:1px solid #E1E5ED;border-radius:14px;padding:12px;margin-bottom:10px;background:#fff}.finwb-card h3{display:flex;align-items:center;gap:7px;margin:0 0 9px;font-size:13px}.finwb-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}.finwb-kv span{display:block;font-size:10px;color:var(--ink-3);font-weight:750}.finwb-kv strong{display:block;margin-top:2px;font-size:12px;color:var(--ink);overflow-wrap:anywhere}.finwb-snapshot-note{padding:9px 10px;border-radius:10px;background:#FFF8E7;color:#71511B;font-size:11px;font-weight:700;line-height:1.45}
-      .finwb-doc{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--hairline)}.finwb-doc:first-of-type{border-top:0}.finwb-doc-main{flex:1;min-width:0}.finwb-doc button,.finwb-doc a{border:0;border-radius:9px;padding:8px 10px;background:var(--surface-2);color:var(--guinda);font:800 11px inherit;text-decoration:none;cursor:pointer}.finwb-doc button:disabled{opacity:.55;cursor:default}
+      .finwb-detail{display:flex;flex-direction:column}.finwb-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid var(--hairline);background:#F8F9FC}.finwb-detail-head strong{display:block;margin-top:2px;font:850 12px var(--mono);overflow-wrap:anywhere}.finwb-detail-scroll{overflow:auto;min-height:0;padding:12px 12px 104px}.finwb-card{border:1px solid #E1E5ED;border-radius:14px;padding:12px;margin-bottom:10px;background:#fff}.finwb-card h3{display:flex;align-items:center;gap:7px;margin:0 0 9px;font-size:13px}.finwb-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}.finwb-kv span{display:block;font-size:10px;color:var(--ink-3);font-weight:750}.finwb-kv strong{display:block;margin-top:2px;font-size:12px;color:var(--ink);overflow-wrap:anywhere}.finwb-snapshot-note{padding:9px 10px;border-radius:10px;background:#FFF8E7;color:#71511B;font-size:11px;font-weight:700;line-height:1.45}
+      .finwb-doc{display:grid;grid-template-columns:72px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--hairline)}.finwb-doc:first-of-type{border-top:0}.finwb-doc-main{min-width:0}.finwb-doc-preview{width:72px;height:58px;border:0;border-radius:10px;overflow:hidden;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);padding:0;cursor:pointer}.finwb-doc-preview img,.finwb-doc-preview iframe{width:100%;height:100%;border:0;object-fit:cover;pointer-events:none}.finwb-doc button,.finwb-doc a{border:0;border-radius:9px;padding:8px 10px;background:var(--surface-2);color:var(--guinda);font:800 11px inherit;text-decoration:none;cursor:pointer}.finwb-doc button:disabled{opacity:.55;cursor:default}
+      .finwb-flow-summary{border:1px solid #E4D3D9;background:linear-gradient(135deg,#FFF8FA,#fff);border-radius:13px;padding:11px;margin-bottom:10px}.finwb-flow-current{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}.finwb-flow-current strong{font-size:15px}.finwb-flow-current p{margin:4px 0 0;font-size:11px;color:var(--ink-3);font-weight:650;line-height:1.45}.finwb-responsible{padding:6px 8px;border-radius:999px;background:#F4E8ED;color:var(--guinda);font-size:10px;font-weight:850;white-space:nowrap}.finwb-steps{display:flex;flex-direction:column;gap:0}.finwb-step{display:grid;grid-template-columns:24px minmax(0,1fr);gap:9px;position:relative;padding:7px 0}.finwb-step:not(:last-child):before{content:'';position:absolute;left:11px;top:30px;bottom:-5px;width:2px;background:#E0E4EA}.finwb-step-dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#EEF0F4;color:#687080;font-size:10px;font-weight:900;z-index:1}.finwb-step[data-state=done] .finwb-step-dot{background:#DDF4E8;color:#087A50}.finwb-step[data-state=current] .finwb-step-dot{background:var(--guinda);color:#fff;box-shadow:0 0 0 4px #F6E8ED}.finwb-step strong{font-size:11.5px}.finwb-step p{margin:2px 0 0;font-size:10.5px;color:var(--ink-3);font-weight:650;line-height:1.4}.finwb-next-action{margin-top:9px;padding:9px 10px;border-radius:10px;background:#EEF3FF;color:#244F9E;font-size:11px;font-weight:750;line-height:1.45}
       .finwb-timeline{display:flex;flex-direction:column;gap:9px}.finwb-event{display:grid;grid-template-columns:10px 1fr;gap:9px}.finwb-event-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;background:var(--guinda);box-shadow:0 0 0 4px #F8E8EE}.finwb-event strong{font-size:11.5px}.finwb-event p{margin:2px 0 0;font-size:10.5px;color:var(--ink-3);font-weight:650;line-height:1.4}
       .finwb-actionbar{position:absolute;left:0;right:0;bottom:0;padding:11px 12px;background:rgba(248,249,252,.97);border-top:1px solid #DDE2EA;backdrop-filter:blur(10px)}.finwb-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.finwb-note{margin-top:8px;resize:vertical;min-height:52px}.finwb-buttons{display:grid;grid-template-columns:auto auto 1fr;gap:8px;margin-top:8px}.finwb-buttons button{border:0;border-radius:10px;padding:9px 11px;font-family:inherit;font-size:11.5px;font-weight:850;cursor:pointer}.finwb-buttons button:disabled{opacity:.5;cursor:default}.finwb-secondary{background:var(--surface);color:var(--ink-2);box-shadow:var(--neo-sm)}.finwb-primary{background:var(--guinda);color:#fff}.finwb-feedback{margin-top:7px;font-size:11px;font-weight:800}.finwb-feedback[data-tone=saving]{color:#7A5A16}.finwb-feedback[data-tone=success]{color:#087A50}.finwb-feedback[data-tone=error]{color:#A00027}
       @media(max-width:1279px){.finwb-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.finwb-kv{grid-template-columns:1fr}.finwb-grid{grid-template-columns:minmax(285px,.9fr) minmax(330px,1.1fr)}}
       @media(max-width:1359px){.finwb-queue-head,.finwb-row{grid-template-columns:68px minmax(0,1fr) 92px;gap:5px;padding-left:8px;padding-right:8px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3){display:none}.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:none}.finwb-badge{box-sizing:border-box;max-width:100%;padding:0 6px;font-size:9.5px}}
-      @media(min-width:1280px){.finwb-filters{grid-template-columns:minmax(180px,1.5fr) repeat(5,minmax(108px,1fr))}.finwb-grid{grid-template-columns:minmax(470px,1fr) minmax(440px,1fr)}}
+      @media(min-width:1280px){.finwb-filters{grid-template-columns:minmax(180px,1.5fr) repeat(6,minmax(96px,1fr))}.finwb-grid{grid-template-columns:minmax(470px,1fr) minmax(440px,1fr)}}
+      @media(max-width:1023px){.finwb-filters{grid-template-columns:1fr 1fr}.finwb-grid{grid-template-columns:1fr;max-height:none;min-height:0}.finwb-queue{max-height:390px}.finwb-detail{min-height:680px}.finwb-detail-scroll{overflow:visible}.finwb-actionbar{position:sticky}.finwb-doc{grid-template-columns:58px minmax(0,1fr) auto}.finwb-doc-preview{width:58px;height:50px}}
     `;
     document.head.appendChild(style);
   }
@@ -34305,7 +34320,7 @@ Object.assign(window, {
     adminEvents.forEach(event => events.push({
       at: event.created_at,
       title: ADMIN_EVENT_LABELS[event.action] || 'Acción administrativa',
-      text: [event.actor_label || 'Personal autorizado', event.comment].filter(Boolean).join(' · ')
+      text: [event.from_stage_label && event.to_stage_label ? event.from_stage_label + ' → ' + event.to_stage_label : '', event.actor_label || 'Personal autorizado', event.comment].filter(Boolean).join(' · ')
     }));
     const approvedAt = detail.financial_approved_at || detail.financial_approval_snapshot && detail.financial_approval_snapshot.approved_at;
     if (approvedAt && !adminEvents.some(event => event.action === 'APPROVE')) events.push({
@@ -34316,7 +34331,7 @@ Object.assign(window, {
     const exportState = detail.financial_export;
     if (exportState && exportState.updated_at) events.push({
       at: exportState.updated_at,
-      title: stageMeta(detail.financial_processing_status).label,
+      title: processingMeta(detail.financial_processing_status).label,
       text: exportState.export_status === 'failed' ? 'La entrega puede reintentarse sin duplicar la solicitud.' : 'Estado confirmado por el contrato de exportación.'
     });
     return events.filter(event => event.at).sort((a, b) => new Date(a.at) - new Date(b.at));
@@ -34331,6 +34346,10 @@ Object.assign(window, {
     if (/REQUIRED_DOCUMENTS_MISSING/.test(code)) return 'Faltan documentos obligatorios para continuar.';
     if (/CONDITIONS_CHANGED/.test(code)) return 'Las condiciones cambiaron; revisa nuevamente antes de aprobar.';
     if (/APPROVED_FINANCIAL_REQUEST_STATUS_IMMUTABLE/.test(code)) return 'La solicitud aprobada ya no admite ese cambio de estado.';
+    if (/QUOTE_AMOUNT_REQUIRED/.test(code)) return 'Captura un monto válido para aprobar la cotización.';
+    if (/REQUEST_WORKFLOW_ALREADY_COMPLETE/.test(code)) return 'El flujo ya se encuentra en su última etapa.';
+    if (/REQUEST_WORKFLOW_|TRACKING_/.test(code)) return 'El flujo cambió o no está disponible. Se recargó la etapa vigente.';
+    if (/SPECIALIZED_FINANCIAL_APPROVAL_REQUIRED/.test(code)) return 'Esta aprobación requiere el proceso financiero autorizado.';
     return 'No se completó la acción. Puedes reintentar sin duplicar la solicitud.';
   }
   function DesktopFinancialWorkbench({
@@ -34354,16 +34373,19 @@ Object.assign(window, {
       [sort, setSort] = useState('newest');
     const [action, setAction] = useState(''),
       [actionNote, setActionNote] = useState(''),
+      [quoteAmount, setQuoteAmount] = useState(''),
+      [quoteValidUntil, setQuoteValidUntil] = useState(''),
       [busy, setBusy] = useState(false),
       [feedback, setFeedback] = useState(null),
       [rowFeedback, setRowFeedback] = useState({}),
-      [documentViews, setDocumentViews] = useState({});
+      [documentViews, setDocumentViews] = useState({}),
+      [viewer, setViewer] = useState(null);
     const actionAttempts = React.useRef(new Map());
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async quiet => {
       try {
         if (!quiet) setPhase('loading');
-        const source = await window.ProgramRequestRepository.listFinancialQueue();
+        const source = await window.ProgramRequestRepository.listAdminFlowQueue();
         const scoped = initialAffiliateId ? source.filter(row => row.affiliate_id === initialAffiliateId) : source;
         setRows(scoped.slice());
         setError('');
@@ -34372,7 +34394,7 @@ Object.assign(window, {
         return scoped;
       } catch (_) {
         if (!quiet) setRows([]);
-        setError('No fue posible cargar las solicitudes financieras.');
+        setError('No fue posible cargar las solicitudes.');
         setPhase('error');
         onCount(0);
         return [];
@@ -34381,15 +34403,16 @@ Object.assign(window, {
     useEffect(() => {
       load(false);
     }, [load]);
-    const programs = React.useMemo(() => Array.from(new Map(rows.map(row => [row.program_id, programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
+    const programs = React.useMemo(() => Array.from(new Map(rows.map(row => [row.program_id + ':' + (row.request_type || ''), programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
+    const stages = React.useMemo(() => Array.from(new Map(rows.map(row => [currentStage(row) && currentStage(row).id, stageLabel(row)]).filter(item => item[0])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
     const visible = React.useMemo(() => {
       const needle = search.trim().toLocaleLowerCase('es-MX');
       const filtered = rows.filter(row => {
         const text = [row.folio, row.nombre, row.numero_control, programLabel(row)].join(' ').toLocaleLowerCase('es-MX');
         if (needle && !text.includes(needle)) return false;
         if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-        if (programFilter !== 'all' && row.program_id !== programFilter) return false;
-        if (stageFilter !== 'all' && row.financial_processing_status !== stageFilter) return false;
+        if (programFilter !== 'all' && row.program_id + ':' + (row.request_type || '') !== programFilter) return false;
+        if (stageFilter !== 'all' && (!currentStage(row) || currentStage(row).id !== stageFilter)) return false;
         const days = ageDays(row.created_at);
         if (ageFilter === 'today' && days !== 0 || ageFilter === '3d' && days < 3 || ageFilter === '7d' && days < 7 || ageFilter === '30d' && days < 30) return false;
         return !dateFilter || dayKey(row.created_at) === dateFilter;
@@ -34409,8 +34432,11 @@ Object.assign(window, {
       setDetailPhase('loading');
       setFeedback(null);
       setActionNote('');
+      setQuoteAmount('');
+      setQuoteValidUntil('');
       setDocumentViews({});
-      window.ProgramRequestRepository.financialDetail(selectedId).then(value => {
+      setViewer(null);
+      window.ProgramRequestRepository.adminFlowDetail(selectedId).then(value => {
         if (active) {
           setDetail(value);
           setDetailPhase('loaded');
@@ -34429,28 +34455,42 @@ Object.assign(window, {
       selected = index >= 0 ? visible[index] : null;
     const actionOptions = React.useMemo(() => {
       if (!detail || !app.admin.has('program_requests.write')) return [];
-      const productPayment = detail.program_id !== 'prestamo';
-      const options = [{
-        id: 'note',
-        label: 'Guardar observación'
-      }];
-      if (['requires_financial_processing', 'submitted'].includes(detail.status)) options.unshift({
+      const target = nextStage(detail),
+        snapshot = detail.financial_submission_snapshot || {},
+        productPayment = snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1',
+        statusRefs = target && target.status_references || [],
+        options = [];
+      if (['requires_financial_processing', 'submitted'].includes(detail.status)) options.push({
         id: 'review',
-        label: 'Marcar en revisión'
+        label: 'Iniciar revisión'
       });
-      if (['requires_financial_processing', 'submitted', 'in_review'].includes(detail.status)) options.push({
-        id: productPayment ? 'approveProduct' : 'approve',
-        label: productPayment ? 'Aprobar en Supabase' : 'Aprobar y enviar a gestión'
-      }, {
+      if (target) {
+        if (statusRefs.includes('approved') && detail.request_type === 'quote' && detail.financial_processing_status == null) options.push({
+          id: 'quoteAdvance',
+          label: 'Guardar cotización y aprobar etapa'
+        });else if (statusRefs.includes('approved') && detail.financial_processing_status != null) options.push({
+          id: productPayment ? 'approveProduct' : 'approveLoan',
+          label: productPayment ? 'Aprobar etapa en Supabase' : 'Aprobar etapa y autorizar préstamo'
+        });else options.push({
+          id: 'advance',
+          label: statusRefs.includes('approved') ? 'Aprobar etapa' : 'Avanzar a siguiente etapa'
+        });
+      }
+      if (!['approved', 'rejected', 'cancelled'].includes(detail.status) && (workflowOf(detail).stages || []).some(stage => stage.outcome === 'failure')) options.push({
         id: 'reject',
-        label: 'Rechazar solicitud'
-      }, {
+        label: 'Rechazar etapa'
+      });
+      if (!['approved', 'rejected', 'cancelled'].includes(detail.status)) options.push({
         id: 'cancel',
         label: 'Cancelar solicitud'
       });
-      if (!productPayment && detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.unshift({
+      if (detail.program_id === 'prestamo' && detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.push({
         id: 'handoff',
         label: detail.financial_processing_status === 'failed' ? 'Reintentar envío a gestión' : 'Enviar a gestión'
+      });
+      options.push({
+        id: 'note',
+        label: 'Guardar observación'
       });
       return options;
     }, [detail, app]);
@@ -34473,6 +34513,8 @@ Object.assign(window, {
     };
     const save = async advance => {
       if (!detail || !action || busy) return;
+      const targetBefore = nextStage(detail),
+        currentBefore = currentStage(detail);
       if (actionNote.trim().length > 0 && actionNote.trim().length < 3) {
         setFeedback({
           tone: 'error',
@@ -34494,11 +34536,21 @@ Object.assign(window, {
         });
         return;
       }
+      if (action === 'quoteAdvance' && numberValue(quoteAmount) == null) {
+        setFeedback({
+          tone: 'error',
+          text: 'Captura el monto de la cotización antes de aprobar la etapa.'
+        });
+        return;
+      }
+      const transitionText = currentBefore && targetBefore ? currentBefore.label + ' → ' + targetBefore.label : '';
       const confirmations = {
-        approve: '¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y el backend intentará entregarla al historial financiero de Google.',
-        approveProduct: '¿Aprobar este plan de producto en Supabase? No se enviará información a Google.',
+        advance: '¿Avanzar la solicitud de “' + transitionText + '”? El afiliado verá la nueva etapa inmediatamente.',
+        approveLoan: '¿Aprobar la etapa “' + transitionText + '”? Se guardará la autorización en Supabase y el backend continuará con la gestión financiera autorizada.',
+        approveProduct: '¿Aprobar la etapa “' + transitionText + '” en Supabase? No se enviará información a Google.',
+        quoteAdvance: '¿Guardar la cotización por ' + moneyValue(quoteAmount) + ' y avanzar “' + transitionText + '”? El afiliado verá la cotización disponible.',
         handoff: '¿Enviar esta solicitud aprobada a la gestión financiera de Google?',
-        reject: '¿Rechazar esta solicitud financiera?',
+        reject: '¿Rechazar la etapa actual “' + (currentBefore && currentBefore.label || 'actual') + '”? El afiliado verá la solicitud como rechazada.',
         cancel: '¿Cancelar esta solicitud? Esta acción quedará registrada en la bitácora.'
       };
       if (confirmations[action] && !window.confirm(confirmations[action])) return;
@@ -34514,40 +34566,41 @@ Object.assign(window, {
       }));
       const adminAction = {
           review: 'MARK_IN_REVIEW',
-          reject: 'REJECT',
           cancel: 'CANCEL',
           note: 'COMMENT'
         }[action],
-        fingerprint = [currentId, action, actionNote.trim()].join('|');
+        fingerprint = [currentId, action, actionNote.trim(), quoteAmount, quoteValidUntil].join('|');
       let persistedEvent = null;
       try {
-        if (adminAction) {
-          const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
-          actionAttempts.current.set(fingerprint, actionId);
-          persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);
-        } else if (action === 'approveProduct') {
-          const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
-          actionAttempts.current.set(fingerprint, actionId);
-          await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);
-        } else if (action === 'approve') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
+        const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
+        actionAttempts.current.set(fingerprint, actionId);
+        if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') {
+          const result = await window.ProgramRequestRepository.transitionWorkflow(currentId, action === 'reject' ? 'REJECT' : 'ADVANCE', actionNote.trim(), actionId, action === 'quoteAdvance' ? {
+            amount: quoteAmount,
+            validUntil: quoteValidUntil
+          } : null);
+          persistedEvent = result.event;
+        } else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
         const refreshed = await load(true),
-          verified = refreshed.find(row => row.id === currentId);
-        let valid = verified && (action === 'review' ? verified.status === 'in_review' : action === 'reject' ? verified.status === 'rejected' : action === 'cancel' ? verified.status === 'cancelled' : action === 'approveProduct' ? verified.status === 'approved' && verified.financial_processing_status === 'completed' : action === 'approve' ? verified.status === 'approved' && ['ready_for_handoff', 'in_progress', 'handed_off'].includes(verified.financial_processing_status) : action === 'handoff' ? verified.financial_processing_status === 'handed_off' : true);
-        if (valid && persistedEvent) {
-          const verifiedDetail = await window.ProgramRequestRepository.financialDetail(currentId);
-          valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
-        }
+          verified = refreshed.find(row => row.id === currentId),
+          verifiedDetail = await window.ProgramRequestRepository.adminFlowDetail(currentId),
+          verifiedCurrent = currentStage(verifiedDetail);
+        let valid = Boolean(verified);
+        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.financial_processing_status === 'handed_off';
+        if (valid && persistedEvent) valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
         if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
         actionAttempts.current.delete(fingerprint);
+        setDetail(verifiedDetail);
         setFeedback({
           tone: 'success',
-          text: '✓ Actualizado y verificado'
+          text: '✓ Guardado · Admin y afiliado ya muestran la etapa vigente'
         });
         setRowFeedback(all => Object.assign({}, all, {
           [currentId]: 'success'
         }));
         setActionNote('');
-        if (advance && nextId !== currentId) setSelectedId(nextId);else setDetailNonce(value => value + 1);
+        setQuoteAmount('');
+        if (advance && nextId !== currentId) setSelectedId(nextId);
       } catch (actionError) {
         await load(true);
         setDetailNonce(value => value + 1);
@@ -34562,29 +34615,58 @@ Object.assign(window, {
         setBusy(false);
       }
     };
-    const prepareDocument = async (document, viewKey) => {
-      setDocumentViews(all => Object.assign({}, all, {
-        [viewKey]: {
-          phase: 'loading'
-        }
-      }));
+    const prepareDocument = React.useCallback(async (document, keys) => {
+      const viewKeys = Array.isArray(keys) ? keys : [keys];
+      setDocumentViews(all => {
+        const next = Object.assign({}, all);
+        viewKeys.forEach(key => {
+          next[key] = {
+            phase: 'loading'
+          };
+        });
+        return next;
+      });
       try {
         const preview = await window.DocumentWorkflowRepository.adminPreview(document.affiliate_document_id || document.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST');
         if (!preview.signedUrl) throw new Error('PREVIEW_UNAVAILABLE');
-        setDocumentViews(all => Object.assign({}, all, {
-          [viewKey]: {
-            phase: 'ready',
-            url: preview.signedUrl
-          }
-        }));
+        const expiresAt = Date.now() + (Number(preview.expiresIn) || 300) * 1000;
+        setDocumentViews(all => {
+          const next = Object.assign({}, all);
+          viewKeys.forEach(key => {
+            next[key] = {
+              phase: 'ready',
+              url: preview.signedUrl,
+              expiresAt
+            };
+          });
+          return next;
+        });
       } catch (_) {
-        setDocumentViews(all => Object.assign({}, all, {
-          [viewKey]: {
-            phase: 'error'
-          }
-        }));
+        setDocumentViews(all => {
+          const next = Object.assign({}, all);
+          viewKeys.forEach(key => {
+            next[key] = {
+              phase: 'error'
+            };
+          });
+          return next;
+        });
       }
-    };
+    }, [detail]);
+    useEffect(() => {
+      if (!detail || detailPhase !== 'loaded' || !app.admin.has('documents.read')) return;
+      const groups = new Map();
+      [['request', detail.request_documents || []], ['affiliate', detail.current_affiliate_documents || []]].forEach(([scope, documents]) => documents.forEach(document => {
+        const id = document.affiliate_document_id || document.id,
+          entry = groups.get(id) || {
+            document,
+            keys: []
+          };
+        entry.keys.push(scope + ':' + document.id);
+        groups.set(id, entry);
+      }));
+      groups.forEach(entry => prepareDocument(entry.document, entry.keys));
+    }, [detail && detail.id, detailPhase, app, prepareDocument]);
     const onKeyDown = event => {
       if (/INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
       if (event.key === 'ArrowDown') {
@@ -34658,32 +34740,124 @@ Object.assign(window, {
         }
       }, h('strong', null, row.number), h('span', null, row.date), h('strong', null, moneyValue(row.payment)))))) : null);
     };
+    const renderWorkflow = () => {
+      const workflow = workflowOf(detail),
+        current = currentStage(detail),
+        next = nextStage(detail),
+        steps = workflow.stages || [];
+      if (!workflow.available) return h('section', {
+        className: 'finwb-card',
+        'data-financial-workflow': 'true'
+      }, h('h3', null, h(I, {
+        name: 'clock',
+        size: 17,
+        stroke: 2
+      }), 'Flujo completo de la solicitud'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, workflow.message || 'Seguimiento no disponible.'));
+      return h('section', {
+        className: 'finwb-card',
+        'data-financial-workflow': 'true'
+      }, h('h3', null, h(I, {
+        name: 'clock',
+        size: 17,
+        stroke: 2
+      }), 'Flujo completo de la solicitud'), h('div', {
+        className: 'finwb-flow-summary'
+      }, h('div', {
+        className: 'finwb-sub'
+      }, (workflow.workflow_name || 'Flujo aplicado') + (workflow.workflow_version ? ' · versión ' + workflow.workflow_version : '')), h('div', {
+        className: 'finwb-flow-current'
+      }, h('div', null, h('span', {
+        className: 'finwb-sub'
+      }, 'ETAPA ACTUAL'), h('strong', null, current && current.label || 'No disponible'), current && current.description && h('p', null, current.description)), current && h('span', {
+        className: 'finwb-responsible'
+      }, current.responsible || 'Área responsable')), h('div', {
+        className: 'finwb-next-action'
+      }, next ? 'Siguiente acción: ' + next.label + ' · Responsable: ' + (next.responsible || 'Área responsable') : 'Flujo completado · no hay otra etapa pendiente')), h('div', {
+        className: 'finwb-steps'
+      }, steps.map((stage, stageIndex) => h('div', {
+        className: 'finwb-step',
+        'data-state': stage.state,
+        key: stage.id
+      }, h('span', {
+        className: 'finwb-step-dot'
+      }, stage.state === 'done' ? '✓' : stageIndex + 1), h('div', null, h('strong', null, stage.label), h('p', null, (stage.state === 'done' ? 'Completada' : stage.state === 'current' ? 'Actual' : 'Pendiente') + ' · ' + (stage.responsible || 'Sin responsable') + (stage.date ? ' · ' + dateValue(stage.date) : '')), stage.description && h('p', null, stage.description))))));
+    };
     const renderDocumentRows = (documents, scope) => documents.map(document => {
       const viewKey = scope + ':' + document.id,
         view = documentViews[viewKey] || {},
-        status = document.status_at_submission || document.status || 'No disponible';
-      return h('div', {
-        className: 'finwb-doc',
-        key: viewKey
+        status = document.status_at_submission || document.status || 'No disponible',
+        mime = String(document.mimeType || '').toLowerCase(),
+        title = document.document_type && document.document_type.label || 'Documento',
+        ready = view.phase === 'ready' && view.url;
+      const preview = ready ? mime.startsWith('image/') ? h('button', {
+        type: 'button',
+        className: 'finwb-doc-preview',
+        onClick: () => setViewer({
+          source: view.url,
+          mimeType: mime,
+          title
+        }),
+        'aria-label': 'Ampliar ' + title
+      }, h('img', {
+        src: view.url,
+        alt: 'Vista previa de ' + title
+      })) : mime === 'application/pdf' ? h('button', {
+        type: 'button',
+        className: 'finwb-doc-preview',
+        onClick: () => setViewer({
+          source: view.url,
+          mimeType: mime,
+          title
+        }),
+        'aria-label': 'Abrir ' + title
+      }, h('iframe', {
+        src: view.url + '#toolbar=0&navpanes=0',
+        title: 'Vista previa de ' + title,
+        tabIndex: -1
+      })) : h('span', {
+        className: 'finwb-doc-preview'
       }, h(I, {
         name: 'doc',
-        size: 18,
-        stroke: 2
-      }), h('div', {
-        className: 'finwb-doc-main'
-      }, h('div', {
-        className: 'finwb-person'
-      }, document.document_type && document.document_type.label || 'Documento'), h('div', {
-        className: 'finwb-sub'
-      }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status)), view.phase === 'ready' ? h('a', {
+        size: 24,
+        stroke: 1.8
+      })) : h('span', {
+        className: 'finwb-doc-preview'
+      }, view.phase === 'loading' ? h(I, {
+        name: 'clock',
+        size: 20
+      }) : h(I, {
+        name: view.phase === 'error' ? 'warning' : 'doc',
+        size: 22
+      }));
+      const openAction = ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
+        type: 'button',
+        onClick: () => setViewer({
+          source: view.url,
+          mimeType: mime,
+          title
+        })
+      }, mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
         href: view.url,
         target: '_blank',
         rel: 'noopener noreferrer'
-      }, 'Abrir') : h('button', {
+      }, 'Abrir') : view.phase === 'error' ? h('button', {
         type: 'button',
-        disabled: view.phase === 'loading',
         onClick: () => prepareDocument(document, viewKey)
-      }, view.phase === 'loading' ? 'Autorizando…' : view.phase === 'error' ? 'Reintentar' : 'Preparar vista'));
+      }, 'Reintentar') : null;
+      return h('div', {
+        className: 'finwb-doc',
+        key: viewKey
+      }, preview, h('div', {
+        className: 'finwb-doc-main'
+      }, h('div', {
+        className: 'finwb-person'
+      }, title), h('div', {
+        className: 'finwb-sub'
+      }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status), h('div', {
+        className: 'finwb-sub'
+      }, view.phase === 'loading' ? 'Preparando vista segura…' : view.phase === 'error' ? 'Vista no disponible · el archivo sigue privado' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
     const renderDetail = () => {
       if (detailPhase === 'loading') return h('div', {
@@ -34711,7 +34885,7 @@ Object.assign(window, {
         className: 'finwb-detail-head'
       }, h('div', null, h('span', {
         className: 'finwb-sub'
-      }, 'SOLICITUD FINANCIERA'), h('strong', null, detail.folio), h('div', {
+      }, 'SOLICITUD DE ' + requestTypeLabel(detail).toLocaleUpperCase('es-MX')), h('strong', null, detail.folio), h('div', {
         className: 'finwb-sub'
       }, index + 1 + ' de ' + visible.length + ' · ' + programLabel(detail))), badge(statusMeta(detail.status), 'data-financial-human-status', statusMeta(detail.status).label)), h('div', {
         className: 'finwb-detail-scroll'
@@ -34730,14 +34904,14 @@ Object.assign(window, {
         name: 'receipt',
         size: 17,
         stroke: 2
-      }), 'Estado y etapa'), h('div', {
+      }), 'Resumen'), h('div', {
         className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Estado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Etapa financiera'), h('strong', null, stageMeta(detail.financial_processing_status).label))), detail.notes && h('div', {
+      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
         className: 'finwb-snapshot-note',
         style: {
           marginTop: 10
         }
-      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderWorkflow(), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {
@@ -34807,7 +34981,7 @@ Object.assign(window, {
           setAction(event.target.value);
           setActionNote('');
         },
-        'aria-label': 'Acción financiera permitida'
+        'aria-label': 'Acción permitida para la etapa'
       }, actionOptions.map(item => h('option', {
         key: item.id,
         value: item.id
@@ -34817,14 +34991,37 @@ Object.assign(window, {
         style: {
           fontSize: 11.5
         }
-      }, stageMeta(detail.financial_processing_status).label))), h('textarea', {
+      }, stageLabel(detail)))), action === 'quoteAdvance' && h('div', {
+        className: 'finwb-action-grid',
+        style: {
+          marginTop: 8
+        }
+      }, h('input', {
+        className: 'finwb-action-select',
+        type: 'number',
+        min: '0.01',
+        step: '0.01',
+        value: quoteAmount,
+        onChange: event => setQuoteAmount(event.target.value),
+        placeholder: 'Monto cotizado (MXN)',
+        'aria-label': 'Monto de la cotización'
+      }), h('input', {
+        className: 'finwb-action-select',
+        type: 'date',
+        value: quoteValidUntil,
+        onChange: event => setQuoteValidUntil(event.target.value),
+        'aria-label': 'Vigencia de la cotización'
+      })), h('textarea', {
         className: 'finwb-note',
         value: actionNote,
         disabled: busy || action === 'handoff',
         onChange: event => setActionNote(event.target.value),
-        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'approve' ? 'Comentario de autorización (opcional)' : action === 'review' ? 'Comentario de revisión (opcional)' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Observación administrativa obligatoria',
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
         'aria-label': 'Observación de la acción'
-      }), h('div', {
+      }), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
+        className: 'finwb-next-action',
+        'data-financial-next-action': 'true'
+      }, 'Confirmar moverá la solicitud de “' + stageLabel(detail) + '” a “' + nextStage(detail).label + '”. Responsable siguiente: ' + (nextStage(detail).responsible || 'Área responsable') + '.'), h('div', {
         className: 'finwb-buttons'
       }, h('button', {
         className: 'finwb-secondary',
@@ -34834,17 +35031,24 @@ Object.assign(window, {
         className: 'finwb-secondary',
         disabled: index < 0 || index >= visible.length - 1 || busy,
         onClick: () => move(1)
-      }, 'Siguiente'), h('button', {
+      }, 'Siguiente solicitud'), h('button', {
         className: 'finwb-primary',
         disabled: busy || !action,
-        onClick: () => save(true)
-      }, busy ? 'Guardando…' : 'Guardar y siguiente')), feedback && h('div', {
+        onClick: () => save(false)
+      }, busy ? 'Guardando…' : (actionOptions.find(item => item.id === action) || {
+        label: 'Confirmar acción'
+      }).label)), feedback && h('div', {
         className: 'finwb-feedback',
         'data-financial-action-feedback': feedback.tone,
         'data-tone': feedback.tone
       }, feedback.text)) : h('div', {
         className: 'finwb-sub'
-      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')));
+      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')), viewer && window.DocumentViewer && h(window.DocumentViewer, {
+        source: viewer.source,
+        mimeType: viewer.mimeType,
+        title: viewer.title,
+        onClose: () => setViewer(null)
+      }));
     };
     return h('div', {
       className: 'finwb-root',
@@ -34890,16 +35094,16 @@ Object.assign(window, {
       value: item[0]
     }, item[1])))), h('div', {
       className: 'finwb-field'
-    }, h('label', null, 'Etapa'), h('select', {
+    }, h('label', null, 'Etapa actual'), h('select', {
       value: stageFilter,
       onChange: event => setStageFilter(event.target.value),
-      'aria-label': 'Filtrar por etapa financiera'
+      'aria-label': 'Filtrar por etapa real de la solicitud'
     }, h('option', {
       value: 'all'
-    }, 'Todas'), Object.keys(FINANCIAL_STAGE).map(value => h('option', {
-      key: value,
-      value
-    }, FINANCIAL_STAGE[value].label)))), h('div', {
+    }, 'Todas'), stages.map(item => h('option', {
+      key: item[0],
+      value: item[0]
+    }, item[1])))), h('div', {
       className: 'finwb-field'
     }, h('label', null, 'Antigüedad'), h('select', {
       value: ageFilter,
@@ -34971,11 +35175,11 @@ Object.assign(window, {
       className: 'finwb-sub'
     }, maskedControl(row.numero_control) + ' · ' + programLabel(row))), h('span', null, h('span', {
       className: 'finwb-amount'
-    }, moneyValue(row.requested_amount)), h('span', {
+    }, moneyValue(row.requested_amount != null ? row.requested_amount : row.quoted_amount)), h('span', {
       className: 'finwb-sub'
-    }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : 'Plazo no disponible')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
+    }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type === 'quote' ? 'Cotización' : 'Sin plazo financiero')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
       className: 'finwb-stage'
-    }, stageMeta(row.financial_processing_status).label), rowFeedback[row.id] && h('span', {
+    }, stageLabel(row)), rowFeedback[row.id] && h('span', {
       className: 'finwb-stage',
       'data-financial-inline-feedback': rowFeedback[row.id]
     }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', {
@@ -35005,36 +35209,10 @@ Object.assign(window, {
     initialAffiliateId
   }) {
     const desktop = useDesktop();
-    const store = useStore(!desktop);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
     const [tab, setTab] = useState('sols'); // 'sols' | 'cots'
-    const [openId, setOpenId] = useState(null);
-    const [filter, setFilter] = useState('all');
     const [desktopCount, setDesktopCount] = useState(0);
-    if (!desktop && openId) {
-      const r = store.get(openId);
-      if (r) return React.createElement(RequestDetail, {
-        app,
-        r,
-        onBack: () => setOpenId(null),
-        header
-      });
-    }
-    const belongsToAffiliate = row => !initialAffiliateId || row.affiliate_id === initialAffiliateId || row.usuario && row.usuario.id === initialAffiliateId;
-    const all = store.all().filter(belongsToAffiliate);
-    const list = store.byEstado(filter).filter(belongsToAffiliate).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    const montoTotal = all.reduce((s, r) => s + (r.simulacion.montoSolicitado || 0), 0);
-    const chips = [{
-      id: 'all',
-      label: 'Todas'
-    }].concat(window.FINANZAS.ESTADOS.map(e => ({
-      id: e.id,
-      label: e.label
-    })));
     const cotPend = qs ? qs.pendientes() : 0;
-    const source = store.state ? store.state() : {
-      phase: 'loaded'
-    };
     const segBtn = (id, label, badge) => React.createElement('button', {
       key: id,
       onClick: () => setTab(id),
@@ -35073,7 +35251,7 @@ Object.assign(window, {
       'data-admin-view': 'finanzas'
     }, header({
       title: 'Finanzas · Solicitudes',
-      sub: (desktop ? desktopCount : all.length) + ' solicitud(es) · ' + (qs ? qs.all().length : 0) + ' cotización(es)',
+      sub: desktopCount + ' solicitud(es) · flujo real por programa',
       onBack
     }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
       className: 'su-app-scroll',
@@ -35087,183 +35265,15 @@ Object.assign(window, {
         gap: 10,
         marginBottom: 16
       }
-    }, segBtn('sols', 'Financiamientos', desktop ? null : store.pendientes() || null), segBtn('cots', 'Cotizaciones', cotPend || null)), desktop ? tab === 'cots' ? React.createElement(CotizacionesAdmin, {
+    }, segBtn('sols', 'Solicitudes', null), segBtn('cots', 'Cotizaciones', cotPend || null)), tab === 'cots' ? React.createElement(CotizacionesAdmin, {
       qs,
       app
     }) : React.createElement(DesktopFinancialWorkbench, {
       app,
       onCount: setDesktopCount,
-      initialAffiliateId
-    }) : source.phase === 'error' ? React.createElement(window.EmptyState, {
-      icon: 'warning',
-      title: 'No fue posible cargar solicitudes',
-      sub: 'La fuente productiva no respondió.',
-      actionLabel: 'Reintentar',
-      onAction: () => store.retry()
-    }) : source.phase === 'loading' ? React.createElement(window.EmptyState, {
-      icon: 'clock',
-      title: 'Cargando solicitudes',
-      sub: 'Consultando información vigente.'
-    }) : tab === 'cots' ? React.createElement(CotizacionesAdmin, {
-      qs,
-      app
-    }) : React.createElement(React.Fragment, null, React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 10,
-        marginBottom: 14
-      }
-    }, kpi('receipt', all.length, 'Recibidas'), kpi('clock', store.pendientes(), 'Pendientes', true), kpi('cash', money(montoTotal).replace(/\.00$/, ''), 'Monto solicitado')), React.createElement('div', {
-      style: {
-        background: '#EEF3FF',
-        border: '1px solid #D6E2FB',
-        borderRadius: 14,
-        padding: '11px 13px',
-        display: 'flex',
-        gap: 10,
-        alignItems: 'flex-start',
-        marginBottom: 16
-      }
-    }, React.createElement(I, {
-      name: 'info',
-      size: 17,
-      stroke: 2,
-      style: {
-        color: '#2456C7',
-        flexShrink: 0,
-        marginTop: 1
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        color: 'var(--ink-2)',
-        fontWeight: 600,
-        lineHeight: 1.5
-      }
-    }, 'El ', React.createElement('b', null, 'Panel de Finanzas'), ' concentra las solicitudes enviadas desde la app, vinculadas al usuario, empresa, programa y simulación.')), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 8,
-        overflowX: 'auto',
-        paddingBottom: 4,
-        marginBottom: 14,
-        scrollbarWidth: 'none'
-      }
-    }, chips.map(c => React.createElement('button', {
-      key: c.id,
-      onClick: () => setFilter(c.id),
-      style: {
-        flexShrink: 0,
-        height: 34,
-        padding: '0 14px',
-        borderRadius: 999,
-        border: 'none',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: filter === c.id ? 'var(--guinda)' : 'var(--surface)',
-        color: filter === c.id ? '#fff' : 'var(--ink-2)',
-        boxShadow: filter === c.id ? 'none' : 'var(--neo-sm)'
-      }
-    }, c.label))), list.length === 0 ? React.createElement(window.EmptyState, {
-      icon: 'receipt',
-      title: 'Sin solicitudes',
-      sub: 'Cuando un afiliado envíe una solicitud tras simular, aparecerá aquí.'
-    }) : React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 11
-      }
-    }, list.map(r => React.createElement('button', {
-      key: r.id,
-      onClick: () => setOpenId(r.id),
-      style: {
-        display: 'flex',
-        gap: 12,
-        alignItems: 'center',
-        textAlign: 'left',
-        background: 'var(--surface)',
-        border: 'none',
-        borderRadius: 16,
-        padding: 14,
-        boxShadow: 'var(--neo-sm)',
-        cursor: 'pointer',
-        fontFamily: 'inherit'
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 46,
-        height: 46,
-        borderRadius: 13,
-        background: 'var(--guinda-50)',
-        color: 'var(--guinda)',
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: r.icon || 'cash',
-      size: 23,
-      stroke: 2
-    })), React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8
-      }
-    }, React.createElement('span', {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 800,
-        color: 'var(--ink)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, r.productoNombre || r.programa || 'Préstamo'), React.createElement('span', {
-      style: {
-        fontSize: 11,
-        color: 'var(--ink-3)',
-        fontWeight: 700,
-        fontFamily: 'var(--mono)',
-        flexShrink: 0
-      }
-    }, r.folio)), React.createElement('div', {
-      'data-financial-mobile-person': 'true',
-      style: {
-        fontSize: 12,
-        color: 'var(--ink-3)',
-        fontWeight: 600,
-        marginTop: 3,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, r.usuario.nombre + ' · ' + r.usuario.sindicato), React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 7
-      }
-    }, React.createElement('span', {
-      'data-financial-mobile-amount': 'true',
-      style: {
-        fontSize: 15,
-        fontWeight: 800,
-        color: 'var(--guinda)'
-      }
-    }, money(r.simulacion.montoSolicitado)), React.createElement(EstadoBadge, {
-      estado: r.estado
-    })))))))));
+      initialAffiliateId,
+      compact: !desktop
+    })));
   }
 
   // ── Cotizaciones: solicitudes de interés + configuración de servicios ──

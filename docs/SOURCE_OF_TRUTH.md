@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 — operación de etapas
+
+`program_requests` conserva la solicitud y su estado; `workflow_snapshot` conserva el flujo inmutable aplicado a esa solicitud; `operational_workflows` y `operational_workflow_stages` configuran exclusivamente solicitudes futuras; `operational_request_tracking` es la proyección derivada de etapa vigente; y `program_request_admin_events` es la bitácora inmutable de decisiones. Admin Finanzas no define etapas ni interpreta `financial_processing_status` como workflow.
+
+Toda transición operativa se resuelve contra `program_requests.workflow_snapshot`, persiste de forma atómica en Supabase y se vuelve a leer mediante el resolver central. Las aprobaciones financieras especializadas continúan en sus writers certificados; la transición genérica no puede sustituirlas. Los documentos siguen privados: `request_documents` fija la evidencia, `affiliate_documents` proyecta el expediente y `document-access` entrega únicamente URLs firmadas efímeras bajo autorización.
+
 ## Corte ADR-099 — documentos institucionales de Tu sindicato
 
 `public.institutional_documents` es la autoridad única de metadatos para `Normas y Reglamentos` y `Descarga de formatos`; `document_asset_id → public.app_assets → documents` es la autoridad única del PDF publicado. `InstitutionalDocumentsRepository` sólo proyecta esas relaciones Supabase y la UI abre primero el PDF resuelto por Storage. `document_url` e `image_url` quedaron retirados del runtime y nulos en las ocho filas fuente.

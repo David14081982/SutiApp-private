@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Admin Finanzas — transición y vista previa focal
+
+Las RPC de bandeja/detalle exigen `program_requests.read`; la transición exige `program_requests.write`, deriva actor desde Auth, bloquea aprobaciones financieras especializadas y usa `client_action_id` idempotente. `public`, `anon` y el acceso directo a la tabla de eventos permanecen revocados. La UI confirma la acción, pero la autorización y la compatibilidad estado/etapa se validan en backend.
+
+La vista previa automática no publica archivos ni persiste URLs: cada documento se autoriza individualmente mediante `document-access` con propósito `ADMIN_FINANCIAL_REQUEST`, contexto de afiliado explícito y vencimiento corto. El repository sólo conserva la URL en memoria durante la vista abierta.
+
 ## Documentos institucionales de Tu sindicato — ADR-099
 
 Los PDFs públicos se resuelven exclusivamente mediante `document_asset_id → app_assets → documents`; el browser no recibe `asset_sources`, tokens privilegiados ni URL Google. Las columnas legacy de `institutional_documents` permanecen nulas y el repository ni siquiera las selecciona. `asset_sources` conserva procedencia para recuperación y la lectura con publishable key fue denegada/vacía.

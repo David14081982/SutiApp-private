@@ -8,6 +8,8 @@
     {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
   ],
   "nodes": [
+    {"type": "domain", "name": "Admin Access Protected Contract", "file": "docs/ADMIN_ACCESS_PROTECTED_CONTRACT.md", "domain": "admin-authorization", "aliases": ["Administradores", "Permisos por pantalla", "Tomar control", "impersonation"], "source_of_truth": "SUPABASE", "properties": {"mode": "PROTECTED_CLOSED_CONTRACT", "protected_sha": "b8c1f6c0057dabded90804ffadd5bd012fb41a1a", "adr": "ADR-098", "regression_guard": "scripts/test-admin-access-protected-contract.js"}},
+    {"type": "test", "name": "scripts/test-admin-access-protected-contract.js", "file": "scripts/test-admin-access-protected-contract.js", "domain": "admin-authorization", "aliases": ["admin access regression guard"], "properties": {"scope": "FOCUSED", "global_default": false}},
     {"type": "screen", "name": "CredencialScreen", "file": "app/screens-credencial.jsx", "domain": "identity", "aliases": ["Credencial", "Credencial digital", "Fotografía de credencial", "Perfil"], "source_of_truth": "SUPABASE", "properties": {"protected_boundary": "Auth affiliate identity + private Storage/RLS"}},
     {"type": "service", "name": "AffiliateAuth", "file": "app/affiliate-auth.js", "domain": "identity", "source_of_truth": "SUPABASE"},
     {"type": "service", "name": "createAffiliateViewModel", "file": "app/affiliate-view-model.js", "domain": "identity", "aliases": ["photoUrl", "proyección de fotografía"], "source_of_truth": "DERIVED"},
@@ -31,6 +33,7 @@
     {"type": "external_legacy_source", "name": "Google Ahorro", "domain": "finance", "aliases": ["Ahorro legacy"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED_PRODUCTIVE"}}
   ],
   "relationships": [
+    {"from_type": "test", "from": "scripts/test-admin-access-protected-contract.js", "to_type": "domain", "to": "Admin Access Protected Contract", "type": "PROTECTS"},
     {"from_type": "screen", "from": "CredencialScreen", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
     {"from_type": "screen", "from": "CredencialScreen", "to_type": "service", "to": "AffiliateAuth", "type": "USES"},
     {"from_type": "service", "from": "AffiliateAuth", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},

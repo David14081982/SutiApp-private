@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-098 | El contrato Admin Access / Impersonation / Global Permissions aprobado en producción queda protegido y cerrado; futuras H deben declarar impacto y preservar autoridades, migraciones, invariantes y regresión focal. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-097 | La administración global reutiliza roles/asignaciones y responsabilidades existentes; altas Admin resuelven email confirmado a UUID, la cuenta principal queda protegida y la impersonación vuelve a exigir `affiliates.impersonate` ligado a sesión Auth. | Aceptada / ACTIVE |
 | ADR-095 | Ahorro se implementa como `SHADOW + NEW FOUNDATION`; Google conserva autoridad productiva hasta cutover separado, el ledger Supabase separa capital/rendimiento y toda importación exige snapshot certificado. | Aceptada / RAW_SHADOW_IMPORT_APPLIED / NO_CUTOVER |
 | ADR-092 | Depósito registra y reutiliza una cuenta con Banco + (Tarjeta válida OR CLABE válida); si ambas se capturan, ambas validan. Continuar exige cuenta válida seleccionada y celular de 10 dígitos. | Aceptada / ACTIVE |
@@ -68,6 +69,15 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-098 — Protección del contrato de acceso administrativo
+
+- **Contexto:** `H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001` quedó `PASS`, revisada `APPROVED` y publicada en el SHA `b8c1f6c0057dabded90804ffadd5bd012fb41a1a`. El propietario ordena congelar ese comportamiento sin nuevas funciones, rediseño, refactor o cambio productivo.
+- **Decisión:** marcar Administradores, permisos por pantalla, responsables de sección, contexto de acceso e impersonación como `PROTECTED / CLOSED CONTRACT`. Se conservan exactamente las autoridades de ADR-097 y las migraciones `20260903000120`–`20260903000122`; no se permite autoridad paralela.
+- **Cambio futuro:** no queda prohibido automáticamente, pero exige razón, impacto explícito, Navigator, auditoría de fuente y pre-change, preservación de invariantes, prueba focal y post-change verification. Una H ajena no modifica el dominio.
+- **Regression guard:** los tests focales existentes se consolidan bajo `scripts/test-admin-access-protected-contract.js`; ninguna suite global se ejecuta por defecto salvo que otra frontera de `AGENTS.md` la haga aplicable.
+- **Efecto:** documental y técnico solamente; comportamiento, UI, datos productivos, RLS/RPC y permisos permanecen sin cambio.
+- **Aprobación:** propietario, `H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-PROTECTION-001`, 2026-09-02.
 
 ### ADR-097 — Acceso administrativo global e impersonación por capacidad explícita
 

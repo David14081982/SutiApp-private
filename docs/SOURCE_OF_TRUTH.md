@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Contrato protegido ADR-098 — Admin Access / Impersonation / Global Permissions
+
+El dominio aprobado en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` queda `PROTECTED / CLOSED CONTRACT`. `admin_roles`, `admin_role_permissions`, `admin_assignments` y `has_admin_permission()` son la autoridad única de autorización administrativa; `admin_section_definitions`, `admin_section_responsibilities` y `has_section_action()` son la autoridad única de responsabilidades y acciones exactas; `impersonation_sessions`, sus RPC de contexto y `identity_audit_log` son la autoridad única de asistencia. `admin_audit_log` conserva la historia administrativa.
+
+Email es únicamente una entrada para resolver un `auth.users.id` confirmado y único; nunca es autoridad durable. La UI sólo proyecta el contexto y no reemplaza RLS/RPC/backend. No se permite una tabla, store, catálogo, caché, mock, fallback o privilegio por email paralelo. Las migraciones `20260903000120`–`20260903000122`, sus recoveries y el contrato completo están fijados en `docs/ADMIN_ACCESS_PROTECTED_CONTRACT.md`. Una futura H sólo puede tocar esta frontera con razón e impacto explícitos, auditoría previa, invariantes preservados y regresión focal.
+
 ## Corte ADR-095 — Ahorro SHADOW y nueva fundación
 
 Google Sheets + Apps Script continúan como autoridad histórica y productiva vigente de Ahorro hasta un cutover posterior expresamente autorizado. La importación RAW SHADOW del 2026-09-02 no consultó ni escribió Google y no modificó fórmulas, triggers, conciliaciones ni saldos legacy.

@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## 2026-09-02 — H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-PROTECTION-001
+
+- El acceso administrativo, las 11 responsabilidades `ENFORCED` y la impersonación aprobados en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` quedaron `PROTECTED / CLOSED CONTRACT` mediante ADR-098, contrato canónico e invariantes INV-189–198.
+- Las autoridades de ADR-097 y las migraciones `20260903000120`–`20260903000122` permanecen sin cambio; un guard focal fija sus hashes y bloquea duplicación o pérdida de cobertura.
+- El arnés live reconoce la denegación fail-closed del recovery después de actividad legítima. La matriz A–H ejecutó con rollback y cero escrituras persistentes; Chrome real preservó desktop/móvil y denegaciones.
+- No se modificaron UI, runtime, RLS/RPC, permisos, datos productivos, Supabase productivo ni legacy. Suites globales no ejecutadas.
+
+```text
+H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-PROTECTION-001 RESULT
+Status: PASS
+Files changed: gobierno/contrato/evidencia; metadata y Registry derivados; guard y ajuste focal del arnés live
+Source-of-truth verdict: PASS — autoridades únicas de ADR-097 preservadas
+Invariant verdict: PASS — INV-189–198 registrados y guardados
+Build: NOT APPLICABLE — no cambió runtime ni artefacto
+Tests: PASS — guard estático; matriz A–H; Chrome real; Registry
+Security: PASS — sin cambio de grants/RLS/RPC; normales y anónimo denegados
+Legacy impact: NO INTERACTION
+Unexpected files changed: 0
+Known limitations: el contrato puede cambiar sólo mediante una futura H explícita con el gate documentado
+Evidence: docs/qa/H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-PROTECTION-001-EVIDENCE.md
+```
+
 ## 2026-09-02 — H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001
 
 - Se añadieron tres superficies focales al Panel: Administradores con alta total por email Auth confirmado, Permisos por pantalla desde las 11 definiciones backend `ENFORCED` y Tomar control por permiso explícito.

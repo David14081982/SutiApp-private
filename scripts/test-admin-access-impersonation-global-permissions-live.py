@@ -176,8 +176,13 @@ def main():
     main_applied=query(values,"select to_regclass('public.admin_access_migration_state_20260903000120') is not null as applied;")[0]['applied']
     metadata_applied=query(values,"select to_regclass('public.admin_assignment_metadata_fix_state_20260903000121') is not null as applied;")[0]['applied']
     stop_applied=query(values,"select to_regclass('public.impersonation_stop_binding_state_20260903000122') is not null as applied;")[0]['applied']
+    recovery_guard='ROUNDTRIP'
     if main_applied and metadata_applied and stop_applied:
-        query(values,'begin;'+stop_recovery+metadata_recovery+metadata_fix+stop_fix+'rollback;')
+        try:
+            query(values,'begin;'+stop_recovery+metadata_recovery+metadata_fix+stop_fix+'rollback;')
+        except RuntimeError as error:
+            if 'RECOVERY_BLOCKED_POST_MIGRATION_ACTIVITY' not in str(error): raise
+            recovery_guard='POST_ACTIVITY_BLOCKED'
         query(values,'begin;'+CHECKS+'rollback;')
     elif main_applied and metadata_applied:
         query(values,'begin;'+stop_fix+stop_recovery+'rollback;')
@@ -188,7 +193,7 @@ def main():
     else:
         query(values,'begin;'+migration+metadata_fix+stop_fix+stop_recovery+metadata_recovery+recovery+'rollback;')
         query(values,'begin;'+migration+metadata_fix+stop_fix+CHECKS+'rollback;')
-    print(json.dumps({'status':'PASS','migration_recovery_compile':True,'metadata_fix_compile':True,'stop_binding_compile':True,'matrix':'A-H','persistent_writes':0,'credentials_exposed':False},sort_keys=True))
+    print(json.dumps({'status':'PASS','migration_recovery_compile':True,'metadata_fix_compile':True,'stop_binding_compile':True,'recovery_guard':recovery_guard,'matrix':'A-H','persistent_writes':0,'credentials_exposed':False},sort_keys=True))
     return 0
 
 if __name__=='__main__': raise SystemExit(main())

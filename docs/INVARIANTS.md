@@ -1,5 +1,16 @@
 # Invariantes
 
+- **INV-189:** El contrato Admin Access / Impersonation / Global Permissions aprobado en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` está `PROTECTED / CLOSED CONTRACT`; una H ajena no lo modifica y una H que lo toque declara razón, impacto, auditoría y prueba focalizada.
+- **INV-190:** El email nunca es autoridad administrativa durable. Sólo resuelve una cuenta Auth confirmada y única; `auth_user_id` es la identidad persistente de toda asignación.
+- **INV-191:** Frontend, menú y navegación nunca son la única barrera. Toda autorización sensible vuelve a denegarse en RLS, RPC o backend y anónimo/usuario normal permanecen sin privilegios.
+- **INV-192:** `admin_roles`, `admin_role_permissions`, `admin_assignments` y `has_admin_permission()` son una sola autoridad técnica; no existe asignación, rol, permiso o bypass paralelo ni hardcode por email.
+- **INV-193:** `admin_section_definitions`, `admin_section_responsibilities` y `has_section_action()` son la única autoridad de responsabilidad; una acción de sección no implica otra acción ni otra sección.
+- **INV-194:** La impersonación exige `affiliates.impersonate`; ser Admin o responsable de sección no concede esa capacidad, y la capacidad de impersonar no concede acceso administrativo global.
+- **INV-195:** Toda sesión de impersonación conserva sin sustitución `actor_real_auth_user_id` y `usuario_contexto_affiliate_id`, además de sesión Auth y motivo; el usuario contexto nunca se convierte en actor real.
+- **INV-196:** Toda impersonación se audita, no admite anidamiento, expira en un máximo de 30 minutos y termina al salir o al revocar asignación/capacidad.
+- **INV-197:** Toda asignación o revocación administrativa se audita, conserva metadata histórica y no permite revocar el Super Admin protegido ni dejar el sistema sin un principal válido.
+- **INV-198:** Ningún cambio concede privilegios por inferencia, cargo, sección, email, estado UI, caché o fallback; todo escalamiento debe ser explícito, mínimo y autorizado por las autoridades protegidas.
+
 - **INV-174:** Google Sheets + Apps Script conservan la autoridad histórica/productiva de Ahorro hasta un cutover owner posterior. `public.savings_*` es exclusivamente `SHADOW + NEW FOUNDATION`; no existe dual-read, sincronización automática, escritura Google ni fallback local.
 - **INV-175:** Una importación de Ahorro requiere manifest y evidencia SHA-256 coincidentes, certificación explícita y `service_role`; el CLI es dry-run por defecto. Folios ambiguos/huérfanos mantienen `affiliate_id=NULL` y resolver identidad nunca muta historia financiera.
 - **INV-176:** Capital y rendimiento son componentes distintos de `savings_transactions`, que es append-only. Saldo, total, retenido y disponible son proyecciones backend; Q legacy es sólo evidencia conciliable y nunca fuente del ledger.

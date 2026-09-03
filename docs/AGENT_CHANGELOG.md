@@ -6,6 +6,7 @@
 - Supabase mantiene status, tracking y auditoría en una transición atómica e idempotente; préstamo/producto conservan sus writers certificados. La asignación futura distingue préstamo por programa de cotización por tipo sin alterar snapshots históricos.
 - Imágenes y PDF se autorizan automáticamente al abrir; otros documentos muestran nombre y acción. Los objetos siguen privados y las URLs firmadas sólo viven en memoria.
 - El alcance fue focal: préstamo, membresía, cotización y beneficio; sin Marketplace, service worker, suite global, reglas financieras ni Google legacy.
+- Migración, recovery en rollback, matriz transaccional, build y Chrome productivo pasaron; Pages desplegó `c5e0647` y las 58 filas documentales visibles cargaron sin preparación manual. Revisión arquitectónica: `APPROVED`.
 
 ## 2026-09-03 — H-ADMIN-VISIBILITY-ACCESS-GATE-001
 

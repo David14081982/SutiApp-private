@@ -28,9 +28,14 @@ Autoridades preservadas: `program_requests` para solicitud/status; `workflow_sna
 - Recovery productivo ejecutado dentro de `ROLLBACK`, seguido de forward y checks: `PASS`; conteos idénticos y `persistentChanges=0`. Quedará fail-closed cuando exista historia nueva de etapas.
 - Chrome real local, modo read-only: préstamo, membresía, cotización y beneficio mostraron workflow/nombre/etapa actual/etapas completas y pendientes/siguiente/responsable/historial: `PASS`.
 - Previews locales: 47 autorizaciones automáticas intentadas; préstamo 17 filas visibles, membresía 15, cotización 9 y beneficio 17; botón manual “Preparar vista”: `0`. El origen local no pertenece a `ALLOWED_APP_ORIGINS`, por lo que las 47 firmas fallaron cerradas como se esperaba. La carga real queda condicionada al `PASS` posterior desde GitHub Pages.
+- GitHub Pages, commit `c5e0647`: despliegue `33746210924` `PASS`. Chrome contra el origen productivo autorizado cargó automáticamente 17/17 documentos de préstamo, 15/15 de membresía, 9/9 de cotización y 17/17 de beneficio; fallos `0`, botón manual “Preparar vista” `0` y llamadas al resolver firmado `47`.
 - Responsive: 1440 px con dos paneles y siete filtros; 430 px con un panel, sin overflow: `PASS`.
 - Escrituras de transición durante la inspección read-only: `0`; errores de página: `0`; lecturas Google directas: `0`.
 
-Evidencia de navegador: `docs/qa/evidence/finance-request-workflow-ux-20260903/browser-result.json` y `workflow-workbench.png` (PII enmascarada).
+Evidencia de navegador productiva: `docs/qa/evidence/finance-request-workflow-ux-20260903/browser-result.json` y `workflow-workbench.png` (PII enmascarada).
 
-La publicación GitHub Pages y verificación remota se agregan después del commit.
+## Revisión arquitectónica independiente
+
+`APPROVED`. El diff respeta las autoridades documentadas, el snapshot inmutable, la separación entre estado de solicitud y procesamiento financiero, los writers certificados y el acceso privado a documentos. No introduce fallback, mock productivo, nueva autoridad, secreto frontend ni llamada Google. La recuperación y la matriz live-rollback restauraron conteos exactos.
+
+Los tres archivos derivados del Architecture Registry ya estaban modificados al iniciar esta H y quedaron fuera de ambos commits para no mezclar ni sobrescribir trabajo ajeno. El check permanece `STALE`; el discovery se hizo contra código, schema y documentos autoritativos reales.

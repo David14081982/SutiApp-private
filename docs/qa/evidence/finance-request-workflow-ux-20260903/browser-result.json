@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "browser": "Chrome",
-  "mode": "LOCAL_FOCAL",
+  "mode": "PRODUCTION_FOCAL",
   "types": {
     "loan": {
       "flow": true,
@@ -35,30 +35,30 @@
   "documents": {
     "loan": {
       "rows": 17,
-      "ready": 0,
-      "failed": 17,
-      "automatic": false,
+      "ready": 17,
+      "failed": 0,
+      "automatic": true,
       "manualPrepare": false
     },
     "membership": {
       "rows": 15,
-      "ready": 0,
-      "failed": 15,
-      "automatic": false,
+      "ready": 15,
+      "failed": 0,
+      "automatic": true,
       "manualPrepare": false
     },
     "quote": {
       "rows": 9,
-      "ready": 0,
-      "failed": 9,
-      "automatic": false,
+      "ready": 9,
+      "failed": 0,
+      "automatic": true,
       "manualPrepare": false
     },
     "benefit": {
       "rows": 17,
-      "ready": 0,
-      "failed": 17,
-      "automatic": false,
+      "ready": 17,
+      "failed": 0,
+      "automatic": true,
       "manualPrepare": false
     },
     "signedPreviewCalls": 47

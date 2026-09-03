@@ -21,6 +21,7 @@ async function main(){
     await page.locator('input[type=email]').fill(values.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(values.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
     await page.waitForFunction(()=>window.AffiliateAuth&&window.AffiliateAuth.getState().phase==='authenticated',null,{timeout:30000});
     const admin=page.getByRole('button',{name:'Admin',exact:true});if(await admin.count())await admin.click();
+    assert.equal(await admin.count(),1,'Super Admin entry hidden');result.modules.superAdminVisible=true;
     await page.waitForFunction(()=>window.AdminRepository&&window.AdminRepository.getState().phase==='authorized',null,{timeout:30000});await page.waitForSelector('[data-admin-view=menu]');
     for(const id of ['administrators','screen_permissions','impersonation'])assert.equal(await page.locator(`[data-admin-module=${id}]`).count(),1,id+' card');
     await page.locator('[data-admin-module=administrators]').click();await page.waitForSelector('[data-admin-assignment-form=total]');result.modules.administrators=true;
@@ -32,13 +33,26 @@ async function main(){
     await page.evaluate(()=>window.AdminRepository.primeAccessContext({technical_permissions:[],section_actions:[{section_key:'agreements',action:'update'}]}));
     await page.waitForSelector('[data-admin-view=menu]');
     assert.equal(await page.locator('[data-admin-module=convenios]').count(),1,'section-only assigned module');
+    assert.deepEqual(await page.locator('[data-admin-module]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-admin-module'))),['convenios'],'section owner sees unrelated modules');
     assert.equal(await page.locator('[data-admin-module=impersonation]').count(),0,'retained unauthorized view');
     assert.equal(await page.locator('[data-admin-module=roles]').count(),0,'unassigned module hidden');
-    result.modules.sectionOnlyMenu=true;result.modules.directViewDenied=true;
+    assert.equal(await page.getByRole('button',{name:'Admin',exact:true}).count(),1,'section owner entry hidden');
+    result.modules.sectionOnlyMenu=true;result.modules.directViewDenied=true;result.modules.sectionOwnerVisible=true;
+    await page.evaluate(()=>window.AdminRepository.primeAccessContext({role_code:null,full_access:false,technical_permissions:[],section_actions:[]}));
+    await page.waitForFunction(()=>window.AdminRepository.getState().phase==='denied'&&!document.querySelector('[data-app-tab=admin]')&&!document.querySelector('[data-admin-view]'),null,{timeout:10000});
+    result.modules.revocationHidden=true;
     await page.evaluate(()=>window.AdminRepository.retry());
     await page.waitForFunction(()=>window.AdminRepository.getState().phase==='authorized'&&window.AdminRepository.getState().assignment.fullAccess===true,null,{timeout:15000});
     const normal=await token(values,'H005_TEST3'),assignments=await rpc(values,'list_admin_assignments',normal),search=await rpc(values,'search_affiliates_for_impersonation',normal,{p_query:'00'});
     assert(assignments.status>=400,'normal user listed admins');assert(search.status>=400,'normal user searched impersonation');result.security={normalAssignmentDenied:true,normalImpersonationDenied:true};
+    const normalPage=await browser.newPage({viewport:{width:430,height:932},reducedMotion:'reduce'});normalPage.on('pageerror',error=>result.pageErrors.push(error.message));
+    await normalPage.goto(target.replace(/#.*$/,'')+'#/admin',{waitUntil:'domcontentloaded'});
+    await normalPage.locator('input[type=email]').fill(values.H005_TEST3_EMAIL);await normalPage.locator('input[type=password]').fill(values.H005_TEST3_PASSWORD);await normalPage.locator('button[type=submit]').click();
+    await normalPage.waitForFunction(()=>window.AffiliateAuth&&window.AffiliateAuth.getState().phase==='authenticated',null,{timeout:30000});
+    assert.equal(await normalPage.locator('[data-app-tab=admin]').count(),0,'normal user sees Admin entry');
+    assert.equal(await normalPage.locator('[data-admin-view]').count(),0,'normal user entered Admin by direct hash');
+    assert.equal(await normalPage.evaluate(()=>window.AdminRepository.getState().phase),'denied','normal user Admin context authorized');
+    await normalPage.close();result.security.normalUiHidden=true;result.security.directHashDenied=true;
     assert.deepEqual(result.pageErrors,[]);result.status='PASS';console.log(JSON.stringify(result));
   }finally{if(browser)await browser.close().catch(()=>{});if(server){if(server.closeAllConnections)server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}
 }

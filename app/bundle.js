@@ -7258,6 +7258,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const listeners = new Set();
   let state = Object.freeze({ phase: 'loading', assignment: null, errorCode: null });
   let promise = null;
+  let loadVersion = 0;
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const managed = Object.freeze({
     banners: { table:'banners',section:'banners',permission:'banners.write',origin:'ADMIN_H009',fields:`id,placement,title,description,action_label,action_url,company_raw,category_raw,image_asset_id,enabled,start_at,end_at,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['placement','title','description','action_label','action_url','company_raw','category_raw','image_asset_id','enabled','start_at','end_at','sort_order'] },
@@ -7273,9 +7274,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
-  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access);publish(fullAccess||permissions.length||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode:value.role_code||null})}:{phase:'denied'});return state;}
+  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;publish(roleCode||fullAccess||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode})}:{phase:'denied'});return state;}
   function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
-  function clearAccessContext(){promise=null;publish({phase:'denied'});}
+  function clearAccessContext(){loadVersion+=1;promise=null;publish({phase:'denied'});}
   function technical(permission) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.permissions.includes(permission)); }
   function sectionAction(section,action) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action)); }
   function has(permission) {
@@ -7304,14 +7305,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
 
   async function load() {
+    const version=++loadVersion;
     try {
       const result=await client().rpc('get_admin_access_context');
       if(result.error) throw result.error;
-      applyAccessContext(result.data||{});
-    } catch(_){ publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
+      if(version===loadVersion)applyAccessContext(result.data||{});
+    } catch(_){ if(version===loadVersion)publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
     return state;
   }
   function bootstrap(){if(!promise)promise=load();return promise;}
+  function refreshAccessContext(){promise=load();return promise;}
   function retry(){promise=null;publish({phase:'loading'});return bootstrap();}
   function subscribe(fn){listeners.add(fn);fn(state);return()=>listeners.delete(fn);}
 
@@ -7493,7 +7496,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function stopImpersonation(){const result=await client().rpc('stop_affiliate_impersonation');if(result.error)throw result.error;await window.AffiliateAuth.refreshContext();return Boolean(result.data);}
 
   function useAdminAuth(){const[snapshot,setSnapshot]=React.useState(state);React.useEffect(()=>subscribe(setSnapshot),[]);React.useEffect(()=>{bootstrap();},[]);return Object.assign({},snapshot,{retry,has});}
-  window.AdminRepository=Object.freeze({bootstrap,retry,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionDefinitions,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
+  window.AdminRepository=Object.freeze({bootstrap,retry,refreshAccessContext,primeAccessContext,clearAccessContext,subscribe,getState:()=>state,has,updateSettings,uploadBrandingAsset,clearAsset,uploadResourceAsset,resetResourceAsset,listManaged,saveManaged,setEnabled,removeManaged,reorderManaged,uploadManagedAsset,discardAsset,attachAsset,replaceCompanyAsset,getNewsSettings,updateNewsSettings,resolveSectionResponsibility,listSectionDefinitions,listSectionResponsibilities,setSectionResponsibilities,revokeSectionResponsibilities,listSectionResponsibilityAudit,searchAffiliates,getAffiliateProfile,updateAffiliateProfile,startImpersonation,stopImpersonation});
   window.useAdminAuth=useAdminAuth;
 })();
 })();
@@ -62141,7 +62144,7 @@ Object.assign(window, {
       if (adminResult.error) throw adminResult.error;
       const adminContext=adminResult.data||{};
       if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
-      const isAdmin = Boolean((adminContext.technical_permissions||[]).length||(adminContext.section_actions||[]).length);
+      const isAdmin = Boolean(adminContext.role_code||adminContext.full_access||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion) return;
       if (!affiliate && !isAdmin) {
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
@@ -62890,10 +62893,11 @@ Object.assign(window, {
   function BottomNav({
     tab,
     setTab,
-    adminOnly
+    adminOnly,
+    showAdmin
   }) {
     const as = window.adminStore;
-    const tabs = adminOnly ? TABS.filter(t => t.id === 'admin') : as ? TABS.filter(t => t.id === 'admin' || !as.tabHidden(t.id)) : TABS;
+    const tabs = adminOnly ? TABS.filter(t => t.id === 'admin' && showAdmin) : TABS.filter(t => t.id === 'admin' ? showAdmin : !as || !as.tabHidden(t.id));
     const wrapRef = React.useRef(null);
     const boxes = React.useRef({});
     const indRef = React.useRef(null);
@@ -63624,6 +63628,7 @@ Object.assign(window, {
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
     const admin = window.useAdminAuth();
+    const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore(); // re-render al cambiar accesos de pantalla
     const [tab, setTabState] = useState(auth.affiliateView ? window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin');
     const [stack, setStack] = useState(() => window.location.hash === '#/savings' && auth.affiliateView ? [{
@@ -63688,13 +63693,21 @@ Object.assign(window, {
       }]);
     }, []);
     const back = useCallback(() => popOne(), [popOne]);
-    const setTab = useCallback(id => {
+    const commitTab = useCallback(id => {
       setOutgoing(null);
       if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search);
       if (window.MOTION) window.MOTION.shared.clear();
       setStack([]);
       setTabState(id);
     }, []);
+    const setTab = useCallback(id => {
+      if (id !== 'admin') return commitTab(id);
+      if (!adminAuthorized) return false;
+      window.AdminRepository.refreshAccessContext().then(fresh => {
+        if (fresh.phase === 'authorized') commitTab('admin');else if (auth.affiliateView) commitTab('home');else auth.refreshContext();
+      });
+      return true;
+    }, [adminAuthorized, auth.affiliateView, auth.refreshContext, commitTab]);
     const showToast = useCallback(msg => {
       setToast(msg);
       setTimeout(() => setToast(null), 2600);
@@ -63721,6 +63734,36 @@ Object.assign(window, {
       editorial,
       admin
     };
+    useEffect(() => {
+      if (adminAuthorized) return;
+      if (tab !== 'admin') return;
+      setOutgoing(null);
+      setStack([]);
+      if (auth.affiliateView) setTabState('home');else if (auth.refreshContext) auth.refreshContext();
+    }, [adminAuthorized, tab, auth.affiliateView, auth.refreshContext]);
+    useEffect(() => {
+      let disposed = false,
+        inFlight = false;
+      const refresh = () => {
+        if (disposed || inFlight) return;
+        inFlight = true;
+        window.AdminRepository.refreshAccessContext().finally(() => {
+          inFlight = false;
+        });
+      };
+      const onVisibility = () => {
+        if (document.visibilityState === 'visible') refresh();
+      };
+      window.addEventListener('focus', refresh);
+      document.addEventListener('visibilitychange', onVisibility);
+      const timer = window.setInterval(refresh, 30000);
+      return () => {
+        disposed = true;
+        window.clearInterval(timer);
+        window.removeEventListener('focus', refresh);
+        document.removeEventListener('visibilitychange', onVisibility);
+      };
+    }, [auth.session && auth.session.user && auth.session.user.id]);
 
     // ---- Botón Atrás del dispositivo (Android/PWA) ----
     // Modelo: se mantiene siempre una entrada "trampa" en el historial. Al presionar
@@ -63787,7 +63830,7 @@ Object.assign(window, {
 
     // tab screen (bloqueo de pantalla completa desde el panel)
     const gate = id => window.adminStore ? window.adminStore.screenAllowed(id) : true;
-    const tabAllowed = tab === 'admin' || gate(tab);
+    const tabAllowed = tab === 'admin' ? adminAuthorized : gate(tab);
     const tabScreen = {
       home: window.HomeScreen,
       financiera: window.FinancieraScreen,
@@ -63927,7 +63970,8 @@ Object.assign(window, {
     React.createElement(BottomNav, {
       tab,
       setTab,
-      adminOnly: !auth.affiliateView
+      adminOnly: !auth.affiliateView,
+      showAdmin: adminAuthorized
     }),
     // pushed full-screen routes (capa de presencia · entrada + salida)
     // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.
@@ -64010,7 +64054,7 @@ Object.assign(window, {
         const l = visual.popups || [];
         if (l.length) setPopupItems(l);else showToast('No hay pop-up productivo activo');
       }
-    }), React.createElement(window.TweakButton, {
+    }), adminAuthorized && React.createElement(window.TweakButton, {
       label: 'Ir al Panel Administrativo',
       onClick: () => setTab('admin')
     }), React.createElement(window.TweakSection, {

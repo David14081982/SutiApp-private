@@ -41,7 +41,7 @@ has(adapter,"p.includes('affiliates.impersonate')");
 has(banner,'Estás viendo SutiApp como');
 has(banner,'Salir de tomar control');
 has(builder,"'screens-admin-access.jsx'");
-has(html,'app/bundle.js?v=198');has(sw,"sutiapp-v142");has(sw,'app/bundle.js?v=198');
+has(html,'app/bundle.js?v=200');has(sw,"sutiapp-v144");has(sw,'app/bundle.js?v=200');
 
 const forbidden=[/service_role/i,/localStorage/i,/DATA\./,/google/i,/apps script/i];
 forbidden.forEach(pattern=>must(!pattern.test(screen),'forbidden frontend authority: '+pattern));

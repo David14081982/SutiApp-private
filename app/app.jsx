@@ -149,9 +149,11 @@
   // Indicador único que VIAJA entre pestañas (M3 · shell). El fondo guinda ya no
   // vive en cada botón: es un solo objeto medido tras el commit y desplazado con
   // transform. Los botones solo interpolan color.
-  function BottomNav({ tab, setTab, adminOnly }) {
+  function BottomNav({ tab, setTab, adminOnly, showAdmin }) {
     const as = window.adminStore;
-    const tabs = adminOnly ? TABS.filter((t) => t.id === 'admin') : (as ? TABS.filter((t) => t.id === 'admin' || !as.tabHidden(t.id)) : TABS);
+    const tabs = adminOnly
+      ? TABS.filter((t) => t.id === 'admin' && showAdmin)
+      : TABS.filter((t) => t.id === 'admin' ? showAdmin : (!as || !as.tabHidden(t.id)));
     const wrapRef = React.useRef(null);
     const boxes = React.useRef({});
     const indRef = React.useRef(null);
@@ -322,6 +324,7 @@
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
     const admin = window.useAdminAuth();
+    const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
     const [tab, setTabState] = useState(auth.affiliateView ? (window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin');
     const [stack, setStack] = useState(() => window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
@@ -372,11 +375,43 @@
 
     const push = useCallback((name, params = {}) => { setOutgoing(null); if (name === 'savings') history.replaceState(history.state, '', '#/savings'); setStack((s) => [...s, { name, params }]); }, []);
     const back = useCallback(() => popOne(), [popOne]);
-    const setTab = useCallback((id) => { setOutgoing(null); if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
+    const commitTab = useCallback((id) => { setOutgoing(null); if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
+    const setTab = useCallback((id) => {
+      if(id!=='admin')return commitTab(id);
+      if(!adminAuthorized)return false;
+      window.AdminRepository.refreshAccessContext().then((fresh)=>{
+        if(fresh.phase==='authorized')commitTab('admin');
+        else if(auth.affiliateView)commitTab('home');
+        else auth.refreshContext();
+      });
+      return true;
+    }, [adminAuthorized,auth.affiliateView,auth.refreshContext,commitTab]);
     const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); }, []);
   const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
 
     const app = { push, back, setTab, toast: showToast, openFinanceItem, logout: auth.signOut, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
+
+    useEffect(()=>{
+      if(adminAuthorized)return;
+      if(tab!=='admin')return;
+      setOutgoing(null);setStack([]);
+      if(auth.affiliateView)setTabState('home');
+      else if(auth.refreshContext)auth.refreshContext();
+    },[adminAuthorized,tab,auth.affiliateView,auth.refreshContext]);
+
+    useEffect(()=>{
+      let disposed=false,inFlight=false;
+      const refresh=()=>{
+        if(disposed||inFlight)return;
+        inFlight=true;
+        window.AdminRepository.refreshAccessContext().finally(()=>{inFlight=false;});
+      };
+      const onVisibility=()=>{if(document.visibilityState==='visible')refresh();};
+      window.addEventListener('focus',refresh);
+      document.addEventListener('visibilitychange',onVisibility);
+      const timer=window.setInterval(refresh,30000);
+      return()=>{disposed=true;window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',onVisibility);};
+    },[auth.session&&auth.session.user&&auth.session.user.id]);
 
     // ---- Botón Atrás del dispositivo (Android/PWA) ----
     // Modelo: se mantiene siempre una entrada "trampa" en el historial. Al presionar
@@ -425,7 +460,7 @@
 
     // tab screen (bloqueo de pantalla completa desde el panel)
     const gate = (id) => (window.adminStore ? window.adminStore.screenAllowed(id) : true);
-    const tabAllowed = tab === 'admin' || gate(tab);
+    const tabAllowed = tab === 'admin' ? adminAuthorized : gate(tab);
     const tabScreen = {
       home: window.HomeScreen, financiera: window.FinancieraScreen, convenios: window.ConveniosScreen,
       historial: window.HistorialScreen, credencial: window.CredencialScreen, admin: window.AdminScreen,
@@ -490,7 +525,7 @@
             ? React.createElement(tabScreen, { app, t })
             : React.createElement(window.ScreenLocked, { screen: tab })),
         // bottom nav
-        React.createElement(BottomNav, { tab, setTab, adminOnly: !auth.affiliateView }),
+        React.createElement(BottomNav, { tab, setTab, adminOnly: !auth.affiliateView, showAdmin: adminAuthorized }),
         // pushed full-screen routes (capa de presencia · entrada + salida)
         // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.
         // Mientras únicamente queda la capa saliente (pointer-events:none), el
@@ -520,7 +555,7 @@
         React.createElement(window.TweakSection, { label: 'Pop-ups' }),
         React.createElement(window.TweakToggle, { label: 'Mostrar pop-ups administrables', value: t.showPromo, onChange: (v) => setTweak('showPromo', v) }),
         React.createElement(window.TweakButton, { label: 'Ver pop-up productivo', onClick: () => { const l = visual.popups || []; if (l.length) setPopupItems(l); else showToast('No hay pop-up productivo activo'); } }),
-        React.createElement(window.TweakButton, { label: 'Ir al Panel Administrativo', onClick: () => setTab('admin') }),
+        adminAuthorized && React.createElement(window.TweakButton, { label: 'Ir al Panel Administrativo', onClick: () => setTab('admin') }),
         React.createElement(window.TweakSection, { label: 'Accesibilidad' }),
         React.createElement(window.TweakToggle, { label: 'Modo accesible (texto grande)', value: t.a11y, onChange: (v) => setTweak('a11y', v) }),
         React.createElement(window.TweakSection, { label: 'QA de movimiento (dev)' }),

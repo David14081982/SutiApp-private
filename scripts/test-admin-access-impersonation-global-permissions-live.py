@@ -142,6 +142,9 @@ end $$;
 do $$ begin
   if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='impersonation_sessions' and column_name='actor_auth_session_id') then raise exception 'SESSION_BINDING_COLUMN_MISSING'; end if;
   if has_function_privilege('anon',to_regprocedure('public.set_total_admin_by_email(text)'),'EXECUTE') then raise exception 'ANON_ADMIN_RPC_EXPOSED'; end if;
+  if has_function_privilege('anon',to_regprocedure('public.get_admin_access_context()'),'EXECUTE') then raise exception 'ANON_ADMIN_CONTEXT_EXPOSED'; end if;
+  if has_function_privilege('anon',to_regprocedure('public.has_admin_permission(text)'),'EXECUTE') then raise exception 'ANON_ADMIN_PERMISSION_EXPOSED'; end if;
+  if has_function_privilege('anon',to_regprocedure('public.has_section_action(text,text)'),'EXECUTE') then raise exception 'ANON_SECTION_PERMISSION_EXPOSED'; end if;
   if has_function_privilege('anon',to_regprocedure('public.start_affiliate_impersonation(uuid,text)'),'EXECUTE') then raise exception 'ANON_IMPERSONATION_RPC_EXPOSED'; end if;
   if (select count(*) from public.admin_section_definitions where enforcement_status='ENFORCED')<>11 then raise exception 'ENFORCED_SECTION_COUNT_CHANGED'; end if;
 end $$;

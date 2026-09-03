@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-099 | Normas y formatos de Tu sindicato usan sólo `institutional_documents → app_assets → documents`; Google queda como procedencia privada, y un duplicado binario histórico se conserva despublicado sin crear otro objeto. | Aceptada / ACTIVE |
 | ADR-098 | El contrato Admin Access / Impersonation / Global Permissions aprobado en producción queda protegido y cerrado; futuras H deben declarar impacto y preservar autoridades, migraciones, invariantes y regresión focal. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-097 | La administración global reutiliza roles/asignaciones y responsabilidades existentes; altas Admin resuelven email confirmado a UUID, la cuenta principal queda protegida y la impersonación vuelve a exigir `affiliates.impersonate` ligado a sesión Auth. | Aceptada / ACTIVE |
 | ADR-095 | Ahorro se implementa como `SHADOW + NEW FOUNDATION`; Google conserva autoridad productiva hasta cutover separado, el ledger Supabase separa capital/rendimiento y toda importación exige snapshot certificado. | Aceptada / RAW_SHADOW_IMPORT_APPLIED / NO_CUTOVER |
@@ -69,6 +70,15 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-099 — Corte final de Normas y formatos a Supabase Storage
+
+- **Contexto:** el libro `SutiApp Final` contiene 2 filas válidas en `Normas y Reglamentos` y 6 en `Descargas2`. Los metadatos y binarios ya habían sido evacuados, pero las columnas URL legacy seguían pobladas y la tarjeta prefería la portada sobre el PDF.
+- **Decisión:** mantener `institutional_documents` como autoridad única de metadata y `app_assets` + bucket `documents` como autoridad física. Las URL Google sobreviven sólo en `asset_sources`. La UI abre el PDF Supabase antes de cualquier portada.
+- **Duplicado:** `Descargas2!15` y `Descargas2!17` tienen el mismo SHA-256 y el mismo asset. Se conserva la fila 17 por ser la referencia vigente con descripción 2026–2027; la fila 15 queda despublicada, sin borrado histórico.
+- **Recuperación:** `20260903000130_union_institutional_documents_storage_cutover_recovery.sql` restaura columnas y publicación sólo si se revierte también el frontend y se autoriza explícitamente.
+- **Límite:** no cambia repositories compartidos, buckets, policies, Auth, documentos privados, otras pantallas ni legacy financiero; no aplica suite global.
+- **Aprobación:** propietario, `H-UNION-INSTITUTIONAL-DOCUMENTS-STORAGE-001`, 2026-09-03.
 
 ### ADR-098 — Protección del contrato de acceso administrativo
 

@@ -1,5 +1,9 @@
 # Invariantes
 
+- **INV-199:** `Normas y Reglamentos` y `Descarga de formatos` leen exclusivamente `institutional_documents → app_assets → Supabase Storage`; las URL Google sólo existen como procedencia privada de migración y nunca como campo o fallback productivo.
+- **INV-200:** Las filas fuente se reconcilian por `source_sheet + source_row_ordinal`. Las 8 filas históricas permanecen trazables, pero sólo 7 documentos únicos están publicados: 2 normas y 5 formatos; el duplicado físico comprobado `Descargas2!15/17` comparte asset y conserva deshabilitada la versión más antigua.
+- **INV-201:** Una tarjeta documental con portada y PDF abre siempre `url` (PDF Supabase) antes que `imageUrl`; ambas secciones mantienen sus filtros y contrato visual sin mezclar registros.
+
 - **INV-189:** El contrato Admin Access / Impersonation / Global Permissions aprobado en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` está `PROTECTED / CLOSED CONTRACT`; una H ajena no lo modifica y una H que lo toque declara razón, impacto, auditoría y prueba focalizada.
 - **INV-190:** El email nunca es autoridad administrativa durable. Sólo resuelve una cuenta Auth confirmada y única; `auth_user_id` es la identidad persistente de toda asignación.
 - **INV-191:** Frontend, menú y navegación nunca son la única barrera. Toda autorización sensible vuelve a denegarse en RLS, RPC o backend y anónimo/usuario normal permanecen sin privilegios.

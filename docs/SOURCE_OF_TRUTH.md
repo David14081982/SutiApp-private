@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-099 — documentos institucionales de Tu sindicato
+
+`public.institutional_documents` es la autoridad única de metadatos para `Normas y Reglamentos` y `Descarga de formatos`; `document_asset_id → public.app_assets → documents` es la autoridad única del PDF publicado. `InstitutionalDocumentsRepository` sólo proyecta esas relaciones Supabase y la UI abre primero el PDF resuelto por Storage. `document_url` e `image_url` quedaron retirados del runtime y nulos en las ocho filas fuente.
+
+La referencia histórica exacta es el libro `SutiApp Final`: `Normas y Reglamentos` aporta 2 filas válidas y `Descargas2` aporta 6. Sus URL Google se conservan exclusivamente en `asset_sources`, sin lectura pública ni dependencia productiva. Las filas 15 y 17 de `Descargas2` entregaron el mismo SHA-256 y comparten deliberadamente un solo `app_asset`/objeto; la fila 15 queda despublicada, la 17 vigente y las ocho permanecen trazables. Resultado productivo: 2 normas + 5 formatos visibles, 7 archivos físicos únicos y cero duplicados visibles.
+
 ## Contrato protegido ADR-098 — Admin Access / Impersonation / Global Permissions
 
 El dominio aprobado en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` queda `PROTECTED / CLOSED CONTRACT`. `admin_roles`, `admin_role_permissions`, `admin_assignments` y `has_admin_permission()` son la autoridad única de autorización administrativa; `admin_section_definitions`, `admin_section_responsibilities` y `has_section_action()` son la autoridad única de responsabilidades y acciones exactas; `impersonation_sessions`, sus RPC de contexto y `identity_audit_log` son la autoridad única de asistencia. `admin_audit_log` conserva la historia administrativa.

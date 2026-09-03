@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Documentos institucionales de Tu sindicato — ADR-099
+
+Los PDFs públicos se resuelven exclusivamente mediante `document_asset_id → app_assets → documents`; el browser no recibe `asset_sources`, tokens privilegiados ni URL Google. Las columnas legacy de `institutional_documents` permanecen nulas y el repository ni siquiera las selecciona. `asset_sources` conserva procedencia para recuperación y la lectura con publishable key fue denegada/vacía.
+
+La migración usa un claim `service_role` sólo dentro de su transacción owner-authorized para atravesar el guard de mantenimiento existente; no crea ni modifica roles, grants, RLS, policies o permisos persistentes. La prueba live volvió a descargar los 7 objetos públicos, validó firma PDF, tamaño y SHA-256 y confirmó cero exposición de la procedencia.
+
 ## Ahorro SHADOW — ADR-095
 
 Las 17 tablas `savings_*` habilitan y fuerzan RLS; `anon` y `authenticated` no reciben DML directo. Autoservicio usa tres RPC `SECURITY DEFINER` con `search_path=''`, deriva `get_effective_affiliate_id()` y nunca acepta un afiliado objetivo. Administración usa RPC separadas y permisos mínimos `savings.read|write|approve|config|reports|identity_review`; ningún rol se concede desde la UI.

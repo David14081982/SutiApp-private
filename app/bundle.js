@@ -15868,7 +15868,7 @@ Object.assign(window, {
       if (url) window.open(url, '_blank', 'noopener');else app.toast && app.toast('Enlace no configurado');
     };
     const downloadFile = () => {
-      if (b.imageUrl) openUrl(b.imageUrl);else if (b.url) openUrl(b.url);else app.toast && app.toast('Archivo no disponible');
+      if (b.url) openUrl(b.url);else if (b.imageUrl) openUrl(b.imageUrl);else app.toast && app.toast('Archivo no disponible');
     };
     if (b.kind === 'texto') {
       const paras = String(b.texto || '').split(/\n{2,}/).map(s => s.trim()).filter(Boolean);

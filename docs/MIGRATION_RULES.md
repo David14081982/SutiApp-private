@@ -1,5 +1,11 @@
 # Reglas de migración
 
+## 20260903000130 — corte documental de Tu sindicato
+
+Estado: `APPLIED / VERIFIED — PASS`. El corte reconcilió exactamente 8 filas históricas de `SutiApp Final` (`Normas y Reglamentos`: 2; `Descargas2`: 6) contra `institutional_documents`, comprobó `app_assets` `READY`, bucket `documents`, objeto físico, MIME PDF, tamaño, SHA-256 y procedencia privada. No descargó ni subió copias nuevas porque los 7 binarios únicos ya estaban correctamente evacuados; reutilizarlos evita duplicados.
+
+La migración anuló `document_url` e `image_url` en las 8 filas y despublicó de forma reversible `Descargas2!15`, cuyo contenido coincide exactamente con `Descargas2!17`; no eliminó filas, assets ni objetos. Forward + recovery pasaron juntos con `ROLLBACK` antes del apply. El recovery rehidrata únicamente las URL históricas desde `asset_sources` y reactiva la fila 15, pero sólo debe ejecutarse junto con la reversión del frontend y una decisión explícita.
+
 ## 20260902000300 — lector self Ahorro live read-only
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración agrega exclusivamente `get_self_savings_live_readonly()` y su grant autenticado; no crea ni altera tablas, filas, triggers, writers, ledger, rendimientos o datos importados. El lector deriva identidad efectiva, no acepta objetivo y proyecta Q/AA:DO/DP:DW/retiros/cambios/beneficiarios desde la evidencia SHADOW certificada.

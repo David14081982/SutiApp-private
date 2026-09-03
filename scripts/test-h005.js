@@ -62,7 +62,7 @@ function createHarness(options = {}) {
     URL,
     setTimeout,
     clearTimeout,
-    window: {
+      window: {
       SutiSupabase: { getClient: () => ({ auth, rpc: async (name) => {
         if (name === 'get_affiliate_activation_status') return { data: { status: options.activationStatus || 'ELIGIBLE' }, error: options.preflightError || null };
         assert.equal(name, 'get_admin_access_context');
@@ -154,6 +154,10 @@ function createHarness(options = {}) {
   assert.equal(await callback.controller.completeActivation('NewPassword!123'), true);
   assert.equal(callback.controller.getState().phase, 'unauthenticated');
   assert.match(callback.controller.getState().notice, /Cuenta activada/);
+
+  const metadataCallback = createHarness({ session: { user: { id: 'auth-2', email: 'owner@example.test', user_metadata: { sutiapp_activation: true } } }, claimSucceeds: true });
+  await metadataCallback.controller.bootstrap();
+  assert.equal(metadataCallback.controller.getState().phase, 'activation_password');
 
   console.log('H-005 local Auth tests: PASS');
 })().catch((error) => {

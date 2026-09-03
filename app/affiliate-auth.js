@@ -65,6 +65,10 @@
     catch (_) { return ''; }
   }
 
+  function isActivationSession(session) {
+    return requestedAuthFlow() === 'activation' || Boolean(session && session.user && session.user.user_metadata && session.user.user_metadata.sutiapp_activation === true);
+  }
+
   function clearAuthFlowUrl() {
     try {
       const url = new URL(window.location.href);
@@ -181,7 +185,7 @@
         }
         if (event === 'INITIAL_SESSION') {
           if (state.phase === 'loading') {
-            if (session && requestedAuthFlow() === 'activation') publish({ phase: 'activation_password', session });
+            if (session && isActivationSession(session)) publish({ phase: 'activation_password', session });
             else resolveSession(session);
           }
           return;
@@ -190,7 +194,7 @@
           publish({ phase: 'password_recovery', session });
           return;
         }
-        if (event === 'SIGNED_IN' && session && requestedAuthFlow() === 'activation') {
+        if (event === 'SIGNED_IN' && session && isActivationSession(session)) {
           publish({ phase: 'activation_password', session });
           return;
         }
@@ -212,7 +216,7 @@
         const result = await authClient.auth.getSession();
         if (result.error) throw result.error;
         const session = result.data && result.data.session;
-        if (session && requestedAuthFlow() === 'activation') publish({ phase: 'activation_password', session });
+        if (session && isActivationSession(session)) publish({ phase: 'activation_password', session });
         else await resolveSession(session);
       } catch (error) {
         publish({ phase: 'error', errorCode: controlledErrorCode(error) });

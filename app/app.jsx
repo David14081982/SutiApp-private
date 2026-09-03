@@ -35,6 +35,7 @@
     // Selector: el TopBar sólo depende de status/overview. Una cotización
     // nueva no debe re-renderizar el encabezado ni sus drivers de scroll.
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
+    const savingsBalance = window.useSelfSavingsBalance ? window.useSelfSavingsBalance(variant === 'home') : { status: 'error', value: null, label: '—' };
     const [homeFinancialUser, setHomeFinancialUser] = React.useState(null);
     React.useEffect(() => {
       if (variant !== 'home' || !window.financialLegacyStore) return undefined;
@@ -108,9 +109,9 @@
           React.createElement('div', { ref: fadeRef, style: { willChange: 'transform, opacity', transformOrigin: '0 50%' } },
             React.createElement('div', { style: { fontSize: 14.5, opacity: .85, fontWeight: 600 } }, saludoHome() + ','),
             React.createElement('div', { 'data-affiliate-field': 'topbar-name', style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short)),
-          React.createElement('div', { ref: chipsRef, 'data-home-financial-chips': 'partial', 'data-home-credit-state': availableCreditReady ? 'ready' : financial.status === 'error' ? 'error' : 'loading', 'data-home-savings-state': 'pending-source', style: { display: 'flex', gap: 11, marginTop: 16, willChange: 'transform, opacity', transformOrigin: '50% 0' } },
+          React.createElement('div', { ref: chipsRef, 'data-home-financial-chips': 'complete', 'data-home-credit-state': availableCreditReady ? 'ready' : financial.status === 'error' ? 'error' : 'loading', 'data-home-savings-state': savingsBalance.status, style: { display: 'flex', gap: 11, marginTop: 16, willChange: 'transform, opacity', transformOrigin: '50% 0' } },
             balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'),
-            balChip('Mi ahorro', '—', 'piggy'))),
+            balChip('Mi ahorro', savingsBalance.label, 'piggy', { 'data-home-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value), 'data-savings-balance-state': savingsBalance.status }))),
         sheetLip());
     }
 
@@ -124,11 +125,11 @@
         frostBtn('bell', () => app.push('notifs'), unread)),
       sheetLip());
   }
-  function balChip(label, val, icon) {
+  function balChip(label, val, icon, valueProps) {
     return React.createElement('div', { key: label, style: { flex: 1, minWidth: 0, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 18, padding: '12px 14px', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 'clamp(10.5px, 3vw, 11.5px)', opacity: .9, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
         React.createElement(I, { name: icon, size: 14, stroke: 2, style: { flexShrink: 0 } }), label),
-      React.createElement('div', { style: { fontSize: 'clamp(17px, 5.4vw, 21px)', fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', whiteSpace: 'nowrap' } }, val));
+      React.createElement('div', Object.assign({ style: { fontSize: 'clamp(17px, 5.4vw, 21px)', fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', whiteSpace: 'nowrap' } }, valueProps || {}), val));
   }
   function saludoHome() {
     const h = new Date().getHours();

@@ -10775,6 +10775,11 @@ Object.assign(window, {
       status: 'error',
       overview: null
     };
+    const savingsBalance = window.useSelfSavingsBalance ? window.useSelfSavingsBalance(true) : {
+      status: 'error',
+      value: null,
+      label: '—'
+    };
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = amount => typeof amount === 'number' ? window.money(amount) : '—';
@@ -10838,7 +10843,10 @@ Object.assign(window, {
         display: 'flex',
         gap: 18
       }
-    }, miniStat('Mi ahorro', value(overview.savings && overview.savings.balance), 'fin.stat.ahorro'), React.createElement('div', {
+    }, miniStat('Mi ahorro', savingsBalance.label, 'fin.stat.ahorro', false, {
+      'data-finance-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value),
+      'data-savings-balance-state': savingsBalance.status
+    }), React.createElement('div', {
       style: {
         width: 1,
         background: 'var(--hairline)'
@@ -10937,7 +10945,7 @@ Object.assign(window, {
       stroke: 2
     })), label);
   }
-  function miniStat(label, val, resKey, investment) {
+  function miniStat(label, val, resKey, investment, valueProps) {
     return React.createElement('div', {
       key: label,
       style: {
@@ -10977,7 +10985,7 @@ Object.assign(window, {
       style: {
         color: 'var(--guinda)'
       }
-    }), label), React.createElement('div', {
+    }), label), React.createElement('div', Object.assign({
       style: {
         fontSize: 17,
         fontWeight: 800,
@@ -10985,7 +10993,7 @@ Object.assign(window, {
         fontVariantNumeric: 'tabular-nums',
         color: 'var(--navy)'
       }
-    }, val));
+    }, valueProps || {}), val));
   }
   function Recommended({
     app
@@ -11601,8 +11609,8 @@ Object.assign(window, {
     }, 'Reintentar'))));
     const participant = dashboard.participant,
       enrollment = dashboard.enrollment,
-      balance = dashboard.balances,
       years = dashboard.annual || [];
+    const balanceView = window.SavingsBalanceReadModel.select(state);
     const history = dashboard.history || [],
       withdrawals = dashboard.withdrawals || [],
       beneficiaries = dashboard.beneficiaries || [];
@@ -11662,13 +11670,14 @@ Object.assign(window, {
       className: 'sav-body'
     }, participant ? h(React.Fragment, null, h('section', {
       className: 'sav-balance sav-balance-summary',
-      'aria-label': 'Resumen de ahorro'
+      'aria-label': 'Resumen de ahorro',
+      'data-savings-balance-state': balanceView.status
     }, h('div', {
       className: 'sav-kicker'
     }, 'Saldo actual'), h('div', {
       className: 'sav-total',
-      'data-savings-total': balance && balance.total != null ? String(balance.total) : ''
-    }, balance && balance.total != null ? money(balance.total) : 'Por confirmar')), section('Detalle por año', years.length ? h('div', {
+      'data-savings-total': balanceView.value == null ? '' : String(balanceView.value)
+    }, balanceView.label)), section('Detalle por año', years.length ? h('div', {
       className: 'sav-year-list'
     }, years.map((item, index) => {
       const subtotal = item.capital == null && item.yield == null ? null : Number(item.capital || 0) + Number(item.yield || 0);
@@ -11733,7 +11742,8 @@ Object.assign(window, {
       'data-savings-detail': code.toLowerCase()
     }, h('span', null, icon(iconName, 16)), label, h('small', null, count)))))) : h('section', {
       className: 'sav-balance sav-empty',
-      'data-savings-empty': ''
+      'data-savings-empty': '',
+      'data-savings-balance-state': balanceView.status
     }, h('span', {
       className: 'sav-icon'
     }, icon('cash', 22)), h('h2', null, 'Ahorro no encontrado'), h('p', null, 'No encontramos una cuenta de ahorro vinculada a tu perfil.'), h('button', {
@@ -24780,6 +24790,46 @@ Object.assign(window, {
     adminPromise = null,
     adminParticipant = null;
   const emit = () => listeners.forEach(fn => fn());
+  const balanceFormatter = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  function selectSelfBalance(snapshot) {
+    const current = snapshot || {};
+    if (current.selfPhase === 'loading' || current.selfPhase === 'idle') return Object.freeze({
+      status: current.selfPhase || 'idle',
+      value: null,
+      label: '—'
+    });
+    if (current.selfPhase === 'error') return Object.freeze({
+      status: 'error',
+      value: null,
+      label: '—'
+    });
+    const dashboard = current.self;
+    if (!dashboard || !dashboard.participant) return Object.freeze({
+      status: 'empty',
+      value: null,
+      label: '—'
+    });
+    const raw = dashboard.balances && dashboard.balances.total;
+    const value = raw == null || raw === '' ? null : Number(raw);
+    if (!Number.isFinite(value)) return Object.freeze({
+      status: 'invalid',
+      value: null,
+      label: 'Por confirmar'
+    });
+    return Object.freeze({
+      status: 'ready',
+      value,
+      label: balanceFormatter.format(value)
+    });
+  }
+  const balanceReadModel = Object.freeze({
+    select: selectSelfBalance
+  });
   async function loadSelf(force) {
     if (selfPromise && !force) return selfPromise;
     selfPhase = 'loading';
@@ -24854,14 +24904,24 @@ Object.assign(window, {
     }
   };
   window.savingsStore = store;
+  window.SavingsBalanceReadModel = balanceReadModel;
   window.useSavingsStore = function (mode, participantId) {
     const [, force] = useState(0);
     useEffect(() => store.subscribe(() => force(value => value + 1)), []);
     useEffect(() => {
+      if (mode === 'disabled') return undefined;
       const request = mode === 'admin' ? store.loadAdmin(participantId) : store.loadSelf();
       request.catch(() => {});
     }, [mode, participantId]);
     return store;
+  };
+  window.useSelfSavingsBalance = function (enabled) {
+    const active = enabled !== false;
+    const currentStore = window.useSavingsStore(active ? 'self' : 'disabled');
+    return active ? balanceReadModel.select(currentStore.state()) : balanceReadModel.select({
+      self: null,
+      selfPhase: 'idle'
+    });
   };
 })();
 })();
@@ -61943,6 +62003,11 @@ Object.assign(window, {
       status: 'error',
       overview: null
     };
+    const savingsBalance = window.useSelfSavingsBalance ? window.useSelfSavingsBalance(variant === 'home') : {
+      status: 'error',
+      value: null,
+      label: '—'
+    };
     const [homeFinancialUser, setHomeFinancialUser] = React.useState(null);
     React.useEffect(() => {
       if (variant !== 'home' || !window.financialLegacyStore) return undefined;
@@ -62170,9 +62235,9 @@ Object.assign(window, {
         }
       }, u.short)), React.createElement('div', {
         ref: chipsRef,
-        'data-home-financial-chips': 'partial',
+        'data-home-financial-chips': 'complete',
         'data-home-credit-state': availableCreditReady ? 'ready' : financial.status === 'error' ? 'error' : 'loading',
-        'data-home-savings-state': 'pending-source',
+        'data-home-savings-state': savingsBalance.status,
         style: {
           display: 'flex',
           gap: 11,
@@ -62180,7 +62245,10 @@ Object.assign(window, {
           willChange: 'transform, opacity',
           transformOrigin: '50% 0'
         }
-      }, balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'), balChip('Mi ahorro', '—', 'piggy'))), sheetLip());
+      }, balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'), balChip('Mi ahorro', savingsBalance.label, 'piggy', {
+        'data-home-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value),
+        'data-savings-balance-state': savingsBalance.status
+      }))), sheetLip());
     }
 
     // other tabs: gradient header with title + bell + sheet lip
@@ -62232,7 +62300,7 @@ Object.assign(window, {
       }
     }, subtitles[variant])), frostBtn('bell', () => app.push('notifs'), unread)), sheetLip());
   }
-  function balChip(label, val, icon) {
+  function balChip(label, val, icon, valueProps) {
     return React.createElement('div', {
       key: label,
       style: {
@@ -62264,7 +62332,7 @@ Object.assign(window, {
       style: {
         flexShrink: 0
       }
-    }), label), React.createElement('div', {
+    }), label), React.createElement('div', Object.assign({
       style: {
         fontSize: 'clamp(17px, 5.4vw, 21px)',
         fontWeight: 800,
@@ -62273,7 +62341,7 @@ Object.assign(window, {
         letterSpacing: '-.01em',
         whiteSpace: 'nowrap'
       }
-    }, val));
+    }, valueProps || {}), val));
   }
   function saludoHome() {
     const h = new Date().getHours();

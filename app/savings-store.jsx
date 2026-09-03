@@ -7,6 +7,21 @@
   let self = null, admin = null, selfPhase = 'idle', adminPhase = 'idle', selfError = null, adminError = null;
   let selfPromise = null, adminPromise = null, adminParticipant = null;
   const emit = () => listeners.forEach((fn) => fn());
+  const balanceFormatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  function selectSelfBalance(snapshot) {
+    const current = snapshot || {};
+    if (current.selfPhase === 'loading' || current.selfPhase === 'idle') return Object.freeze({ status: current.selfPhase || 'idle', value: null, label: '—' });
+    if (current.selfPhase === 'error') return Object.freeze({ status: 'error', value: null, label: '—' });
+    const dashboard = current.self;
+    if (!dashboard || !dashboard.participant) return Object.freeze({ status: 'empty', value: null, label: '—' });
+    const raw = dashboard.balances && dashboard.balances.total;
+    const value = raw == null || raw === '' ? null : Number(raw);
+    if (!Number.isFinite(value)) return Object.freeze({ status: 'invalid', value: null, label: 'Por confirmar' });
+    return Object.freeze({ status: 'ready', value, label: balanceFormatter.format(value) });
+  }
+
+  const balanceReadModel = Object.freeze({ select: selectSelfBalance });
 
   async function loadSelf(force) {
     if (selfPromise && !force) return selfPromise;
@@ -41,13 +56,20 @@
   };
 
   window.savingsStore = store;
+  window.SavingsBalanceReadModel = balanceReadModel;
   window.useSavingsStore = function (mode, participantId) {
     const [, force] = useState(0);
     useEffect(() => store.subscribe(() => force((value) => value + 1)), []);
     useEffect(() => {
+      if (mode === 'disabled') return undefined;
       const request = mode === 'admin' ? store.loadAdmin(participantId) : store.loadSelf();
       request.catch(() => {});
     }, [mode, participantId]);
     return store;
+  };
+  window.useSelfSavingsBalance = function (enabled) {
+    const active = enabled !== false;
+    const currentStore = window.useSavingsStore(active ? 'self' : 'disabled');
+    return active ? balanceReadModel.select(currentStore.state()) : balanceReadModel.select({ self: null, selfPhase: 'idle' });
   };
 })();

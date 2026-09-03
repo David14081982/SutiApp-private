@@ -43,11 +43,12 @@ assert(app.includes("right: 0, top: '50%', marginTop: -90"), 'el sello de las ca
 assert(!/home-header-collapsed\.(?:png|webp)/.test(app), 'Inicio no debe referenciar el archivo directo');
 assert(app.includes("saludoHome() + ','"));
 assert(app.includes("h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buenas noches'"));
-assert(app.includes("'data-home-financial-chips': 'partial'"));
+assert(app.includes("'data-home-financial-chips': 'complete'"));
 assert(app.includes("'data-home-credit-state': availableCreditReady ? 'ready'"));
-assert(app.includes("'data-home-savings-state': 'pending-source'"));
+assert(app.includes("'data-home-savings-state': savingsBalance.status"));
 assert(app.includes("balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash')"));
-assert(app.includes("balChip('Mi ahorro', '—', 'piggy')"));
+assert(app.includes("window.useSelfSavingsBalance(variant === 'home')"));
+assert(app.includes("balChip('Mi ahorro', savingsBalance.label, 'piggy'"));
 assert(app.includes("typeof window.FinancialLegacyRepository.availableCreditTotal === 'function'"));
 assert(!app.includes("'data-affiliate-field': 'topbar-control'"));
 assert(financialRepository.includes("program.status === 'AVAILABLE'"));

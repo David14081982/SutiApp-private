@@ -7,6 +7,7 @@
 
   function SummaryCard({ app }) {
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy(overviewSlice) : { status: 'error', overview: null };
+    const savingsBalance = window.useSelfSavingsBalance ? window.useSelfSavingsBalance(true) : { status: 'error', value: null, label: '—' };
     const overview = financial.overview || {};
     const availableCredit = window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const value = (amount) => typeof amount === 'number' ? window.money(amount) : '—';
@@ -23,7 +24,7 @@
           React.createElement(window.Badge, { tone: overview.status === 'AVAILABLE' ? 'green' : 'amber', icon: overview.status === 'AVAILABLE' ? 'checkCircle' : 'clock' }, financial.status === 'ready' ? (overview.eligibility_label || 'NO DISPONIBLE') : 'CONSULTANDO')),
         React.createElement('div', { style: { height: 1, background: 'var(--hairline)', margin: '16px 0' } }),
         React.createElement('div', { style: { display: 'flex', gap: 18 } },
-          miniStat('Mi ahorro', value(overview.savings && overview.savings.balance), 'fin.stat.ahorro'),
+          miniStat('Mi ahorro', savingsBalance.label, 'fin.stat.ahorro', false, { 'data-finance-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value), 'data-savings-balance-state': savingsBalance.status }),
           React.createElement('div', { style: { width: 1, background: 'var(--hairline)' } }),
           miniStat('Mi inversión', '—', null, true)),
         React.createElement('div', { 'data-finance-summary-actions': '', style: { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 9, marginTop: 18 } },
@@ -46,7 +47,7 @@
           : React.createElement(I, { name: icon, size: 19, stroke: 2 })),
       label);
   }
-  function miniStat(label, val, resKey, investment) {
+  function miniStat(label, val, resKey, investment, valueProps) {
     return React.createElement('div', { key: label, style: { flex: 1 } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 700 } },
         investment
@@ -54,7 +55,7 @@
               React.createElement('path', { d: 'M3 17l6-6 4 4 8-8' }),
               React.createElement('path', { d: 'M15 7h6v6' }))
           : React.createElement(window.Res, { resKey, size: 13, stroke: 2, style: { color: 'var(--guinda)' } }), label),
-      React.createElement('div', { style: { fontSize: 17, fontWeight: 800, marginTop: 3, fontVariantNumeric: 'tabular-nums', color: 'var(--navy)' } }, val));
+      React.createElement('div', Object.assign({ style: { fontSize: 17, fontWeight: 800, marginTop: 3, fontVariantNumeric: 'tabular-nums', color: 'var(--navy)' } }, valueProps || {}), val));
   }
 
   function Recommended({ app }) {

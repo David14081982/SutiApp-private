@@ -1,5 +1,11 @@
 # Invariantes
 
+- **INV-202:** El contrato Admin → Finanzas → Solicitudes aprobado en `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527` está `PROTECTED / CLOSED CONTRACT`; una H ajena no lo modifica y toda H que lo toque declara razón, impacto, auditoría y regresión focal.
+- **INV-203:** `program_requests.workflow_snapshot` y `resolve_program_request_workflow_state()` siguen siendo la única semántica de etapas para la solicitud creada; configuración futura, `financial_processing_status`, UI, mocks o cachés nunca reinterpretan su historia.
+- **INV-204:** Toda acción conserva confirmación explícita, autorización backend, transición atómica, idempotencia, evento origen/destino y read-back desde la misma autoridad para Admin y afiliado. Ningún éxito se afirma sólo por estado local.
+- **INV-205:** La preview Admin permanece automática y privada mediante `document-access`; imágenes, PDF y otros archivos conservan su affordance aprobado sin URL persistente, publicación, fallback ni paso manual “Preparar vista”.
+- **INV-206:** La migración `20260903000140` es histórica e inmutable. Todo cambio legítimo es aditivo, conserva writers financieros especializados, snapshots y eventos existentes, aporta recovery y pasa el guard focal de ADR-100.
+
 - **INV-199:** `Normas y Reglamentos` y `Descarga de formatos` leen exclusivamente `institutional_documents → app_assets → Supabase Storage`; las URL Google sólo existen como procedencia privada de migración y nunca como campo o fallback productivo.
 - **INV-200:** Las filas fuente se reconcilian por `source_sheet + source_row_ordinal`. Las 8 filas históricas permanecen trazables, pero sólo 7 documentos únicos están publicados: 2 normas y 5 formatos; el duplicado físico comprobado `Descargas2!15/17` comparte asset y conserva deshabilitada la versión más antigua.
 - **INV-201:** Una tarjeta documental con portada y PDF abre siempre `url` (PDF Supabase) antes que `imageUrl`; ambas secciones mantienen sus filtros y contrato visual sin mezclar registros.

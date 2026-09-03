@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Contrato protegido ADR-100 — Admin Finanzas · Solicitudes
+
+El comportamiento aprobado en `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527` queda `PROTECTED / CLOSED CONTRACT`. `program_requests` conserva solicitud/status; su `workflow_snapshot` conserva el flujo aplicado; `operational_workflows`/`operational_workflow_stages` configuran altas futuras; `operational_request_tracking` es derivado; y `program_request_admin_events` conserva auditoría append-only. Admin y afiliado consumen el mismo resolver central.
+
+`request_documents`, `affiliate_documents`, `private_assets`/`private-assets` y `document-access` mantienen la frontera documental privada. Ninguna URL firmada es autoridad ni persistencia. El contrato completo y su gate de cambio futuro están fijados en `docs/FINANCE_REQUESTS_FLOW_PROTECTED_CONTRACT.md`; no se permite flujo, etapa, bitácora, store, mock, caché o fallback paralelo.
+
 ## H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 — operación de etapas
 
 `program_requests` conserva la solicitud y su estado; `workflow_snapshot` conserva el flujo inmutable aplicado a esa solicitud; `operational_workflows` y `operational_workflow_stages` configuran exclusivamente solicitudes futuras; `operational_request_tracking` es la proyección derivada de etapa vigente; y `program_request_admin_events` es la bitácora inmutable de decisiones. Admin Finanzas no define etapas ni interpreta `financial_processing_status` como workflow.

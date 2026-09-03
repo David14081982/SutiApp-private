@@ -39,3 +39,99 @@ Evidencia de navegador productiva: `docs/qa/evidence/finance-request-workflow-ux
 `APPROVED`. El diff respeta las autoridades documentadas, el snapshot inmutable, la separación entre estado de solicitud y procesamiento financiero, los writers certificados y el acceso privado a documentos. No introduce fallback, mock productivo, nueva autoridad, secreto frontend ni llamada Google. La recuperación y la matriz live-rollback restauraron conteos exactos.
 
 Los tres archivos derivados del Architecture Registry ya estaban modificados al iniciar esta H y quedaron fuera de ambos commits para no mezclar ni sobrescribir trabajo ajeno. El check permanece `STALE`; el discovery se hizo contra código, schema y documentos autoritativos reales.
+
+## Cierre protegido aprobado por el propietario
+
+```text
+PRE-CHANGE AUDIT
+H: H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 — protección contractual
+Objetivo: cerrar el resultado aprobado como PROTECTED / CLOSED CONTRACT
+Alcance: contrato, ADR, invariantes, fuente de verdad documental, changelog y regression guard focal
+Fuera de alcance: UI, runtime, Supabase productivo, schema, datos, Storage, URLs firmadas, writers financieros, Google y suites globales
+Archivos a tocar: FINANCE_REQUESTS_FLOW_PROTECTED_CONTRACT.md; DECISIONS.md; SOURCE_OF_TRUTH.md; INVARIANTS.md; AGENT_CHANGELOG.md; esta evidencia; guard focal
+Datos afectados: ninguno
+Fuentes de verdad: autoridades vigentes de ADR-038/076/077/079/080, sin cambio
+Tablas/APIs: ninguna modificación; sólo inspección y tests read-only
+Legacy involucrado: no
+Invariantes: INV-160–164 preservadas; INV-202–206 fijan la protección
+Riesgo: contrato documental divergente o protección que bloquee cambios legítimos sin indicar el gate
+Tests: guard focal, contratos estáticos existentes, hash de migración y evidencia Chrome productiva
+Recovery: revertir únicamente el commit documental/técnico; no existe rollback de datos
+Status: PASS
+```
+
+```text
+SOURCE OF TRUTH AUDIT
+Domain: workflow operativo de program_requests y documentos privados de solicitudes
+Authority: program_requests/workflow_snapshot; operational_workflows/stages para futuras altas; tracking derivado; eventos append-only; autoridades documentales existentes
+Readers: resolver central, proyecciones Admin/self y document-access
+Writers: RPC backend autorizadas y writers financieros especializados vigentes
+Alternative sources: ninguna
+Fallbacks: ninguno
+Caches: estado UI y URL firmada efímera en memoria, no autoridad
+Conflicts: ninguno
+Verdict: SAFE
+Evidence: ADR-100, INV-202–206 y docs/FINANCE_REQUESTS_FLOW_PROTECTED_CONTRACT.md
+```
+
+- SHA funcional protegido: `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527`.
+- Migración protegida: `20260903000140`, SHA-256 `59A68797AB302DC94608E93119C6C95A56F79084B1E5798D18F7A3ECAA02C117`.
+- Efecto productivo: ninguno; el cierre agrega gobierno y un guard focal ejecutable.
+
+## Post-change verification del cierre
+
+```text
+H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 RESULT
+Status: PASS / PROTECTED / CLOSED CONTRACT
+Files changed: contrato canónico; DECISIONS; SOURCE_OF_TRUTH; INVARIANTS; AGENT_CHANGELOG; evidencia; regression guard focal
+Source-of-truth verdict: SAFE — autoridades productivas sin cambio ni duplicación
+Invariant verdict: PASS — INV-160–164 preservadas e INV-202–206 activas
+Build: NOT APPLICABLE — no cambió runtime ni artefacto frontend
+Tests: PASS — guard protegido, cuatro contratos focales, hash de migración y evidencia Chrome productiva
+Security: NOT APPLICABLE — Auth, RLS, grants, Storage y URLs firmadas sin cambio; scan de secretos sin hallazgos
+Legacy impact: NOT APPLICABLE — cero interacción Google/Apps Script y cero cambio financiero
+Unexpected files changed: tres archivos Registry preexistentes permanecen fuera del alcance y sin staging
+Known limitations: WORK_QUEUE_HISTORY.md no existe; no se autoriza ni infiere continuación automática
+Evidence: este documento y scripts/test-finance-requests-flow-protected-contract.js
+```
+
+## Revisión arquitectónica del cierre
+
+```text
+# ARCHITECT REVIEW
+
+Task reviewed: cierre protegido de H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001
+Verdict: APPROVED
+What Codex did correctly: fijó el SHA funcional y la migración, preservó autoridades, creó invariantes y un guard focal ejecutable sin cambiar runtime.
+Important findings: la aprobación expresa del propietario queda registrada como ADR-100 y PROTECTED / CLOSED CONTRACT.
+Problems detected: ninguno dentro del alcance; WORK_QUEUE_HISTORY.md no existe y el Registry ya estaba modificado antes de este cierre.
+Architecture implications: futuras H deben declarar impacto y pasar el gate focal; no se creó otra arquitectura.
+Source-of-truth implications: ninguna autoridad cambió; se prohíben etapas, stores o fallbacks paralelos.
+Security implications: ninguna frontera cambió; la autorización backend y previews privadas permanecen protegidas.
+Data implications: cero DML, migración o reescritura histórica.
+Owner decision required: NO
+Recommended next action: aceptar el cierre y detenerse; no iniciar otra H.
+
+# RESPONSE TO CODEX
+
+Aprueba H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 como PROTECTED / CLOSED CONTRACT. Publica únicamente el cierre documental y su regression guard, verifica el deploy y no avances a otra H.
+
+SUTIAPP ARCHITECT REVIEW
+
+Task: H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001 — protección contractual
+Verdict: APPROVED
+
+Critical findings: ninguno
+
+Source of truth: SAFE
+Architecture: PASS
+Security: NOT APPLICABLE — sin cambio funcional
+Data: NOT APPLICABLE — cero cambios
+Legacy: NOT APPLICABLE — cero interacción
+
+Owner decision: NO
+
+Next action: publicar el cierre y detenerse
+
+Response generated for Codex: YES
+```

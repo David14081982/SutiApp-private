@@ -7,6 +7,7 @@
 - Imágenes y PDF se autorizan automáticamente al abrir; otros documentos muestran nombre y acción. Los objetos siguen privados y las URLs firmadas sólo viven en memoria.
 - El alcance fue focal: préstamo, membresía, cotización y beneficio; sin Marketplace, service worker, suite global, reglas financieras ni Google legacy.
 - Migración, recovery en rollback, matriz transaccional, build y Chrome productivo pasaron; Pages desplegó `c5e0647` y las 58 filas documentales visibles cargaron sin preparación manual. Revisión arquitectónica: `APPROVED`.
+- Por orden posterior del propietario, el resultado funcional `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527` queda `PROTECTED / CLOSED CONTRACT` mediante ADR-100, contrato canónico, INV-202–206 y regression guard focal. No se modificó runtime ni producción.
 
 ## 2026-09-03 — H-ADMIN-VISIBILITY-ACCESS-GATE-001
 

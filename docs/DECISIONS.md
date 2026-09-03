@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-100 | Admin → Finanzas → Solicitudes conserva el workflow inmutable real, transición atómica/idempotente, lectura común Admin/afiliado y preview privada automática; el resultado productivo aprobado queda cerrado y protegido. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-099 | Normas y formatos de Tu sindicato usan sólo `institutional_documents → app_assets → documents`; Google queda como procedencia privada, y un duplicado binario histórico se conserva despublicado sin crear otro objeto. | Aceptada / ACTIVE |
 | ADR-098 | El contrato Admin Access / Impersonation / Global Permissions aprobado en producción queda protegido y cerrado; futuras H deben declarar impacto y preservar autoridades, migraciones, invariantes y regresión focal. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-097 | La administración global reutiliza roles/asignaciones y responsabilidades existentes; altas Admin resuelven email confirmado a UUID, la cuenta principal queda protegida y la impersonación vuelve a exigir `affiliates.impersonate` ligado a sesión Auth. | Aceptada / ACTIVE |
@@ -70,6 +71,15 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-100 — Protección del flujo Admin Finanzas · Solicitudes
+
+- **Contexto:** `H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001` quedó `PASS`, revisada `APPROVED`, publicada y verificada en Chrome productivo sobre el SHA `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527`. El propietario ordena cerrar y proteger ese comportamiento.
+- **Decisión:** marcar la bandeja, detalle, workflow aplicado, transición operativa, actualización Admin/afiliado, bitácora y preview documental como `PROTECTED / CLOSED CONTRACT`. Se preservan las autoridades de ADR-038/076/077/079/080 y la migración `20260903000140`; no se permite autoridad paralela ni etapa local.
+- **Cambio futuro:** exige razón e impacto explícitos sobre el contrato, Navigator, pre-change audit, guardians aplicables, invariantes preservados, pruebas focales y post-change verification. Una H ajena no modifica esta frontera.
+- **Regression guard:** `scripts/test-finance-requests-flow-protected-contract.js` fija el SHA funcional, el hash de la migración, las autoridades, los invariantes y la evidencia Chrome de préstamo, membresía, cotización y beneficio.
+- **Efecto:** documental y técnico solamente; UI, datos productivos, RLS/RPC, objetos Storage, URLs firmadas, writers financieros y legacy permanecen sin cambio.
+- **Aprobación:** propietario, cierre de `H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001`, 2026-09-03.
 
 ### ADR-099 — Corte final de Normas y formatos a Supabase Storage
 

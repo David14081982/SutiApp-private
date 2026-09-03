@@ -2575,7 +2575,8 @@ Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
 ## 2026-09-03 — H-AUTH-PROD-ACTIVATION-CERT-001
 
 - Se eliminó el falso éxito de activación/recuperación y se publicó preflight fail-closed, OTP, callback de password y verificación del vínculo.
-- Site URL y redirects productivos quedaron corregidos. Dos correos reales llegaron y producción alcanzó `activation_password`; el rate limit real aparece como alerta.
-- Certificación completa `BLOCKED`: no hay SMTP propio, el proveedor default limita a 2 correos/hora y Supabase rechazó elevarlo sin credenciales SMTP. Password/login/recovery completos no se declararon PASS.
-- Cuatro afiliados QA quedaron archivados; un Auth QA vinculado y su auditoría se preservaron. Un archivo accidental de un afiliado histórico fue restaurado inmediatamente y los conteos históricos archivados regresaron al baseline.
+- Site URL y redirects productivos quedaron corregidos. Resend Custom SMTP usa `auth.sutiapp.com`, remitente `no-reply@auth.sutiapp.com`, TLS 1.3 y credencial de mínimo privilegio fuera de Git.
+- Certificación completa `PASS`: activación y recuperación con correo real, callbacks en GitHub Pages, password, vínculo, login, doble activación controlada y alta desde Admin.
+- Supabase quedó en 100 correos Auth/hora y 60 segundos por dirección. El plan Resend Free aceptado por el propietario impone la capacidad efectiva de 100 correos diarios y 3,000 mensuales.
+- Cinco afiliados QA acumulados quedaron archivados; Auth y auditoría vinculada se preservaron. Los afiliados productivos históricos no se modificaron durante el cierre SMTP.
 - Evidencia: `docs/qa/H-AUTH-PROD-ACTIVATION-CERT-001-EVIDENCE.md`.

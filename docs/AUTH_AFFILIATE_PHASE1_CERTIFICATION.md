@@ -1,8 +1,8 @@
 # Fase 1 - Auth / Affiliate Certification
 
 Fecha: 2026-08-24  
-Estado: **PASS_WITH_BLOCKED_PRODUCTION_ACTIVATION_CERT**
-La prueba online del 2026-09-03 corrigió defectos reales y demostró correo/callback, pero la matriz completa sigue bloqueada por ausencia de SMTP propio y límite global de 2 correos/hora. Ver `docs/qa/H-AUTH-PROD-ACTIVATION-CERT-001-EVIDENCE.md`.
+Estado: **PASS**
+La certificación productiva del 2026-09-03 quedó cerrada con Resend Custom SMTP: correo real, callback, password, vínculo, login, doble activación, recuperación y alta desde Admin dieron PASS. Ver `docs/qa/H-AUTH-PROD-ACTIVATION-CERT-001-EVIDENCE.md`.
 
 ## Binding exacto
 
@@ -68,11 +68,11 @@ Recovery real PASS: token Supabase -> callback `PASSWORD_RECOVERY` -> password u
 
 Defecto corregido: un `SIGNED_OUT` tardio borraba el aviso y dejaba la pantalla atrapada en modo reset. `AffiliateAuth` ahora conserva el aviso y vuelve a login cuando queda `unauthenticated`. No cambio layout, copy, estilos ni controles.
 
-## Activación — gate productivo bloqueado
+## Activación — certificación productiva cerrada
 
 Código vigente: preflight mínimo usa el email histórico normalizado, falla ante cero/múltiples/no elegible/vinculado y `signInWithOtp` usa Supabase Auth. El callback define password y sólo concluye después de `claim_affiliate_identity` y una lectura que comprueba el UUID vinculado.
 
-Producción recibió dos correos reales y alcanzó el callback de password. La matriz no completó password + vínculo + login + recovery por el límite de dos correos/hora; Supabase rechazó elevarlo sin SMTP propio. Resultado: **BLOCKED_CUSTOM_SMTP**.
+Producción usa Resend Custom SMTP con `auth.sutiapp.com`, remitente `no-reply@auth.sutiapp.com`, TLS 1.3, autoconfirm desactivado, frecuencia mínima de 60 segundos y límite Supabase de 100 correos por hora. El plan Resend Free limita la capacidad real a 100 correos diarios. La matriz completa recibió activación y recuperación reales, completó password, vínculo, login, doble activación controlada y alta Admin. Resultado: **PASS**.
 
 ## Guardians
 
@@ -103,7 +103,7 @@ numero_control authority: PASS
 Email credential model: PASS
 Login: PASS
 Activation architecture: VERIFIED
-Positive real activation: DEFERRED_UNTIL_ONLINE
+Positive real activation: PASS
 Recovery: PASS
 Session refresh: PASS
 Logout/login context reset: PASS
@@ -115,26 +115,26 @@ Normal user Admin denied: PASS
 Local productive identity authority: 0
 Stale identity leaks: 0
 Secrets exposed: 0
-Browser: PASS para flujos ejecutados; completitud de activacion FAIL
+Browser: PASS para activacion y recuperacion productivas completas
 Transient fixtures remaining: 0
 Known security defect: NO
-Production activation certification pending: YES
-Final verdict: PASS_WITH_DEFERRED_PRODUCTION_ACTIVATION_TEST
+Production activation certification pending: NO
+Final verdict: PASS
 ```
 
 ## H-FASE-1 RESULT
 
 ```text
-Status: PASS_WITH_DEFERRED_PRODUCTION_ACTIVATION_TEST
-Files changed: app/affiliate-auth.js; app/bundle.js; scripts/certify-auth-affiliate-phase1.py; scripts/test-auth-affiliate-phase1-browser.js; este reporte; docs/AGENT_CHANGELOG.md
+Status: PASS
+Files changed: app/affiliate-auth.js; app/bundle.js; scripts/certify-auth-affiliate-phase1.py; scripts/test-auth-affiliate-phase1-browser.js; scripts/configure-auth-custom-smtp.js; este reporte; docs/AGENT_CHANGELOG.md
 Source-of-truth verdict: SAFE
-Invariant verdict: PASS; INV-037 queda como certificación productiva diferida por ADR-056
+Invariant verdict: PASS; INV-037 certificado en producción con Custom SMTP
 Build: PASS - bundle de 83 fuentes; node --check PASS
 Tests: 34/34 static; H-005 unit; census/RLS live; Chrome Auth/recovery PASS
 Security: PASS para Auth/RLS/aislamiento/Admin/impersonacion
 Legacy impact: NOT APPLICABLE / NO INTERACTION
 Unexpected files changed: no detectados; no existe metadata Git para diff
-Known limitations: `AUTH-PROD-ACTIVATION-CERT` pendiente online; WORK_QUEUE_HISTORY.md ausente
+Known limitations: Resend Free limita el dominio a 100 correos Auth diarios; reintentos y recovery consumen la misma cuota
 ```
 
 Hashes SHA-256:

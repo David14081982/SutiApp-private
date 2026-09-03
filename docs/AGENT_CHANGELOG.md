@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-09-03 — H-ADMIN-VISIBILITY-ACCESS-GATE-001
+
+- Admin se muestra únicamente cuando el contexto protegido devuelve una asignación activa o al menos una responsabilidad efectiva de sección; cualquier ausencia, error o revocación falla cerrado.
+- Navegación inferior, acceso interno y URL directa quedan denegados para usuarios normales. Los responsables conservan sólo sus secciones autorizadas y el Panel existente no fue rediseñado.
+- `get_admin_access_context`, `has_admin_permission`, `has_section_action`, RPC/RLS y las autoridades de ADR-098 permanecen como única barrera real; no hubo schema, datos, hardcodes, `localStorage`, mocks ni fallbacks.
+- Pruebas estáticas, live, Chrome local/producción, build y Pages pasaron. La suite global fue `NOT APPLICABLE` por alcance focal y orden owner.
+- `sutiapp-architect-reviewer` emitió `APPROVED`; no existe continuación autorizada en la cola y la H se detiene.
+
+```text
+H-ADMIN-VISIBILITY-ACCESS-GATE-001 RESULT
+Status: PASS
+Files changed: repository/contexto Admin; shell/navegación; bundle/cache; pruebas focales; evidencia
+Source-of-truth verdict: PASS — autoridades protegidas de ADR-098 sin duplicación
+Invariant verdict: PASS — INV-189–198 y hashes de migraciones preservados
+Build: PASS — bundle reproducible de 100 fuentes; Pages workflow 33741942899 success
+Tests: PASS — gate focal; contrato protegido; 38 contratos; live A–H; Chrome local/producción
+Security: PASS — RPC/RLS backend; normal y anónimo denegados; cero secretos frontend
+Legacy impact: NO INTERACTION
+Unexpected files changed: 0 de esta H; 3 Registry preexistentes preservados y excluidos
+Known limitations: revalidación de revocación en foco/intento de acceso y cada 30 s en inactividad visible; test no focal productization conserva expectativa histórica 16/19
+Evidence: docs/qa/H-ADMIN-VISIBILITY-ACCESS-GATE-001-EVIDENCE.md; commit 00f2824; Actions 33741942899
+```
+
 ## 2026-09-03 — H-UNION-INSTITUTIONAL-DOCUMENTS-STORAGE-001
 
 - Se reconciliaron en vivo y read-only las pestañas `Normas y Reglamentos` y `Descargas2` de `SutiApp Final`: 8 filas fuente, 7 PDFs únicos ya evacuados correctamente.

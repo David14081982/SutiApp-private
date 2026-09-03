@@ -311,6 +311,27 @@ Known limitations: E2E persistente con archivo/restauración real y reemplazo do
 Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
 ```
 
+## 2026-09-03 — H-AUTH-PASSWORD-RECOVERY-STATE-LOCK-001
+
+- Recovery permanece como estado dominante ante `INITIAL_SESSION`, `SIGNED_IN`, `TOKEN_REFRESHED`, `USER_UPDATED`, resoluciones en vuelo y eventos encolados; sólo se libera tras `updateUser` y logout exitosos.
+- La certificación local y en `sutiapp.com` usó sesiones recovery reales generadas por Admin API, consumió cero correos y restauró/verificó la contraseña H005 original.
+- Login normal, Pages, cache `sutiapp-v148` y regresión global completa quedaron `PASS`; no cambiaron Supabase schema/RLS, SMTP, afiliados, Admin, Google, finanzas ni UI visual.
+
+```text
+H-AUTH-PASSWORD-RECOVERY-STATE-LOCK-001 RESULT
+Status: PASS
+Files changed: Auth frontend; bundle/cache; tests sin SMTP; evidencia
+Source-of-truth verdict: PASS — Supabase Auth único
+Invariant verdict: PASS — recovery bloqueante; identidad y login preservados
+Build: PASS — workflow 33792834799
+Tests: PASS focal/live/global; SMTP 0
+Security: PASS — secretos frontend 0; credencial QA restaurada
+Legacy impact: NOT APPLICABLE
+Unexpected files changed: 0 de la H
+Known limitations: preview privado rechaza localhost por diseño; Pages autorizado PASS
+Evidence: docs/qa/H-AUTH-PASSWORD-RECOVERY-STATE-LOCK-001-EVIDENCE.md
+```
+
 ## 2026-09-02 — H-SAVINGS-BALANCE-CARD-VISUAL-001
 
 - La card superior de Ahorrar muestra únicamente Saldo actual y el monto, centrados y con importe responsivo mayor; el detalle anual conserva Ahorro/Rendimiento.

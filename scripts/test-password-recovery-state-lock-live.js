@@ -68,19 +68,26 @@ async function main() {
   const authUserId = originalLogin.body && originalLogin.body.user && originalLogin.body.user.id;
   assert(authUserId, 'CONTROLLED_AUTH_USER_ID_MISSING');
 
-  const port = await freePort();
-  const server = http.createServer((request, response) => {
-    const pathname = new URL(request.url, `http://127.0.0.1:${port}`).pathname;
-    const relative = pathname === '/' ? 'SutiApp.html' : decodeURIComponent(pathname.slice(1));
-    const file = path.resolve(root, relative);
-    if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
-      response.writeHead(404).end();
-      return;
-    }
-    response.writeHead(200, { 'Content-Type': mime(file), 'Cache-Control': 'no-store' });
-    fs.createReadStream(file).pipe(response);
-  });
-  await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+  const configuredTarget = String(process.env.SUTIAPP_RECOVERY_E2E_URL || '').trim();
+  if (configuredTarget) assert(/^https:\/\//.test(configuredTarget), 'PRODUCTION_RECOVERY_TARGET_MUST_USE_HTTPS');
+  let server = null;
+  let appUrl = configuredTarget;
+  if (!appUrl) {
+    const port = await freePort();
+    server = http.createServer((request, response) => {
+      const pathname = new URL(request.url, `http://127.0.0.1:${port}`).pathname;
+      const relative = pathname === '/' ? 'SutiApp.html' : decodeURIComponent(pathname.slice(1));
+      const file = path.resolve(root, relative);
+      if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+        response.writeHead(404).end();
+        return;
+      }
+      response.writeHead(200, { 'Content-Type': mime(file), 'Cache-Control': 'no-store' });
+      fs.createReadStream(file).pipe(response);
+    });
+    await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+    appUrl = `http://127.0.0.1:${port}/`;
+  }
 
   const temporaryPassword = `SutiRecovery!${crypto.randomBytes(12).toString('hex')}Aa9`;
   const { chromium } = loadPlaywright();
@@ -107,7 +114,8 @@ async function main() {
     });
     assert(verified.ok && verified.body && verified.body.access_token && verified.body.refresh_token, `RECOVERY_TOKEN_VERIFICATION_FAILED_${verified.status}`);
 
-    const callback = new URL(`http://127.0.0.1:${port}/?auth_flow=recovery`);
+    const callback = new URL(appUrl);
+    callback.searchParams.set('auth_flow', 'recovery');
     callback.hash = new URLSearchParams({
       access_token: verified.body.access_token,
       refresh_token: verified.body.refresh_token,
@@ -151,7 +159,7 @@ async function main() {
     try { await restoreOriginalPassword(); }
     finally {
       await browser.close();
-      await new Promise((resolve) => server.close(resolve));
+      if (server) await new Promise((resolve) => server.close(resolve));
     }
   }
 
@@ -162,7 +170,7 @@ async function main() {
   });
   assert.equal(restoredLogin.status, 200, 'CONTROLLED_LOGIN_FAILED_AFTER_RESTORE');
   console.log(JSON.stringify({
-    status: 'PASS', smtpEmailsSent: 0, realRecoverySession: true,
+    status: 'PASS', target: configuredTarget ? 'PRODUCTION' : 'LOCAL_BUILD', smtpEmailsSent: 0, realRecoverySession: true,
     recoveryLockAfterWait: true, tokenRefreshLocked: true, reloadLocked: true,
     passwordUpdated: true, oldPasswordRejected: true, originalPasswordRestored: true,
   }));

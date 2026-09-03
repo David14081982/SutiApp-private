@@ -2572,3 +2572,10 @@ Unexpected files changed: 0
 Known limitations: migración y E2E productivo con archivo legítimo requieren autorización posterior
 Evidence: docs/qa/H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001-EVIDENCE.md
 ```
+## 2026-09-03 — H-AUTH-PROD-ACTIVATION-CERT-001
+
+- Se eliminó el falso éxito de activación/recuperación y se publicó preflight fail-closed, OTP, callback de password y verificación del vínculo.
+- Site URL y redirects productivos quedaron corregidos. Dos correos reales llegaron y producción alcanzó `activation_password`; el rate limit real aparece como alerta.
+- Certificación completa `BLOCKED`: no hay SMTP propio, el proveedor default limita a 2 correos/hora y Supabase rechazó elevarlo sin credenciales SMTP. Password/login/recovery completos no se declararon PASS.
+- Cuatro afiliados QA quedaron archivados; un Auth QA vinculado y su auditoría se preservaron. Un archivo accidental de un afiliado histórico fue restaurado inmediatamente y los conteos históricos archivados regresaron al baseline.
+- Evidencia: `docs/qa/H-AUTH-PROD-ACTIVATION-CERT-001-EVIDENCE.md`.

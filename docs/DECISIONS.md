@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-101 | Activación usa preflight mínimo sobre `affiliates`, OTP/callback de Supabase Auth y claim verificado; ningún error de entrega puede presentarse como éxito. | Aceptada / ACTIVE / CERT BLOCKED BY SMTP |
 | ADR-100 | Admin → Finanzas → Solicitudes conserva el workflow inmutable real, transición atómica/idempotente, lectura común Admin/afiliado y preview privada automática; el resultado productivo aprobado queda cerrado y protegido. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-099 | Normas y formatos de Tu sindicato usan sólo `institutional_documents → app_assets → documents`; Google queda como procedencia privada, y un duplicado binario histórico se conserva despublicado sin crear otro objeto. | Aceptada / ACTIVE |
 | ADR-098 | El contrato Admin Access / Impersonation / Global Permissions aprobado en producción queda protegido y cerrado; futuras H deben declarar impacto y preservar autoridades, migraciones, invariantes y regresión focal. | Aceptada / PROTECTED / CLOSED CONTRACT |
@@ -71,6 +72,14 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-101 — Activación productiva observable y fail-closed
+
+- **Autoridades:** Supabase Auth conserva sesión, correo y contraseña; `public.affiliates` conserva afiliación y vínculo nullable. Email no sustituye UUID ni `numero_control`.
+- **Flujo:** el preflight anónimo devuelve sólo un estado mínimo y exige coincidencia única/elegible/no archivada. Auth envía OTP, el callback exige password y `claim_affiliate_identity`; la UI verifica el vínculo antes de finalizar.
+- **Errores:** Supabase, configuración, proveedor y rate limit siempre producen estado visible; queda prohibido devolver éxito desde un `catch`.
+- **Configuración:** Site URL y redirects productivos quedan fijados a GitHub Pages. El proveedor default entregó correo real, pero no permite elevar 2 correos/hora sin SMTP propio; la certificación completa permanece bloqueada.
+- **Aprobación:** instrucción explícita del propietario `H-AUTH-PROD-ACTIVATION-CERT-001`, 2026-09-03.
 
 ### ADR-100 — Protección del flujo Admin Finanzas · Solicitudes
 

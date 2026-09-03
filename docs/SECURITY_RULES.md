@@ -237,3 +237,9 @@ La policy Storage usa `can_admin_upload_affiliate_document_path(text)`, un guard
 ## Gate de compatibilidad Auth previo a Pages — 2026-09-01
 
 Toda dependencia RPC obligatoria de la resolución de sesión debe verificarse contra el backend productivo antes de construir o desplegar GitHub Pages. El probe usa exclusivamente la publishable key y debe obtener denegación explícita de ejecución anónima; `404/PGRST202`, respuesta de infraestructura inesperada o `2xx` bloquean el despliegue. El gate nunca recibe credenciales elevadas ni sustituye las pruebas autenticadas de RLS.
+
+## Activación productiva observable — 2026-09-03
+
+`get_affiliate_activation_status(text)` es la única excepción pública focal: devuelve exclusivamente `INVALID_EMAIL|NOT_REGISTERED|AMBIGUOUS|NOT_ELIGIBLE|ALREADY_ACTIVATED|ELIGIBLE`, nunca UUID, nombre, control, email almacenado ni otra PII. Cuenta todas las coincidencias y falla cerrado si no existe exactamente una fila activa/elegible. No escribe `affiliates` ni Auth.
+
+El browser sólo solicita OTP después de `ELIGIBLE`. El vínculo continúa protegido por `claim_affiliate_identity`, que deriva `auth.uid()` y email confirmado en backend. Password y callback pertenecen a Supabase Auth. Ningún error de Auth, SMTP, proveedor o rate limit puede convertirse en notice exitoso. Site URL/redirects son productivos; credenciales de gestión y SMTP permanecen fuera del bundle.

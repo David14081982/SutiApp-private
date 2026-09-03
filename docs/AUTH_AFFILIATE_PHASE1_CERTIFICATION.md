@@ -1,8 +1,8 @@
 # Fase 1 - Auth / Affiliate Certification
 
 Fecha: 2026-08-24  
-Estado: **PASS_WITH_DEFERRED_PRODUCTION_ACTIVATION_TEST**  
-La activación positiva se difiere por ADR-056 hasta que exista configuración online productiva definitiva. No es un defecto funcional demostrado.
+Estado: **PASS_WITH_BLOCKED_PRODUCTION_ACTIVATION_CERT**
+La prueba online del 2026-09-03 corrigió defectos reales y demostró correo/callback, pero la matriz completa sigue bloqueada por ausencia de SMTP propio y límite global de 2 correos/hora. Ver `docs/qa/H-AUTH-PROD-ACTIVATION-CERT-001-EVIDENCE.md`.
 
 ## Binding exacto
 
@@ -68,11 +68,11 @@ Recovery real PASS: token Supabase -> callback `PASSWORD_RECOVERY` -> password u
 
 Defecto corregido: un `SIGNED_OUT` tardio borraba el aviso y dejaba la pantalla atrapada en modo reset. `AffiliateAuth` ahora conserva el aviso y vuelve a login cuando queda `unauthenticated`. No cambio layout, copy, estilos ni controles.
 
-## Activacion - gate pendiente
+## Activación — gate productivo bloqueado
 
-Codigo y negativas verificadas: `signUp` usa Supabase Auth; claim exige email confirmado, una unica fila `eligible`, no acepta `affiliate_id`/`numero_control`, rechaza affiliate ya vinculado y deja Auth sin affiliate sin PII.
+Código vigente: preflight mínimo usa el email histórico normalizado, falla ante cero/múltiples/no elegible/vinculado y `signInWithOtp` usa Supabase Auth. El callback define password y sólo concluye después de `claim_affiliate_identity` y una lectura que comprueba el UUID vinculado.
 
-No se ejecutó la prueba positiva `affiliate sin Auth -> Auth creado -> binding`. Por decisión del propietario no se enviará correo, creará Auth ni modificará configuración local. Resultado: **DEFERRED_UNTIL_ONLINE** y pendiente de Release `AUTH-PROD-ACTIVATION-CERT`.
+Producción recibió dos correos reales y alcanzó el callback de password. La matriz no completó password + vínculo + login + recovery por el límite de dos correos/hora; Supabase rechazó elevarlo sin SMTP propio. Resultado: **BLOCKED_CUSTOM_SMTP**.
 
 ## Guardians
 

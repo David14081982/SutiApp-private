@@ -2,11 +2,22 @@
 
 ## AUTH-PROD-ACTIVATION-CERT
 
-Estado: `DEFERRED_UNTIL_ONLINE`  
+Estado: `BLOCKED_CUSTOM_SMTP / PRODUCTIVE_FIX_DEPLOYED`
 Bloquea: cierre definitivo de Fase 1.  
 No bloquea: trabajo técnico independiente ni Fase 2 read-only.
 
-Prerequisitos obligatorios:
+Estado verificado 2026-09-03:
+
+- URL, Site URL, redirects, entrega real y entrada al callback productivo: `PASS`;
+- observabilidad de error y rate limit visible: `PASS`;
+- proveedor: Supabase default, sin SMTP propio, máximo 2 correos/hora;
+- password + vínculo + login + recovery en un único ciclo certificado: `FAIL / BLOCKED`.
+
+Prerequisito restante:
+
+- configurar SMTP productivo (host, port, user, pass y remitente) y repetir `scripts/certify-auth-prod-activation-live.js`.
+
+Prerequisitos históricos ya resueltos:
 
 - Production URL y dominio final;
 - Supabase Site URL definitiva;
@@ -29,12 +40,11 @@ affiliate elegible sin Auth
 → identity verification
 ```
 
-Restricciones mientras SutiApp continúe local:
+Restricciones vigentes:
 
-- no enviar correo para esta certificación;
-- no crear un usuario Auth de prueba;
-- no modificar Site URL ni Redirect URLs;
-- no configurar localhost para cerrar el gate.
+- no elevar falsamente el límite sin SMTP;
+- no usar afiliados reales para completar la matriz;
+- no borrar auditoría ni Auth vinculado sólo para limpiar fixtures.
 
 Criterio de cierre: solo después de `PASS` en esta matriz Fase 1 puede cambiar de `PASS_WITH_DEFERRED_PRODUCTION_ACTIVATION_TEST` a `CLOSED`.
 

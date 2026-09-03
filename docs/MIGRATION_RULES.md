@@ -164,3 +164,9 @@ Los tres forward y recovery se validaron dentro de transacciones con `ROLLBACK`.
 Estado: `APPLIED / CERTIFIED — PASS`. La migración agrega únicamente `finance_presentation_authenticated_read` sobre la tabla existente `finance_catalog_presentation`; no crea tablas/columnas, no ejecuta DML, no cambia grants ni writers y preservó el hash de sus 6 filas. `authenticated` lee configuración global, `anon` permanece sin acceso y UPDATE sigue exigiendo `workflow.write`.
 
 Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`. El recovery elimina sólo la policy nueva y no toca filas, histórico ni autoridad financiera. No modifica reglas, fondos, programas, cálculos o Google legacy.
+
+## 20260903000150 — preflight de activación Auth
+
+Estado: `APPLIED / VERIFIED — PRODUCTIVE CERT BLOCKED BY SMTP`. La migración agrega una sola función `STABLE SECURITY DEFINER search_path=''`, sin tablas, columnas ni DML. Sólo retorna un estado mínimo sobre `public.affiliates`; anónimo no puede leer la tabla ni obtener PII. Forward/recovery se probaron en `ROLLBACK` y el apply conservó conteos de afiliados y vínculos.
+
+El recovery elimina únicamente la función después de revertir el frontend que la consume. No modifica afiliados, Auth, auditoría ni configuración. La actividad QA posterior se conserva por las reglas de archivo/auditoría vigentes y no autoriza ejecutar recovery destructivo sobre historia.

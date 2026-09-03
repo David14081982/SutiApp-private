@@ -88,7 +88,7 @@ async function listMessages(mailbox) {
 function linksFromMessage(message) {
   const source = [message.text || '', ...(Array.isArray(message.html) ? message.html : [message.html || ''])].join('\n');
   const decoded = source.replace(/&amp;/g, '&').replace(/&#x3D;/gi, '=').replace(/\\u0026/g, '&');
-  return [...decoded.matchAll(/https:\/\/[^\s"'<>]+/g)].map((match) => match[0]);
+  return [...decoded.matchAll(/https:\/\/[^\s"'<>]+/g)].map((match) => match[0].replace(/[\]\)}>.,]+$/g, ''));
 }
 
 async function waitForEmail(mailbox, excludedIds, timeoutMs = 120000) {
@@ -131,6 +131,19 @@ async function archiveFixture(values, affiliateId) {
     p_expected_updated_at: workbench.profile.updated_at,
     p_reason: 'Cierre de certificación Auth productiva QA',
   });
+  return true;
+}
+
+async function deleteUnlinkedAuthFixture(values, email) {
+  if (!email || !values.SUPABASE_SECRET_KEY) return false;
+  const escaped = email.replace(/'/g, "''");
+  const rows = await managementSql(values, `select u.id::text as id from auth.users u where lower(u.email)=lower('${escaped}') and not exists(select 1 from public.affiliates a where a.auth_user_id=u.id)`);
+  if (rows.length === 0) return false;
+  if (rows.length !== 1) throw new Error('AMBIGUOUS_QA_AUTH_CLEANUP');
+  const response = await fetch(`${values.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/admin/users/${rows[0].id}`, {
+    method: 'DELETE', headers: { apikey: values.SUPABASE_SECRET_KEY, 'User-Agent': 'SutiApp-AuthActivationCert/1.0' },
+  });
+  if (!response.ok && response.status !== 404) throw new Error(`AUTH_CLEANUP_HTTP_${response.status}`);
   return true;
 }
 
@@ -288,6 +301,7 @@ async function main() {
         const rows = await managementSql(values, `select auth_user_id::text as auth_user_id from public.affiliates where id = '${affiliateId}'::uuid`);
         authUserId = rows[0] && rows[0].auth_user_id;
       }
+      await deleteUnlinkedAuthFixture(values, mailbox && mailbox.address);
       await archiveFixture(values, affiliateId);
       if (mailbox) await fetch('https://api.mail.tm/accounts/' + mailbox.id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + mailbox.token } });
       result.cleanup = Boolean(!affiliateId || mailbox);

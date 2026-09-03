@@ -215,6 +215,10 @@ El registro de assets usa rutas derivadas de SHA-256, contrato MIME/tamaño por 
 ## MASTER Phase 1 — Activación, recuperación y contexto administrativo
 
 ```text
+Email capturado → get_affiliate_activation_status() → estado mínimo/fail-closed
+                                                     ↓ ELIGIBLE
+                         Supabase Auth OTP → callback productivo → password
+                                                     ↓
 Supabase Auth email confirmado → claim_affiliate_identity()
                                   ↓ coincidencia única/elegible
                          affiliates.auth_user_id
@@ -226,7 +230,7 @@ actor Auth → admin_assignments/RLS → impersonation_sessions (motivo + TTL)
                        actor_real / usuario_contexto auditados
 ```
 
-`AffiliateRepository` obtiene el UUID efectivo desde backend y la policy de `affiliates` expone solo esa fila. Sin contexto activo conserva la relación propia H-005; con contexto activo requiere el permiso `affiliates.impersonate`. La UI muestra un banner global hasta el cierre y nunca sustituye la frontera RLS. Recuperación usa el flujo nativo de Supabase Auth y no confirma públicamente si un correo tiene cuenta.
+`AffiliateRepository` obtiene el UUID efectivo desde backend y la policy de `affiliates` expone solo esa fila. Sin contexto activo conserva la relación propia H-005; con contexto activo requiere el permiso `affiliates.impersonate`. La UI muestra un banner global hasta el cierre y nunca sustituye la frontera RLS. Activación usa OTP nativo, exige password y relectura del vínculo; el preflight no devuelve PII. Recuperación usa el flujo nativo de Supabase Auth y no confirma públicamente si un correo tiene cuenta. Errores de proveedor/configuración/rate limit permanecen visibles y nunca se transforman en éxito.
 
 ## MASTER Phase 3 — Comercio y Convenios
 

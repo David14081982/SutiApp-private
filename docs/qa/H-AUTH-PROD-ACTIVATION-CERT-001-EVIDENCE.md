@@ -1,6 +1,6 @@
 # H-AUTH-PROD-ACTIVATION-CERT-001 — evidencia
 
-Fecha: 2026-09-03  
+Fecha: 2026-09-03
 Estado: **BLOCKED — corrección productiva publicada; certificación completa FAIL**
 
 ## Resultado solicitado

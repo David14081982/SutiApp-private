@@ -61959,7 +61959,7 @@ Object.assign(window, {
     const availableCreditReady = availableCredit !== null;
     const unread = qs ? qs.readyUnseen().length : 0;
     const titles = {
-      financiera: 'Mi Financiera',
+      financiera: 'SUTIFINANZAS',
       convenios: 'Convenios',
       historial: 'Mi Historial',
       credencial: 'Mi Credencial'

@@ -48,7 +48,7 @@
       ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const availableCreditReady = availableCredit !== null;
     const unread = qs ? qs.readyUnseen().length : 0;
-    const titles = { financiera: 'Mi Financiera', convenios: 'Convenios', historial: 'Mi Historial', credencial: 'Mi Credencial' };
+    const titles = { financiera: 'SUTIFINANZAS', convenios: 'Convenios', historial: 'Mi Historial', credencial: 'Mi Credencial' };
     const subtitles = { financiera: 'Tu dinero, tu sindicato', convenios: 'Descuentos para afiliados', historial: 'Seguimiento de solicitudes', credencial: 'Identidad sindical digital' };
 
     // M2.2 · Collapsing header ligado al scroll (Motion System · B).

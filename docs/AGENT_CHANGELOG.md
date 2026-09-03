@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-09-03 — H-UNION-INSTITUTIONAL-DOCUMENTS-STORAGE-001
+
+- Se reconciliaron en vivo y read-only las pestañas `Normas y Reglamentos` y `Descargas2` de `SutiApp Final`: 8 filas fuente, 7 PDFs únicos ya evacuados correctamente.
+- Supabase quedó como única dependencia runtime. Las URL legacy de las 8 filas se anularon; `asset_sources` conserva procedencia privada y la UI abre el PDF antes que la portada.
+- El duplicado exacto `Descargas2!15/17` comparte asset: la fila 15 quedó despublicada sin borrado y la fila 17 vigente. Producción muestra 2 normas + 5 formatos sin duplicados.
+- Static, forward/recovery, apply, hashes live, Chrome local, build Pages, workflow `33737697667` y Chrome producción pasaron. No se ejecutaron suites globales por alcance y orden owner.
+- `sutiapp-architect-reviewer` emitió `APPROVED`; `WORK_QUEUE_HISTORY.md` no existe y la cola Phase 7 no autoriza continuación, por lo que no se inicia otra H.
+
+```text
+H-UNION-INSTITUTIONAL-DOCUMENTS-STORAGE-001 RESULT
+Status: PASS
+Files changed: pantalla documental focal; bundle/cache; migration/recovery; pruebas focales; contratos/evidencia
+Source-of-truth verdict: PASS — institutional_documents → app_assets → documents; Google sólo procedencia privada
+Invariant verdict: PASS — 8 filas trazables; 7 documentos únicos visibles; 2 normas + 5 formatos; UI abre PDF
+Build: PASS — bundle de 100 fuentes; Pages artifact de 16 archivos; deploy workflow PASS
+Tests: PASS — static; forward/recovery; apply; live 7 hashes; Chrome local y producción
+Security: PASS — asset_sources no público; sin grants/RLS/policies nuevos; cero secretos frontend
+Legacy impact: READ ONLY no financiero — 2 rangos Google; 0 escrituras; Apps Script/finanzas sin interacción
+Unexpected files changed: 0 de esta H; 3 Registry preexistentes preservados y excluidos
+Known limitations: la fila histórica Descargas2!15 permanece despublicada porque duplica byte a byte la fila 17
+Evidence: docs/qa/H-UNION-INSTITUTIONAL-DOCUMENTS-STORAGE-001-EVIDENCE.md; Actions 33737697667
+```
+
 ## 2026-09-02 — H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-PROTECTION-001
 
 - El acceso administrativo, las 11 responsabilidades `ENFORCED` y la impersonación aprobados en `b8c1f6c0057dabded90804ffadd5bd012fb41a1a` quedaron `PROTECTED / CLOSED CONTRACT` mediante ADR-098, contrato canónico e invariantes INV-189–198.

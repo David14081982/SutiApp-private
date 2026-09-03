@@ -113,7 +113,7 @@ async function main() {
 
     stage = 'activation_recovery_ui';
     await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Activar mi cuenta')).click()");
-    const activationUi = await waitFor(() => evaluate("document.querySelectorAll('input[type=password]').length===2&&[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Activar cuenta')"));
+    const activationUi = await waitFor(() => evaluate("document.querySelectorAll('input[type=password]').length===0&&document.querySelectorAll('input[type=email]').length===1&&[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Enviar correo de activación')"));
     await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Volver al inicio')).click()");
     await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Olvid')).click()");
     await setField('input[type=email]', 'nonexistent-phase1-browser@example.invalid');

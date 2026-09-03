@@ -62104,6 +62104,36 @@ Object.assign(window, {
     return 'CONNECTION_ERROR';
   }
 
+  function emailDeliveryErrorCode(error, prefix) {
+    const code = String((error && error.code) || '').toLowerCase();
+    const message = String((error && error.message) || '').toLowerCase();
+    const status = Number(error && error.status);
+    if (status === 429 || /rate.?limit|too many|over_email_send_rate_limit/.test(code + ' ' + message)) return prefix + '_RATE_LIMIT';
+    if (/not authorized|smtp|email provider|signup_disabled|otp_disabled|email_address_not_authorized/.test(code + ' ' + message)) return prefix + '_CONFIGURATION';
+    if (code === 'supabase_not_configured' || code === 'supabase_client_unavailable' || code === 'pgrst202' || status === 404) return prefix + '_CONFIGURATION';
+    return prefix + '_PROVIDER_ERROR';
+  }
+
+  function authFlowUrl(flow) {
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set('auth_flow', flow);
+    return url.toString();
+  }
+
+  function requestedAuthFlow() {
+    try { return new URL(window.location.href).searchParams.get('auth_flow') || ''; }
+    catch (_) { return ''; }
+  }
+
+  function clearAuthFlowUrl() {
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('auth_flow');
+      url.hash = '';
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+    } catch (_) {}
+  }
+
   function provideClient() {
     if (!client) client = window.SutiSupabase.getClient();
     return client;
@@ -62210,13 +62240,21 @@ Object.assign(window, {
           return;
         }
         if (event === 'INITIAL_SESSION') {
-          if (state.phase === 'loading') resolveSession(session);
+          if (state.phase === 'loading') {
+            if (session && requestedAuthFlow() === 'activation') publish({ phase: 'activation_password', session });
+            else resolveSession(session);
+          }
           return;
         }
         if (event === 'PASSWORD_RECOVERY') {
           publish({ phase: 'password_recovery', session });
           return;
         }
+        if (event === 'SIGNED_IN' && session && requestedAuthFlow() === 'activation') {
+          publish({ phase: 'activation_password', session });
+          return;
+        }
+        if (event === 'USER_UPDATED' && (state.phase === 'activation_password' || state.phase === 'activating_password')) return;
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           resolveSession(session);
         }
@@ -62233,7 +62271,9 @@ Object.assign(window, {
         listenForAuthChanges(authClient);
         const result = await authClient.auth.getSession();
         if (result.error) throw result.error;
-        await resolveSession(result.data && result.data.session);
+        const session = result.data && result.data.session;
+        if (session && requestedAuthFlow() === 'activation') publish({ phase: 'activation_password', session });
+        else await resolveSession(session);
       } catch (error) {
         publish({ phase: 'error', errorCode: controlledErrorCode(error) });
       }
@@ -62289,35 +62329,86 @@ Object.assign(window, {
     }
   }
 
-  async function activate(email, password) {
+  async function activate(email) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
     publish({ phase: 'activating' });
     try {
-      const result = await provideClient().auth.signUp({
-        email: String(email || '').trim(), password: String(password || ''),
-        options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      const preflight = await provideClient().rpc('get_affiliate_activation_status', { p_email: normalizedEmail });
+      if (preflight.error) throw preflight.error;
+      const activationStatus = String(preflight.data && preflight.data.status || '');
+      const blocked = {
+        INVALID_EMAIL: 'ACTIVATION_NOT_ELIGIBLE',
+        NOT_REGISTERED: 'ACTIVATION_NOT_REGISTERED',
+        NOT_ELIGIBLE: 'ACTIVATION_NOT_ELIGIBLE',
+        AMBIGUOUS: 'ACTIVATION_AMBIGUOUS',
+        ALREADY_ACTIVATED: 'ACTIVATION_ALREADY_ACTIVE',
+      };
+      if (blocked[activationStatus]) {
+        publish({ phase: 'activation_error', errorCode: blocked[activationStatus] });
+        return false;
+      }
+      if (activationStatus !== 'ELIGIBLE') throw Object.assign(new Error('Activation preflight unavailable'), { code: 'ACTIVATION_PREFLIGHT_INVALID' });
+      const result = await provideClient().auth.signInWithOtp({
+        email: normalizedEmail,
+        options: { emailRedirectTo: authFlowUrl('activation'), shouldCreateUser: true, data: { sutiapp_activation: true } },
       });
       if (result.error) throw result.error;
-      publish({ phase: 'activation_sent', notice: 'Revisa tu correo para confirmar y completar la activación.' });
+      publish({ phase: 'activation_sent', notice: 'Correo de activación enviado. Revisa tu bandeja y abre el enlace para definir tu contraseña.' });
       return true;
-    } catch (_) {
-      publish({ phase: 'activation_sent', notice: 'Si el correo es elegible, recibirás instrucciones para completar la activación.' });
-      return true;
+    } catch (error) {
+      publish({ phase: 'activation_error', errorCode: emailDeliveryErrorCode(error, 'ACTIVATION') });
+      return false;
     }
+  }
+
+  async function completeActivation(password) {
+    const session = state.session;
+    if (!session || !session.user) {
+      publish({ phase: 'unauthenticated', errorCode: 'ACTIVATION_CALLBACK_INVALID' });
+      return false;
+    }
+    publish({ phase: 'activating_password', session });
+    const update = await provideClient().auth.updateUser({ password: String(password || ''), data: { sutiapp_activation: false } });
+    if (update.error) {
+      publish({ phase: 'activation_password', session, errorCode: 'ACTIVATION_PASSWORD_FAILED' });
+      return false;
+    }
+    try {
+      await window.AffiliateRepository.claimCurrentIdentity();
+      const affiliate = await window.AffiliateRepository.getCurrentAffiliate(session.user);
+      if (!affiliate || affiliate.auth_user_id !== session.user.id) throw new Error('Activation link was not persisted');
+    } catch (_) {
+      publish({ phase: 'activation_password', session, errorCode: 'ACTIVATION_LINK_FAILED' });
+      return false;
+    }
+    clearAuthFlowUrl();
+    const signedOut = await provideClient().auth.signOut();
+    if (signedOut.error) {
+      publish({ phase: 'error', session, errorCode: 'LOGOUT_FAILED' });
+      return false;
+    }
+    publish({ phase: 'unauthenticated', notice: 'Cuenta activada y contraseña definida. Ya puedes iniciar sesión.' });
+    return true;
   }
 
   async function requestPasswordRecovery(email) {
     publish({ phase: 'recovering' });
     try {
-      await provideClient().auth.resetPasswordForEmail(String(email || '').trim(), { redirectTo: window.location.origin + window.location.pathname });
-    } catch (_) {}
-    publish({ phase: 'recovery_sent', notice: 'Si existe una cuenta para ese correo, recibirás instrucciones de recuperación.' });
-    return true;
+      const result = await provideClient().auth.resetPasswordForEmail(String(email || '').trim(), { redirectTo: authFlowUrl('recovery') });
+      if (result.error) throw result.error;
+      publish({ phase: 'recovery_sent', notice: 'Si existe una cuenta para ese correo, recibirás instrucciones de recuperación.' });
+      return true;
+    } catch (error) {
+      publish({ phase: 'recovery_error', errorCode: emailDeliveryErrorCode(error, 'RECOVERY') });
+      return false;
+    }
   }
 
   async function updateRecoveredPassword(password) {
     publish({ phase: 'recovering', session: state.session });
     const result = await provideClient().auth.updateUser({ password: String(password || '') });
     if (result.error) { publish({ phase: 'password_recovery', session: state.session, errorCode: 'PASSWORD_UPDATE_FAILED' }); return false; }
+    clearAuthFlowUrl();
     await signOut();
     publish({ phase: 'unauthenticated', notice: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
     return true;
@@ -62334,7 +62425,7 @@ Object.assign(window, {
     const [snapshot, setSnapshot] = React.useState(state);
     React.useEffect(() => subscribe(setSnapshot), []);
     React.useEffect(() => { bootstrap(); }, []);
-    return Object.assign({}, snapshot, { signIn, signOut, retry, activate, requestPasswordRecovery, updateRecoveredPassword, refreshContext });
+    return Object.assign({}, snapshot, { signIn, signOut, retry, activate, completeActivation, requestPasswordRecovery, updateRecoveredPassword, refreshContext });
   }
 
   function messageFor(stateValue) {
@@ -62342,6 +62433,16 @@ Object.assign(window, {
     if (stateValue.phase === 'unlinked') return 'Tu cuenta no está vinculada con un afiliado habilitado.';
     if (stateValue.phase === 'ineligible') return 'Tu afiliación no está habilitada para iniciar sesión.';
     if (stateValue.errorCode === 'INVALID_CREDENTIALS') return 'Correo o contraseña incorrectos.';
+    if (stateValue.errorCode === 'ACTIVATION_ALREADY_ACTIVE') return 'Esta cuenta ya está activada. Inicia sesión o recupera tu contraseña.';
+    if (stateValue.errorCode === 'ACTIVATION_NOT_REGISTERED') return 'Este correo no está registrado en el padrón de afiliados.';
+    if (stateValue.errorCode === 'ACTIVATION_NOT_ELIGIBLE') return 'Este correo no está habilitado para activar una cuenta.';
+    if (stateValue.errorCode === 'ACTIVATION_AMBIGUOUS') return 'El correo coincide con más de un registro. Solicita revisión administrativa.';
+    if (stateValue.errorCode === 'ACTIVATION_RATE_LIMIT' || stateValue.errorCode === 'RECOVERY_RATE_LIMIT') return 'Se alcanzó el límite temporal de correos. Espera un momento e intenta nuevamente.';
+    if (stateValue.errorCode === 'ACTIVATION_CONFIGURATION' || stateValue.errorCode === 'RECOVERY_CONFIGURATION') return 'El correo de acceso no está configurado correctamente. Contacta a soporte.';
+    if (stateValue.errorCode === 'ACTIVATION_PROVIDER_ERROR' || stateValue.errorCode === 'RECOVERY_PROVIDER_ERROR') return 'El proveedor de correo no respondió. Intenta nuevamente más tarde.';
+    if (stateValue.errorCode === 'ACTIVATION_CALLBACK_INVALID') return 'El enlace de activación no es válido o expiró. Solicita uno nuevo.';
+    if (stateValue.errorCode === 'ACTIVATION_PASSWORD_FAILED') return 'No fue posible definir la contraseña. Revisa los datos e intenta nuevamente.';
+    if (stateValue.errorCode === 'ACTIVATION_LINK_FAILED') return 'La cuenta se confirmó, pero no pudo vincularse al padrón. Contacta a soporte.';
     if (stateValue.errorCode === 'NOT_CONFIGURED' || stateValue.errorCode === 'CLIENT_UNAVAILABLE') return 'El acceso no está configurado en este dispositivo.';
     if (stateValue.errorCode === 'LOGOUT_FAILED') return 'No fue posible cerrar la sesión. Revisa tu conexión e intenta nuevamente.';
     if (stateValue.errorCode === 'CONNECTION_ERROR') return 'No pudimos conectar con el servicio de acceso. Intenta nuevamente.';
@@ -62363,18 +62464,20 @@ Object.assign(window, {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [confirmPassword, setConfirmPassword] = React.useState('');
-    const [mode, setMode] = React.useState(auth.phase === 'password_recovery' ? 'reset' : 'login');
+    const [mode, setMode] = React.useState(auth.phase === 'password_recovery' ? 'reset' : auth.phase === 'activation_password' ? 'activate_password' : 'login');
     React.useEffect(() => {
       if (auth.phase === 'password_recovery') setMode('reset');
+      else if (auth.phase === 'activation_password') setMode('activate_password');
       else if (auth.phase === 'unauthenticated') setMode('login');
     }, [auth.phase]);
-    const busy = ['loading','signing_in','signing_out','activating','recovering'].includes(auth.phase);
+    const busy = ['loading','signing_in','signing_out','activating','activating_password','recovering'].includes(auth.phase);
     const message = messageFor(auth);
     const submit = (event) => {
       event.preventDefault();
       if (busy) return;
       if (mode === 'login' && email.trim() && password) auth.signIn(email, password);
-      if (mode === 'activate' && email.trim() && password.length >= 8 && password === confirmPassword) auth.activate(email, password);
+      if (mode === 'activate' && email.trim()) auth.activate(email);
+      if (mode === 'activate_password' && password.length >= 8 && password === confirmPassword) auth.completeActivation(password);
       if (mode === 'recover' && email.trim()) auth.requestPasswordRecovery(email);
       if (mode === 'reset' && password.length >= 8 && password === confirmPassword) auth.updateRecoveredPassword(password);
     };
@@ -62391,29 +62494,29 @@ Object.assign(window, {
         React.createElement('div', { style: { textAlign: 'center', marginBottom: 24 } },
           window.SutiSeal && React.createElement(window.SutiSeal, { size: 82 }),
           React.createElement('h1', { style: { margin: '15px 0 4px', fontSize: 27, color: 'var(--ink)', letterSpacing: '-.02em' } }, 'Bienvenido a SutiApp'),
-          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : 'Ingresa con tu cuenta de afiliado')),
+          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'activate_password' ? 'Define la contraseña de tu cuenta' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : 'Ingresa con tu cuenta de afiliado')),
         React.createElement('form', { onSubmit: submit, style: { padding: 20, borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-md)' } },
           React.createElement('div', { style: { display: 'grid', gap: 12 } },
-            mode !== 'reset' && field('message', 'email', email, setEmail, 'Email', 'email', busy),
-            mode !== 'recover' && field('lock', 'password', password, setPassword, mode === 'reset' ? 'Nueva contraseña' : 'Contraseña', mode === 'login' ? 'current-password' : 'new-password', busy),
-            (mode === 'activate' || mode === 'reset') && field('lock', 'password', confirmPassword, setConfirmPassword, 'Confirmar contraseña', 'new-password', busy)),
+            mode !== 'reset' && mode !== 'activate_password' && field('message', 'email', email, setEmail, 'Email', 'email', busy),
+            mode !== 'recover' && mode !== 'activate' && field('lock', 'password', password, setPassword, mode === 'login' ? 'Contraseña' : 'Nueva contraseña', mode === 'login' ? 'current-password' : 'new-password', busy),
+            (mode === 'activate_password' || mode === 'reset') && field('lock', 'password', confirmPassword, setConfirmPassword, 'Confirmar contraseña', 'new-password', busy)),
           auth.notice && React.createElement('div', { role: 'status', style: { marginTop: 13, padding: '10px 12px', borderRadius: 11, background: '#E7F5EE', color: '#176447', fontSize: 13, fontWeight: 750, lineHeight: 1.35 } }, auth.notice),
           message && React.createElement('div', { className: 'su-err', role: 'alert', style: { marginTop: 13, padding: '10px 12px', borderRadius: 11, background: '#FDEAEA', color: '#A32921', fontSize: 13, fontWeight: 750, lineHeight: 1.35 } }, message),
           React.createElement(window.Btn || 'button', {
             full: true,
             type: 'submit',
             loading: busy,
-            disabled: busy || (mode !== 'reset' && !email.trim()) || (mode !== 'recover' && (!password || ((mode === 'activate' || mode === 'reset') && (password.length < 8 || password !== confirmPassword)))),
+            disabled: busy || ((mode === 'login' || mode === 'activate' || mode === 'recover') && !email.trim()) || ((mode === 'login' || mode === 'reset' || mode === 'activate_password') && (!password || ((mode === 'activate_password' || mode === 'reset') && (password.length < 8 || password !== confirmPassword)))),
             style: { marginTop: 16 },
-          }, busy ? 'Procesando…' : mode === 'activate' ? 'Activar cuenta' : mode === 'recover' ? 'Enviar instrucciones' : mode === 'reset' ? 'Guardar contraseña' : 'Entrar'),
+          }, busy ? 'Procesando…' : mode === 'activate' ? 'Enviar correo de activación' : mode === 'activate_password' ? 'Activar cuenta' : mode === 'recover' ? 'Enviar instrucciones' : mode === 'reset' ? 'Guardar contraseña' : 'Entrar'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('recover'), style: { width: '100%', marginTop: 12, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Olvidé mi contraseña'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('activate'), style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Activar mi cuenta'),
-          mode !== 'login' && mode !== 'reset' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
+          mode !== 'login' && mode !== 'reset' && mode !== 'activate_password' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
           (auth.errorCode === 'CONNECTION_ERROR' || auth.phase === 'error' || auth.phase === 'unlinked' || auth.phase === 'ineligible' || auth.phase === 'archived') && React.createElement('button', { type: 'button', onClick: auth.retry, style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Intentar nuevamente')),
         React.createElement('p', { style: { margin: '18px 12px 0', textAlign: 'center', color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 } }, 'Si todavía no activas tu cuenta, tu registro de afiliación permanece intacto.')));
   }
 
-  window.AffiliateAuth = Object.freeze({ bootstrap, signIn, signOut, retry, activate, requestPasswordRecovery, updateRecoveredPassword, refreshContext, subscribe, getState: () => state });
+  window.AffiliateAuth = Object.freeze({ bootstrap, signIn, signOut, retry, activate, completeActivation, requestPasswordRecovery, updateRecoveredPassword, refreshContext, subscribe, getState: () => state });
   window.useAffiliateAuth = useAffiliateAuth;
   window.AffiliateLoginScreen = AffiliateLoginScreen;
 })();

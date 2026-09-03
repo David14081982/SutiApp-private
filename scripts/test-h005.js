@@ -10,6 +10,7 @@ const viewModelSource = fs.readFileSync('app/affiliate-view-model.js', 'utf8');
 function createHarness(options = {}) {
   let session = options.session || null;
   let signOutCalls = 0;
+  let otpCalls = 0;
   const auth = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     getSession: async () => ({ data: { session }, error: null }),
@@ -18,6 +19,15 @@ function createHarness(options = {}) {
       session = { user: { id: 'auth-1', email } };
       return { data: { session }, error: null };
     },
+    signInWithOtp: async ({ email, options: otpOptions }) => {
+      otpCalls += 1;
+      if (options.otpError) return { data: {}, error: options.otpError };
+      assert.equal(otpOptions.shouldCreateUser, true);
+      assert.match(otpOptions.emailRedirectTo, /auth_flow=activation/);
+      return { data: { user: null, session: null }, error: null };
+    },
+    resetPasswordForEmail: async () => ({ data: {}, error: options.recoveryError || null }),
+    updateUser: async () => ({ data: { user: session && session.user }, error: options.updateError || null }),
     signOut: async () => {
       signOutCalls += 1;
       session = null;
@@ -41,6 +51,7 @@ function createHarness(options = {}) {
       };
     },
     claimCurrentIdentity: async () => {
+      if (options.claimSucceeds) return 'affiliate-1';
       const error = new Error('claim unavailable in unit harness');
       error.code = 'SOURCE_ERROR';
       throw error;
@@ -48,14 +59,18 @@ function createHarness(options = {}) {
   };
   const context = {
     console,
+    URL,
     setTimeout,
     clearTimeout,
     window: {
       SutiSupabase: { getClient: () => ({ auth, rpc: async (name) => {
+        if (name === 'get_affiliate_activation_status') return { data: { status: options.activationStatus || 'ELIGIBLE' }, error: options.preflightError || null };
         assert.equal(name, 'get_admin_access_context');
         return { data: { technical_permissions: [], section_actions: [] }, error: null };
       }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) },
       AffiliateRepository: repository,
+      location: { origin: 'https://example.test', pathname: '/SutiApp/', href: options.activationCallback ? 'https://example.test/SutiApp/?auth_flow=activation' : 'https://example.test/SutiApp/' },
+      history: { replaceState() {} },
     },
     React: {
       useState() { throw new Error('React hook not expected in controller test'); },
@@ -69,6 +84,7 @@ function createHarness(options = {}) {
   return {
     controller: context.window.AffiliateAuth,
     getSignOutCalls: () => signOutCalls,
+    getOtpCalls: () => otpCalls,
   };
 }
 
@@ -106,6 +122,38 @@ function createHarness(options = {}) {
   await failure.controller.signIn('owner@example.test', 'correct');
   assert.equal(failure.controller.getState().phase, 'error');
   assert.equal(failure.controller.getState().errorCode, 'CONNECTION_ERROR');
+
+  const activation = createHarness();
+  assert.equal(await activation.controller.activate('owner@example.test'), true);
+  assert.equal(activation.controller.getState().phase, 'activation_sent');
+  assert.equal(activation.getOtpCalls(), 1);
+
+  for (const [status, code] of [
+    ['NOT_REGISTERED', 'ACTIVATION_NOT_REGISTERED'],
+    ['NOT_ELIGIBLE', 'ACTIVATION_NOT_ELIGIBLE'],
+    ['AMBIGUOUS', 'ACTIVATION_AMBIGUOUS'],
+    ['ALREADY_ACTIVATED', 'ACTIVATION_ALREADY_ACTIVE'],
+  ]) {
+    const blocked = createHarness({ activationStatus: status });
+    assert.equal(await blocked.controller.activate('owner@example.test'), false);
+    assert.equal(blocked.controller.getState().errorCode, code);
+    assert.equal(blocked.getOtpCalls(), 0);
+  }
+
+  const rateLimited = createHarness({ otpError: { status: 429, code: 'over_email_send_rate_limit' } });
+  assert.equal(await rateLimited.controller.activate('owner@example.test'), false);
+  assert.equal(rateLimited.controller.getState().errorCode, 'ACTIVATION_RATE_LIMIT');
+
+  const providerFailure = createHarness({ otpError: { status: 503, code: 'unexpected_failure' } });
+  assert.equal(await providerFailure.controller.activate('owner@example.test'), false);
+  assert.equal(providerFailure.controller.getState().errorCode, 'ACTIVATION_PROVIDER_ERROR');
+
+  const callback = createHarness({ session: { user: { id: 'auth-1', email: 'owner@example.test' } }, activationCallback: true, claimSucceeds: true });
+  await callback.controller.bootstrap();
+  assert.equal(callback.controller.getState().phase, 'activation_password');
+  assert.equal(await callback.controller.completeActivation('NewPassword!123'), true);
+  assert.equal(callback.controller.getState().phase, 'unauthenticated');
+  assert.match(callback.controller.getState().notice, /Cuenta activada/);
 
   console.log('H-005 local Auth tests: PASS');
 })().catch((error) => {

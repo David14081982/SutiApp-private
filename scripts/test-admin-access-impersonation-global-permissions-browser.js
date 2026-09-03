@@ -9,13 +9,15 @@ async function token(values,prefix){const response=await fetch(values.SUPABASE_U
 async function rpc(values,name,accessToken,body={}){return fetch(values.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:values.SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify(body)});}
 async function main(){
   const values=env();['H005_TEST_EMAIL','H005_TEST_PASSWORD','H005_TEST3_EMAIL','H005_TEST3_PASSWORD'].forEach(k=>assert(values[k],k));
-  const port=await freePort(),server=await serve(port),{chromium}=playwright();let browser;
+  const publicTarget=(process.argv.find(value=>value.startsWith('--url='))||'').slice(6);
+  const port=publicTarget?null:await freePort(),server=publicTarget?null:await serve(port),{chromium}=playwright();let browser;
+  const target=publicTarget||`http://127.0.0.1:${port}/SutiApp.html`;
   const result={status:'FAIL',realBrowser:true,modules:{},security:{},pageErrors:[]};
   try{
     browser=await chromium.launch({headless:true,executablePath:chromePath,args:['--no-sandbox','--disable-gpu','--no-first-run']});
     const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
     page.on('pageerror',error=>result.pageErrors.push(error.message));
-    await page.goto(`http://127.0.0.1:${port}/SutiApp.html`,{waitUntil:'domcontentloaded'});
+    await page.goto(target,{waitUntil:'domcontentloaded'});
     await page.locator('input[type=email]').fill(values.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(values.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
     await page.waitForFunction(()=>window.AffiliateAuth&&window.AffiliateAuth.getState().phase==='authenticated',null,{timeout:30000});
     const admin=page.getByRole('button',{name:'Admin',exact:true});if(await admin.count())await admin.click();

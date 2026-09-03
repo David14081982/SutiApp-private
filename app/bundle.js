@@ -11791,7 +11791,7 @@ Object.assign(window, {
   const MAX = 2000000;
   const STEP = 10000;
   const PRESETS = [50000, 100000, 250000, 500000, 1000000, 2000000];
-  const TERMS = [6, 12, 18, 24];
+  const TERMS = [6, 12];
   const CSS = `
     .su-investment{--inv-guinda:#910022;--inv-guinda-700:#6a001b;--inv-guinda-50:#fbeef1;--inv-coral:#e8364f;--inv-ink:#14213d;--inv-ink-2:#5a6378;--inv-ink-3:#97a0b3;--inv-navy:#14213d;--inv-ok:#13794a;--inv-surface:#fff;--inv-surface-2:#eef1f6;--inv-bg:#f2f3f5;--inv-hairline:#e6eaf1;--inv-shadow-lg:0 24px 56px -18px rgba(20,33,61,.26);--inv-neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--inv-neo-md:0 14px 30px -12px rgba(20,33,61,.2),0 4px 10px -2px rgba(20,33,61,.06);--inv-inset:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:var(--inv-bg);color:var(--inv-ink);font-family:Nunito,system-ui,-apple-system,sans-serif}
     .su-investment *{box-sizing:border-box}
@@ -12021,7 +12021,7 @@ Object.assign(window, {
         }
       }));
     });
-    const steps = [['Eliges monto y plazo', 'Desde $50,000, a 6, 12, 18 o 24 meses. Firmas el contrato con tu firma digital.'], ['El fondo lo presta a afiliados', 'Tu dinero financia préstamos de nómina del propio sindicato, con descuento garantizado.'], ['Cobras el 2.5% cada mes', 'Se deposita en tu cuenta bancaria registrada el día 5 de cada mes, todos los meses del plazo.']];
+    const steps = [['Eliges monto y plazo', 'Desde $50,000, a 6 y 12 meses. Firmas el contrato con tu firma digital.'], ['El fondo lo presta a afiliados', 'Tu dinero financia préstamos de nómina del propio sindicato, con descuento garantizado.'], ['Cobras el 2.5% cada mes', 'Se deposita en tu cuenta bancaria registrada el día 5 de cada mes, todos los meses del plazo.']];
     const guarantees = [['shield', 'Respaldado por el patrimonio del SUTI', 'El fondo responde con reservas propias; no se invierte en bolsa ni en instrumentos de riesgo.'], ['users', 'Auditado por el Comité de Vigilancia', 'Revisión mensual y asamblea informativa cada semestre, abierta a todos los afiliados.'], ['doc', 'Tu capital regresa completo', 'Los rendimientos ya se te pagaron mes a mes: al cerrar el plazo (mínimo 6 meses) recibes íntegro el capital, o lo renuevas.']];
     return h('div', {
       className: 'su-investment',

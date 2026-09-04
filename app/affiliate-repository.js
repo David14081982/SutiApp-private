@@ -69,11 +69,14 @@
     async function getCurrentAffiliate(knownUser) {
       try {
         const client = provideClient();
-        await getAuthenticatedUser(client, knownUser);
+        const principal = await getAuthenticatedUser(client, knownUser);
         const access = await client.rpc('get_current_affiliate_access_state');
         if (access.error) throw access.error;
         if (access.data === 'ARCHIVED') {
           throw new AffiliateRepositoryError('AFFILIATE_ARCHIVED', 'Affiliate self-service is archived');
+        }
+        if (access.data === 'IDENTITY_MISMATCH' || access.data === 'AMBIGUOUS_IDENTITY') {
+          throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Authenticated principal does not exactly match one affiliate');
         }
         if (access.data !== 'ACTIVE') {
           throw new AffiliateRepositoryError('AUTH_IDENTITY_WITHOUT_AFFILIATE', 'Authenticated principal has no linked affiliate');
@@ -81,7 +84,7 @@
         const effective = await client.rpc('get_effective_affiliate_id');
         if (effective.error) throw effective.error;
         if (!effective.data) {
-          throw new AffiliateRepositoryError('AUTH_IDENTITY_WITHOUT_AFFILIATE', 'Authenticated principal has no linked affiliate');
+          throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Active identity did not resolve exactly one affiliate');
         }
         const [result, context] = await Promise.all([
           client.from('affiliates').select(PUBLIC_FIELDS).eq('id', effective.data).maybeSingle(),
@@ -90,12 +93,22 @@
         if (result.error) throw result.error;
         if (!result.data) {
           throw new AffiliateRepositoryError(
-            'AUTH_IDENTITY_WITHOUT_AFFILIATE',
-            'Authenticated principal has no linked affiliate'
+            'AUTH_IDENTITY_MISMATCH',
+            'Effective affiliate could not be verified'
           );
         }
         if (context.error) throw context.error;
         const active = Array.isArray(context.data) ? context.data[0] : null;
+        if (active) {
+          if (active.actor_real_auth_user_id !== principal.id || active.usuario_contexto_affiliate_id !== result.data.id) {
+            throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Impersonation context does not match the authenticated principal');
+          }
+        } else {
+          const principalEmail = String(principal.email || '').trim().toLowerCase();
+          if (!principal.email_confirmed_at || !principalEmail || result.data.auth_user_id !== principal.id || result.data.historical_email_normalized !== principalEmail) {
+            throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Authenticated principal does not exactly match the resolved affiliate');
+          }
+        }
         return Object.assign({}, result.data, { _impersonation: active || null });
       } catch (error) {
         throw sourceError(error);

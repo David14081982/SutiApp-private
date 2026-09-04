@@ -8,7 +8,7 @@ function load(file, context) {
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
 }
 
-function queryClient(rows, authUser = { id: 'auth-1' }) {
+function queryClient(rows, authUser = { id: 'auth-1', email: 'owner@example.test', email_confirmed_at: '2026-01-01T00:00:00Z' }) {
   const calls = [];
   function chain() {
     const q = {
@@ -50,7 +50,7 @@ function queryClient(rows, authUser = { id: 'auth-1' }) {
   assert.equal(context.window.SutiSupabase.getClient(), context.window.SutiSupabase.getClient());
   assert.equal(created, 1);
 
-  const row = { id: 'affiliate-1', auth_user_id: 'auth-1' };
+  const row = { id: 'affiliate-1', auth_user_id: 'auth-1', historical_email_normalized: 'owner@example.test' };
   const currentClient = queryClient([row]);
   const repository = context.window.createAffiliateRepository(() => currentClient);
   const current = await repository.getCurrentAffiliate();
@@ -84,7 +84,7 @@ function queryClient(rows, authUser = { id: 'auth-1' }) {
 
   const worker = fs.readFileSync('sw.js', 'utf8');
   assert.match(worker, /staticCdnHosts/);
-  assert.match(worker, /cdn\.jsdelivr\.net/);
+  assert.match(worker, /fonts\.googleapis\.com/);
   assert.match(worker, /!sameOrigin && !staticCdnHosts\.has/);
   assert.match(worker, /supabase-config\.js/);
 

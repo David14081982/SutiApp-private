@@ -157,7 +157,7 @@
         return;
       }
       if (affiliate && affiliate.auth_user_id !== session.user.id && !affiliate._impersonation) {
-        await rejectUnusableSession('unlinked', 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
+        await rejectUnusableSession('identity_error', 'AUTH_IDENTITY_MISMATCH');
         return;
       }
       if (affiliate && affiliate.auth_eligibility !== 'eligible' && !isAdmin) {
@@ -176,6 +176,10 @@
       if (version !== resolutionVersion) return;
       if (error && error.code === 'AUTH_IDENTITY_WITHOUT_AFFILIATE') {
         await rejectUnusableSession('unlinked', error.code);
+        return;
+      }
+      if (error && error.code === 'AUTH_IDENTITY_MISMATCH') {
+        await rejectUnusableSession('identity_error', error.code);
         return;
       }
       publish({ phase: 'error', session, errorCode: controlledErrorCode(error) });
@@ -414,6 +418,7 @@
   }
 
   function messageFor(stateValue) {
+    if (stateValue.phase === 'identity_error') return 'No pudimos verificar que esta sesión corresponda exactamente a tu afiliación. La sesión se cerró por seguridad; contacta a soporte.';
     if (stateValue.phase === 'archived') return 'Tu afiliación está archivada. No puedes iniciar nuevas operaciones; solicita una restauración administrativa.';
     if (stateValue.phase === 'unlinked') return 'Tu cuenta no está vinculada con un afiliado habilitado.';
     if (stateValue.phase === 'ineligible') return 'Tu afiliación no está habilitada para iniciar sesión.';

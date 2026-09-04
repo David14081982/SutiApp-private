@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-102 — resolución exacta de identidad de afiliado
+
+Supabase Auth conserva autenticación y principal; `public.affiliates` conserva la afiliación y su vínculo nullable. Para autoservicio, `get_current_affiliate_access_state()` y `get_effective_affiliate_id()` vuelven a validar en cada resolución `auth.uid() → affiliates.auth_user_id`, correo Auth confirmado, coincidencia exacta con `historical_email_normalized` y unicidad global del correo histórico. El email participa únicamente como prueba fail-closed de activación/vínculo; no reemplaza UUID ni `numero_control` como identidad durable.
+
+`claim_affiliate_identity()` sólo escribe el vínculo cuando hay exactamente una fila histórica total y ésta es elegible/no archivada. Un duplicado nunca se reduce a “la única elegible”. `AffiliateRepository` verifica de nuevo el principal y `AffiliateAuth` rechaza/cierra una discrepancia antes de montar la app. `impersonation_sessions` permanece como la única excepción explícita, sujeta al contrato ADR-098. No existen lookup alterno, `DATA`, cache, localStorage, nombre o `numero_control` como fallback.
+
 ## Contrato protegido ADR-100 — Admin Finanzas · Solicitudes
 
 El comportamiento aprobado en `c5e0647922a8fdd9e34bf0c09cfa670dc41f2527` queda `PROTECTED / CLOSED CONTRACT`. `program_requests` conserva solicitud/status; su `workflow_snapshot` conserva el flujo aplicado; `operational_workflows`/`operational_workflow_stages` configuran altas futuras; `operational_request_tracking` es derivado; y `program_request_admin_events` conserva auditoría append-only. Admin y afiliado consumen el mismo resolver central.

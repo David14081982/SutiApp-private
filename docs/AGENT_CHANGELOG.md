@@ -1,5 +1,13 @@
 # Bitácora de agentes
 
+## 2026-09-04 — H-CRITICAL-CROSS-USER-IDENTITY-MISMATCH-001
+
+- Se demostró un fallo de cardinalidad: el claim podía elegir una fila elegible dentro de un correo duplicado y la resolución efectiva confiaba en un vínculo previo sin revalidar email confirmado/unicidad.
+- Producción quedó fail-closed en `auth.uid() → affiliates.auth_user_id → affiliate efectivo`; cualquier discrepancia o ambigüedad devuelve `NULL`, cierra sesión y muestra error de identidad. Impersonación ADR-098 se conserva como única excepción auditada.
+- Auditoría antes/después: 71 Auth, 67 vínculos, 7 grupos duplicados, 0 vínculos incorrectos, 0 múltiples, 0 ambiguos ya vinculados y 0 impersonaciones activas. No se corrigió, fusionó, borró ni reasignó ninguna fila.
+- Forward/recovery, matriz A–G, RLS de perfil/foto/documentos/solicitudes/ahorro, impersonación, build y tests locales pasaron. La credencial QA productiva `H005_TEST` estaba inválida; no se alteró para forzar el E2E.
+- Evidencia: `docs/qa/H-CRITICAL-CROSS-USER-IDENTITY-MISMATCH-001-EVIDENCE.md`; ADR-102; INV-207.
+
 ## 2026-09-03 — H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001
 
 - Admin → Finanzas → Solicitudes consume ahora el workflow inmutable real de cada solicitud, comunica actual/completadas/pendientes/siguiente/responsable y usa acciones explícitas con confirmación y read-back.

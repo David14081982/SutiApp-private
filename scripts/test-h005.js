@@ -142,6 +142,13 @@ const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(unlinked.controller.getState().phase, 'unlinked');
   assert.equal(unlinked.getSignOutCalls(), 1);
 
+  const identityMismatch = createHarness({ repositoryError: Object.assign(new Error('identity mismatch'), { code: 'AUTH_IDENTITY_MISMATCH' }) });
+  await identityMismatch.controller.signIn('owner@example.test', 'correct');
+  assert.equal(identityMismatch.controller.getState().phase, 'identity_error');
+  assert.equal(identityMismatch.controller.getState().errorCode, 'AUTH_IDENTITY_MISMATCH');
+  assert.equal(identityMismatch.controller.getState().affiliate, null);
+  assert.equal(identityMismatch.getSignOutCalls(), 1);
+
   const ineligible = createHarness({ eligibility: 'invalid_email' });
   await ineligible.controller.signIn('owner@example.test', 'correct');
   assert.equal(ineligible.controller.getState().phase, 'ineligible');

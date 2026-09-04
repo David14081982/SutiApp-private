@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-102 | Una sesión normal sólo resuelve afiliado cuando `auth.uid()`, `affiliates.auth_user_id` y el correo Auth confirmado coinciden exactamente y el correo histórico es globalmente unívoco; cualquier inconsistencia falla cerrada. | Aceptada / ACTIVE / INCIDENT CONTAINED |
 | ADR-101 | Activación usa preflight mínimo sobre `affiliates`, OTP/callback de Supabase Auth y claim verificado; ningún error de entrega puede presentarse como éxito. | Aceptada / ACTIVE / CERT BLOCKED BY SMTP |
 | ADR-100 | Admin → Finanzas → Solicitudes conserva el workflow inmutable real, transición atómica/idempotente, lectura común Admin/afiliado y preview privada automática; el resultado productivo aprobado queda cerrado y protegido. | Aceptada / PROTECTED / CLOSED CONTRACT |
 | ADR-099 | Normas y formatos de Tu sindicato usan sólo `institutional_documents → app_assets → documents`; Google queda como procedencia privada, y un duplicado binario histórico se conserva despublicado sin crear otro objeto. | Aceptada / ACTIVE |
@@ -72,6 +73,15 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-102 — Identidad de afiliado exacta y fail-closed
+
+- **Incidente:** se demostró que `claim_affiliate_identity()` podía escoger la única fila elegible dentro de un correo histórico duplicado y que `get_effective_affiliate_id()` confiaba en cualquier `auth_user_id` ya escrito sin volver a comprobar correo confirmado, coincidencia exacta y unicidad global. La auditoría productiva actual encontró cero vínculos incorrectos, pero ambas rutas permitían aceptar o crear una asociación ambigua.
+- **Decisión:** para sesión normal se exige exactamente una fila con `auth.uid() = affiliates.auth_user_id`, correo Auth confirmado igual a `historical_email_normalized` y una sola aparición de ese correo en todo `affiliates`. Ambigüedad, discrepancia o resolución incoherente devuelve estado cerrado/`NULL`; el cliente cierra la sesión y muestra `identity_error` sin montar Inicio, perfil, documentos o Finanzas.
+- **Claim:** un correo con más de una fila histórica nunca vincula, aunque sólo una sea elegible. No se elige por orden, nombre, `source_row_ordinal` ni `numero_control`. Email continúa siendo selector verificado de activación, no identidad durable de negocio; el vínculo durable sigue siendo UUID Auth y `numero_control` conserva su semántica histórica.
+- **Impersonación:** la única excepción es una sesión vigente ligada al `session_id`, con permiso `affiliates.impersonate`, `actor_real_auth_user_id` y `usuario_contexto_affiliate_id` auditados. Se preserva sin alterar el contrato protegido ADR-098.
+- **Datos y recuperación:** `20260904000100` reemplaza sólo tres funciones y no modifica filas de afiliados/Auth. La auditoría previa/posterior mostró cero vínculos incorrectos o múltiples; por ello se aplicaron cero reparaciones. El recovery restaura definiciones previas y fue compilado dentro de `ROLLBACK`.
+- **Aprobación:** `H-CRITICAL-CROSS-USER-IDENTITY-MISMATCH-001`, instrucción explícita del propietario, 2026-09-04.
 
 ### ADR-101 — Activación productiva observable y fail-closed
 

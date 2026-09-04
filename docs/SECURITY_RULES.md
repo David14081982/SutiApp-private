@@ -1,5 +1,11 @@
 # Reglas de seguridad
 
+## Identidad exacta de afiliado — ADR-102
+
+Toda ruta self-service depende de `get_effective_affiliate_id()`. En sesión normal, la función sólo retorna un UUID si el principal Auth confirmado coincide exactamente con un único vínculo y un único correo histórico global; de lo contrario retorna `NULL`. `get_current_affiliate_access_state()` distingue `UNLINKED`, `IDENTITY_MISMATCH` y `AMBIGUOUS_IDENTITY`; el frontend convierte las dos últimas en cierre de sesión y error controlado, nunca en perfil alterno.
+
+`claim_affiliate_identity()` cuenta todas las filas del correo antes de evaluar elegibilidad y bloquea cualquier cardinalidad distinta de uno. Las tres funciones siguen `SECURITY DEFINER`, `search_path=''`, revocadas a `public/anon` y ejecutables sólo por `authenticated`. La impersonación conserva permiso, vínculo a `session_id`, TTL, actor real, usuario contexto y auditoría de ADR-098; ninguna condición de interfaz amplía esa excepción.
+
 ## Admin Finanzas — transición y vista previa focal
 
 Las RPC de bandeja/detalle exigen `program_requests.read`; la transición exige `program_requests.write`, deriva actor desde Auth, bloquea aprobaciones financieras especializadas y usa `client_action_id` idempotente. `public`, `anon` y el acceso directo a la tabla de eventos permanecen revocados. La UI confirma la acción, pero la autorización y la compatibilidad estado/etapa se validan en backend.

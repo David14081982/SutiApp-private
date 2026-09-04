@@ -1,9 +1,14 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v148';
+const CACHE = 'sutiapp-v149';
 const CORE = [
   './',
   './SutiApp.html',
+  './app/vendor/react-18.3.1/react.production.min.js',
+  './app/vendor/react-dom-18.3.1/react-dom.production.min.js',
+  './app/vendor/supabase-js-2.112.3/supabase.min.js',
   './app/bundle.js?v=204',
+  './app/supabase-client.js',
+  './app/affiliate-repository.js?v=3',
   './app/financial-legacy-repository.js?v=10',
   './app/payroll-declaration-repository.js',
   './manifest.webmanifest',
@@ -26,14 +31,17 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
+self.addEventListener('message', (e) => {
+  if (!e.data || e.data.type !== 'SUTIAPP_PURGE_OLD_CACHES') return;
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))));
+});
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
   const staticCdnHosts = new Set([
-    'unpkg.com',
-    'cdn.jsdelivr.net',
     'fonts.googleapis.com',
     'fonts.gstatic.com',
   ]);

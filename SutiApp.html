@@ -547,7 +547,82 @@
         </text>
       </svg>
     </template>
+    <div
+      id="suti-startup-status"
+      role="status"
+      aria-live="polite"
+      style="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:#f0f3f4;color:#222;font-family:Nunito,Arial,sans-serif;text-align:center"
+    >
+      <div style="max-width:420px">
+        <div id="suti-startup-title" style="font-size:1.25rem;font-weight:800;color:#910022">Cargando SutiApp…</div>
+        <p id="suti-startup-message" hidden style="margin:12px 0 18px;line-height:1.5">
+          Revisa tu conexión e intenta nuevamente.
+        </p>
+        <button
+          id="suti-startup-retry"
+          type="button"
+          hidden
+          style="border:0;border-radius:12px;padding:12px 20px;background:#910022;color:#fff;font:inherit;font-weight:800;cursor:pointer"
+        >
+          Reintentar
+        </button>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding:24px;background:#f0f3f4;color:#910022;font-family:Arial,sans-serif;text-align:center;font-weight:700">
+        No fue posible iniciar SutiApp. Activa JavaScript y presiona Reintentar en tu navegador.
+      </div>
+    </noscript>
     <div id="root"></div>
+
+    <script>
+      // Guardia de arranque independiente de React: nunca deja una pantalla blanca.
+      (function () {
+        var status = document.getElementById("suti-startup-status");
+        var title = document.getElementById("suti-startup-title");
+        var message = document.getElementById("suti-startup-message");
+        var retry = document.getElementById("suti-startup-retry");
+        var root = document.getElementById("root");
+        var state = { ready: false, failed: false, timer: null, observer: null };
+
+        function fail(detail) {
+          if (state.ready || state.failed) return;
+          state.failed = true;
+          clearTimeout(state.timer);
+          title.textContent = "No fue posible iniciar SutiApp";
+          message.hidden = false;
+          retry.hidden = false;
+          status.style.display = "flex";
+          status.setAttribute("role", "alert");
+          status.dataset.startupError = detail || "STARTUP_FAILED";
+        }
+
+        function ready() {
+          if (state.failed || !root || root.childElementCount === 0) return;
+          state.ready = true;
+          clearTimeout(state.timer);
+          if (state.observer) state.observer.disconnect();
+          status.hidden = true;
+          status.style.display = "none";
+        }
+
+        window.__sutiStartupFail = fail;
+        window.__sutiStartupState = state;
+        retry.addEventListener("click", function () {
+          retry.disabled = true;
+          title.textContent = "Cargando SutiApp…";
+          message.hidden = true;
+          var next = new URL(window.location.href);
+          next.searchParams.set("startup_retry", Date.now().toString());
+          window.location.replace(next.toString());
+        });
+        state.observer = new MutationObserver(ready);
+        state.observer.observe(root, { childList: true });
+        state.timer = setTimeout(function () { fail("STARTUP_TIMEOUT"); }, 45000);
+        window.addEventListener("error", function () { fail("STARTUP_SCRIPT_ERROR"); });
+        window.addEventListener("unhandledrejection", function () { fail("STARTUP_PROMISE_REJECTION"); });
+      })();
+    </script>
 
     <script>
       // Captura del evento de instalación PWA (relay para el botón "Instalar app")
@@ -563,28 +638,41 @@
     </script>
 
     <script
-      src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      src="app/vendor/react-18.3.1/react.production.min.js"
+      integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
       crossorigin="anonymous"
+      onerror="window.__sutiStartupFail('REACT_LOAD_FAILED')"
     ></script>
     <script
-      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      src="app/vendor/react-dom-18.3.1/react-dom.production.min.js"
+      integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
       crossorigin="anonymous"
+      onerror="window.__sutiStartupFail('REACT_DOM_LOAD_FAILED')"
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js"
+      src="app/vendor/supabase-js-2.112.3/supabase.min.js"
+      integrity="sha384-l8ah+VgaWtk1mvOe9VC+OirC6qHFF4yH7l7mKRidV9MSti3E9F463bMp6ZVN4kuC"
       crossorigin="anonymous"
+      onerror="window.__sutiStartupFail('SUPABASE_JS_LOAD_FAILED')"
     ></script>
-    <script src="app/supabase-config.js"></script>
-    <script src="app/supabase-client.js"></script>
-    <script src="app/affiliate-repository.js?v=3"></script>
-    <script src="app/financial-legacy-repository.js?v=10"></script>
-  <script src="app/bundle.js?v=204"></script>
+    <script>
+      if (!window.React || !window.ReactDOM || !window.supabase) {
+        window.__sutiStartupFail("CRITICAL_GLOBAL_MISSING");
+      }
+    </script>
+    <script src="app/supabase-config.js" onerror="window.__sutiStartupFail('CONFIG_LOAD_FAILED')"></script>
+    <script src="app/supabase-client.js" onerror="window.__sutiStartupFail('SUPABASE_CLIENT_LOAD_FAILED')"></script>
+    <script src="app/affiliate-repository.js?v=3" onerror="window.__sutiStartupFail('AFFILIATE_REPOSITORY_LOAD_FAILED')"></script>
+    <script src="app/financial-legacy-repository.js?v=10" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
+  <script src="app/bundle.js?v=204" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
     <script>
       // Service worker (offline + instalación PWA)
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("sw.js").catch(function () {});
+          navigator.serviceWorker.register("sw.js").then(function (registration) {
+            registration.update().catch(function () {});
+          }).catch(function () {});
         });
       }
     </script>

@@ -24,6 +24,9 @@ assert.equal(result.status, 0, result.stderr || result.stdout);
 const required = [
   'index.html', 'SutiApp.html', 'sw.js', 'manifest.webmanifest', '.nojekyll',
   'app/bundle.js', 'app/supabase-config.js', 'app/supabase-client.js',
+  'app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-18.3.1/LICENSE',
+  'app/vendor/react-dom-18.3.1/react-dom.production.min.js', 'app/vendor/react-dom-18.3.1/LICENSE',
+  'app/vendor/supabase-js-2.112.3/supabase.min.js', 'app/vendor/supabase-js-2.112.3/LICENSE',
   'app/affiliate-repository.js', 'app/financial-legacy-repository.js',
   'app/payroll-declaration-repository.js', 'assets/branding/home-header-collapsed.webp',
 ];
@@ -43,6 +46,10 @@ assert.equal(manifest.scope, './');
 const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
 assert(/navigator\.serviceWorker\.register\(["']sw\.js["']\)/.test(html));
 assert(html.includes('app/supabase-config.js'));
+assert(!/https:\/\/(?:unpkg\.com|cdn\.jsdelivr\.net)\//.test(html));
+assert(html.includes('Cargando SutiApp…'));
+assert(html.includes('No fue posible iniciar SutiApp'));
+assert(html.includes('id="suti-startup-retry"'));
 
 fs.rmSync(output, { recursive: true, force: true });
 console.log(JSON.stringify({ status: 'PASS', pwa: true, forbiddenFiles: 0 }));

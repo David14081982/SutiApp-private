@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+## 2026-09-04 — H-AFFILIATES-EXPORT-EMAILS-001
+
+- Admin → Afiliados → `Exportar Excel` proyecta ahora dos columnas independientes: `Correo histórico` desde `public.affiliates.historical_email_raw` y `Correo de acceso` desde el usuario Auth exactamente vinculado por `auth_user_id`.
+- El UUID sólo se usa dentro de Edge y no aparece en el archivo ni en la auditoría; ausencia de cuenta deja la celda de acceso vacía y un vínculo Auth irresoluble falla cerrado. No se empareja por nombre/email ni se modifica identidad.
+- La Edge `data-exports` versión 11 quedó publicada. La validación productiva abrió en memoria el XLSX de 954 filas y pasó casos reales de correos iguales, distintos y sin Auth, con hashes de afiliados/Auth intactos y una sola fila esperada de auditoría de exportación.
+- No se modificó pantalla, repository, bundle, schema, RLS, Storage, Google o finanzas; no se ejecutaron suites globales. Evidencia: `docs/qa/H-AFFILIATES-EXPORT-EMAILS-001-EVIDENCE.md`; INV-209.
+
 ## 2026-09-04 — H-AFFILIATES-CSV-UPDATE-APPLY-001
 
 - Se procesó el CSV exacto de 947 filas por `numero_control` únicamente: 1 email seguro actualizado, 8 `NEEDS_AUTH_SYNC`, 145 ambiguos omitidos, 7 `CSV_ONLY`, 786 sin cambio y 10 extras preservados, incluidos 7 fixtures QA.

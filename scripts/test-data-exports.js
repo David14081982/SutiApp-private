@@ -35,7 +35,14 @@ assert.match(edge,/Content-Disposition/);
 assert.match(edge,/data_export_audit_log/);
 assert.match(edge,/status:"SUCCESS",column_set:spec\.columns/);
 assert.match(edge,/columns: \["id","numero_control"/);
-assert.doesNotMatch(edge,/columns:\s*\[[^\]]*"(?:auth_user_id|actor_real_auth_user_id|signature_data|source_payload|storage_path|content_sha256|historical_email_raw)"/s);
+const affiliateColumns=edge.match(/affiliates:\s*\{[\s\S]*?columns:\s*\[([^\]]+)\]/)[1];
+assert.match(affiliateColumns,/"historical_email_raw"/);
+assert.match(affiliateColumns,/"auth_email"/);
+assert.doesNotMatch(affiliateColumns,/"auth_user_id"/);
+assert.match(edge,/headers:\s*\{\s*historical_email_raw:"Correo histórico",\s*auth_email:"Correo de acceso"\s*\}/);
+assert.match(edge,/privileged\.auth\.admin\.getUserById\(authId\)/);
+assert.match(edge,/delete projected\.auth_user_id/);
+assert.doesNotMatch(edge,/columns:\s*\[[^\]]*"(?:auth_user_id|actor_real_auth_user_id|signature_data|source_payload|storage_path|content_sha256)"/s);
 assert.doesNotMatch(repo,/SERVICE_ROLE|service_role|\.from\(/);
 assert.match(repo,/functions\.invoke\('data-exports'/);
 

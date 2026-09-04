@@ -7,11 +7,13 @@ type DomainSpec = {
   description: string;
   table: string;
   columns: string[];
+  headers?: Record<string, string>;
   filters: Record<string, "text" | "boolean" | "date">;
   section?: string;
   reserved?: boolean;
   fixed?: Record<string, string | boolean>;
   sensitivePii?: boolean;
+  linkedAuthEmail?: boolean;
 };
 
 const MAX_ROWS = 20000;
@@ -22,7 +24,8 @@ const allowedOrigins = (Deno.env.get("ALLOWED_APP_ORIGINS") || "")
 const domains: Record<string, DomainSpec> = {
   affiliates: {
     label: "Afiliados", description: "Padrón actual autorizado de public.affiliates.", table: "affiliates", reserved: true, sensitivePii: true,
-    columns: ["id","numero_control","full_name","display_name","affiliate_status_raw","phone_raw","address_raw","birth_date_raw","gender_raw","marital_status_raw","children_count_raw","rfc_raw","curp_raw","unit_raw","city_raw","employment_position_raw","employment_entry_date_raw","occupation_raw","institute_entry_date_raw","employment_area_raw","employment_level_raw","pension_raw","subdirectorate_raw","union_enrollment_date_raw","affiliation_raw","union_position_raw","termination_date_raw","financial_union_code","financial_employee_category_code","financial_employee_type","financial_affiliation_status","financial_employment_status","created_at","updated_at"],
+    columns: ["id","numero_control","full_name","display_name","historical_email_raw","auth_email","affiliate_status_raw","phone_raw","address_raw","birth_date_raw","gender_raw","marital_status_raw","children_count_raw","rfc_raw","curp_raw","unit_raw","city_raw","employment_position_raw","employment_entry_date_raw","occupation_raw","institute_entry_date_raw","employment_area_raw","employment_level_raw","pension_raw","subdirectorate_raw","union_enrollment_date_raw","affiliation_raw","union_position_raw","termination_date_raw","financial_union_code","financial_employee_category_code","financial_employee_type","financial_affiliation_status","financial_employment_status","created_at","updated_at"],
+    headers: { historical_email_raw:"Correo histórico", auth_email:"Correo de acceso" }, linkedAuthEmail: true,
     filters: { affiliation_raw:"text", employment_level_raw:"text", affiliate_status_raw:"text", financial_affiliation_status:"text", financial_employment_status:"text" },
   },
   requests: {
@@ -109,6 +112,7 @@ function csvValue(value: unknown) {
   return /[",\r\n]/.test(raw) ? `"${raw.replaceAll('"','""')}"` : raw;
 }
 function safeFilePart(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]+/g,"_"); }
+function headerFor(spec: DomainSpec, key: string) { return spec.headers?.[key] || key; }
 
 async function canExport(userClient: ReturnType<typeof createClient>, spec: DomainSpec) {
   const global = await userClient.rpc("has_admin_permission", { required_permission:"data_exports.read" });
@@ -144,8 +148,9 @@ function applyFilters(query: any, spec: DomainSpec, input: unknown) {
 async function rowsFor(privileged: ReturnType<typeof createClient>, spec: DomainSpec, input: unknown) {
   const output: Record<string, unknown>[] = [];
   let auditFilters: Record<string, unknown> = {};
+  const selectColumns=spec.linkedAuthEmail?[...spec.columns.filter((key)=>key!=="auth_email"),"auth_user_id"]:spec.columns;
   for (let from=0; from<=MAX_ROWS; from+=PAGE_SIZE) {
-    let query = privileged.from(spec.table).select(spec.columns.join(",")).order(spec.columns.includes("created_at")?"created_at":spec.columns[0],{ascending:true}).range(from,Math.min(from+PAGE_SIZE-1,MAX_ROWS));
+    let query = privileged.from(spec.table).select(selectColumns.join(",")).order(spec.columns.includes("created_at")?"created_at":spec.columns[0],{ascending:true}).range(from,Math.min(from+PAGE_SIZE-1,MAX_ROWS));
     const applied=applyFilters(query,spec,input);query=applied.query;auditFilters=applied.filters;
     const result=await query;
     if(result.error)throw result.error;
@@ -153,18 +158,29 @@ async function rowsFor(privileged: ReturnType<typeof createClient>, spec: Domain
     if((result.data||[]).length<PAGE_SIZE)break;
   }
   if(output.length>MAX_ROWS)throw new Error("EXPORT_ROW_LIMIT_EXCEEDED");
-  return { rows:output, filters:auditFilters };
+  if(!spec.linkedAuthEmail)return { rows:output, filters:auditFilters };
+  const authIds=[...new Set(output.map((row)=>row.auth_user_id).filter((value): value is string=>typeof value==="string"&&value.length>0))];
+  const authEmails=new Map<string,string>();let next=0;
+  async function resolveLinkedAuthEmails(){
+    while(next<authIds.length){
+      const authId=authIds[next++];const found=await privileged.auth.admin.getUserById(authId);
+      if(found.error||!found.data.user||found.data.user.id!==authId)throw new Error("AUTH_EMAIL_LOOKUP_FAILED");
+      authEmails.set(authId,found.data.user.email||"");
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(12,authIds.length)},()=>resolveLinkedAuthEmails()));
+  return { rows:output.map((row)=>{const projected={...row,auth_email:typeof row.auth_user_id==="string"?authEmails.get(row.auth_user_id)||"":""};delete projected.auth_user_id;return projected;}), filters:auditFilters };
 }
 
 async function fileFor(spec: DomainSpec, rows: Record<string, unknown>[], format: ExportFormat) {
   if(format==="csv") {
-    const lines=[spec.columns.map(csvValue).join(","),...rows.map((row)=>spec.columns.map((key)=>csvValue(row[key])).join(","))];
+    const lines=[spec.columns.map((key)=>csvValue(headerFor(spec,key))).join(","),...rows.map((row)=>spec.columns.map((key)=>csvValue(row[key])).join(","))];
     return { body:new TextEncoder().encode("\uFEFF"+lines.join("\r\n")), type:"text/csv; charset=utf-8" };
   }
   const workbook=new ExcelJS.Workbook();
   workbook.creator="SutiApp";workbook.created=new Date();
   const sheet=workbook.addWorksheet(spec.label.slice(0,31));
-  sheet.columns=spec.columns.map((key)=>({header:key,key,width:Math.min(40,Math.max(14,key.length+2))}));
+  sheet.columns=spec.columns.map((key)=>{const header=headerFor(spec,key);return {header,key,width:Math.min(40,Math.max(14,header.length+2))};});
   sheet.getRow(1).font={bold:true,color:{argb:"FFFFFFFF"}};sheet.getRow(1).fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF7B1634"}};sheet.views=[{state:"frozen",ySplit:1}];sheet.autoFilter={from:"A1",to:{row:1,column:spec.columns.length}};
   rows.forEach((row)=>sheet.addRow(Object.fromEntries(spec.columns.map((key)=>[key,cell(row[key])]))));
   const bytes=await workbook.xlsx.writeBuffer();

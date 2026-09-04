@@ -123,4 +123,11 @@ Artefacto local de reparaciones: `C:\Users\david\Downloads\H-AFFILIATES-CSV-AUTH
 
 El backend certificado autoriza las 11 excepciones estrechas a la comparación con correo histórico. `AffiliateRepository.getCurrentAffiliate()` conserva la comprobación exacta `affiliate.auth_user_id === auth.uid()` y delega la vigencia de UUID+correo confirmado+afiliado+control a `get_current_affiliate_access_state()` y `get_effective_affiliate_id()`; ya no vuelve a invalidar en navegador una reparación que ambos resolvedores aprobaron. La URL cambió a `affiliate-repository.js?v=5` y el app-shell a `sutiapp-v151` para expulsar la copia previa. No cambiaron JSX, layout, copy, navegación ni bundle.
 
-La prueba focal de sesión pasó login, restauración, refresh, logout y fallo cerrado si el RPC no existe. El guardian visual confirmó paridad estructural total. Por tratarse de un repository compartido y del service worker, se intentó además la regresión protegida sobre el build local: no llegó a ninguna superficie porque Supabase Auth rechazó el fixture preexistente `H005_TEST` con `400 invalid_credentials`. No se modificó su contraseña ni identidad para forzar el E2E. Esta indisponibilidad QA no alteró el postflight backend, que volvió a comprobar 84 vínculos, 76 correctos y 0 cruces determinísticos.
+La prueba focal de sesión pasó login, restauración, refresh, logout y fallo cerrado si el RPC no existe. El guardian visual confirmó paridad estructural total. Por tratarse de un repository compartido y del service worker, se intentó además la regresión protegida tanto sobre el build local como sobre GitHub Pages: en ambos orígenes no llegó a ninguna superficie autenticada porque Supabase Auth rechazó el fixture preexistente `H005_TEST` con `400 invalid_credentials`. No se modificó su contraseña ni identidad para forzar el E2E. Esta indisponibilidad QA no alteró el postflight backend, que volvió a comprobar 84 vínculos, 76 correctos y 0 cruces determinísticos.
+
+## Publicación
+
+- Commit funcional: `78a84cbc5a26aab3e916def3d5e025fc002fde78`.
+- Workflow Pages `33923747999`: `SUCCESS`.
+- Read-back público: HTML `v=5`, repository con validación backend certificada y service worker `sutiapp-v151`.
+- Regresión protegida local/publicada: `BLOCKED` exclusivamente en login por `H005_TEST = invalid_credentials`; ninguna superficie ni dato productivo fue mutado por esos intentos.

@@ -131,3 +131,22 @@ La prueba focal de sesión pasó login, restauración, refresh, logout y fallo c
 - Workflow Pages `33923747999`: `SUCCESS`.
 - Read-back público: HTML `v=5`, repository con validación backend certificada y service worker `sutiapp-v151`.
 - Regresión protegida local/publicada: `BLOCKED` exclusivamente en login por `H005_TEST = invalid_credentials`; ninguna superficie ni dato productivo fue mutado por esos intentos.
+
+## Cierre constitucional
+
+```text
+H-AFFILIATES-CSV-AUTH-LINK-REPAIR-001 RESULT
+Status: BLOCKED para cierre PASS; reparación APPLIED / VERIFIED
+Files changed: migration/recovery/runner/test; AffiliateRepository; cachebusters; gobierno y evidencia
+Source-of-truth verdict: PASS
+Invariant verdict: PASS — 0 cruces determinísticos restantes
+Build: PASS — artefacto Pages de 22 archivos
+Tests: PASS focal; regresión protegida BLOCKED antes de superficies por credencial QA inválida
+Security: PASS — service-only, forced RLS, UUID + correo confirmado + afiliado + control exactos
+Legacy impact: NOT APPLICABLE
+Unexpected files changed: 0 en los commits; trabajo ajeno del worktree preservado y excluido
+Known limitations: H005_TEST invalid_credentials; Architecture Registry preexistente STALE (682 archivos)
+Evidence: batch 8ebd3cd8-1f57-5054-953d-c2a7fe12af66; workflow Pages 33923747999
+```
+
+El Registry se consultó con fallback dirigido sobre Auth/AffiliateRepository/migraciones, pero no se regeneró: su baseline global antecede 682 cambios y una generación completa incorporaría arquitectura histórica y archivos ajenos fuera de esta H. El índice derivado no fue usado como autoridad para aplicar ni verificar datos.

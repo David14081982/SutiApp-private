@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+## 2026-09-04 — H-AFFILIATES-CSV-UPDATE-APPLY-001
+
+- Se procesó el CSV exacto de 947 filas por `numero_control` únicamente: 1 email seguro actualizado, 8 `NEEDS_AUTH_SYNC`, 145 ambiguos omitidos, 7 `CSV_ONLY`, 786 sin cambio y 10 extras preservados, incluidos 7 fixtures QA.
+- El lote productivo `9975324a-2fcc-510f-94d7-3b47e4f47977` guardó snapshot de las 121 diferencias resueltas antes del único write y dejó recovery service-only protegido contra cambios posteriores.
+- Los 79 vínculos Auth conservaron el mismo `auth_user_id → affiliate_id`; el resolver efectivo pasó antes/después y `AUTH_IDENTITY_MISMATCH_CREATED=0`. No hubo altas, merges, cambios de control, cambios Auth ni interacción Google/finanzas.
+- Dry-run forward/apply/recovery en rollback, prueba focal estática, read-back productivo, RLS y artefacto local de 947 resultados pasaron. Evidencia: `docs/qa/H-AFFILIATES-CSV-UPDATE-APPLY-001-EVIDENCE.md`; ADR-103; INV-208.
+
 ## 2026-09-04 — H-CRITICAL-CROSS-USER-IDENTITY-MISMATCH-001
 
 - Se demostró un fallo de cardinalidad: el claim podía elegir una fila elegible dentro de un correo duplicado y la resolución efectiva confiaba en un vínculo previo sin revalidar email confirmado/unicidad.

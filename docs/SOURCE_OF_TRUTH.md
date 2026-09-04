@@ -1,5 +1,11 @@
 # Fuentes de verdad
 
+## Corte ADR-103 — actualización puntual de email histórico
+
+`public.affiliates` continúa como única autoridad productiva del padrón. `Usuarios (8).csv`, fijado por SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29`, fue únicamente el insumo autorizado para `H-AFFILIATES-CSV-UPDATE-APPLY-001`; no queda conectado al runtime ni sustituye la procedencia histórica certificada.
+
+El cruce usa sólo `numero_control` texto. `historical_email_raw` conserva el valor recortado conforme al writer vigente y `historical_email_normalized` deriva sólo `trim + lowercase`. `affiliate_csv_email_update_batches` y `affiliate_csv_email_update_snapshot` son evidencia y recuperación service-only, nunca una segunda autoridad. Auth permanece separada: ninguna fila vinculada se actualiza sin sincronización explícita y `auth_user_id` no se deriva ni modifica.
+
 ## Corte ADR-102 — resolución exacta de identidad de afiliado
 
 Supabase Auth conserva autenticación y principal; `public.affiliates` conserva la afiliación y su vínculo nullable. Para autoservicio, `get_current_affiliate_access_state()` y `get_effective_affiliate_id()` vuelven a validar en cada resolución `auth.uid() → affiliates.auth_user_id`, correo Auth confirmado, coincidencia exacta con `historical_email_normalized` y unicidad global del correo histórico. El email participa únicamente como prueba fail-closed de activación/vínculo; no reemplaza UUID ni `numero_control` como identidad durable.

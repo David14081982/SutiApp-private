@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-103 | `public.affiliates` conserva la autoridad; `Usuarios (8).csv`, fijado por hash y orden owner, fue sólo insumo de actualización puntual por `numero_control`. Filas Auth-linked o ambiguas fallan cerradas y todo cambio usa snapshot/recovery service-only. | Aceptada / APPLIED / VERIFIED |
 | ADR-102 | Una sesión normal sólo resuelve afiliado cuando `auth.uid()`, `affiliates.auth_user_id` y el correo Auth confirmado coinciden exactamente y el correo histórico es globalmente unívoco; cualquier inconsistencia falla cerrada. | Aceptada / ACTIVE / INCIDENT CONTAINED |
 | ADR-101 | Activación usa preflight mínimo sobre `affiliates`, OTP/callback de Supabase Auth y claim verificado; ningún error de entrega puede presentarse como éxito. | Aceptada / ACTIVE / CERT BLOCKED BY SMTP |
 | ADR-100 | Admin → Finanzas → Solicitudes conserva el workflow inmutable real, transición atómica/idempotente, lectura común Admin/afiliado y preview privada automática; el resultado productivo aprobado queda cerrado y protegido. | Aceptada / PROTECTED / CLOSED CONTRACT |
@@ -73,6 +74,16 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-103 — Actualización puntual del email histórico por número de control
+
+- **Autoridad:** `public.affiliates` continúa como maestro productivo. El CSV `Usuarios (8).csv`, SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29`, es un insumo de cambio autorizado una sola vez y no una fuente runtime, fallback ni autoridad paralela.
+- **Emparejamiento:** sólo `Número de control` columna A, preservado como texto y con remoción exclusiva del sufijo de exportación `.0`. Nombre y email nunca reasignan identidad.
+- **Email:** columna C se persiste como raw conforme al writer vigente —`trim`, vacío a `NULL`— y como normalized mediante `trim + lowercase`. No se aplica otra corrección.
+- **Fallo cerrado:** se actualizan únicamente controles unívocos, sin vínculo Auth y cuyo email propuesto no colisiona. Vínculos Auth quedan `NEEDS_AUTH_SYNC`; controles o emails ambiguos y filas CSV-only no se escriben. `auth_user_id`, altas, merges, históricos omitidos y fixtures QA permanecen intactos.
+- **Recuperación y auditoría:** `20260904000200` fija hash/conteos, bloquea el universo durante la transacción, guarda snapshot lógico antes del update, audita resultado y aborta si cambia cualquier mapeo Auth. Recovery restaura sólo la fila aplicada y se bloquea ante un cambio posterior de email o identidad.
+- **Resultado:** 947 filas fuente; 1 email actualizado, 8 `NEEDS_AUTH_SYNC`, 145 ambiguas omitidas, 7 `CSV_ONLY`, 786 sin cambio, 10 extras conservados y cero cruces de identidad. Los 79 vínculos Auth conservaron el mismo `affiliate_id` efectivo.
+- **Aprobación:** instrucción explícita del propietario `H-AFFILIATES-CSV-UPDATE-APPLY-001`, 2026-09-04.
 
 ### ADR-102 — Identidad de afiliado exacta y fail-closed
 

@@ -123,29 +123,34 @@ Artefacto local de reparaciones: `C:\Users\david\Downloads\H-AFFILIATES-CSV-AUTH
 
 El backend certificado autoriza las 11 excepciones estrechas a la comparación con correo histórico. `AffiliateRepository.getCurrentAffiliate()` conserva la comprobación exacta `affiliate.auth_user_id === auth.uid()` y delega la vigencia de UUID+correo confirmado+afiliado+control a `get_current_affiliate_access_state()` y `get_effective_affiliate_id()`; ya no vuelve a invalidar en navegador una reparación que ambos resolvedores aprobaron. La URL cambió a `affiliate-repository.js?v=5` y el app-shell a `sutiapp-v151` para expulsar la copia previa. No cambiaron JSX, layout, copy, navegación ni bundle.
 
-La prueba focal de sesión pasó login, restauración, refresh, logout y fallo cerrado si el RPC no existe. El guardian visual confirmó paridad estructural total. Por tratarse de un repository compartido y del service worker, se intentó además la regresión protegida tanto sobre el build local como sobre GitHub Pages: en ambos orígenes no llegó a ninguna superficie autenticada porque Supabase Auth rechazó el fixture preexistente `H005_TEST` con `400 invalid_credentials`. No se modificó su contraseña ni identidad para forzar el E2E. Esta indisponibilidad QA no alteró el postflight backend, que volvió a comprobar 84 vínculos, 76 correctos y 0 cruces determinísticos.
+La prueba focal de sesión pasó login, restauración, refresh, logout y fallo cerrado si el RPC no existe. El guardian visual confirmó paridad estructural total. Los intentos iniciales de la regresión protegida no llegaron a una superficie autenticada porque la credencial local de `H005_TEST` estaba desfasada.
+
+En el cierre autorizado se rotó exclusivamente la contraseña del principal QA ya vinculado y se actualizó sólo `H005_TEST_PASSWORD` en `supabase.env`, ignorado por Git. El login posterior devolvió `ACTIVE` y el mismo afiliado efectivo. Los `954` afiliados, los `84` valores `auth_user_id`, el UUID Auth, email Auth, fila afiliada y asignación Admin permanecieron exactos; el nuevo secreto tuvo `0` coincidencias en archivos versionados.
+
+La regresión autenticada pendiente se ejecutó una sola vez después de la rotación. El proceso avanzó más allá del login, pero Node terminó con `FATAL ERROR: Committing semi space failed. Allocation failed - JavaScript heap out of memory` antes de emitir la matriz de superficies. Se clasificó `OUT_OF_SCOPE / PREEXISTING` de infraestructura de prueba y no se reejecutó, conforme a la instrucción owner. Esta falla no escribió afiliados ni reejecutó la migración/lote.
 
 ## Publicación
 
 - Commit funcional: `78a84cbc5a26aab3e916def3d5e025fc002fde78`.
 - Workflow Pages `33923747999`: `SUCCESS`.
 - Read-back público: HTML `v=5`, repository con validación backend certificada y service worker `sutiapp-v151`.
-- Regresión protegida local/publicada: `BLOCKED` exclusivamente en login por `H005_TEST = invalid_credentials`; ninguna superficie ni dato productivo fue mutado por esos intentos.
+- Fixture `H005_TEST`: contraseña QA rotada, credencial local segura sincronizada, login `ACTIVE` y afiliado efectivo exacto; vínculo Auth y fila afiliada sin cambios.
+- Regresión protegida posterior: una sola ejecución; `OUT_OF_SCOPE / PREEXISTING — NODE_HEAP_OOM` antes del resultado de superficies; sin retry.
 
 ## Cierre constitucional
 
 ```text
 H-AFFILIATES-CSV-AUTH-LINK-REPAIR-001 RESULT
-Status: BLOCKED para cierre PASS; reparación APPLIED / VERIFIED
-Files changed: migration/recovery/runner/test; AffiliateRepository; cachebusters; gobierno y evidencia
+Status: BLOCKED para cierre PASS; reparación y fixture QA APPLIED / VERIFIED
+Files changed: cierre adicional sólo en credencial local ignorada y evidencia; ningún runtime/schema/vínculo
 Source-of-truth verdict: PASS
 Invariant verdict: PASS — 0 cruces determinísticos restantes
 Build: PASS — artefacto Pages de 22 archivos
-Tests: PASS focal; regresión protegida BLOCKED antes de superficies por credencial QA inválida
-Security: PASS — service-only, forced RLS, UUID + correo confirmado + afiliado + control exactos
+Tests: login QA PASS; regresión protegida ejecutada una vez y BLOCKED por NODE_HEAP_OOM preexistente
+Security: PASS — secreto versionado 0; UUID/email/afiliado/asignación y 84 vínculos preservados
 Legacy impact: NOT APPLICABLE
 Unexpected files changed: 0 en los commits; trabajo ajeno del worktree preservado y excluido
-Known limitations: H005_TEST invalid_credentials; Architecture Registry preexistente STALE (682 archivos)
+Known limitations: matriz sin resultado por NODE_HEAP_OOM; Architecture Registry preexistente STALE (682 archivos)
 Evidence: batch 8ebd3cd8-1f57-5054-953d-c2a7fe12af66; workflow Pages 33923747999
 ```
 

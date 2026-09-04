@@ -1,5 +1,15 @@
 # Fuentes de verdad
 
+## Corte ADR-104 — reparación certificada de vínculos Auth por mapa CSV
+
+Supabase Auth continúa como autoridad del principal y `public.affiliates` como autoridad del padrón, `numero_control` y vínculo nullable. Por decisión explícita del propietario, `Usuarios (8).csv` con SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29` fue evidencia superior a `historical_email_*` exclusivamente para reconciliar los vínculos Auth existentes en este lote; el archivo no queda conectado al runtime ni se convierte en maestro general.
+
+La reparación exige email CSV único, control CSV destino único, una sola fila Supabase para ese control y también control/email CSV unívocos en la fila actualmente vinculada. Conserva el mismo `auth.users.id`, mueve sólo `affiliates.auth_user_id`, no usa nombre, no modifica `auth.users`, `historical_email_*`, controles ni perfiles y deja duplicados, vacíos, archivados o no mapeables sin tocar. `affiliate_csv_auth_link_repair_batches`, `affiliate_csv_auth_link_repair_snapshot` y `affiliate_csv_auth_link_repairs` son evidencia/auditoría/recovery service-only, no otra autoridad del padrón.
+
+Los resolvedores aceptan una reparación activa únicamente cuando coinciden a la vez UUID Auth, correo Auth confirmado, afiliado destino y `numero_control` certificado; fuera de esas filas conserva íntegro el contrato fail-closed de ADR-102. El apply productivo revisó 84 vínculos, detectó 15 cruces, reparó 11 determinísticos, omitió 8 ambiguos/no mapeables y dejó 76 correctos con cero cruces determinísticos restantes.
+
+El cliente no crea una segunda autoridad: exige que el afiliado devuelto conserve `auth_user_id = auth.uid()` y acepta exclusivamente los estados/resultados certificados por esos resolvedores backend. No reinterpreta `historical_email_*` para invalidar una reparación aprobada ni puede seleccionar otro afiliado.
+
 ## Corte ADR-103 — actualización puntual de email histórico
 
 `public.affiliates` continúa como única autoridad productiva del padrón. `Usuarios (8).csv`, fijado por SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29`, fue únicamente el insumo autorizado para `H-AFFILIATES-CSV-UPDATE-APPLY-001`; no queda conectado al runtime ni sustituye la procedencia histórica certificada.

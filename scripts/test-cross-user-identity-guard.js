@@ -80,10 +80,10 @@ function clientFor({ access = 'ACTIVE', effective = 'affiliate-1', row, context 
 
   const html = fs.readFileSync('SutiApp.html', 'utf8');
   const worker = fs.readFileSync('sw.js', 'utf8');
-  assert.match(html, /affiliate-repository\.js\?v=4/);
+  assert.match(html, /affiliate-repository\.js\?v=5/);
   assert.match(html, /bundle\.js\?v=205/);
-  assert.match(worker, /sutiapp-v150/);
-  assert.match(worker, /affiliate-repository\.js\?v=4/);
+  assert.match(worker, /sutiapp-v151/);
+  assert.match(worker, /affiliate-repository\.js\?v=5/);
   assert.match(worker, /bundle\.js\?v=205/);
 
   console.log(JSON.stringify({ status: 'PASS', matrix: ['exact', 'mismatch', 'ambiguous', 'foreign', 'impersonation', 'invalid_impersonation'], fallback: false }));

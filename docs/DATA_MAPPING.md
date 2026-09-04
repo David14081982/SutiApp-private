@@ -1,5 +1,22 @@
 # Data Mapping autoritativo
 
+## Afiliados / reconciliación Auth por CSV — ADR-104
+
+```text
+DOMAIN: Vínculo Auth de afiliados existentes
+Business authority: public.affiliates.id + numero_control; Authentication authority: auth.users.id
+Owner reconciliation evidence: Usuarios (8).csv SHA-256 3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29; one-time only
+Join: unique normalized CSV email -> unique non-empty CSV numero_control -> exactly one public.affiliates row
+Current-link gate: current affiliate control and its CSV email must also be non-empty and unique
+Write: service-only apply_affiliate_csv_auth_link_repair; preserve auth.users.id, clear old affiliates.auth_user_id, set exact target
+Audit/recovery: affiliate_csv_auth_link_repair_batches + snapshot + repairs; forced RLS, no browser grants
+Runtime proof for repaired rows: exact applied batch + auth UUID + confirmed Auth email + target affiliate + target numero_control
+Unchanged: auth.users email/password, historical_email_raw/normalized, numero_control, names, profiles, ambiguous/QA rows
+Readers: get_effective_affiliate_id, get_current_affiliate_access_state, idempotent claim, activation status
+Fallback/cache: NONE; CSV is not read at runtime and repair evidence cannot select any unregistered row
+Applied: batch 8ebd3cd8-1f57-5054-953d-c2a7fe12af66; 84 checked / 11 repaired / 8 skipped / 0 deterministic crossings remaining
+```
+
 ## Ahorro SHADOW — ADR-095
 
 ```text

@@ -1,5 +1,13 @@
 # Reglas de migración
 
+## 20260904000300 — reparación certificada de vínculos Auth por CSV
+
+Estado: `APPLIED / VERIFIED — PASS`. La migración agrega manifest, snapshot y reparación auditada service-only; no modifica filas al instalarse. El writer fija el CSV de 947 filas por SHA-256, bloquea `public.affiliates`, toma locks de los principals vinculados y recalcula dentro de la transacción la unicidad de email/control CSV, control Supabase, elegibilidad, archivo y ocupación del target. Cualquier carrera produce `LIVE_PREFLIGHT_CHANGED` y cero escrituras.
+
+El lote `8ebd3cd8-1f57-5054-953d-c2a7fe12af66` conservó los 84 UUID Auth existentes, guardó snapshot de 21 afiliados y movió 11 vínculos mediante clear/assign transaccional. No actualizó `auth.users`, email histórico, nombres ni controles. Resultado: 65→76 vínculos correctos, 15 cruces detectados, 8 ambiguos omitidos y 0 cruces determinísticos restantes. Las tablas fuerzan RLS y carecen de grants browser; el resolvedor sólo admite evidencia activa exacta UUID+email confirmado+afiliado+control.
+
+Forward y schema recovery compilaron juntos en `ROLLBACK`; el recovery de datos también restauró los 11 vínculos dentro de `ROLLBACK`. Recovery real queda bloqueado si cualquiera de las 21 filas cambió después del apply. El schema recovery sólo procede con cero historia y nunca elimina auditoría aplicada.
+
 ## 20260903000140 — corrección focal de workflow en Admin Finanzas
 
 La migración es aditiva y no reescribe solicitudes ni snapshots históricos: agrega referencias de etapa a la bitácora, RPC de lectura/transición, sincronización continua de tracking y validación estado/etapa. Corrige únicamente la prioridad para altas futuras: membresía por offering, préstamo por `program_id=prestamo`, cotización no-préstamo por tipo y beneficio como rama restante; las claves configuradas específicas siguen teniendo precedencia.

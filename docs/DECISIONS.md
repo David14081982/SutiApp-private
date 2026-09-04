@@ -2,6 +2,7 @@
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| ADR-104 | El mapa owner `Usuarios (8).csv` puede corregir vínculos Auth existentes sólo en pares completamente unívocos; conserva el UUID, mueve `auth_user_id`, deja histórico/ambiguos intactos y limita la excepción runtime a evidencia service-only exacta y reversible. | Aceptada / APPLIED / VERIFIED |
 | ADR-103 | `public.affiliates` conserva la autoridad; `Usuarios (8).csv`, fijado por hash y orden owner, fue sólo insumo de actualización puntual por `numero_control`. Filas Auth-linked o ambiguas fallan cerradas y todo cambio usa snapshot/recovery service-only. | Aceptada / APPLIED / VERIFIED |
 | ADR-102 | Una sesión normal sólo resuelve afiliado cuando `auth.uid()`, `affiliates.auth_user_id` y el correo Auth confirmado coinciden exactamente y el correo histórico es globalmente unívoco; cualquier inconsistencia falla cerrada. | Aceptada / ACTIVE / INCIDENT CONTAINED |
 | ADR-101 | Activación usa preflight mínimo sobre `affiliates`, OTP/callback de Supabase Auth y claim verificado; ningún error de entrega puede presentarse como éxito. | Aceptada / ACTIVE / CERT BLOCKED BY SMTP |
@@ -74,6 +75,16 @@
 | ADR-079 | La confirmación financiera service-only es compatible con el snapshot documental; Mi Historial usa una proyección self mínima y siempre se refresca tras una solicitud confirmada. | Aceptada / ACTIVE |
 
 No se infieren autoridades para los demás dominios. Registrar nuevas decisiones con contexto, opciones, consecuencia, fecha y aprobación; nunca reescribir silenciosamente una ADR aceptada.
+
+### ADR-104 — Reparación de identidad Auth por correspondencia explícita CSV
+
+- **Autoridades:** Supabase Auth conserva el principal/credencial y `public.affiliates` el afiliado/control/vínculo. El CSV `Usuarios (8).csv`, SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29`, es evidencia owner de una sola reconciliación de vínculos existentes; no queda como archivo runtime, fallback ni padrón paralelo.
+- **Criterio:** correo CSV normalizado sólo con `trim + lowercase` debe aparecer una vez y apuntar a un control CSV no vacío y único con una sola fila Supabase. La fila actualmente vinculada también debe tener control y email CSV unívocos. Nombre nunca participa. Controles/emails duplicados, vacíos, targets archivados/no elegibles o cuentas sin mapa se omiten.
+- **Cambio:** se conserva exactamente el mismo `auth.users.id`, se elimina su vínculo del afiliado origen y se asigna al destino dentro de una transacción. No se actualizan email/contraseña Auth, `historical_email_raw`, `historical_email_normalized`, `numero_control`, nombres, perfiles ni fixtures ambiguos.
+- **Resolución:** ADR-102 sigue vigente por defecto. Sólo una fila registrada en `affiliate_csv_auth_link_repairs` bajo batch `APPLIED` puede sustituir la prueba de email histórico, y únicamente si coinciden UUID, correo Auth confirmado, afiliado y control destino. Claim sólo devuelve idempotentemente un vínculo ya reparado; no crea reparaciones nuevas.
+- **Recuperación/auditoría:** `20260904000300` guarda 21 filas de snapshot y 11 eventos de reparación antes del movimiento. Recovery restaura los UUID anteriores sólo si cada fila conserva exactamente el estado/timestamp aplicado; el schema recovery no elimina historia de reparación.
+- **Resultado:** 84 vínculos revisados al lock, 65 correctos antes, 15 cruces encontrados, 11 reparados, 8 ambiguos/no mapeables omitidos, 76 correctos después y 0 cruces determinísticos restantes. `cosaf@hotmail.com → 1536 → PRECIADO RAMIREZ XOCHITL NOHEMI` quedó `PASS`; 224761 quedó sin ese UUID.
+- **Aprobación:** instrucción explícita del propietario `CORRECCIÓN DE CRITERIO — IDENTIDAD AFILIADOS`, 2026-09-04.
 
 ### ADR-103 — Actualización puntual del email histórico por número de control
 

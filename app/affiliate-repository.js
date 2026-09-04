@@ -104,9 +104,8 @@
             throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Impersonation context does not match the authenticated principal');
           }
         } else {
-          const principalEmail = String(principal.email || '').trim().toLowerCase();
-          if (!principal.email_confirmed_at || !principalEmail || result.data.auth_user_id !== principal.id || result.data.historical_email_normalized !== principalEmail) {
-            throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Authenticated principal does not exactly match the resolved affiliate');
+          if (result.data.auth_user_id !== principal.id) {
+            throw new AffiliateRepositoryError('AUTH_IDENTITY_MISMATCH', 'Authenticated principal does not match the backend-certified affiliate link');
           }
         }
         return Object.assign({}, result.data, { _impersonation: active || null });

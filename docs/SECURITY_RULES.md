@@ -1,5 +1,13 @@
 # Reglas de seguridad
 
+## Reparación certificada de vínculos Auth — ADR-104
+
+El writer `apply_affiliate_csv_auth_link_repair` está revocado a `public`, `anon` y `authenticated` y concedido sólo a `service_role`. Fija hash/947 filas, vuelve a calcular el universo bajo lock, exige unicidad del control y email en ambos extremos, correo Auth confirmado, afiliados no archivados/elegibles y target libre o perteneciente a la misma permutación determinística. Primero guarda snapshot y auditoría; después despeja los UUID origen y los asigna a sus destinos dentro de la misma transacción. Cualquier conteo, ocupación, principal perdido o postcondición distinta aborta todo.
+
+Las tres tablas de evidencia tienen RLS habilitada y forzada, sin grants browser. `has_certified_affiliate_auth_link` tampoco es ejecutable por browser y sólo devuelve verdadero con batch `APPLIED`, reparación no recuperada, UUID, email Auth normalizado, afiliado y `numero_control` exactos. `get_effective_affiliate_id`, estado de acceso, claim idempotente y preflight de activación consumen esa prueba estrecha; no consultan el CSV ni aceptan control/afiliado del cliente. Email sin confirmar, evidencia alterada, recovery o target distinto falla cerrado.
+
+El frontend consume esa decisión backend y vuelve a comprobar que la fila devuelta tiene exactamente `auth_user_id = auth.uid()`. No usa el email ni el control enviados por el navegador para resolver identidad, ni permite que el cliente amplíe una reparación certificada.
+
 ## Identidad exacta de afiliado — ADR-102
 
 Toda ruta self-service depende de `get_effective_affiliate_id()`. En sesión normal, la función sólo retorna un UUID si el principal Auth confirmado coincide exactamente con un único vínculo y un único correo histórico global; de lo contrario retorna `NULL`. `get_current_affiliate_access_state()` distingue `UNLINKED`, `IDENTITY_MISMATCH` y `AMBIGUOUS_IDENTITY`; el frontend convierte las dos últimas en cierre de sesión y error controlado, nunca en perfil alterno.

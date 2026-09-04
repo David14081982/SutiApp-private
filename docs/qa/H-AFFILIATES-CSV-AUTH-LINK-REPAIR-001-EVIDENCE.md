@@ -1,7 +1,7 @@
 # H-AFFILIATES-CSV-AUTH-LINK-REPAIR-001 — Evidencia
 
 Fecha: 2026-09-04
-Estado: `PASS / APPLIED / VERIFIED`
+Estado: `APPLIED / VERIFIED — CIERRE GLOBAL BLOCKED`
 
 ## Autoridad y alcance
 

@@ -34,9 +34,11 @@ Build: `node scripts/build-bundle.js C:/tmp/babel-standalone-7.28.4.min.js`. Dif
 
 ## Resultado
 
-Estado implementación: PASS. Prueba focal: 6/6 PASS (tres flujos por motor), geometría idéntica, toque/foco/selección/valor/autocomplete/teclado/envío PASS. Build y syntax/diff check PASS. Publicación y comprobación pública pendientes en el momento de este commit.
+Estado final: PASS. Prueba focal: 6/6 PASS (tres flujos por motor), geometría idéntica, toque/foco/selección/valor/autocomplete/teclado/envío PASS. Build y syntax/diff check PASS.
+
+Publicación: commit `c8302d9be575a15d25b58f02fbabfbe7386e2a5e`, GitHub Pages run `33943660542` completed/success. URL: https://sutiapp.com/. Verificación pública posterior: WebKit/iPhone 13 PASS y Chromium/Pixel 5 PASS, bundle v206, ambos toques, etiqueta accesible, 44 × 44 px, foco/selección/valor conservados. Cero envíos. Comprobación pública adicional realizada con Playwright sobre la página real (sin sustituir Auth ni datos).
 Archivos inesperados de esta H: ninguno; modificaciones previas excluidas.
 Limitación: emulación móvil con motores reales, sin prueba en teléfonos físicos ni gestores nativos de contraseñas.
-Siguiente acción autorizada: finalizar prueba focal, publicar, verificar el ojo público y detenerse.
+Siguiente acción: detenerse. Publicación y comprobación pública completadas.
 
 SUTIAPP ARCHITECT REVIEW: APPROVED para el alcance implementado y probado. Inspección del diff confirma cambios exclusivamente UI y versiones de publicación; no se alteraron funciones Auth, submit, autoridades ni legacy. Owner decision: NO. RESPONSE TO CODEX: publica este cambio autorizado, comprueba el ojo en la URL pública, registra el resultado y detente; no avances a otra H.

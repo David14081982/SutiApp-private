@@ -441,21 +441,43 @@
     return '';
   }
 
-  function field(icon, type, value, setValue, placeholder, autoComplete, disabled) {
-    return React.createElement('label', { style: { display: 'flex', alignItems: 'center', gap: 11, height: 52, padding: '0 15px', borderRadius: 14, background: 'var(--surface-2)', color: 'var(--ink-3)' } },
+  function field(icon, type, value, setValue, placeholder, autoComplete, disabled, visibility) {
+    return React.createElement('label', { style: { position: 'relative', display: 'flex', alignItems: 'center', gap: 11, height: 52, padding: '0 15px', borderRadius: 14, background: 'var(--surface-2)', color: 'var(--ink-3)' } },
       window.Icon && React.createElement(window.Icon, { name: icon, size: 19, stroke: 2 }),
       React.createElement('input', {
-        type, value, placeholder, autoComplete, disabled,
+        type: visibility && visibility.shown ? 'text' : type, value, placeholder, autoComplete, disabled,
         onChange: (event) => setValue(event.target.value),
-        style: { flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--ink)', fontSize: 16, fontWeight: 650 },
-      }));
+        style: { flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', color: 'var(--ink)', fontSize: 16, fontWeight: 650, ...(visibility ? { paddingRight: 40 } : {}) },
+      }),
+      visibility && React.createElement('button', {
+        type: 'button', disabled,
+        'aria-label': `${visibility.shown ? 'Ocultar' : 'Mostrar'} ${placeholder.toLowerCase()}`,
+        onMouseDown: (event) => event.preventDefault(),
+        onClick: (event) => {
+          event.preventDefault();
+          const input = event.currentTarget.parentElement.querySelector('input');
+          const focused = document.activeElement === input;
+          const start = input.selectionStart, end = input.selectionEnd, direction = input.selectionDirection;
+          visibility.toggle();
+          if (focused) requestAnimationFrame(() => {
+            if (document.activeElement === input) input.setSelectionRange(start, end, direction);
+          });
+        },
+        style: { position: 'absolute', right: 4, top: 4, width: 44, height: 44, padding: 0, display: 'grid', placeItems: 'center', border: 'none', borderRadius: 10, background: 'transparent', color: 'inherit', cursor: 'pointer', touchAction: 'manipulation' },
+      }, React.createElement('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false },
+        React.createElement('path', { d: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z' }),
+        React.createElement('circle', { cx: 12, cy: 12, r: 3 }),
+        visibility.shown && React.createElement('path', { d: 'M3 3l18 18' }))));
   }
 
   function AffiliateLoginScreen({ auth }) {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [confirmPassword, setConfirmPassword] = React.useState('');
+    const [showPassword, setShowPassword] = React.useState(false);
+    const [showConfirmation, setShowConfirmation] = React.useState(false);
     const [mode, setMode] = React.useState(auth.phase === 'password_recovery' ? 'reset' : auth.phase === 'activation_password' ? 'activate_password' : 'login');
+    React.useEffect(() => { setShowPassword(false); setShowConfirmation(false); }, [mode]);
     React.useEffect(() => {
       if (auth.phase === 'password_recovery') setMode('reset');
       else if (auth.phase === 'activation_password') setMode('activate_password');
@@ -489,8 +511,8 @@
         React.createElement('form', { onSubmit: submit, style: { padding: 20, borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-md)' } },
           React.createElement('div', { style: { display: 'grid', gap: 12 } },
             mode !== 'reset' && mode !== 'activate_password' && field('message', 'email', email, setEmail, 'Email', 'email', busy),
-            mode !== 'recover' && mode !== 'activate' && field('lock', 'password', password, setPassword, mode === 'login' ? 'Contraseña' : 'Nueva contraseña', mode === 'login' ? 'current-password' : 'new-password', busy),
-            (mode === 'activate_password' || mode === 'reset') && field('lock', 'password', confirmPassword, setConfirmPassword, 'Confirmar contraseña', 'new-password', busy)),
+            mode !== 'recover' && mode !== 'activate' && field('lock', 'password', password, setPassword, mode === 'login' ? 'Contraseña' : 'Nueva contraseña', mode === 'login' ? 'current-password' : 'new-password', busy, { shown: showPassword, toggle: () => setShowPassword(shown => !shown) }),
+            (mode === 'activate_password' || mode === 'reset') && field('lock', 'password', confirmPassword, setConfirmPassword, 'Confirmar contraseña', 'new-password', busy, { shown: showConfirmation, toggle: () => setShowConfirmation(shown => !shown) })),
           auth.notice && React.createElement('div', { role: 'status', style: { marginTop: 13, padding: '10px 12px', borderRadius: 11, background: '#E7F5EE', color: '#176447', fontSize: 13, fontWeight: 750, lineHeight: 1.35 } }, auth.notice),
           message && React.createElement('div', { className: 'su-err', role: 'alert', style: { marginTop: 13, padding: '10px 12px', borderRadius: 11, background: '#FDEAEA', color: '#A32921', fontSize: 13, fontWeight: 750, lineHeight: 1.35 } }, message),
           React.createElement(window.Btn || 'button', {

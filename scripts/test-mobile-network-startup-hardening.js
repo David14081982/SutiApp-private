@@ -54,14 +54,22 @@ assert(html.includes('No fue posible iniciar SutiApp'));
 assert(html.includes('id="suti-startup-retry"'));
 assert(html.includes('STARTUP_TIMEOUT'));
 assert(html.includes('window.__sutiStartupFail'));
-assert.match(worker, /const CACHE = 'sutiapp-v149'/);
+const cacheVersion = worker.match(/const CACHE = '(sutiapp-v\d+)'/);
+assert(cacheVersion, 'versioned service worker cache missing');
 assert.match(worker, /keys\.filter\(\(key\) => key !== CACHE\)/);
+assert.match(worker, /c\.addAll\(CORE\)\)\.then\(\(\) => self\.skipWaiting\(\)\)/);
+assert.doesNotMatch(worker, /c\.addAll\(CORE\)\.catch\(\(\) => \{\}\)/);
+assert.match(worker, /req\.mode === 'navigate'/);
+assert.match(worker, /cache\.match\(SHELL_URL\)/);
+assert.match(worker, /No fue posible conectar con SutiApp/);
+assert.match(worker, /status: 503/);
+assert(html.indexOf('updateViaCache: "none"') < reactAt, 'service worker update must start before React');
 
 console.log(JSON.stringify({
   status: 'PASS',
   criticalJsLocal: true,
   externalStartupCdnDependency: 'NONE',
   htmlFallback: true,
-  serviceWorkerCache: 'sutiapp-v149',
+  serviceWorkerCache: cacheVersion[1],
   dependencyIntegrity: dependencies.length,
 }));

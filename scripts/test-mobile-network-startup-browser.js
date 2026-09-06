@@ -7,6 +7,9 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const site = path.resolve(root, process.argv[2] || '_site-mobile-hardening');
+const workerSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const serviceWorkerCache = (workerSource.match(/const CACHE = '(sutiapp-v\d+)'/) || [])[1];
+assert(serviceWorkerCache, 'versioned service worker cache missing');
 const playwrightPath = process.env.SUTIAPP_PLAYWRIGHT_PATH || 'C:\\tmp\\sutiapp-playwright-audit\\node_modules\\playwright-core';
 const { chromium, webkit } = require(playwrightPath);
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -81,15 +84,75 @@ async function oldCacheRecovery(baseUrl) {
   const page = await context.newPage();
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.evaluate(async () => { const cache = await caches.open('sutiapp-v148'); await cache.put('/old-shell', new Response('old')); });
-    await page.evaluate(async () => { const registration = await navigator.serviceWorker.register('/sw.js'); await registration.update(); await navigator.serviceWorker.ready; });
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true), null, { timeout: 30000 });
     await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, { timeout: 30000 });
-    await page.evaluate(() => navigator.serviceWorker.controller.postMessage({ type: 'SUTIAPP_PURGE_OLD_CACHES' }));
-    await page.waitForFunction(async () => { const keys = await caches.keys(); return keys.includes('sutiapp-v149') && !keys.includes('sutiapp-v148'); }, null, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    await page.evaluate(async () => { const cache = await caches.open('sutiapp-v148'); await cache.put('/old-shell', new Response('old')); });
+    await page.evaluate(async () => { const registration = await navigator.serviceWorker.ready; registration.active.postMessage({ type: 'SUTIAPP_PURGE_OLD_CACHES' }); });
+    await page.waitForFunction(async (currentCache) => { const keys = await caches.keys(); return keys.includes(currentCache) && !keys.includes('sutiapp-v148'); }, serviceWorkerCache, { timeout: 30000 });
     const keys = await page.evaluate(() => caches.keys());
-    return { oldCacheRemoved: !keys.includes('sutiapp-v148'), newCacheActive: keys.includes('sutiapp-v149'), controlled: true };
+    assert(!keys.includes('sutiapp-v148'), 'old cache survived explicit purge');
+    assert(keys.includes(serviceWorkerCache), 'current cache missing after purge');
+    return { oldCacheRemoved: !keys.includes('sutiapp-v148'), newCacheActive: keys.includes(serviceWorkerCache), controlled: true };
   } finally { await browser.close(); }
+}
+
+async function offlineNavigationRecovery(baseUrl) {
+  const browser = await webkit.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  try {
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true), null, { timeout: 30000 });
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, { timeout: 30000 });
+    await page.waitForFunction(() => document.readyState === 'complete', null, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    await context.setOffline(true);
+    await page.evaluate((url) => { window.location.href = url; }, `${baseUrl}?prueba=movil`);
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    const visibleSurface = await page.evaluate(() => Boolean(
+      document.querySelector('#suti-startup-status') ||
+      document.querySelector('input[type="email"]') ||
+      document.body.innerText.trim()
+    ));
+    assert.equal(visibleSurface, true, 'offline query navigation rendered blank');
+    return { engine: 'WEBKIT_AUTOMATED', queryNavigation: true, visibleSurface: true, blankScreen: false };
+  } finally { await browser.close(); }
+}
+
+async function emptyCacheNavigationRecovery() {
+  const server = await startServer();
+  const address = server.address();
+  const baseUrl = `http://127.0.0.1:${address.port}/`;
+  let serverClosed = false;
+  const browser = await webkit.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  try {
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true), null, { timeout: 30000 });
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, { timeout: 30000 });
+    await page.waitForFunction(() => document.readyState === 'complete', null, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    await page.evaluate((currentCache) => caches.delete(currentCache), serviceWorkerCache);
+    await new Promise((resolve) => server.close(resolve));
+    serverClosed = true;
+    await page.evaluate((url) => { window.location.href = url; }, `${baseUrl}?cache=empty`);
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+    await page.getByText('No fue posible conectar con SutiApp', { exact: true }).waitFor({ state: 'visible', timeout: 10000 });
+    const state = await page.evaluate(() => ({
+      text: document.body.innerText,
+      background: getComputedStyle(document.body).backgroundColor,
+      retry: Boolean(document.querySelector('button')),
+    }));
+    assert(state.text.includes('Revisa tu conexión'));
+    assert.notEqual(state.background, 'rgba(0, 0, 0, 0)');
+    assert.equal(state.retry, true);
+    return { engine: 'WEBKIT_AUTOMATED', emptyCache: true, recoveryVisible: true, retryVisible: true, blankScreen: false };
+  } finally {
+    await browser.close();
+    if (!serverClosed) await new Promise((resolve) => server.close(resolve));
+  }
 }
 
 (async () => {
@@ -104,6 +167,8 @@ async function oldCacheRecovery(baseUrl) {
     engines.push({ startup: await firstLoad(chromium, chromiumOptions, baseUrl, 'CHROME_MOBILE_EMULATED'), failure: await controlledFailure(chromium, chromiumOptions, baseUrl, 'CHROME_MOBILE_EMULATED') });
     engines.push({ startup: await firstLoad(webkit, webkitOptions, baseUrl, 'WEBKIT_AUTOMATED'), failure: await controlledFailure(webkit, webkitOptions, baseUrl, 'WEBKIT_AUTOMATED') });
     const cache = await oldCacheRecovery(baseUrl);
-    console.log(JSON.stringify({ status: 'PASS', engines, cache }));
+    const offlineNavigation = await offlineNavigationRecovery(baseUrl);
+    const emptyCacheNavigation = await emptyCacheNavigationRecovery();
+    console.log(JSON.stringify({ status: 'PASS', engines, cache, offlineNavigation, emptyCacheNavigation }));
   } finally { await new Promise((resolve) => server.close(resolve)); }
-})().catch((error) => { console.error(JSON.stringify({ status: 'FAIL', error: error.message })); process.exitCode = 1; });
+})().catch((error) => { console.error(JSON.stringify({ status: 'FAIL', error: error.message, stack: error.stack })); process.exitCode = 1; });

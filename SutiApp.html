@@ -625,6 +625,31 @@
     </script>
 
     <script>
+      // Solicita el worker vigente antes de cargar la aplicación. En iOS la PWA
+      // conserva su propio contexto, así que evitamos reutilizar el HTTP cache de sw.js.
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        var reloadingForWorker = false;
+        var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (!hadControllerAtBoot || reloadingForWorker) return;
+          reloadingForWorker = true;
+          window.location.reload();
+        });
+
+        function registerWorker() {
+          return navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
+            .then(function (registration) { return registration.update(); })
+            .catch(function () {
+              return navigator.serviceWorker.register("./sw.js");
+            });
+        }
+
+        window.__sutiServiceWorkerUpdate = registerWorker().catch(function () { return null; });
+      })();
+    </script>
+
+    <script>
       // Captura del evento de instalación PWA (relay para el botón "Instalar app")
       window.addEventListener("beforeinstallprompt", function (e) {
         e.preventDefault();
@@ -666,15 +691,5 @@
     <script src="app/financial-legacy-repository.js?v=10" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
   <script src="app/bundle.js?v=206" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
-    <script>
-      // Service worker (offline + instalación PWA)
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker.register("sw.js").then(function (registration) {
-            registration.update().catch(function () {});
-          }).catch(function () {});
-        });
-      }
-    </script>
   </body>
 </html>

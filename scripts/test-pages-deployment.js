@@ -44,7 +44,8 @@ assert.equal(manifest.start_url, './SutiApp.html');
 assert.equal(manifest.scope, './');
 
 const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
-assert(/navigator\.serviceWorker\.register\(["']sw\.js["']\)/.test(html));
+assert(/navigator\.serviceWorker\.register\(["']\.\/sw\.js["']/.test(html));
+assert(html.includes('updateViaCache: "none"'));
 assert(html.includes('app/supabase-config.js'));
 assert(!/https:\/\/(?:unpkg\.com|cdn\.jsdelivr\.net)\//.test(html));
 assert(html.includes('Cargando SutiApp…'));

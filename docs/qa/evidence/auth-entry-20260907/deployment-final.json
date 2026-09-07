@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "releaseCommit": "843c4ea35fde81f94e2b292282553864fbb7e7b4",
+  "workflow": {
+    "conclusion": "success",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34153881776"
+  },
+  "files": [
+    {
+      "url": "/",
+      "http": 200,
+      "sha256": "2c5343d4de65ec323541df7f4322c568d8a8e522f51967bb7c2253e89776068e",
+      "matchesRelease": true,
+      "cacheStatus": "DYNAMIC"
+    },
+    {
+      "url": "/SutiApp.html",
+      "http": 200,
+      "sha256": "2c5343d4de65ec323541df7f4322c568d8a8e522f51967bb7c2253e89776068e",
+      "matchesRelease": true,
+      "cacheStatus": "DYNAMIC"
+    },
+    {
+      "url": "/app/bundle.js?v=220",
+      "http": 200,
+      "sha256": "f362610ec355440873db47e36ddd2625d0ba75bed65fcd8897e096b70154b5ab",
+      "matchesRelease": true,
+      "cacheStatus": "HIT"
+    },
+    {
+      "url": "/sw.js?v=167",
+      "http": 200,
+      "sha256": "484f72e0b22f2a50ccc08a8976f48a0b61b8e9d16325c569edc1d09b28da3966",
+      "matchesRelease": true,
+      "cacheStatus": "HIT"
+    }
+  ]
+}

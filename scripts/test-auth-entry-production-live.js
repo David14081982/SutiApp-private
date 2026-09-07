@@ -29,6 +29,9 @@ async function login(page) {
     try {
       const context = await browser.newContext({ ...pw.devices[device] });
       const page = await context.newPage();
+      // Promotions load asynchronously; dismiss through their real UI even
+      // when one appears while Playwright is waiting to click a tab.
+      await page.addLocatorHandler(page.getByRole('button', { name: 'Ahora no', exact: true }), async button => { await button.click(); });
       const errors = [];
       let navigations = 0;
       page.on('pageerror', error => errors.push({ stage: lastStage, message: error.message.replace(/https?:\/\/[^\s"']+/g, value => { try { const url = new URL(value); return url.origin + '/' + url.pathname.split('/').filter(Boolean).slice(0, 3).join('/'); } catch (_) { return '[URL]'; } }) }));
@@ -47,9 +50,6 @@ async function login(page) {
       const loginMs = await login(page);
       await page.locator('[data-app-tab-scroll=home]').waitFor();
       await page.waitForFunction(() => window.VisualContent?.getState().phase !== 'loading');
-      await page.waitForTimeout(1500);
-      const dismissPromo = page.getByRole('button', { name: 'Ahora no', exact: true });
-      if (await dismissPromo.isVisible()) await dismissPromo.click();
       await page.locator('[data-app-tab=admin]').click();
       await page.locator('[data-admin-view=menu]').waitFor();
       lastStage = engine + ':focus-and-refresh';

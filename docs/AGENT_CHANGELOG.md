@@ -1,6 +1,11 @@
 # Bitácora de agentes
 
+## 2026-09-07 — H-AUTH-ENTRY-001
 
+- Publicada corrección del acceso que abría definición de contraseña por metadata histórica; recuperación limitada al contexto local, eventos repetidos del mismo token sin lecturas duplicadas y salida al login sin cambiar password.
+- Release 843c4ea, bundle 220 y worker versionado 167 publicados con Actions success y hashes públicos verificados. Seis suites, regresión global local/Pages y ciclo móvil real de WebKit/iPhone y Chromium/Pixel PASS; caché antigua se actualiza sin borrado manual.
+- Credencial QA autorizada restablecida al secreto privado existente, misma identidad/permisos. Sin datos de negocio modificados ni trabajo previo de Ahorro incorporado. Revisión APPROVED; limitación: navegadores móviles emulados, no teléfono físico del propietario. [Entrega y evidencia final](qa/evidence/auth-entry-20260907/DELIVERY.md).
+- [Auditoría](audits/H-AUTH-ENTRY-001.md) y [resultado/evidencia](qa/evidence/auth-entry-20260907/RESULT.md).
 
 ## 2026-09-04 — H-AFFILIATES-CSV-AUTH-LINK-REPAIR-001
 

@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "realBackend": true,
+  "businessDataMutations": 0,
+  "passwordWrites": 0,
+  "results": [
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "status": "PASS",
+      "loginMs": 2315,
+      "secondLoginMs": 2679,
+      "stableAdminScreen": true,
+      "focusCycles": 12,
+      "tokenRefresh": true,
+      "reload": true,
+      "secondTab": true,
+      "explicitRecoveryAndCancel": true,
+      "unexpectedPasswordSetup": false,
+      "pageErrors": 0,
+      "crashes": 0,
+      "navigations": 3,
+      "bundle": "bundle.js?v=220"
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 5",
+      "status": "PASS",
+      "loginMs": 1380,
+      "secondLoginMs": 805,
+      "stableAdminScreen": true,
+      "focusCycles": 12,
+      "tokenRefresh": true,
+      "reload": true,
+      "secondTab": true,
+      "explicitRecoveryAndCancel": true,
+      "unexpectedPasswordSetup": false,
+      "pageErrors": 0,
+      "crashes": 0,
+      "navigations": 3,
+      "bundle": "bundle.js?v=220"
+    }
+  ]
+}

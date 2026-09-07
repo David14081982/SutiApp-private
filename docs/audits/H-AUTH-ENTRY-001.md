@@ -21,11 +21,11 @@
 - Source of truth: SAFE; Supabase Auth + public.affiliates mantienen dominios separados, sin fuentes alternativas.
 - Supabase security: backend/RLS/identidad sin modificación; metadata y URL seleccionan sólo el formulario, nunca conceden permiso.
 - Legacy: READ ONLY para regresión de superficies existente; cero cambios en Google, fórmulas, saldos o datos financieros.
-- UI preservation y post-change-verification: pendientes de evidencia final.
+- UI preservation y post-change-verification: PASS; evidencia final en DELIVERY.md.
 
 ## VERIFY / EVIDENCE
 
-Implementación y pruebas focales terminadas; cierre global BLOCKED. Resultado, limitaciones, comandos y revisión en [RESULT](../qa/evidence/auth-entry-20260907/RESULT.md).
+Implementación publicada y cierre global PASS. El bloqueo inicial de [RESULT](../qa/evidence/auth-entry-20260907/RESULT.md) queda como historia; resultado vigente, limitaciones y revisión en [DELIVERY](../qa/evidence/auth-entry-20260907/DELIVERY.md).
 
 Entrega revisable: generar además un candidato temporal desde el bundle publicado/HEAD, sustituyendo únicamente el módulo affiliate-auth y los dos cachebusters. Esto evita incorporar cambios preexistentes de Ahorro. Sus hashes/manifiesto quedan en el directorio de evidencia ya declarado; no se modifica Git ni se publica.
 

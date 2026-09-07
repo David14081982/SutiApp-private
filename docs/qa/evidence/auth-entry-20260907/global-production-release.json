@@ -1,0 +1,136 @@
+{
+  "status": "PASS",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "initial": {
+    "families": {
+      "appAssets": {
+        "status": "PASS",
+        "checked": 156,
+        "passed": 156
+      },
+      "profilePhotos": {
+        "status": "PASS",
+        "checked": 1
+      },
+      "legacyAffiliateFiles": {
+        "status": "PASS",
+        "checked": 29,
+        "passed": 29,
+        "images": 29,
+        "pdfs": 0
+      },
+      "affiliateDocuments": {
+        "status": "PASS",
+        "purposes": [
+          {
+            "purpose": "SELF_SERVICE_EXPEDIENTE",
+            "status": "PASS",
+            "mime": "IMAGE"
+          },
+          {
+            "purpose": "SELF_SERVICE_LOAN",
+            "status": "PASS",
+            "mime": "IMAGE"
+          },
+          {
+            "purpose": "SELF_SERVICE_MEMBERSHIP",
+            "status": "PASS",
+            "mime": "IMAGE"
+          }
+        ]
+      },
+      "privateAssetsAdmin": {
+        "status": "PASS",
+        "checked": 1
+      },
+      "programCatalogAssets": {
+        "status": "PASS",
+        "checked": 248,
+        "passed": 248,
+        "items": 134
+      },
+      "staticBundle": {
+        "status": "PASS",
+        "checked": 10
+      }
+    },
+    "surfaces": {
+      "loginSeal": "PASS",
+      "publicBranding": {
+        "status": "PASS",
+        "checked": 7,
+        "passed": 7
+      },
+      "headerProfileCredential": "PASS",
+      "expediente": "PASS",
+      "membershipDocuments": "PASS",
+      "loanDocuments": "PASS",
+      "programCatalog": "PASS",
+      "marketplace": {
+        "status": "PASS",
+        "checked": 3,
+        "passed": 3
+      },
+      "membershipLogos": {
+        "status": "PASS",
+        "checked": 6,
+        "passed": 6
+      },
+      "fullscreenViewer": "PASS",
+      "affiliateDocumentPdf": "NOT_APPLICABLE_CURRENT_ACCOUNT",
+      "programProductGallery": "PASS"
+    },
+    "failures": [],
+    "cache": {
+      "serviceWorkerControlled": true,
+      "serviceWorkerScript": "sw.js",
+      "cacheNames": [
+        "sutiapp-v166"
+      ]
+    },
+    "status": "PASS"
+  },
+  "loginSeal": {
+    "status": "PASS",
+    "naturalWidth": 240,
+    "naturalHeight": 240
+  },
+  "admin": {
+    "status": "PASS",
+    "photos": {
+      "checked": 1,
+      "passed": 1
+    },
+    "documentThumbnails": {
+      "checked": 10,
+      "passed": 10,
+      "failed": []
+    }
+  },
+  "refresh": {
+    "profile": true,
+    "seal": true
+  },
+  "cacheComparison": {
+    "freshProfile": true,
+    "serviceWorkerUnregistered": true,
+    "withoutServiceWorker": {
+      "status": "PASS",
+      "seal": "PASS",
+      "controlled": false,
+      "profile": true,
+      "programImage": true
+    }
+  },
+  "legitimatePdf": {
+    "status": "PASS",
+    "account": "H005_TEST",
+    "found": true,
+    "http": 200,
+    "mime": "application/pdf",
+    "opened": true
+  },
+  "browserErrors": 0,
+  "productionDataMutations": 0,
+  "rawUrlsLogged": 0
+}

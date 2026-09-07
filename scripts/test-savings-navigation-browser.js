@@ -10,12 +10,12 @@ async function main(){
    const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>r.abort());
    await page.setContent('<html lang="es"><body><div id="root"></div></body></html>');
    await page.addStyleTag({content:[...fs.readFileSync(path.join(root,'SutiApp.html'),'utf8').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n')});
-   for(const file of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/savings-recorded-history.jsx','app/savings-review-admin.jsx'])await page.addScriptTag({content:fs.readFileSync(path.join(root,file),'utf8')});
+   for(const file of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/savings-recorded-history.jsx','app/savings-withdrawal-list.jsx','app/savings-review-admin.jsx'])await page.addScriptTag({content:fs.readFileSync(path.join(root,file),'utf8')});
    await page.evaluate(()=>{
     window.Icon=()=>null;window.pending={};window.failDetail=false;
     const records=Array.from({length:45},(_,i)=>({id:String(i),folio:'00'+i,sheet:'Ahorro',row:i+2,status:'PENDING',batch_id:'test',identity:{name:'Ahorrador de prueba '+i,match_count:1},issues:[],proposed_balance:100+i}));
     window.reviewDetail=id=>({id,status:'PENDING',version:0,source_sheet:'Ahorro',source_row:+id+2,identity:records[+id].identity,source_data:{A:records[+id].folio,Q:100+(+id)},proposed_data:{},field_defs:[{key:'A',label:'Folio',kind:'text',editable:true},{key:'Q',label:'Saldo (HOY)',kind:'money',editable:true}],raw_source:{},batch:{observed_at:'2026-09-06T20:00:00Z'},history:[]});
-    window.SavingsReviewRepository={recordedHistory:async()=>({records:[]}),list:async()=>({records,batches:[],can_write:true,can_review_identity:true}),detail:id=>{if(window.failDetail){window.failDetail=false;return Promise.reject(Error('NETWORK'));}if(window.delayDetail)return new Promise(resolve=>window.pending[id]=resolve);return Promise.resolve(window.reviewDetail(id));}};
+    window.SavingsReviewRepository={withdrawals:async()=>({source_folio:'00123',records:[]}),recordedHistory:async()=>({records:[]}),list:async()=>({records,batches:[],can_write:true,can_review_identity:true}),detail:id=>{if(window.failDetail){window.failDetail=false;return Promise.reject(Error('NETWORK'));}if(window.delayDetail)return new Promise(resolve=>window.pending[id]=resolve);return Promise.resolve(window.reviewDetail(id));}};
     window.uiRoot=ReactDOM.createRoot(document.getElementById('root'));window.uiRoot.render(React.createElement(window.SavingsReviewAdmin));
    });
    await page.getByRole('button',{name:'Revisar 0015 fila 17',exact:true}).click();

@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "applied_at": "2026-09-07T04:45:03.286Z",
+  "migration": "20260906000900",
+  "before": {
+    "financial": [
+      {
+        "transactions": 0,
+        "participants": 363,
+        "evidence": 42229,
+        "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+      }
+    ],
+    "review": [
+      {
+        "records": 1463,
+        "content_hash": "981bf60037261eb746636db544467869"
+      }
+    ],
+    "events": [
+      {
+        "events": 0
+      }
+    ]
+  },
+  "after": {
+    "financial": [
+      {
+        "transactions": 0,
+        "participants": 363,
+        "evidence": 42229,
+        "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+      }
+    ],
+    "review": [
+      {
+        "records": 1463,
+        "content_hash": "981bf60037261eb746636db544467869"
+      }
+    ],
+    "events": [
+      {
+        "events": 0
+      }
+    ]
+  },
+  "owner_example_verified": true
+}

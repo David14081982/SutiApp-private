@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "viewports": [
+    390,
+    1440
+  ],
+  "checks": [
+    "multiple independent withdrawals",
+    "D date not parent M",
+    "G amount and H status",
+    "pagination",
+    "invalid date and blank/zero distinct",
+    "identity proposal not applied",
+    "per-record edit saves correct ID",
+    "unsaved return protected",
+    "back to parent history",
+    "optional observation",
+    "original/correction split",
+    "error/retry",
+    "read-only",
+    "late person response isolation",
+    "no mobile overflow"
+  ]
+}

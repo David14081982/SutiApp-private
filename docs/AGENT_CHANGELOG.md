@@ -2659,3 +2659,8 @@ Private Savings Admin now exposes original first deduction (F), separate plan st
 ## H-SAVINGS-SIMPLE-001
 
 Authorized private Savings review simplification: compact original balance/amount/first-date/status summary and seven persistent person sections. Old auxiliary fields remain secondary; all correction fields and pending edits preserved. No financial, repository, schema, Google or permission changes. Evidence: docs/qa/evidence/savings-simple-20260906/RESULT.md.
+
+
+## H-SAVINGS-WITHDRAWALS-001
+
+Private withdrawal history now uses every matching original-Folio Solicitud de retiro row with D date/G amount/H status. Replaces misleading Ahorro aggregate cards, keeps historical data and individual review with parent return. Additive admin-only reader009 applied with unchanged data fingerprints and owner example verified. See docs/qa/evidence/savings-withdrawals-20260906/RESULT.md. No financial posting/Google write/public balance change.

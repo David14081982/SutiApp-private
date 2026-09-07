@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "mode": "ROLLBACK",
+  "installed": false,
+  "checks": [
+    "original parent Folio despite proposal",
+    "all withdrawal rows retained",
+    "leading zeros distinct",
+    "other proposed Folio never joins",
+    "D date and G amount and H source status preserved",
+    "restricted payload excludes external PDF",
+    "anonymous and ordinary user denied",
+    "authenticated admin executes",
+    "recovery",
+    "financial fingerprint unchanged"
+  ]
+}

@@ -26907,6 +26907,7 @@ Object.assign(window, {
   revokeAccess: id => rpc('revoke_section_responsibilities', { p_auth_user_id: id, p_section_key: 'savings' }),
   list: () => rpc('get_admin_savings_review', { p_record_id: null }),
   detail: id => rpc('get_admin_savings_review', { p_record_id: id }),
+  withdrawals: recordId => rpc('get_admin_savings_review_withdrawals', { p_record_id: recordId }),
   recordedHistory: participantId => rpc('get_admin_savings_recorded_history', { p_participant_id: participantId }),
   save: command => rpc('admin_save_savings_review', {
    p_record_id: command.id, p_version: command.version, p_changes: command.changes,
@@ -27284,6 +27285,126 @@ Object.assign(window, {
   window.SavingsPersonHistory = SavingsPersonHistory;
 })();
 })();
+/* @@file savings-withdrawal-list.jsx */
+(function(){
+/* Private imported withdrawal records; no financial posting or alternate data source. */
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  function dateKey(value) {
+    const text = String(value || '').trim();
+    let parts = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!parts) {
+      const local = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (local) parts = [text, local[3], local[2].padStart(2, '0'), local[1].padStart(2, '0')];
+    }
+    if (!parts) return '';
+    const iso = parts.slice(1).join('-'),
+      d = new Date(iso + 'T12:00:00Z');
+    return !Number.isNaN(+d) && d.toISOString().slice(0, 10) === iso ? iso : '';
+  }
+  const date = value => {
+    const iso = dateKey(value);
+    return iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC'
+    }) : value ? String(value) + ' · Fecha por revisar' : 'Sin fecha registrada';
+  };
+  const money = value => value == null || value === '' ? 'Sin importe registrado' : typeof value === 'number' ? new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(value) : String(value) + ' · Importe por revisar';
+  const show = value => value == null || value === '' ? 'Sin dato' : String(value);
+  const css = '.svw{font:13px var(--font,Arial);line-height:1.5}.svw-heading{display:flex;gap:12px;justify-content:space-between;align-items:center}.svw h2{margin:0}.svw p{color:#626b7b}.svw-table{background:white;border:1px solid #dde0e7;border-radius:12px;overflow:auto}.svw table{width:100%;border-collapse:collapse;font-size:12px}.svw td,.svw th{padding:12px 9px;text-align:left;vertical-align:top;border-bottom:1px solid #e5e7ed}.svw th{background:#f1f3f7}.svw small{display:block;color:#626b7b;margin-top:4px}.svw-money{font-weight:bold;white-space:nowrap}.svw-warning{background:#fff2d4;padding:12px;border-radius:10px}.svw-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0}@media(max-width:650px){.svw thead{display:none}.svw tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #dde0e7;padding:8px}.svw td{border:0;padding:7px;min-width:0;overflow-wrap:anywhere}.svw td::before{content:attr(data-label);display:block;font-size:10px;color:#626b7b;margin-bottom:4px}.svw td:last-child{grid-column:1/-1}.svw td:last-child button{width:100%}.svw-heading{align-items:flex-start}.svw-pager{font-size:11px}}';
+  function SavingsWithdrawalList({
+    recordId,
+    onOpen,
+    disabled = false
+  }) {
+    const [state, setState] = React.useState({}),
+      [retry, setRetry] = React.useState(0),
+      [page, setPage] = React.useState(0);
+    React.useEffect(() => {
+      let active = true;
+      setState({});
+      setPage(0);
+      window.SavingsReviewRepository.withdrawals(recordId).then(data => {
+        if (active) setState({
+          id: recordId,
+          data
+        });
+      }).catch(() => {
+        if (active) setState({
+          id: recordId,
+          error: true
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [recordId, retry]);
+    if (state.id !== recordId) return h('p', {
+      role: 'status'
+    }, 'Cargando retiros de esta persona…');
+    if (state.error) return h('div', {
+      role: 'alert'
+    }, 'No fue posible cargar los retiros. ', h('button', {
+      onClick: () => setRetry(retry + 1)
+    }, 'Reintentar retiros'));
+    const data = state.data,
+      rows = (data.records || []).slice().sort((a, b) => dateKey(b.source_data.D).localeCompare(dateKey(a.source_data.D)) || a.source_row - b.source_row || a.id.localeCompare(b.id)),
+      pages = Math.max(1, Math.ceil(rows.length / 8)),
+      current = Math.min(page, pages - 1);
+    function cell(r, key, label, format = show) {
+      const original = r.source_data[key],
+        proposal = r.proposed_data || {},
+        changed = !r.identity_change_pending && Object.prototype.hasOwnProperty.call(proposal, key) && JSON.stringify(original) !== JSON.stringify(proposal[key]);
+      return h('td', {
+        'data-label': label
+      }, h('span', {
+        className: key === 'G' ? 'svw-money' : undefined
+      }, format(original)), changed && h('small', null, 'En revisión: ' + format(proposal[key])));
+    }
+    return h('section', {
+      className: 'svw',
+      'aria-label': 'Retiros de esta persona'
+    }, h('style', null, css), h('div', {
+      className: 'svw-heading'
+    }, h('div', null, h('h2', null, 'Historial de retiros'), h('p', null, rows.length + ' registro(s) · Folio ' + (data.source_folio || 'sin registro'))), h('button', {
+      onClick: () => setRetry(retry + 1),
+      disabled
+    }, 'Actualizar retiros')), h('p', null, 'Cada fila corresponde a un registro de «Solicitud de retiro». La fecha corresponde a esa solicitud y el estado indica cómo quedó registrado.'), data.identity_change_pending && h('p', {
+      className: 'svw-warning'
+    }, 'Hay un cambio de Folio pendiente. Esta lista conserva los retiros del Folio original.'), !rows.length ? h('p', null, 'No hay solicitudes de retiro cargadas con el Folio exacto de esta persona.') : h('div', {
+      className: 'svw-table'
+    }, h('table', {
+      'aria-label': 'Lista de retiros'
+    }, h('thead', null, h('tr', null, ['Fecha de retiro', 'Importe', 'Tipo de retiro', 'Continúa ahorrando', 'Estado', 'Detalle'].map(label => h('th', {
+      key: label
+    }, label)))), h('tbody', null, rows.slice(current * 8, current * 8 + 8).map(r => h('tr', {
+      key: r.id
+    }, cell(r, 'D', 'Fecha de retiro', date), cell(r, 'G', 'Importe', money), cell(r, 'E', 'Tipo de retiro'), cell(r, 'F', 'Continúa ahorrando'), cell(r, 'H', 'Estado'), h('td', {
+      'data-label': 'Detalle'
+    }, h('button', {
+      disabled,
+      onClick: () => onOpen(r.id),
+      'aria-label': 'Ver retiro de ' + date(r.source_data.D) + ' por ' + money(r.source_data.G) + ' fila ' + r.source_row
+    }, 'Ver y revisar'), r.identity_change_pending && h('small', null, 'Folio en revisión; se muestran importes originales.'), h('small', null, 'Fila ' + r.source_row + ' · Copia ' + date(String(r.batch.observed_at).slice(0, 10))))))))), rows.length > 0 && h('div', {
+      className: 'svw-pager'
+    }, h('button', {
+      disabled: current === 0,
+      onClick: () => setPage(current - 1)
+    }, 'Retiros anteriores'), h('span', null, 'Página ' + (current + 1) + ' de ' + pages), h('button', {
+      disabled: current + 1 >= pages,
+      onClick: () => setPage(current + 1)
+    }, 'Más retiros')));
+  }
+  window.SavingsWithdrawalList = SavingsWithdrawalList;
+})();
+})();
 /* @@file savings-review-admin.jsx */
 (function(){
 /* Private administrative review. No self reader, financial posting or browser persistence. */
@@ -27332,7 +27453,7 @@ Object.assign(window, {
     J: 'Importe retirado y continúa ahorrando',
     K: 'Tipo de retiro registrado',
     L: 'Continúa ahorrando según el archivo',
-    M: 'Fecha de retiro registrada',
+    M: 'Fecha que figuraba en el resumen anterior',
     N: 'Estado del retiro registrado',
     Q: 'Saldo del archivo original',
     AR: '30 de junio de 2026 · Aportación y rendimiento incluidos',
@@ -27344,6 +27465,13 @@ Object.assign(window, {
     DU: 'Total de 2026',
     DV: 'Ahorro acumulado de 2025 y 2026',
     DW: 'Rendimientos acumulados de 2025 y 2026'
+  }[def.key] || def.label : sheet === 'Solicitud de retiro' ? {
+    D: 'Fecha de retiro registrada',
+    G: 'Importe del retiro',
+    E: 'Tipo de retiro',
+    F: 'Contin\u00faa ahorrando',
+    H: 'Estado del retiro',
+    I: 'Observaciones del retiro'
   }[def.key] || def.label : def.label).replace(/PROCESS/g, 'Categoría de descuento');
   const show = (value, kind) => value == null || value === '' ? 'Sin dato' : kind === 'money' && typeof value === 'number' ? new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -27352,7 +27480,6 @@ Object.assign(window, {
   const sections = [['main', 'Resumen'], ['dates', 'Descuentos'], ['withdrawals', 'Retiros'], ['amount', 'Cambios de monto'], ['annual', 'Rendimientos'], ['previous', 'Datos anteriores'], ['review', 'Revisión y cambios']];
   const groups = {
     main: ['A', 'Q', 'R', 'F', 'W'],
-    withdrawals: ['H', 'I', 'J', 'K', 'L', 'M', 'N'],
     amount: ['R', 'S', 'T', 'U'],
     annual: ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW']
   };
@@ -27390,6 +27517,7 @@ Object.assign(window, {
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState(''),
       [success, setSuccess] = React.useState('');
+    const [returnRecord, setReturnRecord] = React.useState(null);
     const generation = React.useRef(0),
       listGeneration = React.useRef(0),
       mounted = React.useRef(true),
@@ -27456,7 +27584,7 @@ Object.assign(window, {
         listGeneration.current++;
       };
     }, []);
-    async function open(id, force) {
+    async function open(id, force, parent = null, startGroup = 'main') {
       if (locked.current) return;
       if (!force && !discardAllowed()) return;
       if (!selected) returnFocus.current = document.activeElement;
@@ -27468,7 +27596,8 @@ Object.assign(window, {
       setObservation('');
       setError('');
       setSuccess('');
-      setGroup('main');
+      setReturnRecord(parent);
+      setGroup(startGroup);
       try {
         const value = await window.SavingsReviewRepository.detail(id);
         if (mounted.current && seq === generation.current) {
@@ -27533,7 +27662,7 @@ Object.assign(window, {
         setPreview(null);
         setChanges({});
         setObservation('');
-        await open(preview.id, true);
+        await open(preview.id, true, returnRecord);
         await load();
         if (mounted.current) setSuccess('Revisión guardada. Los valores del ahorrador no se modificaron.');
       } catch (e) {
@@ -27550,9 +27679,10 @@ Object.assign(window, {
     }
     const savings = detail && detail.source_sheet === 'Ahorro';
     const dated = f => /Descuento registrado|Proyección futura/.test(f.label);
-    const fields = detail ? detail.field_defs.filter(f => !savings || group === 'dates' && dated(f) || groups[group] && groups[group].includes(f.key) || group === 'previous' && !dated(f) && !Object.values(groups).flat().includes(f.key)) : [];
+    const withdrawal = detail && detail.source_sheet === 'Solicitud de retiro';
+    const fields = detail ? detail.field_defs.filter(f => !savings && (!withdrawal || ['A', 'D', 'E', 'F', 'G', 'H', 'I'].includes(f.key)) || group === 'dates' && dated(f) || groups[group] && groups[group].includes(f.key) || group === 'previous' && !dated(f) && !Object.values(groups).flat().includes(f.key)) : [];
     const pendingCount = Object.keys(changes).length;
-    function fieldTable() {
+    function fieldTable(items = fields) {
       return h('div', {
         className: 'svr-scroll',
         style: {
@@ -27563,7 +27693,7 @@ Object.assign(window, {
         'aria-label': 'Datos originales y correcciones'
       }, h('thead', null, h('tr', null, ['Dato', 'Original', 'Corrección para revisión'].map(t => h('th', {
         key: t
-      }, t)))), h('tbody', null, fields.map(def => {
+      }, t)))), h('tbody', null, items.map(def => {
         const value = def.key in changes ? changes[def.key] : effective[def.key],
           canEdit = editable && def.editable && (def.key !== 'A' || data.can_review_identity);
         return h('tr', {
@@ -27690,7 +27820,10 @@ Object.assign(window, {
     }, h('div', null, h('button', {
       onClick: close,
       disabled: busy
-    }, '← Volver a la lista'), h('h2', null, (detail ? detail.identity.name : (rows.find(r => r.id === selected) || {}).identity?.name) || 'Cargando ahorrador…'), h('p', null, 'Folio ' + ((detail ? effective.A : (rows.find(r => r.id === selected) || {}).folio) || 'sin registro'))), h('div', {
+    }, '← Volver a la lista'), h('h2', null, returnRecord ? returnRecord.name : (detail ? detail.identity.name : (rows.find(r => r.id === selected) || {}).identity?.name) || 'Cargando ahorrador…'), h('p', null, 'Folio ' + ((returnRecord ? returnRecord.folio : detail ? effective.A : (rows.find(r => r.id === selected) || {}).folio) || 'sin registro'))), returnRecord ? h('button', {
+      disabled: busy,
+      onClick: () => open(returnRecord.id, false, null, 'withdrawals')
+    }, 'Volver al historial de retiros') : h('div', {
       className: 'svr-actions'
     }, h('button', {
       disabled: busy || filtered.findIndex(r => r.id === selected) <= 0,
@@ -27720,7 +27853,7 @@ Object.assign(window, {
       className: 'svr-loading',
       role: 'status'
     }, error ? h('button', {
-      onClick: () => open(selected, true)
+      onClick: () => open(selected, true, returnRecord)
     }, 'Reintentar abrir expediente') : 'Cargando información del ahorrador…') : h(React.Fragment, null, savings && group === 'main' && h(React.Fragment, null, h('div', {
       className: 'svr-overview'
     }, sourceCard('Q', 'Saldo de referencia', 'money'), sourceCard('R', 'Aportación registrada', 'money'), sourceCard('F', 'Primer descuento', 'date'), sourceCard('W', 'Estado del ahorro', 'text')), h('p', {
@@ -27741,13 +27874,16 @@ Object.assign(window, {
       className: 'svr-editor'
     }, h('summary', null, editable ? 'Corregir descuentos por fecha' : 'Consultar importes originales'), h('p', {
       className: 'svr-note'
-    }, 'Si corriges descuentos, revisa también el saldo. El 30 de junio de 2026 incluye rendimientos: no deben sumarse otra vez.'), fieldTable())), savings && group === 'withdrawals' && h(React.Fragment, null, h('h2', null, 'Retiros'), h('p', {
-      className: 'svr-note'
-    }, 'Importes de retiros registrados en la copia anterior. Estos acumulados no indican cuántos pagos se hicieron ni sustituyen un historial de pagos por fecha.'), h('div', {
-      className: 'svr-overview'
-    }, sourceCard('H', 'Retiros parciales', 'money'), sourceCard('I', 'Retiro al dejar de ahorrar', 'money'), sourceCard('J', 'Retiro y continúa ahorrando', 'money')), h('details', {
-      className: 'svr-editor'
-    }, h('summary', null, 'Ver datos del retiro' + (editable ? ' y corregir' : '')), fieldTable())), savings && group === 'amount' && h(React.Fragment, null, h('h2', null, 'Cambios de monto'), h('p', {
+    }, 'Si corriges descuentos, revisa también el saldo. El 30 de junio de 2026 incluye rendimientos: no deben sumarse otra vez.'), fieldTable())), savings && group === 'withdrawals' && h(window.SavingsWithdrawalList, {
+      key: detail.id,
+      recordId: detail.id,
+      disabled: busy,
+      onOpen: id => open(id, false, {
+        id: detail.id,
+        name: detail.identity.name,
+        folio: detail.source_folio || detail.source_data.A
+      })
+    }), savings && group === 'amount' && h(React.Fragment, null, h('h2', null, 'Cambios de monto'), h('p', {
       className: 'svr-note'
     }, 'Importe, fecha y estado registrados en la copia anterior. Corregir estos datos no programa un nuevo descuento.'), fieldTable()), savings && group === 'annual' && h(React.Fragment, null, h('h2', null, 'Ahorro y rendimientos por periodo'), h('p', {
       className: 'svr-note'
@@ -27755,9 +27891,13 @@ Object.assign(window, {
       className: 'svr-note'
     }, 'Campos auxiliares conservados para consultar el archivo anterior. No es necesario llenarlos para recorrer el expediente. El saldo manual permanece sólo como antecedente.'), fieldTable(), h('details', {
       className: 'svr-editor'
-    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' · Fila ' + detail.source_row + ' · Copia del ' + stamp(detail.batch.observed_at)), detail.raw_source.readiness && h('p', null, 'Saldo de la copia anterior: ' + show(detail.raw_source.readiness.prior_balance_cents == null ? null : detail.raw_source.readiness.prior_balance_cents / 100, 'money')))), !savings && h(React.Fragment, null, h('details', {
+    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' · Fila ' + detail.source_row + ' · Copia del ' + stamp(detail.batch.observed_at)), detail.raw_source.readiness && h('p', null, 'Saldo de la copia anterior: ' + show(detail.raw_source.readiness.prior_balance_cents == null ? null : detail.raw_source.readiness.prior_balance_cents / 100, 'money')))), withdrawal && h('div', {
+      className: 'svr-bar'
+    }, 'Fecha e importe de la solicitud de retiro original. Esta revisi\u00f3n no realiza un pago ni modifica el saldo.'), !savings && h(React.Fragment, null, h('details', {
       className: 'svr-editor'
-    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' \u00b7 Fila ' + detail.source_row + ' \u00b7 Copia del ' + stamp(detail.batch.observed_at))), fieldTable()), (!savings || group === 'review') && h(React.Fragment, null, editable && h(React.Fragment, null, h('h3', null, 'Resultado de esta revisión'), h('label', null, 'Estado al guardar ', h('select', {
+    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' \u00b7 Fila ' + detail.source_row + ' \u00b7 Copia del ' + stamp(detail.batch.observed_at))), fieldTable()), withdrawal && h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, 'Otros datos de la solicitud'), fieldTable(detail.field_defs.filter(f => !fields.includes(f)))), (!savings || group === 'review') && h(React.Fragment, null, editable && h(React.Fragment, null, h('h3', null, 'Resultado de esta revisión'), h('label', null, 'Estado al guardar ', h('select', {
       'aria-label': 'Estado al guardar',
       value: nextStatus,
       disabled: frozen,
@@ -27783,7 +27923,7 @@ Object.assign(window, {
       onClick: review,
       disabled: busy
     }, 'Revisar antes de guardar'), h('button', {
-      onClick: () => open(detail.id),
+      onClick: () => open(detail.id, false, returnRecord),
       disabled: busy
     }, 'Actualizar expediente'))), preview && h('section', {
       className: 'svr-preview',

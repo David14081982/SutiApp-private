@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "fixture_network": "BLOCKED",
+  "checks": [
+    "leading zero Folio",
+    "duplicate visible",
+    "original versus proposal",
+    "optional notes",
+    "preview before save",
+    "retry same command",
+    "null versus zero",
+    "filters",
+    "history",
+    "read-only",
+    "mobile overflow"
+  ]
+}

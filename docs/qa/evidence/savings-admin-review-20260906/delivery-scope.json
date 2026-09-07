@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "changed": [
+    "admin-store.jsx",
+    "savings-review-repository.js",
+    "savings-review-admin.jsx",
+    "screens-admin-savings.jsx",
+    "screens-admin.jsx"
+  ],
+  "removed": [],
+  "public_savings_readers_unchanged": true,
+  "auth_unchanged": true,
+  "bundle_sha256": "e07969ba8cfd949bf91164abfeeb2949a5129c4efc6b72dd818b4e64987b6d3c"
+}

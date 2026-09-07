@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "mode": "ROLLBACK",
+  "records": 708,
+  "raw_source_unchanged": true,
+  "review_events": 0,
+  "financial_writes": 0,
+  "result": [
+    {
+      "normalized_records": 708
+    }
+  ]
+}

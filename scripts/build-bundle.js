@@ -25,7 +25,7 @@ const files = [
   'screens-historial.jsx', 'screens-credencial.jsx', 'image-slot.js',
   'screens-documentos.jsx', 'admin-store.jsx', 'admin-cutover-store.jsx', 'custom-screen.jsx',
   'sindicato-store.jsx', 'finance-store.jsx', 'savings-store.jsx', 'quotes-store.jsx', 'operations-store.jsx', 'flow-store.jsx',
-  'funds-store.jsx', 'admin-popup-editor.jsx',
+  'funds-store.jsx', 'admin-popup-editor.jsx', 'savings-review-repository.js', 'savings-review-admin.jsx',
   'section-responsibility.jsx', 'screens-admin-roles.jsx', 'screens-admin-content.jsx', 'screens-admin-news.jsx',
   'screens-admin-convenios.jsx', 'screens-admin-sindicato.jsx', 'screens-admin-finanzas.jsx', 'screens-admin-fondos.jsx', 'screens-admin-fincat.jsx', 'screens-admin-flujos.jsx', 'screens-admin-documents.jsx',
   'fincat-store.jsx',

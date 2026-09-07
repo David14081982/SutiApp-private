@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "mode": "ROLLBACK",
+  "installed": true,
+  "checks": [
+    "optional observations",
+    "source immutable",
+    "history immutable",
+    "exact Folio",
+    "null versus zero",
+    "idempotency",
+    "stale version",
+    "missing identity blocked",
+    "private permissions",
+    "self reader unchanged"
+  ],
+  "before": [
+    {
+      "transactions": 0,
+      "participants": 363,
+      "evidence": 42229,
+      "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+    }
+  ],
+  "after": [
+    {
+      "transactions": 0,
+      "participants": 363,
+      "evidence": 42229,
+      "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+    }
+  ]
+}

@@ -5,6 +5,7 @@
   const h = React.createElement;
   const I = window.Icon;
   const TABS = [
+    ['review', 'Conciliación y revisión'],
     ['summary', 'Resumen'], ['participants', 'Participantes'], ['contributions', 'Aportaciones'], ['calendar', 'Calendario'],
     ['amount_changes', 'Cambios de monto'], ['withdrawals', 'Retiros'], ['terminations', 'Bajas'], ['beneficiaries', 'Beneficiarios'],
     ['yields', 'Rendimientos'], ['omissions', 'Omisiones'], ['holds', 'Retenciones'], ['process', 'Cambios de PROCESS'],
@@ -49,7 +50,7 @@
 
   function SavingsAdminModule({ app, onBack, header, initialAffiliateId }) {
     const [globalData, setGlobalData] = React.useState(null), [detailData, setDetailData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [error, setError] = React.useState('');
-    const [selectedId, setSelectedId] = React.useState(''), [tab, setTab] = React.useState('summary'), [query, setQuery] = React.useState('');
+    const [selectedId, setSelectedId] = React.useState(''), [tab, setTab] = React.useState('review'), [query, setQuery] = React.useState('');
     const [feedback, setFeedback] = React.useState(''), [busy, setBusy] = React.useState(false);
     const loadGlobal = React.useCallback(async () => { setPhase('loading'); setError(''); try { const value = await window.SavingsRepository.getAdminDashboard(null); setGlobalData(value); const candidates = value.participants || []; const initial = candidates.find((row) => row.affiliate_id === initialAffiliateId) || candidates.find((row) => row.id === selectedId) || candidates[0]; if (initial) setSelectedId(initial.id); setPhase('ready'); return value; } catch (failure) { setError(errorText(failure)); setPhase('error'); return null; } }, [initialAffiliateId]);
     React.useEffect(() => { loadGlobal(); }, [loadGlobal]);
@@ -124,10 +125,12 @@
     }
 
     return h('div', { className: 'sava-root', 'data-admin-savings': phase, 'data-savings-authority': globalData && globalData.authority, 'data-savings-cutover': globalData && globalData.cutover_status },
-      header({ title: 'Caja de Ahorro', sub: 'SHADOW + NEW FOUNDATION · sin cutover', onBack }), h('style', null, CSS),
+      header({ title: 'Ahorro', sub: 'Revisión y administración del programa', onBack }), h('style', null, CSS),
       h('div', { className: 'su-app-scroll sava-page' },
-        h('div', { className: 'sava-banner' }, h(I, { name: 'info', size: 17 }), h('div', null, h('b', null, 'Google continúa como autoridad histórica/productiva.'), h('br'), 'Esta consola administra únicamente la fundación shadow. Los valores Q se comparan con el ledger y nunca sustituyen el saldo.')),
-        phase === 'error' ? h('div', { className: 'sava-error' }, error, h('button', { className: 'sava-button', onClick: loadGlobal, style: { marginLeft: 10 } }, 'Reintentar')) : h(React.Fragment, null,
+        tab !== 'review' && h('div', { className: 'sava-banner' }, h(I, { name: 'info', size: 17 }), h('div', null, h('b', null, 'Google continúa como autoridad histórica/productiva.'), h('br'), 'Esta consola administra únicamente la fundación shadow. Los valores Q se comparan con el ledger y nunca sustituyen el saldo.')),
+        tab === 'review' ? h(React.Fragment, null,
+          h('nav', { className: 'sava-tabs', 'aria-label': 'Secciones de Ahorro' }, TABS.map((item) => h('button', { key: item[0], 'aria-current': tab === item[0] ? 'page' : undefined, onClick: () => setTab(item[0]), 'data-savings-admin-tab': item[0] }, item[1]))),
+          h(window.SavingsReviewAdmin, { app })) : phase === 'error' ? h('div', { className: 'sava-error' }, error, h('button', { className: 'sava-button', onClick: loadGlobal, style: { marginLeft: 10 } }, 'Reintentar')) : h(React.Fragment, null,
           h('div', { className: 'sava-kpis' }, [['Participantes activos', kpis.active_enrollments || 0], ['Capital total', money(kpis.capital_total)], ['Rendimientos', money(kpis.yield_total)], ['Saldo total', money(kpis.balance_total)], ['Saldo retenido', money(kpis.held_total)], ['Retiros pendientes', kpis.pending_withdrawals || 0], ['Cambios de monto', kpis.pending_amount_changes || 0], ['PROCESS por revisar', kpis.process_reviews || 0], ['Identidades ambiguas', kpis.ambiguous_identity || 0], ['Identidades huérfanas', kpis.orphan_identity || 0]].map((item) => h('div', { className: 'sava-kpi', key: item[0] }, h('span', null, item[0]), h('b', null, item[1])))),
           h('div', { className: 'sava-toolbar' }, h('label', { className: 'sava-search' }, h(I, { name: 'search', size: 16 }), h('input', { value: query, onChange: (event) => setQuery(event.target.value), placeholder: 'Buscar folio, nombre o estado…' })), h('select', { value: selectedId, onChange: (event) => setSelectedId(event.target.value) }, h('option', { value: '' }, 'Todos / sin selección'), allParticipants.map((row) => h('option', { key: row.id, value: row.id }, (row.legacy_folio || 'Sin folio') + ' · ' + (row.display_name || row.identity_status)))), h('button', { className: 'sava-button', onClick: reload, disabled: busy }, 'Actualizar')),
           feedback && h('div', { className: /No se|permiso|completó/.test(feedback) ? 'sava-error' : 'sava-success', style: { marginTop: 10 } }, feedback),

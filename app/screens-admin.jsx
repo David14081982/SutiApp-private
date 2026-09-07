@@ -37,7 +37,7 @@
     { id: 'sindicato', label: 'Tu Sindicato', icon: 'fist', desc: 'Contenido de las 9 pantallas', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'requests', label: 'Solicitudes', icon: 'receipt', desc: 'Trámites de programas y productos', ready: true },
     { id: 'finanzas', label: 'Finanzas · Solicitudes', icon: 'finance', desc: 'Solicitudes de financiamiento', classification: 'PRODUCTIVE_HYBRID' },
-    { id: 'savings', label: 'Caja de Ahorro', icon: 'piggy', desc: 'Participantes, ledger, solicitudes y control', classification: 'PRODUCTIVE_SHADOW' },
+    { id: 'savings', label: 'Ahorro', icon: 'piggy', desc: 'Ahorradores, aportaciones, retiros y aperturas', classification: 'PRODUCTIVE_SHADOW' },
     { id: 'fondos', label: 'Fondos y reglas', icon: 'finance', desc: 'Visibilidad SutiApp por criterio', classification: 'PRODUCTIVE_GOOGLE_CONTROLLED' },
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet', desc: 'Secciones y productos de Finanzas', classification: 'PRODUCTIVE_HYBRID' },
     { id: 'program_products', label: 'Programas · Productos', icon: 'cart', desc: 'Productos propios, precios e imágenes', ready: true },
@@ -73,7 +73,8 @@
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','savings','fondos','fincat','flujos','membresias'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','fondos','fincat','flujos','membresias'] },
+    { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
     { id:'settings', label:'Acceso y configuración', icon:'settings', modules:['catalogos','roles','pantallas','secciones','menus','formularios','branding'] },

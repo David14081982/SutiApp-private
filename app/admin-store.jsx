@@ -62,7 +62,7 @@
     { id: 'popups', label: 'Pop-ups por pantalla', icon: 'message' },
     { id: 'sindicato', label: 'Tu Sindicato (9 pantallas)', icon: 'fist' },
     { id: 'finanzas', label: 'Finanzas · Solicitudes', icon: 'finance' },
-    { id: 'savings', label: 'Caja de Ahorro', icon: 'piggy' },
+    { id: 'savings', label: 'Ahorro', icon: 'piggy' },
     { id: 'savings_approvals', label: 'Ahorro · Aprobaciones', icon: 'checkCircle' },
     { id: 'savings_config', label: 'Ahorro · Configuración', icon: 'settings' },
     { id: 'savings_reports', label: 'Ahorro · Reportes legacy', icon: 'download' },

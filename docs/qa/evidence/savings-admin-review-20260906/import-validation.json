@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "records": 1463,
+  "blank_cells_preserved": 1142,
+  "explicit_zero_cells_preserved": 17443,
+  "matrix_bounds": "AA:DO; Z remains date"
+}

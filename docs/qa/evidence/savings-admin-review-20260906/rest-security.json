@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "rpc": "get_admin_savings_review",
+      "http": 401,
+      "code": "42501"
+    },
+    {
+      "rpc": "admin_save_savings_review",
+      "http": 401,
+      "code": "42501"
+    }
+  ]
+}

@@ -264,3 +264,10 @@ Autoservicio y Administración son contratos separados. El primero sólo puede l
 ## Corte 2026-09-02 — acceso Admin, responsables e impersonación
 
 `admin_roles`, `admin_role_permissions` y `admin_assignments` permanecen como autoridad única de autorización administrativa. El correo es sólo entrada de resolución contra una cuenta Auth confirmada y única; la asignación durable usa `auth.users.id`, registra asignador y fecha, y protege una asignación principal contra revocación. `admin_section_definitions` y `admin_section_responsibilities` siguen siendo la única autoridad de acciones exactas para las 11 secciones `ENFORCED`; la interfaz no mantiene un catálogo paralelo. `impersonation_sessions` conserva la sesión contextual y `identity_audit_log` su historia; iniciar exige `affiliates.impersonate`, motivo y `session_id` Auth, mientras revocar asignación/permiso cierra la sesión. No se crea fuente, fallback ni escritor financiero nuevo.
+
+
+## Private Savings administrative review ? 2026-09-06
+
+Migration 20260906000500 is APPLIED independently of still-pending operations 001?004. savings_review_batches / savings_review_records / savings_review_events are the sole authority for private administrative proposals, with optional observations and immutable source/history. All 1,463 captured rows/incidents were loaded for review; no source evidence, participant, financial ledger or self reader changed. RESOLVED is administrative review only, never financial certification/publication. Admin read/write/identity-review permissions are enforced in backend. Full real-session acceptance remains unverified because the configured automated account returns invalid_credentials; owner-account identification is pending. See docs/qa/evidence/savings-admin-review-20260906/RESULT.md for evidence and delivery status.
+
+Review import normalization 006 is applied before publication, with immutable backup of 708 derived projections and no change to raw source or financial records. Direct source verification preserves blanks versus explicit zero and correct AA:DO bounds.

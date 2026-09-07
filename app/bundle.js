@@ -27321,6 +27321,19 @@ Object.assign(window, {
   const issue = code => labels[code] || 'Dato pendiente de revisión';
   const fieldLabel = (def, sheet) => (sheet === 'Ahorro' ? {
     A: 'Folio',
+    F: 'Primer descuento registrado',
+    R: 'Aportación registrada',
+    S: 'Nuevo importe registrado',
+    T: 'Fecha del cambio registrada',
+    U: 'Cambio aplicado según el archivo',
+    W: 'Estado del ahorro',
+    H: 'Importe de retiros parciales',
+    I: 'Importe retirado al dejar de ahorrar',
+    J: 'Importe retirado y continúa ahorrando',
+    K: 'Tipo de retiro registrado',
+    L: 'Continúa ahorrando según el archivo',
+    M: 'Fecha de retiro registrada',
+    N: 'Estado del retiro registrado',
     Q: 'Saldo del archivo original',
     AR: '30 de junio de 2026 · Aportación y rendimiento incluidos',
     DP: 'Ahorro de 2025',
@@ -27336,8 +27349,21 @@ Object.assign(window, {
     style: 'currency',
     currency: 'MXN'
   }).format(value) : String(value);
+  const sections = [['main', 'Resumen'], ['dates', 'Descuentos'], ['withdrawals', 'Retiros'], ['amount', 'Cambios de monto'], ['annual', 'Rendimientos'], ['previous', 'Datos anteriores'], ['review', 'Revisión y cambios']];
+  const groups = {
+    main: ['A', 'Q', 'R', 'F', 'W'],
+    withdrawals: ['H', 'I', 'J', 'K', 'L', 'M', 'N'],
+    amount: ['R', 'S', 'T', 'U'],
+    annual: ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW']
+  };
+  const dateText = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value)) && !Number.isNaN(Date.parse(value + 'T12:00:00Z')) && new Date(value + 'T12:00:00Z').toISOString().slice(0, 10) === value ? new Date(value + 'T12:00:00Z').toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  }) : show(value);
   const stamp = value => value ? new Date(value).toLocaleString('es-MX') : '—';
-  const css = `.svr{color:var(--ink,#202432);font-family:var(--font,Arial);font-size:13px}.svr button,.svr input,.svr select,.svr textarea{font:inherit}.svr button{cursor:pointer}.svr .svr-person{border:0;padding:0;text-align:left;background:transparent;color:var(--guinda,#a00038)}.svr button:disabled{cursor:default;opacity:.5}.svr-bar{padding:14px;background:#fff6df;border:1px solid #efd39a;border-radius:14px;line-height:1.6;margin-bottom:14px}.svr-kpis{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.svr-kpis>div{flex:1;min-width:120px;background:white;border:1px solid #e1e3e8;border-radius:13px;padding:12px}.svr-kpis b{display:block;font-size:23px;margin-top:5px}.svr-filters{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;align-items:center}.svr-filters input{flex:1;min-width:180px}.svr input,.svr select,.svr textarea{padding:9px;border:1px solid #ced1da;border-radius:8px;background:white;box-sizing:border-box;max-width:100%}.svr button{border:1px solid #d4d7df;background:white;padding:9px 13px;border-radius:9px;color:inherit}.svr .svr-primary{background:#a00038;color:white;border-color:#a00038}.svr-scroll{overflow:auto;border:1px solid #dfe2e8;border-radius:12px;background:white;max-height:540px}.svr table{border-collapse:collapse;width:100%;font-size:12px}.svr th{background:#f3f4f7;position:sticky;top:0;z-index:1;text-align:left}.svr td,.svr th{padding:11px;border-bottom:1px solid #e7e8ed;vertical-align:top}.svr td small{display:block;margin-top:4px;line-height:1.5;color:#687084}.svr .svr-status{display:inline-block;background:#f2edf0;border-radius:18px;padding:5px 9px;white-space:nowrap}.svr-dialog{width:min(1120px,96vw);max-width:96vw;height:92dvh;max-height:92dvh;padding:0;border:0;border-radius:20px;color:var(--ink,#202432);background:#f4f5f8;box-shadow:0 24px 80px #0004;overflow:hidden}.svr-dialog[open]{display:flex;flex-direction:column}.svr-dialog::backdrop{background:#18213588}.svr-dialog-head{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:white;border-bottom:1px solid #ddd}.svr-dialog-head h2{font-size:21px;margin:10px 0 3px}.svr-dialog-head p{margin:0;color:#566075}.svr-dialog .svr-detail{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;margin:0;border:0;border-radius:0;padding:20px}.svr-dialog .svr-scroll{max-height:none}.svr-loading{padding:35px;text-align:center}.svr-detail{background:white;border:1px solid #dde0e7;border-radius:14px;padding:16px;margin-top:15px}.svr-detail h2{font-size:20px;margin:12px 0}.svr-detail h3{font-size:15px;margin:18px 0 10px}.svr-fields{min-width:640px}.svr-fields input{width:100%;min-width:150px}.svr-note{color:#666f81;line-height:1.6}.svr-error{padding:12px;border-radius:9px;background:#ffe8ed;color:#9a0034;margin:10px 0}.svr-success{padding:12px;background:#e7f7ee;border-radius:9px;margin:10px 0}.svr-preview{border:2px solid #a00038;border-radius:12px;padding:14px;margin-top:12px}.svr-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.svr textarea{display:block;width:100%;min-height:75px;margin-top:6px}.svr-history{padding:12px;border-bottom:1px solid #e0e3e8}.svr-history summary{cursor:pointer;line-height:1.7}.svr-highlight{background:#fff8e8}.svr label{line-height:1.5}.svr-footer{display:flex;gap:10px;align-items:center;margin-top:10px}@media(max-width:650px){.svr-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;margin:0}.svr-dialog-head{padding:12px;align-items:stretch;flex-direction:column;gap:6px}.svr-dialog-head h2{font-size:18px}.svr-dialog-head .svr-actions{margin:0}.svr-dialog-head .svr-actions button{flex:1;font-size:11px;padding:10px 5px}.svr-dialog .svr-detail{padding:12px}.svr-fields{min-width:0}.svr-fields thead{display:none}.svr-fields tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd;padding:8px 0}.svr-fields td{border:0;min-width:0;padding:6px}.svr-fields td:first-child{grid-column:1/-1}.svr-fields td:nth-child(2)::before{content:"Dato original";display:block;font-size:10px;color:#666;margin-bottom:5px}.svr-fields td:nth-child(3)::before{content:"Corrección";display:block;font-size:10px;color:#666;margin-bottom:5px}.svr-fields input{min-width:0}.svr-detail{padding:11px}.svr-filters{flex-direction:column;align-items:stretch}.svr h2{font-size:18px}.svr-kpis>div{min-width:100px}}`;
+  const css = `.svr{color:var(--ink,#202432);font-family:var(--font,Arial);font-size:13px}.svr button,.svr input,.svr select,.svr textarea{font:inherit}.svr button{cursor:pointer}.svr .svr-person{border:0;padding:0;text-align:left;background:transparent;color:var(--guinda,#a00038)}.svr button:disabled{cursor:default;opacity:.5}.svr-bar{padding:14px;background:#fff6df;border:1px solid #efd39a;border-radius:14px;line-height:1.6;margin-bottom:14px}.svr-kpis{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.svr-kpis>div{flex:1;min-width:120px;background:white;border:1px solid #e1e3e8;border-radius:13px;padding:12px}.svr-kpis b{display:block;font-size:23px;margin-top:5px}.svr-filters{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;align-items:center}.svr-filters input{flex:1;min-width:180px}.svr input,.svr select,.svr textarea{padding:9px;border:1px solid #ced1da;border-radius:8px;background:white;box-sizing:border-box;max-width:100%}.svr button{border:1px solid #d4d7df;background:white;padding:9px 13px;border-radius:9px;color:inherit}.svr .svr-primary{background:#a00038;color:white;border-color:#a00038}.svr-scroll{overflow:auto;border:1px solid #dfe2e8;border-radius:12px;background:white;max-height:540px}.svr table{border-collapse:collapse;width:100%;font-size:12px}.svr th{background:#f3f4f7;position:sticky;top:0;z-index:1;text-align:left}.svr td,.svr th{padding:11px;border-bottom:1px solid #e7e8ed;vertical-align:top}.svr td small{display:block;margin-top:4px;line-height:1.5;color:#687084}.svr .svr-status{display:inline-block;background:#f2edf0;border-radius:18px;padding:5px 9px;white-space:nowrap}.svr-dialog{width:min(1120px,96vw);max-width:96vw;height:92dvh;max-height:92dvh;padding:0;border:0;border-radius:20px;color:var(--ink,#202432);background:#f4f5f8;box-shadow:0 24px 80px #0004;overflow:hidden}.svr-dialog[open]{display:flex;flex-direction:column}.svr-dialog::backdrop{background:#18213588}.svr-dialog-head{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:white;border-bottom:1px solid #ddd}.svr-dialog-head h2{font-size:21px;margin:10px 0 3px}.svr-dialog-head p{margin:0;color:#566075}.svr-dialog .svr-detail{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;margin:0;border:0;border-radius:0;padding:20px}.svr-dialog .svr-scroll{max-height:none}.svr-loading{padding:35px;text-align:center}.svr-detail{background:white;border:1px solid #dde0e7;border-radius:14px;padding:16px;margin-top:15px}.svr-detail h2{font-size:20px;margin:12px 0}.svr-detail h3{font-size:15px;margin:18px 0 10px}.svr-fields{min-width:640px}.svr-fields input{width:100%;min-width:150px}.svr-note{color:#666f81;line-height:1.6}.svr-error{padding:12px;border-radius:9px;background:#ffe8ed;color:#9a0034;margin:10px 0}.svr-success{padding:12px;background:#e7f7ee;border-radius:9px;margin:10px 0}.svr-preview{border:2px solid #a00038;border-radius:12px;padding:14px;margin-top:12px}.svr-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.svr textarea{display:block;width:100%;min-height:75px;margin-top:6px}.svr-history{padding:12px;border-bottom:1px solid #e0e3e8}.svr-history summary{cursor:pointer;line-height:1.7}.svr-highlight{background:#fff8e8}.svr label{line-height:1.5}.svr-sections{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;background:white;border-bottom:1px solid #ddd;flex-shrink:0}.svr-sections button{font-size:12px;padding:9px 12px}.svr-sections button[aria-pressed=true]{background:#a00038;color:white;border-color:#a00038}.svr-person-footer{padding:10px 16px;background:white;border-top:1px solid #ddd;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-shrink:0}.svr-person-footer small{color:#626b7b}.svr-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.svr-overview>div{background:white;border:1px solid #dde0e7;border-radius:12px;padding:16px;min-width:0}.svr-overview b{display:block;font-size:18px;margin:7px 0;overflow-wrap:anywhere}.svr-overview .svr-balance{grid-column:1/-1;background:#a00038;color:white}.svr-balance b{font-size:30px}.svr-overview small{display:block;line-height:1.6}.svr-editor{margin-top:14px;background:white;padding:12px;border-radius:12px;border:1px solid #ddd}.svr-editor>summary{cursor:pointer;font-weight:bold;padding:5px}.svr-footer{display:flex;gap:10px;align-items:center;margin-top:10px}@media(max-width:650px){.svr-overview{grid-template-columns:1fr 1fr}.svr-overview>div:last-child{grid-column:1/-1}.svr-sections{padding:8px;gap:5px}.svr-sections button{flex:1 1 auto;font-size:11px;padding:8px}.svr-person-footer{padding:8px;font-size:11px}.svr-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;margin:0}.svr-dialog-head{padding:12px;align-items:stretch;flex-direction:column;gap:6px}.svr-dialog-head h2{font-size:18px}.svr-dialog-head .svr-actions{margin:0}.svr-dialog-head .svr-actions button{flex:1;font-size:11px;padding:10px 5px}.svr-dialog .svr-detail{padding:12px}.svr-fields{min-width:0}.svr-fields thead{display:none}.svr-fields tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ddd;padding:8px 0}.svr-fields td{border:0;min-width:0;padding:6px}.svr-fields td:first-child{grid-column:1/-1}.svr-fields td:nth-child(2)::before{content:"Dato original";display:block;font-size:10px;color:#666;margin-bottom:5px}.svr-fields td:nth-child(3)::before{content:"Corrección";display:block;font-size:10px;color:#666;margin-bottom:5px}.svr-fields input{min-width:0}.svr-detail{padding:11px}.svr-filters{flex-direction:column;align-items:stretch}.svr h2{font-size:18px}.svr-kpis>div{min-width:100px}}`;
   function errorText(error) {
     const text = String(error && (error.message || error.code) || error);
     if (/SAVINGS_REVIEW_CHANGED/.test(text)) return 'Otra persona actualizó esta fila. Vuelve a abrirla para revisar la versión actual.';
@@ -27522,7 +27548,47 @@ Object.assign(window, {
         if (mounted.current) setBusy(false);
       }
     }
-    const fields = detail ? detail.field_defs.filter(f => detail.source_sheet !== 'Ahorro' || group === 'all' || (group === 'dates' ? f.key.length <= 2 && /Descuento registrado|Proyección futura/.test(f.label) : group === 'annual' ? ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW'].includes(f.key) : !(/Descuento registrado|Proyección futura/.test(f.label) || ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW'].includes(f.key)))) : [];
+    const savings = detail && detail.source_sheet === 'Ahorro';
+    const dated = f => /Descuento registrado|Proyección futura/.test(f.label);
+    const fields = detail ? detail.field_defs.filter(f => !savings || group === 'dates' && dated(f) || groups[group] && groups[group].includes(f.key) || group === 'previous' && !dated(f) && !Object.values(groups).flat().includes(f.key)) : [];
+    const pendingCount = Object.keys(changes).length;
+    function fieldTable() {
+      return h('div', {
+        className: 'svr-scroll',
+        style: {
+          marginTop: 12
+        }
+      }, h('table', {
+        className: 'svr-fields',
+        'aria-label': 'Datos originales y correcciones'
+      }, h('thead', null, h('tr', null, ['Dato', 'Original', 'Corrección para revisión'].map(t => h('th', {
+        key: t
+      }, t)))), h('tbody', null, fields.map(def => {
+        const value = def.key in changes ? changes[def.key] : effective[def.key],
+          canEdit = editable && def.editable && (def.key !== 'A' || data.can_review_identity);
+        return h('tr', {
+          key: def.key,
+          className: def.key in changes ? 'svr-highlight' : ''
+        }, h('td', null, h('b', null, fieldLabel(def, detail.source_sheet))), h('td', null, show(detail.source_data[def.key], def.kind)), h('td', null, canEdit ? h('input', {
+          'aria-label': fieldLabel(def, detail.source_sheet),
+          value: value ?? '',
+          type: def.kind === 'money' ? 'number' : 'text',
+          step: def.kind === 'money' ? '.01' : undefined,
+          placeholder: def.kind === 'date' ? 'AAAA-MM-DD' : 'Sin dato',
+          disabled: frozen,
+          onChange: e => update(def, e.target.value)
+        }) : show(value, def.kind)));
+      }))));
+    }
+    function sourceCard(key, label, kind) {
+      const value = detail.source_data[key],
+        proposal = key in changes ? changes[key] : effective[key],
+        format = v => kind === 'date' ? dateText(v) : show(v, kind);
+      return h('div', {
+        key,
+        className: key === 'Q' ? 'svr-balance' : undefined
+      }, h('span', null, label), h('b', null, format(value)), JSON.stringify(value) !== JSON.stringify(proposal) && h('small', null, 'Corrección en revisión: ' + format(proposal)), key === 'Q' && h('small', null, 'Saldo de la copia cargada · Pendiente de revisión'));
+    }
     return h('section', {
       className: 'svr',
       'data-savings-review': 'private'
@@ -27632,7 +27698,15 @@ Object.assign(window, {
     }, '← Anterior ahorrador'), h('button', {
       disabled: busy || filtered.findIndex(r => r.id === selected) < 0 || filtered.findIndex(r => r.id === selected) >= filtered.length - 1,
       onClick: () => open(filtered[filtered.findIndex(r => r.id === selected) + 1].id)
-    }, 'Siguiente ahorrador →'))), h('article', {
+    }, 'Siguiente ahorrador →'))), detail && detail.source_sheet === 'Ahorro' && h('nav', {
+      className: 'svr-sections',
+      'aria-label': 'Secciones del expediente'
+    }, sections.map(([value, label]) => h('button', {
+      key: value,
+      type: 'button',
+      'aria-pressed': group === value,
+      onClick: () => setGroup(value)
+    }, label))), h('article', {
       className: 'svr-detail',
       'aria-label': 'Detalle de revisión',
       ref: detailElement
@@ -27647,56 +27721,43 @@ Object.assign(window, {
       role: 'status'
     }, error ? h('button', {
       onClick: () => open(selected, true)
-    }, 'Reintentar abrir expediente') : 'Cargando información del ahorrador…') : h(React.Fragment, null, detail.source_sheet === 'Ahorro' && h(window.SavingsRecordedHistory, {
+    }, 'Reintentar abrir expediente') : 'Cargando información del ahorrador…') : h(React.Fragment, null, savings && group === 'main' && h(React.Fragment, null, h('div', {
+      className: 'svr-overview'
+    }, sourceCard('Q', 'Saldo de referencia', 'money'), sourceCard('R', 'Aportación registrada', 'money'), sourceCard('F', 'Primer descuento', 'date'), sourceCard('W', 'Estado del ahorro', 'text')), h('p', {
+      className: 'svr-note'
+    }, 'Consulta los descuentos por fecha, retiros y cambios de monto con los botones de arriba.'), (detail.issues || []).length > 0 && h('div', {
+      className: 'svr-bar'
+    }, h('b', null, 'Pendientes de esta persona'), h('ul', null, detail.issues.map(code => h('li', {
+      key: code
+    }, issue(code))))), h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, editable ? 'Corregir datos principales' : 'Consultar datos principales'), h('p', {
+      className: 'svr-note'
+    }, 'Las correcciones se guardan para revisión. Cambiar el Folio no asigna automáticamente estos datos a otra persona.'), fieldTable())), savings && group === 'dates' && h(React.Fragment, null, h(window.SavingsRecordedHistory, {
       key: detail.id,
       record: detail,
       changes
-    }), detail.source_sheet === 'Ahorro' && h('div', {
-      className: 'svr-kpis'
-    }, h('div', null, 'Saldo del archivo original', h('b', null, show(detail.source_data.Q, 'money'))), h('div', null, 'Saldo en revisión', h('b', null, show('Q' in changes ? changes.Q : effective.Q, 'money')))), h('details', {
-      className: 'svr-note',
-      style: {
-        marginBottom: 12
-      }
-    }, h('summary', {
-      style: {
-        cursor: 'pointer'
-      }
-    }, 'Origen de los datos y recomendaciones'), h('p', null, detail.source_sheet + ' · Fila ' + detail.source_row + ' · Revisión ' + detail.version + ' · Copia del ' + stamp(detail.batch.observed_at)), h('p', {
+    }), h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, editable ? 'Corregir descuentos por fecha' : 'Consultar importes originales'), h('p', {
       className: 'svr-note'
-    }, 'Los cambios de Folio son propuestas para revisión de identidad. No vinculan automáticamente esta información a otra persona ni modifican el padrón.'), detail.raw_source.readiness && h('p', null, 'Saldo del archivo original: ' + show(detail.source_data.Q, 'money') + ' · Saldo de la copia anterior: ' + show(detail.raw_source.readiness.prior_balance_cents == null ? null : detail.raw_source.readiness.prior_balance_cents / 100, 'money')), detail.source_sheet === 'Ahorro' && h('p', null, 'Si corriges aportaciones, retiros o rendimientos, revisa también el saldo. El descuento del 30 de junio de 2026 ya incluye el rendimiento de ese semestre: evita sumarlo dos veces. Los importes de fechas futuras son estimaciones, no dinero recibido.')), detail.source_sheet === 'Ahorro' && h(React.Fragment, null, h('select', {
-      'aria-label': 'Grupo de campos',
-      value: group,
-      onChange: e => setGroup(e.target.value)
-    }, [['main', 'Datos principales y saldo'], ['dates', 'Descuentos por fecha'], ['annual', 'Capital y rendimientos históricos'], ['all', 'Todos los campos']].map(([value, label]) => h('option', {
-      key: value,
-      value
-    }, label)))), h('div', {
-      className: 'svr-scroll',
-      style: {
-        marginTop: 12
-      }
-    }, h('table', {
-      className: 'svr-fields',
-      'aria-label': 'Datos originales y correcciones'
-    }, h('thead', null, h('tr', null, ['Campo', 'Dato original', 'Propuesta para revisión'].map(t => h('th', {
-      key: t
-    }, t)))), h('tbody', null, fields.map(def => {
-      const value = def.key in changes ? changes[def.key] : effective[def.key],
-        canEdit = editable && def.editable && (def.key !== 'A' || data.can_review_identity);
-      return h('tr', {
-        key: def.key,
-        className: def.key in changes ? 'svr-highlight' : ''
-      }, h('td', null, h('b', null, fieldLabel(def, detail.source_sheet))), h('td', null, show(detail.source_data[def.key], def.kind)), h('td', null, canEdit ? h('input', {
-        'aria-label': fieldLabel(def, detail.source_sheet),
-        value: value ?? '',
-        type: def.kind === 'money' ? 'number' : 'text',
-        step: def.kind === 'money' ? '.01' : undefined,
-        placeholder: def.kind === 'date' ? 'AAAA-MM-DD' : 'Sin dato',
-        disabled: frozen,
-        onChange: e => update(def, e.target.value)
-      }) : show(value, def.kind)));
-    })))), editable && h(React.Fragment, null, h('h3', null, 'Resultado de esta revisión'), h('label', null, 'Estado al guardar ', h('select', {
+    }, 'Si corriges descuentos, revisa también el saldo. El 30 de junio de 2026 incluye rendimientos: no deben sumarse otra vez.'), fieldTable())), savings && group === 'withdrawals' && h(React.Fragment, null, h('h2', null, 'Retiros'), h('p', {
+      className: 'svr-note'
+    }, 'Importes de retiros registrados en la copia anterior. Estos acumulados no indican cuántos pagos se hicieron ni sustituyen un historial de pagos por fecha.'), h('div', {
+      className: 'svr-overview'
+    }, sourceCard('H', 'Retiros parciales', 'money'), sourceCard('I', 'Retiro al dejar de ahorrar', 'money'), sourceCard('J', 'Retiro y continúa ahorrando', 'money')), h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, 'Ver datos del retiro' + (editable ? ' y corregir' : '')), fieldTable())), savings && group === 'amount' && h(React.Fragment, null, h('h2', null, 'Cambios de monto'), h('p', {
+      className: 'svr-note'
+    }, 'Importe, fecha y estado registrados en la copia anterior. Corregir estos datos no programa un nuevo descuento.'), fieldTable()), savings && group === 'annual' && h(React.Fragment, null, h('h2', null, 'Ahorro y rendimientos por periodo'), h('p', {
+      className: 'svr-note'
+    }, 'Importes históricos del archivo. Aquí no se establece una nueva tasa ni se calculan rendimientos.'), fieldTable()), savings && group === 'previous' && h(React.Fragment, null, h('h2', null, 'Datos anteriores'), h('p', {
+      className: 'svr-note'
+    }, 'Campos auxiliares conservados para consultar el archivo anterior. No es necesario llenarlos para recorrer el expediente. El saldo manual permanece sólo como antecedente.'), fieldTable(), h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' · Fila ' + detail.source_row + ' · Copia del ' + stamp(detail.batch.observed_at)), detail.raw_source.readiness && h('p', null, 'Saldo de la copia anterior: ' + show(detail.raw_source.readiness.prior_balance_cents == null ? null : detail.raw_source.readiness.prior_balance_cents / 100, 'money')))), !savings && h(React.Fragment, null, h('details', {
+      className: 'svr-editor'
+    }, h('summary', null, 'Origen de los datos'), h('p', null, detail.source_sheet + ' \u00b7 Fila ' + detail.source_row + ' \u00b7 Copia del ' + stamp(detail.batch.observed_at))), fieldTable()), (!savings || group === 'review') && h(React.Fragment, null, editable && h(React.Fragment, null, h('h3', null, 'Resultado de esta revisión'), h('label', null, 'Estado al guardar ', h('select', {
       'aria-label': 'Estado al guardar',
       value: nextStatus,
       disabled: frozen,
@@ -27755,7 +27816,15 @@ Object.assign(window, {
       return h('li', {
         key
       }, fieldLabel(def, detail.source_sheet) + ': ' + show(key in event.before.proposed_data ? event.before.proposed_data[key] : detail.source_data[key], def.kind) + ' → ' + show(value, def.kind));
-    }))))))));
+    }))))))), savings && h('footer', {
+      className: 'svr-person-footer'
+    }, h('small', null, pendingCount ? pendingCount + ' dato(s) con cambios sin guardar' : observation ? 'Observación sin guardar' : preview ? 'Confirmación pendiente' : 'Revisión privada · Sin publicar'), h('button', {
+      className: 'svr-primary',
+      onClick: () => {
+        setGroup("review");
+        if (detailElement.current) detailElement.current.scrollTop = 0;
+      }
+    }, editable ? 'Revisar y guardar' : 'Ver revisiones'))));
   }
   window.SavingsReviewAdmin = SavingsReviewAdmin;
 })();

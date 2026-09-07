@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "viewports": [
+    390,
+    1440
+  ],
+  "checks": [
+    "single source balance",
+    "compact default",
+    "seven persistent sections",
+    "auxiliary and unknown fields retained in previous data",
+    "manual balance read only",
+    "dated deductions accessible",
+    "withdrawal aggregates not fabricated events",
+    "period yields preserved",
+    "pending edits survive sections",
+    "all pending changes in preview",
+    "frozen preview survives navigation",
+    "optional observation",
+    "read-only controls",
+    "no page overflow"
+  ]
+}

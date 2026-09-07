@@ -21,12 +21,13 @@ async function main(){
    await page.getByRole('button',{name:'Revisar 0015 fila 17',exact:true}).click();
    const dialog=page.getByRole('dialog',{name:'Expediente del ahorrador'});await dialog.waitFor();
    assert((await dialog.boundingBox()).y>=0);assert((await dialog.boundingBox()).y<100);
+   await page.getByText('Corregir datos principales',{exact:true}).click();
    await page.getByLabel('Saldo del archivo original',{exact:true}).fill('999');
    page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:/Siguiente ahorrador/}).click();
    assert.match(await dialog.locator('.svr-dialog-head').innerText(),/Ahorrador de prueba 15/);
    assert.equal(await page.getByLabel('Saldo del archivo original',{exact:true}).inputValue(),'999');
    page.once('dialog',d=>d.accept());await page.getByRole('button',{name:/Siguiente ahorrador/}).click();
-   await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();assert.equal(await page.getByLabel('Saldo del archivo original',{exact:true}).inputValue(),'116');
+   await page.getByText('Corregir datos principales',{exact:true}).click();await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();assert.equal(await page.getByLabel('Saldo del archivo original',{exact:true}).inputValue(),'116');
    await page.locator('.svr-detail').evaluate(e=>e.scrollTop=e.scrollHeight);
    await page.getByRole('button',{name:/Anterior ahorrador/}).click();
    assert.equal(await page.locator('.svr-detail').evaluate(e=>e.scrollTop),0);
@@ -35,10 +36,10 @@ async function main(){
    await page.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
    assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Revisar 0015 fila 17');
    await page.evaluate(()=>window.failDetail=true);await page.getByRole('button',{name:'Revisar 000 fila 2',exact:true}).click();
-   await dialog.getByRole('alert').waitFor();await dialog.getByRole('button',{name:'Reintentar abrir expediente'}).click();await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();
+   await dialog.getByRole('alert').waitFor();await dialog.getByRole('button',{name:'Reintentar abrir expediente'}).click();await page.getByText('Corregir datos principales',{exact:true}).click();await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();
    await page.evaluate(()=>window.delayDetail=true);await page.getByRole('button',{name:/Siguiente ahorrador/}).click();
    await page.getByRole('button',{name:/Siguiente ahorrador/}).click();
-   await page.evaluate(()=>window.pending['2'](window.reviewDetail('2')));await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();
+   await page.evaluate(()=>window.pending['2'](window.reviewDetail('2')));await page.getByText('Corregir datos principales',{exact:true}).click();await page.getByLabel('Saldo del archivo original',{exact:true}).waitFor();
    await page.evaluate(()=>window.pending['1'](window.reviewDetail('1')));assert.equal(await page.getByLabel('Saldo del archivo original',{exact:true}).inputValue(),'102');
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
    fs.mkdirSync(path.join(root,'docs/qa/evidence/savings-navigation-20260906'),{recursive:true});

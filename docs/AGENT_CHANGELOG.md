@@ -2654,3 +2654,8 @@ H-SAVINGS-NAVIGATION-001 final delivery v214/cache161 also resolves the actual e
 ## H-SAVINGS-HISTORY-001
 
 Private Savings Admin now exposes original first deduction (F), separate plan start (X), dated source amounts, private corrections and future estimates. Additive permission-checked RPC joins participant to original exact Folio; duplicate rows require choice. No financial/Google writes; before/after hashes unchanged. See docs/qa/evidence/savings-history-20260906/RESULT.md. Delivery excludes pending operations001-004.
+
+
+## H-SAVINGS-SIMPLE-001
+
+Authorized private Savings review simplification: compact original balance/amount/first-date/status summary and seven persistent person sections. Old auxiliary fields remain secondary; all correction fields and pending edits preserved. No financial, repository, schema, Google or permission changes. Evidence: docs/qa/evidence/savings-simple-20260906/RESULT.md.

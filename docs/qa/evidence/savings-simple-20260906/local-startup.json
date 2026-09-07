@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "verified_at": "2026-09-07T04:07:55.953Z",
+  "url": "http://127.0.0.1:59258/",
+  "version": 216,
+  "cache": 163,
+  "bundle_sha256": "881cb0ecbae441b392255bc06c00907f8d32bec4611b63d013fcd369cda209c5",
+  "results": [
+    {
+      "service_worker": "allow",
+      "status": "PASS",
+      "version": true,
+      "history": true,
+      "person": true,
+      "reader": true,
+      "auth": "unauthenticated"
+    },
+    {
+      "service_worker": "block",
+      "status": "PASS",
+      "version": true,
+      "history": true,
+      "person": true,
+      "reader": true,
+      "auth": "unauthenticated"
+    }
+  ],
+  "authenticated_acceptance": "NOT_CLAIMED"
+}

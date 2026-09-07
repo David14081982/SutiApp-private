@@ -1,0 +1,508 @@
+{
+  "at": "2026-09-07T21:25:23.263Z",
+  "functions": [
+    {
+      "signature": "get_admin_access_context()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_access_context()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select original || jsonb_build_object('technical_permissions',coalesce((\n  select jsonb_agg(permission order by permission) from (\n   select value as permission from jsonb_array_elements_text(original->'technical_permissions')\n    where value not like 'savings.%' or public.has_admin_permission(value)\n   union select 'savings.read' where public.has_section_action('savings','read') and public.savings_admin_access_allowed()\n  ) permissions),'[]'::jsonb))\n from (select public.savings_context_before_20260906() original) context;\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "savings_context_before_20260906()",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_context_before_20260906()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select jsonb_build_object(\n    'role_code',(\n      select r.code from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n      where a.auth_user_id=(select auth.uid()) and a.enabled limit 1\n    ),\n    'full_access',coalesce((\n      select r.code='principal_admin' from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n      where a.auth_user_id=(select auth.uid()) and a.enabled limit 1\n    ),false),\n    'technical_permissions',coalesce((\n      select jsonb_agg(rp.permission order by rp.permission)\n      from public.admin_assignments a\n      join public.admin_roles ar on ar.id=a.role_id and ar.enabled\n      join public.admin_role_permissions rp on rp.role_id=ar.id\n      where a.auth_user_id=(select auth.uid()) and a.enabled\n    ),'[]'::jsonb),\n    'section_actions',coalesce((\n      select jsonb_agg(jsonb_build_object('section_key',r.section_key,'action',r.action) order by r.section_key,r.action)\n      from public.admin_section_responsibilities r\n      join public.admin_section_definitions d on d.section_key=r.section_key\n      where r.auth_user_id=(select auth.uid()) and r.enabled and d.enforcement_status='ENFORCED'\n    ),'[]'::jsonb)\n  )\n$function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "admin_role_permissions",
+      "policyname": "admin_role_permissions_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('authorization.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "admin_roles",
+      "policyname": "admin_roles_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('authorization.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(status = 'READY'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_admin_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "has_admin_permission('assets.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_admin_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "has_admin_permission('assets.write'::text)",
+      "with_check": "has_admin_permission('assets.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_admin_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "has_admin_permission('assets.write'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "union_assets_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(has_admin_permission('union_content.write'::text) AND (split_part(storage_path, '/'::text, 1) = 'sindicato'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text) AND (storage_bucket = ANY (ARRAY['app-assets'::text, 'documents'::text])))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('assets.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "union_assets_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(has_admin_permission('union_content.write'::text) AND (split_part(storage_path, '/'::text, 1) = 'sindicato'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": "(has_admin_permission('union_content.write'::text) AND (split_part(storage_path, '/'::text, 1) = 'sindicato'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text) AND (storage_bucket = ANY (ARRAY['app-assets'::text, 'documents'::text])))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "union_assets_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(has_admin_permission('union_content.write'::text) AND (split_part(storage_path, '/'::text, 1) = 'sindicato'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "marketplace_company_asset_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((owner_company_id IS NOT NULL) AND is_marketplace_company_member(owner_company_id, 'write'::text) AND (storage_bucket = 'company-assets'::text) AND (storage_path ~~ (('marketplace/'::text || (owner_company_id)::text) || '/%'::text)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "marketplace_company_asset_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "((owner_company_id IS NOT NULL) AND is_marketplace_company_member(owner_company_id, 'write'::text))",
+      "with_check": "((owner_company_id IS NOT NULL) AND is_marketplace_company_member(owner_company_id, 'write'::text) AND (storage_bucket = 'company-assets'::text) AND (storage_path ~~ (('marketplace/'::text || (owner_company_id)::text) || '/%'::text)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "marketplace_company_asset_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "((owner_company_id IS NOT NULL) AND is_marketplace_company_member(owner_company_id, 'write'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_section_owner_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(has_section_action(split_part(storage_path, '/'::text, 1), 'assets'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text) AND (((split_part(storage_path, '/'::text, 1) = 'companies'::text) AND (storage_bucket = 'company-assets'::text)) OR ((split_part(storage_path, '/'::text, 1) = ANY (ARRAY['documents'::text, 'minutes'::text])) AND (storage_bucket = 'documents'::text)) OR ((split_part(storage_path, '/'::text, 1) <> ALL (ARRAY['companies'::text, 'documents'::text, 'minutes'::text])) AND (storage_bucket = 'app-assets'::text))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_section_owner_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(has_section_action(split_part(storage_path, '/'::text, 1), 'assets'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": "(has_section_action(split_part(storage_path, '/'::text, 1), 'assets'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_section_owner_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(has_section_action(split_part(storage_path, '/'::text, 1), 'assets'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_news_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(has_section_action('news'::text, 'assets'::text) AND (asset_type = 'NEWS_IMAGE'::text) AND (storage_bucket = 'app-assets'::text) AND (owner_company_id IS NULL) AND (storage_path ~~ (('news/'::text || (auth.uid())::text) || '/%'::text)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_news_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(has_section_action('news'::text, 'assets'::text) AND (asset_type = 'NEWS_IMAGE'::text) AND (storage_bucket = 'app-assets'::text) AND (storage_path ~~ (('news/'::text || (auth.uid())::text) || '/%'::text)))",
+      "with_check": "(has_section_action('news'::text, 'assets'::text) AND (asset_type = 'NEWS_IMAGE'::text) AND (storage_bucket = 'app-assets'::text) AND (owner_company_id IS NULL) AND (storage_path ~~ (('news/'::text || (auth.uid())::text) || '/%'::text)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "app_assets_news_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(has_section_action('news'::text, 'assets'::text) AND (asset_type = 'NEWS_IMAGE'::text) AND (storage_bucket = 'app-assets'::text) AND (storage_path ~~ (('news/'::text || (auth.uid())::text) || '/%'::text)) AND (NOT (EXISTS ( SELECT 1\n   FROM news_articles n\n  WHERE (n.image_asset_id = app_assets.id)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "directory_assets_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND (split_part(storage_path, '/'::text, 1) = 'directory'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text) AND (storage_bucket = 'app-assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "directory_assets_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND (split_part(storage_path, '/'::text, 1) = 'directory'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND (split_part(storage_path, '/'::text, 1) = 'directory'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text) AND (storage_bucket = 'app-assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "app_assets",
+      "policyname": "directory_assets_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND (split_part(storage_path, '/'::text, 1) = 'directory'::text) AND (split_part(storage_path, '/'::text, 2) = (auth.uid())::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "banners",
+      "policyname": "banners_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled = true)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "banners",
+      "policyname": "banners_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('banners.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "banners",
+      "policyname": "banners_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'delete'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'create'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "banners",
+      "policyname": "banners_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('banners'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'create'::text)) AND (record_origin = 'ADMIN_H009'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'update'::text) OR has_section_action('companies'::text, 'publish'::text) OR has_section_action('companies'::text, 'order'::text) OR has_section_action('companies'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'update'::text) OR has_section_action('companies'::text, 'publish'::text) OR has_section_action('companies'::text, 'order'::text) OR has_section_action('companies'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('companies.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "((has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'delete'::text)) AND (record_origin = 'ADMIN_H009'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_section_action('companies'::text, 'read'::text) OR has_section_action('agreements'::text, 'read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "marketplace_company_member_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "is_marketplace_company_member(id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled AND can_view_company(id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_assets",
+      "policyname": "company_assets_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_assets",
+      "policyname": "company_assets_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(((EXISTS ( SELECT 1\n   FROM companies c\n  WHERE ((c.id = company_benefit_profiles.company_id) AND c.enabled))) AND can_view_company(company_id)) OR has_admin_permission('companies.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text) OR has_section_action('agreements'::text, 'order'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'order'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "((enabled AND (EXISTS ( SELECT 1\n   FROM companies c\n  WHERE ((c.id = company_benefits.company_id) AND c.enabled))) AND can_view_company(company_id) AND matches_current_affiliate_audience(audience_mode, union_codes, employment_category_codes, gender_codes, tag_codes)) OR has_admin_permission('companies.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text) OR has_section_action('agreements'::text, 'publish'::text) OR has_section_action('agreements'::text, 'order'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'publish'::text) OR has_section_action('agreements'::text, 'order'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "screen_access_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "screen_access_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('segmentation.write'::text)",
+      "with_check": "has_admin_permission('segmentation.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "segmentation_admin_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('segmentation.write'::text)",
+      "with_check": "has_admin_permission('segmentation.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "segmentation_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    }
+  ],
+  "baseline_fanout": "../../disk-io-audit-20260907/fanout-isolated.json"
+}

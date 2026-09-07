@@ -1,0 +1,97 @@
+{
+  "at": "2026-09-07T22:02:55.689Z",
+  "report": [
+    {
+      "label": "production_before",
+      "cycles": [
+        {
+          "calls": 9,
+          "domain_reads": 8,
+          "decoded_response_bytes": 45016,
+          "last_response_ms": 443,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ]
+        },
+        {
+          "calls": 9,
+          "domain_reads": 8,
+          "decoded_response_bytes": 45016,
+          "last_response_ms": 463,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ]
+        },
+        {
+          "calls": 9,
+          "domain_reads": 8,
+          "decoded_response_bytes": 45016,
+          "last_response_ms": 404,
+          "statuses": [
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200,
+            200
+          ]
+        }
+      ],
+      "projection_sha256": "6fa8c5619d973a3d375bba6d4ea8da73fe3510eead134d47fde103431d02d5c1"
+    },
+    {
+      "label": "candidate",
+      "cycles": [
+        {
+          "calls": 1,
+          "domain_reads": 0,
+          "decoded_response_bytes": 1713,
+          "last_response_ms": 247,
+          "statuses": [
+            200
+          ]
+        },
+        {
+          "calls": 1,
+          "domain_reads": 0,
+          "decoded_response_bytes": 1713,
+          "last_response_ms": 208,
+          "statuses": [
+            200
+          ]
+        },
+        {
+          "calls": 1,
+          "domain_reads": 0,
+          "decoded_response_bytes": 1713,
+          "last_response_ms": 446,
+          "statuses": [
+            200
+          ]
+        }
+      ],
+      "projection_sha256": "6fa8c5619d973a3d375bba6d4ea8da73fe3510eead134d47fde103431d02d5c1"
+    }
+  ],
+  "equal_visible_projections": true,
+  "notes": "Real browser with caller RLS; decoded response bodies counted without retaining content. Timing is wall clock under host pressure, not an isolated CPU benchmark. Auth/access audit may occur; no business mutation."
+}

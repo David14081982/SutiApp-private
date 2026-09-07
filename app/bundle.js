@@ -7258,6 +7258,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const listeners = new Set();
   let state = Object.freeze({ phase: 'loading', assignment: null, errorCode: null });
   let promise = null;
+  let refreshPromise = null;
   let loadVersion = 0;
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const managed = Object.freeze({
@@ -7274,9 +7275,24 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
-  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;publish(roleCode||fullAccess||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode})}:{phase:'denied'});return state;}
-  function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
-  function clearAccessContext(){loadVersion+=1;promise=null;publish({phase:'denied'});}
+  function accessSubject(context,identity){
+    const value=context||{},auth=identity||(window.AffiliateAuth&&window.AffiliateAuth.getState())||{},session=auth.session||{},affiliate=auth.affiliate||{},impersonation=auth.impersonation||affiliate._impersonation||{};
+    let sessionId=value.actor_session_id||'';
+    if(!sessionId&&session.access_token){try{sessionId=JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
+    return [value.actor_auth_user_id||(session.user&&session.user.id)||'',sessionId,affiliate.id||'',impersonation.id||impersonation.session_id||''].join(':');
+  }
+  function applyAccessContext(context,identity){
+    const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
+    publish(roleCode||fullAccess||sectionActions.length?{
+      phase:'authorized',
+      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode}),
+      subjectKey:accessSubject(value,identity),
+      contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
+    }:{phase:'denied'});
+    return state;
+  }
+  function primeAccessContext(context,identity){loadVersion+=1;refreshPromise=null;const next=applyAccessContext(context,identity);promise=Promise.resolve(next);return next;}
+  function clearAccessContext(){loadVersion+=1;promise=null;refreshPromise=null;publish({phase:'denied'});}
   function technical(permission) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.permissions.includes(permission)); }
   function sectionAction(section,action) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action)); }
   function has(permission) {
@@ -7306,15 +7322,20 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   async function load() {
     const version=++loadVersion;
+    const subject=accessSubject();
     try {
-      const result=await client().rpc('get_admin_access_context');
+      const result=await client().rpc('get_admin_refresh_context');
       if(result.error) throw result.error;
-      if(version===loadVersion)applyAccessContext(result.data||{});
-    } catch(_){ if(version===loadVersion)publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
+      if(version===loadVersion&&subject===accessSubject())applyAccessContext(result.data||{});
+    } catch(_){ if(version===loadVersion&&subject===accessSubject())publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
     return state;
   }
   function bootstrap(){if(!promise)promise=load();return promise;}
-  function refreshAccessContext(){promise=load();return promise;}
+  function refreshAccessContext(){
+    if(refreshPromise)return refreshPromise;
+    const current=load().finally(()=>{if(refreshPromise===current)refreshPromise=null;});
+    refreshPromise=current;promise=current;return current;
+  }
   function retry(){promise=null;publish({phase:'loading'});return bootstrap();}
   function subscribe(fn){listeners.add(fn);fn(state);return()=>listeners.delete(fn);}
 
@@ -23642,8 +23663,7 @@ Object.assign(window, {
     companyProfiles = [],
     companyRules = [],
     ads = [],
-    acting = null,
-    loading = false;
+    acting = null;
   const listeners = new Set();
   const emit = () => listeners.forEach(fn => fn());
   const fail = e => {
@@ -23725,33 +23745,108 @@ Object.assign(window, {
   // panel completo en blanco (regresión real: un embed inválido vaciaba roles,
   // catálogos, convenios y acceso a pantallas a la vez).
   let failedDomains = [];
-  async function load() {
-    if (loading) return;
-    loading = true;
-    const jobs = [['roles', () => repo.listRoles()], ['segments', () => repo.listSegments()], ['access', () => repo.listScreenAccess()], ['companies', () => window.AdminRepository.listManaged('companies')], ['profiles', () => repo.listCompanyProfiles()], ['rules', () => repo.listCompanyRules()], ['banners', () => window.AdminRepository.listManaged('banners')]];
-    try {
-      const settled = await Promise.allSettled(jobs.map(j => j[1]()));
-      const failed = [];
+  const jobs = [['roles', () => repo.listRoles()], ['segments', () => repo.listSegments()], ['access', () => repo.listScreenAccess()], ['companies', () => window.AdminRepository.listManaged('companies')], ['profiles', () => repo.listCompanyProfiles()], ['rules', () => repo.listCompanyRules()], ['banners', () => window.AdminRepository.listManaged('banners')]];
+  const domainKeys = jobs.map(job => job[0]),
+    pending = new Set();
+  let contentContext = null,
+    securityKey = '',
+    generation = 0,
+    activeLoad = null,
+    certified = {};
+  const visible = () => typeof document === 'undefined' || document.visibilityState !== 'hidden';
+  function clearDomain(key) {
+    if (key === 'roles') {
+      roles = [];
+      acting = null;
+    } else if (key === 'segments') segments = [];else if (key === 'access') access = {};else if (key === 'companies') companies = [];else if (key === 'profiles') companyProfiles = [];else if (key === 'rules') companyRules = [];else if (key === 'banners') ads = [];
+  }
+  function contextSecurity(next) {
+    const a = next.assignment || {};
+    return JSON.stringify([a.fullAccess, a.roleCode, (a.permissions || []).slice().sort(), (a.sectionActions || []).map(x => x.section_key + ':' + x.action).sort()]);
+  }
+  function flush() {
+    if (activeLoad) return activeLoad;
+    if (!contentContext || contentContext.phase !== 'authorized' || !visible() || !pending.size) return Promise.resolve();
+    const selected = jobs.filter(job => pending.has(job[0])),
+      epoch = generation;
+    const versions = Object.assign({}, contentContext.contentVersions || {});
+    selected.forEach(job => pending.delete(job[0]));
+    const current = (async () => {
+      const settled = await Promise.allSettled(selected.map(j => j[1]()));
+      if (epoch !== generation) return;
       settled.forEach((r, i) => {
-        const key = jobs[i][0];
+        const key = selected[i][0];
+        if (versions[key] !== (contentContext && contentContext.contentVersions || {})[key]) {
+          pending.add(key);
+          return;
+        }
+        pending.delete(key);
         if (r.status !== 'fulfilled') {
-          failed.push(key);
+          if (!failedDomains.includes(key)) failedDomains.push(key);
           console.error('Admin cutover authority error [' + key + ']', r.reason);
           return;
         }
+        failedDomains = failedDomains.filter(domain => domain !== key);
+        certified[key] = versions[key];
         const v = r.value;
         if (key === 'roles') roles = v.map(projectRole);else if (key === 'segments') segments = v;else if (key === 'access') {
           access = {};
           v.forEach(x => access[x.screen_id] = x);
         } else if (key === 'companies') companies = v;else if (key === 'profiles') companyProfiles = v;else if (key === 'rules') companyRules = v;else if (key === 'banners') ads = v.filter(x => x.placement === 'marketplace' || x.placement === 'convenios');
       });
-      failedDomains = failed;
-      if (failed.length && window.__sutiToast) window.__sutiToast('No se pudo cargar: ' + failed.join(', '));
+      if (failedDomains.length && window.__sutiToast) window.__sutiToast('No se pudo cargar: ' + failedDomains.join(', '));
       if (!acting || !roles.some(r => r.id === acting)) acting = (roles[0] || {}).id || null;
       emit();
-    } finally {
-      loading = false;
+    })().finally(() => {
+      if (activeLoad === current) {
+        activeLoad = null;
+        if (pending.size) flush();
+      }
+    });
+    activeLoad = current;
+    return current;
+  }
+  function receiveContext(next) {
+    const previous = contentContext,
+      nextSecurity = contextSecurity(next);
+    const subjectChanged = !previous || previous.subjectKey !== next.subjectKey;
+    const securityChanged = subjectChanged || nextSecurity !== securityKey || previous.phase !== next.phase;
+    if (securityChanged) {
+      generation += 1;
+      activeLoad = null;
     }
+    contentContext = next;
+    securityKey = nextSecurity;
+    if (next.phase !== 'authorized') {
+      pending.clear();
+      certified = {};
+      failedDomains = [];
+      domainKeys.forEach(clearDomain);
+      emit();
+      return;
+    }
+    if (subjectChanged) {
+      certified = {};
+      pending.clear();
+      domainKeys.forEach(clearDomain);
+    }
+    for (const key of domainKeys) {
+      if (!next.contentVersions || !Object.prototype.hasOwnProperty.call(certified, key) || certified[key] !== next.contentVersions[key]) {
+        pending.add(key);
+        // New permission/identity snapshots must never retain a row whose
+        // visibility has changed while a replacement request is in flight.
+        clearDomain(key);
+      }
+    }
+    if (securityChanged || pending.size) emit();
+    flush();
+  }
+  function load() {
+    // Explicit mutations/refresh keep their existing fresh-read contract.
+    generation += 1;
+    activeLoad = null;
+    domainKeys.forEach(key => pending.add(key));
+    return flush();
   }
   const originalSubscribe = store.subscribe.bind(store);
   store.subscribe = fn => {
@@ -24169,9 +24264,7 @@ Object.assign(window, {
       return failedDomains.slice();
     }
   });
-  if (window.AdminRepository && window.AdminRepository.subscribe) window.AdminRepository.subscribe(s => {
-    if (s.phase === 'authorized') load();
-  });
+  if (window.AdminRepository && window.AdminRepository.subscribe) window.AdminRepository.subscribe(receiveContext);
 })();
 })();
 /* @@file custom-screen.jsx */
@@ -65085,9 +65178,9 @@ Object.assign(window, {
       const [affiliate, adminResult] = await Promise.all([affiliatePromise, adminPromise]);
       if (adminResult.error) throw adminResult.error;
       const adminContext=adminResult.data||{};
-      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
       const isAdmin = Boolean(adminContext.role_code||adminContext.full_access||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion || recoveryActive) return;
+      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext, { session, affiliate });
       if (!affiliate && !isAdmin) {
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;

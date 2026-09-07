@@ -4,7 +4,6 @@
   const listeners = new Set();
   let state = Object.freeze({ phase: 'loading', assignment: null, errorCode: null });
   let promise = null;
-  let refreshPromise = null;
   let loadVersion = 0;
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const managed = Object.freeze({
@@ -21,24 +20,9 @@
 
   function client() { return window.SutiSupabase.getClient(); }
   function publish(next) { state = Object.freeze(Object.assign({ phase:'denied', assignment:null, errorCode:null }, next)); listeners.forEach((fn)=>fn(state)); }
-  function accessSubject(context,identity){
-    const value=context||{},auth=identity||(window.AffiliateAuth&&window.AffiliateAuth.getState())||{},session=auth.session||{},affiliate=auth.affiliate||{},impersonation=auth.impersonation||affiliate._impersonation||{};
-    let sessionId=value.actor_session_id||'';
-    if(!sessionId&&session.access_token){try{sessionId=JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
-    return [value.actor_auth_user_id||(session.user&&session.user.id)||'',sessionId,affiliate.id||'',impersonation.id||impersonation.session_id||''].join(':');
-  }
-  function applyAccessContext(context,identity){
-    const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
-    publish(roleCode||fullAccess||sectionActions.length?{
-      phase:'authorized',
-      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode}),
-      subjectKey:accessSubject(value,identity),
-      contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
-    }:{phase:'denied'});
-    return state;
-  }
-  function primeAccessContext(context,identity){loadVersion+=1;refreshPromise=null;const next=applyAccessContext(context,identity);promise=Promise.resolve(next);return next;}
-  function clearAccessContext(){loadVersion+=1;promise=null;refreshPromise=null;publish({phase:'denied'});}
+  function applyAccessContext(context){const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;publish(roleCode||fullAccess||sectionActions.length?{phase:'authorized',assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode})}:{phase:'denied'});return state;}
+  function primeAccessContext(context){const next=applyAccessContext(context);promise=Promise.resolve(next);return next;}
+  function clearAccessContext(){loadVersion+=1;promise=null;publish({phase:'denied'});}
   function technical(permission) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.permissions.includes(permission)); }
   function sectionAction(section,action) { return state.phase === 'authorized' && (state.assignment.fullAccess || state.assignment.sectionActions.some((x)=>x.section_key===section&&x.action===action)); }
   function has(permission) {
@@ -68,20 +52,15 @@
 
   async function load() {
     const version=++loadVersion;
-    const subject=accessSubject();
     try {
-      const result=await client().rpc('get_admin_refresh_context');
+      const result=await client().rpc('get_admin_access_context');
       if(result.error) throw result.error;
-      if(version===loadVersion&&subject===accessSubject())applyAccessContext(result.data||{});
-    } catch(_){ if(version===loadVersion&&subject===accessSubject())publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
+      if(version===loadVersion)applyAccessContext(result.data||{});
+    } catch(_){ if(version===loadVersion)publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
     return state;
   }
   function bootstrap(){if(!promise)promise=load();return promise;}
-  function refreshAccessContext(){
-    if(refreshPromise)return refreshPromise;
-    const current=load().finally(()=>{if(refreshPromise===current)refreshPromise=null;});
-    refreshPromise=current;promise=current;return current;
-  }
+  function refreshAccessContext(){promise=load();return promise;}
   function retry(){promise=null;publish({phase:'loading'});return bootstrap();}
   function subscribe(fn){listeners.add(fn);fn(state);return()=>listeners.delete(fn);}
 

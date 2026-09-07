@@ -1,0 +1,32 @@
+[
+  {
+    "script": "test-admin-access-protected-contract.js",
+    "exit_code": 0,
+    "stdout": "{\"status\":\"PASS\",\"protected_contract\":true,\"protected_sha\":\"b8c1f6c0057dabded90804ffadd5bd012fb41a1a\",\"migrations\":3,\"invariants\":10,\"focused_static\":true,\"global_suites\":\"NOT_EXECUTED\",\"functional_change\":false,\"production_data_change\":false}\n",
+    "stderr": ""
+  },
+  {
+    "script": "test-admin-decisions-cutover.js",
+    "exit_code": 0,
+    "stdout": "ADMIN_DECISIONS_CUTOVER_STATIC PASS\n",
+    "stderr": ""
+  },
+  {
+    "script": "test-h009.js",
+    "exit_code": 0,
+    "stdout": "H-009 static verification PASS: Supabase-only CRUD modules, column-scoped grants, public enabled filters, RLS and no browser secret.\n",
+    "stderr": ""
+  },
+  {
+    "script": "test-admin-affiliates.js",
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "node:assert:885\r\n    throw err;\r\n    ^\r\n\r\nAssertionError [ERR_ASSERTION]: The input did not match the regular expression /const belongsToAffiliate=/. Input:\r\n\r\n'/* screens-admin-finanzas.jsx — Panel de Finanzas (base). Concentra TODAS las\\r\\n' +\r\n  '   solicitudes de financiamiento enviadas por los usuarios tras simular un\\r\\n' +\r\n  '   producto/servicio con descuento vía nómina. Vincula por ID usuario, empresa,\\r\\n' +\r\n  '   programa/convenio, producto y simulación. Visualizar, administrar y dar\\r\\n' +\r\n  '   seguimiento. Exporta window.FinanzasModule. */\\r\\n' +\r\n  '(function () {\\r\\n' +\r\n  '  const { useState, useEffect } = React;\\r\\n' +\r\n  '  const h = React.createElement;\\r\\n' +\r\n  '  const I = window.Icon;\\r\\n' +\r\n  '  const F = () => window.financeStore;\\r\\n' +\r\n  \"  const money = (n"
+  },
+  {
+    "script": "test-pages-deployment.js",
+    "exit_code": 0,
+    "stdout": "{\"status\":\"PASS\",\"pwa\":true,\"forbiddenFiles\":0}\n",
+    "stderr": ""
+  }
+]

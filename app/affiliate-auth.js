@@ -163,9 +163,9 @@
       const [affiliate, adminResult] = await Promise.all([affiliatePromise, adminPromise]);
       if (adminResult.error) throw adminResult.error;
       const adminContext=adminResult.data||{};
-      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext);
       const isAdmin = Boolean(adminContext.role_code||adminContext.full_access||(adminContext.section_actions||[]).length);
       if (version !== resolutionVersion || recoveryActive) return;
+      if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext, { session, affiliate });
       if (!affiliate && !isAdmin) {
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;

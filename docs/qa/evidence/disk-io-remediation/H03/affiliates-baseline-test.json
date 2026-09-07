@@ -1,0 +1,6 @@
+{
+  "base": "3029c743871c4a307bc04f0fd655f92690a1dc89",
+  "status": "FAIL",
+  "reason": "The input did not match the regular expression /const belongsToAffiliate=/.",
+  "scope": "All test file reads from git HEAD. Confirms preexisting assertion against unchanged financial screen; no H03 business/source changes."
+}

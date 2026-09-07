@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "mode": "isolated real sources / deterministic transport, no production mutations",
+  "results": [
+    {
+      "case": "before identical authorized context",
+      "calls": 9,
+      "reads": 8
+    },
+    {
+      "case": "normal Admin / five unchanged cycles",
+      "calls_per_cycle": 1,
+      "content_reads": 0,
+      "unchanged_data": true
+    },
+    {
+      "case": "permission ordering is not a content change",
+      "calls": 1
+    },
+    {
+      "case": "external banner update",
+      "calls": 2,
+      "only_domain": "banners"
+    },
+    {
+      "case": "hidden tab security retained / return reloads pending domain",
+      "hidden_calls": 1,
+      "return_calls": 2
+    },
+    {
+      "case": "focus/visibility/navigation share in-flight security",
+      "calls": 1
+    },
+    {
+      "case": "permission loss and role change",
+      "old_roles_removed": true,
+      "only_domain": "roles"
+    },
+    {
+      "case": "permission gain",
+      "visible": true,
+      "calls": 2
+    },
+    {
+      "case": "logout rejects stale security response",
+      "phase": "denied",
+      "content_cleared": true
+    },
+    {
+      "case": "login reloads same actor without reusing logged-out data",
+      "authorized": true
+    },
+    {
+      "case": "late content after revocation/logout",
+      "discarded": true
+    },
+    {
+      "case": "impersonation entry/stable/exit",
+      "calls": [
+        9,
+        1,
+        9
+      ],
+      "context_isolated": true
+    },
+    {
+      "case": "actor and Auth session replacement race",
+      "old_response_discarded": true
+    },
+    {
+      "case": "security failure fails closed / recovery",
+      "content_cleared": true
+    },
+    {
+      "case": "domain error retries on next revalidation, never loops",
+      "calls_per_request": 2
+    },
+    {
+      "case": "actual App interval/focus/visibility effect and remount",
+      "hidden_security": true,
+      "return_calls": 1,
+      "timers_after_cleanup": 0,
+      "no_duplicate_timers": true
+    }
+  ]
+}

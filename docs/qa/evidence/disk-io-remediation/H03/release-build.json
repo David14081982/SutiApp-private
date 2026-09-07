@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "base": "3029c743871c4a307bc04f0fd655f92690a1dc89",
+  "files": 108,
+  "changed_chunks": [
+    "admin-repository.js",
+    "admin-cutover-store.jsx",
+    "affiliate-auth.js"
+  ],
+  "bundle_sha256": "64183ea2009104565cf00a7a44529dfb38175c0728778b55d16c976e4169fe10",
+  "normalization": "CRLF to LF; content comparison against published bundle",
+  "workspace_unrelated_changes_excluded": true
+}

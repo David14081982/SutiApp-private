@@ -1,0 +1,52 @@
+{
+  "preparation_failures": [
+    {
+      "case": "SQL rollback fixtures",
+      "errors": [
+        "23502 missing image_asset_id",
+        "23514 invalid placement convenios",
+        "23514 sort_order zero"
+      ],
+      "resolution": "Inspected live constraints; legitimate existing image, marketplace, positive order. All fixture transactions rolled back."
+    },
+    {
+      "case": "A-H historical registry assertion",
+      "error": "Expected 11 enforced sections; live baseline 12",
+      "resolution": "Test copy pins captured baseline12; original production logic unchanged."
+    },
+    {
+      "case": "Protected static bundle assertion",
+      "error": "Historical bundle200/worker144",
+      "resolution": "Verify HTML/worker version consistency; retain protected migration hashes and invariants."
+    },
+    {
+      "case": "Browser navigation",
+      "error": "Menu tile scrolled beneath sticky header; obsolete selector",
+      "resolution": "Use existing visible desktop sidebar button and actual assignment form selector; no UI change."
+    },
+    {
+      "case": "Controlled route teardown",
+      "error": "In-flight intercepted request closed during failed test cleanup",
+      "resolution": "Await security promise for focus/visibility; await route cleanup, sanitize transport errors."
+    },
+    {
+      "case": "Policy equality",
+      "error": "Unordered arrays compared positionally",
+      "resolution": "Compare all 48 policies by table and policy identity."
+    },
+    {
+      "case": "Global local initial attempts",
+      "errors": [
+        "Timeout without stack",
+        "DOCUMENT_PREVIEW_UNAVAILABLE"
+      ],
+      "resolution": "Confirmed document-access OPTIONS403 ORIGIN_DENIED on 127.0.0.1:55473. Same PDF passed published version. Repeated full suite using existing allowed localhost:8080: PASS. No CORS/Edge configuration change."
+    },
+    {
+      "case": "Registry incremental",
+      "error": "Preexisting drift outside H03 violates exact-change-set requirement",
+      "resolution": "Regenerate derived index from current files; no business source changed."
+    }
+  ],
+  "status": "Preparation/test harness corrections; final required results recorded separately"
+}

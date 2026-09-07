@@ -1,0 +1,16 @@
+{
+  "at": "2026-09-07T21:37:26.103Z",
+  "before": [
+    {
+      "existing": null
+    }
+  ],
+  "after": [
+    {
+      "signature": "get_admin_refresh_context()",
+      "definition_md5": "40c99eff8e19fedb085b205f9406550d",
+      "prosecdef": false,
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ]
+}

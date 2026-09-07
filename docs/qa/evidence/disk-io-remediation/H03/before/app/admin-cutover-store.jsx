@@ -4,7 +4,7 @@
   'use strict';
   const repo=window.AdminCutoverRepository, store=window.adminStore;
   if(!repo||!store) throw new Error('ADMIN_CUTOVER_DEPENDENCY_MISSING');
-  let roles=[],segments=[],access={},companies=[],companyProfiles=[],companyRules=[],ads=[],acting=null;
+  let roles=[],segments=[],access={},companies=[],companyProfiles=[],companyRules=[],ads=[],acting=null,loading=false;
   const listeners=new Set();
   const emit=()=>listeners.forEach(fn=>fn());
   const fail=(e)=>{console.error('Admin cutover authority error',e); if(window.__sutiToast) window.__sutiToast('No se pudo guardar en Supabase');};
@@ -43,7 +43,9 @@
   // panel completo en blanco (regresión real: un embed inválido vaciaba roles,
   // catálogos, convenios y acceso a pantallas a la vez).
   let failedDomains=[];
-  const jobs=[
+  async function load(){
+    if(loading)return;loading=true;
+    const jobs=[
       ['roles',()=>repo.listRoles()],
       ['segments',()=>repo.listSegments()],
       ['access',()=>repo.listScreenAccess()],
@@ -51,38 +53,12 @@
       ['profiles',()=>repo.listCompanyProfiles()],
       ['rules',()=>repo.listCompanyRules()],
       ['banners',()=>window.AdminRepository.listManaged('banners')]];
-  const domainKeys=jobs.map(job=>job[0]),pending=new Set();
-  let contentContext=null,securityKey='',generation=0,activeLoad=null,certified={};
-  const visible=()=>typeof document==='undefined'||document.visibilityState!=='hidden';
-  function clearDomain(key){
-    if(key==='roles'){roles=[];acting=null;}
-    else if(key==='segments')segments=[];
-    else if(key==='access')access={};
-    else if(key==='companies')companies=[];
-    else if(key==='profiles')companyProfiles=[];
-    else if(key==='rules')companyRules=[];
-    else if(key==='banners')ads=[];
-  }
-  function contextSecurity(next){
-    const a=next.assignment||{};
-    return JSON.stringify([a.fullAccess,a.roleCode,(a.permissions||[]).slice().sort(),(a.sectionActions||[]).map(x=>x.section_key+':'+x.action).sort()]);
-  }
-  function flush(){
-    if(activeLoad)return activeLoad;
-    if(!contentContext||contentContext.phase!=='authorized'||!visible()||!pending.size)return Promise.resolve();
-    const selected=jobs.filter(job=>pending.has(job[0])),epoch=generation;
-    const versions=Object.assign({},contentContext.contentVersions||{});
-    selected.forEach(job=>pending.delete(job[0]));
-    const current=(async()=>{
-      const settled=await Promise.allSettled(selected.map(j=>j[1]()));
-      if(epoch!==generation)return;
+    try{
+      const settled=await Promise.allSettled(jobs.map(j=>j[1]()));
+      const failed=[];
       settled.forEach((r,i)=>{
-        const key=selected[i][0];
-        if(versions[key]!==((contentContext&&contentContext.contentVersions)||{})[key]){pending.add(key);return;}
-        pending.delete(key);
-        if(r.status!=='fulfilled'){if(!failedDomains.includes(key))failedDomains.push(key);console.error('Admin cutover authority error ['+key+']',r.reason);return;}
-        failedDomains=failedDomains.filter(domain=>domain!==key);
-        certified[key]=versions[key];
+        const key=jobs[i][0];
+        if(r.status!=='fulfilled'){failed.push(key);console.error('Admin cutover authority error ['+key+']',r.reason);return;}
         const v=r.value;
         if(key==='roles')roles=v.map(projectRole);
         else if(key==='segments')segments=v;
@@ -92,38 +68,11 @@
         else if(key==='rules')companyRules=v;
         else if(key==='banners')ads=v.filter(x=>x.placement==='marketplace'||x.placement==='convenios');
       });
-      if(failedDomains.length&&window.__sutiToast)window.__sutiToast('No se pudo cargar: '+failedDomains.join(', '));
+      failedDomains=failed;
+      if(failed.length&&window.__sutiToast)window.__sutiToast('No se pudo cargar: '+failed.join(', '));
       if(!acting||!roles.some(r=>r.id===acting))acting=(roles[0]||{}).id||null;
       emit();
-    })().finally(()=>{if(activeLoad===current){activeLoad=null;if(pending.size)flush();}});
-    activeLoad=current;return current;
-  }
-  function receiveContext(next){
-    const previous=contentContext,nextSecurity=contextSecurity(next);
-    const subjectChanged=!previous||previous.subjectKey!==next.subjectKey;
-    const securityChanged=subjectChanged||nextSecurity!==securityKey||previous.phase!==next.phase;
-    if(securityChanged){generation+=1;activeLoad=null;}
-    contentContext=next;securityKey=nextSecurity;
-    if(next.phase!=='authorized'){
-      pending.clear();certified={};failedDomains=[];domainKeys.forEach(clearDomain);emit();return;
-    }
-    if(subjectChanged){certified={};pending.clear();domainKeys.forEach(clearDomain);}
-    for(const key of domainKeys){
-      if(!next.contentVersions||!Object.prototype.hasOwnProperty.call(certified,key)||certified[key]!==next.contentVersions[key]){
-        pending.add(key);
-        // New permission/identity snapshots must never retain a row whose
-        // visibility has changed while a replacement request is in flight.
-        clearDomain(key);
-      }
-    }
-    if(securityChanged||pending.size)emit();
-    flush();
-  }
-  function load(){
-    // Explicit mutations/refresh keep their existing fresh-read contract.
-    generation+=1;activeLoad=null;
-    domainKeys.forEach(key=>pending.add(key));
-    return flush();
+    }finally{loading=false;}
   }
   const originalSubscribe=store.subscribe.bind(store);
   store.subscribe=(fn)=>{listeners.add(fn);const off=originalSubscribe(fn);return()=>{listeners.delete(fn);off();};};
@@ -172,5 +121,5 @@
   const structural=()=>{if(window.__sutiToast)window.__sutiToast('La estructura se administra mediante versión de la aplicación');};
   store.saveNode=structural;store.toggleNode=structural;store.removeNode=structural;store.duplicateNode=structural;store.reorderContent=structural;store.resetContent=structural;
   window.AdminCutoverStore=Object.freeze({load,toCodes,toLabels,get segments(){return segments;},get failedDomains(){return failedDomains.slice();}});
-  if(window.AdminRepository&&window.AdminRepository.subscribe)window.AdminRepository.subscribe(receiveContext);
+  if(window.AdminRepository&&window.AdminRepository.subscribe)window.AdminRepository.subscribe(s=>{if(s.phase==='authorized')load();});
 })();

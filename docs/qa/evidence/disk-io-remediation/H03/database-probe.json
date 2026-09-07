@@ -1,0 +1,32 @@
+{
+  "at": "2026-09-07T21:37:01.751Z",
+  "result": [
+    {
+      "result": {
+        "normal": {
+          "equal_context": true,
+          "versions_empty": true
+        },
+        "security": {
+          "invoker": true,
+          "anon_execute": false,
+          "definition_md5": "40c99eff8e19fedb085b205f9406550d"
+        },
+        "principal": {
+          "domains": 7,
+          "invoker": "authenticated",
+          "refresh_ms": 162.587,
+          "equal_context": true,
+          "stable_versions": true
+        },
+        "content_changes": {
+          "delete": true,
+          "insert": true,
+          "update": true,
+          "persistent_writes": 0,
+          "only_banners_invalidated": true
+        }
+      }
+    }
+  ]
+}

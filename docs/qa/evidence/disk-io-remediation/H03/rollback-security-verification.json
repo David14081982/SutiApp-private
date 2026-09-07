@@ -1,0 +1,9 @@
+{
+  "at": "2026-09-07T21:51:46.785Z",
+  "status": "PASS",
+  "drop_recreate_rolled_back": true,
+  "protected_functions_definitions_grants_owners_security_search_path_unchanged": true,
+  "rls_policies_unchanged": 48,
+  "persistent_business_writes": 0,
+  "command_note": "Transactional recovery and recreation succeeded in preceding invocation, then unordered policy comparison corrected by sorting identities."
+}

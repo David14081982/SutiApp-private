@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-07T21:36:03.169Z",
+  "status": "PASS",
+  "matrix": "Existing A-H authorization/impersonation assertions against new delegating RPC, transaction rolled back",
+  "baseline_enforced_sections": 12,
+  "maintenance": "Historical hardcoded 11 replaced by captured baseline; original file unchanged",
+  "persistent_writes": 0
+}

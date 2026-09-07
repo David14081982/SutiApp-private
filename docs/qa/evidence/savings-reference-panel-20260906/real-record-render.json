@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "source": "Live Supabase private RPC DTO rendered in isolated browser",
+  "source_folio": "11402",
+  "checked": [
+    "original Q rendered",
+    "historical withdrawal total 6768.64",
+    "D date 1 July 2026",
+    "read-only mode",
+    "390/1440 no horizontal overflow",
+    "no page errors"
+  ],
+  "writes": 0,
+  "authenticated_production_acceptance": "NOT_CLAIMED",
+  "private_screenshots": true
+}

@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "scope": "PRIVATE_REVIEW_ONLY",
+  "build_files": 108,
+  "base_commit": "b4b03697ad5a12e01e42403246f1c5e74f5eb06a",
+  "fingerprints": {
+    "SutiApp.html": "588c2726635d8c387174f8149605fbbfa968b0010e20329e3879c44c23091e44",
+    "sw.js": "1b69773fcb0f4c27b275dbf3a2c91e0040357bbbabe1941ddcdbf4852f4aacc5",
+    "app/bundle.js": "58da7896d4ea998ce5fff3259ac898b62bcee9d436b07826a2b173a3a0578e3b",
+    "app/savings-panel-repository.js": "17c8ff11b13300f121018fb8cec655295903f498c4f7f7d68f3b6a6c73c2f83b",
+    "app/savings-panel-reference.jsx": "f849cf2631356d598587fe172633c8f769f2a967015eb0f59630a405f85a074f",
+    "app/savings-panel-admin.jsx": "7385b540d670898a91b9a5b4a31675cdefa5f19a3b29e626ef07b70efe029ee3",
+    "app/savings-review-admin.jsx": "8661b822025c2b0b5c36929d2a45942fd46082332b6195ce1b79d4b6bd126673",
+    "app/savings-withdrawal-list.jsx": "dd83fef5da1664cfc28d3a4c29740815e4b179214e4554ce7751263110b270c6",
+    "app/screens-admin-savings.jsx": "0f1a6b1e69bec9daf77544bcb033a9e7ecec10c4ce016b1a537d85ba221f2382",
+    "scripts/build-bundle.js": "c4edc5a61b7317ce2a50a38991947c56abf02c80206b1e2f503540f6a0ce50b3"
+  },
+  "unchanged_shared_sources": [
+    "app/screens-savings.jsx",
+    "app/savings-repository.js",
+    "app/savings-store.jsx",
+    "app/screens-admin-affiliates.jsx",
+    "app/supabase-client.js"
+  ],
+  "pending_operational_modules_excluded": true,
+  "new_module_no_seed_or_browser_store": true,
+  "global_image_regression": "NOT_APPLICABLE: focal Savings source integration; cache identifiers only"
+}

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "records": 5,
+  "formula": "recognized Q = source-cycle capital + yield already included in AR - H/I/J withdrawals",
+  "scope": "Arithmetic of imported current cycle only; not bank receipt or remaining capital/yield certification",
+  "private_evidence_sha256": "3ee9fde87c2ec6605a830540aa2c009afef6c9962cdee5a5c3676627f0782209",
+  "writes": "ROLLBACK; source/financial data unchanged"
+}

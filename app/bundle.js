@@ -27322,16 +27322,19 @@ Object.assign(window, {
   function SavingsWithdrawalList({
     recordId,
     onOpen,
-    disabled = false
+    disabled = false,
+    data: providedData,
+    onRefresh
   }) {
     const [state, setState] = React.useState({}),
       [retry, setRetry] = React.useState(0),
       [page, setPage] = React.useState(0);
+    const provided = providedData !== undefined;
     React.useEffect(() => {
       let active = true;
       setState({});
       setPage(0);
-      window.SavingsReviewRepository.withdrawals(recordId).then(data => {
+      if (!provided) window.SavingsReviewRepository.withdrawals(recordId).then(data => {
         if (active) setState({
           id: recordId,
           data
@@ -27345,16 +27348,18 @@ Object.assign(window, {
       return () => {
         active = false;
       };
-    }, [recordId, retry]);
-    if (state.id !== recordId) return h('p', {
+    }, [recordId, retry, provided]);
+    const refresh = provided ? onRefresh : () => setRetry(retry + 1);
+    if (!provided && state.id !== recordId) return h('p', {
       role: 'status'
     }, 'Cargando retiros de esta persona…');
-    if (state.error) return h('div', {
+    if (provided ? !providedData || providedData.parent_id !== recordId || !Array.isArray(providedData.records) : state.error) return h('div', {
       role: 'alert'
     }, 'No fue posible cargar los retiros. ', h('button', {
-      onClick: () => setRetry(retry + 1)
+      onClick: refresh,
+      disabled: !refresh
     }, 'Reintentar retiros'));
-    const data = state.data,
+    const data = provided ? providedData : state.data,
       rows = (data.records || []).slice().sort((a, b) => dateKey(b.source_data.D).localeCompare(dateKey(a.source_data.D)) || a.source_row - b.source_row || a.id.localeCompare(b.id)),
       pages = Math.max(1, Math.ceil(rows.length / 8)),
       current = Math.min(page, pages - 1);
@@ -27374,8 +27379,8 @@ Object.assign(window, {
     }, h('style', null, css), h('div', {
       className: 'svw-heading'
     }, h('div', null, h('h2', null, 'Historial de retiros'), h('p', null, rows.length + ' registro(s) · Folio ' + (data.source_folio || 'sin registro'))), h('button', {
-      onClick: () => setRetry(retry + 1),
-      disabled
+      onClick: refresh,
+      disabled: disabled || !refresh
     }, 'Actualizar retiros')), h('p', null, 'Cada fila corresponde a un registro de «Solicitud de retiro». La fecha corresponde a esa solicitud y el estado indica cómo quedó registrado.'), data.identity_change_pending && h('p', {
       className: 'svw-warning'
     }, 'Hay un cambio de Folio pendiente. Esta lista conserva los retiros del Folio original.'), !rows.length ? h('p', null, 'No hay solicitudes de retiro cargadas con el Folio exacto de esta persona.') : h('div', {
@@ -27500,7 +27505,9 @@ Object.assign(window, {
     if (/INVALID/.test(text)) return 'Revisa el formato de los campos. Los importes admiten dos decimales y las fechas usan AAAA-MM-DD.';
     return 'No se pudo completar la operación. Tus cambios permanecen en esta pantalla; puedes reintentar.';
   }
-  function SavingsReviewAdmin() {
+  function SavingsReviewAdmin({
+    readOnly = false
+  } = {}) {
     const [data, setData] = React.useState(null),
       [detail, setDetail] = React.useState(null),
       [selected, setSelected] = React.useState('');
@@ -27621,7 +27628,7 @@ Object.assign(window, {
       currentPage = Math.min(page, pages - 1),
       visible = filtered.slice(currentPage * 40, currentPage * 40 + 40);
     const effective = detail ? Object.assign({}, detail.source_data, detail.proposed_data) : {};
-    const editable = !!(data && data.can_write),
+    const editable = !readOnly && !!(data && data.can_write),
       frozen = busy || !!preview;
     function update(def, text) {
       const next = Object.assign({}, changes),
@@ -43456,6 +43463,1538 @@ Object.assign(window, {
   };
 })();
 })();
+/* @@file savings-panel-repository.js */
+(function(){
+/* Server-owned private Savings review. No local financial authority. */
+(function(){
+ 'use strict';
+ async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
+ window.SavingsPanelRepository=Object.freeze({
+  list:q=>rpc('get_admin_savings_panel',{p_tab:q.tab,p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:20}),
+  detail:(id,offset=0,limit=6)=>rpc('get_admin_savings_panel_detail',{p_record_id:id,p_history_offset:offset,p_history_limit:limit}),
+  affiliate:id=>rpc('get_admin_savings_panel_affiliate',{p_affiliate_id:id}),
+  request:id=>rpc('get_admin_savings_panel_request',{p_record_id:id}),
+  neighbor:c=>rpc('get_admin_savings_panel_neighbor',{p_record_id:c.id,p_tab:c.tab,p_search:c.search||'',p_filter:c.filter||'todos',p_direction:c.direction}),
+  reset:c=>rpc('admin_reset_savings_panel_discount',{p_record_id:c.id,p_version:c.version,p_field:c.field,p_observation:c.observation||null,p_client_action_id:c.key}),
+  save:c=>rpc('admin_save_savings_panel',{p_record_id:c.id,p_version:c.version,p_changes:c.changes,p_status:c.status,p_observation:c.observation||null,p_client_action_id:c.key}),
+ });
+})();
+})();
+/* @@file savings-panel-reference.jsx */
+(function(){
+/* Presentational components reconstructed from the owner-supplied reference.
+   No demo store, generated savers, financial calculations or persistence. */
+(function () {
+  const I = window.Icon;
+  const M = n => n == null ? 'Por confirmar' : typeof n !== 'number' || !Number.isFinite(n) ? 'Por revisar' : new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(n);
+  const MD = M;
+  const fmt = d => {
+    if (!d) return 'Sin fecha';
+    const date = new Date(d + 'T12:00:00Z');
+    return !/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(+date) || date.toISOString().slice(0, 10) !== d ? 'Fecha por revisar' : date.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  };
+  const estados = {
+    ahorrando: {
+      label: 'Ahorrando',
+      fg: '#13794A'
+    },
+    pausado: {
+      label: 'Sin descuento',
+      fg: '#9A6100'
+    },
+    baja: {
+      label: 'Dejó de ahorrar',
+      fg: '#C0341D'
+    },
+    revision: {
+      label: 'Por revisar',
+      fg: '#9A6100'
+    }
+  };
+  const St = () => ({
+    fmt,
+    estadoDe: a => estados[a.estado] || estados.revision,
+    ultimoDescuento: a => a.ultimo,
+    saldo: a => a.saldo
+  });
+  function KPIs({
+    k,
+    onGo
+  }) {
+    const cob = k.cobranza;
+    return React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    },
+    // cifra dominante
+    React.createElement('div', {
+      style: {
+        background: 'var(--grad-guinda)',
+        color: '#fff',
+        borderRadius: 20,
+        padding: '17px 18px',
+        boxShadow: 'var(--glow-guinda)',
+        position: 'relative',
+        overflow: 'hidden'
+      }
+    }, React.createElement('div', {
+      style: {
+        position: 'absolute',
+        right: -26,
+        top: -22,
+        opacity: .13
+      }
+    }, React.createElement(I, {
+      name: 'piggy',
+      size: 130,
+      stroke: 1.4
+    })), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 800,
+        letterSpacing: '.05em',
+        opacity: .9
+      }
+    }, 'AHORRO DE TODOS LOS AFILIADOS'), React.createElement('div', {
+      style: {
+        fontSize: 34,
+        fontWeight: 900,
+        letterSpacing: '-.03em',
+        marginTop: 4,
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, M(k.total)), React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+        marginTop: 8,
+        fontSize: 12.5,
+        fontWeight: 700,
+        opacity: .92
+      }
+    }, React.createElement(I, {
+      name: 'users',
+      size: 15,
+      stroke: 2.2
+    }), k.activos + ' ahorrando al corte', React.createElement('span', {
+      style: {
+        opacity: .5
+      }
+    }, '·'), k.afiliados + ' en el padrón')),
+    // apoyos
+    React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 10
+      }
+    }, React.createElement('button', {
+      onClick: () => onGo('cobranza'),
+      style: tile()
+    }, head('calendar', 'PRÓXIMO DESCUENTO'), React.createElement('div', {
+      style: {
+        fontSize: 20,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        letterSpacing: '-.02em',
+        marginTop: 5
+      }
+    }, St().fmt(k.prox)), React.createElement('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--ink-2)',
+        marginTop: 3
+      }
+    }, 'Ahorro previsto'), React.createElement('div', {
+      style: {
+        fontSize: 15.5,
+        fontWeight: 900,
+        color: 'var(--guinda)',
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, M(k.porRecibir))), React.createElement('button', {
+      onClick: () => onGo('cobranza'),
+      style: tile()
+    }, head('trending', 'ÚLTIMO PERIODO'), React.createElement('div', {
+      style: {
+        fontSize: 20,
+        fontWeight: 900,
+        color: cob.pct >= 95 ? '#13794A' : '#9A6100',
+        letterSpacing: '-.02em',
+        marginTop: 5
+      }
+    }, cob.pct == null ? 'Por conciliar' : cob.pct + '% cobrado'), React.createElement('div', {
+      style: {
+        height: 6,
+        borderRadius: 999,
+        background: 'var(--hairline-strong)',
+        overflow: 'hidden',
+        margin: '7px 0 5px'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: Math.min(100, cob.pct || 0) + '%',
+        height: '100%',
+        borderRadius: 999,
+        background: cob.pct >= 95 ? '#13794A' : '#C68100'
+      }
+    })), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, cob.esperado == null ? 'Registrado: ' + MD(cob.recibido) : MD(cob.recibido) + ' de ' + MD(cob.esperado)))), React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        background: 'var(--surface)',
+        borderRadius: 16,
+        boxShadow: 'var(--neo-sm)',
+        padding: '11px 14px',
+        gap: 12
+      }
+    }, half('plus', '#13794A', k.altas, 'altas este mes'), React.createElement('div', {
+      style: {
+        width: 1,
+        alignSelf: 'stretch',
+        background: 'var(--hairline)'
+      }
+    }), half('logout', '#C0341D', k.bajas, 'bajas este mes')));
+  }
+  function tile() {
+    return {
+      textAlign: 'left',
+      background: 'var(--surface)',
+      border: 'none',
+      borderRadius: 16,
+      padding: '13px 14px',
+      boxShadow: 'var(--neo-sm)',
+      cursor: 'pointer',
+      fontFamily: 'inherit'
+    };
+  }
+  function head(icon, label) {
+    return React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        color: 'var(--ink-3)'
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 14,
+      stroke: 2.2
+    }), React.createElement('span', {
+      style: {
+        fontSize: 9.5,
+        fontWeight: 900,
+        letterSpacing: '.07em'
+      }
+    }, label));
+  }
+  function half(icon, color, n, label) {
+    return React.createElement('div', {
+      style: {
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        background: color + '18',
+        color,
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 16,
+      stroke: 2.3
+    })), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontSize: 17,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        lineHeight: 1
+      }
+    }, n), React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, label)));
+  }
+
+  // ── Fila de ahorrador (lo que se lee sin abrir) ──────────────
+  function Row({
+    a,
+    onOpen,
+    right
+  }) {
+    const s = St(),
+      e = s.estadoDe(a),
+      ult = s.ultimoDescuento(a);
+    return React.createElement('div', {
+      onClick: onOpen,
+      'data-savings-person-id': a.id,
+      className: 'su-press svp-person',
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        background: 'var(--surface)',
+        borderRadius: 15,
+        padding: '12px 13px',
+        boxShadow: 'var(--neo-sm)',
+        cursor: 'pointer'
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6
+      }
+    }, React.createElement('span', {
+      style: {
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        background: e.fg,
+        flexShrink: 0
+      }
+    }), React.createElement('span', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 800,
+        color: 'var(--ink)',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, a.nombre)), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + M(a.aporte) + (a.proceso === 'JUB' ? ' mensual' : ['1', '3'].includes(a.proceso) ? ' quincenal' : ' · frecuencia por confirmar')), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: ult ? 'var(--ink-3)' : '#C0341D',
+        marginTop: 2
+      }
+    }, ult ? 'Último descuento ' + s.fmt(ult) : 'Sin descuento registrado')), right || React.createElement('div', {
+      style: {
+        textAlign: 'right',
+        flexShrink: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 15.5,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        fontVariantNumeric: 'tabular-nums',
+        letterSpacing: '-.02em'
+      }
+    }, M(s.saldo(a))), React.createElement('div', {
+      style: {
+        fontSize: 10,
+        fontWeight: 900,
+        color: e.fg,
+        letterSpacing: '.03em',
+        marginTop: 3
+      }
+    }, e.label.toUpperCase())), React.createElement(I, {
+      name: 'chevR',
+      size: 17,
+      stroke: 2.4,
+      style: {
+        color: 'var(--ink-3)',
+        flexShrink: 0
+      }
+    }));
+  }
+  function Titulo({
+    children,
+    sub
+  }) {
+    return React.createElement('div', {
+      style: {
+        margin: '18px 0 10px'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        letterSpacing: '-.01em'
+      }
+    }, children), sub && React.createElement('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        marginTop: 3,
+        lineHeight: 1.4
+      }
+    }, sub));
+  }
+
+  // ── Pestaña Cobranza ─────────────────────────────────────────
+  function Tarjeta({
+    title,
+    icon,
+    right,
+    children,
+    style
+  }) {
+    return React.createElement('div', {
+      style: Object.assign({
+        background: 'var(--surface)',
+        borderRadius: 18,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)'
+      }, style)
+    }, title && React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        marginBottom: 11
+      }
+    }, icon && React.createElement('div', {
+      style: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 16,
+      stroke: 2.2
+    })), React.createElement('div', {
+      style: {
+        flex: 1,
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: 'var(--ink)'
+      }
+    }, title), right), children);
+  }
+  function Fila({
+    label,
+    valor,
+    tono
+  }) {
+    return React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 12,
+        alignItems: 'baseline',
+        padding: '10px 0',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('span', {
+      style: {
+        flex: 1,
+        fontSize: 12.5,
+        fontWeight: 700,
+        color: 'var(--ink-2)'
+      }
+    }, label), React.createElement('span', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: tono || 'var(--ink)',
+        fontVariantNumeric: 'tabular-nums',
+        textAlign: 'right'
+      }
+    }, valor));
+  }
+  window.SavingsPanelVisual = {
+    KPIs,
+    Row,
+    Titulo,
+    Tarjeta,
+    Fila,
+    M,
+    fmt,
+    estados
+  };
+})();
+})();
+/* @@file savings-panel-admin.jsx */
+(function(){
+/* Admin Savings: responsive reference layout, Supabase queries and private review. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    V = window.SavingsPanelVisual;
+  const {
+    KPIs,
+    Row,
+    Titulo,
+    Tarjeta,
+    Fila,
+    M,
+    fmt,
+    estados
+  } = V;
+  const tabs = [['cobranza', 'Cobranza'], ['padron', 'Ahorradores'], ['solicitudes', 'Retiros y cambios'], ['revision', 'Revisión']];
+  const css = `.svp{--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-body{padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@media(min-width:850px){.svp-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}.svp-kpis{position:sticky;top:16px}.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@media(max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
+  function Btn({
+    children,
+    onClick,
+    disabled,
+    tone = '',
+    ...rest
+  }) {
+    return h('button', {
+      type: 'button',
+      className: 'svp-btn ' + tone,
+      onClick,
+      disabled,
+      ...rest
+    }, children);
+  }
+  function Empty({
+    title = 'Sin resultados',
+    text
+  }) {
+    return h('div', {
+      className: 'svp-empty'
+    }, h(window.Icon, {
+      name: 'search',
+      size: 28
+    }), h('b', null, title), text);
+  }
+  function Loading() {
+    return h('div', {
+      role: 'status',
+      'aria-label': 'Cargando ahorro',
+      className: 'svp-stack'
+    }, [0, 1, 2, 3].map(i => h('div', {
+      key: i,
+      className: 'svp-skeleton ' + (i > 1 ? 'svp-skeleton-line' : '')
+    })));
+  }
+  function explain(e) {
+    const s = String(e && e.message || '');
+    if (/MULTIPLE_BASELINES/.test(s)) return 'Hay varias copias de Ahorro cargadas. Hay que revisar cuál corresponde al corte antes de mostrar un total.';
+    if (/AMOUNT_INVALID|MONEY_INVALID/.test(s)) return 'Captura un importe válido, sin números negativos y con un máximo de dos decimales.';
+    if (/42501|DENIED/.test(s)) return 'Tu cuenta no tiene permiso para realizar esta acción.';
+    if (/CHANGED/.test(s)) return 'Otra persona actualizó este expediente. Cierra y vuelve a abrirlo para revisar los cambios.';
+    if (/IDENTITY|DUPLICATE/.test(s)) return 'Primero hay que revisar el Folio de este expediente; no se asignarán datos a otra persona.';
+    if (/NO_CHANGES/.test(s)) return 'No hay cambios por guardar.';
+    return 'No se pudo confirmar la operación. Conservamos tu captura; vuelve a intentar.';
+  }
+  function useQuery(load, deps) {
+    const [s, set] = useState({}),
+      [retry, refresh] = useState(0);
+    useEffect(() => {
+      let active = true;
+      set(previous => ({
+        ...previous,
+        loading: true,
+        error: null
+      }));
+      load().then(data => {
+        if (active) set({
+          data
+        });
+      }).catch(error => {
+        if (active) set({
+          error: explain(error)
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [...deps, retry]);
+    return [s, () => refresh(v => v + 1)];
+  }
+  function Modal({
+    title,
+    children,
+    onClose,
+    busy = false,
+    dirty = false
+  }) {
+    const ref = useRef(),
+      closeRef = useRef();
+    closeRef.current = () => {
+      if (busy) return;
+      if (dirty && !window.confirm('Hay cambios sin guardar. ¿Quieres salir sin guardarlos?')) return;
+      onClose();
+    };
+    useEffect(() => {
+      const el = ref.current,
+        prior = document.activeElement;
+      el.showModal();
+      return () => {
+        el.close();
+        if (prior && prior.isConnected) prior.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    return h('dialog', {
+      ref,
+      className: 'svp svp-modal',
+      onCancel: e => {
+        e.preventDefault();
+        closeRef.current();
+      }
+    }, h('header', null, h('h2', null, title), h(Btn, {
+      onClick: () => closeRef.current(),
+      disabled: busy,
+      'aria-label': 'Cerrar'
+    }, '×')), h('section', null, children));
+  }
+  function EditSheet({
+    data,
+    mode,
+    period,
+    onClose,
+    onSaved
+  }) {
+    const r = data.record,
+      a = data.person,
+      base = {
+        ...r.source_data,
+        ...r.proposed_data
+      };
+    const initial = mode === 'date' ? {
+      [period.key]: period.monto
+    } : mode === 'person' ? {
+      R: base.R,
+      W: base.W,
+      F: base.F,
+      A: base.A
+    } : {};
+    const [draft, setDraft] = useState(initial),
+      [observation, setObservation] = useState(''),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState('');
+    const lock = useRef(false),
+      command = useRef();
+    const changes = {};
+    Object.keys(draft).forEach(k => {
+      if (JSON.stringify(draft[k]) !== JSON.stringify(initial[k])) changes[k] = draft[k];
+    });
+    const nextStatus = mode === 'review' ? r.status === 'RESOLVED' ? 'IN_REVIEW' : 'RESOLVED' : r.status === 'RESOLVED' ? 'IN_REVIEW' : r.status;
+    const count = Object.keys(changes).length,
+      dirty = count > 0 || !!observation;
+    const reset = mode === 'date' && period.corregido && JSON.stringify(draft[period.key]) === JSON.stringify(period.original);
+    function update(k, v) {
+      setDraft(x => ({
+        ...x,
+        [k]: v
+      }));
+      command.current = null;
+    }
+    async function save() {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        if (!command.current) command.current = {
+          id: r.id,
+          version: r.version,
+          changes,
+          status: nextStatus,
+          observation,
+          field: reset ? period.key : null,
+          key: crypto.randomUUID()
+        };
+        await (command.current.field ? window.SavingsPanelRepository.reset(command.current) : window.SavingsPanelRepository.save(command.current));
+        await onSaved();
+        onClose();
+      } catch (e) {
+        setError(explain(e));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    const title = mode === 'date' ? 'Corregir descuento' : mode === 'review' ? r.status === 'RESOLVED' ? 'Reabrir revisión' : 'Marcar revisado' : 'Corregir datos';
+    const field = (key, label, type = 'text') => h('label', {
+      className: 'svp-field',
+      key
+    }, label, type === 'select' ? h('select', {
+      'aria-label': label,
+      value: draft[key] || '',
+      disabled: busy,
+      onChange: e => update(key, e.target.value)
+    }, [...new Set([draft[key], 'Ahorrando', 'Dejó de ahorrar'].filter(Boolean))].map(v => h('option', {
+      key: v,
+      value: v
+    }, v))) : h('input', {
+      type,
+      value: draft[key] == null ? '' : draft[key],
+      disabled: busy || key === 'A' && !data.can_identity || key !== 'A' && a.identity_pending,
+      min: type === 'number' ? 0 : undefined,
+      step: type === 'number' ? '.01' : undefined,
+      onChange: e => update(key, type === 'number' ? e.target.value === '' ? null : Number(e.target.value) : type === 'date' && e.target.value === '' ? null : e.target.value)
+    }));
+    return h(Modal, {
+      title,
+      onClose,
+      busy,
+      dirty
+    }, h('b', null, a.nombre), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO')), mode === 'person' && h(React.Fragment, null, field('R', a.proceso === 'JUB' ? 'Aportación mensual' : ['1', '3'].includes(a.proceso) ? 'Aportación quincenal' : 'Aportación (frecuencia por confirmar)', 'number'), field('W', 'Estado del ahorro', 'select'), field('F', 'Fecha del primer descuento', 'date'), field('A', 'Folio'), h('p', {
+      className: 'svp-note'
+    }, 'Un cambio de Folio queda pendiente de revisión y conserva la relación original de sus movimientos. Esta revisión todavía no cambia el calendario de descuentos futuros.')), mode === 'date' && h(React.Fragment, null, h('p', null, fmt(period.fecha)), field(period.key, 'Importe realmente descontado', 'number'), period.key === 'AR' && h('p', {
+      className: 'svp-note warn'
+    }, 'Este registro incluye el rendimiento del semestre. Captura el total combinado y evita sumarlo de nuevo.'), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      disabled: busy,
+      onClick: () => update(period.key, 0)
+    }, 'Sin descuento'), period.corregido && h(Btn, {
+      disabled: busy,
+      onClick: () => update(period.key, period.original)
+    }, 'Quitar corrección')), h('p', {
+      className: 'svp-note'
+    }, 'Importe original: ' + M(typeof period.original === 'number' ? period.original : null))), mode === 'review' && h('p', {
+      className: 'svp-note'
+    }, r.status === 'RESOLVED' ? 'El expediente volverá a la lista de pendientes.' : 'Marca esta revisión después de comprobar los datos. Esto no autoriza un retiro ni publica saldos.'), h('label', {
+      className: 'svp-field'
+    }, 'Observaciones (opcional)', h('textarea', {
+      value: observation,
+      maxLength: 4000,
+      disabled: busy,
+      onChange: e => {
+        setObservation(e.target.value);
+        command.current = null;
+      }
+    })), mode !== 'review' && h('p', {
+      className: 'svp-note'
+    }, count + ' campo(s) modificado(s). Se conservarán los valores anteriores, tu nombre y la fecha.'), error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), h('p', {
+      className: 'svp-note'
+    }, 'Corrección privada para revisión. El saldo reconocido del archivo se conserva.'), h(Btn, {
+      tone: 'primary full',
+      onClick: save,
+      disabled: busy || mode !== 'review' && !count
+    }, busy ? 'Guardando…' : 'Guardar cambios'));
+  }
+  function RequestCard({
+    r,
+    onOpen
+  }) {
+    const withdrawal = r.source_sheet === 'Solicitud de retiro',
+      d = r.source_data || {},
+      p = r.proposed_data || {},
+      pending = r.status !== 'RESOLVED';
+    const value = k => typeof d[k] === 'number' ? M(d[k]) : 'Por revisar';
+    const facts = withdrawal ? [['Importe del retiro', value('G')], ['Fecha registrada', r.fecha ? fmt(r.fecha) : d.D ? 'Fecha por revisar' : 'Sin fecha registrada']] : [['Monto anterior', value('C')], ['Nuevo monto', value('D')]];
+    return h('article', {
+      className: 'svp-record'
+    }, h('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        alignItems: 'center',
+        marginBottom: 9
+      }
+    }, h('div', {
+      style: {
+        width: 32,
+        height: 32,
+        borderRadius: 11,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, h(window.Icon, {
+      name: withdrawal ? 'download' : 'swap',
+      size: 17,
+      stroke: 2.2
+    })), h('div', null, h('div', {
+      className: 'type'
+    }, withdrawal ? 'RETIRO ' + (d.E === 'Completo' ? 'TOTAL' : d.E === 'Parcial' ? 'PARCIAL' : 'POR CLASIFICAR') : 'CAMBIO DE MONTO'), h('h3', null, r.identity.name))), h('small', null, 'Folio ' + (r.source_folio || 'SIN REGISTRO')), h('dl', null, facts.map(([label, text]) => h('div', {
+      key: label
+    }, h('dt', null, label), h('dd', null, text)))), !withdrawal && h('p', {
+      className: 'svp-note'
+    }, 'Fecha registrada: ' + (r.fecha ? fmt(r.fecha) : d.B ? 'Por revisar' : 'Sin fecha')), h('p', {
+      className: 'svp-note'
+    }, withdrawal ? (d.H || 'Sin estado registrado') + ' · Continúa ahorrando: ' + (d.F || 'por revisar') : d.E === 'TRUE' ? 'Cambio registrado como realizado' : 'Aplicación por revisar'), r.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Folio pendiente de revisión.'), (!r.identity_pending ? withdrawal ? ['G'] : ['C', 'D'] : []).filter(k => Object.prototype.hasOwnProperty.call(p, k) && JSON.stringify(p[k]) !== JSON.stringify(d[k])).map(k => h('p', {
+      className: 'svp-note warn',
+      key: k
+    }, 'Corrección en revisión: ' + M(p[k]))), h(Btn, {
+      tone: 'outline full',
+      onClick: onOpen
+    }, pending ? 'Ver y revisar solicitud' : 'Ver solicitud revisada'));
+  }
+  function RequestSheet({
+    id,
+    onClose,
+    onSaved,
+    canWrite
+  }) {
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.request(id), [id]);
+    const [draft, setDraft] = useState({}),
+      [reviewStatus, setReviewStatus] = useState(null),
+      [obs, setObs] = useState(''),
+      [busy, setBusy] = useState(false),
+      [err, setErr] = useState('');
+    const command = useRef(),
+      lock = useRef(false);
+    const r = state.data,
+      changes = {};
+    if (r) Object.keys(draft).forEach(k => {
+      if (JSON.stringify(draft[k]) !== JSON.stringify({
+        ...r.source_data,
+        ...r.proposed_data
+      }[k])) changes[k] = draft[k];
+    });
+    async function save() {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setErr('');
+      try {
+        if (!command.current) command.current = {
+          id,
+          version: r.version,
+          changes,
+          status: reviewStatus || (r.status === 'RESOLVED' ? 'IN_REVIEW' : r.status),
+          observation: obs,
+          key: crypto.randomUUID()
+        };
+        await window.SavingsReviewRepository.save(command.current);
+        await onSaved();
+        onClose();
+      } catch (e) {
+        setErr(explain(e));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    return h(Modal, {
+      title: 'Revisar solicitud',
+      onClose,
+      busy,
+      dirty: Object.keys(changes).length > 0 || !!obs || !!(r && reviewStatus && reviewStatus !== r.status)
+    }, state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert'
+    }, state.error, h(Btn, {
+      onClick: reload
+    }, 'Reintentar')) : r && h(React.Fragment, null, h('b', null, r.identity.name), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + (r.source_folio || 'SIN REGISTRO') + ' · ' + r.source_sheet), h('p', {
+      className: 'svp-note warn'
+    }, 'Solicitud del archivo original. Corregirla no vuelve a pagar un retiro ni autoriza una solicitud nueva.'), r.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Folio pendiente de revisión. Se conserva la identidad original.'), (r.field_defs || []).filter(f => (r.source_sheet === 'Solicitud de retiro' ? ['D', 'E', 'F', 'G', 'H', 'I'] : ['B', 'C', 'D', 'E']).includes(f.key)).map(f => {
+      const value = Object.prototype.hasOwnProperty.call(draft, f.key) ? draft[f.key] : {
+        ...r.source_data,
+        ...r.proposed_data
+      }[f.key];
+      if (r.source_sheet === 'Solicitud Cambio ahorro' && f.key === 'E') return canWrite && !r.identity_pending ? h('label', {
+        className: 'svp-field',
+        key: f.key
+      }, f.label, h('select', {
+        'aria-label': f.label,
+        value: value || '',
+        disabled: busy,
+        onChange: e => {
+          if (r.status === 'RESOLVED') setReviewStatus('IN_REVIEW');
+          setDraft(x => ({
+            ...x,
+            E: e.target.value || null
+          }));
+          command.current = null;
+        }
+      }, !['TRUE', 'FALSE'].includes(value) && h('option', {
+        value: value || ''
+      }, 'Por confirmar'), h('option', {
+        value: 'TRUE'
+      }, 'Sí'), h('option', {
+        value: 'FALSE'
+      }, 'No'))) : h(Fila, {
+        key: f.key,
+        label: f.label,
+        valor: value === 'TRUE' ? 'Sí' : value === 'FALSE' ? 'No' : 'Por confirmar'
+      });
+      return canWrite && !r.identity_pending && f.editable !== false ? h('label', {
+        className: 'svp-field',
+        key: f.key
+      }, f.label, h('input', {
+        value: value == null ? '' : value,
+        type: f.kind === 'money' ? 'number' : f.kind === 'date' ? 'date' : 'text',
+        step: f.kind === 'money' ? '.01' : undefined,
+        disabled: busy,
+        onChange: e => {
+          if (r.status === 'RESOLVED') setReviewStatus('IN_REVIEW');
+          setDraft(x => ({
+            ...x,
+            [f.key]: f.kind === 'money' ? e.target.value === '' ? null : Number(e.target.value) : e.target.value
+          }));
+          command.current = null;
+        }
+      })) : h(Fila, {
+        key: f.key,
+        label: f.label,
+        valor: f.kind === 'money' ? M(value) : value || 'Sin dato'
+      });
+    }), canWrite && h('label', {
+      className: 'svp-field'
+    }, 'Observaciones (opcional)', h('textarea', {
+      value: obs,
+      disabled: busy,
+      maxLength: 4000,
+      onChange: e => {
+        setObs(e.target.value);
+        command.current = null;
+      }
+    })), canWrite && h('label', {
+      className: 'svp-field'
+    }, 'Resultado de la revisión', h('select', {
+      'aria-label': 'Resultado de la revisión',
+      value: reviewStatus || r.status,
+      disabled: busy || r.identity_pending,
+      onChange: e => {
+        setReviewStatus(e.target.value);
+        command.current = null;
+      }
+    }, h('option', {
+      value: 'PENDING'
+    }, 'Por revisar'), h('option', {
+      value: 'IN_REVIEW'
+    }, 'En revisión'), h('option', {
+      value: 'RESOLVED'
+    }, 'Revisada'))), err && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, err), canWrite && h(Btn, {
+      tone: 'primary full',
+      onClick: save,
+      disabled: busy || r.identity_pending || !Object.keys(changes).length && (!reviewStatus || reviewStatus === r.status) && !obs.trim()
+    }, busy ? 'Guardando…' : 'Guardar revisión')));
+  }
+  function Detail({
+    id,
+    onBack,
+    onPrev,
+    onNext,
+    header,
+    onChange,
+    initialPeriod,
+    disabled = false
+  }) {
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.detail(id), [id]);
+    const [extra, setExtra] = useState([]),
+      [loadingMore, setLoadingMore] = useState(false),
+      [extraError, setExtraError] = useState(''),
+      [sheet, setSheet] = useState(null),
+      [withdrawal, setWithdrawal] = useState(null),
+      [note, setNote] = useState('');
+    const generation = useRef(0);
+    useEffect(() => {
+      generation.current++;
+      setExtra([]);
+      setSheet(null);
+      setWithdrawal(null);
+      setNote('');
+      setLoadingMore(false);
+      setExtraError('');
+      return () => {
+        generation.current++;
+      };
+    }, [id]);
+    async function saved() {
+      setExtra([]);
+      reload();
+      onChange();
+      setNote('Corrección guardada. Puedes volver a abrir el expediente para consultarla.');
+    }
+    async function more() {
+      if (loadingMore) return;
+      const seq = generation.current;
+      setLoadingMore(true);
+      setExtraError('');
+      try {
+        const d = await window.SavingsPanelRepository.detail(id, 6 + extra.length, 24);
+        if (generation.current === seq) setExtra(x => x.concat(d.dates));
+      } catch (e) {
+        if (generation.current === seq) setExtraError(explain(e));
+      } finally {
+        if (generation.current === seq) setLoadingMore(false);
+      }
+    }
+    const d = state.data,
+      a = d && d.person,
+      r = d && d.record;
+    const autoOpened = useRef(false);
+    useEffect(() => {
+      if (d && d.can_write && !d.person.identity_pending && initialPeriod && !autoOpened.current) {
+        autoOpened.current = true;
+        const key = initialPeriod.key,
+          source = d.record.source_data[key],
+          value = {
+            ...d.record.source_data,
+            ...d.record.proposed_data
+          }[key];
+        setSheet({
+          mode: 'date',
+          period: {
+            ...initialPeriod,
+            original: source,
+            monto: value,
+            corregido: JSON.stringify(source) !== JSON.stringify(value)
+          }
+        });
+      }
+    }, [d, initialPeriod]);
+    return h('div', null, header({
+      title: a ? a.nombre : 'Expediente de ahorro',
+      sub: a ? 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + (estados[a.estado] || estados.revision).label : 'Cargando expediente',
+      onBack
+    }), h('div', {
+      className: 'svp-body',
+      inert: disabled || state.loading ? '' : undefined,
+      'aria-busy': disabled || state.loading
+    }, h('div', {
+      className: 'svp-actions',
+      style: {
+        marginTop: 0,
+        marginBottom: 13
+      }
+    }, h(Btn, {
+      onClick: onPrev,
+      disabled: !onPrev
+    }, '‹ Anterior'), h(Btn, {
+      onClick: onNext,
+      disabled: !onNext
+    }, 'Siguiente ›')), !d && state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error, h(Btn, {
+      onClick: reload
+    }, 'Reintentar expediente')) : a && h(React.Fragment, null, h('div', {
+      className: 'svp-hero'
+    }, h('div', {
+      style: {
+        position: 'absolute',
+        right: -24,
+        top: -20,
+        opacity: .12,
+        pointerEvents: 'none'
+      }
+    }, h(window.Icon, {
+      name: 'piggy',
+      size: 120,
+      stroke: 1.4
+    })), h('small', null, 'TIENE AHORRADO'), h('strong', null, M(a.saldo)), h('div', {
+      className: 'svp-mini'
+    }, [['Le han descontado', a.aportado], ['Rendimiento', a.rendimiento], ['Retiros registrados', d.withdrawn_total]].map(([label, n]) => h('div', {
+      key: label
+    }, label, h('b', null, M(n)))))), h('p', {
+      className: 'svp-note'
+    }, 'Saldo reconocido en el archivo al ' + fmt(String(a.observed_at).slice(0, 10)) + '. Descuentos y rendimiento corresponden al plan registrado; los retiros muestran el historial completo y no se vuelven a restar. Revisión privada.'), a.correccion !== 0 && h('p', {
+      className: 'svp-note warn'
+    }, 'Saldo al aplicar las correcciones de descuentos: ' + M(a.saldo_revision) + '. Diferencia: ' + M(a.correccion) + '.'), a.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Cambio de Folio pendiente: ' + a.proposed_folio + '. Los movimientos conservan su Folio original.'), note && h('div', {
+      role: 'status',
+      className: 'svp-success'
+    }, note), h('div', {
+      className: 'svp-detail-grid'
+    }, h(Tarjeta, {
+      title: 'Su ahorro',
+      icon: 'calendar'
+    }, h(Fila, {
+      label: a.proceso === 'JUB' ? 'Le descuentan cada mes' : ['1', '3'].includes(a.proceso) ? 'Le descuentan cada quincena' : 'Aportación · frecuencia por confirmar',
+      valor: M(a.aporte)
+    }), h(Fila, {
+      label: 'Empezó a ahorrar',
+      valor: fmt(a.inicio)
+    }), h(Fila, {
+      label: 'Último descuento registrado',
+      valor: fmt(a.ultimo)
+    }), h(Fila, {
+      label: a.estado === 'baja' ? 'Dejó de ahorrar el' : 'Siguiente descuento previsto',
+      valor: fmt(a.estado === 'baja' ? a.bajaAt : a.prox)
+    }), h('p', {
+      className: 'svp-note'
+    }, 'Inicio del plan: ' + fmt(a.plan_inicio))), h(Tarjeta, {
+      title: 'Descuentos por fecha',
+      icon: 'receipt',
+      right: h('span', {
+        style: {
+          fontSize: 11,
+          color: 'var(--ink-3)'
+        }
+      }, d.can_write ? 'Toca para corregir' : d.date_count + ' fechas')
+    }, [...d.dates, ...extra].map(p => h('button', {
+      className: 'svp-period',
+      key: p.key,
+      disabled: !d.can_write || a.identity_pending,
+      onClick: () => setSheet({
+        mode: 'date',
+        period: p
+      })
+    }, h('span', {
+      className: 'svp-dot ' + (p.monto === 0 ? 'zero' : '')
+    }), h('span', null, fmt(p.fecha), p.corregido && h('small', null, 'CORREGIDO · EN REVISIÓN'), p.key === 'AR' && h('small', null, 'Incluye rendimiento del semestre')), h('b', null, typeof p.monto !== 'number' ? 'Por revisar' : p.monto === 0 ? 'Registrado en cero' : M(p.monto)))), !d.date_count && h(Empty, {
+      title: 'Sin fechas registradas'
+    }), d.date_count > 6 + extra.length && h(Btn, {
+      tone: 'full',
+      onClick: more,
+      disabled: loadingMore
+    }, loadingMore ? 'Cargando…' : 'Ver más fechas (' + (d.date_count - 6 - extra.length) + ')'), extra.length > 0 && h(Btn, {
+      tone: 'full',
+      onClick: () => setExtra([])
+    }, 'Ver solo las últimas 6'), extraError && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, extraError), h('p', {
+      className: 'svp-note'
+    }, 'Un importe en cero requiere revisión; no demuestra por sí solo que faltó el descuento.')), h('div', {
+      className: 'svp-wide'
+    }, h(Tarjeta, {
+      title: 'Retiros',
+      icon: 'download'
+    }, h(window.SavingsWithdrawalList, {
+      recordId: id,
+      data: d.withdrawals,
+      onRefresh: reload,
+      disabled: state.loading,
+      onOpen: setWithdrawal
+    }))), h(Tarjeta, {
+      title: 'Movimientos del expediente',
+      icon: 'clock'
+    }, (r.history || []).length ? r.history.map(e => h('div', {
+      className: 'svp-audit',
+      key: e.id
+    }, h('b', null, e.actor_name), h('span', null, ' · Revisión guardada'), h('small', null, new Date(e.at).toLocaleString('es-MX')), e.observation && h('p', null, e.observation), h('details', null, h('summary', null, 'Ver cambios'), h('p', null, 'Estado: ' + ({
+      PENDING: 'Pendiente',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[e.before.status] || 'Por revisar') + ' → ' + ({
+      PENDING: 'Pendiente',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[e.after.status] || 'Por revisar')), [...new Set([...Object.keys(e.after.proposed_data || {}), ...Object.keys(e.before.proposed_data || {})])].filter(k => JSON.stringify(e.after.proposed_data[k]) !== JSON.stringify((e.before.proposed_data || {})[k])).map(k => h('p', {
+      key: k
+    }, ((r.field_defs || []).find(f => f.key === k) || {
+      label: k
+    }).label + ': ' + String(Object.prototype.hasOwnProperty.call(e.before.proposed_data || {}, k) ? e.before.proposed_data[k] : r.source_data[k]) + ' → ' + String(Object.prototype.hasOwnProperty.call(e.after.proposed_data || {}, k) ? e.after.proposed_data[k] : r.source_data[k])))))) : h('p', {
+      className: 'svp-note'
+    }, 'Todavía no se han realizado correcciones.')), h(Tarjeta, {
+      title: 'Revisión del expediente',
+      icon: 'checkCircle'
+    }, h('p', {
+      className: 'svp-note'
+    }, r.status === 'RESOLVED' ? 'Este expediente está marcado como revisado.' : 'Comprueba el Folio, los descuentos, el saldo y los retiros.'), d.can_write && h(Btn, {
+      tone: 'green full',
+      onClick: () => setSheet({
+        mode: 'review'
+      })
+    }, r.status === 'RESOLVED' ? 'Reabrir revisión' : 'Marcar revisado'))), d.can_write && h(Btn, {
+      tone: 'outline full',
+      style: {
+        marginTop: 16
+      },
+      onClick: () => setSheet({
+        mode: 'person'
+      })
+    }, 'Corregir datos de este ahorrador'), h('details', {
+      className: 'svp-note'
+    }, h('summary', null, 'Ver datos anteriores y rendimientos por periodo'), h(Tarjeta, {
+      title: 'Importes originales'
+    }, (r.field_defs || []).filter(f => ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW'].includes(f.key)).map(f => h(Fila, {
+      key: f.key,
+      label: f.label,
+      valor: M(r.source_data[f.key])
+    })), h('p', {
+      className: 'svp-note'
+    }, 'Estos totales históricos no son abonos nuevos. La copia disponible no incluye descuentos de 2025 por fecha.'))), sheet && h(EditSheet, {
+      key: id + sheet.mode,
+      data: d,
+      ...sheet,
+      onClose: () => setSheet(null),
+      onSaved: saved
+    }), withdrawal && h(RequestSheet, {
+      id: withdrawal,
+      canWrite: d.can_write,
+      onClose: () => setWithdrawal(null),
+      onSaved: saved
+    }))));
+  }
+  function SavingsPanelAdmin({
+    app,
+    onBack,
+    header,
+    initialAffiliateId
+  }) {
+    const [tab, setTab] = useState('cobranza'),
+      [search, setSearch] = useState(''),
+      [query, setQuery] = useState(''),
+      [filter, setFilter] = useState('todos'),
+      [offset, setOffset] = useState(0),
+      [open, setOpen] = useState(null),
+      [request, setRequest] = useState(null),
+      [toolsOpen, setToolsOpen] = useState(false),
+      [revision, setRevision] = useState(0);
+    const root = useRef(),
+      origin = useRef(),
+      scroll = useRef([]),
+      [navError, setNavError] = useState(''),
+      navLock = useRef(false),
+      navGeneration = useRef(0),
+      [navBusy, setNavBusy] = useState(false);
+    useEffect(() => () => {
+      navGeneration.current++;
+    }, []);
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.list({
+      tab,
+      search: query,
+      filter,
+      offset
+    }), [tab, query, filter, offset, revision]);
+    useEffect(() => {
+      const t = setTimeout(() => {
+        setQuery(search);
+        setOffset(0);
+      }, 250);
+      return () => clearTimeout(t);
+    }, [search]);
+    useEffect(() => {
+      if (!initialAffiliateId) return;
+      let alive = true;
+      window.SavingsPanelRepository.affiliate(initialAffiliateId).then(v => {
+        if (!alive) return;
+        setTab('padron');
+        setSearch(v.folio || '');
+        setQuery(v.folio || '');
+        if (v.records.length === 1) setOpen({
+          id: v.records[0].id,
+          index: 0,
+          rows: v.records,
+          offset: 0,
+          external: true
+        });else setNavError(v.records.length ? 'Hay varios registros con este Folio. Selecciona el que corresponde.' : 'No hay expediente de Ahorro con el Folio exacto de esta persona.');
+      }).catch(e => {
+        if (alive) setNavError(explain(e));
+      });
+      return () => {
+        alive = false;
+      };
+    }, [initialAffiliateId]);
+    function changeTab(t) {
+      setTab(t);
+      setOffset(0);
+      setFilter('todos');
+      setSearch('');
+      setQuery('');
+    }
+    function show(a, index, correct = false) {
+      origin.current = a.id;
+      const list = [];
+      let el = root.current;
+      while (el) {
+        if (el.scrollHeight > el.clientHeight) list.push([el, el.scrollTop]);
+        el = el.parentElement;
+      }
+      scroll.current = list;
+      setOpen({
+        id: a.id,
+        index,
+        rows: state.data.rows,
+        offset,
+        total: state.data.total,
+        initialPeriod: correct ? a.last_scheduled : null
+      });
+      list.forEach(([el]) => el.scrollTop = 0);
+    }
+    function back() {
+      navGeneration.current++;
+      navLock.current = false;
+      setNavBusy(false);
+      if (open && open.external) {
+        onBack();
+        return;
+      }
+      setOpen(null);
+      requestAnimationFrame(() => {
+        scroll.current.forEach(([el, top]) => {
+          if (el.isConnected) el.scrollTop = top;
+        });
+        const target = root.current && (root.current.querySelector('[data-savings-person-id="' + CSS.escape(origin.current || '') + '"]') || root.current.querySelector('input'));
+        if (target) target.focus({
+          preventScroll: true
+        });
+      });
+    }
+    async function next(direction) {
+      if (navLock.current) return;
+      navLock.current = true;
+      const generation = ++navGeneration.current;
+      setNavBusy(true);
+      setNavError('');
+      try {
+        const target = await window.SavingsPanelRepository.neighbor({
+          id: open.id,
+          tab,
+          search: query,
+          filter,
+          direction
+        });
+        if (generation !== navGeneration.current) return;
+        if (target) setOpen({
+          id: target.id,
+          hasPrev: target.has_prev,
+          hasNext: target.has_next,
+          initialPeriod: null
+        });else setOpen(previous => ({
+          ...previous,
+          [direction > 0 ? 'hasNext' : 'hasPrev']: false
+        }));
+      } catch (e) {
+        if (generation === navGeneration.current) setNavError(explain(e));
+      } finally {
+        if (generation === navGeneration.current) {
+          navLock.current = false;
+          setNavBusy(false);
+        }
+      }
+    }
+    const heading = header || (({
+      title,
+      sub,
+      onBack: backAction
+    }) => h('header', {
+      className: 'svp-header'
+    }, h(Btn, {
+      onClick: backAction,
+      'aria-label': 'Volver al administrador'
+    }, '‹'), h('div', null, h('h1', null, title), h('p', null, sub))));
+    const d = state.data,
+      refresh = () => {
+        setRevision(n => n + 1);
+      };
+    return h('div', {
+      className: 'svp',
+      ref: root
+    }, h('style', null, css), open ? h(React.Fragment, null, navError && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, navError), navBusy && h('p', {
+      role: 'status',
+      className: 'svp-note'
+    }, 'Abriendo expediente…'), h(Detail, {
+      disabled: navBusy,
+      key: open.id,
+      id: open.id,
+      initialPeriod: open.initialPeriod,
+      header: heading,
+      onBack: back,
+      onPrev: open.hasPrev ?? (open.index > 0 || open.offset > 0) ? () => next(-1) : null,
+      onNext: !open.external && (open.hasNext ?? open.offset + open.index + 1 < open.total) ? () => next(1) : null,
+      onChange: refresh
+    })) : h(React.Fragment, null, heading({
+      title: 'Ahorro',
+      sub: d ? d.kpis.padron + ' ahorradores · corte ' + fmt(String(d.cutoff).slice(0, 10)) : 'Consultando información',
+      onBack
+    }), h('div', {
+      className: 'svp-body'
+    }, h('div', {
+      className: 'svp-notice'
+    }, h('span', null, 'Revisión privada · Sin publicar a los ahorradores'), h(Btn, {
+      onClick: () => setToolsOpen(true)
+    }, 'Accesos y datos anteriores')), navError && h('p', {
+      role: 'alert',
+      className: 'svp-note warn'
+    }, navError), !d && state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error, h(Btn, {
+      onClick: reload
+    }, 'Reintentar')) : d && h('div', {
+      className: 'svp-layout'
+    }, h('div', {
+      className: 'svp-kpis'
+    }, h(KPIs, {
+      k: d.kpis,
+      onGo: changeTab
+    })), h('div', {
+      style: {
+        minWidth: 0
+      }
+    }, h('nav', {
+      className: 'svp-tabs',
+      role: 'tablist',
+      'aria-label': 'Secciones de Ahorro'
+    }, tabs.map(([id, label]) => h('button', {
+      key: id,
+      role: 'tab',
+      'aria-selected': tab === id,
+      onClick: () => changeTab(id)
+    }, label + (id === 'revision' && d.kpis.incidencias ? ' · ' + d.kpis.incidencias : id === 'solicitudes' && d.kpis.pendientes ? ' · ' + d.kpis.pendientes : '')))), tab === 'cobranza' ? h(React.Fragment, null, h(Titulo, {
+      sub: 'Los descuentos registrados se conservan con su fecha e importe.'
+    }, 'Periodo del ' + fmt(d.kpis.cobranza.fecha)), h(Tarjeta, {
+      title: 'Último periodo registrado',
+      icon: 'receipt'
+    }, h(Fila, {
+      label: 'Importe registrado',
+      valor: M(d.kpis.cobranza.recibido)
+    }), h(Fila, {
+      label: 'Importe esperado',
+      valor: M(d.kpis.cobranza.esperado)
+    }), h('p', {
+      className: 'svp-note warn'
+    }, 'Falta confirmar la aportación que correspondía a cada persona en cada fecha. El porcentaje de cobro queda pendiente de esa revisión.')), h(Titulo, {
+      sub: 'Estos registros tienen un cero en la última fecha correspondiente a su categoría actual. Comprueba la categoría y el descuento de esa fecha.'
+    }, 'Descuentos por verificar (' + d.total + ')'), state.loading ? h(Loading) : d.rows.length ? h('div', {
+      className: 'svp-stack'
+    }, d.rows.map((a, i) => h('article', {
+      className: 'svp-record',
+      key: a.id
+    }, h('h3', null, a.nombre), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + fmt(a.last_scheduled && a.last_scheduled.fecha)), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      tone: 'green',
+      onClick: () => show(a, i, true),
+      disabled: !d.can_write
+    }, 'Sí se descontó'), h(Btn, {
+      onClick: () => show(a, i)
+    }, 'Ver expediente')))), offset > 0 && h(Btn, {
+      onClick: () => setOffset(offset - 20)
+    }, 'Anteriores'), offset + 20 < d.total && h(Btn, {
+      onClick: () => setOffset(offset + 20)
+    }, 'Ver más')) : h(Empty, {
+      title: 'Sin registros en cero',
+      text: 'Esto no sustituye la comprobación de los descuentos recibidos.'
+    })) : h(React.Fragment, null, h('label', {
+      className: 'svp-search'
+    }, h(window.Icon, {
+      name: 'search',
+      size: 18
+    }), h('input', {
+      'aria-label': 'Buscar por nombre o folio',
+      placeholder: 'Buscar por nombre o folio',
+      value: search,
+      onChange: e => setSearch(e.target.value)
+    })), h('div', {
+      className: 'svp-tabs',
+      'aria-label': 'Filtros'
+    }, (tab === 'padron' ? [['todos', 'Todos'], ['ahorrando', 'Ahorrando'], ['pausado', 'Sin descuento'], ['baja', 'Dejó de ahorrar']] : [['todos', 'Todos'], ['pendientes', 'Por revisar'], ['resueltas', 'Revisados']]).map(([v, label]) => h('button', {
+      key: v,
+      'aria-pressed': filter === v,
+      onClick: () => {
+        setFilter(v);
+        setOffset(0);
+      }
+    }, label))), h('div', {
+      className: 'svp-totals'
+    }, h('span', null, d.total + (tab === 'solicitudes' ? ' solicitudes' : ' ahorrador(es)')), tab === 'padron' && h('span', null, M(d.saldo_total) + ' en total')), tab === 'solicitudes' && h('p', {
+      className: 'svp-note'
+    }, 'Solicitudes importadas. Cada retiro conserva su fecha, importe y estado original. El contador indica cuántas faltan por revisar.' + (d.kpis.solicitudes_estado_pendiente ? ' Hay ' + d.kpis.solicitudes_estado_pendiente + ' con estado por confirmar.' : '')), state.loading ? h(Loading) : !d.rows.length ? h(Empty, {
+      title: query ? 'Sin resultados' : tab === 'revision' ? 'Sin incidencias' : tab === 'solicitudes' ? 'Sin solicitudes' : 'Sin ahorradores',
+      text: query ? 'Prueba con otro nombre o Folio.' : 'No hay registros para este filtro.'
+    }) : h('div', {
+      className: 'svp-stack'
+    }, d.rows.map((a, i) => tab === 'solicitudes' ? h(RequestCard, {
+      key: a.id,
+      r: a,
+      onOpen: () => setRequest(a.id)
+    }) : h('div', {
+      key: a.id
+    }, h(Row, {
+      a,
+      onOpen: () => show(a, i)
+    }), tab === 'revision' && h('div', {
+      className: 'svp-note warn'
+    }, a.status === 'RESOLVED' ? 'Revisado · Puedes reabrirlo desde el expediente.' : a.identity_pending ? 'Cambio de Folio pendiente.' : a.identity.match_count !== 1 ? a.identity.name + ' · Verifica su Folio.' : 'Revisa descuentos, saldo y datos del expediente.')))), h('div', {
+      className: 'svp-actions'
+    }, offset > 0 && h(Btn, {
+      disabled: state.loading,
+      onClick: () => setOffset(Math.max(0, offset - 20))
+    }, 'Anteriores'), offset + 20 < d.total && h(Btn, {
+      disabled: state.loading,
+      onClick: () => setOffset(offset + 20)
+    }, 'Ver más (' + Math.min(20, d.total - offset - 20) + ')'))))))), request && h(RequestSheet, {
+      id: request,
+      canWrite: d && d.can_write,
+      onClose: () => setRequest(null),
+      onSaved: refresh
+    }), toolsOpen && h(Modal, {
+      title: 'Accesos y datos anteriores',
+      onClose: () => setToolsOpen(false)
+    }, h(window.SavingsAccessAdmin), h('p', {
+      className: 'svp-note'
+    }, 'Consulta de datos originales y revisiones anteriores.'), h(window.SavingsReviewAdmin, {
+      readOnly: true
+    })));
+  }
+  window.SavingsPanelAdmin = SavingsPanelAdmin;
+})();
+})();
 /* @@file screens-admin-branding.jsx */
 (function(){
 /* H-008 branding editor. Auth: Supabase session; authorization: backend RLS. */
@@ -50082,7 +51621,7 @@ Object.assign(window, {
       onClick: () => loadDetail(selectedId)
     }, 'Reintentar abrir expediente')) : content()))))));
   }
-  window.SavingsAdminModule = SavingsAdminModule;
+  window.SavingsAdminModule = window.SavingsPanelAdmin;
 })();
 })();
 /* @@file screens-admin-access.jsx */

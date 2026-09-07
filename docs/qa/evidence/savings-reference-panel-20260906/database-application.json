@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "scope": "PRIVATE_REVIEW_ONLY",
+  "applied_at": "2026-09-07T07:24:39.029Z",
+  "migration": "supabase/migrations/20260906001000_savings_reference_panel.sql",
+  "migration_sha256": "3d93bdc64721a45158017641e429509929d1b4f0caebdc78f1d6f338dfa082b4",
+  "before": {
+    "financial": [
+      {
+        "transactions": 0,
+        "participants": 363,
+        "evidence": 42229,
+        "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+      }
+    ],
+    "review": [
+      {
+        "records": 1463,
+        "records_hash": "fe471921589b7cd32342e366c4d192c0",
+        "events": 0,
+        "events_hash": null,
+        "participants_hash": "fb0b6d28371fd50b420adba6486d224a"
+      }
+    ]
+  },
+  "after": {
+    "financial": [
+      {
+        "transactions": 0,
+        "participants": 363,
+        "evidence": 42229,
+        "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+      }
+    ],
+    "review": [
+      {
+        "records": 1463,
+        "records_hash": "fe471921589b7cd32342e366c4d192c0",
+        "events": 0,
+        "events_hash": null,
+        "participants_hash": "fb0b6d28371fd50b420adba6486d224a"
+      }
+    ]
+  },
+  "google_writes": 0,
+  "financial_writes": 0,
+  "member_reader_unchanged": true,
+  "recovery": "supabase/recovery/20260906001000_savings_reference_panel_recovery.sql"
+}

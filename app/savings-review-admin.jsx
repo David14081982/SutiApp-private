@@ -32,7 +32,7 @@
   if (/INVALID/.test(text)) return 'Revisa el formato de los campos. Los importes admiten dos decimales y las fechas usan AAAA-MM-DD.';
   return 'No se pudo completar la operación. Tus cambios permanecen en esta pantalla; puedes reintentar.';
  }
- function SavingsReviewAdmin() {
+ function SavingsReviewAdmin({readOnly=false}={}) {
   const [data,setData]=React.useState(null),[detail,setDetail]=React.useState(null),[selected,setSelected]=React.useState('');
   const [search,setSearch]=React.useState(''),[sheet,setSheet]=React.useState('Ahorro'),[status,setStatus]=React.useState(''),[onlyIssues,setOnlyIssues]=React.useState(false),[page,setPage]=React.useState(0);
   const [changes,setChanges]=React.useState({}),[observation,setObservation]=React.useState(''),[nextStatus,setNextStatus]=React.useState('IN_REVIEW'),[group,setGroup]=React.useState('main');
@@ -58,7 +58,7 @@
   const filtered=rows.filter(r=>(!sheet||r.sheet===sheet)&&(!status||r.status===status)&&(!onlyIssues||r.issues.length||(r.identity&&r.identity.match_count!==1))&&[r.folio,r.identity&&r.identity.name,r.sheet,...r.issues.map(issue)].join(' ').toLocaleLowerCase('es').includes(search.trim().toLocaleLowerCase('es')));
   const pages=Math.max(1,Math.ceil(filtered.length/40)),currentPage=Math.min(page,pages-1),visible=filtered.slice(currentPage*40,currentPage*40+40);
   const effective=detail?Object.assign({},detail.source_data,detail.proposed_data):{};
-  const editable=!!(data&&data.can_write),frozen=busy||!!preview;
+  const editable=!readOnly&&!!(data&&data.can_write),frozen=busy||!!preview;
   function update(def,text){
    const next=Object.assign({},changes),value=text===''?null:def.kind==='money'?(Number.isFinite(Number(text))?Number(text):text):text;
    if(JSON.stringify(value)===JSON.stringify(effective[def.key]??null))delete next[def.key];else next[def.key]=value;

@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "scope": "PRIVATE_REVIEW_ONLY",
+  "mode": "ROLLBACK",
+  "installed": true,
+  "checks": [
+    "real imported count and recognized Q aggregate",
+    "20-row pagination without overlap",
+    "name and exact-text Folio search",
+    "state filter",
+    "empty result",
+    "11402 withdrawal D and G preserved",
+    "latest six dated source values, future excluded",
+    "optional observation and authenticated actor",
+    "idempotent retry",
+    "stale version rejected",
+    "derived balance not writable",
+    "negative discount rejected",
+    "correction private delta only",
+    "remove correction restores original",
+    "mark reviewed and reopen",
+    "anonymous and ordinary user blocked",
+    "helper not exposed",
+    "recovery and financial fingerprint unchanged"
+  ],
+  "result": [
+    {
+      "reviewed": "IN_REVIEW"
+    }
+  ]
+}

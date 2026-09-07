@@ -12,6 +12,7 @@
   revokeAccess: id => rpc('revoke_section_responsibilities', { p_auth_user_id: id, p_section_key: 'savings' }),
   list: () => rpc('get_admin_savings_review', { p_record_id: null }),
   detail: id => rpc('get_admin_savings_review', { p_record_id: id }),
+  recordedHistory: participantId => rpc('get_admin_savings_recorded_history', { p_participant_id: participantId }),
   save: command => rpc('admin_save_savings_review', {
    p_record_id: command.id, p_version: command.version, p_changes: command.changes,
    p_status: command.status, p_observation: command.observation || null, p_client_action_id: command.key,

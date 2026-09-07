@@ -93,6 +93,7 @@
     h('article',{className:'svr-detail','aria-label':'Detalle de revisión',ref:detailElement},
      error&&h('div',{role:'alert',className:'svr-error'},error),success&&h('div',{role:'status',className:'svr-success'},success),
      !detail?h('div',{className:'svr-loading',role:'status'},error?h('button',{onClick:()=>open(selected,true)},'Reintentar abrir expediente'):'Cargando información del ahorrador…'):h(React.Fragment,null,
+    detail.source_sheet==='Ahorro'&&h(window.SavingsRecordedHistory,{key:detail.id,record:detail,changes}),
     detail.source_sheet==='Ahorro'&&h('div',{className:'svr-kpis'},h('div',null,'Saldo del archivo original',h('b',null,show(detail.source_data.Q,'money'))),h('div',null,'Saldo en revisión',h('b',null,show('Q' in changes?changes.Q:effective.Q,'money')))),
     h('details',{className:'svr-note',style:{marginBottom:12}},h('summary',{style:{cursor:'pointer'}},'Origen de los datos y recomendaciones'),h('p',null,detail.source_sheet+' · Fila '+detail.source_row+' · Revisión '+detail.version+' · Copia del '+stamp(detail.batch.observed_at)),
     h('p',{className:'svr-note'},'Los cambios de Folio son propuestas para revisión de identidad. No vinculan automáticamente esta información a otra persona ni modifican el padrón.'),

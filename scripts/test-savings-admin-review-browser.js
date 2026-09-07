@@ -7,7 +7,7 @@ async function main(){
   const page=await browser.newPage({viewport:{width:1280,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',r=>r.abort());await page.setContent('<html lang="es"><body><div id="root"></div></body></html>');
   await page.addStyleTag({content:[...fs.readFileSync('SutiApp.html','utf8').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n')});
-  for(const f of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/savings-review-admin.jsx'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});
+  for(const f of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/savings-recorded-history.jsx','app/savings-review-admin.jsx'])await page.addScriptTag({content:fs.readFileSync(f,'utf8')});
   await page.evaluate(()=>{
    window.calls=[];window.fail=false;window.allow=true;let sequence=0;window.crypto.randomUUID=()=> 'isolated-command-'+(++sequence);
    const records=[{id:'one',batch_id:'batch',folio:'00123',sheet:'Ahorro',row:2,status:'PENDING',identity:{name:'Cuenta aislada',match_count:1},issues:[],proposed_balance:1000},{id:'two',batch_id:'batch',folio:'00234',sheet:'Ahorro',row:3,status:'PENDING',identity:{name:'Primero DUPLICADO',match_count:2},issues:['IDENTITY_DUPLICADO'],proposed_balance:null}];

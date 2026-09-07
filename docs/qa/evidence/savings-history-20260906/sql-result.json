@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "mode": "ROLLBACK",
+  "installed": true,
+  "checks": [
+    "original Folio exact text",
+    "leading zero remains distinct",
+    "duplicate rows retained",
+    "proposed identity never relinks",
+    "original F and combined AR preserved",
+    "admin authenticated execution",
+    "ordinary and anonymous denial",
+    "recovery",
+    "financial fingerprint unchanged"
+  ]
+}

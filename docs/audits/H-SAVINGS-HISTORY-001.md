@@ -1,0 +1,18 @@
+# H-SAVINGS-HISTORY-001
+
+PRE-CHANGE AUDIT - PASS for implementation and isolated checks.
+Owner requests each person's deductions by date/amount and first savings date, preserving plain Spanish and existing navigation.
+
+Evidence: normalized private Ahorro capture contains F (Primer descuento), X (Inicio de Descuento Quincenal) and AA:DO dated amounts. Private review exposed dates only in a dropdown; Admin summary read the empty canonical movement history. Dates are source evidence, not proof of bank settlement. AR 2026-06-30 includes DT yield; never subtract/split/add it speculatively. F is shown as recorded, not inferred from the first positive matrix cell. Earlier years with totals but no dated cells must be disclosed.
+
+Scope: additive migration/recovery 008 with one admin-only read RPC; SavingsReviewRepository one new method; Savings recorded-history UI component; review and Admin integration; bundle builder and generated/cache versions; focal SQL/UI/history tests plus direct dependent fixtures; audit, authority/changelog/evidence and architecture index. Preserve pending operations 001-004 and unrelated work by isolated delivery on 513f525.
+
+Authority: savings_review_records immutable source_data/source_folio and separate proposed_data, same private evidence authority. New RPC accepts existing participant UUID and resolves exact textual legacy_folio server-side to ORIGINAL source_folio. Existing list RPC exposes proposed Folio, so it must NOT be used for automatic history joins. No email/name/numeric/fuzzy match. Multiple records remain visible and require explicit selection; never sum or choose arbitrarily. A proposed Folio change does not transfer its corrections to another person. New reader is private, no self-service/public readers change.
+
+Tables/data: read savings_participants, savings_review_records, savings_review_batches only. No record insert/update/delete, recalculation, Google/Apps Script/formula modification, new balance, publication, loan or padron changes. Original versus correction remain distinguishable. Source annotations (and capture date) distinguish historical entries from future projections; wall-clock passage does not turn a projection into a received payment. Zero, blank, negative and invalid source values remain distinct. No new financial totals.
+
+Security: new SECURITY DEFINER read RPC, empty search_path, authenticated execute only and savings.read check on every call, including restricted-mode enforcement. Existing RLS/grants/roles untouched. No service role/browser secret or direct table access. Recovery drops only this additive read function after reverting its frontend consumer; no historical data is dropped.
+
+UI: visible first-discount/start-plan cards and a date/amount history inside review and each Admin person's summary/contributions/calendar. Future estimates separate; source-date coverage and yield-included rows clearly labelled. Read-only history does not replace existing correction forms, actions or permissions. Stable person keys and cancellation prevent late replies or old records crossing people. Errors show retry, never a substitute source.
+
+Tests: source-header inspection; rollback SQL permissions/original-Folio/multiple-record/no-proposed-reassignment tests; zero/blank/future/AR/F/partial-history browser fixtures; failed-load and rapid-person-switch checks; existing review/navigation/access and dependent Admin checks; exact generated module allowlist; build/private artifact and public startup. No shared Auth/asset/shell/Storage logic changed; component is confined to the single Savings Admin surface. Registry must be regenerated for new component and RPC/dependency.

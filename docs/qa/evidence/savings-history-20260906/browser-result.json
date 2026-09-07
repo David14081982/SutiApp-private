@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "viewports": [
+    390,
+    1440
+  ],
+  "checks": [
+    "recorded first date",
+    "source amounts and proposals separate",
+    "null versus zero",
+    "combined yield warning",
+    "fixed source future classification",
+    "duplicate selection",
+    "late response isolation",
+    "visible retry",
+    "no page overflow"
+  ]
+}

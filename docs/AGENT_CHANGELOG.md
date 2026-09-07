@@ -2671,3 +2671,8 @@ Authorized private Savings review simplification: compact original balance/amoun
 ## H-SAVINGS-WITHDRAWALS-001
 
 Private withdrawal history now uses every matching original-Folio Solicitud de retiro row with D date/G amount/H status. Replaces misleading Ahorro aggregate cards, keeps historical data and individual review with parent return. Additive admin-only reader009 applied with unchanged data fingerprints and owner example verified. See docs/qa/evidence/savings-withdrawals-20260906/RESULT.md. No financial posting/Google write/public balance change.
+
+
+## H03 — Disk I/O: refresco administrativo (2026-09-07)
+
+Autorización explícita posterior a H01/H02 PASS. Nueva RPC INVOKER delegante conserva getter protegido y 48 políticas; huellas efímeras RLS por siete dominios, revalidación continua y descarte por actor/sesión/impersonación. Chrome real: 9→1 llamadas, 45.016→1.713 bytes y proyecciones idénticas. 16 casos aislados, 12 Chrome locales y 12 publicados, matriz backend A–H y regresión global local/publicada PASS. Build aislado con sólo tres chunks; dff4099 publicado, bundle221/worker168. Rollback probado. Fallo estático histórico de Finanzas documentado contra baseline, sin cambiar ese dominio. Trabajo ajeno preservado; no se declara resuelto el paging del host ni se inicia otra H. Evidencia: [H03/VERIFICATION.md](qa/evidence/disk-io-remediation/H03/VERIFICATION.md).

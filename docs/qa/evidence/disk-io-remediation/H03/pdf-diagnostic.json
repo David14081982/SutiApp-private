@@ -1,0 +1,15 @@
+[
+  {
+    "target": "local",
+    "pdf": true,
+    "preview": false,
+    "code": "DOCUMENT_PREVIEW_UNAVAILABLE",
+    "edge": []
+  },
+  {
+    "target": "production-before",
+    "pdf": true,
+    "preview": true,
+    "edge": []
+  }
+]

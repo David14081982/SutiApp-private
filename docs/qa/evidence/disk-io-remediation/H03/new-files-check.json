@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-07T22:14:33.650Z",
+  "new_files_outside_evidence": [
+    "scripts/test-admin-refresh-browser.js",
+    "scripts/test-admin-refresh.js",
+    "supabase/migrations/20260907000300_admin_refresh_context.sql",
+    "supabase/recovery/20260907000300_admin_refresh_context.sql"
+  ],
+  "unexpected_new_files": [],
+  "status": "PASS"
+}

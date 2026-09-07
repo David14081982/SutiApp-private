@@ -1,0 +1,24 @@
+{
+  "at": "2026-09-07T22:23:58.064Z",
+  "baseline_files": 1508,
+  "changed": [
+    "SutiApp.html",
+    "app/admin-cutover-store.jsx",
+    "app/admin-repository.js",
+    "app/affiliate-auth.js",
+    "app/bundle.js",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "scripts/test-admin-access-impersonation-global-permissions.js",
+    "sw.js",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/qa/evidence/disk-io-remediation/README.md"
+  ],
+  "unexpected": [],
+  "preserved_outside_scope": true,
+  "scope_note": "H03 new evidence excluded from baseline by preparation. Original untracked/dirty business files preserved byte for byte.",
+  "changelog_prefix_unchanged": true
+}

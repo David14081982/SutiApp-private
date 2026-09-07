@@ -11,6 +11,6 @@
 
 Los intentos de preparación fallidos se conservan en test-maintenance.json y archivos de fallo. El origen55473 no estaba autorizado por CORS; preflight403 y comparación del mismo PDF en producción confirmaron la causa. La suite completa definitiva usa el origen8080 ya autorizado. No se cambió CORS, Edge Functions, datos ni UI para obtener PASS.
 
-Verificación posterior de publicación y Registry se registrarán en VERIFICATION.md y sus JSON finales; este archivo no declara por sí solo cerrado H03.
+Verificación publicada: Chrome12 casos PASS y regresión global completa PASS, mismo hash del candidato, worker168, cero errores JS. Registry: suite completa de generación/freshness/lookup/incremental/secretos/determinismo PASS sobre checkout sin escrituras concurrentes. Cierre en VERIFICATION.md; revisión APPROVED en ARCHITECT_REVIEW.md.
 
 Control adicional: Admin decisions cutover, H009 y Pages deployment PASS. La suite ampliada test-admin-affiliates.js falla una assertion histórica de screens-admin-finanzas.jsx (const belongsToAffiliate=); se reprodujo exactamente contra lecturas de git HEAD3029c74. Ese archivo/test no cambia en la entrega H03; no se modifica lógica financiera para corregir un test ajeno. La regresión funcional Admin Afiliados sí pasa en la suite global. Ver affiliates-baseline-test.json y focal-static.json.

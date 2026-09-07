@@ -1,0 +1,16 @@
+{
+  "at": "2026-09-07T22:14:32.655Z",
+  "status": "PASS",
+  "function": {
+    "signature": "get_admin_refresh_context()",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_admin_refresh_context()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE\n SET search_path TO ''\nAS $function$\ndeclare\n  context jsonb := public.get_admin_access_context();\n  versions jsonb := '{}'::jsonb;\nbegin\n  if context->>'role_code' is not null\n     or coalesce((context->>'full_access')::boolean,false)\n     or jsonb_array_length(coalesce(context->'section_actions','[]'::jsonb))>0 then\n    with marks(domain,mark) as (\n      select domain,'' from unnest(array['roles','segments','access','companies','profiles','rules','banners']) domain\n      union all select 'roles','r:'||r.ctid::text||':'||r.xmin::text from public.admin_roles r\n      union all select 'roles','p:'||r.ctid::text||':'||r.xmin::text from public.admin_role_permissions r\n      union all select 'segments',r.ctid::text||':'||r.xmin::text from public.segmentation_catalog_entries r\n      union all select 'access',r.ctid::text||':'||r.xmin::text from public.screen_access_policies r\n      union all select 'companies','c:'||r.ctid::text||':'||r.xmin::text from public.companies r\n      union all select 'companies','l:'||r.ctid::text||':'||r.xmin::text from public.company_assets r\n        where r.company_id in (select id from public.companies)\n      union all select 'companies','a:'||r.ctid::text||':'||r.xmin::text from public.app_assets r\n        where r.id in (select logo_asset_id from public.companies\n          union select a.asset_id from public.company_assets a where a.company_id in (select id from public.companies))\n      union all select 'profiles','p:'||r.ctid::text||':'||r.xmin::text from public.company_benefit_profiles r\n      union all select 'profiles','b:'||r.ctid::text||':'||r.xmin::text from public.company_benefits r\n      union all select 'rules',r.ctid::text||':'||r.xmin::text from public.company_audience_rules r\n      union all select 'banners','b:'||r.ctid::text||':'||r.xmin::text from public.banners r\n      union all select 'banners','a:'||r.ctid::text||':'||r.xmin::text from public.app_assets r\n        where r.id in (select image_asset_id from public.banners)\n    ), fingerprints as (\n      select domain,md5(string_agg(mark,',' order by mark)) value from marks group by domain\n    ) select jsonb_object_agg(domain,value) into versions from fingerprints;\n  end if;\n  return context || jsonb_build_object(\n    'content_versions',versions,\n    'actor_auth_user_id',auth.uid(),\n    'actor_session_id',auth.jwt()->>'session_id'\n  );\nend;\n$function$\n",
+    "definition_md5": "40c99eff8e19fedb085b205f9406550d",
+    "owner": "postgres",
+    "prosecdef": false,
+    "proconfig": [
+      "search_path=\"\""
+    ],
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  "rollback_fixture_rows": 0
+}

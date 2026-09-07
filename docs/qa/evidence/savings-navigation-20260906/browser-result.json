@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "viewports": [
+    390,
+    1440
+  ],
+  "checks": [
+    "immediate person view",
+    "previous/next",
+    "preserved list and focus",
+    "unsaved changes protected",
+    "keyboard containment and Escape",
+    "visible failed-load retry",
+    "late response cannot cross persons",
+    "readable labels",
+    "retained sections",
+    "mobile without page overflow"
+  ]
+}

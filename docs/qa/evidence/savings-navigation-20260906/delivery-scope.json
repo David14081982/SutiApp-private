@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "base": "bcdbd96d3838ff7abd22909c2283a4325037c265",
+  "changed": [
+    "savings-review-admin.jsx",
+    "screens-admin-savings.jsx"
+  ],
+  "module_count": 103,
+  "backend_and_repositories_unchanged": true,
+  "self_savings_home_finance_auth_unchanged": true,
+  "bundle_sha256": "cd4521b05b43790dab6c637d3cdb6d116636b71c5806f11d2757a5ebabf41e51"
+}

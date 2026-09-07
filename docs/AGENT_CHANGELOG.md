@@ -2642,3 +2642,8 @@ Review import normalization 006 is applied before publication, with immutable ba
 ## H-SAVINGS-ACCESS-001 - email-controlled private review
 
 Owner requested OPEN now and configurable email restrictions. Applied migration 007 with default OPEN, zero assignments/events, private definition backup and guarded recovery. Added manager-only access card with consult/edit levels using existing section responsibility APIs. SQL/RLS/actual authenticated-role checks, focused browser and dependent review tests PASS. Isolated v212/cache159 delivery excludes pending financial operations and unrelated Auth edits. Full authenticated/global matrix remains BLOCKED at existing automated login timeout; no global PASS claimed. Evidence: docs/qa/evidence/savings-access-20260906/RESULT.md.
+
+
+## H-SAVINGS-NAVIGATION-001 - plain Savings person navigation
+
+Owner-authorized UI-only improvement: immediate per-person review/dialog, previous/next, preserved list/focus, readable Spanish and mobile fields. All sections/actions/data authority retained; no financial/Google/permission changes. Focused browser and generated two-chunk scope checks PASS. v213/cache160 excludes pending operational work. Registry structural update N/A for copy/CSS/microinteraction; hash staleness declared. Evidence: docs/qa/evidence/savings-navigation-20260906/RESULT.md.

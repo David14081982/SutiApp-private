@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "service_worker": "allow",
+      "status": "PASS",
+      "version": true,
+      "review": true,
+      "admin": true,
+      "auth": "unauthenticated"
+    },
+    {
+      "service_worker": "block",
+      "status": "PASS",
+      "version": true,
+      "review": true,
+      "admin": true,
+      "auth": "unauthenticated"
+    }
+  ],
+  "authenticated_acceptance": "NOT_CLAIMED"
+}

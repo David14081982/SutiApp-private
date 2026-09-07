@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "engine": "Chromium",
+  "physical_devices": false,
+  "network": "BLOCKED",
+  "samples": [
+    {
+      "width": 1440,
+      "frame": 430
+    },
+    {
+      "width": 1440,
+      "frame": 320
+    },
+    {
+      "width": 1440,
+      "frame": 375
+    },
+    {
+      "width": 1440,
+      "frame": 390
+    },
+    {
+      "width": 320
+    },
+    {
+      "width": 375
+    },
+    {
+      "width": 390
+    },
+    {
+      "width": 430
+    },
+    {
+      "width": 900
+    },
+    {
+      "width": 1440
+    }
+  ],
+  "checks": [
+    "summary above all four tabs",
+    "content retains available width",
+    "no frame horizontal overflow",
+    "container resize 430/320/900/430 without reload",
+    "detail columns use actual container width",
+    "correction sheet fits actual container",
+    "optional observation unchanged",
+    "no page errors"
+  ]
+}

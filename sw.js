@@ -1,5 +1,5 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v165';
+const CACHE = 'sutiapp-v166';
 const SHELL_URL = './SutiApp.html';
 const CORE = [
   './',
@@ -7,7 +7,7 @@ const CORE = [
   './app/vendor/react-18.3.1/react.production.min.js',
   './app/vendor/react-dom-18.3.1/react-dom.production.min.js',
   './app/vendor/supabase-js-2.112.3/supabase.min.js',
-  './app/bundle.js?v=218',
+  './app/bundle.js?v=219',
   './app/supabase-client.js',
   './app/affiliate-repository.js?v=5',
   './app/financial-legacy-repository.js?v=10',

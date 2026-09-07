@@ -1,10 +1,12 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/savings-reference-panel-20260906');
+const root=path.resolve(__dirname,'..'),layoutOnly=process.argv.includes('--layout-only'),out=path.resolve(process.env.SAVINGS_PANEL_QA_OUTPUT||path.join(root,layoutOnly?'docs/qa/evidence/savings-summary-stack-20260907':'docs/qa/evidence/savings-reference-panel-20260906'));
+const samples=layoutOnly?[{width:1440,frame:430},...[320,375,390].map(frame=>({width:1440,frame})),...[320,375,390,430,900,1440].map(width=>({width}))]:[320,375,390,430,1440].map(width=>({width}));
 async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
- try{for(const width of [320,375,390,430,1440]){
+ try{for(const {width,frame} of samples){const label=frame?'frame-'+frame:width;
   const page=await browser.newPage({viewport:{width,height:900},reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});await page.route('**/*',r=>r.abort());
   await page.setContent('<html lang="es"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}*{box-sizing:border-box}</style></head><body><div id="root"></div></body></html>');
+  if(frame)await page.addStyleTag({content:'#root{width:'+frame+'px;height:850px;max-width:100%;margin:24px auto;overflow:auto;border-radius:30px}'});
   for(const f of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/icons.jsx','app/savings-panel-reference.jsx','app/savings-withdrawal-list.jsx','app/savings-panel-admin.jsx'])await page.addScriptTag({content:fs.readFileSync(path.join(root,f),'utf8')});
   await page.evaluate(()=>{
    let sequence=0;window.crypto.randomUUID=()=> 'fixture-command-'+(++sequence);
@@ -23,6 +25,19 @@ async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chr
    window.SavingsReviewRepository={withdrawals:async()=>({source_folio:'00123',records:[withdrawal]}),save:async c=>{saves.push(structuredClone(c));requestRecord.proposed_data={...requestRecord.proposed_data,...c.changes};requestRecord.status=c.status;requestRecord.version++;}};
    window.uiRoot=ReactDOM.createRoot(document.getElementById('root'));window.mount=()=>uiRoot.render(React.createElement(SavingsPanelAdmin,{app:{toast:()=>{}},onBack:()=>{window.returned=true;}}));mount();
   });
+  if(layoutOnly){
+   await page.getByRole('tab',{name:'Cobranza',exact:true}).waitFor();
+   const geometry=async()=>page.evaluate(()=>{const summary=document.querySelector('.svp-kpis').getBoundingClientRect(),tabs=document.querySelector('[role=tablist]').getBoundingClientRect(),container=document.querySelector('.svp').getBoundingClientRect(),root=document.getElementById('root');return {summary:{bottom:summary.bottom,width:summary.width},tabs:{top:tabs.top,width:tabs.width},container:{width:container.width},overflow:root.scrollWidth-root.clientWidth};});
+   const g=await geometry();await page.screenshot({path:path.join(out,`summary-${label}.png`)});fs.writeFileSync(path.join(out,`geometry-${label}.json`),JSON.stringify(g,null,2));
+   assert(g.summary.bottom<=g.tabs.top,'SUMMARY_MUST_PRECEDE_TABS: '+label);assert(g.tabs.width>=g.summary.width-2,'CONTENT_SQUEEZED: '+label);assert(g.overflow<=1,'FRAME_OVERFLOW: '+label);
+   if(frame===430){for(const resized of [320,900,430]){await page.locator('#root').evaluate((e,w)=>{e.style.width=w+'px';},resized);const changed=await geometry();assert(changed.summary.bottom<=changed.tabs.top&&changed.overflow<=1,'CONTAINER_RESIZE');assert.equal(changed.container.width,resized);}}
+   for(const name of ['Ahorradores','Retiros y cambios','Revisión','Cobranza']){await page.getByRole('tab',{name:new RegExp('^'+name)}).click();await page.getByRole('tab',{name:new RegExp('^'+name),selected:true}).waitFor();assert((await geometry()).summary.bottom<=(await geometry()).tabs.top);}
+   await page.getByRole('tab',{name:'Ahorradores',exact:true}).click();await page.locator('.svp-person').first().click();await page.getByText('TIENE AHORRADO',{exact:true}).waitFor();
+   const columns=await page.locator('.svp-detail-grid').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length);assert.equal(columns,(frame||width)>=850?2:1,'DETAIL_MUST_USE_CONTAINER_WIDTH');
+   await page.getByRole('button',{name:'Corregir datos de este ahorrador',exact:true}).click();await page.getByRole('dialog').waitFor();const modal=await page.getByRole('dialog').boundingBox();assert(modal.width<=Math.min(frame||width,560)+1,'SHEET_TOO_WIDE: '+label);
+   await page.getByLabel('Aportación mensual',{exact:true}).fill('700');assert(await page.getByRole('button',{name:'Guardar cambios',exact:true}).isEnabled());assert.equal(await page.getByLabel('Observaciones (opcional)',{exact:true}).inputValue(),'');await page.screenshot({path:path.join(out,`correction-${label}.png`)});
+   assert.deepEqual(errors,[]);await page.close();continue;
+  }
   await page.getByRole('tab',{name:'Ahorradores',exact:true}).click();await page.locator('.svp-person').first().waitFor();
   assert.equal(await page.locator('.svp-person').count(),20);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   await page.screenshot({path:path.join(out,`panel-padron-${width}.png`)});
@@ -46,7 +61,7 @@ async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chr
   await page.evaluate(()=>{window.failNext=true;});await page.getByRole('tab',{name:'Ahorradores',exact:true}).click();await page.getByRole('alert').waitFor();await page.getByRole('button',{name:'Reintentar',exact:true}).click();await page.locator('.svp-person').first().waitFor();
   await page.locator('.svp-person').nth(19).click();await page.getByText('TIENE AHORRADO',{exact:true}).waitFor();await page.getByRole('button',{name:'Siguiente ›',exact:true}).click();await page.getByRole('heading',{name:'Persona de prueba 20',exact:true}).waitFor();await page.getByRole('button',{name:'‹ Anterior',exact:true}).click();await page.getByRole('heading',{name:'Persona de prueba 19',exact:true}).waitFor();await page.getByRole('button',{name:'Volver al administrador',exact:true}).click();await page.locator('.svp-person').first().waitFor();assert.equal(await page.evaluate(()=>document.activeElement.dataset.savingsPersonId),'fixture-19');
   assert.deepEqual(errors,[]);await page.close();
- }const report={status:'PASS',engine:'Chromium desktop emulation',physical_devices:false,network:'BLOCKED',viewports:[320,375,390,430,1440],checks:['four tabs','server paging/search arguments','search focus preserved','keyboard opens person','long name and large amount no overflow','six dates/show more','multiple withdrawal source list','read-only view/explicit correction sheet','optional observation/no-op disabled','save then reload detail','discount correction and reset','review/reopen','filtered context restored','empty/error/retry','responsive screenshots','no page errors']};fs.writeFileSync(path.join(out,'browser-result.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ }const report=layoutOnly?{status:'PASS',engine:'Chromium',physical_devices:false,network:'BLOCKED',samples,checks:['summary above all four tabs','content retains available width','no frame horizontal overflow','container resize 430/320/900/430 without reload','detail columns use actual container width','correction sheet fits actual container','optional observation unchanged','no page errors']}:{status:'PASS',engine:'Chromium desktop emulation',physical_devices:false,network:'BLOCKED',viewports:[320,375,390,430,1440],checks:['four tabs','server paging/search arguments','search focus preserved','keyboard opens person','long name and large amount no overflow','six dates/show more','multiple withdrawal source list','read-only view/explicit correction sheet','optional observation/no-op disabled','save then reload detail','discount correction and reset','review/reopen','filtered context restored','empty/error/retry','responsive screenshots','no page errors']};fs.writeFileSync(path.join(out,'browser-result.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
  }finally{await browser.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

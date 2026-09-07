@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "command": "SUTIAPP_IMAGE_E2E_URL=https://david14081982.github.io/SutiApp-private/ node scripts/test-global-image-regression-production-live.js",
+  "source": "execution session 13781 stdout; exit_code=0",
+  "release": "bundle219 / sutiapp-v166",
+  "publicAssets": {
+    "checked": 156,
+    "passed": 156
+  },
+  "programAssets": {
+    "checked": 248,
+    "passed": 248
+  },
+  "affiliateFiles": {
+    "checked": 29,
+    "passed": 29
+  },
+  "adminDocumentThumbnails": {
+    "checked": 10,
+    "passed": 10
+  },
+  "surfaces": [
+    "loginSeal",
+    "profile",
+    "AdminAffiliates",
+    "documentImages",
+    "legitimatePdf",
+    "membership",
+    "loan",
+    "programCatalog",
+    "gallery",
+    "marketplace",
+    "fullscreen",
+    "refresh",
+    "withAndWithoutServiceWorker"
+  ],
+  "surfaceVerdict": "PASS",
+  "browserErrors": 0,
+  "productionDataMutations": 0
+}

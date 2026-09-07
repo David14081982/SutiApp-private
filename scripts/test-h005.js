@@ -13,6 +13,7 @@ function createHarness(options = {}) {
   let otpCalls = 0;
   let updateUserCalls = 0;
   let authStateListener = null;
+  let repositoryCalls = 0;
   let releaseRepository = null;
   const repositoryGate = options.delayRepository ? new Promise((resolve) => { releaseRepository = resolve; }) : null;
   const auth = {
@@ -48,6 +49,7 @@ function createHarness(options = {}) {
     clearProfilePhotoCache() {},
     getProfilePhoto: async () => null,
     getCurrentAffiliate: async () => {
+      repositoryCalls += 1;
       if (repositoryGate) await repositoryGate;
       if (options.repositoryError) throw options.repositoryError;
       if (options.unlinked) {
@@ -71,7 +73,7 @@ function createHarness(options = {}) {
   const location = {
     origin: 'https://example.test',
     pathname: '/SutiApp/',
-    href: options.activationCallback ? 'https://example.test/SutiApp/?auth_flow=activation' : options.recoveryCallback ? 'https://example.test/SutiApp/?auth_flow=recovery' : 'https://example.test/SutiApp/',
+    href: options.activationCallback ? 'https://example.test/SutiApp/?auth_flow=activation' : options.recoveryCallback ? 'https://example.test/SutiApp/?auth_flow=recovery' : options.legacyRecoveryCallback ? 'https://example.test/SutiApp/#type=recovery&access_token=isolated' : 'https://example.test/SutiApp/',
   };
   const context = {
     console,
@@ -106,6 +108,8 @@ function createHarness(options = {}) {
     getSignOutCalls: () => signOutCalls,
     getOtpCalls: () => otpCalls,
     getUpdateUserCalls: () => updateUserCalls,
+    getRepositoryCalls: () => repositoryCalls,
+    getUrl: () => location.href,
     emitAuthState: (event, nextSession = session) => {
       session = nextSession;
       assert(authStateListener, 'Auth state listener is not registered');
@@ -187,13 +191,52 @@ const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
   const callback = createHarness({ session: { user: { id: 'auth-1', email: 'owner@example.test' } }, activationCallback: true, claimSucceeds: true });
   await callback.controller.bootstrap();
   assert.equal(callback.controller.getState().phase, 'activation_password');
+  callback.emitAuthState('TOKEN_REFRESHED');
+  await flushAuthEvents();
+  assert.equal(callback.controller.getState().phase, 'activation_password', 'Explicit activation must survive token refresh');
+  callback.emitAuthState('SIGNED_IN');
   assert.equal(await callback.controller.completeActivation('NewPassword!123'), true);
+  await flushAuthEvents();
   assert.equal(callback.controller.getState().phase, 'unauthenticated');
   assert.match(callback.controller.getState().notice, /Cuenta activada/);
 
   const metadataCallback = createHarness({ session: { user: { id: 'auth-2', email: 'owner@example.test', user_metadata: { sutiapp_activation: true } } }, claimSucceeds: true });
   await metadataCallback.controller.bootstrap();
-  assert.equal(metadataCallback.controller.getState().phase, 'activation_password');
+  assert.equal(metadataCallback.controller.getState().phase, 'authenticated', 'Historical metadata must not reopen password setup on normal entry');
+  metadataCallback.emitAuthState('SIGNED_IN');
+  await flushAuthEvents();
+  assert.equal(metadataCallback.controller.getState().phase, 'authenticated');
+
+  const focusedSession = { access_token: 'isolated-session-token', user: { id: 'auth-1', user_metadata: { sutiapp_activation: true } } };
+  const focused = createHarness({ session: focusedSession });
+  await focused.controller.bootstrap();
+  const initialCalls = focused.getRepositoryCalls();
+  const phases = [];
+  focused.controller.subscribe(state => phases.push(state.phase));
+  for (let i = 0; i < 10; i++) focused.emitAuthState('SIGNED_IN', focusedSession);
+  await flushAuthEvents();
+  assert.equal(focused.getRepositoryCalls(), initialCalls, 'Repeated focus events must not refetch the same resolved identity');
+  assert(phases.every(phase => phase === 'authenticated'), 'Focus must not unmount the authenticated app');
+  focused.emitAuthState('TOKEN_REFRESHED', { ...focusedSession, access_token: 'rotated-session-token' });
+  await flushAuthEvents();
+  assert(focused.getRepositoryCalls() > initialCalls, 'Token rotation must still revalidate backend context');
+
+  const cancelled = createHarness({ session: { user: { id: 'auth-1' } }, activationCallback: true });
+  await cancelled.controller.bootstrap();
+  cancelled.emitAuthState('SIGNED_IN');
+  assert.equal(await cancelled.controller.signOut(), true);
+  await flushAuthEvents();
+  assert.equal(cancelled.controller.getState().phase, 'unauthenticated', 'A queued event must not reopen a cancelled flow');
+  assert(!cancelled.getUrl().includes('auth_flow'));
+  assert.equal(cancelled.getUpdateUserCalls(), 0);
+
+  const staleActivationUrl = createHarness({ activationCallback: true });
+  await staleActivationUrl.controller.bootstrap();
+  assert.equal(await staleActivationUrl.controller.signIn('owner@example.test', 'correct'), true);
+  staleActivationUrl.emitAuthState('SIGNED_IN');
+  await flushAuthEvents();
+  assert.equal(staleActivationUrl.controller.getState().phase, 'authenticated');
+  assert(!staleActivationUrl.getUrl().includes('auth_flow'));
 
   const recoverySession = { user: { id: 'auth-1', email: 'owner@example.test' } };
   const recovery = createHarness({ session: recoverySession, recoveryCallback: true });
@@ -210,9 +253,20 @@ const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(recovery.controller.getState().phase, 'unauthenticated');
   assert.match(recovery.controller.getState().notice, /Contraseña actualizada/);
 
+  const cancelledRecovery = createHarness({ session: recoverySession, recoveryCallback: true });
+  await cancelledRecovery.controller.bootstrap();
+  cancelledRecovery.emitAuthState('PASSWORD_RECOVERY', recoverySession);
+  assert.equal(await cancelledRecovery.controller.signOut(), true);
+  await flushAuthEvents();
+  assert.equal(cancelledRecovery.controller.getState().phase, 'unauthenticated');
+  assert(!cancelledRecovery.getUrl().includes('auth_flow'));
+  assert.equal(await cancelledRecovery.controller.signIn('owner@example.test', 'correct'), true);
+  assert.equal(cancelledRecovery.getUpdateUserCalls(), 0);
+
   const queuedRecovery = createHarness({ session: recoverySession, recoveryCallback: true });
   await queuedRecovery.controller.bootstrap();
   queuedRecovery.emitAuthState('TOKEN_REFRESHED', recoverySession);
+  queuedRecovery.emitAuthState('PASSWORD_RECOVERY', recoverySession);
   assert.equal(await queuedRecovery.controller.updateRecoveredPassword('NewPassword!123'), true);
   await flushAuthEvents();
   assert.equal(queuedRecovery.controller.getState().phase, 'unauthenticated', 'queued recovery event reopened the app after completion');
@@ -224,7 +278,13 @@ const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(failedRecovery.controller.getState().errorCode, 'PASSWORD_UPDATE_FAILED');
   assert.equal(failedRecovery.getSignOutCalls(), 0);
 
-  const racingRecovery = createHarness({ session: recoverySession, delayRepository: true });
+  const otherTab = createHarness({ session: recoverySession });
+  await otherTab.controller.bootstrap();
+  otherTab.emitAuthState('PASSWORD_RECOVERY', recoverySession);
+  await flushAuthEvents();
+  assert.equal(otherTab.controller.getState().phase, 'authenticated', 'Recovery in another tab must not select this tab’s reset form');
+
+  const racingRecovery = createHarness({ session: recoverySession, delayRepository: true, legacyRecoveryCallback: true });
   const racingBootstrap = racingRecovery.controller.bootstrap();
   await flushAuthEvents();
   racingRecovery.emitAuthState('PASSWORD_RECOVERY', recoverySession);

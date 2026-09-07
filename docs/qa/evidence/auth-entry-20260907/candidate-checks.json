@@ -1,0 +1,25 @@
+{
+  "mobile": [
+    {
+      "engine": "webkit",
+      "status": "PASS",
+      "phase": "unauthenticated",
+      "newPasswordInputs": 0,
+      "bundle": "bundle.js?v=220",
+      "errors": []
+    },
+    {
+      "engine": "chromium",
+      "status": "PASS",
+      "phase": "unauthenticated",
+      "newPasswordInputs": 0,
+      "bundle": "bundle.js?v=220",
+      "errors": []
+    }
+  ],
+  "global": {
+    "status": "BLOCKED",
+    "error": "{\"status\":\"FAIL\",\"error\":\"page.waitForFunction: Timeout 30000ms exceeded.\"}",
+    "diagnostic": "H005_TEST INVALID_CREDENTIALS; no password reset performed"
+  }
+}

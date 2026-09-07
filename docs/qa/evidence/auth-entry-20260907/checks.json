@@ -1,0 +1,36 @@
+{
+  "build": "PASS",
+  "babel": "7.28.4",
+  "results": [
+    {
+      "script": "test-h005.js",
+      "status": "PASS",
+      "output": "H-005 local Auth tests: PASS"
+    },
+    {
+      "script": "test-auth-session-regression.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"repository\":\"ACTUAL_AFFILIATE_REPOSITORY\",\"validLogin\":true,\"invalidCredentials\":true,\"missingRpcControlled\":true,\"restoredSession\":true,\"refresh\":true,\"logout\":true}"
+    },
+    {
+      "script": "test-auth-prod-activation.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"observability\":true,\"callbackPasswordSetup\":true,\"failClosedPreflight\":true,\"sourceOfTruth\":\"Supabase Auth + public.affiliates\",\"secretsExposed\":false}"
+    },
+    {
+      "script": "test-auth-deployment-contract.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"protectedRpcs\":4,\"publicActivationRpcs\":1,\"missingSchemaBlocked\":true,\"anonymousExposureBlocked\":true,\"activationSchemaBlocked\":true}"
+    },
+    {
+      "script": "test-master-phase1.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"onboarding\":true,\"recovery\":true,\"impersonation\":true,\"actor_context\":true,\"rls\":true,\"ui_contract\":true}"
+    },
+    {
+      "script": "test-pages-deployment.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"pwa\":true,\"forbiddenFiles\":0}"
+    }
+  ]
+}

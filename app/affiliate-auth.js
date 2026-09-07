@@ -6,11 +6,17 @@
   let client = null;
   let bootstrapPromise = null;
   let authSubscription = null;
+  let authEventVersion = 0;
   let resolutionVersion = 0;
   let resolutionPromise = null;
   let resolutionUserId = null;
   let blockedPhase = null;
   let recoveryActive = false;
+  // Capture legacy implicit callbacks before Supabase consumes their hash.
+  let recoveryCallbackInUrl = (() => {
+    try { return /(?:^#|&)type=recovery(?:&|$)/.test(new URL(window.location.href).hash); }
+    catch (_) { return false; }
+  })();
   let state = Object.freeze({
     phase: 'loading',
     session: null,
@@ -67,7 +73,10 @@
   }
 
   function isActivationSession(session) {
-    return requestedAuthFlow() === 'activation' || Boolean(session && session.user && session.user.user_metadata && session.user.user_metadata.sutiapp_activation === true);
+    // Metadata can survive a password reset or a restored browser session.
+    // Only the explicit activation link selects password setup; metadata is
+    // never evidence that a normal login needs a new password.
+    return requestedAuthFlow() === 'activation' && Boolean(session && session.user);
   }
 
   function recoveryRequested() {
@@ -88,6 +97,7 @@
   }
 
   function clearAuthFlowUrl() {
+    recoveryCallbackInUrl = false;
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete('auth_flow');
@@ -113,6 +123,10 @@
     const version = ++resolutionVersion;
     if ((recoveryActive || recoveryRequested()) && session && session.user) {
       holdPasswordRecovery(session);
+      return;
+    }
+    if (isActivationSession(session)) {
+      if (state.phase !== 'activating_password') publish({ phase: 'activation_password', session });
       return;
     }
     if (!session || !session.user) {
@@ -203,8 +217,11 @@
   function listenForAuthChanges(authClient) {
     if (authSubscription) return;
     const result = authClient.auth.onAuthStateChange((event, session) => {
-      const recoveryLockedAtDelivery = recoveryActive || recoveryRequested() || event === 'PASSWORD_RECOVERY';
+      const eventVersion = authEventVersion;
+      const localRecoveryEvent = event === 'PASSWORD_RECOVERY' && (recoveryCallbackInUrl || recoveryRequested() || recoveryActive);
+      const recoveryLockedAtDelivery = recoveryActive || recoveryRequested() || localRecoveryEvent;
       setTimeout(() => {
+        if (eventVersion !== authEventVersion) return;
         if (event === 'SIGNED_OUT') {
           resolutionVersion += 1;
           const wasRecovering = recoveryActive;
@@ -226,7 +243,10 @@
           return;
         }
         if (event === 'PASSWORD_RECOVERY') {
-          holdPasswordRecovery(session);
+          // Auth broadcasts events to other tabs. Only the tab that opened
+          // the recovery link should switch to the password-reset form.
+          if (localRecoveryEvent) holdPasswordRecovery(session);
+          else resolveSession(session);
           return;
         }
         if (event === 'SIGNED_IN' && session && isActivationSession(session)) {
@@ -239,6 +259,13 @@
             if (recoveryActive || recoveryRequested()) holdPasswordRecovery(session);
             return;
           }
+          // Supabase also emits SIGNED_IN when a tab regains focus. Keep the
+          // mounted app and avoid repeating its reads for the exact same token.
+          // Rotated tokens and explicit context refreshes still reach backend.
+          if (event === 'SIGNED_IN' && state.phase === 'authenticated' &&
+              session && session.access_token && state.session &&
+              session.access_token === state.session.access_token &&
+              session.user && state.session.user && session.user.id === state.session.user.id) return;
           resolveSession(session);
         }
       }, 0);
@@ -267,6 +294,9 @@
 
   async function signIn(email, password) {
     blockedPhase = null;
+    authEventVersion += 1;
+    recoveryActive = false;
+    if (requestedAuthFlow()) clearAuthFlowUrl();
     resolutionVersion += 1;
     window.AffiliateRepository.clearProfilePhotoCache();
     if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
@@ -289,12 +319,18 @@
 
   async function signOut() {
     blockedPhase = null;
+    authEventVersion += 1;
     resolutionVersion += 1;
+    const leavingPasswordSetup = recoveryActive || recoveryRequested() || requestedAuthFlow() === 'activation';
     window.AffiliateRepository.clearProfilePhotoCache();
     publish({ phase: 'signing_out' });
     try {
-      const result = await provideClient().auth.signOut();
+      const result = await provideClient().auth.signOut(leavingPasswordSetup ? { scope: 'local' } : undefined);
       if (result.error) throw result.error;
+      authEventVersion += 1;
+      recoveryActive = false;
+      clearAuthFlowUrl();
+      if (window.AdminRepository && window.AdminRepository.clearAccessContext) window.AdminRepository.clearAccessContext();
       publish({ phase: 'unauthenticated' });
       return true;
     } catch (_) {
@@ -371,6 +407,7 @@
       publish({ phase: 'error', session, errorCode: 'LOGOUT_FAILED' });
       return false;
     }
+    authEventVersion += 1;
     publish({ phase: 'unauthenticated', notice: 'Cuenta activada y contraseña definida. Ya puedes iniciar sesión.' });
     return true;
   }
@@ -396,6 +433,7 @@
     if (result.error) { holdPasswordRecovery(recoverySession, 'PASSWORD_UPDATE_FAILED'); return false; }
     const signedOut = await provideClient().auth.signOut();
     if (signedOut.error) { holdPasswordRecovery(recoverySession, 'LOGOUT_FAILED'); return false; }
+    authEventVersion += 1;
     recoveryActive = false;
     resolutionVersion += 1;
     clearAuthFlowUrl();
@@ -525,6 +563,7 @@
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('recover'), style: { width: '100%', marginTop: 12, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Olvidé mi contraseña'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('activate'), style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Activar mi cuenta'),
           mode !== 'login' && mode !== 'reset' && mode !== 'activate_password' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
+          (mode === 'reset' || mode === 'activate_password') && React.createElement('button', { type: 'button', onClick: auth.signOut, disabled: busy, style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
           (auth.errorCode === 'CONNECTION_ERROR' || auth.phase === 'error' || auth.phase === 'unlinked' || auth.phase === 'ineligible' || auth.phase === 'archived') && React.createElement('button', { type: 'button', onClick: auth.retry, style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Intentar nuevamente')),
         React.createElement('p', { style: { margin: '18px 12px 0', textAlign: 'center', color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 650, lineHeight: 1.45 } }, 'Si todavía no activas tu cuenta, tu registro de afiliación permanece intacto.')));
   }

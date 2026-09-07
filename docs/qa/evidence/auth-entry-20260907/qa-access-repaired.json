@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "alias": "H005_TEST",
+  "passwordReset": true,
+  "login": "PASS",
+  "identityMetadataUnchanged": true,
+  "adminContextReadable": true,
+  "adminAuthorized": true,
+  "localSecretFileUnchanged": true,
+  "businessDataMutations": 0,
+  "otherAccountsChanged": 0
+}

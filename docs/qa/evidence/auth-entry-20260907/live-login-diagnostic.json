@@ -1,0 +1,20 @@
+[
+  {
+    "url": "http://127.0.0.1:8766/",
+    "phase": "unauthenticated",
+    "errorCode": "INVALID_CREDENTIALS",
+    "alert": "Correo o contraseña incorrectos."
+  },
+  {
+    "url": "https://sutiapp.com/",
+    "phase": "unauthenticated",
+    "errorCode": "INVALID_CREDENTIALS",
+    "alert": "Correo o contraseña incorrectos."
+  },
+  {
+    "url": "https://sutiapp.com/",
+    "phase": "unauthenticated",
+    "errorCode": "INVALID_CREDENTIALS",
+    "alert": "Correo o contraseña incorrectos."
+  }
+]

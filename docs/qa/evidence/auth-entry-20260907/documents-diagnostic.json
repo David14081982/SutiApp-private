@@ -1,0 +1,32 @@
+{
+  "getDocuments": {
+    "count": 5
+  },
+  "getHistoricalDocuments": {
+    "count": 24
+  },
+  "SELF_SERVICE_EXPEDIENTE": {
+    "count": 10,
+    "available": 10,
+    "mimes": [
+      "image/jpeg",
+      "image/png"
+    ]
+  },
+  "SELF_SERVICE_LOAN": {
+    "count": 10,
+    "available": 10,
+    "mimes": [
+      "image/jpeg",
+      "image/png"
+    ]
+  },
+  "SELF_SERVICE_MEMBERSHIP": {
+    "count": 10,
+    "available": 10,
+    "mimes": [
+      "image/jpeg",
+      "image/png"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "files": {
+    "app/affiliate-auth.js": "a660c73324fc8da4b82af1cf80470757708546de610151f8890d25b5532ce1a6",
+    "scripts/test-h005.js": "88545e6d00a678cdad885cac25d36781e04923644e918514b3152d319d1953ab",
+    "scripts/test-auth-prod-activation.js": "0f133866be30d7bfae1022a9260ed3e4236f16e7068b7ed1acafae3c65168f90",
+    "scripts/test-auth-entry-browser.js": "1c08b15277762730f4da994d2c9b83a3eb10833b19852a5aefee704144d79eca",
+    "SutiApp.html": "6d658a56882120198c59179bc9212d4b94883cf4882f40921645ff82f6969e33",
+    "sw.js": "eed52a4135ab4c4c44d60ee1b2871187ad86418997723d81b641eda77f0fc60c",
+    "app/bundle.js": "11e12e9e745d1af62aa4119b589c3f04c5707371eec3c7c89b5a8c3af07f4246"
+  },
+  "authSourceMatchesBundle": true
+}

@@ -122,8 +122,15 @@ async function audit(page) {
     report.families.profilePhotos = { status: profilePass ? 'PASS' : 'FAIL', checked: 1 };
     report.surfaces.headerProfileCredential = profilePass ? 'PASS' : 'BROKEN_SIGNED_URL';
 
-    const currentDocuments = await window.AffiliateRepository.getDocuments();
-    const historicalDocuments = await window.AffiliateRepository.getHistoricalDocuments();
+    const readDocuments = async (method) => {
+      try { return await window.AffiliateRepository[method](); }
+      catch (error) {
+        const cause = error && error.cause || {};
+        throw new Error(`DOCUMENT_READ_${method}_${error.code || 'UNKNOWN'}_${cause.code || cause.name || 'UNKNOWN'}_${cause.status || 0}`);
+      }
+    };
+    const currentDocuments = await readDocuments('getDocuments');
+    const historicalDocuments = await readDocuments('getHistoricalDocuments');
     const legacyAll = [...currentDocuments, ...historicalDocuments];
     const legacyPdf = legacyAll.find((doc) => doc.mimeType === 'application/pdf' && doc.signedUrl) || null;
     const legacyPass = await parallelPassed(legacyAll, (doc) => fetchAsset(doc.signedUrl, doc.mimeType, 'G_LEGACY_AFFILIATE_FILES', doc.classification === 'PRIVATE'));
@@ -419,7 +426,12 @@ async function main() {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'allow' });
   const page = await context.newPage();
   const browserErrors = [];
+  const networkErrors = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith('/auth/') || url.pathname.startsWith('/rest/')) networkErrors.push({ endpoint: url.pathname.split('/').slice(0, 4).join('/'), error: request.failure()?.errorText });
+  });
   try {
     await page.goto(target, { waitUntil: 'domcontentloaded' });
     const loginSeal = await loginSealSurface(page, 'initial');
@@ -472,6 +484,9 @@ async function main() {
       productionDataMutations: 0,
       rawUrlsLogged: 0,
     }));
+  } catch (error) {
+    if (networkErrors.length) console.error(JSON.stringify({ networkErrors: networkErrors.slice(-10) }));
+    throw error;
   } finally {
     await context.close();
     await browser.close();

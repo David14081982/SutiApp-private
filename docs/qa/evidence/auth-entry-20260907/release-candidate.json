@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "candidate": "C:\\Users\\david\\AppData\\Local\\Temp\\sutiapp-auth-entry-XaJ9iO\\candidate",
+  "publishedBaselineMatchesHead": true,
+  "baseCommit": "2ed0d44753422b5f450627ab3c4115dea0e01761",
+  "publishedBundleSha256": "9d2ec566949058786fab01775f3346c7346cfff343a42fe638c64940328efcf8",
+  "candidateBundleSha256": "f362610ec355440873db47e36ddd2625d0ba75bed65fcd8897e096b70154b5ab",
+  "onlyChangedModule": "affiliate-auth.js",
+  "unchangedBeforeModule": true,
+  "unchangedAfterModule": true,
+  "cachebusters": [
+    "bundle=220",
+    "service-worker=167"
+  ],
+  "deployed": false
+}

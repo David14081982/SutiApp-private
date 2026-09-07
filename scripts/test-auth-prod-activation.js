@@ -14,7 +14,7 @@ assert.match(auth, /signInWithOtp/);
 assert.match(auth, /shouldCreateUser:\s*true/);
 assert.match(auth, /searchParams\.set\('auth_flow', flow\)/);
 assert.match(auth, /authFlowUrl\('activation'\)/);
-assert.match(auth, /user_metadata\.sutiapp_activation === true/);
+assert.match(auth, /requestedAuthFlow\(\) === 'activation' && Boolean\(session && session\.user\)/);
 assert.match(auth, /completeActivation/);
 assert.match(auth, /claimCurrentIdentity/);
 assert.match(auth, /ACTIVATION_NOT_REGISTERED/);

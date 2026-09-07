@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "productionMutations": 0,
+  "results": [
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "status": "PASS",
+      "baselineReproduced": true,
+      "loginGeometry": "IDENTICAL",
+      "restoredMetadata": true,
+      "focusEvents": 50,
+      "recoveryBroadcastScoped": true,
+      "explicitLinksAndReload": true,
+      "cancelAndLogin": true,
+      "passwordWrites": 0
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 5",
+      "status": "PASS",
+      "baselineReproduced": true,
+      "loginGeometry": "IDENTICAL",
+      "restoredMetadata": true,
+      "focusEvents": 50,
+      "recoveryBroadcastScoped": true,
+      "explicitLinksAndReload": true,
+      "cancelAndLogin": true,
+      "passwordWrites": 0
+    }
+  ]
+}

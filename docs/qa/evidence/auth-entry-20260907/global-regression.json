@@ -1,0 +1,20 @@
+[
+  {
+    "label": "LOCAL_BUILD",
+    "url": "http://127.0.0.1:8766/",
+    "status": "BLOCKED",
+    "exitCode": 1,
+    "output": "",
+    "error": "{\"status\":\"FAIL\",\"error\":\"page.waitForFunction: Timeout 30000ms exceeded.\"}",
+    "diagnostic": "H005_TEST account returns INVALID_CREDENTIALS; see live-login-diagnostic.json"
+  },
+  {
+    "label": "GITHUB_PAGES",
+    "url": "https://david14081982.github.io/SutiApp-private/",
+    "status": "BLOCKED",
+    "exitCode": 1,
+    "output": "",
+    "error": "{\"status\":\"FAIL\",\"error\":\"page.waitForFunction: Timeout 30000ms exceeded.\"}",
+    "diagnostic": "H005_TEST account returns INVALID_CREDENTIALS; see live-login-diagnostic.json"
+  }
+]

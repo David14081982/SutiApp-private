@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "base": "5e60f921542e8bde51e6f897e5c6ab2b413dbd2e",
+  "changed": [
+    "savings-access-admin.jsx",
+    "savings-review-repository.js",
+    "screens-admin-savings.jsx"
+  ],
+  "removed": [],
+  "module_count": 103,
+  "public_savings_readers_unchanged": true,
+  "auth_frontend_unchanged": true,
+  "bundle_lf_sha256": "b1366ee7fb9575a0f690cfe83427cffe022806435e17c99c8a716f3ed8269ffe"
+}

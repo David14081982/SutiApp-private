@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "site": "https://sutiapp.com/",
+  "commit": "5e60f921542e8bde51e6f897e5c6ab2b413dbd2e",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/34072815042",
+  "published_git_blob_sha256": "36d7059f1c1e942836c347d515fc72133805e9e56419fb5b5fe2f7ba5e8946e2",
+  "local_worktree_sha256": "e07969ba8cfd949bf91164abfeeb2949a5129c4efc6b72dd818b4e64987b6d3c",
+  "newline_note": "Git committed LF; local generated artifact CRLF. Published bytes match committed blob exactly.",
+  "version": 211,
+  "backend": "005/006 applied; private review only",
+  "financial_publication": false,
+  "authenticated_owner_acceptance": "PENDING_ACCOUNT"
+}

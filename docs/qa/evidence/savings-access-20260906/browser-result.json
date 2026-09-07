@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "fixture_network": "BLOCKED",
+  "checks": [
+    "OPEN default",
+    "email read/edit levels",
+    "remove member",
+    "mode network retry reuses command",
+    "missing account explicit",
+    "nonmanager no controls",
+    "mobile"
+  ]
+}

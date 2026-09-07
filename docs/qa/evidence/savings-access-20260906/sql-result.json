@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "mode": "ROLLBACK",
+  "installed": true,
+  "checks": [
+    "OPEN preserves current administrators",
+    "no public access",
+    "email assignment reused",
+    "read/edit levels",
+    "review edits without financial privileges",
+    "no self elevation",
+    "restricted role gate",
+    "manager recovery access",
+    "revocation immediate",
+    "mode retry and stale version",
+    "other domains unchanged",
+    "recovery before activity"
+  ]
+}

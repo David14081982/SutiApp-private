@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "service_worker": "allow",
+      "status": "PASS",
+      "reviewModule": true,
+      "reviewRepository": true,
+      "authPhase": "unauthenticated",
+      "seal": true
+    },
+    {
+      "service_worker": "block",
+      "status": "PASS",
+      "reviewModule": true,
+      "reviewRepository": true,
+      "authPhase": "unauthenticated",
+      "seal": true
+    }
+  ],
+  "authenticated_matrix": "BLOCKED_INVALID_TEST_CREDENTIALS"
+}

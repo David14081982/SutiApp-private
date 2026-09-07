@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "applied_at": "2026-09-07T01:47:08.565Z",
+  "financial_before": [
+    {
+      "transactions": 0,
+      "participants": 363,
+      "evidence": 42229,
+      "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+    }
+  ],
+  "financial_after": [
+    {
+      "transactions": 0,
+      "participants": 363,
+      "evidence": 42229,
+      "self_reader": "74f504337e4f336e6b12da3ab32f30a6"
+    }
+  ],
+  "default_state": [
+    {
+      "mode": "OPEN",
+      "version": 0,
+      "events": 0,
+      "members": 0
+    }
+  ],
+  "original_oids_and_grants_preserved": true,
+  "review_before": [
+    {
+      "records": 1463,
+      "events": 0,
+      "roles": 2,
+      "responsibilities": 77
+    }
+  ]
+}

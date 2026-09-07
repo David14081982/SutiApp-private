@@ -22,3 +22,14 @@ Q es el saldo reconocido en la captura de origen. Las correcciones permanecen pr
 La incidencia de préstamos conserva ID, Folios y estatus originales. Su revisión no liquida el préstamo ni habilita retiros. La captura muestra su fecha y no sustituye una comprobación vigente de adeudos.
 
 Si otra persona modifica la misma fila, el sistema pide volver a abrirla para evitar sobrescribir su trabajo. Si necesitas salir con cambios sin guardar, guárdalos primero En revisión.
+
+
+## Acceso del encargado por correo
+
+1. Entra con tu cuenta administradora y abre Admin > Ahorro > Conciliación y revisión.
+2. En Acceso a Ahorro, escribe el correo de la persona y elige Sólo consultar o Revisar y corregir; pulsa Autorizar acceso. La cuenta debe estar registrada y tener su correo confirmado.
+3. Por ahora queda Libre para administradores autorizados. Los ahorradores comunes y visitantes no pueden entrar. Las personas que agregues también podrán entrar con su propia cuenta.
+4. Cuando decidas limitarlo, selecciona Sólo personas autorizadas en la lista y Guarda modalidad. Los administradores que gestionan permisos mantienen acceso para administrar la lista.
+5. Quitar acceso revoca lo asignado en esta lista. En modalidad libre, una persona que ya tenga permisos por su rol administrativo los conserva; para limitar el acceso usa la modalidad restringida.
+
+Estos permisos permiten revisar la información privada. No autorizan publicar saldos, pagar retiros ni otorgar permisos generales de administrador. La observación de cada corrección sigue siendo opcional y queda historial automático.

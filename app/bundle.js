@@ -26901,6 +26901,10 @@ Object.assign(window, {
   return result.data;
  }
  window.SavingsReviewRepository = Object.freeze({
+  access: () => rpc('get_savings_admin_access', {}),
+  setAccessMode: command => rpc('set_savings_admin_access_mode', { p_mode: command.mode, p_version: command.version, p_client_action_id: command.key }),
+  authorizeEmail: (email, edit) => rpc('set_section_responsibilities', { p_email: email.trim(), p_section_key: 'savings', p_actions: edit ? ['read', 'update'] : ['read'] }),
+  revokeAccess: id => rpc('revoke_section_responsibilities', { p_auth_user_id: id, p_section_key: 'savings' }),
   list: () => rpc('get_admin_savings_review', { p_record_id: null }),
   detail: id => rpc('get_admin_savings_review', { p_record_id: id }),
   save: command => rpc('admin_save_savings_review', {
@@ -26908,6 +26912,232 @@ Object.assign(window, {
    p_status: command.status, p_observation: command.observation || null, p_client_action_id: command.key,
   }),
  });
+})();
+})();
+/* @@file savings-access-admin.jsx */
+(function(){
+/* Confirmed-account responsibilities; never assigns total administrator. */
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  function SavingsAccessAdmin() {
+    const [data, setData] = React.useState(null),
+      [mode, setMode] = React.useState(''),
+      [email, setEmail] = React.useState(''),
+      [level, setLevel] = React.useState('edit');
+    const [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [note, setNote] = React.useState('');
+    const alive = React.useRef(true),
+      lock = React.useRef(false),
+      retry = React.useRef(null),
+      sequence = React.useRef(0),
+      repo = window.SavingsReviewRepository;
+    function explain(e) {
+      const t = String(e && e.message || e);
+      if (/NOT_FOUND/.test(t)) return 'No se encontró una cuenta confirmada con ese correo. La persona debe registrar una cuenta y confirmar su correo antes de autorizarla.';
+      if (/AMBIGUOUS/.test(t)) return 'Ese correo coincide con más de una cuenta. Revisa las cuentas antes de autorizar.';
+      if (/SELF_ASSIGNMENT/.test(t)) return 'Tu acceso como administrador de permisos ya está disponible; no necesitas agregarte a la lista.';
+      if (/CHANGED/.test(t)) return 'La configuración cambió. Revisa la modalidad actual antes de guardar.';
+      if (/DENIED|42501/.test(t)) return 'No tienes permiso para administrar estos accesos.';
+      return 'No se pudo confirmar el resultado. Actualiza los accesos o vuelve a intentar.';
+    }
+    async function load() {
+      const id = ++sequence.current;
+      try {
+        const value = await repo.access();
+        if (alive.current && id === sequence.current) {
+          setData(value);
+          setMode(value.mode);
+        }
+      } catch (e) {
+        if (alive.current && id === sequence.current) setError(explain(e));
+      }
+    }
+    React.useEffect(() => {
+      alive.current = true;
+      load();
+      return () => {
+        alive.current = false;
+        sequence.current++;
+      };
+    }, []);
+    async function run(action, success) {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      setNote('');
+      try {
+        await action();
+        if (!alive.current) return;
+        retry.current = null;
+        setEmail('');
+        await load();
+        if (alive.current) setNote(success);
+      } catch (e) {
+        if (alive.current) {
+          setError(explain(e));
+          if (/CHANGED/.test(String(e.message))) {
+            retry.current = null;
+            await load();
+          }
+        }
+      } finally {
+        lock.current = false;
+        if (alive.current) setBusy(false);
+      }
+    }
+    function saveMode() {
+      if (!retry.current || retry.current.mode !== mode) retry.current = {
+        mode,
+        version: data.version,
+        key: crypto.randomUUID()
+      };
+      run(() => repo.setAccessMode(retry.current), 'Modalidad de acceso guardada.');
+    }
+    const style = {
+      padding: 15,
+      margin: '10px 0 16px',
+      border: '1px solid var(--hairline,#dfe2e8)',
+      borderRadius: 14,
+      background: 'white',
+      fontSize: 12,
+      lineHeight: 1.5
+    };
+    if (data && !data.can_manage) return null;
+    return h('section', {
+      'data-savings-access': 'settings',
+      style
+    }, h('h2', {
+      style: {
+        fontSize: 16,
+        margin: '0 0 8px'
+      }
+    }, 'Acceso a Ahorro'), error && h('div', {
+      role: 'alert',
+      className: 'sava-error'
+    }, error), note && h('div', {
+      role: 'status',
+      className: 'sava-success'
+    }, note), !data ? h('div', null, 'Consultando permisos… ', h('button', {
+      className: 'sava-button',
+      onClick: () => {
+        setError('');
+        load();
+      }
+    }, 'Reintentar')) : h(React.Fragment, null, h('p', null, 'Agrega personas por su correo para que consulten o revisen Ahorro. Esta autorización no les da acceso total a SutiApp.'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        flexWrap: 'wrap',
+        alignItems: 'end'
+      }
+    }, h('label', {
+      style: {
+        flex: 1,
+        minWidth: 210
+      }
+    }, 'Modalidad de acceso', h('select', {
+      'aria-label': 'Modalidad de acceso a Ahorro',
+      className: 'sava-select',
+      style: {
+        display: 'block',
+        width: '100%'
+      },
+      disabled: busy,
+      value: mode,
+      onChange: e => {
+        setMode(e.target.value);
+        retry.current = null;
+      }
+    }, h('option', {
+      value: 'OPEN'
+    }, 'Libre para administradores autorizados'), h('option', {
+      value: 'RESTRICTED'
+    }, 'Sólo personas autorizadas en la lista'))), h('button', {
+      className: 'sava-button is-primary',
+      disabled: busy || mode === data.mode,
+      onClick: saveMode
+    }, 'Guardar modalidad')), h('p', {
+      style: {
+        color: 'var(--ink-3,#687084)'
+      }
+    }, 'Libre mantiene los permisos administrativos actuales. Restringido exige estar en la lista. Los administradores que gestionan permisos conservan acceso en ambas modalidades. Los visitantes y ahorradores comunes no pueden entrar.'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        alignItems: 'end',
+        flexWrap: 'wrap'
+      }
+    }, h('label', {
+      style: {
+        flex: 1,
+        minWidth: 200
+      }
+    }, 'Correo de la persona', h('input', {
+      'aria-label': 'Correo para acceso a Ahorro',
+      className: 'sava-input',
+      type: 'email',
+      value: email,
+      disabled: busy,
+      onChange: e => setEmail(e.target.value),
+      placeholder: 'persona@dominio.com'
+    })), h('label', null, 'Permiso', h('select', {
+      'aria-label': 'Permiso en Ahorro',
+      className: 'sava-select',
+      style: {
+        display: 'block'
+      },
+      value: level,
+      disabled: busy,
+      onChange: e => setLevel(e.target.value)
+    }, h('option', {
+      value: 'edit'
+    }, 'Revisar y corregir'), h('option', {
+      value: 'read'
+    }, 'Sólo consultar'))), h('button', {
+      className: 'sava-button is-primary',
+      disabled: busy || !/^\S+@\S+\.\S+$/.test(email.trim()),
+      onClick: () => run(() => repo.authorizeEmail(email, level === 'edit'), 'Persona autorizada para Ahorro.')
+    }, 'Autorizar acceso')), h('h3', {
+      style: {
+        fontSize: 13,
+        marginTop: 16
+      }
+    }, 'Personas autorizadas'), !(data.members || []).length ? h('p', null, 'Todavía no has agregado personas a la lista.') : h('div', {
+      style: {
+        overflowX: 'auto'
+      }
+    }, h('table', {
+      className: 'sava-table',
+      'aria-label': 'Personas autorizadas en Ahorro'
+    }, h('thead', null, h('tr', null, ['Correo', 'Permiso', 'Acción'].map(t => h('th', {
+      key: t
+    }, t)))), h('tbody', null, data.members.map(row => h('tr', {
+      key: row.auth_user_id
+    }, h('td', null, row.email), h('td', null, row.actions.includes('update') ? 'Revisar y corregir' : 'Sólo consultar'), h('td', null, h('button', {
+      className: 'sava-button',
+      disabled: busy,
+      'aria-label': 'Quitar acceso ' + row.email,
+      onClick: () => run(() => repo.revokeAccess(row.auth_user_id), 'Acceso de la lista retirado.')
+    }, 'Quitar acceso'))))))), h('p', {
+      style: {
+        color: 'var(--ink-3,#687084)'
+      }
+    }, 'En modalidad libre, quitar a alguien de la lista conserva los permisos que ya tenga por su rol administrativo. Restringido limita el acceso a esta lista, además de los administradores de permisos.'), h('details', null, h('summary', null, 'Historial de modalidades'), !(data.history || []).length ? h('p', null, 'Sin cambios de modalidad.') : data.history.map(row => h('p', {
+      key: row.id
+    }, new Date(row.created_at).toLocaleString('es-MX') + ' · ' + (row.before_mode === 'OPEN' ? 'Libre' : 'Restringido') + ' → ' + (row.after_mode === 'OPEN' ? 'Libre' : 'Restringido') + ' · ' + row.actor_auth_user_id))), h('button', {
+      className: 'sava-button',
+      disabled: busy,
+      onClick: () => {
+        setError('');
+        load();
+      }
+    }, 'Actualizar accesos')));
+  }
+  window.SavingsAccessAdmin = SavingsAccessAdmin;
 })();
 })();
 /* @@file savings-review-admin.jsx */
@@ -49104,7 +49334,9 @@ Object.assign(window, {
       'aria-current': tab === item[0] ? 'page' : undefined,
       onClick: () => setTab(item[0]),
       'data-savings-admin-tab': item[0]
-    }, item[1]))), h(window.SavingsReviewAdmin, {
+    }, item[1]))), h(window.SavingsAccessAdmin, {
+      app
+    }), h(window.SavingsReviewAdmin, {
       app
     })) : phase === 'error' ? h('div', {
       className: 'sava-error'

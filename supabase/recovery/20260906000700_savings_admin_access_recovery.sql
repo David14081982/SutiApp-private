@@ -1,0 +1,20 @@
+begin;
+do $$ declare item record; begin
+ if exists(select 1 from public.savings_admin_access_events) or exists(select 1 from public.admin_section_responsibilities where section_key='savings') then raise exception 'SAVINGS_ACCESS_RECOVERY_PRESERVE_HISTORY'; end if;
+ if exists(select 1 from public.savings_access_definition_backup b left join pg_proc p on p.pronamespace='public'::regnamespace and p.proname=b.name where p.oid is null or pg_get_functiondef(p.oid) is distinct from b.applied_definition) then raise exception 'SAVINGS_ACCESS_RECOVERY_DEFINITION_CHANGED'; end if;
+ for item in select definition from public.savings_access_definition_backup order by case when name='has_admin_permission' then 0 else 1 end loop execute item.definition; end loop;
+end $$;
+drop function public.set_savings_admin_access_mode(text,integer,uuid);
+drop function public.get_savings_admin_access();
+drop function public.savings_review_identity_allowed();
+drop function public.savings_review_edit_allowed();
+drop function public.savings_admin_access_allowed();
+drop function public.savings_permission_before_20260906(text);
+drop function public.savings_context_before_20260906();
+delete from public.admin_section_definitions where section_key='savings';
+drop table public.savings_admin_access_events;
+drop table public.savings_admin_access_mode;
+drop table public.savings_access_definition_backup;
+drop function public.savings_access_history_guard();
+notify pgrst,'reload schema';
+commit;

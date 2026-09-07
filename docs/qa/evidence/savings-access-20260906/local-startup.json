@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "service_worker": "allow",
+      "status": "PASS",
+      "accessModule": true,
+      "reviewModule": true,
+      "accessRepo": true,
+      "version": true,
+      "auth": "unauthenticated"
+    },
+    {
+      "service_worker": "block",
+      "status": "PASS",
+      "accessModule": true,
+      "reviewModule": true,
+      "accessRepo": true,
+      "version": true,
+      "auth": "unauthenticated"
+    }
+  ],
+  "authenticated_matrix": "BLOCKED_TEST_LOGIN"
+}

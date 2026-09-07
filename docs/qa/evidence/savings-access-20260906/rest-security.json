@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "rpc": "get_savings_admin_access",
+      "status": 401,
+      "code": "42501"
+    },
+    {
+      "rpc": "set_savings_admin_access_mode",
+      "status": 401,
+      "code": "42501"
+    }
+  ],
+  "auth": {
+    "protectedRpcs": [
+      {
+        "rpc": "get_current_affiliate_access_state",
+        "status": 401,
+        "code": "42501",
+        "verdict": "PRESENT_DENIED"
+      },
+      {
+        "rpc": "get_effective_affiliate_id",
+        "status": 401,
+        "code": "42501",
+        "verdict": "PRESENT_DENIED"
+      },
+      {
+        "rpc": "get_impersonation_context",
+        "status": 401,
+        "code": "42501",
+        "verdict": "PRESENT_DENIED"
+      },
+      {
+        "rpc": "get_admin_access_context",
+        "status": 401,
+        "code": "42501",
+        "verdict": "PRESENT_DENIED"
+      }
+    ],
+    "activation": {
+      "rpc": "get_affiliate_activation_status",
+      "status": 200,
+      "verdict": "PRESENT_MINIMAL_PUBLIC"
+    }
+  }
+}

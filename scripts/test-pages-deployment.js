@@ -44,7 +44,11 @@ assert.equal(manifest.start_url, './SutiApp.html');
 assert.equal(manifest.scope, './');
 
 const html = fs.readFileSync(path.join(output, 'index.html'), 'utf8');
-assert(/navigator\.serviceWorker\.register\(["']\.\/sw\.js["']/.test(html));
+const worker = fs.readFileSync(path.join(output, 'sw.js'), 'utf8');
+const cacheVersion = worker.match(/const CACHE = 'sutiapp-v(\d+)'/);
+assert(cacheVersion, 'Missing service-worker cache version');
+assert(html.includes(`serviceWorkerUrl = "./sw.js?v=${cacheVersion[1]}"`), 'Worker URL must invalidate the CDN cache with the current cache version');
+assert(/navigator\.serviceWorker\.register\(serviceWorkerUrl/.test(html));
 assert(html.includes('updateViaCache: "none"'));
 assert(html.includes('app/supabase-config.js'));
 assert(!/https:\/\/(?:unpkg\.com|cdn\.jsdelivr\.net)\//.test(html));

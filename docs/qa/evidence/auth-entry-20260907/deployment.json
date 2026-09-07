@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "commit": "a1ca52f819bb48d937df3df843d4ade58402461d",
+  "workflow": {
+    "conclusion": "success",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34153550157"
+  },
+  "publicBundleSha256": "f362610ec355440873db47e36ddd2625d0ba75bed65fcd8897e096b70154b5ab",
+  "releaseBundleSha256": "f362610ec355440873db47e36ddd2625d0ba75bed65fcd8897e096b70154b5ab",
+  "matches": true
+}

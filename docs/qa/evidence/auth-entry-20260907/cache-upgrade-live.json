@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "oldCache": "sutiapp-v166",
+  "oldCodeReproducedUnexpectedPasswordSetup": true,
+  "staleMetadataFixture": "isolated browser Auth cache only",
+  "serverMetadataWrites": 0,
+  "manualCacheClears": 0,
+  "afterUpgrade": {
+    "phase": "authenticated",
+    "newPasswordInputs": 0,
+    "caches": [
+      "sutiapp-v167"
+    ],
+    "worker": "/sw.js?v=167"
+  }
+}

@@ -631,6 +631,9 @@
         if (!("serviceWorker" in navigator)) return;
         var reloadingForWorker = false;
         var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
+        // Keep this version aligned with sw.js CACHE. CDN caches can outlive
+        // the browser cache even when updateViaCache is disabled.
+        var serviceWorkerUrl = "./sw.js?v=167";
         navigator.serviceWorker.addEventListener("controllerchange", function () {
           if (!hadControllerAtBoot || reloadingForWorker) return;
           reloadingForWorker = true;
@@ -638,10 +641,10 @@
         });
 
         function registerWorker() {
-          return navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
+          return navigator.serviceWorker.register(serviceWorkerUrl, { updateViaCache: "none" })
             .then(function (registration) { return registration.update(); })
             .catch(function () {
-              return navigator.serviceWorker.register("./sw.js");
+              return navigator.serviceWorker.register(serviceWorkerUrl);
             });
         }
 

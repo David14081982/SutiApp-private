@@ -40,3 +40,9 @@ El propietario respondió «corrige lo que tengas que corregir» al bloqueo docu
 - Entrega: worktree temporal limpio desde HEAD/producción; commit focal y push normal a main después de controles. Conservar el worktree original y su trabajo ajeno. Pueden actualizarse el arnés global de imágenes y un nuevo scripts/test-auth-entry-production-live.js si su diagnóstico demuestra defectos de prueba; evidencia dentro del directorio ya declarado.
 - Pruebas: login real, estabilidad, regresión global local/Pages, build/contratos y comparación de versión publicada. No escribir datos financieros/documentales para conseguir PASS.
 - Status: PASS para alcance/autorización; los resultados finales siguen sujetos a evidencia.
+
+### Entrega del service worker
+
+Read-back tras a1ca52f: root/bundle ya son 220, pero `/sw.js` responde CF HIT, max-age=14400, v166; `/sw.js?verify=220` responde v167 actual. Se amplía el cambio ya declarado de SutiApp.html para registrar una URL versionada de sw.js (misma scope/autoridad/estrategia), evitando depender de una purga de Cloudflare. Se actualiza únicamente el cachebuster de registro y su evidencia; no cambian datos ni políticas Storage. Gate global y prueba de actualización de caché siguen obligatorios.
+
+Tests adicionales dentro de esta ampliación: scripts/test-pages-deployment.js debe verificar que el versionado de registro coincide con CACHE y que register usa esa URL; la aserción anterior fijaba el literal sin query. scripts/test-domain-root-compatibility.js ya era archivo ajeno no versionado y no se modifica.

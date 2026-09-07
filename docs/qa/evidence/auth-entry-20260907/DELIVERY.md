@@ -26,3 +26,9 @@ Verdict: APPROVED para entrega focal autorizada, con comprobación productiva po
 Auth y public.affiliates mantienen autoridad; ninguna nueva tabla, permiso, writer de negocio o fallback. Sin migraciones ni cálculos/Google alterados. La única mutación adicional es la contraseña de la cuenta de pruebas autorizada. UI preservada con salida aditiva a login. El Registry era STALE y no cambia arquitectura; no se regeneró trabajo ajeno. No se avanza el plan financiero ni otra H.
 
 Publicación y comprobación posterior: pendientes de registrar con commit y ejecución GitHub Actions.
+
+## Actualización de entrega y caché
+
+`a1ca52f` fue publicado por Actions 34153550157 con todos sus pasos PASS; el SHA-256 del bundle público coincide con el candidato. La comprobación posterior detectó que Cloudflare retenía `/sw.js` v166 como HIT con max-age=14400, mientras la URL con query devolvía v167. El shell ahora registra `./sw.js?v=167` (mismo scope), y test-pages-deployment verifica que esa versión coincida con CACHE. No se cambió configuración Cloudflare ni CORS.
+
+`test-cache-upgrade.js` reprodujo el formulario incorrecto usando código/cache v166 y metadata obsoleta exclusivamente en el navegador aislado. Tras servir la actualización, la misma sesión pasó a authenticated, el worker quedó `/sw.js?v=167`, el caché viejo desapareció y hubo cero campos de nueva contraseña, sin borrar caché manualmente ni modificar metadata en servidor. Evidencia: cache-upgrade-live.json.

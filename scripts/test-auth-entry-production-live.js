@@ -79,6 +79,8 @@ async function login(page) {
       await second.goto(target, { waitUntil: 'domcontentloaded' });
       await second.waitForFunction(() => window.AffiliateAuth?.getState().phase === 'authenticated');
       assert.equal(await second.locator('input[autocomplete=new-password]').count(), 0);
+      await second.evaluate(async () => { await window.__sutiServiceWorkerUpdate; await navigator.serviceWorker.ready; });
+      await second.waitForTimeout(1000);
       await second.close();
       // Exercise an explicit recovery URL and its local cancellation. Do not
       // submit a password or send recovery mail during a production smoke.

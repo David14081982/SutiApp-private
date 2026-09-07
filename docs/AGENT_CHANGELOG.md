@@ -1,5 +1,7 @@
 # Bitácora de agentes
 
+
+
 ## 2026-09-04 — H-AFFILIATES-CSV-AUTH-LINK-REPAIR-001
 
 - El CSV owner exacto de 947 filas se usó como mapa `email único → numero_control único`; se revisaron 84 vínculos Auth al lock, se detectaron 15 cruces, se movieron 11 UUID determinísticos y 8 casos ambiguos/no mapeables quedaron intactos.

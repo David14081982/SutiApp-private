@@ -53,10 +53,11 @@
     const [globalData, setGlobalData] = React.useState(null), [detailData, setDetailData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [error, setError] = React.useState('');
     const [selectedId, setSelectedId] = React.useState(''), [tab, setTab] = React.useState('review'), [query, setQuery] = React.useState('');
     const [feedback, setFeedback] = React.useState(''), [busy, setBusy] = React.useState(false), [detailError,setDetailError]=React.useState('');
-    const [personView,setPersonView]=React.useState(false),pageRef=React.useRef(null),listPosition=React.useRef(0),personFocus=React.useRef(null),returnFocus=React.useRef(null);
-    function openPerson(id,summary){if(busy)return;if(!personView){listPosition.current=pageRef.current?.scrollTop||0;returnFocus.current=document.activeElement;}setPersonView(!!id);setFeedback('');setSelectedId(id);if(summary||tab==='participants')setTab('summary');}
-    function backToList(){setPersonView(false);requestAnimationFrame(()=>{if(pageRef.current)pageRef.current.scrollTop=listPosition.current;if(returnFocus.current?.isConnected)returnFocus.current.focus({preventScroll:true});});}
-    React.useLayoutEffect(()=>{if(personView){if(pageRef.current)pageRef.current.scrollTop=0;if(personFocus.current)personFocus.current.focus({preventScroll:true});}},[personView,selectedId,tab]);
+    const [personView,setPersonView]=React.useState(false),pageRef=React.useRef(null),listPosition=React.useRef(0),scrollOwner=React.useRef(null),personFocus=React.useRef(null),returnFocus=React.useRef(null);
+    function currentScroller(){let node=pageRef.current;while(node){if(/auto|scroll/.test(getComputedStyle(node).overflowY))return node;node=node.parentElement;}return document.scrollingElement;}
+    function openPerson(id,summary){if(busy)return;if(!personView){scrollOwner.current=currentScroller();listPosition.current=scrollOwner.current?.scrollTop||0;returnFocus.current=document.activeElement;}setPersonView(!!id);setFeedback('');setSelectedId(id);if(summary||tab==='participants')setTab('summary');}
+    function backToList(){setPersonView(false);requestAnimationFrame(()=>{if(scrollOwner.current)scrollOwner.current.scrollTop=listPosition.current;if(returnFocus.current?.isConnected)returnFocus.current.focus({preventScroll:true});});}
+    React.useLayoutEffect(()=>{if(personView){const scroller=currentScroller();if(scroller)scroller.scrollTop=0;if(personFocus.current)personFocus.current.focus({preventScroll:true});}},[personView,selectedId,tab]);
     const globalGeneration = React.useRef(0), detailGeneration = React.useRef(0), selectedRef = React.useRef(selectedId), initialized = React.useRef(false);
     selectedRef.current = selectedId;
     const loadGlobal = React.useCallback(async () => {

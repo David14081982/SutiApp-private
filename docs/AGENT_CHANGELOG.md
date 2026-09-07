@@ -2647,3 +2647,5 @@ Owner requested OPEN now and configurable email restrictions. Applied migration 
 ## H-SAVINGS-NAVIGATION-001 - plain Savings person navigation
 
 Owner-authorized UI-only improvement: immediate per-person review/dialog, previous/next, preserved list/focus, readable Spanish and mobile fields. All sections/actions/data authority retained; no financial/Google/permission changes. Focused browser and generated two-chunk scope checks PASS. v213/cache160 excludes pending operational work. Registry structural update N/A for copy/CSS/microinteraction; hash staleness declared. Evidence: docs/qa/evidence/savings-navigation-20260906/RESULT.md.
+
+H-SAVINGS-NAVIGATION-001 final delivery v214/cache161 also resolves the actual enclosing Admin/mobile scroll container; browser checks assert immediate top and exact outer/inner-list restoration. No shared shell files changed.

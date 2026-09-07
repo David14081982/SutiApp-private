@@ -49021,12 +49021,22 @@ Object.assign(window, {
     const [personView, setPersonView] = React.useState(false),
       pageRef = React.useRef(null),
       listPosition = React.useRef(0),
+      scrollOwner = React.useRef(null),
       personFocus = React.useRef(null),
       returnFocus = React.useRef(null);
+    function currentScroller() {
+      let node = pageRef.current;
+      while (node) {
+        if (/auto|scroll/.test(getComputedStyle(node).overflowY)) return node;
+        node = node.parentElement;
+      }
+      return document.scrollingElement;
+    }
     function openPerson(id, summary) {
       if (busy) return;
       if (!personView) {
-        listPosition.current = pageRef.current?.scrollTop || 0;
+        scrollOwner.current = currentScroller();
+        listPosition.current = scrollOwner.current?.scrollTop || 0;
         returnFocus.current = document.activeElement;
       }
       setPersonView(!!id);
@@ -49037,7 +49047,7 @@ Object.assign(window, {
     function backToList() {
       setPersonView(false);
       requestAnimationFrame(() => {
-        if (pageRef.current) pageRef.current.scrollTop = listPosition.current;
+        if (scrollOwner.current) scrollOwner.current.scrollTop = listPosition.current;
         if (returnFocus.current?.isConnected) returnFocus.current.focus({
           preventScroll: true
         });
@@ -49045,7 +49055,8 @@ Object.assign(window, {
     }
     React.useLayoutEffect(() => {
       if (personView) {
-        if (pageRef.current) pageRef.current.scrollTop = 0;
+        const scroller = currentScroller();
+        if (scroller) scroller.scrollTop = 0;
         if (personFocus.current) personFocus.current.focus({
           preventScroll: true
         });

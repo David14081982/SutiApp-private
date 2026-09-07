@@ -47,12 +47,13 @@ async function main(){
    // Released and in-progress screens use identical focal navigation.
    for(const file of ['app/savings-operations-admin.jsx','app/savings-retirement-admin.jsx','app/savings-yield-admin.jsx','app/screens-admin-savings.jsx'])if(fs.existsSync(path.join(root,file)))await page.addScriptTag({content:fs.readFileSync(path.join(root,file),'utf8')});
    await page.evaluate(w=>{if(w>=1024)document.documentElement.setAttribute('data-admin-desktop','true');},width);
-   await page.addStyleTag({content:'.sava-root{height:100dvh;display:flex;flex-direction:column}.sava-page{min-height:0;overflow:auto}'});
+   await page.addStyleTag({content:'#root{height:100dvh;overflow-y:auto}.sava-root{min-height:100%}'});
    await page.evaluate(()=>{window.SavingsAccessAdmin=()=>null;window.delayDetail=false;window.SavingsRepository={getAdminDashboard:async id=>({participants:Array.from({length:25},(_,i)=>({id:String(i),legacy_folio:'00'+i,display_name:'Persona de prueba '+i,total:100+i,legacy_reported_balance:100+i,identity_status:'LINKED',certification_status:'PENDING',current_process:'PROCESS_1'})),kpis:{},history:[]})};window.uiRoot.render(React.createElement(window.SavingsAdminModule,{app:{admin:{has:()=>false}},header:()=>React.createElement('h1',null,'Ahorro')}));});
    await page.locator('[data-savings-admin-tab="summary"]').click();
+   await page.evaluate(()=>document.getElementById('root').addEventListener('click',e=>{if(e.target.closest('.sava-person')){window.previousListTop=document.getElementById('root').scrollTop;window.previousInnerListTop=document.querySelector('.sava-list').scrollTop;}},true));
    await page.locator('.sava-person').filter({hasText:'Persona de prueba 12'}).click();
    await page.locator('[data-person-open="true"]').waitFor();
-   assert.equal(await page.locator('.sava-page').evaluate(e=>e.scrollTop),0);
+   assert.equal(await page.locator('#root').evaluate(e=>e.scrollTop),0);
    assert.equal(await page.locator('.sava-workbench>aside').isVisible(),false);
    assert.match(await page.locator('.sava-person-heading').innerText(),/Persona de prueba 12/);
    assert((await page.locator('.sava-person-heading').boundingBox()).y<120,JSON.stringify(await page.locator('.sava-person-heading').boundingBox()));
@@ -60,6 +61,7 @@ async function main(){
    await page.getByRole('button',{name:/Siguiente ahorrador/}).click();assert.match(await page.locator('.sava-person-heading').innerText(),/Persona de prueba 13/);
    await page.screenshot({path:path.join(root,`docs/qa/evidence/savings-navigation-20260906/person-${width}.png`)});
    await page.getByRole('button',{name:/Volver a ahorradores/}).click();assert(await page.locator('.sava-workbench>aside').isVisible());
+   await page.waitForFunction(()=>Math.abs(document.getElementById('root').scrollTop-window.previousListTop)<3&&Math.abs(document.querySelector('.sava-list').scrollTop-window.previousInnerListTop)<3);
    assert.equal(await page.locator('.sava-person').count(),25);assert.deepEqual(errors,[]);await page.close();
   }
   const out={status:'PASS',network:'BLOCKED',viewports:[390,1440],checks:['immediate person view','previous/next','preserved list and focus','unsaved changes protected','keyboard containment and Escape','visible failed-load retry','late response cannot cross persons','readable labels','retained sections','mobile without page overflow']};fs.writeFileSync(path.join(root,'docs/qa/evidence/savings-navigation-20260906/browser-result.json'),JSON.stringify(out,null,2));console.log(JSON.stringify(out));

@@ -1,0 +1,4 @@
+{
+  "status": "FAIL",
+  "error": " {\"status\":\"FAIL\",\"error\":\"LOGIN_SEAL_SURFACE_MISSING_initial_NO_AUTH_http://localhost:8080/_No fue posible iniciar SutiApp\\n\\nRevisa tu conexión e intenta nuevamente.\\n\\nReintentar\"}\n"
+}

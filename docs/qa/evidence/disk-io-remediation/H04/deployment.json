@@ -1,0 +1,9 @@
+{
+  "at": "2026-09-08T00:03:15.372Z",
+  "status": "APPLIED",
+  "project": "jsucdyothkuptosvskqf",
+  "migration": "20260907000400_private_storage_rls_work.sql",
+  "method": "Supabase Management database/query; guarded transaction",
+  "policy_hash": "767fe699b0dc607481bfbb0e68ca1680",
+  "frontend_changed": false
+}

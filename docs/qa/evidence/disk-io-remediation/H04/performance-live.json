@@ -1,0 +1,50 @@
+{
+  "at": "2026-09-08T00:17:36.381Z",
+  "status": "PASS",
+  "samples": [
+    {
+      "ms": 82.092,
+      "hits": 757,
+      "reads": 0,
+      "document_rows": 0,
+      "executed_document_seq_scans": 0
+    },
+    {
+      "ms": 29.344,
+      "hits": 757,
+      "reads": 0,
+      "document_rows": 0,
+      "executed_document_seq_scans": 0
+    },
+    {
+      "ms": 36.197,
+      "hits": 757,
+      "reads": 0,
+      "document_rows": 0,
+      "executed_document_seq_scans": 0
+    }
+  ],
+  "function_calls": [
+    {
+      "schemaname": "public",
+      "funcname": "get_effective_affiliate_id",
+      "calls": 81,
+      "total_time": 114.411291,
+      "self_time": 75.763494
+    },
+    {
+      "schemaname": "public",
+      "funcname": "has_admin_permission",
+      "calls": 106,
+      "total_time": 48.139593,
+      "self_time": 7.572142
+    },
+    {
+      "schemaname": "public",
+      "funcname": "savings_permission_before_20260906",
+      "calls": 106,
+      "total_time": 40.567451,
+      "self_time": 40.567451
+    }
+  ]
+}

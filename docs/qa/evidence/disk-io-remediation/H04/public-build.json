@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "source_commit": "4be7986b62f77c893150c710f98b362ba01e2e41",
+  "allowlisted_files": 22,
+  "local_vendor_bytes_restored_from_git": true,
+  "vendors": [
+    {
+      "file": "app/vendor/react-18.3.1/react.production.min.js",
+      "sha384": "DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
+    },
+    {
+      "file": "app/vendor/react-dom-18.3.1/react-dom.production.min.js",
+      "sha384": "gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
+    },
+    {
+      "file": "app/vendor/supabase-js-2.112.3/supabase.min.js",
+      "sha384": "l8ah+VgaWtk1mvOe9VC+OirC6qHFF4yH7l7mKRidV9MSti3E9F463bMp6ZVN4kuC"
+    }
+  ],
+  "all_tracked_public_files_exact_git_bytes": 19,
+  "bundle_sha256": "64183ea2009104565cf00a7a44529dfb38175c0728778b55d16c976e4169fe10"
+}

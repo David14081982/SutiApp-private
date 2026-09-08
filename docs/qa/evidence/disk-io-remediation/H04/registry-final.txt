@@ -1,0 +1,4 @@
+Workspace Registry: FRESH
+Isolated delivery Registry: FRESH
+Full acceptance suite: PASS (registry-tests.txt)
+Final workspace preservation: 1577 baseline files; 7 authorized changes; 91 additions; 0 unexpected; 0 secret matches

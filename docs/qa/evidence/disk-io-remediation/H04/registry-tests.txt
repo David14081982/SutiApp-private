@@ -1,0 +1,4 @@
+Command: python scripts/test-architecture-registry.py
+Checkout: C:/tmp/sutiapp-h04-release-20260907 (frozen during execution)
+Exit: 0
+PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism

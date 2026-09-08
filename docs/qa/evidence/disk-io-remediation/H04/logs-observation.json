@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "start": "2026-09-08 00:17:44.452188+00",
+  "end": "2026-09-08 00:19:13.586636+00",
+  "data": {
+    "result": []
+  },
+  "limitation": "Log ingestion may lag; finite window, not a future guarantee."
+}

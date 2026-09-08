@@ -2676,3 +2676,8 @@ Private withdrawal history now uses every matching original-Folio Solicitud de r
 ## H03 — Disk I/O: refresco administrativo (2026-09-07)
 
 Autorización explícita posterior a H01/H02 PASS. Nueva RPC INVOKER delegante conserva getter protegido y 48 políticas; huellas efímeras RLS por siete dominios, revalidación continua y descarte por actor/sesión/impersonación. Chrome real: 9→1 llamadas, 45.016→1.713 bytes y proyecciones idénticas. 16 casos aislados, 12 Chrome locales y 12 publicados, matriz backend A–H y regresión global local/publicada PASS. Build aislado con sólo tres chunks; dff4099 publicado, bundle221/worker168. Rollback probado. Fallo estático histórico de Finanzas documentado contra baseline, sin cambiar ese dominio. Trabajo ajeno preservado; no se declara resuelto el paging del host ni se inicia otra H. Evidencia: [H03/VERIFICATION.md](qa/evidence/disk-io-remediation/H03/VERIFICATION.md).
+
+
+## H04 — Disk I/O: RLS documental y Storage privado (2026-09-07)
+
+Autorización explícita tras H01/H02/H03 PASS. Una policy USING separa tres ramas equivalentes, sin nuevos índices ni permisos. Consulta exacta: 3.044→0 documentos, 28.164→757 hits; 192 casos antes/candidato y 192 live iguales. Regresión global local/GitHub Pages PASS; 252 funciones y 227 policies adicionales intactas. Recovery/idempotencia/drift PASS. Altas concurrentes anteriores al despliegue reconciliadas sin borrado. Sin cambios frontend, finanzas ni históricos por H04. Carpetas vacías de preparación fuera del repo conservadas tras bloqueo automático de limpieza, sin efecto productivo. Evidencia: [H04/VERIFICATION.md](qa/evidence/disk-io-remediation/H04/VERIFICATION.md). No se inicia otra H.

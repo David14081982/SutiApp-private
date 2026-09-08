@@ -1,0 +1,22 @@
+{
+  "before": {
+    "cmd": "r",
+    "md5": "be9066257c7206214dcf5cbc4038984d",
+    "qual": "((bucket_id = 'private-assets'::text) AND (public.has_admin_permission('assets.read'::text) OR (EXISTS ( SELECT 1\n   FROM ((public.private_assets pa\n     LEFT JOIN public.affiliate_files af ON ((af.private_asset_id = pa.id)))\n     LEFT JOIN public.affiliate_documents d ON (((d.private_asset_id = pa.id) OR (d.affiliate_file_id = af.id))))\n  WHERE ((pa.storage_path = objects.name) AND (pa.storage_bucket = objects.bucket_id) AND (pa.status = 'READY'::text) AND (((af.affiliate_id = public.get_effective_affiliate_id()) AND (af.status = 'READY'::text) AND (af.expediente_classification = 'CURRENT_DOCUMENT'::text)) OR ((d.affiliate_id = public.get_effective_affiliate_id()) AND (d.status <> 'REJECTED'::text))))))))",
+    "roles": [
+      "authenticated"
+    ],
+    "permissive": true,
+    "with_check": null
+  },
+  "after": {
+    "cmd": "r",
+    "md5": "767fe699b0dc607481bfbb0e68ca1680",
+    "qual": "((bucket_id = 'private-assets'::text) AND (( SELECT public.has_admin_permission('assets.read'::text) AS has_admin_permission) OR (EXISTS ( SELECT 1\n   FROM public.private_assets pa\n  WHERE ((pa.storage_path = objects.name) AND (pa.storage_bucket = objects.bucket_id) AND (pa.status = 'READY'::text) AND ((EXISTS ( SELECT 1\n           FROM public.affiliate_files af\n          WHERE ((af.private_asset_id = pa.id) AND (af.affiliate_id = ( SELECT public.get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (af.status = 'READY'::text) AND (af.expediente_classification = 'CURRENT_DOCUMENT'::text)))) OR (EXISTS ( SELECT 1\n           FROM public.affiliate_documents d\n          WHERE ((d.private_asset_id = pa.id) AND (d.affiliate_id = ( SELECT public.get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (d.status <> 'REJECTED'::text)))) OR (EXISTS ( SELECT 1\n           FROM (public.affiliate_files af\n             JOIN public.affiliate_documents d ON ((d.affiliate_file_id = af.id)))\n          WHERE ((af.private_asset_id = pa.id) AND (d.affiliate_id = ( SELECT public.get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (d.status <> 'REJECTED'::text))))))))))",
+    "roles": [
+      "authenticated"
+    ],
+    "permissive": true,
+    "with_check": null
+  }
+}

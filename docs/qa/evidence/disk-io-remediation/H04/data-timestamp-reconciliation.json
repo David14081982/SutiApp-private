@@ -1,0 +1,56 @@
+{
+  "baseline_start": "2026-09-08T00:01:22.480Z",
+  "deployment_at": "2026-09-08T00:03:15.372Z",
+  "tables": [
+    {
+      "relation": "private_assets",
+      "update_timestamp_field": "updated_at",
+      "rows": 13135,
+      "latest_created": "2026-09-08 00:02:49.923443+00",
+      "latest_updated": "2026-09-08 00:02:49.923443+00",
+      "created_after_deploy": 0,
+      "updated_after_deploy": 0,
+      "updated_during_baseline": 3
+    },
+    {
+      "relation": "affiliate_files",
+      "update_timestamp_field": "updated_at",
+      "rows": 12901,
+      "latest_created": "2026-08-22 11:08:49.784853+00",
+      "latest_updated": "2026-09-08 00:02:49.923443+00",
+      "created_after_deploy": 0,
+      "updated_after_deploy": 0,
+      "updated_during_baseline": 6
+    },
+    {
+      "relation": "affiliate_documents",
+      "update_timestamp_field": "updated_at",
+      "rows": 3522,
+      "latest_created": "2026-09-08 00:02:49.923443+00",
+      "latest_updated": "2026-09-08 00:02:49.923443+00",
+      "created_after_deploy": 0,
+      "updated_after_deploy": 0,
+      "updated_during_baseline": 3
+    },
+    {
+      "relation": "program_catalog_items",
+      "update_timestamp_field": "updated_at",
+      "rows": 135,
+      "latest_created": "2026-08-24 10:53:56.173928+00",
+      "latest_updated": "2026-09-01 15:42:46.095252+00",
+      "created_after_deploy": 0,
+      "updated_after_deploy": 0,
+      "updated_during_baseline": 0
+    },
+    {
+      "relation": "program_catalog_item_assets",
+      "update_timestamp_field": "created_at",
+      "rows": 268,
+      "latest_created": "2026-08-22 15:13:02.475815+00",
+      "latest_updated": "2026-08-22 15:13:02.475815+00",
+      "created_after_deploy": 0,
+      "updated_after_deploy": 0,
+      "updated_during_baseline": 0
+    }
+  ]
+}

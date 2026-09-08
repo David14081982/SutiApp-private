@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-08T00:21:50.734Z",
+  "status": "PASS",
+  "steps": [
+    "apply",
+    "idempotent apply",
+    "recover exact original",
+    "idempotent recover",
+    "reapply",
+    "rollback to deployed policy"
+  ],
+  "candidate_hash": "767fe699b0dc607481bfbb0e68ca1680",
+  "guards_reject_null_hash": true
+}

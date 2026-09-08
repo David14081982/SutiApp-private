@@ -1,0 +1,41 @@
+{
+  "at": "2026-09-08T00:16:51.897Z",
+  "status": "PASS",
+  "only_changed_policy": "master_private_storage_authorized_read",
+  "functions_unchanged": 252,
+  "other_policies_unchanged": 227,
+  "rls_owners_acl_unchanged": true,
+  "index_definitions_unchanged": 29,
+  "initial_business_hashes_identical": false,
+  "post_deploy_business_hashes_stable": true,
+  "business_hashes": [
+    {
+      "relation": "private_assets",
+      "rows": 13135,
+      "hash": "f18f2e427fdd63fb376398f437b46bcc"
+    },
+    {
+      "relation": "affiliate_files",
+      "rows": 12901,
+      "hash": "9cf16514676078de56dc464fc1079718"
+    },
+    {
+      "relation": "affiliate_documents",
+      "rows": 3522,
+      "hash": "df6e610980e345041392028c81d4e07f"
+    },
+    {
+      "relation": "program_catalog_items",
+      "rows": 135,
+      "hash": "fa5cca3210b7b7604135e7f5b7a51f17"
+    },
+    {
+      "relation": "program_catalog_item_assets",
+      "rows": 268,
+      "hash": "0b4f2e695dab768009d42e6736d3f9f1"
+    }
+  ],
+  "data_reconciliation": "Three assets/documents and six file classification timestamps changed during baseline capture, all BEFORE policy deployment. Programs identical. Two post-deploy snapshots identical. No fixture persists; see data-timestamp-reconciliation.json.",
+  "fixtures_absent": true,
+  "bucket_public": false
+}

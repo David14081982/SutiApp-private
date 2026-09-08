@@ -1,0 +1,54 @@
+{
+  "at": "2026-09-08T00:15:00.646Z",
+  "baseline_at": "2026-09-08T00:01:22.480Z",
+  "rows": [
+    {
+      "relation": "private_assets",
+      "category": "AFFILIATE_DOCUMENT",
+      "mime_type": "image/jpeg",
+      "status": "READY",
+      "created_at": "2026-09-08 00:01:39.887291+00",
+      "updated_at": "2026-09-08 00:01:39.887291+00"
+    },
+    {
+      "relation": "affiliate_documents",
+      "category": "guarantor_ine_front",
+      "mime_type": null,
+      "status": "PENDING_REVIEW",
+      "created_at": "2026-09-08 00:01:39.887291+00",
+      "updated_at": "2026-09-08 00:01:39.887291+00"
+    },
+    {
+      "relation": "private_assets",
+      "category": "AFFILIATE_DOCUMENT",
+      "mime_type": "image/jpeg",
+      "status": "READY",
+      "created_at": "2026-09-08 00:01:54.505692+00",
+      "updated_at": "2026-09-08 00:01:54.505692+00"
+    },
+    {
+      "relation": "affiliate_documents",
+      "category": "guarantor_ine_back",
+      "mime_type": null,
+      "status": "PENDING_REVIEW",
+      "created_at": "2026-09-08 00:01:54.505692+00",
+      "updated_at": "2026-09-08 00:01:54.505692+00"
+    },
+    {
+      "relation": "private_assets",
+      "category": "AFFILIATE_DOCUMENT",
+      "mime_type": "image/jpeg",
+      "status": "READY",
+      "created_at": "2026-09-08 00:02:49.923443+00",
+      "updated_at": "2026-09-08 00:02:49.923443+00"
+    },
+    {
+      "relation": "affiliate_documents",
+      "category": "guarantor_photo",
+      "mime_type": null,
+      "status": "PENDING_REVIEW",
+      "created_at": "2026-09-08 00:02:49.923443+00",
+      "updated_at": "2026-09-08 00:02:49.923443+00"
+    }
+  ]
+}

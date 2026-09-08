@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-08T00:21:52.458Z",
+  "status": "PASS",
+  "result": [
+    {
+      "drift_rejected": true
+    }
+  ],
+  "unknown_predicate_rejected": true,
+  "transaction_rolled_back": true
+}

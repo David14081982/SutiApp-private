@@ -1,0 +1,23 @@
+{
+  "start": "2026-09-08 00:17:44.452188+00",
+  "end": "2026-09-08 00:19:13.586636+00",
+  "seconds": 89.134,
+  "stats_reset_equal": true,
+  "delta": {
+    "xact_commit": 336,
+    "xact_rollback": 0,
+    "blks_read": 0,
+    "blks_hit": 32436,
+    "temp_files": 3,
+    "temp_bytes": 13469087,
+    "deadlocks": 0
+  },
+  "connections": [
+    62,
+    57
+  ],
+  "lock_waiters": [
+    0,
+    0
+  ]
+}

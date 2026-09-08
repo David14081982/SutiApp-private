@@ -1,0 +1,26 @@
+{
+  "at": "2026-09-08T00:17:36.380Z",
+  "rows": [
+    {
+      "schemaname": "public",
+      "funcname": "get_effective_affiliate_id",
+      "calls": 81,
+      "total_time": 114.411291,
+      "self_time": 75.763494
+    },
+    {
+      "schemaname": "public",
+      "funcname": "has_admin_permission",
+      "calls": 106,
+      "total_time": 48.139593,
+      "self_time": 7.572142
+    },
+    {
+      "schemaname": "public",
+      "funcname": "savings_permission_before_20260906",
+      "calls": 106,
+      "total_time": 40.567451,
+      "self_time": 40.567451
+    }
+  ]
+}

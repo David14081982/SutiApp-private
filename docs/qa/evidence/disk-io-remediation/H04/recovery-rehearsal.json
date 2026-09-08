@@ -1,0 +1,13 @@
+{
+  "at": "2026-09-08T00:00:48.630Z",
+  "status": "PASS",
+  "steps": [
+    "apply",
+    "idempotent apply",
+    "recover exact original",
+    "idempotent recover",
+    "reapply",
+    "rollback transaction"
+  ],
+  "candidate_hash": "767fe699b0dc607481bfbb0e68ca1680"
+}

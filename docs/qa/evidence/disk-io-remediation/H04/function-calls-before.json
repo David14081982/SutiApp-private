@@ -1,0 +1,27 @@
+{
+  "at": "2026-09-07T23:41:29.840Z",
+  "setting": "SET LOCAL track_functions=all; restored by ROLLBACK",
+  "result": [
+    {
+      "schemaname": "public",
+      "funcname": "has_admin_permission",
+      "calls": 6172,
+      "total_time": 1720.325524,
+      "self_time": 215.631004
+    },
+    {
+      "schemaname": "public",
+      "funcname": "savings_permission_before_20260906",
+      "calls": 6172,
+      "total_time": 1504.69452,
+      "self_time": 1504.69452
+    },
+    {
+      "schemaname": "public",
+      "funcname": "get_effective_affiliate_id",
+      "calls": 3113,
+      "total_time": 1282.385365,
+      "self_time": 364.152761
+    }
+  ]
+}

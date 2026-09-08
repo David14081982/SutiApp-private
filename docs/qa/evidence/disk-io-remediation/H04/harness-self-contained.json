@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "read_only_probe": 1,
+  "private_env_not_copied": true,
+  "dependency_on_unpublished_audit_helper": false
+}

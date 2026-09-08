@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-08T00:29:01.052Z",
+  "status": "PASS",
+  "matrix_before_candidate": 192,
+  "matrix_deployed": 192,
+  "global_local": "PASS",
+  "global_production": "PASS",
+  "backend": "PASS",
+  "recovery": "PASS",
+  "registry_acceptance": "PASS",
+  "migration_hashes": {
+    "supabase/migrations/20260907000400_private_storage_rls_work.sql": "7089e2f97719c9a8e99f310e2f339be713b7a3f4900d9a0835c6ffbd4fb46cd0",
+    "supabase/recovery/20260907000400_private_storage_rls_work.sql": "9f26b9863c344f5c1528aca24068460b5daffcdadff99e0e11ed85d1b54786bf"
+  },
+  "frontend_change": false,
+  "limitations": "See VERIFICATION.md; concurrent pre-deploy activity and local empty directories explicitly retained."
+}

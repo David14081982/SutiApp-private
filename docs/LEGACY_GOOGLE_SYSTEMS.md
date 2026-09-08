@@ -63,3 +63,13 @@ El writer desplegado se autentica server-to-server, toma `LockService`, verifica
 D Proceso, M afiliación, Y=`Iniciado`, plazo y los cinco documentos O:S están codificados fail-closed desde fuentes/snapshots autoritativos. Proceso 3 se rechaza mientras no exista set autoritativo T:W de aval. Se prohíbe escribir una fila parcial o inferir valores. Después del append termina la automatización: no se ejecutan amortización, scripts financieros posteriores, estados, pagos, saldos o conciliación. La validación productiva del append permanece pendiente porque no se autoriza contaminar el histórico con una fila inventada.
 
 Recovery: retirar o rotar el secret o deshabilitar el deployment detiene exports nuevos. Supabase conserva siempre la solicitud. Ante fallo o timeout queda reintentable; antes de repetir el append se consulta el UUID bajo lock para recuperar una escritura Google que sí ocurrió pero cuya confirmación no llegó.
+
+## Explicit request deletion - ADR-108
+
+The owner authorizes removing the selected request from Historial de solicitudes. The existing receiver
+adds authenticated delete_request inspect/apply under ScriptLock. It validates UUID/folio, control, date,
+initial hash, uniqueness, formulas and backup fingerprint. Only matched A:AG content is cleared; row
+positions, AH+ and adjacent records remain intact. The technical handoff registry retains a deletion
+tombstone, rejecting delayed sync_request and handoff. Supabase stores the private backup before clear.
+No financial calculations, triggers, payments, balances or reconciliation are invoked. Unsupported or
+ambiguous legacy identity fails visibly. See H-ADMIN-REQUEST-DELETE-001 and its focused GAS evidence.

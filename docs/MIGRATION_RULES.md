@@ -191,3 +191,15 @@ Forward y recovery compilaron juntos dentro de una transacción con `ROLLBACK`. 
 Estado: `APPLIED / VERIFIED — PRODUCTIVE CERT BLOCKED BY SMTP`. La migración agrega una sola función `STABLE SECURITY DEFINER search_path=''`, sin tablas, columnas ni DML. Sólo retorna un estado mínimo sobre `public.affiliates`; anónimo no puede leer la tabla ni obtener PII. Forward/recovery se probaron en `ROLLBACK` y el apply conservó conteos de afiliados y vínculos.
 
 El recovery elimina únicamente la función después de revertir el frontend que la consume. No modifica afiliados, Auth, auditoría ni configuración. La actividad QA posterior se conserva por las reglas de archivo/auditoría vigentes y no autoriza ejecutar recovery destructivo sobre historia.
+
+## 20260908000400 - Admin request deletion
+
+Additive deletion journal/RPC/guards, with the existing claim RPC excluding prepared deletions.
+Forward, role checks, finalization, preservation hashes and exact claim/schema recovery pass in one
+transaction ending ROLLBACK. Request/document snapshots pass typed reconstruction. The recovery SQL
+refuses to remove infrastructure when any journal entry exists. Live claim definition/OID/ACL and GAS15
+source are privately backed up in C:/tmp/sutiapp-request-delete-20260908. Installation deletes no business
+rows. Deployment receipts, source hashes and final status: docs/qa/evidence/admin-request-delete-20260908.
+For post-use recovery retain the journal, inspect the private request/children/Google backup, verify all
+foreign keys and current Google identity, and prepare a separate operation-specific recovery transaction.
+Never run empty-schema recovery after real deletion or automatically replay business sync/workflows.

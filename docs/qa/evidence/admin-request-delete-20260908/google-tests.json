@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "exact request cleared, dossier references not followed, AH+ and adjacent request preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicates, changed identity/date, formula, bad secret and changed fingerprint fail before writes",
+      "status": "PASS"
+    },
+    {
+      "name": "interruption after tombstone safely retries without recreating request",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed absent request marks tombstone without touching reused row or creating business row",
+      "status": "PASS"
+    },
+    {
+      "name": "interruption after clearing and before acknowledgement resumes from the original backup",
+      "status": "PASS"
+    }
+  ],
+  "externalWrites": 0
+}

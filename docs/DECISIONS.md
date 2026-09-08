@@ -1,5 +1,30 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-108 — Eliminación administrativa de una solicitud, 2026-09-08
+
+El propietario autoriza el botón Eliminar solicitud y confirma incluir su registro Google,
+preservando el expediente actual del afiliado y sus imágenes. La autorización permite implementar
+la operación; no identifica una solicitud productiva que deba borrarse durante QA.
+
+La confirmación por folio usa el permiso backend existente program_requests.write. La operación
+retira program_requests y sus relaciones propias sólo después de confirmar Google; conserva en
+program_request_deletions una auditoría privada con actor real, motivo y respaldo íntegro. Esta
+excepción expresa permite retirar eventos/referencias de la consulta operacional de la solicitud
+eliminada, reteniéndolos dentro del respaldo; no permite modificar historia de otras solicitudes.
+Ningún archivo del expediente se elimina: los adjuntos actuales son vínculos compartidos.
+
+Google permite limpiar únicamente A:AG de la identidad única verificada, sin eliminar/desplazar
+filas ni tocar AH+. El registro técnico conserva una marca de eliminación que impide recreaciones
+por entregas demoradas. No se ejecutan amortizaciones, pagos, conciliaciones ni cambios de estado.
+Una solicitud dependiente de una cotización impide eliminar esa cotización. Una referencia legacy
+que no puede verificarse falla de forma explícita. La eliminación preparada se reintenta desde el
+mismo botón; no acepta nuevas transiciones mientras está pendiente.
+
+El journal es evidencia y coordinación de eliminación, jamás autoridad alternativa para mostrar
+solicitudes. Carece de acceso browser y restauración automática. Recovery de infraestructura sólo
+procede sin historia; cualquier recuperación posterior conserva el journal y requiere un plan por
+operación, con verificación de identidad, relaciones y celdas. Ver H-ADMIN-REQUEST-DELETE-001.
+
 ## ADR-107 — Referencias de sincronización verificadas, 2026-09-08
 
 El propietario autorizó reparar las referencias desplazadas y aplicar la corrección después de

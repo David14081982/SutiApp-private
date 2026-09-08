@@ -178,6 +178,7 @@ function receiveHandoff_(payload) {
     const lockedValidationError=validatePayload_(payload); if(lockedValidationError) return failure_(lockedValidationError);
     if(registryMatch) {
       registryRow=registryMatch.getRow(); const saved=registry.getRange(registryRow,1,1,HANDOFF_HEADERS.length).getDisplayValues()[0];
+      if(String(saved[12]).startsWith('REQUEST_SYNC_V1:')&&JSON.parse(String(saved[12]).slice(16)).deletion)throw new Error('REQUEST_DELETED');
       if(saved[12]!=='PAYLOAD_SHA256:'+payload.payload_sha256) throw new Error('REGISTRY_HASH_MISMATCH');
       const match=String(saved[11]||'').match(/^Historial de solicitudes!A(\d+)$/); if(!match) throw new Error('REGISTRY_REFERENCE_INVALID');
       targetRow=Number(match[1]); const existing=target.getRange(targetRow,1,1,TARGET_HEADERS.length).getValues()[0];
@@ -255,6 +256,7 @@ function receiveRequestSync_(payload) {
     if(saved){
       if(!String(saved[12]).startsWith('REQUEST_SYNC_V1:'))throw new Error('REQUEST_SYNC_LEGACY_REGISTRY_REQUIRES_REVIEW');
       meta=JSON.parse(String(saved[12]).slice('REQUEST_SYNC_V1:'.length));
+      if(meta.deletion)throw new Error('REQUEST_DELETED');
       if(meta.initial_sha256!==payload.payload_sha256)throw new Error('REGISTRY_HASH_MISMATCH');
     }
     if(meta&&meta.folio&&suppliedFolio&&meta.folio!==suppliedFolio)throw new Error('REQUEST_SYNC_FOLIO_INVALID');
@@ -326,10 +328,67 @@ function receiveRequestSync_(payload) {
   }finally{lock.releaseLock();}
 }
 
+// Owner-authorized request removal. No row shifting, asset deletion or AH+ writes.
+function deleteRequest_(payload) {
+  const allowed=new Set(['action','secret','contract_version','program_request_id','request_folio','numero_control','request_created_at','initial_sha256','operation_id','mode','fingerprint']);
+  if(Object.keys(payload).some(function(k){return !allowed.has(k);})||payload.contract_version!=='REQUEST_DELETE_V1'||!validUuid_(payload.program_request_id)||!validUuid_(payload.operation_id)||!/^SR-\d{4}-\d{6,}$/.test(payload.request_folio||'')||!['inspect','apply'].includes(payload.mode))throw new Error('REQUEST_DELETE_INVALID');
+  const secret=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!secret||!constantTimeEqual_(secret,payload.secret))throw new Error('REQUEST_DELETE_DENIED');
+  const lock=LockService.getScriptLock();lock.waitLock(20000);
+  try{
+    const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID),target=book.getSheetByName(TARGET_SHEET_NAME),registry=book.getSheetByName(HANDOFF_SHEET_NAME);
+    validateSheet_(target,TARGET_HEADERS.slice(0,33),'TARGET');validateSheet_(registry,HANDOFF_HEADERS,'HANDOFF');
+    if(String(book.getId())!==HANDOFF_SPREADSHEET_ID||Number(target.getSheetId())!==TARGET_SHEET_ID)throw new Error('TARGET_SHEET_ID_MISMATCH');
+    const id=payload.program_request_id,registrations=registry.getRange(2,1,Math.max(1,registry.getLastRow()-1),1).createTextFinder(id).matchEntireCell(true).findAll();
+    if(registrations.length>1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
+    const registryRow=registrations.length?registrations[0].getRow():registry.getLastRow()+1;
+    const saved=registrations.length?registry.getRange(registryRow,1,1,16).getValues()[0]:null;
+    let meta=null;
+    if(saved){
+      if(!String(saved[12]).startsWith('REQUEST_SYNC_V1:'))throw new Error('REQUEST_DELETE_LEGACY_REVIEW_REQUIRED');
+      meta=JSON.parse(String(saved[12]).slice(16));
+      if(meta.folio&&meta.folio!==payload.request_folio)throw new Error('REQUEST_DELETE_IDENTITY_MISMATCH');
+      if(meta.initial_sha256!==payload.initial_sha256)throw new Error('REGISTRY_HASH_MISMATCH');
+      if(meta.deletion&&meta.deletion.operation_id!==payload.operation_id)throw new Error('REQUEST_DELETE_OPERATION_MISMATCH');
+      if(meta.deletion&&meta.deletion.phase==='completed')return jsonResponse_({ok:true,action:'delete_request',program_request_id:id,operation_id:payload.operation_id,deleted:true,idempotent:true});
+    }
+    const identities=target.getRange(2,1,Math.max(1,target.getLastRow()-1),1),matches=identities.createTextFinder(id).matchEntireCell(true).findAll().concat(identities.createTextFinder(payload.request_folio).matchEntireCell(true).findAll());
+    if(matches.length>1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
+    let row=matches.length?matches[0].getRow():null;
+    if(!row&&meta&&meta.deletion)row=meta.deletion.row||null;
+    const range=row?target.getRange(row,1,1,33):null,values=range?range.getValues()[0]:null,formulas=range?range.getFormulas()[0]:null;
+    const recovering=Boolean(meta&&meta.deletion),empty=values&&values.every(function(v){return v===''||v===null;});
+    if(values&&!(recovering&&empty)){
+      if(![id,payload.request_folio].includes(String(values[0]))||String(values[1])!==String(payload.numero_control))throw new Error('REQUEST_DELETE_IDENTITY_MISMATCH');
+      const date=requestRegisterDate_(payload.request_created_at),display=target.getRange(row,10).getDisplayValue();
+      if(String(values[9])!==String(payload.request_created_at)&&values[9]!==date.serial&&display!==date.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
+      if(formulas.some(Boolean))throw new Error('REQUEST_DELETE_FORMULA_PROTECTED');
+    }
+    const encode=function(v){return v instanceof Date?{date:v.toISOString()}:v;};
+    const backup={program_request_id:id,operation_id:payload.operation_id,row:row,values:values?values.map(encode):null,number_formats:range?range.getNumberFormats()[0]:null,registry_row:registrations.length?registryRow:null,registry_values:saved?saved.map(encode):null};
+    const fingerprint=hexDigest_(JSON.stringify(backup));
+    const targetHash=hexDigest_(JSON.stringify({values:backup.values,formats:backup.number_formats}));
+    if(recovering&&!empty&&meta.deletion.target_sha256!==targetHash)throw new Error('REQUEST_DELETE_CHANGED');
+    if(payload.mode==='inspect')return jsonResponse_({ok:true,action:'delete_request',program_request_id:id,operation_id:payload.operation_id,deleted:false,recovering:recovering,backup:Object.assign({},backup,{fingerprint:fingerprint}),fingerprint:fingerprint});
+    if(!recovering&&payload.fingerprint!==fingerprint)throw new Error('REQUEST_DELETE_CHANGED');
+    if(registryRow>registry.getMaxRows())registry.insertRowsAfter(registry.getMaxRows(),registryRow-registry.getMaxRows());
+    meta=meta||{revision:0,initial_sha256:payload.initial_sha256,folio:payload.request_folio};
+    meta.deletion={operation_id:payload.operation_id,phase:'deleting',row:row,target_sha256:recovering?meta.deletion.target_sha256:targetHash};
+    // Persist a tombstone before clearing; delayed sync can never recreate this request.
+    const tombstone=[id,'','','','','','','','','','failed',row?TARGET_SHEET_NAME+'!A'+row:'','REQUEST_SYNC_V1:'+JSON.stringify(meta),new Date().toISOString(),'REQUEST_DELETED','Solicitud eliminada por administrador.'];
+    registry.getRange(registryRow,1,1,16).setValues([tombstone]);SpreadsheetApp.flush();
+    if(range&&!empty){range.setValues([Array(33).fill('')]);SpreadsheetApp.flush();}
+    if(range&&range.getValues()[0].some(function(v){return v!==''&&v!==null;}))throw new Error('REQUEST_DELETE_READBACK_FAILED');
+    meta.deletion.phase='completed';tombstone[12]='REQUEST_SYNC_V1:'+JSON.stringify(meta);registry.getRange(registryRow,1,1,16).setValues([tombstone]);SpreadsheetApp.flush();
+    return jsonResponse_({ok:true,action:'delete_request',program_request_id:id,operation_id:payload.operation_id,deleted:true,idempotent:recovering});
+  }finally{lock.releaseLock();}
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
     if(payload.action==='sync_request')return receiveRequestSync_(payload);
+    if(payload.action==='delete_request')return deleteRequest_(payload);
     if(payload.action==='visibility_initialize')return initializeVisibility_(payload);
     if(payload.action==='visibility_write')return writeVisibility_(payload);
     return receiveHandoff_(payload);
@@ -340,7 +399,8 @@ function doPost(event) {
       'CRITERIA_SHEET_MISSING','CRITERIA_SCHEMA_MISMATCH','VISIBILITY_HEADER_MISMATCH','VISIBILITY_COLUMN_NOT_UNUSED','VISIBILITY_HEADER_WRITE_FAILED',
       'CRITERION_ROW_NOT_FOUND','CRITERION_FINGERPRINT_MISMATCH','VISIBILITY_TARGET_FORMULA_PROTECTED','VISIBILITY_VALUE_INVALID','VISIBILITY_READBACK_FAILED',
       'REQUEST_SYNC_DUPLICATE_ID','REQUEST_SYNC_LEGACY_REGISTRY_REQUIRES_REVIEW','REQUEST_SYNC_STATUS_FORMULA_PROTECTED',
-      'REQUEST_SYNC_DATE_INVALID','REQUEST_SYNC_FOLIO_INVALID','REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED','REQUEST_SYNC_TARGET_MISSING'];
+      'REQUEST_SYNC_DATE_INVALID','REQUEST_SYNC_FOLIO_INVALID','REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED','REQUEST_SYNC_TARGET_MISSING',
+      'REQUEST_DELETED','REQUEST_DELETE_INVALID','REQUEST_DELETE_DENIED','REQUEST_DELETE_LEGACY_REVIEW_REQUIRED','REQUEST_DELETE_IDENTITY_MISMATCH','REQUEST_DELETE_OPERATION_MISMATCH','REQUEST_DELETE_FORMULA_PROTECTED','REQUEST_DELETE_CHANGED','REQUEST_DELETE_READBACK_FAILED'];
     const code=error&&allowed.includes(error.message)?error.message:'INVALID_REQUEST'; return failure_(code);
   }
 }

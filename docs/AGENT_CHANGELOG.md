@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-ADMIN-REQUEST-DELETE-001
+
+Botón Eliminar solicitud en el footer existente, con confirmación por folio y permiso backend.
+Elimina la solicitud y sus relaciones propias después de confirmar el retiro de Google A:AG;
+preserva expediente, imágenes compartidas, otras solicitudes y AH+. Auditoría/respaldo privado
+con actor real; guards y marca técnica impiden mutaciones concurrentes o recreación por reintento.
+Migración 20260908000400, GAS16 y Edge request-delete v1 instalados sin borrar solicitudes reales.
+SQL/recovery, 5 casos GAS, 8 Edge, 25 browser, 9 bridge y validación local con datos reales PASS.
+Callbacks existentes, Auth, Storage y viewers compartidos sin cambios. ADR-108 / INV-218/219.
+Evidencia y estado de publicación: docs/qa/H-ADMIN-REQUEST-DELETE-001.md.
+
 ## 2026-09-08 — H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001
 
 Aplicación autorizada después del reinicio separado de Supabase. Migración 20260908000300 y GAS15

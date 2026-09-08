@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "sourceSha256": "25988055d538c63b91d9d761a48ddb9a78ddc41e85dc6a3dc8df95327b3675a6",
+  "verifyJwt": true,
+  "deployed": {
+    "id": "dacea9ed-10a0-4f14-81b3-7bc41c1052e1",
+    "slug": "request-delete",
+    "name": "request-delete",
+    "status": "ACTIVE",
+    "version": 1,
+    "created_at": 1788900164561,
+    "updated_at": 1788900164561,
+    "verify_jwt": true,
+    "import_map": false,
+    "entrypoint_path": "file:///tmp/user_fn_jsucdyothkuptosvskqf_dacea9ed-10a0-4f14-81b3-7bc41c1052e1_1/source/index.ts",
+    "ezbr_sha256": "118b6dd5c24f49dd92d76a5e2c0b518a3f7cf2c5c7ab58d34b10b79f17252d42"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "googleVersion": 15,
+  "rpcOid": 48656,
+  "rpcSha256": "422dbfc0c811d1da8c06bde5ac7b1d4a918eb159cbb21a1f95bb05debc3af0c1",
+  "counts": {
+    "requests": 60,
+    "request_documents": 397,
+    "affiliate_documents": 3541,
+    "affiliate_files": 12901,
+    "private_assets": 13152,
+    "storage_objects": 13359
+  },
+  "privateBackup": "C:/tmp/sutiapp-request-delete-20260908"
+}

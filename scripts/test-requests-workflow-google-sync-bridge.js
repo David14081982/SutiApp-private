@@ -15,6 +15,7 @@ function fixture(){
     getValue(){return this.getValues()[0][0];}getDisplayValue(){return this.getDisplayValues()[0][0];}
     getFormula(){return this.sheet.formulas[this.row+':'+this.col]||'';}
     getFormulas(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.formulas[(this.row+r)+':'+(this.col+c)]||''));}
+    getNumberFormats(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.formats[(this.row+r)+':'+(this.col+c)]||'General'));}
     setNumberFormat(format){for(let r=0;r<this.height;r++)for(let c=0;c<this.width;c++)this.sheet.formats[(this.row+r)+':'+(this.col+c)]=format;return this;}
     setValue(value){return this.setValues([[value]]);}
     setValues(rows){
@@ -37,7 +38,7 @@ function fixture(){
   let held=false;
   const context={console,ContentService:{MimeType:{JSON:'JSON'},createTextOutput:text=>({text,setMimeType(){return this;}})},
     PropertiesService:{getScriptProperties:()=>({getProperty:()=> 'isolated-server-secret'})},
-    LockService:{getScriptLock:()=>({tryLock:()=>{if(held)return false;held=true;return true;},releaseLock:()=>{held=false;}})},
+    LockService:{getScriptLock:()=>({tryLock:()=>{if(held)return false;held=true;return true;},waitLock:()=>{if(held)throw Error('LOCK_BUSY');held=true;},releaseLock:()=>{held=false;}})},
     Utilities:{DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_a,s)=>Array.from(crypto.createHash('sha256').update(s).digest())},
     SpreadsheetApp:{openById:()=>({getId:()=> '1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80',getSheetByName:name=>name===target.name?target:registry}),flush:()=>{}}
   };

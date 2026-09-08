@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "adminPreview": true,
+  "anonymousDenied": true,
+  "invalidConfirmationDenied": true,
+  "journalBrowserDenied": true,
+  "businessHashesUnchanged": true,
+  "deletionJobs": 0,
+  "productionDeletes": 0,
+  "documents": 397,
+  "dossier": 3545,
+  "files": 12901,
+  "assets": 13156
+}

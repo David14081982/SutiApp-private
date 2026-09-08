@@ -1,0 +1,24 @@
+'use strict';
+const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert').strict,crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),out=root+'/docs/qa/evidence/admin-request-delete-20260908',baseline='ed19f77';
+const git=(...args)=>cp.execFileSync('git',args,{cwd:root,encoding:'utf8',maxBuffer:30000000});
+const read=f=>fs.readFileSync(root+'/'+f,'utf8').replace(/\r\n/g,'\n'),old=f=>git('show',baseline+':'+f).replace(/\r\n/g,'\n');
+const chunks=s=>Object.fromEntries(s.split('/* @@file ').slice(1).map(x=>[x.slice(0,x.indexOf(' */')),x]));
+const before=chunks(old('app/bundle.js')),after=chunks(read('app/bundle.js'));
+const changed=Object.keys(after).filter(k=>after[k]!==before[k]);assert.deepEqual(changed,['admin-request-deletion-repository.js','screens-admin-finanzas.jsx']);
+assert(Object.keys(before).every(k=>k in after));
+assert.equal(read('sw.js').replaceAll('sutiapp-v177','sutiapp-v176').replaceAll('bundle.js?v=230','bundle.js?v=229'),old('sw.js'));
+assert.equal(read('SutiApp.html').replaceAll('sw.js?v=177','sw.js?v=176').replaceAll('bundle.js?v=230','bundle.js?v=229'),old('SutiApp.html'));
+const a=old('app/screens-admin-finanzas.jsx'),b=read('app/screens-admin-finanzas.jsx');
+const save=s=>s.slice(s.indexOf('    const save = async'),s.indexOf('    const previews = useFinancialDocumentPreviews'));
+assert.equal(save(a),save(b));
+for(const f of ['app/program-request-repository.js','app/document-workflow-repository.js','app/private-resource-demand.js','app/image-viewer.jsx','app/affiliate-auth.js'])assert.equal(read(f),old(f),f);
+const files=[...new Set((git('diff','--name-only',baseline)+'\n'+git('ls-files','--others','--exclude-standard')).trim().split(/\r?\n/).filter(Boolean))];
+const allowed=new Set(['SutiApp.html','sw.js','app/bundle.js','app/screens-admin-finanzas.jsx','app/admin-request-deletion-repository.js','scripts/build-bundle.js','scripts/test-requests-workflow-google-sync-bridge.js','scripts/release-admin-request-delete.js','scripts/verify-admin-request-delete-scope.js','google-apps-script/financial-handoff/Code.gs','google-apps-script/financial-handoff/README.md','docs/DATA_GOVERNANCE.md','docs/DECISIONS.md','docs/INVARIANTS.md','docs/LEGACY_GOOGLE_SYSTEMS.md','docs/MIGRATION_RULES.md','docs/SECURITY_RULES.md','docs/SOURCE_OF_TRUTH.md','docs/AGENT_CHANGELOG.md','docs/qa/H-ADMIN-REQUEST-DELETE-001.md']);
+for(const f of files)assert(allowed.has(f)||f.startsWith('docs/architecture/')||f.startsWith('docs/qa/evidence/admin-request-delete-20260908/')||/^scripts\/test-admin-request-delete(?:-[a-z]+)*\.(?:js|sql)$/.test(f)||f==='supabase/functions/request-delete/index.ts'||f==='supabase/migrations/20260908000400_admin_request_delete.sql'||f==='supabase/recovery/20260908000400_admin_request_delete_recovery.sql','UNEXPECTED_FILE '+f);
+const env=fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8');
+const secrets=env.split(/\r?\n/).filter(l=>/^[A-Z0-9_]*(?:SECRET|PASSWORD|ACCESS_TOKEN)=/.test(l)).map(l=>l.slice(l.indexOf('=')+1).trim().replace(/^['"]|['"]$/g,'')).filter(v=>v.length>=12);
+for(const f of files){if(!fs.existsSync(root+'/'+f))continue;const data=fs.readFileSync(root+'/'+f);for(const value of secrets)assert(!data.includes(Buffer.from(value)),'SECRET_IN_CHANGED_FILE '+f);}
+const bridge=JSON.parse(cp.execFileSync(process.execPath,[root+'/scripts/test-requests-workflow-google-sync-bridge.js'],{encoding:'utf8'}));assert.equal(bridge.status,'PASS');fs.writeFileSync(out+'/bridge-regression.json',JSON.stringify(bridge,null,2)+'\n');
+const proof={status:'PASS',baseline,changedBundleModules:changed,approvalCallbackUnchanged:true,sharedImageAndAuthSourcesUnchanged:true,cachebustersOnly:true,secretScan:'PASS',unexpectedFiles:[],globalImageRegression:'NOT APPLICABLE: generated bundle/cachebusters only; shared image sources unchanged',bundleSha256:crypto.createHash('sha256').update(read('app/bundle.js')).digest('hex')};
+fs.writeFileSync(out+'/scope-build.json',JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));

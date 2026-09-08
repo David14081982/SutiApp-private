@@ -257,3 +257,11 @@ Toda dependencia RPC obligatoria de la resolución de sesión debe verificarse c
 `get_affiliate_activation_status(text)` es la única excepción pública focal: devuelve exclusivamente `INVALID_EMAIL|NOT_REGISTERED|AMBIGUOUS|NOT_ELIGIBLE|ALREADY_ACTIVATED|ELIGIBLE`, nunca UUID, nombre, control, email almacenado ni otra PII. Cuenta todas las coincidencias y falla cerrado si no existe exactamente una fila activa/elegible. No escribe `affiliates` ni Auth.
 
 El browser sólo solicita OTP después de `ELIGIBLE`. El vínculo continúa protegido por `claim_affiliate_identity`, que deriva `auth.uid()` y email confirmado en backend. Password y callback pertenecen a Supabase Auth. Ningún error de Auth, SMTP, proveedor o rate limit puede convertirse en notice exitoso. Site URL/redirects son productivos; credenciales de gestión y SMTP permanecen fuera del bundle.
+
+## Request deletion boundary - ADR-108
+
+Admin deletion requires verified Auth and backend program_requests.write. Browser input contains only
+request UUID, confirmed folio/revision and reason; Google coordinates and snapshots come from canonical
+server reads. The journal forces RLS, denies browser access, grants service SELECT only, and restricts
+finalization/Google receipts to service RPCs. No dossier/Storage DELETE exists in this feature. Prepare
+locks the parent and sync lease; child guards serialize writes and prohibit changes after prepare.

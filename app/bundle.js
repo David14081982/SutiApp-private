@@ -8543,6 +8543,22 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.SavingsRepository = Object.freeze(api);
 })();
 })();
+/* @@file admin-request-deletion-repository.js */
+(function(){
+/* Focal Admin request deletion boundary. Never removes affiliate documents or Storage objects. */
+(function(){
+  'use strict';
+  const db=()=>window.SutiSupabase.getClient();
+  async function preview(id){const r=await db().rpc('get_admin_request_delete_preview',{p_request_id:id});if(r.error)throw r.error;return r.data;}
+  async function remove(confirmed,reason){
+    const r=await db().functions.invoke('request-delete',{body:{request_id:confirmed.request_id,folio:confirmed.folio,updated_at:confirmed.updated_at||null,reason}});
+    if(r.error){let code;try{code=(await r.error.context.json()).error;}catch(_){}throw Error(code||r.error.message||'REQUEST_DELETE_RETRY_REQUIRED');}
+    if(!r.data?.data?.deleted||r.data.data.request_id!==confirmed.request_id)throw Error(r.data?.error||'REQUEST_DELETE_RESPONSE_INVALID');
+    window.dispatchEvent(new Event('suti:request-changed'));return r.data.data;
+  }
+  window.AdminRequestDeletionRepository=Object.freeze({preview,remove});
+})();
+})();
 /* @@file institutional-repositories.js */
 (function(){
 /* Sole Supabase data-access boundaries for H-007 public institutional content. */
@@ -35889,9 +35905,11 @@ Object.assign(window, {
       .finwb-modal-close{flex:none;align-self:flex-start;display:grid;place-items:center;width:44px;height:44px;border:1px solid #DCE1EA;border-radius:12px;background:#F3F5F9;color:var(--ink);font-size:26px;cursor:pointer}.finwb-modal :focus-visible{outline:3px solid var(--guinda);outline-offset:2px}.finwb-modal .finwb-badge{font-size:12px;min-height:28px}
       .finwb-modal .finwb-detail-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:start;gap:16px;scrollbar-gutter:stable}.finwb-modal .finwb-card{min-width:0;margin:0;padding:18px}.finwb-modal .finwb-card h3{font-size:15px;margin-bottom:14px}.finwb-modal .finwb-kv{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.finwb-modal .finwb-kv span{font-size:11px}.finwb-modal .finwb-kv strong{font-size:13px;line-height:1.45}.finwb-modal .finwb-doc .finwb-person,.finwb-modal .finwb-doc .finwb-sub{white-space:normal;overflow-wrap:anywhere}.finwb-modal .finwb-flow-current .finwb-sub{display:block;margin-bottom:4px}.finwb-modal .finwb-flow-current{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-responsible{justify-self:start;white-space:normal}.finwb-modal .finwb-step strong{font-size:13px}.finwb-modal .finwb-step p,.finwb-modal .finwb-event p{font-size:12px;overflow-wrap:anywhere}.finwb-modal .finwb-event strong{font-size:13px}
       .finwb-modal .finwb-actionbar{position:static;flex:none;padding:14px 24px;background:#fff;box-shadow:0 -6px 20px #14203808;backdrop-filter:none}.finwb-modal .finwb-action-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}.finwb-modal .finwb-action-grid .finwb-sub{display:block;white-space:normal}.finwb-modal .finwb-note{min-height:44px;height:44px;resize:none;margin-top:8px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-buttons button{min-height:44px;font-size:13px}.finwb-modal .finwb-next-action{margin-top:6px;padding:6px 10px}.finwb-modal .finwb-empty{flex:1;min-height:0;overflow:auto}.finwb-modal .finwb-feedback{overflow-wrap:anywhere}
+      .finwb-modal .finwb-buttons:has(.finwb-delete){grid-template-columns:auto auto minmax(0,1fr) auto}.finwb-delete{background:#fff1f3;color:#a00027;box-shadow:inset 0 0 0 1px #edb7c2}.finwb-delete:focus-visible{outline:3px solid #a00027;outline-offset:2px}
       @media(min-width:768px){.finwb-queue-head,.finwb-row{grid-template-columns:100px minmax(0,1fr) 140px 180px 64px;gap:12px;padding:14px 16px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3),.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:block}}
       @media(max-width:1023px){.finwb-modal{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:16px}.finwb-modal .finwb-detail-head{padding:14px 18px}.finwb-modal .finwb-detail-scroll{padding:16px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:12px 18px}}
       @media(max-width:600px){.finwb-modal{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}.finwb-modal .finwb-detail-head{padding:12px;gap:8px;flex-wrap:wrap}.finwb-modal-heading h2{font-size:17px}.finwb-modal .finwb-detail-head .finwb-badge{max-width:100%;font-size:11px;min-height:24px}.finwb-modal .finwb-detail-head .finwb-sub{font-size:11px}.finwb-modal .finwb-detail-scroll{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-grid{gap:8px}.finwb-modal .finwb-action-select{font-size:12px;min-width:0;padding:8px}.finwb-modal .finwb-buttons{grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.finwb-modal .finwb-primary{grid-column:1/-1}.finwb-modal .finwb-buttons button{padding:8px;font-size:12px}.finwb-modal .finwb-next-action{font-size:10px;line-height:1.3}.finwb-modal .finwb-note{margin-top:6px}.finwb-modal .finwb-feedback{font-size:10px;margin-top:4px}}
+      @media(max-width:600px){.finwb-modal .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr}.finwb-modal .finwb-buttons:has(.finwb-delete) .finwb-primary{grid-column:auto}}
       @media(max-height:600px){.finwb-modal .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:16px;margin:2px 0}.finwb-modal .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-note{height:36px;min-height:36px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-primary{grid-column:auto}}
     `;
     document.head.appendChild(style);
@@ -36282,6 +36300,7 @@ Object.assign(window, {
     onCount,
     initialAffiliateId
   }) {
+    const [deleting, setDeleting] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false),
       modalTitleId = React.useId();
     const [rows, setRows] = useState([]),
@@ -36542,8 +36561,43 @@ Object.assign(window, {
     };
     const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
     const closeDetail = () => {
+      if (deleting) return;
       setViewer(null);
       setDetailOpen(false);
+    };
+    const deleteRequest = async () => {
+      if (!detail || busy || !app.admin.has('program_requests.write')) return;
+      const id = detail.id;
+      setBusy(true);
+      setDeleting(true);
+      setFeedback(null);
+      try {
+        const preview = await window.AdminRequestDeletionRepository.preview(id);
+        if (preview.phase !== 'completed' && !window.confirm('¿Eliminar la solicitud ' + preview.folio + ' y sus ' + preview.documents_count + ' documentos enviados? También se retirará su registro de Google. El expediente del afiliado y sus imágenes se conservarán.')) return;
+        await window.AdminRequestDeletionRepository.remove(preview, actionNote.trim().length >= 3 ? actionNote.trim() : 'Eliminación confirmada desde Admin Solicitudes');
+        setViewer(null);
+        setDetailOpen(false);
+        setDetail(null);
+        setSelectedId('');
+        await load(true);
+      } catch (failure) {
+        const code = String(failure?.message || ''),
+          messages = {
+            REQUEST_DELETE_DENIED: 'No tienes permiso para eliminar solicitudes.',
+            REQUEST_DELETE_SYNC_BUSY: 'La solicitud se está sincronizando. Espera unos segundos y reintenta.',
+            REQUEST_DELETE_CHANGED: 'La solicitud cambió. Actualiza el detalle y vuelve a confirmar.',
+            REQUEST_DELETE_DEPENDENT_REQUEST: 'Otra solicitud utiliza esta cotización; debe conservarse su referencia.',
+            REQUEST_DELETE_LEGACY_REVIEW_REQUIRED: 'No se pudo verificar el registro histórico de Google. La eliminación requiere revisar esa referencia.',
+            REQUEST_DELETE_IN_PROGRESS: 'Hay una eliminación pendiente. Usa Eliminar solicitud para reintentar.'
+          };
+        setFeedback({
+          tone: 'error',
+          text: messages[code] || 'No se completó la eliminación. Reintenta con Eliminar solicitud; el expediente del afiliado se conserva.'
+        });
+      } finally {
+        setBusy(false);
+        setDeleting(false);
+      }
     };
     const onKeyDown = event => {
       if (detailOpen || /INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
@@ -36912,7 +36966,13 @@ Object.assign(window, {
         onClick: () => save(false)
       }, busy ? 'Guardando…' : (actionOptions.find(item => item.id === action) || {
         label: 'Confirmar acción'
-      }).label)), feedback && h('div', {
+      }).label), h('button', {
+        type: 'button',
+        className: 'finwb-delete',
+        disabled: busy,
+        onClick: deleteRequest,
+        'data-request-delete': 'true'
+      }, deleting ? 'Eliminando…' : 'Eliminar solicitud')), feedback && h('div', {
         className: 'finwb-feedback',
         'data-financial-action-feedback': feedback.tone,
         'data-tone': feedback.tone

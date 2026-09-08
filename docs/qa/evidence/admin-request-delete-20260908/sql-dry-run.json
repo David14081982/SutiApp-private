@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "migrationSha256": "9d204e245e0ab98cf10611c6a3a223f5ba51acd2faaac749892ff7967ecc97ff",
+  "persistentWrites": 0,
+  "result": [
+    {
+      "result": "PASS"
+    }
+  ]
+}

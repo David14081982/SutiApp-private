@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "ordered durable backup then Google then finalization",
+      "status": "PASS"
+    },
+    {
+      "name": "unauthorized identity",
+      "status": "PASS"
+    },
+    {
+      "name": "permission denied",
+      "status": "PASS"
+    },
+    {
+      "name": "Google failure retains request",
+      "status": "PASS"
+    },
+    {
+      "name": "retry after lost acknowledgement",
+      "status": "PASS"
+    },
+    {
+      "name": "Google changed after original backup",
+      "status": "PASS"
+    },
+    {
+      "name": "retry after confirmed Google removal",
+      "status": "PASS"
+    },
+    {
+      "name": "completed retry",
+      "status": "PASS"
+    }
+  ],
+  "externalWrites": 0
+}

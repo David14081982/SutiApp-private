@@ -1,5 +1,20 @@
 # Gobierno de datos
 
+## Eliminación explícita de solicitudes — ADR-108
+
+La autorización posterior del propietario permite retirar una solicitud confirmada y sus vínculos
+documentales del dominio operacional, preservando el expediente y los archivos compartidos.
+Prevalece sólo para esta operación sobre la prohibición de borrar eventos/referencias operacionales:
+la historia íntegra se conserva en program_request_deletions.snapshot, con actor real y motivo.
+El journal privado fuerza RLS, sólo permite lectura service y escritura mediante RPC restringidas.
+No caduca ni funciona como fallback o restauración automática. Contiene datos privados de la
+solicitud y el respaldo Google; no debe exportarse a evidencia pública, logs ni frontend.
+
+Lectores: Edge request-delete y recuperación administrativa autorizada. Escritores: prepare,
+record y finish RPC. Origen: filas canónicas bloqueadas y celdas Google verificadas antes del borrado.
+Retención: durable para auditoría/recuperación, sin purge automático. AH+ y datos financieros
+externos no se incluyen ni se modifican. La instalación no borra datos de negocio.
+
 ## Clasificaciones
 
 - **Fuente autoritativa:** sistema oficialmente autorizado para decidir el valor vigente de un dominio.

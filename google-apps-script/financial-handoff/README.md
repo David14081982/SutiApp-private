@@ -49,3 +49,10 @@ Los contratos read-only `overview/quote` usan nombres separados `FINANCIAL_LEGAC
 No crear triggers Apps Script ni ejecutar amortización, pagos o procesos financieros posteriores. Para
 `sync_request`, después del alta A:AG sólo Y puede cambiar; el resto de la fila y otras hojas financieras
 permanecen intactos. El registry técnico conserva UUID/hash/revisión/fila/estado para recuperación.
+
+## Admin request deletion
+
+REQUEST_DELETE_V1 adds delete_request inspect/apply to the same authenticated deployment. Inspect is
+read-only and returns private backup/fingerprint to the Edge. Apply clears only matching A:AG, retaining
+row positions and AH+. The technical registry tombstone prevents delayed sync/handoff resurrection.
+Request deletion completes in Supabase only after verified Google acknowledgement. See ADR-108.

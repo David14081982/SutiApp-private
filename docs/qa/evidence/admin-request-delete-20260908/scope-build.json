@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "baseline": "ed19f77",
+  "changedBundleModules": [
+    "admin-request-deletion-repository.js",
+    "screens-admin-finanzas.jsx"
+  ],
+  "approvalCallbackUnchanged": true,
+  "sharedImageAndAuthSourcesUnchanged": true,
+  "cachebustersOnly": true,
+  "secretScan": "PASS",
+  "unexpectedFiles": [],
+  "globalImageRegression": "NOT APPLICABLE: generated bundle/cachebusters only; shared image sources unchanged",
+  "bundleSha256": "23122b1807afa31205c248b7bd0d17726636a42ed7ac5895a014583dee527767"
+}

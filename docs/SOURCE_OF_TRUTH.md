@@ -312,3 +312,11 @@ Review import normalization 006 is applied before publication, with immutable ba
 ## H-SAVINGS-ACCESS-001 - private Savings section access
 
 The existing admin_section_responsibilities authority now includes savings read/update. Confirmed Auth email resolves assignment UUID only; financial identity remains exact text Folio/numero_control. savings_admin_access_mode controls OPEN (preserve authorized Savings roles) or RESTRICTED (listed members plus permission managers). Only authorization.write manages access. Delegated update authorizes private review proposals, never canonical financial writers. The original permission and context definitions are privately backed up; original function OIDs/grants are preserved. No user balance/source/financial publication authority changes. See docs/audits/H-SAVINGS-ACCESS-001.md and docs/qa/evidence/savings-access-20260906/RESULT.md.
+
+## Admin request deletion - ADR-108
+
+program_requests and request_documents remain canonical. AdminRequestDeletionRepository calls only
+permission-checked preview and request-delete. The Edge coordinates prepare -> verified Google removal
+-> transactional finish. program_request_deletions is private durable audit/recovery evidence, never a
+runtime substitute. Dossier/assets keep their existing authority, records and files. Google A:AG is a
+derived request register; its technical tombstone prevents resurrection. No financial writer changes.

@@ -1,5 +1,14 @@
 # Invariantes
 
+## Eliminación de solicitudes — ADR-108
+
+- **INV-218:** Eliminar una solicitud requiere permiso backend, confirmación de folio/revisión,
+  respaldo privado y confirmación Google antes del DELETE transaccional. Se retienen actor e historia;
+  no se eliminan affiliate_documents, affiliate_files, private_assets ni objetos Storage.
+- **INV-219:** La eliminación invalida exclusivamente el registro Google verificado en A:AG,
+  sin desplazar filas ni modificar AH+. La marca técnica y los guards Supabase impiden recreación
+  y mutaciones concurrentes. Un fallo es visible y reintentable, nunca éxito ni fallback silencioso.
+
 ## Referencias de sincronización — ADR-107
 
 - **INV-216:** El número de fila Google nunca identifica una solicitud. Relocalizar requiere UUID/folio

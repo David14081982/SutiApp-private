@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "rows": [
+    {
+      "test": "test-savings-read-work.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"tests\":19,\"cases\":[{\"name\":\"cold and sequential reuse require backend validation\",\"status\":\"PASS\"},{\"name\":\"simultaneous readers share one request\",\"status\":\"PASS\"},{\"name\":\"changed underlying version refreshes complete projection\",\"status\":\"PASS\"},{\"name\":\"force refresh discards cached version\",\"status\":\"PASS\"},{\"name\":\"network/permission error clears cache without fallback\",\"status\":\"PASS\"},{\"name\":\"store initial load and validated navigation remain ready\",\"status\":\"PASS\"},{\"name\":\"store failures are visible and contain no prior financial data\",\"status\":\"PASS\"},{\"name\":\"logout clears both self/admin financial state and rejects reuse\",\"status\":\"PASS\"},{\"name\":\"actor change invalidates memory\",\"status\":\"PASS\"},{\"name\":\"session change invalidates memory\",\"status\":\"PASS\"},{\"name\":\"affiliate change invalidates memory\",\"status\":\"PASS\"},{\"name\":\"impersonation change invalidates memory\",\"status\":\"PASS\"},{\"name\":\"administrative context change invalidates reuse\",\"status\":\"PASS\"},{\"name\":\"late response from a former session cannot restore data\",\"status\":\"PASS\"},{\"name\":\"forced read supersedes an older in-flight response\",\"status\":\"PASS\"},{\"name\":\"successful savings write invalidates before and after\",\"status\":\"PASS\"},{\"name\":\"uncertain failed write also invalidates cached projection\",\"status\":\"PASS\"},{\"name\":\"read-only admin operation does not invalidate self projection\",\"status\":\"PASS\"},{\"name\":\"explicit state clear also discards repository cache\",\"status\":\"PASS\"}],\"fixtures\":\"Isolated VM only; no network or real financial writes\"}"
+    },
+    {
+      "test": "test-savings-balance-sync.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"authority\":\"get_self_savings_live_readonly\",\"readModel\":\"SavingsBalanceReadModel\",\"active\":\"$8,000.00\",\"empty\":\"—\",\"invalid\":\"Por confirmar\",\"alternateSources\":0}"
+    },
+    {
+      "test": "test-savings-shadow-foundation.js",
+      "status": "PASS",
+      "output": "Savings shadow foundation static verification PASS: schema/recovery, identity import, schedules, ledger, action gates, RLS/RPCs, user/admin UI and no productive fallback."
+    }
+  ]
+}

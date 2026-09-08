@@ -2681,3 +2681,8 @@ Autorización explícita posterior a H01/H02 PASS. Nueva RPC INVOKER delegante c
 ## H04 — Disk I/O: RLS documental y Storage privado (2026-09-07)
 
 Autorización explícita tras H01/H02/H03 PASS. Una policy USING separa tres ramas equivalentes, sin nuevos índices ni permisos. Consulta exacta: 3.044→0 documentos, 28.164→757 hits; 192 casos antes/candidato y 192 live iguales. Regresión global local/GitHub Pages PASS; 252 funciones y 227 policies adicionales intactas. Recovery/idempotencia/drift PASS. Altas concurrentes anteriores al despliegue reconciliadas sin borrado. Sin cambios frontend, finanzas ni históricos por H04. Carpetas vacías de preparación fuera del repo conservadas tras bloqueo automático de limpieza, sin efecto productivo. Evidencia: [H04/VERIFICATION.md](qa/evidence/disk-io-remediation/H04/VERIFICATION.md). No se inicia otra H.
+
+
+## H05 - Disk I/O: Savings read work (2026-09-07)
+
+Owner-authorized after H01-H04 PASS. One measured evidence index and one conditional endpoint delegate to the exact certified getter; no financial/history/rule changes. Ten full real-case equivalence checks, 24 table hashes, backend security/invalidation and recovery pass. Memory-only projection validated on each read, identity/session/context/write/error invalidation. Isolated two-chunk release and local global regression PASS; production delivery verification pending. Evidence: [H05](qa/evidence/disk-io-remediation/H05/TESTS.md). No H06.

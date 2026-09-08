@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "tables": 24,
+  "unchanged": true,
+  "comparison": "Full row multiset hashes and counts for all 24 savings tables"
+}

@@ -1,0 +1,167 @@
+{
+  "at": "2026-09-08T01:06:12.046Z",
+  "status": "PASS",
+  "comparison": "Complete original JSONB versus conditional data, all fields and array order; private payload stays in temporary SQL rows",
+  "rows": [
+    {
+      "label": "JUB_1:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "JUB_1:full",
+      "pass": true
+    },
+    {
+      "label": "JUB_1:identity",
+      "pass": true
+    },
+    {
+      "label": "JUB_1:warm",
+      "pass": true
+    },
+    {
+      "label": "NO_PARTICIPANT:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "NO_PARTICIPANT:full",
+      "pass": true
+    },
+    {
+      "label": "NO_PARTICIPANT:identity",
+      "pass": true
+    },
+    {
+      "label": "NO_PARTICIPANT:warm",
+      "pass": true
+    },
+    {
+      "label": "NO_PROCESS_1:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "NO_PROCESS_1:full",
+      "pass": true
+    },
+    {
+      "label": "NO_PROCESS_1:identity",
+      "pass": true
+    },
+    {
+      "label": "NO_PROCESS_1:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_1:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_1:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_1:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_1:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_2:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_2:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_2:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_2:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_3:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_3:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_3:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_1_3:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_1:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_1:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_1:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_1:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_2:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_2:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_2:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_2:warm",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_3:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_3:full",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_3:identity",
+      "pass": true
+    },
+    {
+      "label": "PROCESS_3_3:warm",
+      "pass": true
+    },
+    {
+      "label": "ZERO_BALANCE:foreign_version",
+      "pass": true
+    },
+    {
+      "label": "ZERO_BALANCE:full",
+      "pass": true
+    },
+    {
+      "label": "ZERO_BALANCE:identity",
+      "pass": true
+    },
+    {
+      "label": "ZERO_BALANCE:warm",
+      "pass": true
+    }
+  ]
+}

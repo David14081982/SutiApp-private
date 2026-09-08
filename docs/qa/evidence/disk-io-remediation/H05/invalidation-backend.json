@@ -1,0 +1,23 @@
+{
+  "at": "2026-09-08T01:06:25.646Z",
+  "status": "PASS",
+  "checks": [
+    {
+      "pass": true,
+      "label": "action_changed"
+    },
+    {
+      "pass": true,
+      "label": "beneficiary_changed"
+    },
+    {
+      "pass": true,
+      "label": "date_zone_changed"
+    },
+    {
+      "pass": true,
+      "label": "evidence_changed"
+    }
+  ],
+  "fixtures": "New transient rows only, transaction rolled back; original historical rows unchanged"
+}

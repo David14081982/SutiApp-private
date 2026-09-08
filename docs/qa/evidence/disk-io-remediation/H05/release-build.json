@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "base": "19eb53d",
+  "files": 108,
+  "changed_chunks": [
+    "savings-repository.js",
+    "savings-store.jsx"
+  ],
+  "bundle_sha256": "d6055c5786d3583e880fb29ce64b3662cd9a3ecc50813ce3dca39ebe53351b04",
+  "publicFiles": 22,
+  "versions": {
+    "bundle": 222,
+    "serviceWorker": 169
+  },
+  "workspace_unrelated_changes_excluded": true
+}

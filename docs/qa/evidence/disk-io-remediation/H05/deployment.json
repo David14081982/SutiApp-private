@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-08T01:13:17.005Z",
+  "status": "APPLIED",
+  "migration": "20260907000500_savings_read_work.sql",
+  "source_sha256": "9524085fdfbe6b3c97c2bc86ff198626f65084275d6ca9c667468c2334669282",
+  "financial_dml": false
+}

@@ -1,0 +1,105 @@
+{
+  "at": "2026-09-08T01:06:27.561Z",
+  "summary": {
+    "ms": 6.339,
+    "hits": 75,
+    "reads": 0,
+    "nodes": [
+      {
+        "node": "Result",
+        "relation": null,
+        "index": null,
+        "rows": 1,
+        "removed": 0,
+        "loops": 1,
+        "hits": 75,
+        "reads": 0,
+        "subplan": null
+      },
+      {
+        "node": "Index Scan",
+        "relation": "h05_versions",
+        "index": "h05_versions_pkey",
+        "rows": 1,
+        "removed": 0,
+        "loops": 1,
+        "hits": 0,
+        "reads": 0,
+        "subplan": "InitPlan 1"
+      }
+    ]
+  },
+  "plan": {
+    "Plan": {
+      "Node Type": "Result",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 2.37,
+      "Total Cost": 2.63,
+      "Plan Rows": 1,
+      "Plan Width": 32,
+      "Actual Startup Time": 6.294,
+      "Actual Total Time": 6.295,
+      "Actual Rows": 1,
+      "Actual Loops": 1,
+      "Shared Hit Blocks": 75,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 4,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0,
+      "Plans": [
+        {
+          "Node Type": "Index Scan",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "InitPlan 1",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Scan Direction": "Forward",
+          "Index Name": "h05_versions_pkey",
+          "Relation Name": "h05_versions",
+          "Alias": "h05_versions",
+          "Startup Cost": 0.15,
+          "Total Cost": 2.37,
+          "Plan Rows": 1,
+          "Plan Width": 32,
+          "Actual Startup Time": 0.04,
+          "Actual Total Time": 0.041,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Index Cond": "(label = 'cold'::text)",
+          "Rows Removed by Index Recheck": 0,
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 4,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        }
+      ]
+    },
+    "Planning": {
+      "Shared Hit Blocks": 6,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 1,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.079,
+    "Triggers": [],
+    "Execution Time": 6.339
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "at": "2026-09-08T00:48:22.358Z",
+  "tables": [
+    {
+      "relation": "savings_access_definition_backup",
+      "rows": 4,
+      "hash": "3454ddfb98cacd96bf1db069144d1d3e"
+    },
+    {
+      "relation": "savings_action_availability",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_admin_access_events",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_admin_access_mode",
+      "rows": 1,
+      "hash": "7b0647ac299bcb5ba0d51c36b3d0b03a"
+    },
+    {
+      "relation": "savings_audit_events",
+      "rows": 1,
+      "hash": "9d475364b0dbecca3481d2df893bb4fe"
+    },
+    {
+      "relation": "savings_beneficiaries",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_beneficiary_versions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_contribution_overrides",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_contribution_plans",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_enrollments",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_holds",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_import_batches",
+      "rows": 1,
+      "hash": "6b2e03826b36aa28013176159c12a79a"
+    },
+    {
+      "relation": "savings_legacy_evidence",
+      "rows": 42229,
+      "hash": "f476cdaebc230b2740b000768715a062"
+    },
+    {
+      "relation": "savings_participants",
+      "rows": 363,
+      "hash": "0536c454933484020b540e1fa0d70c3c"
+    },
+    {
+      "relation": "savings_process_change_events",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_request_approvals",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_requests",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_review_batches",
+      "rows": 1,
+      "hash": "d67c99338144f88c00e84106cf98f49d"
+    },
+    {
+      "relation": "savings_review_events",
+      "rows": 3,
+      "hash": "ceb5318561db90810528f1bcc73be448"
+    },
+    {
+      "relation": "savings_review_import_normalizations",
+      "rows": 708,
+      "hash": "1258140b19badb73a4aaf43a836d11fe"
+    },
+    {
+      "relation": "savings_review_records",
+      "rows": 1463,
+      "hash": "6aeab2cac464350eb395e250eacbb8d3"
+    },
+    {
+      "relation": "savings_transactions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_yield_allocations",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "savings_yield_periods",
+      "rows": 0,
+      "hash": null
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "at": "2026-09-08T01:17:26.570Z",
+  "status": "PASS",
+  "target": "http://localhost:8080/",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "steps": [
+    {
+      "label": "Finance",
+      "projection_sha256": "58592170401fb66650d51c80a83af68a13a7c1d72d9cce934adaef8842db293d",
+      "calls": [
+        {
+          "rpc": "get_self_savings_if_changed",
+          "status": 200,
+          "bytes": 903,
+          "modified": true,
+          "has_financial_payload": true
+        }
+      ]
+    },
+    {
+      "label": "Savings",
+      "projection_sha256": "58592170401fb66650d51c80a83af68a13a7c1d72d9cce934adaef8842db293d",
+      "calls": [
+        {
+          "rpc": "get_self_savings_if_changed",
+          "status": 200,
+          "bytes": 312,
+          "modified": false,
+          "has_financial_payload": false
+        }
+      ]
+    },
+    {
+      "label": "Finance_return",
+      "projection_sha256": "58592170401fb66650d51c80a83af68a13a7c1d72d9cce934adaef8842db293d",
+      "calls": []
+    }
+  ],
+  "navigation": {
+    "rpc_count": 2,
+    "full_projections": 1,
+    "bytes": 1215
+  },
+  "ui": {
+    "html_sha256": "c362e25bec3a661e369916f3e1faeddbf3f4cfb5191f15130d36de7dbf63d7db",
+    "sections": [
+      "Ahorro no encontrado"
+    ],
+    "controls": [
+      {
+        "text": "",
+        "label": "Atrás",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "label": "Actualizar ahorro",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "label": "Información",
+        "disabled": false
+      },
+      {
+        "text": "Ingresar al ahorro",
+        "label": null,
+        "disabled": true
+      }
+    ],
+    "details": []
+  },
+  "checks": [
+    "force refresh fetches full current projection",
+    "controlled backend error removes prior projection",
+    "manual retry restores authoritative projection"
+  ],
+  "page_errors": [],
+  "privacy": "No private payload or displayed amounts retained; complete in-memory JSON compared using SHA256"
+}

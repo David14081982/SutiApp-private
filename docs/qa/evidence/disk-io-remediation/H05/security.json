@@ -1,0 +1,31 @@
+{
+  "at": "2026-09-08T01:08:48.253Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "label": "admin_original_equivalence",
+      "pass": true
+    },
+    {
+      "label": "anon",
+      "pass": true
+    },
+    {
+      "label": "impersonation",
+      "pass": true
+    },
+    {
+      "label": "impersonation_wrong_session",
+      "pass": true
+    },
+    {
+      "label": "missing_actor",
+      "pass": true
+    },
+    {
+      "label": "other_cannot_reuse_owner",
+      "pass": true
+    }
+  ],
+  "notes": "No target parameter. Existing actor/effective affiliate and impersonation authorization used; real principals, new impersonation session and audit rolled back. Existing sessions/roles/affiliates unchanged."
+}

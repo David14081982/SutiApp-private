@@ -1,0 +1,64 @@
+{
+  "at": "2026-09-08T00:43:09.452Z",
+  "role": "authenticated",
+  "query": "select public.get_self_savings_live_readonly()",
+  "index": "participant_id,record_type,observed_on DESC",
+  "summary": {
+    "ms": 17.502,
+    "hits": 1505,
+    "reads": 4,
+    "nodes": [
+      {
+        "node": "Result",
+        "relation": null,
+        "index": null,
+        "rows": 1,
+        "removed": 0,
+        "loops": 1,
+        "hits": 1505,
+        "reads": 4,
+        "subplan": null
+      }
+    ]
+  },
+  "plan": {
+    "Plan": {
+      "Node Type": "Result",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 0,
+      "Total Cost": 0.26,
+      "Plan Rows": 1,
+      "Plan Width": 32,
+      "Actual Startup Time": 17.484,
+      "Actual Total Time": 17.484,
+      "Actual Rows": 1,
+      "Actual Loops": 1,
+      "Shared Hit Blocks": 1505,
+      "Shared Read Blocks": 4,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning": {
+      "Shared Hit Blocks": 0,
+      "Shared Read Blocks": 0,
+      "Shared Dirtied Blocks": 0,
+      "Shared Written Blocks": 0,
+      "Local Hit Blocks": 0,
+      "Local Read Blocks": 0,
+      "Local Dirtied Blocks": 0,
+      "Local Written Blocks": 0,
+      "Temp Read Blocks": 0,
+      "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.011,
+    "Triggers": [],
+    "Execution Time": 17.502
+  }
+}

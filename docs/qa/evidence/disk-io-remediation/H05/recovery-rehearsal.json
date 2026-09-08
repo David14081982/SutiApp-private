@@ -1,0 +1,76 @@
+{
+  "at": "2026-09-08T01:12:05.860Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "label": "JUB_1",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "NO_PARTICIPANT",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "NO_PROCESS_1",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_1_1",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_1_2",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_1_3",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_3_1",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_3_2",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "PROCESS_3_3",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    },
+    {
+      "label": "ZERO_BALANCE",
+      "optimized_equal": true,
+      "recovered_equal": true,
+      "open_client_compatible": true,
+      "index_removed": true
+    }
+  ]
+}

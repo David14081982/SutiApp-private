@@ -1,0 +1,62 @@
+[
+  {
+    "record_type": "AA_DO_CELL",
+    "rows": 33852,
+    "participants": 363,
+    "future_rows": 24752
+  },
+  {
+    "record_type": "AMOUNT_CHANGE",
+    "rows": 126,
+    "participants": 108,
+    "future_rows": 0
+  },
+  {
+    "record_type": "DP_DW_CELL",
+    "rows": 1092,
+    "participants": 363,
+    "future_rows": 0
+  },
+  {
+    "record_type": "ENROLLMENT",
+    "rows": 364,
+    "participants": 363,
+    "future_rows": 8
+  },
+  {
+    "record_type": "LEGACY_REPORTED_BALANCE",
+    "rows": 365,
+    "participants": 363,
+    "future_rows": 0
+  },
+  {
+    "record_type": "PARTICIPANT",
+    "rows": 364,
+    "participants": 363,
+    "future_rows": 0
+  },
+  {
+    "record_type": "PLAN",
+    "rows": 364,
+    "participants": 363,
+    "future_rows": 0
+  },
+  {
+    "record_type": "REPORT",
+    "rows": 4369,
+    "participants": 344,
+    "future_rows": 0
+  },
+  {
+    "record_type": "REQUEST",
+    "rows": 741,
+    "participants": 363,
+    "future_rows": 0
+  },
+  {
+    "record_type": "WITHDRAWAL",
+    "rows": 592,
+    "participants": 363,
+    "future_rows": 0
+  }
+]

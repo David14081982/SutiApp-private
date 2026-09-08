@@ -1,0 +1,12 @@
+[
+  {
+    "mode": "A",
+    "columns": "participant_id,record_type,observed_on DESC",
+    "bytes": 1925120
+  },
+  {
+    "mode": "B",
+    "columns": "participant_id,record_type,source_sheet,source_row DESC",
+    "bytes": 770048
+  }
+]

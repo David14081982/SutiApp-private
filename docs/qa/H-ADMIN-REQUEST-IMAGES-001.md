@@ -59,3 +59,66 @@ update only for the screen dependency on the existing PrivateResourceDemand cont
 
 Receipts: [evidence directory](evidence/admin-request-images-20260908/).
 Publication and final Pages verification remain pending at this checkpoint.
+
+## Delivered production verification
+
+Published commit `5f2a1447b46befe7a4a5801ee229026d3d145293`, bundle **227**, worker **174**.
+[Pages deployment](https://github.com/David14081982/SutiApp-private/actions/runs/34240156243): success.
+Both sutiapp.com and GitHub Pages serve the exact reviewed bundle SHA-256
+`9790df67b2e5f3f3b43c2c979b9364d2a3590cd797bd1496eff28ad518a6d0e8`.
+The follow-up commit only restores UTF-8 punctuation in loading/error copy; the verified lifecycle is unchanged.
+
+- Production focal: **55/55 images decoded**, 0 image/Storage errors, 36 document-access calls,
+  19 loan + 10 membership + 9 quote + 17 benefit document rows. Both documentary sections, workflow,
+  history, fullscreen and mobile PASS. No business writers invoked.
+- Production global: **PASS**, 156 app assets, 248 catalog images, 8 Admin thumbnails, login/profile,
+  Membership/Loan/Marketplace/gallery/fullscreen, refresh, fresh profile and with/without service worker.
+  A legitimate private PDF was found, downloaded as application/pdf and opened in the shared viewer.
+- Workspace preservation: **PASS**, 944 pre-existing modified/untracked files fingerprinted; no changes
+  outside declared files. Published bundle changes only the financial requests screen, not pending H08
+  projections, savings code or any other workspace module.
+- Canonical documents/private Storage/RLS/Edge/Auth and financial writers remain unchanged. Normal
+  login/document-access audit records are expected; no document upload, replacement, deletion or business edit.
+
+Fresh receipts: `production.json`, `global-production.json`, `deployment.json`, `workspace-preservation.json`.
+The implementation and live delivery are verified; derived Registry acceptance is recorded separately.
+
+## Guardian closure
+
+```text
+CLAUDE UI PRESERVATION REVIEW
+Screen: Admin / Finanzas / Solicitudes, including embedded affiliate workbench
+Original sections: filters, queue, request detail, workflow, submission documents, current expediente, history, actions
+Current sections: same
+Missing sections: none
+Added sections: none
+Interactions preserved: navigation, search/filter/sort, request selection, document/PDF opening, fullscreen
+Navigation preserved: YES
+Visual structure preserved: YES (existing CSS unchanged; isolated mobile capture and live responsive check)
+Unauthorized redesign: NO
+Verdict: PASS
+
+SUPABASE SECURITY REVIEW
+Scope: local lifecycle of individually authorized document previews
+Auth/business identity: existing actor and affiliate context preserved
+RLS/grants: unchanged
+Roles/privilege escalation: no new privilege
+Frontend exposure: no new credentials or storage paths; signed URL ephemeral only
+Cross-user access: target/purpose still checked by existing backend; selection/logout/permission races tested
+Impersonation/audit: existing PrivateResourceDemand context invalidation, normal document-access audit retained
+Tests: isolated denied/context cases; actual authorized documents and global regression
+Verdict: PASS for unchanged security boundary and focal consumer
+
+H-ADMIN-REQUEST-IMAGES-001 RESULT
+Status: PASS — correction deployed and verified with legitimate production assets
+Files changed: screen; generated bundle/HTML/SW cache references; focal tests; evidence/changelog; derived Registry
+Source-of-truth verdict: SAFE (canonical document relationships and private Storage unchanged)
+Invariant verdict: PASS (protected finance guard and diff)
+Build: PASS (109-module isolated release; only one runtime module changed; 112-module workspace build)
+Tests: 11 isolated browser scenarios; protected four-suite guard; local/production 55-image focal; global local/Pages
+Security: PASS for focal scope; no backend/grant/Auth/secret changes
+Legacy impact: no Google, calculation, submission, approval, balance or history changes
+Unexpected files changed: 0 (944 pre-existing files checked)
+Known limitations: external service outages can still prevent download; UI exposes the failure and bounded recovery
+Evidence: qa/evidence/admin-request-images-20260908; exact public bundle and successful Actions run above
+```

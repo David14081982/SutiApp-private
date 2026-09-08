@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "target": "PRODUCTION",
+  "started": "2026-09-08T14:45:17.136Z",
+  "types": {
+    "loan": {
+      "rows": 19,
+      "images": 19,
+      "decoded": 19,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "membership": {
+      "rows": 10,
+      "images": 10,
+      "decoded": 10,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "quote": {
+      "rows": 9,
+      "images": 9,
+      "decoded": 9,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "benefit": {
+      "rows": 17,
+      "images": 17,
+      "decoded": 17,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    }
+  },
+  "signedRequests": 36,
+  "storageFailures": [],
+  "businessWrites": 0,
+  "fullscreen": "PASS",
+  "mobile": "PASS",
+  "ended": "2026-09-08T14:45:56.941Z"
+}

@@ -1,0 +1,3 @@
+Registry verification scope
+
+The generator itself was not changed. Full regeneration and the acceptance checks reached the add/remove fixture cycle after generation, freshness, lookups, aliases, graph relationships and secret exclusion. The exhaustive repeated generator/determinism workload was stopped as unrelated to the runtime correction; it is NOT reported PASS. Only its isolated fixture was removed. Final derived indexes are rebuilt from current source, with no fixture and no runtime authority. Runtime source hash, reference integrity and secret-exclusion checks are the focal index acceptance. All application/browser/live/global tests completed PASS independently.

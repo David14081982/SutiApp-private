@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "commit": "5f2a1447b46befe7a4a5801ee229026d3d145293",
+  "actions": "https://github.com/David14081982/SutiApp-private/actions/runs/34240156243",
+  "bundle": 227,
+  "worker": 174,
+  "sha256": "9790df67b2e5f3f3b43c2c979b9364d2a3590cd797bd1496eff28ad518a6d0e8",
+  "sites": [
+    "https://sutiapp.com",
+    "https://david14081982.github.io/SutiApp-private"
+  ],
+  "exactDeployedBytes": true,
+  "runtimeModulesChanged": [
+    "screens-admin-finanzas.jsx"
+  ]
+}

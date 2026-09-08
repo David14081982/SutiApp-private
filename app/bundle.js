@@ -36509,7 +36509,7 @@ Object.assign(window, {
         type: 'button',
         onClick: open,
         disabled: !!view.busy
-      }, view.busy ? 'Abriendo?' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
+      }, view.busy ? 'Cargando…' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
         href: view.url,
         target: '_blank',
         rel: 'noopener noreferrer'
@@ -36528,7 +36528,7 @@ Object.assign(window, {
         className: 'finwb-sub'
       }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status), h('div', {
         className: 'finwb-sub'
-      }, failed ? 'Vista no disponible ? el archivo sigue privado' : !ready ? 'Preparando vista segura?' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
+      }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
     const renderDetail = () => {
       if (detailPhase === 'loading') return h('div', {

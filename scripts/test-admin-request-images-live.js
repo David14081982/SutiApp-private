@@ -14,7 +14,7 @@ async function main(){
   page.on('request',req=>{const url=req.url();if(url.includes('/functions/v1/document-access'))result.signedRequests++;if(/\/rpc\/(?:transition_program_request_workflow|record_program_request_admin_action|register_.*document|approve_)/.test(url))result.businessWrites++;});
   page.on('response',res=>{if(res.url().includes('/storage/v1/object/sign/')&&res.status()>=400)result.storageFailures.push(res.status());});
   await page.goto(target.replace(/\/$/,'')+'/SutiApp.html',{waitUntil:'domcontentloaded'});
-  assert(await page.locator('script[src*="bundle.js?v=226"]').count(),'candidate version missing');
+  assert(await page.locator('script[src*="bundle.js?v=227"]').count(),'candidate version missing');
   await page.locator('input[type=email]').fill(values.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(values.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
   await page.waitForFunction(()=>window.AffiliateAuth?.getState().phase==='authenticated');
   const admin=page.getByRole('button',{name:'Admin',exact:true});if(await admin.count())await admin.click();

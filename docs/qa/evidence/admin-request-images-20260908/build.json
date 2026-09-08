@@ -1,0 +1,9 @@
+{
+  "changedModules": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "modules": 109,
+  "reactSRI": "DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z",
+  "siteUnchangedAssets": "exact git bytes (Windows worktree CRLF excluded)",
+  "generatedBundleSha256": "fcd01279118b86efc3ffbb45ba2ba8f16ba21fcfacc07b763a6c9df0a42efd18"
+}

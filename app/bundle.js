@@ -35851,6 +35851,243 @@ Object.assign(window, {
     if (/SPECIALIZED_FINANCIAL_APPROVAL_REQUIRED/.test(code)) return 'Esta aprobación requiere el proceso financiero autorizado.';
     return 'No se completó la acción. Puedes reintentar sin duplicar la solicitud.';
   }
+
+  // Local preview lifecycle. The repository remains the only authorizer/signer.
+  function useFinancialDocumentPreviews(detail, enabled, onOpen) {
+    const epoch = window.PrivateResourceDemand.useContext();
+    const documents = [];
+    [['request', detail && detail.request_documents || []], ['affiliate', detail && detail.current_affiliate_documents || []]].forEach(([scope, rows]) => rows.forEach(row => documents.push({
+      id: row.affiliate_document_id || row.id,
+      key: scope + ':' + row.id,
+      mime: String(row.mimeType || '').toLowerCase(),
+      version: row.updated_at || row.created_at || '',
+      title: row.document_type && row.document_type.label || 'Documento'
+    })));
+    const identity = JSON.stringify([epoch, enabled, detail && detail.id, detail && detail.affiliate_id, documents]);
+    const current = React.useRef(identity),
+      controller = React.useRef(null),
+      opener = React.useRef(onOpen);
+    current.current = identity;
+    opener.current = onOpen;
+    const [state, setState] = useState({
+      identity: '',
+      views: {}
+    });
+    useEffect(() => {
+      if (!enabled || epoch === null || !detail) return;
+      const abort = new AbortController(),
+        groups = new Map(),
+        queue = [];
+      let running = 0;
+      const valid = () => !abort.signal.aborted && current.current === identity && window.PrivateResourceDemand.context() === epoch;
+      documents.forEach(row => {
+        if (!groups.has(row.id)) groups.set(row.id, {
+          ...row,
+          keys: [],
+          view: {
+            phase: 'loading'
+          },
+          retries: 0
+        });
+        groups.get(row.id).keys.push(row.key);
+      });
+      const publish = (entry, view) => {
+        if (!valid()) return;
+        entry.view = view;
+        setState(previous => {
+          const views = previous.identity === identity ? {
+            ...previous.views
+          } : {};
+          entry.keys.forEach(key => {
+            views[key] = view;
+          });
+          return {
+            identity,
+            views
+          };
+        });
+      };
+      // Each wait is bounded and detached on navigation. A late backend response cannot change the new selection.
+      const bounded = (start, milliseconds, imageLoad) => new Promise((resolve, reject) => {
+        let cancel = () => {},
+          finished = false;
+        const finish = (error, value) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          abort.signal.removeEventListener('abort', stopped);
+          cancel();
+          if (error) reject(error);else resolve(value);
+        };
+        const stopped = () => finish(new Error('PREVIEW_CONTEXT_CHANGED'));
+        const timer = setTimeout(() => finish(Object.assign(new Error('PREVIEW_TIMEOUT'), {
+          imageLoad
+        })), milliseconds);
+        abort.signal.addEventListener('abort', stopped, {
+          once: true
+        });
+        if (!valid()) {
+          stopped();
+          return;
+        }
+        cancel = start(value => finish(null, value), error => finish(error)) || cancel;
+      });
+      const imageReady = url => bounded((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => image.naturalWidth > 0 ? resolve() : reject(Object.assign(new Error('IMAGE_EMPTY'), {
+          imageLoad: true
+        }));
+        image.onerror = () => reject(Object.assign(new Error('IMAGE_DOWNLOAD_FAILED'), {
+          imageLoad: true
+        }));
+        image.src = url;
+        return () => {
+          image.onload = null;
+          image.onerror = null;
+          image.removeAttribute('src');
+        };
+      }, 20000, true);
+      const pump = () => {
+        while (valid() && running < 3 && queue.length) {
+          const job = queue.shift();
+          running++;
+          job().finally(() => {
+            running--;
+            pump();
+          });
+        }
+      };
+      const request = (entry, force) => {
+        if (!valid()) return Promise.resolve(null);
+        if (entry.pending) return entry.pending;
+        if (!force && entry.view.phase === 'ready' && entry.view.expiresAt > Date.now()) return Promise.resolve(entry.view);
+        clearTimeout(entry.renew);
+        publish(entry, entry.view.phase === 'ready' && entry.view.expiresAt > Date.now() ? {
+          ...entry.view,
+          busy: true
+        } : {
+          phase: 'loading',
+          busy: true
+        });
+        entry.pending = new Promise(resolve => queue.push(async () => {
+          let result = null;
+          try {
+            for (;;) {
+              if (!valid()) break;
+              const started = Date.now();
+              const preview = await bounded((done, fail) => {
+                window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST').then(done, fail);
+              }, 25000, false);
+              const expiresAt = started + Math.min(300, Number(preview.expiresIn) || 300) * 1000;
+              if (!preview.signedUrl || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
+              try {
+                if (entry.mime.startsWith('image/')) await imageReady(preview.signedUrl);
+              } catch (error) {
+                if (!error.imageLoad || entry.retries >= 1 || !valid()) throw error;
+                entry.retries++;
+                await bounded(done => {
+                  const timer = setTimeout(done, 1200);
+                  return () => clearTimeout(timer);
+                }, 2000, false);
+                continue;
+              }
+              if (!valid() || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
+              clearTimeout(entry.expire);
+              result = {
+                phase: 'ready',
+                url: preview.signedUrl,
+                expiresAt
+              };
+              publish(entry, result);
+              const remaining = expiresAt - Date.now();
+              entry.renew = setTimeout(() => {
+                if (!document.hidden) request(entry, true);
+              }, Math.max(1000, remaining - Math.min(30000, remaining / 5)));
+              entry.expire = setTimeout(() => {
+                if (!valid() || entry.view.expiresAt !== expiresAt) return;
+                publish(entry, {
+                  phase: 'loading'
+                });
+                if (!document.hidden) request(entry, true);
+              }, remaining);
+              break;
+            }
+          } catch (_) {
+            publish(entry, {
+              phase: 'error'
+            });
+          } finally {
+            entry.pending = null;
+            resolve(valid() ? result : null);
+          }
+        }));
+        pump();
+        return entry.pending;
+      };
+      const find = key => [...groups.values()].find(entry => entry.keys.includes(key));
+      controller.current = {
+        identity,
+        retry(key) {
+          const entry = find(key);
+          if (entry) {
+            entry.retries = 0;
+            request(entry, true);
+          }
+        },
+        failed(key, url) {
+          const entry = find(key);
+          if (!entry || entry.pending || entry.view.url !== url) return;
+          clearTimeout(entry.renew);
+          clearTimeout(entry.expire);
+          publish(entry, {
+            phase: 'error'
+          });
+          if (entry.retries < 1) {
+            entry.retries++;
+            request(entry, true);
+          }
+        },
+        async open(key) {
+          const entry = find(key);
+          if (!entry) return;
+          const result = await request(entry, true);
+          if (result && valid()) opener.current({
+            source: result.url,
+            mimeType: entry.mime,
+            title: entry.title,
+            context: identity
+          });
+        }
+      };
+      groups.forEach(entry => request(entry, false));
+      const foreground = () => {
+        if (document.hidden) return;
+        groups.forEach(entry => {
+          if (entry.view.phase !== 'error' && (!entry.view.expiresAt || entry.view.expiresAt <= Date.now() + 30000)) request(entry, true);
+        });
+      };
+      document.addEventListener('visibilitychange', foreground);
+      return () => {
+        abort.abort();
+        queue.length = 0;
+        groups.forEach(entry => {
+          clearTimeout(entry.renew);
+          clearTimeout(entry.expire);
+        });
+        document.removeEventListener('visibilitychange', foreground);
+      };
+    }, [identity]);
+    const act = (name, ...args) => {
+      if (controller.current && controller.current.identity === identity) return controller.current[name](...args);
+    };
+    return {
+      identity,
+      views: state.identity === identity ? state.views : {},
+      retry: key => act('retry', key),
+      open: key => act('open', key),
+      failed: (key, url) => act('failed', key, url)
+    };
+  }
   function DesktopFinancialWorkbench({
     app,
     onCount,
@@ -35877,7 +36114,6 @@ Object.assign(window, {
       [busy, setBusy] = useState(false),
       [feedback, setFeedback] = useState(null),
       [rowFeedback, setRowFeedback] = useState({}),
-      [documentViews, setDocumentViews] = useState({}),
       [viewer, setViewer] = useState(null);
     const actionAttempts = React.useRef(new Map());
     useEffect(ensureWorkbenchStyles, []);
@@ -35933,7 +36169,6 @@ Object.assign(window, {
       setActionNote('');
       setQuoteAmount('');
       setQuoteValidUntil('');
-      setDocumentViews({});
       setViewer(null);
       window.ProgramRequestRepository.adminFlowDetail(selectedId).then(value => {
         if (active) {
@@ -36114,58 +36349,7 @@ Object.assign(window, {
         setBusy(false);
       }
     };
-    const prepareDocument = React.useCallback(async (document, keys) => {
-      const viewKeys = Array.isArray(keys) ? keys : [keys];
-      setDocumentViews(all => {
-        const next = Object.assign({}, all);
-        viewKeys.forEach(key => {
-          next[key] = {
-            phase: 'loading'
-          };
-        });
-        return next;
-      });
-      try {
-        const preview = await window.DocumentWorkflowRepository.adminPreview(document.affiliate_document_id || document.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST');
-        if (!preview.signedUrl) throw new Error('PREVIEW_UNAVAILABLE');
-        const expiresAt = Date.now() + (Number(preview.expiresIn) || 300) * 1000;
-        setDocumentViews(all => {
-          const next = Object.assign({}, all);
-          viewKeys.forEach(key => {
-            next[key] = {
-              phase: 'ready',
-              url: preview.signedUrl,
-              expiresAt
-            };
-          });
-          return next;
-        });
-      } catch (_) {
-        setDocumentViews(all => {
-          const next = Object.assign({}, all);
-          viewKeys.forEach(key => {
-            next[key] = {
-              phase: 'error'
-            };
-          });
-          return next;
-        });
-      }
-    }, [detail]);
-    useEffect(() => {
-      if (!detail || detailPhase !== 'loaded' || !app.admin.has('documents.read')) return;
-      const groups = new Map();
-      [['request', detail.request_documents || []], ['affiliate', detail.current_affiliate_documents || []]].forEach(([scope, documents]) => documents.forEach(document => {
-        const id = document.affiliate_document_id || document.id,
-          entry = groups.get(id) || {
-            document,
-            keys: []
-          };
-        entry.keys.push(scope + ':' + document.id);
-        groups.set(id, entry);
-      }));
-      groups.forEach(entry => prepareDocument(entry.document, entry.keys));
-    }, [detail && detail.id, detailPhase, app, prepareDocument]);
+    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
     const onKeyDown = event => {
       if (/INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
       if (event.key === 'ArrowDown') {
@@ -36285,36 +36469,29 @@ Object.assign(window, {
     };
     const renderDocumentRows = (documents, scope) => documents.map(document => {
       const viewKey = scope + ':' + document.id,
-        view = documentViews[viewKey] || {},
-        status = document.status_at_submission || document.status || 'No disponible',
-        mime = String(document.mimeType || '').toLowerCase(),
-        title = document.document_type && document.document_type.label || 'Documento',
-        ready = view.phase === 'ready' && view.url;
-      const preview = ready ? mime.startsWith('image/') ? h('button', {
+        view = previews.views[viewKey] || {},
+        status = document.status_at_submission || document.status || 'No disponible';
+      const mime = String(document.mimeType || '').toLowerCase(),
+        title = document.document_type && document.document_type.label || 'Documento';
+      const ready = view.phase === 'ready' && view.url && view.expiresAt > Date.now(),
+        failed = view.phase === 'error';
+      const open = () => previews.open(viewKey),
+        mediaError = () => previews.failed(viewKey, view.url);
+      const preview = ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
         type: 'button',
         className: 'finwb-doc-preview',
-        onClick: () => setViewer({
-          source: view.url,
-          mimeType: mime,
-          title
-        }),
-        'aria-label': 'Ampliar ' + title
-      }, h('img', {
+        onClick: open,
+        disabled: !!view.busy,
+        'aria-label': (mime.startsWith('image/') ? 'Ampliar ' : 'Abrir ') + title
+      }, mime.startsWith('image/') ? h('img', {
         src: view.url,
-        alt: 'Vista previa de ' + title
-      })) : mime === 'application/pdf' ? h('button', {
-        type: 'button',
-        className: 'finwb-doc-preview',
-        onClick: () => setViewer({
-          source: view.url,
-          mimeType: mime,
-          title
-        }),
-        'aria-label': 'Abrir ' + title
-      }, h('iframe', {
+        alt: 'Vista previa de ' + title,
+        onError: mediaError
+      }) : h('iframe', {
         src: view.url + '#toolbar=0&navpanes=0',
         title: 'Vista previa de ' + title,
-        tabIndex: -1
+        tabIndex: -1,
+        onError: mediaError
       })) : h('span', {
         className: 'finwb-doc-preview'
       }, h(I, {
@@ -36322,28 +36499,23 @@ Object.assign(window, {
         size: 24,
         stroke: 1.8
       })) : h('span', {
-        className: 'finwb-doc-preview'
-      }, view.phase === 'loading' ? h(I, {
-        name: 'clock',
-        size: 20
-      }) : h(I, {
-        name: view.phase === 'error' ? 'warning' : 'doc',
+        className: 'finwb-doc-preview',
+        role: 'status'
+      }, h(I, {
+        name: failed ? 'warning' : 'clock',
         size: 22
       }));
       const openAction = ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
         type: 'button',
-        onClick: () => setViewer({
-          source: view.url,
-          mimeType: mime,
-          title
-        })
-      }, mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
+        onClick: open,
+        disabled: !!view.busy
+      }, view.busy ? 'Abriendo?' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
         href: view.url,
         target: '_blank',
         rel: 'noopener noreferrer'
-      }, 'Abrir') : view.phase === 'error' ? h('button', {
+      }, 'Abrir') : failed ? h('button', {
         type: 'button',
-        onClick: () => prepareDocument(document, viewKey)
+        onClick: () => previews.retry(viewKey)
       }, 'Reintentar') : null;
       return h('div', {
         className: 'finwb-doc',
@@ -36356,7 +36528,7 @@ Object.assign(window, {
         className: 'finwb-sub'
       }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status), h('div', {
         className: 'finwb-sub'
-      }, view.phase === 'loading' ? 'Preparando vista segura…' : view.phase === 'error' ? 'Vista no disponible · el archivo sigue privado' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
+      }, failed ? 'Vista no disponible ? el archivo sigue privado' : !ready ? 'Preparando vista segura?' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
     const renderDetail = () => {
       if (detailPhase === 'loading') return h('div', {
@@ -36542,7 +36714,7 @@ Object.assign(window, {
         'data-tone': feedback.tone
       }, feedback.text)) : h('div', {
         className: 'finwb-sub'
-      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')), viewer && window.DocumentViewer && h(window.DocumentViewer, {
+      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')), viewer && viewer.context === previews.identity && window.DocumentViewer && h(window.DocumentViewer, {
         source: viewer.source,
         mimeType: viewer.mimeType,
         title: viewer.title,

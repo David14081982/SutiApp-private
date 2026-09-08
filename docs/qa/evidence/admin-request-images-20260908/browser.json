@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "receipts": [
+    {
+      "case": "before-refresh-reproduction",
+      "initial": 1,
+      "refreshed": 4
+    },
+    {
+      "case": "after-stable-refresh",
+      "initial": 1,
+      "refreshed": 1
+    },
+    {
+      "case": "fresh-open-layout-and-permission-removal",
+      "status": "PASS"
+    },
+    {
+      "case": "slow",
+      "status": "PASS"
+    },
+    {
+      "case": "recover",
+      "status": "PASS"
+    },
+    {
+      "case": "broken",
+      "status": "PASS"
+    },
+    {
+      "case": "authorization-denied-no-retry-loop",
+      "status": "PASS"
+    },
+    {
+      "case": "selection-race-and-logout",
+      "status": "PASS"
+    },
+    {
+      "case": "concurrency-three-deduplicated-sixteen-rows",
+      "status": "PASS"
+    },
+    {
+      "case": "download-timeout-bounded-recovery",
+      "status": "PASS"
+    },
+    {
+      "case": "expiry-renewal-and-fresh-open",
+      "status": "PASS"
+    }
+  ],
+  "productionMutations": 0,
+  "isolated": true
+}

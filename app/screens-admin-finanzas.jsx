@@ -123,11 +123,143 @@
     return 'No se completó la acción. Puedes reintentar sin duplicar la solicitud.';
   }
 
+  // Local preview lifecycle. The repository remains the only authorizer/signer.
+  function useFinancialDocumentPreviews(detail, enabled, onOpen) {
+    const epoch = window.PrivateResourceDemand.useContext();
+    const documents = [];
+    [['request', detail && detail.request_documents || []], ['affiliate', detail && detail.current_affiliate_documents || []]].forEach(([scope, rows]) => rows.forEach((row) => documents.push({
+      id: row.affiliate_document_id || row.id, key: scope + ':' + row.id,
+      mime: String(row.mimeType || '').toLowerCase(), version: row.updated_at || row.created_at || '',
+      title: row.document_type && row.document_type.label || 'Documento'
+    })));
+    const identity = JSON.stringify([epoch, enabled, detail && detail.id, detail && detail.affiliate_id, documents]);
+    const current = React.useRef(identity), controller = React.useRef(null), opener = React.useRef(onOpen);
+    current.current = identity; opener.current = onOpen;
+    const [state, setState] = useState({ identity: '', views: {} });
+    useEffect(() => {
+      if (!enabled || epoch === null || !detail) return;
+      const abort = new AbortController(), groups = new Map(), queue = [];
+      let running = 0;
+      const valid = () => !abort.signal.aborted && current.current === identity && window.PrivateResourceDemand.context() === epoch;
+      documents.forEach((row) => {
+        if (!groups.has(row.id)) groups.set(row.id, { ...row, keys: [], view: { phase: 'loading' }, retries: 0 });
+        groups.get(row.id).keys.push(row.key);
+      });
+      const publish = (entry, view) => {
+        if (!valid()) return;
+        entry.view = view;
+        setState((previous) => {
+          const views = previous.identity === identity ? { ...previous.views } : {};
+          entry.keys.forEach((key) => { views[key] = view; });
+          return { identity, views };
+        });
+      };
+      // Each wait is bounded and detached on navigation. A late backend response cannot change the new selection.
+      const bounded = (start, milliseconds, imageLoad) => new Promise((resolve, reject) => {
+        let cancel = () => {}, finished = false;
+        const finish = (error, value) => {
+          if (finished) return; finished = true; clearTimeout(timer); abort.signal.removeEventListener('abort', stopped); cancel();
+          if (error) reject(error); else resolve(value);
+        };
+        const stopped = () => finish(new Error('PREVIEW_CONTEXT_CHANGED'));
+        const timer = setTimeout(() => finish(Object.assign(new Error('PREVIEW_TIMEOUT'), { imageLoad })), milliseconds);
+        abort.signal.addEventListener('abort', stopped, { once: true });
+        if (!valid()) { stopped(); return; }
+        cancel = start((value) => finish(null, value), (error) => finish(error)) || cancel;
+      });
+      const imageReady = (url) => bounded((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => image.naturalWidth > 0 ? resolve() : reject(Object.assign(new Error('IMAGE_EMPTY'), { imageLoad: true }));
+        image.onerror = () => reject(Object.assign(new Error('IMAGE_DOWNLOAD_FAILED'), { imageLoad: true }));
+        image.src = url;
+        return () => { image.onload = null; image.onerror = null; image.removeAttribute('src'); };
+      }, 20000, true);
+      const pump = () => {
+        while (valid() && running < 3 && queue.length) {
+          const job = queue.shift(); running++;
+          job().finally(() => { running--; pump(); });
+        }
+      };
+      const request = (entry, force) => {
+        if (!valid()) return Promise.resolve(null);
+        if (entry.pending) return entry.pending;
+        if (!force && entry.view.phase === 'ready' && entry.view.expiresAt > Date.now()) return Promise.resolve(entry.view);
+        clearTimeout(entry.renew);
+        publish(entry, entry.view.phase === 'ready' && entry.view.expiresAt > Date.now() ? { ...entry.view, busy: true } : { phase: 'loading', busy: true });
+        entry.pending = new Promise((resolve) => queue.push(async () => {
+          let result = null;
+          try {
+            for (;;) {
+              if (!valid()) break;
+              const started = Date.now();
+              const preview = await bounded((done, fail) => {
+                window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST').then(done, fail);
+              }, 25000, false);
+              const expiresAt = started + Math.min(300, Number(preview.expiresIn) || 300) * 1000;
+              if (!preview.signedUrl || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
+              try { if (entry.mime.startsWith('image/')) await imageReady(preview.signedUrl); }
+              catch (error) {
+                if (!error.imageLoad || entry.retries >= 1 || !valid()) throw error;
+                entry.retries++;
+                await bounded((done) => { const timer = setTimeout(done, 1200); return () => clearTimeout(timer); }, 2000, false);
+                continue;
+              }
+              if (!valid() || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
+              clearTimeout(entry.expire);
+              result = { phase: 'ready', url: preview.signedUrl, expiresAt };
+              publish(entry, result);
+              const remaining = expiresAt - Date.now();
+              entry.renew = setTimeout(() => { if (!document.hidden) request(entry, true); }, Math.max(1000, remaining - Math.min(30000, remaining / 5)));
+              entry.expire = setTimeout(() => {
+                if (!valid() || entry.view.expiresAt !== expiresAt) return;
+                publish(entry, { phase: 'loading' });
+                if (!document.hidden) request(entry, true);
+              }, remaining);
+              break;
+            }
+          } catch (_) { publish(entry, { phase: 'error' }); }
+          finally { entry.pending = null; resolve(valid() ? result : null); }
+        }));
+        pump(); return entry.pending;
+      };
+      const find = (key) => [...groups.values()].find((entry) => entry.keys.includes(key));
+      controller.current = {
+        identity,
+        retry(key) { const entry = find(key); if (entry) { entry.retries = 0; request(entry, true); } },
+        failed(key, url) {
+          const entry = find(key);
+          if (!entry || entry.pending || entry.view.url !== url) return;
+          clearTimeout(entry.renew); clearTimeout(entry.expire);
+          publish(entry, { phase: 'error' });
+          if (entry.retries < 1) { entry.retries++; request(entry, true); }
+        },
+        async open(key) {
+          const entry = find(key); if (!entry) return;
+          const result = await request(entry, true);
+          if (result && valid()) opener.current({ source: result.url, mimeType: entry.mime, title: entry.title, context: identity });
+        }
+      };
+      groups.forEach((entry) => request(entry, false));
+      const foreground = () => {
+        if (document.hidden) return;
+        groups.forEach((entry) => { if (entry.view.phase !== 'error' && (!entry.view.expiresAt || entry.view.expiresAt <= Date.now() + 30000)) request(entry, true); });
+      };
+      document.addEventListener('visibilitychange', foreground);
+      return () => {
+        abort.abort(); queue.length = 0;
+        groups.forEach((entry) => { clearTimeout(entry.renew); clearTimeout(entry.expire); });
+        document.removeEventListener('visibilitychange', foreground);
+      };
+    }, [identity]);
+    const act = (name, ...args) => { if (controller.current && controller.current.identity === identity) return controller.current[name](...args); };
+    return { identity, views: state.identity === identity ? state.views : {}, retry: (key) => act('retry', key), open: (key) => act('open', key), failed: (key, url) => act('failed', key, url) };
+  }
+
   function DesktopFinancialWorkbench({ app, onCount, initialAffiliateId }) {
     const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [error, setError] = useState('');
     const [selectedId, setSelectedId] = useState(''), [detail, setDetail] = useState(null), [detailPhase, setDetailPhase] = useState('idle'), [detailNonce, setDetailNonce] = useState(0);
     const [search, setSearch] = useState(''), [statusFilter, setStatusFilter] = useState('all'), [programFilter, setProgramFilter] = useState('all'), [stageFilter, setStageFilter] = useState('all'), [ageFilter, setAgeFilter] = useState('all'), [dateFilter, setDateFilter] = useState(''), [sort, setSort] = useState('newest');
-    const [action, setAction] = useState(''), [actionNote, setActionNote] = useState(''), [quoteAmount, setQuoteAmount] = useState(''), [quoteValidUntil, setQuoteValidUntil] = useState(''), [busy, setBusy] = useState(false), [feedback, setFeedback] = useState(null), [rowFeedback, setRowFeedback] = useState({}), [documentViews, setDocumentViews] = useState({}), [viewer, setViewer] = useState(null);
+    const [action, setAction] = useState(''), [actionNote, setActionNote] = useState(''), [quoteAmount, setQuoteAmount] = useState(''), [quoteValidUntil, setQuoteValidUntil] = useState(''), [busy, setBusy] = useState(false), [feedback, setFeedback] = useState(null), [rowFeedback, setRowFeedback] = useState({}), [viewer, setViewer] = useState(null);
     const actionAttempts = React.useRef(new Map());
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async (quiet) => { try { if (!quiet) setPhase('loading'); const source = await window.ProgramRequestRepository.listAdminFlowQueue(); const scoped=initialAffiliateId?source.filter((row)=>row.affiliate_id===initialAffiliateId):source; setRows(scoped.slice()); setError(''); setPhase('loaded'); onCount(scoped.length); return scoped; } catch (_) { if (!quiet) setRows([]); setError('No fue posible cargar las solicitudes.'); setPhase('error'); onCount(0); return []; } }, [onCount,initialAffiliateId]);
@@ -144,7 +276,7 @@
       return !dateFilter || dayKey(row.created_at) === dateFilter;
     }); return filtered.sort((a, b) => sort === 'oldest' ? a.ts - b.ts : sort === 'amount' ? Number(b.requested_amount || 0) - Number(a.requested_amount || 0) : b.ts - a.ts); }, [rows, search, statusFilter, programFilter, stageFilter, ageFilter, dateFilter, sort]);
     useEffect(() => { if (!visible.length) setSelectedId(''); else if (!visible.some((row) => row.id === selectedId)) setSelectedId(visible[0].id); }, [visible, selectedId]);
-    useEffect(() => { if (!selectedId) { setDetail(null); setDetailPhase('idle'); return; } let active = true; setDetailPhase('loading'); setFeedback(null); setActionNote(''); setQuoteAmount(''); setQuoteValidUntil(''); setDocumentViews({}); setViewer(null); window.ProgramRequestRepository.adminFlowDetail(selectedId).then((value) => { if (active) { setDetail(value); setDetailPhase('loaded'); } }).catch(() => { if (active) { setDetail(null); setDetailPhase('error'); } }); return () => { active = false; }; }, [selectedId, detailNonce]);
+    useEffect(() => { if (!selectedId) { setDetail(null); setDetailPhase('idle'); return; } let active = true; setDetailPhase('loading'); setFeedback(null); setActionNote(''); setQuoteAmount(''); setQuoteValidUntil(''); setViewer(null); window.ProgramRequestRepository.adminFlowDetail(selectedId).then((value) => { if (active) { setDetail(value); setDetailPhase('loaded'); } }).catch(() => { if (active) { setDetail(null); setDetailPhase('error'); } }); return () => { active = false; }; }, [selectedId, detailNonce]);
     const index = visible.findIndex((row) => row.id === selectedId), selected = index >= 0 ? visible[index] : null;
     const actionOptions = React.useMemo(() => { if (!detail || !app.admin.has('program_requests.write')) return []; const target=nextStage(detail),snapshot=detail.financial_submission_snapshot||{},productPayment=snapshot.contract_version==='PROGRAM_PRODUCT_PAYMENT_V1',statusRefs=target&&target.status_references||[],options=[]; if (['requires_financial_processing','submitted'].includes(detail.status)) options.push({ id:'review',label:'Iniciar revisión' }); if (target) { if (statusRefs.includes('approved') && detail.request_type==='quote' && detail.financial_processing_status==null) options.push({id:'quoteAdvance',label:'Guardar cotización y aprobar etapa'}); else if (statusRefs.includes('approved') && detail.financial_processing_status!=null) options.push({id:productPayment?'approveProduct':'approveLoan',label:productPayment?'Aprobar etapa en Supabase':'Aprobar etapa y autorizar préstamo'}); else options.push({id:'advance',label:statusRefs.includes('approved')?'Aprobar etapa':'Avanzar a siguiente etapa'}); } if (!['approved','rejected','cancelled'].includes(detail.status) && (workflowOf(detail).stages||[]).some((stage)=>stage.outcome==='failure')) options.push({id:'reject',label:'Rechazar etapa'}); if (!['approved','rejected','cancelled'].includes(detail.status)) options.push({id:'cancel',label:'Cancelar solicitud'}); if (detail.program_id==='prestamo' && detail.status==='approved' && ['ready_for_handoff','failed'].includes(detail.financial_processing_status)) options.push({id:'handoff',label:detail.financial_processing_status==='failed'?'Reintentar envío a gestión':'Enviar a gestión'}); options.push({id:'note',label:'Guardar observación'}); return options; }, [detail, app]);
     useEffect(() => { if (!actionOptions.some((item) => item.id === action)) setAction(actionOptions[0] && actionOptions[0].id || ''); }, [actionOptions, action]);
@@ -161,8 +293,7 @@
         actionAttempts.current.delete(fingerprint); setDetail(verifiedDetail); setFeedback({ tone: 'success', text: '✓ Guardado · Admin y afiliado ya muestran la etapa vigente' }); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'success' })); setActionNote(''); setQuoteAmount(''); if (advance && nextId !== currentId) setSelectedId(nextId);
       } catch (actionError) { await load(true); setDetailNonce((value) => value + 1); setFeedback({ tone: 'error', text: humanActionError(actionError) + ' · Se verificó el estado persistido; puedes reintentar.' }); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'error' })); } finally { setBusy(false); }
     };
-    const prepareDocument = React.useCallback(async (document, keys) => { const viewKeys=Array.isArray(keys)?keys:[keys];setDocumentViews((all)=>{const next=Object.assign({},all);viewKeys.forEach((key)=>{next[key]={phase:'loading'};});return next;}); try { const preview = await window.DocumentWorkflowRepository.adminPreview(document.affiliate_document_id || document.id,detail.affiliate_id,'ADMIN_FINANCIAL_REQUEST'); if (!preview.signedUrl) throw new Error('PREVIEW_UNAVAILABLE'); const expiresAt=Date.now()+(Number(preview.expiresIn)||300)*1000;setDocumentViews((all)=>{const next=Object.assign({},all);viewKeys.forEach((key)=>{next[key]={phase:'ready',url:preview.signedUrl,expiresAt};});return next;}); } catch (_) { setDocumentViews((all)=>{const next=Object.assign({},all);viewKeys.forEach((key)=>{next[key]={phase:'error'};});return next;}); } }, [detail]);
-    useEffect(()=>{if(!detail||detailPhase!=='loaded'||!app.admin.has('documents.read'))return;const groups=new Map();[['request',detail.request_documents||[]],['affiliate',detail.current_affiliate_documents||[]]].forEach(([scope,documents])=>documents.forEach((document)=>{const id=document.affiliate_document_id||document.id,entry=groups.get(id)||{document,keys:[]};entry.keys.push(scope+':'+document.id);groups.set(id,entry);}));groups.forEach((entry)=>prepareDocument(entry.document,entry.keys));},[detail&&detail.id,detailPhase,app,prepareDocument]);
+    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
     const onKeyDown = (event) => { if (/INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return; if (event.key === 'ArrowDown') { event.preventDefault(); move(1); } else if (event.key === 'ArrowUp') { event.preventDefault(); move(-1); } else if (event.key === 'Enter') { event.preventDefault(); const panel = document.querySelector('[data-financial-request-detail]'); if (panel) panel.focus(); } };
     const renderConditions = (title, result, fallback) => h('section', { className: 'finwb-card', 'data-financial-snapshot': title }, h('h3', null, h(I, { name: 'cash', size: 17, stroke: 2 }), title), result || fallback ? h('div', { className: 'finwb-kv' },
       [['Monto solicitado', moneyValue(result && result.amount != null ? result.amount : detail.requested_amount)], ['Fondo / programa', result && result.fund || programLabel(detail)], ['Plazo', (result && result.paymentCount || detail.requested_term || '—') + (result && result.paymentPeriod || detail.requested_term_semantics ? ' · ' + (result && result.paymentPeriod || detail.requested_term_semantics) : '')], ['Tasa aplicada', result && result.rate != null ? result.rate + '%' + (result.ratePeriod ? ' · ' + result.ratePeriod : '') : '—'], ['Pago por periodo', moneyValue(result && result.paymentPerPeriod)], ['Interés', moneyValue(result && result.interest)], ['Gasto administrativo', moneyValue(result && result.administrativeFeeTotal)], ['Total', moneyValue(result && result.total)]].map((item) => h('div', { key: item[0] }, h('span', null, item[0]), h('strong', null, item[1])))) : h('div', { className: 'finwb-snapshot-note' }, 'Snapshot contractual no disponible. No se recalculan valores históricos con reglas actuales.'));
@@ -185,7 +316,22 @@
             h('span',{className:'finwb-step-dot'},stage.state==='done'?'✓':stageIndex+1),
             h('div',null,h('strong',null,stage.label),h('p',null,(stage.state==='done'?'Completada':stage.state==='current'?'Actual':'Pendiente')+' · '+(stage.responsible||'Sin responsable')+(stage.date?' · '+dateValue(stage.date):'')),stage.description&&h('p',null,stage.description))))));
     };
-    const renderDocumentRows = (documents, scope) => documents.map((document) => { const viewKey = scope + ':' + document.id, view = documentViews[viewKey] || {}, status = document.status_at_submission || document.status || 'No disponible', mime=String(document.mimeType||'').toLowerCase(),title=document.document_type && document.document_type.label || 'Documento',ready=view.phase==='ready'&&view.url; const preview=ready?(mime.startsWith('image/')?h('button',{type:'button',className:'finwb-doc-preview',onClick:()=>setViewer({source:view.url,mimeType:mime,title}),'aria-label':'Ampliar '+title},h('img',{src:view.url,alt:'Vista previa de '+title})):mime==='application/pdf'?h('button',{type:'button',className:'finwb-doc-preview',onClick:()=>setViewer({source:view.url,mimeType:mime,title}),'aria-label':'Abrir '+title},h('iframe',{src:view.url+'#toolbar=0&navpanes=0',title:'Vista previa de '+title,tabIndex:-1})):h('span',{className:'finwb-doc-preview'},h(I,{name:'doc',size:24,stroke:1.8}))):h('span',{className:'finwb-doc-preview'},view.phase==='loading'?h(I,{name:'clock',size:20}):h(I,{name:view.phase==='error'?'warning':'doc',size:22})); const openAction=ready?(mime.startsWith('image/')||mime==='application/pdf'?h('button',{type:'button',onClick:()=>setViewer({source:view.url,mimeType:mime,title})},mime==='application/pdf'?'Ver PDF':'Ampliar'):h('a',{href:view.url,target:'_blank',rel:'noopener noreferrer'},'Abrir')):view.phase==='error'?h('button',{type:'button',onClick:()=>prepareDocument(document,viewKey)},'Reintentar'):null; return h('div', { className: 'finwb-doc', key: viewKey }, preview, h('div', { className: 'finwb-doc-main' }, h('div', { className: 'finwb-person' }, title), h('div', { className: 'finwb-sub' }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status),h('div',{className:'finwb-sub'},view.phase==='loading'?'Preparando vista segura…':view.phase==='error'?'Vista no disponible · el archivo sigue privado':mime==='application/pdf'?'PDF listo para revisar':mime.startsWith('image/')?'Imagen lista para revisar':'Documento listo para abrir')),openAction); });
+    const renderDocumentRows = (documents, scope) => documents.map((document) => {
+      const viewKey = scope + ':' + document.id, view = previews.views[viewKey] || {}, status = document.status_at_submission || document.status || 'No disponible';
+      const mime = String(document.mimeType || '').toLowerCase(), title = document.document_type && document.document_type.label || 'Documento';
+      const ready = view.phase === 'ready' && view.url && view.expiresAt > Date.now(), failed = view.phase === 'error';
+      const open = () => previews.open(viewKey), mediaError = () => previews.failed(viewKey, view.url);
+      const preview = ready ? (mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
+        type: 'button', className: 'finwb-doc-preview', onClick: open, disabled: !!view.busy, 'aria-label': (mime.startsWith('image/') ? 'Ampliar ' : 'Abrir ') + title
+      }, mime.startsWith('image/') ? h('img', { src: view.url, alt: 'Vista previa de ' + title, onError: mediaError }) : h('iframe', { src: view.url + '#toolbar=0&navpanes=0', title: 'Vista previa de ' + title, tabIndex: -1, onError: mediaError })) : h('span', { className: 'finwb-doc-preview' }, h(I, { name: 'doc', size: 24, stroke: 1.8 })))
+        : h('span', { className: 'finwb-doc-preview', role: 'status' }, h(I, { name: failed ? 'warning' : 'clock', size: 22 }));
+      const openAction = ready ? (mime.startsWith('image/') || mime === 'application/pdf' ? h('button', { type: 'button', onClick: open, disabled: !!view.busy }, view.busy ? 'Abriendo?' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', { href: view.url, target: '_blank', rel: 'noopener noreferrer' }, 'Abrir'))
+        : failed ? h('button', { type: 'button', onClick: () => previews.retry(viewKey) }, 'Reintentar') : null;
+      return h('div', { className: 'finwb-doc', key: viewKey }, preview,
+        h('div', { className: 'finwb-doc-main' }, h('div', { className: 'finwb-person' }, title),
+          h('div', { className: 'finwb-sub' }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status),
+          h('div', { className: 'finwb-sub' }, failed ? 'Vista no disponible ? el archivo sigue privado' : !ready ? 'Preparando vista segura?' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
+    });
     const renderDetail = () => { if (detailPhase === 'loading') return h('div', { className: 'finwb-empty' }, h(I, { name: 'clock', size: 28 }), 'Cargando detalle autorizado…'); if (detailPhase === 'error') return h('div', { className: 'finwb-empty' }, h(I, { name: 'warning', size: 28 }), 'No fue posible cargar el detalle.', h('button', { onClick: () => setDetailNonce((value) => value + 1) }, 'Reintentar')); if (!detail) return h('div', { className: 'finwb-empty' }, 'Selecciona una solicitud para revisar su expediente.'); const submission = snapshotResult(detail, false), approval = snapshotResult(detail, true), productPayment = detail.financial_submission_snapshot && detail.financial_submission_snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1' ? detail.financial_submission_snapshot : null, events = timelineEvents(detail);
       return h(React.Fragment, null,
         h('div', { className: 'finwb-detail-head' }, h('div', null, h('span', { className: 'finwb-sub' }, 'SOLICITUD DE ' + requestTypeLabel(detail).toLocaleUpperCase('es-MX')), h('strong', null, detail.folio), h('div', { className: 'finwb-sub' }, (index + 1) + ' de ' + visible.length + ' · ' + programLabel(detail))), badge(statusMeta(detail.status), 'data-financial-human-status', statusMeta(detail.status).label)),
@@ -201,7 +347,7 @@
           h('section', { className: 'finwb-card', 'data-financial-terms': 'true' }, h('h3', null, h(I, { name: 'checkCircle', size: 17, stroke: 2 }), 'Términos aceptados'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible')))),
           h('section', { className: 'finwb-card', 'data-financial-timeline': 'true' }, h('h3', null, h(I, { name: 'clock', size: 17, stroke: 2 }), 'Timeline'), !detail.admin_events_available ? h('div', { className: 'finwb-snapshot-note', style: { marginBottom: 9 } }, 'No fue posible consultar la bitácora administrativa.') : null, h('div', { className: 'finwb-timeline' }, events.map((event, eventIndex) => h('div', { className: 'finwb-event', key: event.title + eventIndex }, h('span', { className: 'finwb-event-dot' }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text))))))),
         h('div', { className: 'finwb-actionbar', 'data-financial-safe-action-bar': 'true' }, actionOptions.length ? h(React.Fragment, null, h('div', { className: 'finwb-action-grid' }, h('select', { className: 'finwb-action-select', value: action, disabled: busy, onChange: (event) => { setAction(event.target.value); setActionNote(''); }, 'aria-label': 'Acción permitida para la etapa' }, actionOptions.map((item) => h('option', { key: item.id, value: item.id }, item.label))), h('div', null, h('span', { className: 'finwb-sub' }, 'Etapa actual'), h('strong', { style: { fontSize: 11.5 } }, stageLabel(detail)))), action==='quoteAdvance'&&h('div',{className:'finwb-action-grid',style:{marginTop:8}},h('input',{className:'finwb-action-select',type:'number',min:'0.01',step:'0.01',value:quoteAmount,onChange:(event)=>setQuoteAmount(event.target.value),placeholder:'Monto cotizado (MXN)','aria-label':'Monto de la cotización'}),h('input',{className:'finwb-action-select',type:'date',value:quoteValidUntil,onChange:(event)=>setQuoteValidUntil(event.target.value),'aria-label':'Vigencia de la cotización'})), h('textarea', { className: 'finwb-note', value: actionNote, disabled: busy || action === 'handoff', onChange: (event) => setActionNote(event.target.value), placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)', 'aria-label': 'Observación de la acción' }), nextStage(detail)&&['advance','quoteAdvance','approveProduct','approveLoan'].includes(action)&&h('div',{className:'finwb-next-action','data-financial-next-action':'true'},'Confirmar moverá la solicitud de “'+stageLabel(detail)+'” a “'+nextStage(detail).label+'”. Responsable siguiente: '+(nextStage(detail).responsible||'Área responsable')+'.'), h('div', { className: 'finwb-buttons' }, h('button', { className: 'finwb-secondary', disabled: index <= 0 || busy, onClick: () => move(-1) }, 'Anterior'), h('button', { className: 'finwb-secondary', disabled: index < 0 || index >= visible.length - 1 || busy, onClick: () => move(1) }, 'Siguiente solicitud'), h('button', { className: 'finwb-primary', disabled: busy || !action, onClick: () => save(false) }, busy ? 'Guardando…' : (actionOptions.find((item)=>item.id===action)||{label:'Confirmar acción'}).label)), feedback && h('div', { className: 'finwb-feedback', 'data-financial-action-feedback': feedback.tone, 'data-tone': feedback.tone }, feedback.text)) : h('div', { className: 'finwb-sub' }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')),
-        viewer&&window.DocumentViewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
+        viewer&&viewer.context===previews.identity&&window.DocumentViewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
     };
     return h('div', { className: 'finwb-root', tabIndex: 0, onKeyDown, 'data-admin-financial-workbench': 'true' },
       h('div', { className: 'finwb-toolbar', 'data-financial-queue-toolbar': 'true' }, h('div', { className: 'finwb-filters' },

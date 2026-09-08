@@ -1,5 +1,15 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-ADMIN-REQUEST-IMAGES-001
+
+- Corrige miniaturas intermitentes en Admin / Solicitudes: identidad documental estable, confirmación de
+  descarga, concurrencia tres, reintento acotado y autorización fresca al ampliar. No cambia datos,
+  repositorios compartidos, reglas financieras, Auth/RLS ni diseño de las secciones.
+- Chrome aislado reproduce 1→4 firmas con el código anterior y 1→1 con el cambio; recuperación/error,
+  selección, logout, permisos, vencimiento y móvil pasan. Build local con backend real: 55 imágenes
+  decodificadas en cuatro tipos de solicitud, cero errores. Regresión global local PASS con PDF legítimo.
+- Publicación y cierre productivo se registran en [resultado/evidencia](qa/H-ADMIN-REQUEST-IMAGES-001.md).
+
 ## 2026-09-07 — H-AUTH-ENTRY-001
 
 - Publicada corrección del acceso que abría definición de contraseña por metadata histórica; recuperación limitada al contexto local, eventos repetidos del mismo token sin lecturas duplicadas y salida al login sin cambiar password.

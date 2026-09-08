@@ -1,5 +1,5 @@
 // Projection/delivery only. No workflow or financial decision is made here.
-export const REQUEST_REGISTER_VERSION = 'REQUEST_REGISTER_V1';
+export const REQUEST_REGISTER_VERSION = 'REQUEST_REGISTER_V2';
 // Owner instruction: AH and all following columns are outside this register's write boundary.
 export const REQUEST_REGISTER_WIDTH = 33;
 export const REQUEST_REGISTER_HEADERS = ['ID','Número de control','Nombre','Proceso','Fondo','Tasa','Plazo','Monto a solicitar','Total a Pagar','Fecha solicitud','CATEGORIA EMPLEADO','SINDICATO','AFILIADO NO AFILIADO','Monto Maximo','Fotografía rostro','INE Frente','INE Reverso','Talón Penultima quincena','Talón Ultima quincena','Foto aval','INE Frente (aval)','INE Reverso (aval)','Talón última quincena aval','Acepta Términos y condiciones','Estado','Observaciones','PDF','Comprobante de transferencia','Comprobante de transferencia copy','Constancia de no adeudo','Folio Interbancario','Firma del solicitante','Whatsapp Bot','Interes Quincenal','Tota Intereses a Pagar','Monto capital + Interes','Gasto Admon','TGA'];
@@ -32,7 +32,7 @@ export function buildRequestRegisterRow(request, documents, signatureHash) {
 }
 
 export async function loadRequestRegisterSource(client, requestId) {
-  const {data:request,error} = await client.from('program_requests').select('id,affiliate_id,numero_control,program_id,program_item_id,product_id,request_type,status,created_at,requested_amount,requested_term,financial_processing_status,financial_submission_snapshot,financial_profile_snapshot,applicant_profile_snapshot,signature_data,terms_accepted,notes,affiliate:affiliates!affiliate_id(full_name,display_name,phone_raw,financial_union_code,financial_employee_category_code)').eq('id',requestId).single();
+  const {data:request,error} = await client.from('program_requests').select('id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,request_type,status,created_at,requested_amount,requested_term,financial_processing_status,financial_submission_snapshot,financial_profile_snapshot,applicant_profile_snapshot,signature_data,terms_accepted,notes,affiliate:affiliates!affiliate_id(full_name,display_name,phone_raw,financial_union_code,financial_employee_category_code)').eq('id',requestId).single();
   if(error||!request)throw Error('REQUEST_SYNC_SOURCE_UNAVAILABLE');
   const {data:documents,error:documentError}=await client.from('request_documents').select('private_asset_id,asset_sha256,document_type:document_types!document_type_id(code)').eq('request_id',requestId);
   if(documentError)throw Error('REQUEST_SYNC_DOCUMENTS_UNAVAILABLE');
@@ -69,7 +69,10 @@ export async function deliverRequestRegister(client, requestId, env, sha256) {
     const {request,documents}=await loadRequestRegisterSource(client,job.request_id);
     if(!initialRow)initialRow=buildRequestRegisterRow(request,documents,request.signature_data?await sha256(String(request.signature_data)):null);
     const status=job.request_status;
+    // Folio is presentation metadata; never change the immutable UUID/ISO row or its hash.
+    if(!/^SR-\d{4}-\d{6,}$/.test(request.folio||''))throw Error('REQUEST_SYNC_FOLIO_INVALID');
     const payload={action:'sync_request',secret:env('FINANCIAL_LEGACY_API_TOKEN'),contract_version:REQUEST_REGISTER_VERSION,program_request_id:request.id,affiliate_id:request.affiliate_id,numero_control:request.numero_control,program:request.program_id,product_id:request.product_id||request.program_item_id||null,request_type:request.request_type,request_status:status,requested_amount:request.requested_amount,request_created_at:request.created_at,revision:job.revision,desired_status:job.desired_status,row:initialRow,payload_sha256:await sha256(initialRow)};
+    payload.request_folio=request.folio;
     const url=env('FINANCIAL_LEGACY_API_URL');if(!url||!payload.secret)throw Error('REQUEST_SYNC_BRIDGE_NOT_CONFIGURED');
     const token=await googleToken(env);
     const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload),signal:AbortSignal.timeout(30000)});

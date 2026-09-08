@@ -1,5 +1,18 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-REQUESTS-GOOGLE-REGISTER-FORMAT-001
+
+Corrección owner-authorized de presentación Google: A folio SR, J fecha nativa dd/MM/yyyy,
+aprobación Y Aprobado. Transporte UUID/ISO/hash y estados internos inmutables. Tres filas existentes
+verificadas contra todos los campos capturados: 2317/2318/2319; se conservan PENDIENTE/Iniciado.
+J2:J2319 recibe sólo formato, salvo tres conversiones ISO→fecha. Registry M agrega folio, sin cambiar
+referencias ni datos Supabase. No existían celdas Y=APROBADO al corregir; nuevas entregas usan Aprobado.
+Pruebas focales y readback en docs/qa/evidence/register-format-20260908. GAS14 y Edge41 verificados;
+baseline Edge40 extraído y comparado con las tres fuentes anteriores: iguales pese al número mayor.
+Sin frontend, migraciones, AH+, suites globales ni cambios de cálculos/estados/permisos.
+Limitación preexistente: filas movidas/borradas invalidan referencias inmutables de la cola; no se
+recrearon las nueve filas QA ausentes ni se repararon referencias fuera del alcance de formato.
+
 ## 2026-09-08 — H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001
 
 - Corrige la autorización del préstamo usando la identidad de criterio capturada, los documentos de la

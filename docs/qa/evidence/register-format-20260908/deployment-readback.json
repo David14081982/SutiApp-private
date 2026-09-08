@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "googleVersion": 14,
+  "edgeVersion": 41,
+  "googleSourceSha256": "cfcc24d5a900a77b683a40f44a55722f4525b27bf0f484bdae73c1007b45a183",
+  "edgeBundleSha256": "ad2d2d1e5cb567f3642df7b870b1c1f8d29e475495218a9294d89e8f6df2951e",
+  "verifyJwt": true
+}

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "edgeVersion": 40,
+  "googleVersion": 13,
+  "verifyJwt": true,
+  "privateBackup": "C:/tmp/sutiapp-register-format-backup-20260908",
+  "edgeSha256": "d9946f66bdf4c57e6f100f761f15e4430730c180e766b4a32f468878e1b1ae25",
+  "googleSourceSha256": "9af9c2d247c16683b347c7aa237ece2c0b1493edd6d74d35c33f0b93883674f0"
+}

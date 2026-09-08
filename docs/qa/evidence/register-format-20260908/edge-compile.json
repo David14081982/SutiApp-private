@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "version": 40,
+  "verifyJwt": true,
+  "bundleSha256": "30cde69f66996f62fce42b75955d070c89df6966d46f25f6ccff73161cc3a91b",
+  "sourceSha256": "c9427822aba5cd1009fc1681d86a70e6b305cd54c53dbd827724e021ccfa897f"
+}

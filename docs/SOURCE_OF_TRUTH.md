@@ -1,5 +1,13 @@
 # Fuentes de verdad
 
+## Formato del registro Google — 2026-09-08
+
+H-REQUESTS-GOOGLE-REGISTER-FORMAT-001: `program_requests.folio` es la única autoridad del folio SR
+visible en A. J deriva el día del timestamp original con formato nativo `dd/MM/yyyy`; Y proyecta
+la aprobación como `Aprobado`. UUID/ISO/hash/revisión internos permanecen intactos, sin nueva fuente
+ni fallback. El mismo registry técnico agrega folio como índice derivado para idempotencia.
+La corrección puntual no cambia estados posteriores, cálculos, documentos, tablas ni AH+.
+
 ## Contrato posterior autorizado — ADR-106, 2026-09-08
 
 `program_requests`, su `workflow_snapshot` inmutable, `operational_request_tracking` y

@@ -11,11 +11,11 @@ function fixture(){
   class Range{
     constructor(sheet,row,col,height=1,width=1){Object.assign(this,{sheet,row,col,height,width});assert(row>=1&&row+height-1<=sheet.maxRows,'RANGE_OUT_OF_GRID');}
     getValues(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.rows[this.row+r-1]?.[this.col+c-1]??''));}
-    getDisplayValues(){return this.getValues().map(row=>row.map(v=>String(v)));}
+    getDisplayValues(){return this.getValues().map((row,r)=>row.map((v,c)=>{if(typeof v==='number'&&this.sheet.formats[(this.row+r)+':'+(this.col+c)]==='dd/MM/yyyy'){const d=new Date((v-25569)*86400000).toISOString().slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}return String(v);}));}
     getValue(){return this.getValues()[0][0];}getDisplayValue(){return this.getDisplayValues()[0][0];}
     getFormula(){return this.sheet.formulas[this.row+':'+this.col]||'';}
     getFormulas(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.formulas[(this.row+r)+':'+(this.col+c)]||''));}
-    setNumberFormat(){return this;}
+    setNumberFormat(format){for(let r=0;r<this.height;r++)for(let c=0;c<this.width;c++)this.sheet.formats[(this.row+r)+':'+(this.col+c)]=format;return this;}
     setValue(value){return this.setValues([[value]]);}
     setValues(rows){
       const call={sheet:this.sheet.name,row:this.row,col:this.col,height:this.height,width:this.width};
@@ -27,7 +27,7 @@ function fixture(){
     createTextFinder(text){return {matchEntireCell:()=>({findAll:()=>{const found=[];for(let r=this.row;r<this.row+this.height;r++)if(String(this.sheet.rows[r-1]?.[this.col-1]??'')===text)found.push(new Range(this.sheet,r,this.col));return found;}})};}
   }
   class Sheet{
-    constructor(name,id,header){Object.assign(this,{name,id,rows:[header],maxRows:2,formulas:{}});}
+    constructor(name,id,header){Object.assign(this,{name,id,rows:[header],maxRows:2,formulas:{},formats:{}});}
     getSheetId(){return this.id;}getLastRow(){let last=this.rows.length;while(last>0&&!(this.rows[last-1]||[]).some(v=>v!==''&&v!=null))last--;return last;}
     getMaxRows(){return this.maxRows;}insertRowsAfter(_row,count){this.maxRows+=count;}
     getRange(...args){return new Range(this,...args);}
@@ -51,14 +51,16 @@ function payload(family){
   return {action:'sync_request',secret:'isolated-server-secret',contract_version:'REQUEST_REGISTER_V1',program_request_id:id,affiliate_id:request.affiliate_id,numero_control:request.numero_control,program:family,product_id:null,request_type:request.request_type,request_status:'submitted',requested_amount:request.financial_submission_snapshot?.financialResult?.amount??null,request_created_at:request.created_at,revision:1,desired_status:'PENDIENTE',row,payload_sha256:sha(row)};
 }
 function run(name,fn){fn();receipts.push({test:name,result:'PASS'});}
+module.exports={fixture,payload,sha};
+if(require.main===module){
 for(const family of ['prestamo','membership','puertas'])run(family+': create, review, approve, reject/cancel, same A/Y and no duplicates',()=>{
   const f=fixture(),p=payload(family);let result=f.send(p);assert(result.ok);const row=result.google_row;
   assert.equal(f.target.rows[row-1][0],p.program_request_id);assert.equal(f.target.rows[row-1][24],'PENDIENTE');assert.deepEqual(f.target.rows[row-1],p.row);
   const original=f.target.rows[row-1].slice();f.writes.length=0;
   const review={...p,revision:2,request_status:'in_review'};assert(f.send(review).ok);assert(f.send(review).ok);
-  const approved={...p,revision:3,request_status:'approved',desired_status:'APROBADO'};assert(f.send(approved).ok);assert(f.send(approved).ok);assert.equal(f.target.rows[row-1][24],'APROBADO');
+  const approved={...p,revision:3,request_status:'approved',desired_status:'APROBADO'};assert(f.send(approved).ok);assert(f.send(approved).ok);assert.equal(f.target.rows[row-1][24],'Aprobado');
   // A delayed review cannot regress a newer final decision.
-  result=f.send(review);assert.equal(result.revision,3);assert.equal(f.target.rows[row-1][24],'APROBADO');
+  result=f.send(review);assert.equal(result.revision,3);assert.equal(f.target.rows[row-1][24],'Aprobado');
   assert(f.writes.filter(x=>x.sheet===f.target.name).every(x=>x.row===row&&x.col===25&&x.width===1&&x.height===1),'UPDATE_OUTSIDE_Y');
   assert.deepEqual(f.target.rows[row-1].filter((_,i)=>i!==24),original.filter((_,i)=>i!==24));
   assert.equal(f.target.rows.filter(r=>r[0]===p.program_request_id).length,1);
@@ -83,7 +85,7 @@ run('new reserved row inherits unchecked terms checkbox; recovery preserves othe
 });
 run('crash after Y write and before registry update recovers and remains monotonic',()=>{
   const f=fixture(),p=payload('prestamo');assert(f.send(p).ok);const approved={...p,revision:2,request_status:'approved',desired_status:'APROBADO'};
-  f.interrupt(c=>c.sheet===f.registry.name&&c.col===11);assert(!f.send(approved).ok);assert(f.send(approved).ok);assert(f.send(p).ok);assert.equal(f.target.rows[1][24],'APROBADO');
+  f.interrupt(c=>c.sheet===f.registry.name&&c.col===11);assert(!f.send(approved).ok);assert(f.send(approved).ok);assert(f.send(p).ok);assert.equal(f.target.rows[1][24],'Aprobado');
 });
 run('duplicate UUID, header drift, formula in Y, wrong identity and unauthorized calls are denied',()=>{
   for(const problem of ['duplicate','header','formula','identity','auth']){
@@ -100,4 +102,5 @@ run('reserved row at grid boundary recovers before append',()=>{
   const f=fixture(),first=payload('membership');assert(f.send(first).ok);const p=payload('puertas');f.interrupt(c=>c.sheet===f.target.name);assert(!f.send(p).ok);f.target.maxRows=2;assert(f.send(p).ok);assert.equal(f.target.getLastRow(),3);
 });
 const proof={status:'PASS',environment:'isolated; no external writes',tests:receipts,duplicates:0,ownerColumnBoundary:'A:AG; AH onward excluded'};
-fs.writeFileSync(path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908/candidate-bridge.json'),JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
+fs.writeFileSync(process.env.REQUEST_BRIDGE_EVIDENCE||path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908/candidate-bridge.json'),JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
+}

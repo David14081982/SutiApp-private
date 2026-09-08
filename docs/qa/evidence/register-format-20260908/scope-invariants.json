@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "unchanged": [
+    "financial-legacy/index.ts",
+    "visibility-policy.js",
+    "legacy handoff and Google visibility receiver functions",
+    "buildRequestRegisterRow raw UUID/ISO transport",
+    "SQL migrations/RPC/workflow/permissions",
+    "frontend/bundle/service worker"
+  ],
+  "newRuntimeFiles": 0,
+  "fixtureOnlyMocks": true,
+  "privateBackupsOutsideRepo": true
+}

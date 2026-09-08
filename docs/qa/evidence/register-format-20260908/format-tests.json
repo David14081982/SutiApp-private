@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "tests": [
+    {
+      "test": "V2 renders folio/native date/Aprobado; UUID/hash and raw ISO remain immutable",
+      "status": "PASS"
+    },
+    {
+      "test": "V1 row upgrades in place; interrupted folio write recovers without duplicate or raw hash change",
+      "status": "PASS"
+    },
+    {
+      "test": "valid leap date and ISO calendar day preserved; malformed dates/folios fail before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "folio collision, changed folio, identity/date formula and relocated row fail closed",
+      "status": "PASS"
+    },
+    {
+      "test": "V2 never writes AH onward; later legacy state Iniciado survives an equal/stale revision",
+      "status": "PASS"
+    }
+  ],
+  "externalWrites": 0
+}

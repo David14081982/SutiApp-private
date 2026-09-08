@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "releaseBase": "e51550a6bb1488500e1674f1df20d42372a4aee3",
+  "initialMirrorFiles": 26,
+  "unrelatedPrimaryWorkspaceFilesVerified": 1046,
+  "primaryHeadAndIndexPreserved": true,
+  "governanceMerge": "additive insertion; original document contents preserved",
+  "runtimeMirror": "baseline equality verified before replacing",
+  "primaryArchitectureRegistry": "not overwritten; includes unrelated architecture changes",
+  "privateRecovery": "C:/tmp/sutiapp-register-format-backup-20260908/main-before-mirror.json"
+}

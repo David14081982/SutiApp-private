@@ -1,5 +1,13 @@
 # Invariantes
 
+## Aclaración vigente de INV-212 — formato Google, 2026-09-08
+
+Por instrucción posterior expresa, A muestra folio SR autoritativo, J fecha nativa `dd/MM/yyyy`
+con día original y aprobación Y=`Aprobado`. UUID, ISO inicial, hash, revisión y `APROBADO` interno
+siguen inmutables. La corrección permite A/J verificados y Y exacto `APROBADO` → `Aprobado`;
+no reinicia estados legacy posteriores. El registry conserva folio para localizar la misma identidad.
+AH+ sigue excluido. H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 prevalece sobre la presentación de abajo.
+
 ## Registro requerido de solicitudes — ADR-106, 2026-09-08
 
 - **INV-212:** Toda solicitud confirmada primero en Supabase genera una entrega idempotente a

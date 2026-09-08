@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "rows": [
+    {
+      "row": 2317,
+      "folio": "SR-2026-000194",
+      "date": "08/09/2026",
+      "status": "PENDIENTE"
+    },
+    {
+      "row": 2318,
+      "folio": "SR-2026-000121",
+      "date": "07/09/2026",
+      "status": "Iniciado"
+    },
+    {
+      "row": 2319,
+      "folio": "SR-2026-000195",
+      "date": "08/09/2026",
+      "status": "Iniciado"
+    }
+  ],
+  "dateFormat": "J2:J2319 dd/MM/yyyy",
+  "dateValuesPreservedExceptThreeISOConversions": true,
+  "otherTargetCellsPreserved": true,
+  "registryOnlyFolioMetadata": true,
+  "rowCount": 2319,
+  "duplicatesAdded": 0,
+  "AHOnward": "excluded from all writes; not read",
+  "existingUppercaseApprovals": 0,
+  "futureApproval": "Aprobado; actual receiver isolated tests and deployed hash verified",
+  "anonymousEdge": 401,
+  "googleInvalidSecret": "UNAUTHORIZED",
+  "securityProbeWrites": 0,
+  "cellSnapshotSha256": "c09a13799c516a8556cf802c4dd51c7e8d0680124c84359f5ea4d0e713fd8ab4"
+}

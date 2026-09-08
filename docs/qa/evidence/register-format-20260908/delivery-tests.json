@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "tests": [
+    "canonical folio selected and V2 envelope sent",
+    "immutable UUID/ISO/hash/initial_row preserved through finish RPC",
+    "internal APROBADO unchanged",
+    "missing folio fails visibly without delivery"
+  ],
+  "externalWrites": 0
+}

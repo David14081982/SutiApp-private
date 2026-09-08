@@ -1,5 +1,15 @@
 # Registro de decisiones arquitectónicas
 
+## Aclaración posterior de ADR-106 — formato Google, 2026-09-08
+
+El propietario instruye A=`program_requests.folio` (SR), J=`dd/MM/yyyy` y aprobación Y=`Aprobado`.
+H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 autoriza corregir esas celdas existentes con identidad
+demostrada y adaptar el mismo writer. Supersede sólo UUID/ISO visibles, mayúsculas de aprobación
+y la prohibición de actualizar A/J para esta corrección. UUID/ISO/hash/revisión siguen inmutables
+internamente; folio es metadata del mismo registro técnico. La fecha nativa conserva el día original.
+Estados posteriores como Iniciado, IDs históricos ajenos, cálculos, documentos, SQL y AH+ se preservan.
+No autoriza reparar referencias desplazadas, recrear filas borradas ni alterar estados.
+
 ## ADR-106 — Registro de solicitudes A:AG y estado derivado en Google
 
 - **Autoridad y autorización:** H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001, instrucción expresa del

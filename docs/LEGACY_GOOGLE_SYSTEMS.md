@@ -1,5 +1,14 @@
 # Sistemas Google legacy
 
+## Aclaración posterior expresa — presentación A/J/Y, 2026-09-08
+
+H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 sustituye sólo la presentación del contrato siguiente:
+A=folio SR, J=fecha nativa `dd/MM/yyyy` con día original, aprobación Y=`Aprobado`. UUID y hash
+permanecen internos. Se autoriza corrección exacta de A/J de filas verificadas y formato de J;
+Y sólo cambia mayúsculas exactas, preservando Iniciado u otros estados posteriores. Registro técnico
+conserva folio derivado. No se tocan AH+, fórmulas, cálculos, triggers, estados ni hojas financieras
+ajenas. Filas ausentes no se recrean; referencias desplazadas se mantienen como conflicto visible.
+
 ## Excepción posterior expresa — solicitudes A:AG, ADR-106
 
 H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001 autoriza registrar todas las solicitudes después del commit

@@ -1,5 +1,21 @@
 # SutiApp Financial Handoff
 
+## Contrato vigente de presentación — 2026-09-08
+
+La corrección expresa H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 sustituye la presentación A/J/Y:
+A muestra `program_requests.folio` (`SR-2026-000121`); J es fecha nativa `dd/MM/yyyy`, conservando
+el día del timestamp original; aprobación escribe `Aprobado`. UUID, ISO, hash inicial y estado
+interno `APROBADO` permanecen inmutables. Edge envía `REQUEST_REGISTER_V2` + `request_folio`.
+El receptor acepta V1 en tránsito, mantiene folio en el registry existente y localiza por UUID
+o folio sin duplicar. La corrección de presentación permite A/J sobre identidad verificada;
+transiciones siguen cambiando Y. Igual revisión conserva estados legacy posteriores como Iniciado.
+AH+ queda excluido. No cambian cálculos, triggers ni workflows.
+
+Mover/borrar filas manualmente puede invalidar referencias de transporte inmutables. Ese conflicto
+se conserva visible; esta H no recrea filas ni modifica datos Supabase para resolverlo.
+
+## Corte anterior — ADR-106 (presentación sustituida por la instrucción anterior)
+
 Proyecto Apps Script ligado exclusivamente a `SutiApp Final`. ADR-106 añade `sync_request`: después de
 confirmar cualquier solicitud en Supabase, reserva idempotencia en `SutiApp Financial Handoff` y registra
 su UUID en A de `Historial de solicitudes`. El alta escribe exclusivamente A:AG, con Y=`PENDIENTE`;

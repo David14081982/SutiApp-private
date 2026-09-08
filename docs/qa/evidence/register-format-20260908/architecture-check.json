@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "nodes": 4819,
+  "edges": 14233,
+  "uniqueNodesAndValidEdges": true,
+  "currentRuntimeFingerprintVerified": true,
+  "freshness": "STALE only final audit/evidence and isolated delivery test added during generation; runtime mapping current",
+  "googleAppsScript": "not indexed by existing generator; directly inspected and deployed source hash verified",
+  "globalRegistrySuite": "NOT APPLICABLE; generator unchanged and owner prohibits global suites"
+}

@@ -1,0 +1,128 @@
+{
+  "status": "PASS",
+  "summaries": [
+    {
+      "stage": "affiliate-full-compatibility",
+      "items": 134,
+      "ms": 1507.2000000476837,
+      "sha256": "99e55ed28c9876de8d4bde9f795e246d27949223a500f08f5890a7cddcff2ed0",
+      "equivalent": true
+    },
+    {
+      "stage": "admin-full-compatibility",
+      "items": 135,
+      "ms": 811.5,
+      "sha256": "f74afa3e4d9a5454e82ce1c4bd410a53cad27ad86158e0e6a2bceee13f1c64f7",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "aires",
+      "items": 16,
+      "ms": 694.5,
+      "sha256": "bde16be97e7137c5c8f6afa22bdc00dfa9167af31197428074c317849e5b88c5",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "auto",
+      "items": 3,
+      "ms": 1050.2999999523163,
+      "sha256": "90712adea4c551c24be2fc4cab821b4d8dcc7d62aab181111a93aed93f475d38",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "casa",
+      "items": 35,
+      "ms": 529.3999999761581,
+      "sha256": "37748e6c52e0142e9effffaf546350f5e198bc4ddcff159f81aadcaf931765a7",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "cirugias",
+      "items": 0,
+      "ms": 169.29999995231628,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "computo",
+      "items": 1,
+      "ms": 338.60000002384186,
+      "sha256": "be8f2215eea06c4e944c0fddbaeb7ac1964f4609008b19e1e610b017e222a87b",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "donativos",
+      "items": 0,
+      "ms": 177.5,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "farma",
+      "items": 50,
+      "ms": 381,
+      "sha256": "1454d08179f3d3abfcdfb33e8bc2179e5c9bdafac008e879249e851bd7e217f0",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "prestamo",
+      "items": 1,
+      "ms": 365,
+      "sha256": "e6964c3227a3f71bf090f8a55abdc8ffda735553c05b4c327d6843e839c5bdbf",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "puertas",
+      "items": 3,
+      "ms": 369,
+      "sha256": "f1f35cdb881063decbf4c924c6f0eff0f4bf0c7051661a94e9e46e9648fea3dc",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "renta",
+      "items": 1,
+      "ms": 358.6999999284744,
+      "sha256": "8ebbf43cc509874805a7bf52cd8b0978925d857110ea1c1950e38ae1f27482f1",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "solar",
+      "items": 4,
+      "ms": 343.39999997615814,
+      "sha256": "64eb7ef08779ef2142b40c982bf2ce8888821e64f8d055579bca3224b8803e19",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "terrenos",
+      "items": 3,
+      "ms": 362.60000002384186,
+      "sha256": "9e564867c66e93ef9b605ca424b42b9c60cae776315ba5149c2c1ec90470846d",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "tours",
+      "items": 17,
+      "ms": 342.7000000476837,
+      "sha256": "f190dda1573880019e56ed7f6b6d01440d434978154b1563438bfae59b0f14d9",
+      "equivalent": true
+    }
+  ],
+  "adminSummary": {
+    "items": 135,
+    "links": 0,
+    "ms": 203.89999997615814
+  }
+}

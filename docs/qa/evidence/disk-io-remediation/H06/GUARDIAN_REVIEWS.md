@@ -17,7 +17,7 @@ RLS/grants: 253 funciones/228 policies/ACL/owners iguales; Storage privado y JWT
 Frontend exposure: sin secretos ni service role; token sólo comparado en closure existente del cliente.
 Cross-user access: respuestas tardías rechazadas; logout real elimina proyecciones; 192 resultados RLS idénticos, pruebas aisladas de cambios de usuario/sesión/permiso/propósito/target.
 Audit: listados y aperturas conservan backend; open documental siempre pide autorización nueva. Un único trabajo en vuelo equivale a una intención simultánea, no a eludir auditoría.
-Verdict local: PASS. Publicado se confirma en VERIFICATION.md.
+Verdict: PASS local y publicado; global-production.json, backend-after-delivery.json y production-equivalence.json.
 
 ## LEGACY GOOGLE AUDIT
 
@@ -42,4 +42,4 @@ Interactions preserved: scroll, siguiente/anterior, zoom/cierre, abrir/cerrar ed
 Navigation preserved: sí, navegación real y logout/login verificados.
 Visual structure preserved: sí; mismos hashes de texto, campos y controles Admin, nueve slots e imágenes del editor; sin cambios CSS/copy de negocio.
 Unauthorized redesign: NO.
-Verdict local: PASS; regresión publicada requerida para el cierre.
+Verdict: PASS local y publicado; mismos hashes Admin, contenido completo, galería y regresión global. Sin igualdad pixel-perfect declarada de estados transitorios.

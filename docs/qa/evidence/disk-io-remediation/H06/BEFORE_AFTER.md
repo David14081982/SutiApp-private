@@ -24,6 +24,8 @@ Baseline real: 135 productos / 268 vínculos. La lectura de afiliado devuelve 13
 
 Evidencia: browser-navigation-before.json, browser-local.json, admin-before.json, admin-local.json, tests-workspace.json. Las imágenes del editor son necesarias al abrirlo; se conserva la galería histórica de nueve imágenes, sin reducirla al límite de productos nuevos.
 
+Confirmación publicada: production-equivalence.json y browser-production.json reproducen exactamente 22 HTTP, 9.478.048 bytes, seis objetos firmados y seis consultas en el recorrido. La fase inicial publicada registró dos firmas de imágenes demandadas, frente a cero en la muestra local; la frontera temporal entre fases depende de la observación/visibilidad. No se afirma cero firmas iniciales en toda sesión. Ambas muestras evitan la firma global de 268 objetos. El editor publicado conserva los tres hashes del baseline y lotes de tres/nueve imágenes. Las 541 firmas del resumen bruto del harness publicado incluyen sus dos lecturas completas de compatibilidad solicitadas expresamente por el test; no son la navegación del usuario. Las métricas de esta tabla filtran exclusivamente navigation/scroll/detail/lightbox-auto.
+
 Los bytes son cuerpos de respuesta observados por Chrome; no equivalen a bloques físicos de disco ni a facturación de transferencia. Los objetos solicitados a Storage se registran desde las peticiones de firma; no se presentan como un contador interno de invocaciones SQL de Supabase. El recorrido no ejecuta RPC nuevas de H06; conserva la validación de Ahorro y lectores auxiliares existentes. El número total de firmas HTTP puede diferir del de objetos porque se agrupan por lote. Los tiempos de red varían con el host; no se atribuye a H06 la resolución de swap/H02.
 
 ## SQL bajo RLS

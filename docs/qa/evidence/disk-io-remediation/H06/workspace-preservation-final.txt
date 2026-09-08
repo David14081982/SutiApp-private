@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-08T03:15:03.778Z",
+  "at": "2026-09-08T03:17:00.685Z",
   "status": "PASS",
   "baselineFiles": 1783,
   "changed": [
@@ -112,7 +112,9 @@
     "docs/qa/evidence/disk-io-remediation/H06/public-check-rollback-baseline.json",
     "docs/qa/evidence/disk-io-remediation/H06/public-check.cjs",
     "docs/qa/evidence/disk-io-remediation/H06/registry-normalization.json",
+    "docs/qa/evidence/disk-io-remediation/H06/registry-release-check.txt",
     "docs/qa/evidence/disk-io-remediation/H06/registry-release.cjs",
+    "docs/qa/evidence/disk-io-remediation/H06/registry-root-check.txt",
     "docs/qa/evidence/disk-io-remediation/H06/registry-tests.txt",
     "docs/qa/evidence/disk-io-remediation/H06/release-staged-files.txt",
     "docs/qa/evidence/disk-io-remediation/H06/runtime-commit.txt",

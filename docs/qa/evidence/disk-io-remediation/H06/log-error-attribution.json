@@ -1,0 +1,34 @@
+{
+  "status": 200,
+  "rows": [
+    {
+      "sqlstate": "42501",
+      "object": "program_requests"
+    },
+    {
+      "sqlstate": "42501",
+      "object": "get_current_affiliate_access_state"
+    },
+    {
+      "sqlstate": "42501",
+      "object": "get_effective_affiliate_id"
+    },
+    {
+      "sqlstate": "42501",
+      "object": "get_impersonation_context"
+    },
+    {
+      "sqlstate": "42501",
+      "object": "get_admin_access_context"
+    },
+    {
+      "sqlstate": "42501",
+      "object": "program_requests"
+    },
+    {
+      "sqlstate": "42703",
+      "object": "document_type"
+    }
+  ],
+  "rawMessagesExported": false
+}

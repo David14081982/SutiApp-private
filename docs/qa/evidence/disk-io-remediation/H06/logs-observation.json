@@ -1,0 +1,18 @@
+{
+  "status": 200,
+  "start": "2026-09-08 02:42:37.006376+00",
+  "end": "2026-09-08 03:13:04.677935+00",
+  "data": {
+    "result": [
+      {
+        "errors": 6,
+        "sqlstate": "42501"
+      },
+      {
+        "errors": 1,
+        "sqlstate": "42703"
+      }
+    ]
+  },
+  "limitation": "Log ingestion may lag; finite window, not a future guarantee."
+}

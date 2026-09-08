@@ -1,0 +1,77 @@
+{
+  "at": "2026-09-08T03:12:23.968Z",
+  "status": "PASS",
+  "adminEquivalent": true,
+  "navigation": {
+    "http": 22,
+    "bytes": 9478048,
+    "signedObjects": 6,
+    "queries": 6
+  },
+  "failedHTTP": [],
+  "initial": [
+    {
+      "stage": "navigation-auto",
+      "kind": "finance_catalog_presentation",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 1845,
+      "rows": 9,
+      "ms": 173.332
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "rpc:get_self_savings_if_changed",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 312,
+      "rows": 0,
+      "ms": 188.408
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "membership_offerings",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2967,
+      "rows": 6,
+      "ms": 189.033
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_items",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2109,
+      "rows": 3,
+      "ms": 144.649
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_favorites",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 195.787
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_item_assets",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 14596,
+      "rows": 27,
+      "ms": 149.919
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "sign",
+      "requestedObjects": 2,
+      "http": 200,
+      "bytes": 1129,
+      "rows": 2,
+      "ms": 358.414
+    }
+  ]
+}

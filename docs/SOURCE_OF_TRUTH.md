@@ -1,6 +1,6 @@
 # Fuentes de verdad
 
-## Contrato posterior autorizado — ADR-105, 2026-09-08
+## Contrato posterior autorizado — ADR-106, 2026-09-08
 
 `program_requests`, su `workflow_snapshot` inmutable, `operational_request_tracking` y
 `program_request_admin_events` conservan la autoridad de toda solicitud. Historial/Tracking/Admin consumen

@@ -51,10 +51,6 @@
     "docs/architecture/registry-data.json",
     "docs/architecture/registry-edges.json",
     "docs/architecture/registry-search.json",
-    "google-apps-script/financial-handoff/Code.gs",
-    "google-apps-script/financial-handoff/README.md",
-    "supabase/functions/financial-legacy/index.ts",
-    "sw.js",
     "docs/qa/H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001.md",
     "docs/qa/evidence/requests-workflow-google-sync-20260908/ARCHITECT_REVIEW.md",
     "docs/qa/evidence/requests-workflow-google-sync-20260908/admin/isolated-1024x768.png",
@@ -96,6 +92,8 @@
     "docs/qa/evidence/requests-workflow-google-sync-20260908/snapshot-validation-apply.json",
     "docs/qa/evidence/requests-workflow-google-sync-20260908/snapshot-validation-recovery.json",
     "docs/qa/evidence/requests-workflow-google-sync-20260908/worker-configure.json",
+    "google-apps-script/financial-handoff/Code.gs",
+    "google-apps-script/financial-handoff/README.md",
     "scripts/audit-requests-workflow-google-sync-approval.js",
     "scripts/audit-requests-workflow-google-sync.js",
     "scripts/deploy-requests-workflow-google-sync.js",
@@ -111,10 +109,16 @@
     "scripts/test-requests-workflow-google-sync-realtime-live.js",
     "scripts/test-requests-workflow-google-sync-security-live.js",
     "scripts/test-requests-workflow-google-sync-sql.js",
+    "supabase/functions/financial-legacy/index.ts",
     "supabase/functions/financial-legacy/request-google-sync.js",
     "supabase/migrations/20260908000100_requests_workflow_google_sync.sql",
     "supabase/migrations/20260908000200_request_snapshot_status_validation.sql",
     "supabase/recovery/20260908000100_requests_workflow_google_sync_recovery.sql",
-    "supabase/recovery/20260908000200_request_snapshot_status_validation_recovery.sql"
+    "supabase/recovery/20260908000200_request_snapshot_status_validation_recovery.sql",
+    "sw.js",
+    "docs/qa/evidence/requests-workflow-google-sync-20260908/modal-live/production.json",
+    "docs/qa/evidence/requests-workflow-google-sync-20260908/publication.json",
+    "docs/qa/evidence/requests-workflow-google-sync-20260908/realtime-production-status.json",
+    "docs/qa/evidence/requests-workflow-google-sync-20260908/workspace-preservation.json"
   ]
 }

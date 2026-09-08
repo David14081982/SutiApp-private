@@ -88,7 +88,7 @@ a cryptographically random key and set the same existing Supabase secret; preser
 The first owner-only read found no usable existing property. This is configuration repair,
 not another workflow or data writer. Confirm an authenticated invalid-secret probe still fails afterward.
 
-Status: implementation and focused live verification in progress. Both owner clarifications are resolved.
+Status: PASS. Implementation, publication and focused production verification are complete; both owner clarifications are resolved.
 
 Live-validation scope refinement: the current frozen loan v16 maps approved to Authorization with outcome
 process, whereas the older v13 snapshot used success. The existing tracking validator rejected this explicit
@@ -129,7 +129,7 @@ remains authenticated ANYONE / USER_DEPLOYING. Both SQL migrations are registere
 Build: 109 release sources, bundle 229 / worker 176. Shared worker logic is unchanged; version references are
 generated release artifacts. The unrelated dirty main-workspace savings/H08 work is excluded from publication.
 WORK_QUEUE remains an older master-plan checkpoint; this H is authorized directly by the later owner request
-and ADR-105. No continuation to another H or Phase 8 is authorized. WORK_QUEUE_HISTORY.md is absent.
+and ADR-106. No continuation to another H or Phase 8 is authorized. WORK_QUEUE_HISTORY.md is absent.
 
 ## Live acceptance — PASS
 
@@ -159,7 +159,7 @@ Both recovery scripts passed rollback validation. Mobile/tablet checks use Chrom
 
 ```text
 H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001 RESULT
-Status: PASS — focused implementation and live backend acceptance; production frontend verification follows publication
+Status: PASS — implementation, live acceptance, publication and production frontend verification
 Files changed: exact scoped inventory in evidence/requests-workflow-google-sync-20260908/closure-checks.json
 Source-of-truth verdict: PASS — Supabase request/snapshot/tracking/events; Google derived register only
 Invariant verdict: PASS — immutable snapshots, existing specialized approvals, UUID idempotency, A:AG then Y
@@ -177,3 +177,24 @@ both migrations, repositories and request consumers are present. Final freshness
 for the later HTML cache reference, recovery-test mode and closure/evidence documents/tests; none changes
 runtime architecture. The unchanged generator's full global acceptance suite was not run (owner requests
 focused validation). No claim of a FRESH final documentation fingerprint is made.
+
+Workspace integration found local, uncommitted ADR-105 / INV-211 already assigned to a separate CSV task.
+This H's new references were renumbered to ADR-106 / INV-212–215 without changing their meaning or touching
+the CSV task. Its local decision text and 974 unrelated dirty files were preserved exactly. The main workspace
+bundle was rebuilt from its own 112 sources; the 109-source release bundle was never copied over it.
+
+## Published and verified — PASS
+
+Code commit `f45e4ac6a6e3e3252a166745954d539adfade5b8` was pushed to origin/main; GitHub Pages run
+34259020401 completed successfully. Eight asset readbacks (HTML, bundle, financial repository and worker,
+on sutiapp.com and the GitHub Pages address) matched the exact committed bytes. `publication.json` records hashes.
+
+Production History/Tracking loaded the nine persisted outcomes with zero JavaScript errors. Production modal
+acceptance passed all four families: 72 image instances decoded, zero preview/Storage errors, retained workflow,
+history and document sections, fullscreen, X/Escape and five viewport widths with sticky visible controls and
+no horizontal overflow. The harness dismisses the existing home advertisement through its “Ahora no” button;
+no production popup behavior was changed. These production checks performed zero business writes.
+
+Final architect verdict: APPROVED. Only delivery evidence/document reference numbering and the read-only
+test harness are updated after the code commit; executable frontend/backend content remains the verified build.
+No further H is started.

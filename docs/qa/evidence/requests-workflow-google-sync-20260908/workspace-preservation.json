@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "releaseBase": "435fc47",
+  "mirroredFiles": 76,
+  "unrelatedDirtyFilesPreserved": 974,
+  "localDecisionIdsPreserved": true,
+  "releaseDecision": "ADR-106; INV-212..215",
+  "mainBundle": "PASS: rebuilt from 112 local sources; release bundle not copied",
+  "mainRegistry": "preserved local derived index",
+  "mainHeadAndIndex": "unchanged"
+}

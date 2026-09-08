@@ -1,6 +1,6 @@
 # Registro de decisiones arquitectónicas
 
-## ADR-105 — Registro de solicitudes A:AG y estado derivado en Google
+## ADR-106 — Registro de solicitudes A:AG y estado derivado en Google
 
 - **Autoridad y autorización:** H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001, instrucción expresa del
   propietario del 2026-09-08. Supabase conserva la autoridad de creación, estados, workflow, tracking y

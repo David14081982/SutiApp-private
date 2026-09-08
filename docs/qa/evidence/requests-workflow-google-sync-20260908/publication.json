@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "commit": "f45e4ac6a6e3e3252a166745954d539adfade5b8",
+  "pagesRun": 34259020401,
+  "assets": [
+    {
+      "origin": "https://sutiapp.com",
+      "file": "SutiApp.html",
+      "sha256": "8f65bdef50a3b9d8abf266f0cbfcdba47709c25117262a88d93ebb0c6c854563",
+      "http": 200
+    },
+    {
+      "origin": "https://sutiapp.com",
+      "file": "app/bundle.js",
+      "sha256": "fdde2eefe797c4fffce2bbd1d5676087923e05075cd70dfe895d541d7b517b6f",
+      "http": 200
+    },
+    {
+      "origin": "https://sutiapp.com",
+      "file": "app/financial-legacy-repository.js",
+      "sha256": "6e1a87bb850d24a4fbdde2ba81a20274627071e8cc2c3705dfb5d54497cd12b8",
+      "http": 200
+    },
+    {
+      "origin": "https://sutiapp.com",
+      "file": "sw.js",
+      "sha256": "e29af9f07fb266445e4c744167eb34b317052ab97c79325060f6e7de4de00b01",
+      "http": 200
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private",
+      "file": "SutiApp.html",
+      "sha256": "8f65bdef50a3b9d8abf266f0cbfcdba47709c25117262a88d93ebb0c6c854563",
+      "http": 200
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private",
+      "file": "app/bundle.js",
+      "sha256": "fdde2eefe797c4fffce2bbd1d5676087923e05075cd70dfe895d541d7b517b6f",
+      "http": 200
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private",
+      "file": "app/financial-legacy-repository.js",
+      "sha256": "6e1a87bb850d24a4fbdde2ba81a20274627071e8cc2c3705dfb5d54497cd12b8",
+      "http": 200
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private",
+      "file": "sw.js",
+      "sha256": "e29af9f07fb266445e4c744167eb34b317052ab97c79325060f6e7de4de00b01",
+      "http": 200
+    }
+  ]
+}

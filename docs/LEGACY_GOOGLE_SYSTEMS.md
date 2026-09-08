@@ -1,6 +1,6 @@
 # Sistemas Google legacy
 
-## Excepción posterior expresa — solicitudes A:AG, ADR-105
+## Excepción posterior expresa — solicitudes A:AG, ADR-106
 
 H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001 autoriza registrar todas las solicitudes después del commit
 Supabase en `SutiApp Final / Historial de solicitudes`: UUID en A y Y inicial `PENDIENTE`; aprobación

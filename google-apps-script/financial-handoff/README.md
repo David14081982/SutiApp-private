@@ -1,6 +1,6 @@
 # SutiApp Financial Handoff
 
-Proyecto Apps Script ligado exclusivamente a `SutiApp Final`. ADR-105 añade `sync_request`: después de
+Proyecto Apps Script ligado exclusivamente a `SutiApp Final`. ADR-106 añade `sync_request`: después de
 confirmar cualquier solicitud en Supabase, reserva idempotencia en `SutiApp Financial Handoff` y registra
 su UUID en A de `Historial de solicitudes`. El alta escribe exclusivamente A:AG, con Y=`PENDIENTE`;
 aprobación/rechazo/cancelación actualizan sólo Y de esa fila a `APROBADO`/`Rechazado`. AH y siguientes

@@ -1,0 +1,93 @@
+{
+  "status": "PASS",
+  "mode": "status",
+  "target": "production",
+  "dataSource": "live authenticated self RPC and realtime; no intercepted responses",
+  "javascriptErrors": [],
+  "before": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "cancelled"
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "rejected"
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "approved"
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "cancelled"
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "rejected"
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "approved"
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "cancelled"
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "rejected"
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "approved"
+    }
+  ],
+  "changes": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "cancelled",
+      "time": 1788889638106
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "rejected",
+      "time": 1788889638106
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "approved",
+      "time": 1788889638106
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "cancelled",
+      "time": 1788889638106
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "rejected",
+      "time": 1788889638106
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "approved",
+      "time": 1788889638106
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "cancelled",
+      "time": 1788889638106
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "rejected",
+      "time": 1788889638106
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "approved",
+      "time": 1788889638106
+    }
+  ],
+  "realtimeEvents": 0
+}

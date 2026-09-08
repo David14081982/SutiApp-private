@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "before_bundle_sha256": "12928b32a27bd6c785d160a28c87ead053ef6ced710aa2bc78daf6a97b946943",
+  "reconstructed_before_sha256": "12928b32a27bd6c785d160a28c87ead053ef6ced710aa2bc78daf6a97b946943",
+  "method": "Dry-run original builder with two pre-H05 source captures; all other sources verified unchanged by workspace hashes; no filesystem write from builder"
+}

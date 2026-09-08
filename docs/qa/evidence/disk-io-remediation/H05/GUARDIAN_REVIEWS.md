@@ -5,7 +5,7 @@
 - Source of truth / legacy: GOOGLE_LEGACY_AUTHORITY, SHADOW_MIRROR y NOT_CUTOVER permanecen. Getter/helper exactos y 24 tablas completas idénticas. Memoria del cliente derivada, efímera y validada por backend en cada lectura; sin alternativa productiva.
 - Migration: un índice útil medido y un endpoint delegante adicional. Guards y recovery ensayados; no schema financiero, DML histórico ni RLS existente alterados.
 - Supabase security: actor/effective affiliate/impersonación derivan de backend; sin selector de objetivo, anon denegado, matriz live equivalente. Sin secretos browser, URLs públicas ni service role frontend.
-- Post-change: release focal y global local PASS; entrega publicada, Registry y revisión de cierre se completan antes de emitir VERIFICATION PASS.
+- Post-change: release focal, global local/publicada, igualdad UI/payload publicado, Registry completo y hashes de artefacto público PASS. La revisión de cierre reconstruye estas evidencias y los diffs; ver ARCHITECT_REVIEW.md.
 
 ## CLAUDE UI PRESERVATION REVIEW
 

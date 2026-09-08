@@ -1,0 +1,28 @@
+{
+  "at": "2026-09-08T01:49:10.299Z",
+  "scope": "Cumulative since stats reset; conditional endpoint introduced only by H05; query text and private parameters not exported",
+  "rows": [
+    {
+      "rpc": "conditional",
+      "calls": 30,
+      "rows": 30,
+      "total_exec_time": 11187.341816,
+      "mean_exec_time": 372.911393866667,
+      "shared_blks_hit": 30725,
+      "shared_blks_read": 0,
+      "temp_blks_read": 0,
+      "temp_blks_written": 0
+    },
+    {
+      "rpc": "original",
+      "calls": 2338,
+      "rows": 2338,
+      "total_exec_time": 1792544.980942,
+      "mean_exec_time": 766.70016293499,
+      "shared_blks_hit": 13905190,
+      "shared_blks_read": 0,
+      "temp_blks_read": 0,
+      "temp_blks_written": 0
+    }
+  ]
+}

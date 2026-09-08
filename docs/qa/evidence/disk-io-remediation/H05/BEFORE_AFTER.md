@@ -24,3 +24,5 @@ Los candidatos A y B se compararon separadamente en transacciones revertidas. `i
 Los payloads financieros completos y HTML de Ahorro/detalles se compararon en memoria, conservando únicamente hashes y estructura sin valores privados. Igualdad en ambos casos. Las 24 tablas Savings conservan exactamente conteos y hashes completos de filas antes/después (`financial-table-equivalence.json`).
 
 FINANCIAL_EQUIVALENCE = PASS
+
+La medicion publicada reproduce exactamente las cifras locales y la igualdad de payload/HTML: browser-production-equivalence.json. Regresion global publicada PASS.

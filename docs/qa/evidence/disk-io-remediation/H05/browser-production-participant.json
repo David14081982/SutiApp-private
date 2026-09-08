@@ -1,0 +1,119 @@
+{
+  "at": "2026-09-08T01:43:37.174Z",
+  "status": "PASS",
+  "target": "https://david14081982.github.io/SutiApp-private/",
+  "case": "certified participant via authorized impersonation",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "steps": [
+    {
+      "label": "Finance",
+      "projection_sha256": "66c261f0ba9ede83fe602683710d736a870a9a9bfd599b326d20d38615aa362f",
+      "calls": [
+        {
+          "rpc": "get_self_savings_if_changed",
+          "status": 200,
+          "bytes": 16405,
+          "modified": true,
+          "has_financial_payload": true
+        }
+      ]
+    },
+    {
+      "label": "Savings",
+      "projection_sha256": "66c261f0ba9ede83fe602683710d736a870a9a9bfd599b326d20d38615aa362f",
+      "calls": [
+        {
+          "rpc": "get_self_savings_if_changed",
+          "status": 200,
+          "bytes": 346,
+          "modified": false,
+          "has_financial_payload": false
+        }
+      ]
+    },
+    {
+      "label": "Finance_return",
+      "projection_sha256": "66c261f0ba9ede83fe602683710d736a870a9a9bfd599b326d20d38615aa362f",
+      "calls": []
+    }
+  ],
+  "navigation": {
+    "rpc_count": 2,
+    "full_projections": 1,
+    "bytes": 16751
+  },
+  "ui": {
+    "html_sha256": "8e96d8d8874e8bb0d994a8279a8439615b498b44c4ecd86fc7d492da9027e2cc",
+    "sections": [
+      "Detalle por año",
+      "Tu ahorro",
+      "Más detalles"
+    ],
+    "controls": [
+      {
+        "text": "",
+        "label": "Atrás",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "label": "Actualizar ahorro",
+        "disabled": false
+      },
+      {
+        "text": "",
+        "label": "Información",
+        "disabled": false
+      },
+      {
+        "text": "Retirar ahorro",
+        "label": null,
+        "disabled": true
+      },
+      {
+        "text": "Modificar monto",
+        "label": null,
+        "disabled": true
+      },
+      {
+        "text": "Historial15 movimientos",
+        "label": null,
+        "disabled": false
+      },
+      {
+        "text": "Retiros1 registros",
+        "label": null,
+        "disabled": false
+      },
+      {
+        "text": "Beneficiarios0 registrados",
+        "label": null,
+        "disabled": false
+      }
+    ],
+    "details": [
+      {
+        "code": "history",
+        "html_sha256": "a46d17784f3c8489180f703a59360841e8139c959968b5d41f005ac4a07ba19d"
+      },
+      {
+        "code": "withdrawals",
+        "html_sha256": "2a74b50d40eebf85d45fd660193fe87dbd8e3b2faceaf7edb6e8b6b6a083bf27"
+      },
+      {
+        "code": "beneficiaries",
+        "html_sha256": "f4a3bb9ea2be6448b6ce4925e89b17bc011563e61920e28acd3d0ce1742f3db3"
+      }
+    ]
+  },
+  "checks": [
+    "force refresh fetches full current projection",
+    "controlled backend error removes prior projection",
+    "manual retry restores authoritative projection"
+  ],
+  "page_errors": [],
+  "privacy": "No private payload or displayed amounts retained; complete in-memory JSON compared using SHA256"
+}

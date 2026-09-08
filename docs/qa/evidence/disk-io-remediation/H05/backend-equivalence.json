@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "checks": {
+    "original_functions": true,
+    "policies": true,
+    "tables": true,
+    "triggers": true
+  },
+  "original_function_count": 252,
+  "policies": 228,
+  "new_endpoint": [
+    {
+      "signature": "get_self_savings_if_changed(text)",
+      "owner": "postgres",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "5319d0ff16cf0a401393478b02a1632d"
+    }
+  ]
+}

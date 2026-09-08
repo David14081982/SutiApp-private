@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "repeat_migration_in_rollback": "PASS",
+  "unexpected_anon_grant_rejected": true,
+  "all_test_changes_rolled_back": true
+}

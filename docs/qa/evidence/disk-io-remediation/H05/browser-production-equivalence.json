@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "rows": [
+    {
+      "case": "empty",
+      "payload_equal": true,
+      "ui_equal": true,
+      "local_production_ui_equal": true,
+      "before": {
+        "rpc_count": 2,
+        "full_projections": 2,
+        "bytes": 1164
+      },
+      "after": {
+        "rpc_count": 2,
+        "full_projections": 1,
+        "bytes": 1215
+      }
+    },
+    {
+      "case": "-participant",
+      "payload_equal": true,
+      "ui_equal": true,
+      "local_production_ui_equal": true,
+      "before": {
+        "rpc_count": 2,
+        "full_projections": 2,
+        "bytes": 32100
+      },
+      "after": {
+        "rpc_count": 2,
+        "full_projections": 1,
+        "bytes": 16751
+      }
+    }
+  ]
+}

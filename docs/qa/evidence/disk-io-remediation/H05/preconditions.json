@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "phases": [
+    {
+      "phase": "H01",
+      "status": "PASS",
+      "file": "docs/qa/evidence/disk-io-remediation/H01/VERIFICATION.md",
+      "sha256": "c50d427af5bf1aaae8c2b771e3bdd05175d8e7030858f0fd0ceb18da62835565"
+    },
+    {
+      "phase": "H02",
+      "status": "PASS",
+      "file": "docs/qa/evidence/disk-io-remediation/H02/VERIFICATION.md",
+      "sha256": "fcc87cdfb89015ce4cbbec18772e10ce1a4a4fd18c001863745ec743eb6f2644"
+    },
+    {
+      "phase": "H03",
+      "status": "PASS",
+      "file": "docs/qa/evidence/disk-io-remediation/H03/VERIFICATION.md",
+      "sha256": "80599e67aaff1f586bf199b07d70321e4408551abec48b7cb7e3c601c7598e83"
+    },
+    {
+      "phase": "H04",
+      "status": "PASS",
+      "file": "docs/qa/evidence/disk-io-remediation/H04/VERIFICATION.md",
+      "sha256": "1f7b2d7b837a1888b4f15097fed6142005bdb7a31f78b7c1335d607ad48a5911"
+    }
+  ]
+}

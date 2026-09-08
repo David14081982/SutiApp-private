@@ -16,7 +16,12 @@
 | Rollback | recovery-rehearsal.json | PASS, diez casos y cliente abierto |
 | Build aislado | release-build.json | PASS, sólo dos chunks entre 108 módulos |
 | Regresión global local | global-local.json | PASS |
-| Regresión global publicada y cierre de entrega | Se añaden tras publicar el build verificado | PENDING |
+| Regresión global publicada | global-production.json | PASS |
+| Navegación/igualdad publicada | browser-production*.json, browser-production-equivalence.json | PASS |
+| Artefacto público y workflow | public-check-deployment.json, pages-deployment.json | PASS, 21 archivos idénticos |
+| Registry completo | registry-tests.txt | PASS, generación/freshness/lookup/incremental/secretos/determinismo |
+| Observación posterior | OBSERVATION.md | PASS, sin errores Savings ni temporales de su RPC |
+| Preservación del workspace y secretos | workspace-preservation.json, workspace-bundle-preservation.json | PASS |
 
 Los ensayos backend usan timeouts y transacciones revertidas. La captura de hashes de tablas es read-only. No se ejecutaron requests, retiros, liquidaciones, recálculos, imports ni escrituras financieras productivas para probar H05.
 

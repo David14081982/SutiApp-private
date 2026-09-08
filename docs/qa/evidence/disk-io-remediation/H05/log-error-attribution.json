@@ -1,0 +1,41 @@
+{
+  "http": 200,
+  "rows": [
+    {
+      "category": "PERMISSION_DENIED",
+      "object_type": "table",
+      "object": "program_requests",
+      "count": 1,
+      "diagnostic": null
+    },
+    {
+      "category": "PERMISSION_DENIED",
+      "object_type": "function",
+      "object": "get_current_affiliate_access_state",
+      "count": 1,
+      "diagnostic": null
+    },
+    {
+      "category": "PERMISSION_DENIED",
+      "object_type": "function",
+      "object": "get_impersonation_context",
+      "count": 1,
+      "diagnostic": null
+    },
+    {
+      "category": "PERMISSION_DENIED",
+      "object_type": "function",
+      "object": "get_admin_access_context",
+      "count": 1,
+      "diagnostic": null
+    },
+    {
+      "category": "PERMISSION_DENIED",
+      "object_type": "function",
+      "object": "get_effective_affiliate_id",
+      "count": 1,
+      "diagnostic": null
+    }
+  ],
+  "raw_messages_exported": false
+}

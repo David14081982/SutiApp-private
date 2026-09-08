@@ -1,0 +1,41 @@
+{
+  "files": [
+    {
+      "file": "AGENTS.md",
+      "sha256": "64dc43ca45f6e99b8378563679a3d41a0f0701d7788cdef8e340fbe7d786bc1a"
+    },
+    {
+      "file": ".agents/skills/pre-change-audit/SKILL.md",
+      "sha256": "e3966e1f37f2a515e872371334b828bb447a7293ba0869d9bb67e39221d7d20f"
+    },
+    {
+      "file": ".agents/skills/source-of-truth-guardian/SKILL.md",
+      "sha256": "36b241d7c80b54d215f95df5ee436678b2e4144417b74bd256b5ae7c4db4fddc"
+    },
+    {
+      "file": ".agents/skills/legacy-google-guardian/SKILL.md",
+      "sha256": "1a815fd4aa1ecf96c6c574838a85e265a84cf9924142282922257d14ff8c47e9"
+    },
+    {
+      "file": ".agents/skills/database-migration-guardian/SKILL.md",
+      "sha256": "7569f26d32e0e0539330bcc8559c8a5bac2ee2913305afc98b12f5571657efe0"
+    },
+    {
+      "file": ".agents/skills/supabase-security-review/SKILL.md",
+      "sha256": "0ea6b7a2c153c712833146158bdd0dd915b3922343d57838cf983da4da208cd2"
+    },
+    {
+      "file": ".agents/skills/post-change-verification/SKILL.md",
+      "sha256": "9193efb7689c511d4fd7fb7551f5c0b76a890ea006b5b25390121c392a3b189d"
+    },
+    {
+      "file": ".agents/skills/claude-ui-preservation-guardian/SKILL.md",
+      "sha256": "b91cf1b2a7b7280ff3d7a6a592110579315b78374c758b76fbdeebac64ad809a"
+    },
+    {
+      "file": ".agents/skills/sutiapp-architect-reviewer/SKILL.md",
+      "sha256": "10d4ff9e4fca9a2adf0f999aee7d4755521f8c65ebe9f9902ec444ce7fc30258"
+    }
+  ],
+  "authorization": "User H05 and master protocol; no additional owner permission required for this scope"
+}

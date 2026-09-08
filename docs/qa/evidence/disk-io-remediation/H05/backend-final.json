@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-08T01:47:41.123Z",
+  "status": "PASS",
+  "getter": "74f504337e4f336e6b12da3ab32f30a6",
+  "conditional": "5319d0ff16cf0a401393478b02a1632d",
+  "index_bytes": 770048,
+  "anon_execute": false,
+  "authenticated_execute": true,
+  "lock_waiters": 0
+}

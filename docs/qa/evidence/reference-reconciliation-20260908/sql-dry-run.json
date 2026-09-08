@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "migrationSha256": "3944c03e962577585d5043c5eb9b8dce997077f89deaddf53564c533593889c7",
+  "checks": [
+    "actual SQL relocation",
+    "equal-revision retry success/error lease release",
+    "immutable payload",
+    "stale lease denied",
+    "business fields unchanged",
+    "audit provenance",
+    "service-only / forced RLS",
+    "recovery restores same OID/grants"
+  ],
+  "persistentWrites": 0,
+  "result": [
+    {
+      "result": "PASS"
+    }
+  ]
+}

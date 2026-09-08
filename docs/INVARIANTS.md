@@ -1,5 +1,14 @@
 # Invariantes
 
+## Referencias de sincronización — ADR-107
+
+- **INV-216:** El número de fila Google nunca identifica una solicitud. Relocalizar requiere UUID/folio
+  único, control/fecha/hash verificados y lease vigente de la revisión actual para confirmar en Supabase.
+  Un destino confirmado ausente se conserva como error explícito; nunca se recrea ni reutiliza otra fila.
+- **INV-217:** Reintentar la misma revisión libera el lease y actualiza sólo transporte. No cambia
+  workflow, estado financiero, initial_row ni un estado legacy posterior. La procedencia de relocalización
+  queda en auditoría privada append-only; una recuperación no borra esa historia.
+
 ## Aclaración vigente de INV-212 — formato Google, 2026-09-08
 
 Por instrucción posterior expresa, A muestra folio SR autoritativo, J fecha nativa `dd/MM/yyyy`

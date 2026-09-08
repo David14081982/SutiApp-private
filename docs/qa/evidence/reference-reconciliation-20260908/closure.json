@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "productionMigration": "20260908000300",
+  "gasVersion": 15,
+  "edgeVersionUnchanged": 41,
+  "frontendChanges": 0,
+  "existingRPCIdentityAndGrantsPreserved": true,
+  "newPrivateAuditTable": true,
+  "businessRowsUnchangedExceptAuthorizedLocators": 13,
+  "repairedRowReferences": 3,
+  "repairedLegacyReferences": 2,
+  "missingRowsPreservedAsError": 9,
+  "targetSheetWrites": 0,
+  "AHOnwardWrites": 0,
+  "retryNewRequests": 0,
+  "securityReadback": true,
+  "UIRegression": "NOT APPLICABLE: no frontend/shared assets/viewer/Auth source changes",
+  "globalSuites": "not run; focal scope",
+  "visualCheck": "CellData format/validation equality; native rendered inspection unavailable"
+}

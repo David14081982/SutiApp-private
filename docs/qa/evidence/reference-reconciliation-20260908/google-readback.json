@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "metadataCellsChanged": 30,
+  "registryColumns": [
+    "K",
+    "L",
+    "O",
+    "P"
+  ],
+  "targetSheetCellsChanged": 0,
+  "targetRanges": [
+    "A1:A2320",
+    "A2317:AG2320"
+  ],
+  "AHOnwardWrites": 0,
+  "validationAndFormatsPreserved": true,
+  "source": "fresh connector reads before and after exact batch",
+  "spreadsheetId": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80"
+}

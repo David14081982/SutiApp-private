@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "rowsChecked": 13,
+  "auditEventsRetained": 12,
+  "persistentWrites": 0,
+  "querySha256": "c63deb6a9a190d31fa4271eb505a46bb8bf7f2a1da602fd045e778dbdcf3abb1",
+  "checks": [
+    "apply and reverse exact live transport/locator plan",
+    "full request and outbox hashes equal excluding updated_at",
+    "audit retained before final transaction rollback"
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "status": "PASS",
+  "querySha256": "81e319be3a48b47d32e55d79aed8afd33c6eb08481f87da25a8cf847f272ca41",
+  "plan": {
+    "rows": [
+      {
+        "id": "5cd836ad-3681-40c8-8cfc-803ac1af2e34",
+        "folio": "SR-2026-000121",
+        "row": 2318,
+        "oldRow": 2327,
+        "registryRow": 12,
+        "legacyReference": "Historial de solicitudes!A2327",
+        "changed": true
+      },
+      {
+        "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+        "folio": "SR-2026-000167",
+        "row": null,
+        "oldRow": 2317,
+        "registryRow": 2,
+        "legacyReference": "Historial de solicitudes!A2317",
+        "changed": true
+      },
+      {
+        "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+        "folio": "SR-2026-000168",
+        "row": null,
+        "oldRow": 2318,
+        "registryRow": 3,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+        "folio": "SR-2026-000169",
+        "row": null,
+        "oldRow": 2319,
+        "registryRow": 4,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+        "folio": "SR-2026-000170",
+        "row": null,
+        "oldRow": 2320,
+        "registryRow": 5,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "025015eb-3346-4640-802d-62a70f538b7a",
+        "folio": "SR-2026-000171",
+        "row": null,
+        "oldRow": 2321,
+        "registryRow": 6,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+        "folio": "SR-2026-000172",
+        "row": null,
+        "oldRow": 2322,
+        "registryRow": 7,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+        "folio": "SR-2026-000173",
+        "row": null,
+        "oldRow": 2323,
+        "registryRow": 8,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+        "folio": "SR-2026-000174",
+        "row": null,
+        "oldRow": 2324,
+        "registryRow": 9,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "31fce914-3e81-4865-b673-180d588f0d50",
+        "folio": "SR-2026-000175",
+        "row": null,
+        "oldRow": 2325,
+        "registryRow": 10,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "af0f53b7-a990-491c-a792-e69f30760fe4",
+        "folio": "SR-2026-000194",
+        "row": 2317,
+        "oldRow": 2326,
+        "registryRow": 11,
+        "legacyReference": null,
+        "changed": true
+      },
+      {
+        "id": "5202bff1-f85d-4390-bd58-b0826f9fc730",
+        "folio": "SR-2026-000195",
+        "row": 2319,
+        "oldRow": 2328,
+        "registryRow": 13,
+        "legacyReference": "Historial de solicitudes!A2328",
+        "changed": true
+      },
+      {
+        "id": "a3c2b243-4d0c-4fb2-a099-ddc02499a434",
+        "folio": "SR-2026-000196",
+        "row": 2320,
+        "oldRow": 2320,
+        "registryRow": 14,
+        "legacyReference": null,
+        "changed": false
+      }
+    ],
+    "moved": 3,
+    "missing": 9,
+    "alreadyCorrect": 1,
+    "targetWrites": 0,
+    "AHOnwardWrites": 0
+  }
+}

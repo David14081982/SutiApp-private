@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "oid": 48657,
+  "function_md5": "d2dddcdcb96425eb38636d02ccae26f0",
+  "acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "relrowsecurity": true,
+  "relforcerowsecurity": true,
+  "anon_rpc": false,
+  "authenticated_rpc": false,
+  "service_rpc": true,
+  "anon_audit": false,
+  "authenticated_audit": false,
+  "service_audit_read": true,
+  "service_audit_write": false,
+  "migration_entries": 1,
+  "audit_rows": 12,
+  "missing_retry_suspended": 9
+}

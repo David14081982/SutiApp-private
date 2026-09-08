@@ -1,5 +1,13 @@
 # H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001
 
+## Resumed authorization — 2026-09-08
+
+Owner authorized and completed a separate Supabase restart, then explicitly requested applying this
+pending correction ("hazla"). DB, REST and Auth recovered. Resume the originally audited scope with
+fresh source/Google reads, exact live backups, transactional dry-run/recovery, deployment and readback.
+Earlier BLOCKED/restart-deferred sections below are historical, not the current authorization.
+No business transitions, request/document deletion, financial calculations or AH+ writes are authorized.
+
 ## PRE-CHANGE AUDIT — PASS
 
 Owner explicitly authorizes reconciling synchronization references and continuing delivery. Scope:
@@ -46,7 +54,38 @@ sensitive_change_audit; no human actor is invented or impersonated.
 Legacy classification: SAFE CHANGE, expressly authorized technical references only.
 Source-of-truth verdict: SAFE. Migration/security verdict: PASS subject to dry-run and current backup.
 
-## RESULT — BLOCKED, not deployed
+## H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001 RESULT — PASS
+
+Status: PASS — applied and verified after the owner explicitly resumed application.
+Files changed: original receiver/migration/test candidates in e5c9961; exact live RPC recovery;
+test-request-google-reference-live.js; scoped governance/README, derived registry and focal evidence.
+Source-of-truth verdict: SAFE. Supabase UUID/folio/immutable payload remain authoritative; Google row
+positions remain derived. No secondary business source, fallback or recreated missing record.
+Invariant verdict: PASS. Three moved outbox/registry references repaired; two matching legacy_reference
+values corrected. Nine missing prior QA targets visibly marked error, retained with historical locator
+and next_attempt_at=infinity; a manual authorized retry remains possible if the real row is restored.
+Build: actual SQL migration compiled/applied; actual GAS source executed in isolated tests and cloud
+deployment source read back. Frontend build NOT APPLICABLE: no frontend or Edge changes.
+Tests: 6 receiver + 9 bridge cases PASS; live SQL migration/security/recovery dry-run PASS with ROLLBACK;
+one-off apply/recovery dry-run PASS on 13 rows with all business/transport values restored, retaining
+12 audit events until final ROLLBACK. Live equal-revision Edge syncRequest retry PASS for SR-2026-000121:
+attempts 1→2, revision 1 unchanged, synced, lease released, exact full request hash unchanged.
+Security: original RPC OID 48657 and ACL preserved; new audit table forced RLS, browser denied,
+service_role SELECT only. No secret/PII payload in public code/evidence; private backups kept off Git.
+Legacy impact: GAS15, same deployment/manifest/OAuth. Exactly 30 technical K/L/O/P cell values changed;
+formats and validation retained. A1:A2320 and A2317:AG2320 identical before/after repair and real retry;
+no new row, no duplicate, Y=Iniciado retained. AH+ is outside all write requests and receiver write width.
+Unexpected files changed: none; unrelated primary-workspace changes preserved.
+Known limitations: nine previously removed Google QA rows remain absent by design and are no longer
+reported as synced. No claim to recreate those rows or execute their business workflows. Google visual
+check uses CellData/format/validation equality; no authenticated native rendered-sheet inspection.
+Evidence: backup.json, sql-dry-run.json, reference-recovery-dry-run.json, sql-apply.json,
+google-deploy.json, references-apply.json, sql-readback.json, google-readback.json, live-retry.json,
+retry-google-readback.json, receiver-tests.json, bridge-tests.json and architect-review.md.
+Private recovery: C:/tmp/sutiapp-reference-reconcile-20260908; live RPC/source/cell backups and guarded
+SQL/Google inverse plans. Recovery never deletes the new provenance audit history.
+
+## Historical result before availability recovery — BLOCKED, not deployed
 
 Status: BLOCKED by actual Supabase DB and REST UNHEALTHY. Repeated Management SQL544, including
 SELECT1, prevented current RPC backup and live dry-run. No external writes have been attempted.

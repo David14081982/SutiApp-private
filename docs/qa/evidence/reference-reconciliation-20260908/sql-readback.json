@@ -1,0 +1,161 @@
+{
+  "status": "PASS",
+  "businessRowsUnchanged": 13,
+  "rows": [
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "folio": "SR-2026-000167",
+      "legacy_reference": "Historial de solicitudes!A2317",
+      "google_row": 2317,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "folio": "SR-2026-000175",
+      "legacy_reference": null,
+      "google_row": 2325,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "5cd836ad-3681-40c8-8cfc-803ac1af2e34",
+      "folio": "SR-2026-000121",
+      "legacy_reference": "Historial de solicitudes!A2318",
+      "google_row": 2318,
+      "phase": "synced",
+      "error_code": null,
+      "revision": 1,
+      "synced_revision": 1,
+      "lease_until": null
+    },
+    {
+      "id": "af0f53b7-a990-491c-a792-e69f30760fe4",
+      "folio": "SR-2026-000194",
+      "legacy_reference": null,
+      "google_row": 2317,
+      "phase": "synced",
+      "error_code": null,
+      "revision": 1,
+      "synced_revision": 1,
+      "lease_until": null
+    },
+    {
+      "id": "5202bff1-f85d-4390-bd58-b0826f9fc730",
+      "folio": "SR-2026-000195",
+      "legacy_reference": "Historial de solicitudes!A2319",
+      "google_row": 2319,
+      "phase": "synced",
+      "error_code": null,
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "a3c2b243-4d0c-4fb2-a099-ddc02499a434",
+      "folio": "SR-2026-000196",
+      "legacy_reference": null,
+      "google_row": 2320,
+      "phase": "synced",
+      "error_code": null,
+      "revision": 1,
+      "synced_revision": 1,
+      "lease_until": null
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "folio": "SR-2026-000170",
+      "legacy_reference": null,
+      "google_row": 2320,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "folio": "SR-2026-000171",
+      "legacy_reference": null,
+      "google_row": 2321,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "folio": "SR-2026-000173",
+      "legacy_reference": null,
+      "google_row": 2323,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "folio": "SR-2026-000168",
+      "legacy_reference": null,
+      "google_row": 2318,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "folio": "SR-2026-000172",
+      "legacy_reference": null,
+      "google_row": 2322,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "folio": "SR-2026-000169",
+      "legacy_reference": null,
+      "google_row": 2319,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "folio": "SR-2026-000174",
+      "legacy_reference": null,
+      "google_row": 2324,
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_TARGET_MISSING",
+      "revision": 3,
+      "synced_revision": 3,
+      "lease_until": null
+    }
+  ],
+  "audit": [
+    {
+      "action": "TARGET_MISSING",
+      "actor_kind": "OWNER_RECONCILIATION",
+      "count": 9
+    },
+    {
+      "action": "RELOCATED",
+      "actor_kind": "OWNER_RECONCILIATION",
+      "count": 3
+    }
+  ]
+}

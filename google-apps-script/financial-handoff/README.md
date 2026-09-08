@@ -11,8 +11,14 @@ o folio sin duplicar. La corrección de presentación permite A/J sobre identida
 transiciones siguen cambiando Y. Igual revisión conserva estados legacy posteriores como Iniciado.
 AH+ queda excluido. No cambian cálculos, triggers ni workflows.
 
-Mover/borrar filas manualmente puede invalidar referencias de transporte inmutables. Ese conflicto
-se conserva visible; esta H no recrea filas ni modifica datos Supabase para resolverlo.
+## Referencias verificadas — ADR-107, 2026-09-08
+
+GAS15 localiza una fila movida por UUID/folio único y verifica control, fecha y hash inicial antes de
+reparar su referencia técnica. Supabase confirma la nueva posición sólo con lease válido de la revisión
+vigente; registra procedencia en program_request_google_reference_audit, privada y append-only.
+Un registro confirmado ausente falla REQUEST_SYNC_TARGET_MISSING; no se recrea ni usa otra identidad.
+Reintentar igual revisión libera el lease sin regresar Y ni cambiar negocio. La reparación puntual
+alineó tres localizadores y conservó nueve ausencias como error explícito. AH+ sigue excluido.
 
 ## Corte anterior — ADR-106 (presentación sustituida por la instrucción anterior)
 

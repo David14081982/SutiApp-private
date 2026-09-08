@@ -1,5 +1,15 @@
 # Sistemas Google legacy
 
+## Reparación de referencias autorizada — ADR-107, 2026-09-08
+
+SAFE CHANGE aplicada en el mismo receptor GAS15 y mismo deployment. Tres referencias del registry
+SutiApp Financial Handoff!L quedaron alineadas con las filas verificadas de Historial de solicitudes.
+Nueve registros técnicos de pruebas ausentes quedaron K=failed, O=REQUEST_SYNC_TARGET_MISSING y P con
+motivo; el dropdown K permite received/processing/processed/failed y se conservó su validación.
+La corrección puntual no escribió ninguna celda de Historial de solicitudes, ni AH+, fórmulas, cálculos
+o triggers. El reintento real de SR-2026-000121 conservó toda la fila y Y=Iniciado, sin duplicados.
+Backup exacto y plan inverso privados; readback CellData comprueba únicamente 30 celdas técnicas cambiadas.
+
 ## Aclaración posterior expresa — presentación A/J/Y, 2026-09-08
 
 H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 sustituye sólo la presentación del contrato siguiente:

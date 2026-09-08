@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001
+
+Aplicación autorizada después del reinicio separado de Supabase. Migración 20260908000300 y GAS15
+activos con OID/grants/deployment previos. Tres localizadores corregidos y nueve filas QA ausentes
+señaladas como error de transporte, sin borrar ni recrear información. Treinta celdas técnicas K/L/O/P
+modificadas; Historial de solicitudes y AH+ intactos. Trece registros de negocio comparados sin cambios,
+salvo dos legacy_reference autorizados. Reintento real SR-2026-000121 PASS: misma revisión, lease libre,
+sin duplicados ni cambio de Iniciado. Backup, dry-run SQL/recovery, receiver/bridge y readback PASS.
+Sin frontend/Edge, estados/workflow, documentos, cálculos, permisos existentes ni suites globales.
+La tabla privada de procedencia conserva 3 RELOCATED y 9 TARGET_MISSING. ADR-107, INV-216/217.
+Evidencia: docs/qa/H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001.md.
+
 ## 2026-09-08 — H-REQUESTS-GOOGLE-REGISTER-FORMAT-001
 
 Corrección owner-authorized de presentación Google: A folio SR, J fecha nativa dd/MM/yyyy,

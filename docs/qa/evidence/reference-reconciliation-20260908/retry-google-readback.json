@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "sameRevisionRetry": "SR-2026-000121",
+  "allReadCellsAndFormatsUnchanged": true,
+  "targetRowCount": 2320,
+  "duplicatesCreated": 0,
+  "YStatePreserved": "Iniciado",
+  "checkedRanges": [
+    "Historial de solicitudes!A1:A2320",
+    "Historial de solicitudes!A2317:AG2320",
+    "SutiApp Financial Handoff!A1:P40"
+  ],
+  "AHOnwardWrites": 0,
+  "verification": "connector CellData equality before/after real Edge retry"
+}

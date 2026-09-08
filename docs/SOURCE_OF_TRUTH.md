@@ -1,5 +1,14 @@
 # Fuentes de verdad
 
+## Referencias de sincronización — ADR-107, 2026-09-08
+
+Supabase program_requests conserva UUID/folio y negocio; program_request_google_sync.initial_row conserva
+la captura inmutable de entrega. Google Historial de solicitudes es la proyección; su posición es derivada.
+El receptor existente localiza por identidad única/control/fecha/hash y finish_program_request_google_sync
+confirma una relocalización con lease válido. program_request_google_reference_audit registra procedencia,
+no otra solicitud ni otra autoridad. Una fila ausente produce error visible y nunca resurrección de datos.
+La reparación conserva los 13 registros y todos sus campos de negocio salvo 2 localizadores legacy_reference.
+
 ## Formato del registro Google — 2026-09-08
 
 H-REQUESTS-GOOGLE-REGISTER-FORMAT-001: `program_requests.folio` es la única autoridad del folio SR

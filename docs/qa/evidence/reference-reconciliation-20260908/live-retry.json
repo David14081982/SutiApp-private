@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "requestFolio": "SR-2026-000121",
+  "action": "syncRequest",
+  "sameRevision": 1,
+  "googleRow": 2318,
+  "attemptsBefore": 1,
+  "attemptsAfter": 2,
+  "phase": "synced",
+  "leaseReleased": true,
+  "allRequestFieldsUnchanged": true,
+  "immutableInitialRowUnchanged": true,
+  "newRequests": 0,
+  "approvalActions": 0
+}

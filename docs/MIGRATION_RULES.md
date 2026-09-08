@@ -1,5 +1,18 @@
 # Reglas de migración
 
+## 20260908000300 — referencias de sincronización verificadas
+
+APPLIED / VERIFIED — PASS. Conserva firma, OID 48657 y ACL de finish_program_request_google_sync;
+añade auditoría privada con RLS forzada y SELECT service-only. No cambia writers de aprobación/workflow.
+Backup del RPC real y GAS14 en C:/tmp/sutiapp-reference-reconcile-20260908. Dry-run de migración y
+recuperación del RPC PASS con ROLLBACK; aplicación y reversión de los 13 registros también PASS,
+conservando las 12 entradas de auditoría dentro de la prueba antes del ROLLBACK final.
+La recuperación versionada restaura exactamente el RPC anterior y conserva la tabla/historia de auditoría.
+El plan inverso de localizadores/errores y las celdas Google previas son privados, con guardas de revisión.
+Aplicados 3 localizadores, 2 legacy_reference y 9 errores de destino ausente; 0 estados de negocio alterados.
+GAS15 usa el deployment previo. Reintento real de igual revisión libera lease y conserva Iniciado.
+Evidencia: docs/qa/evidence/reference-reconciliation-20260908.
+
 ## 20260904000300 — reparación certificada de vínculos Auth por CSV
 
 Estado: `APPLIED / VERIFIED — PASS`. La migración agrega manifest, snapshot y reparación auditada service-only; no modifica filas al instalarse. El writer fija el CSV de 947 filas por SHA-256, bloquea `public.affiliates`, toma locks de los principals vinculados y recalcula dentro de la transacción la unicidad de email/control CSV, control Supabase, elegibilidad, archivo y ocupación del target. Cualquier carrera produce `LIVE_PREFLIGHT_CHANGED` y cero escrituras.

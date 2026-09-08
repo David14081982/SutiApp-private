@@ -1,8 +1,11 @@
 begin;
--- Candidate recovery from committed baseline; live definition must match before application.
--- Preserve reconciliation audit history.
-create or replace function public.finish_program_request_google_sync(p_request_id uuid,p_revision bigint,p_initial_row jsonb,p_google_row integer,p_error_code text default null)
-returns jsonb language plpgsql security definer set search_path='' as $$
+-- Restore behavior only. Preserve all reconciliation audit history.
+CREATE OR REPLACE FUNCTION public.finish_program_request_google_sync(p_request_id uuid, p_revision bigint, p_initial_row jsonb, p_google_row integer, p_error_code text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 declare s public.program_request_google_sync%rowtype;
 begin
   if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;
@@ -32,5 +35,6 @@ begin
       where id=p_request_id and program_id='prestamo' and status='approved' and financial_processing_status in('ready_for_handoff','in_progress','failed');
   end if;
   return public.get_program_request_google_sync(p_request_id);
-end $$;
+end $function$
+;
 commit;

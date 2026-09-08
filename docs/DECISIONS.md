@@ -1,5 +1,24 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-107 — Referencias de sincronización verificadas, 2026-09-08
+
+El propietario autorizó reparar las referencias desplazadas y aplicar la corrección después de
+recuperar Supabase. UUID/folio e initial_row siguen siendo autoridad; el número de fila es un localizador
+derivado. Apps Script puede relocalizar sólo por identidad única, control, fecha y hash inicial verificados.
+El finish RPC acepta el cambio sólo con lease activo de la revisión vigente y conserva firma/OID/grants.
+Una entrega repetida de igual revisión termina su lease sin alterar estados de negocio ni regresar Y.
+
+Las filas confirmadas ausentes fallan con REQUEST_SYNC_TARGET_MISSING: no se recrean ni se asignan al
+ocupante de la posición anterior. Se conserva la última referencia como procedencia, marcada con error.
+La reparación puntual corrigió 3 localizadores, 2 legacy_reference existentes y 30 celdas técnicas K/L/O/P;
+9 filas QA ausentes quedaron en error de transporte sin reintento automático, conservando todo el histórico.
+La tabla privada program_request_google_reference_audit conserva procedencia append-only WORKER u
+OWNER_RECONCILIATION, con RLS forzada y lectura service-only. No inventa un actor Auth humano.
+La recuperación restaura el RPC anterior y retiene la auditoría. GAS15 y migración 20260908000300
+aplicados; reintento real de igual revisión, reversión transaccional y equivalencia de datos PASS.
+Sin cambios de documentos, cálculos, aprobación, workflows, frontend o AH+. Esta autorización sustituye
+únicamente la exclusión de reparación de referencias de la aclaración de formato de ADR-106.
+
 ## Aclaración posterior de ADR-106 — formato Google, 2026-09-08
 
 El propietario instruye A=`program_requests.folio` (SR), J=`dd/MM/yyyy` y aprobación Y=`Aprobado`.

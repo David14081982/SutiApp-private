@@ -1,0 +1,24 @@
+'use strict';
+const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert').strict,crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),folder=path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908');
+const read=f=>fs.readFileSync(path.join(root,f),'utf8'),git=args=>cp.execFileSync('git',['-c','core.quotePath=false',...args],{cwd:root,encoding:'utf8',maxBuffer:30*1024*1024});
+const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
+const sources=['financial-legacy-repository.js','operations-store.jsx','program-request-repository.js','screens-admin-finanzas.jsx','screens-historial.jsx'];
+function sections(s){return new Map(s.split(/\/\* @@file ([^*]+) \*\//).slice(1).reduce((a,v,i,all)=>i%2?a:a.concat([[v,all[i+1].replace(/\r/g,'')]]),[]));}
+const old=sections(git(['show','435fc47:app/bundle.js'])),current=sections(read('app/bundle.js'));
+const bundled=sources.filter(s=>s!=='financial-legacy-repository.js');
+assert.equal(current.size,109);assert.deepEqual([...current.keys()].filter(k=>current.get(k)!==old.get(k)).sort(),bundled.sort());
+assert(read('SutiApp.html').includes('financial-legacy-repository.js?v=11'),'EXTERNAL_REPOSITORY_CACHE_VERSION');
+assert.equal(read('sw.js').replaceAll('176','175').replaceAll('229','228').replace('financial-legacy-repository.js?v=11','financial-legacy-repository.js?v=10').replace(/\r/g,''),git(['show','435fc47:sw.js']).replace(/\r/g,''),'SHARED_WORKER_LOGIC_CHANGED');
+const required=['candidate-bridge.json','candidate-browser.json','admin/isolated-browser.json','installed-sql.json','controlled-approval.json','backend-apply.json','snapshot-validation-apply.json','edge-deploy-edge.json','google-deploy.json','configuration-reconcile.json','security-live.json','google-live-readback.json','modal-live/local_candidate.json','realtime-local-review.json','realtime-local-decide.json'];
+for(const f of required)assert.equal(JSON.parse(fs.readFileSync(path.join(folder,f),'utf8')).status,'PASS',f);
+const cases=JSON.parse(fs.readFileSync(path.join(folder,'live-requests.json'),'utf8'));assert.equal(cases.length,9);assert(cases.every(r=>r.review==='PASS'&&r.decision==='PASS'&&r.selfHistory==='PASS'&&r.google_sync.phase==='synced'));assert.equal(cases.find(r=>r.family==='service'&&r.branch==='cancel').automaticCronDelivery,'PASS');
+const files=[...new Set((git(['diff','--name-only','435fc47'])+'\n'+git(['ls-files','--others','--exclude-standard'])).trim().split(/\r?\n/))].filter(Boolean);
+const exact=['SutiApp.html','sw.js','app/bundle.js',...sources.map(s=>'app/'+s),'docs/AGENT_CHANGELOG.md','docs/DECISIONS.md','docs/INVARIANTS.md','docs/SOURCE_OF_TRUTH.md','docs/LEGACY_GOOGLE_SYSTEMS.md','google-apps-script/financial-handoff/Code.gs','google-apps-script/financial-handoff/README.md','supabase/functions/financial-legacy/index.ts','supabase/functions/financial-legacy/request-google-sync.js'];
+const unexpected=files.filter(f=>!exact.includes(f)&&!/^docs\/architecture\//.test(f)&&!/^docs\/qa\/(?:H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001\.md|evidence\/requests-workflow-google-sync-20260908\/)/.test(f)&&!/^scripts\/(?:audit|deploy|prepare|reconcile|repair|test)-requests-workflow-.*\.js$/.test(f)&&!/^supabase\/(?:migrations|recovery)\/20260908000[12]00_/.test(f));assert.deepEqual(unexpected,[]);
+const env={};for(const line of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=line.indexOf('=');if(i>0)env[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+const oauth=JSON.parse(fs.readFileSync('C:/Users/david/.clasprc.json','utf8')).tokens.default,worker=JSON.parse(fs.readFileSync('C:/tmp/sutiapp-requests-workflow-sync-backup-20260908/worker-config.json','utf8'));
+const secrets=[...Object.entries(env).filter(([k])=>/SECRET|ACCESS_TOKEN|PASSWORD/.test(k)).map(([,v])=>v),oauth.refresh_token,oauth.client_secret,worker.secret].filter(v=>typeof v==='string'&&v.length>=8);
+const exposed=files.filter(f=>fs.existsSync(path.join(root,f))&&secrets.some(secret=>fs.readFileSync(path.join(root,f)).includes(Buffer.from(secret))));assert.deepEqual(exposed,[],'SECRET_EXPOSURE');
+const proof={status:'PASS',baseline:'435fc47',releaseSources:109,changedBundleSections:bundled,externalRepositoryVersion:11,sharedWorkerLogicUnchanged:true,bundleSha256:sha(fs.readFileSync(path.join(root,'app/bundle.js'))),htmlSha256:sha(fs.readFileSync(path.join(root,'SutiApp.html'))),requiredEvidence:required,controlledRetainedRequests:9,automaticCronDelivery:'PASS',unexpectedFiles:unexpected,secretExposures:exposed,files};
+fs.writeFileSync(path.join(folder,'closure-checks.json'),JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify({status:proof.status,releaseSources:109,changedBundleSections:bundled,externalRepositoryVersion:11,unexpectedFiles:unexpected,secretExposures:exposed,files:files.length}));

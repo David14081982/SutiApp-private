@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "environment": "isolated actual React screens and store",
+  "results": [
+    {
+      "test": "prestamo in_review updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "prestamo approved updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "prestamo rejected updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "prestamo cancelled updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "membership in_review updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "membership approved updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "membership rejected updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "membership cancelled updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "puertas in_review updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "puertas approved updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "puertas rejected updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "puertas cancelled updates open tracking from persisted projection",
+      "result": "PASS"
+    },
+    {
+      "test": "foreground recovery without realtime delivery",
+      "result": "PASS"
+    },
+    {
+      "test": "tracking no horizontal overflow 390",
+      "result": "PASS"
+    },
+    {
+      "test": "tracking no horizontal overflow 768",
+      "result": "PASS"
+    },
+    {
+      "test": "tracking no horizontal overflow 1440",
+      "result": "PASS"
+    },
+    {
+      "test": "identity switch discards late private response and replaces subscription",
+      "result": "PASS"
+    },
+    {
+      "test": "logout clears private state and realtime channel",
+      "result": "PASS"
+    },
+    {
+      "test": "failed read is explicit and retry rereads canonical status",
+      "result": "PASS"
+    },
+    {
+      "test": "history list receives same mutation invalidation and preserves filters",
+      "result": "PASS"
+    }
+  ],
+  "errors": []
+}

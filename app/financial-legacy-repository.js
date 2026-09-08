@@ -85,6 +85,7 @@
     if (signal && signal.aborted) throw abortedInvocation();
     if (error) await throwInvocationError(error, data, 'FINANCIAL_LEGACY_UNAVAILABLE');
     if (!data || !data.data) throw new Error('FINANCIAL_LEGACY_INVALID_RESPONSE');
+    if (['loanSessionConfirm','programPaymentSessionConfirm','approve','handoff'].includes(payload.action)) window.dispatchEvent(new Event('suti:request-changed'));
     return data.data;
   }
   async function invokeLoanSnapshotRpc(payload, options) {

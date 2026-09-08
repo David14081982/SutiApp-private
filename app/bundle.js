@@ -7712,6 +7712,12 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
   function key(){return crypto.randomUUID();}
+  async function refreshRequest(id){
+    window.dispatchEvent(new Event('suti:request-changed'));
+    // The backend outbox already owns delivery; a closed tab or failed request cannot lose it.
+    // Refresh the persisted action immediately; Google latency does not hold the Admin UI.
+    Promise.resolve().then(()=>window.FinancialLegacyRepository.invoke({action:'syncRequest',request_id:id})).catch(()=>{/* The durable job remains pending. */});
+  }
   async function getWorkflowState(id){const r=await db().rpc('get_self_request_workflow_state',{p_request_id:id});return Object.freeze(r.error?{available:false,reason:'WORKFLOW_PROJECTION_UNAVAILABLE',message:'Seguimiento no disponible temporalmente.'}:r.data||{available:false,message:'Seguimiento no disponible temporalmente.'});}
   async function withWorkflow(row){const projected=project(row);if(projected.workflow_state)return projected;const workflow_state=await getWorkflowState(projected.id);return Object.freeze(Object.assign({},projected,{workflow_state}));}
   function project(row){
@@ -7745,9 +7751,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
-    if(r.error)throw r.error;return withWorkflow(r.data);
+    if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -7792,7 +7798,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
     const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
-    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
+    const sync=db().rpc('get_program_request_google_sync',{p_request_id:id});
+    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents,sync]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
     const currentById=new Map(currentRows.map((document)=>[document.id,document]));
     const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
@@ -7805,15 +7812,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       current_documents_available:!parts[2].error,
       admin_events:Object.freeze(parts[3].error?[]:parts[3].data||[]),
       admin_events_available:!parts[3].error,
+      google_sync:parts[4].error?{phase:'error',error_code:'REQUEST_SYNC_STATUS_UNAVAILABLE'}:parts[4].data,
     }));
   }
   async function financialDetail(id){const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
   async function adminFlowDetail(id){const base=await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
-  async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
-  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
-  async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
-  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;return Object.freeze(r.data);}
+  async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
+  async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
   window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
 })();
 })();
@@ -19211,6 +19219,14 @@ Object.assign(window, {
     useState
   } = React;
   const I = window.Icon;
+  const REQUEST_LABELS = {
+    submitted: 'Enviada',
+    requires_financial_processing: 'Pendiente de revisión',
+    in_review: 'En revisión',
+    approved: 'Aprobada',
+    rejected: 'Rechazada',
+    cancelled: 'Cancelada'
+  };
   const META = {
     revision: {
       tone: 'amber',
@@ -19234,15 +19250,17 @@ Object.assign(window, {
     }
   };
   function StatusPill({
-    estado
+    estado,
+    requestStatus
   }) {
     const m = META[estado] || META.revision;
     // Icono v\u00eda registro (F1.6): 'hist.estado.<estado>' \u2192 icono de estadoMeta.
     const r = window.AssetsResolver ? window.AssetsResolver.resolve('hist.estado.' + estado) : null;
+    const label = REQUEST_LABELS[requestStatus] || m.label;
     return React.createElement(window.Badge, {
       tone: m.tone,
       icon: r && r.icon || m.icon
-    }, m.label);
+    }, label);
   }
   function HistorialScreen({
     app
@@ -19383,7 +19401,7 @@ Object.assign(window, {
         fontSize: 13,
         fontWeight: 700
       }
-    }, 'En revisión'), React.createElement('span', {
+    }, REQUEST_LABELS[activa.requestStatus] || 'En revisión'), React.createElement('span', {
       style: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -19501,7 +19519,8 @@ Object.assign(window, {
         color: 'var(--guinda)'
       }
     }, s.monto == null ? 'Por cotizar' : window.money(s.monto)), React.createElement(StatusPill, {
-      estado: s.estado
+      estado: s.estado,
+      requestStatus: s.requestStatus
     })), React.createElement('div', {
       style: {
         fontSize: 12,
@@ -19521,7 +19540,20 @@ Object.assign(window, {
     app,
     params
   }) {
-    const s = params.s;
+    const operations = window.useOperationsStore();
+    const requestId = params.s && params.s.sourceId;
+    const s = operations.all().find(row => row.sourceId === requestId);
+    if (!s) return React.createElement('div', {
+      style: {
+        padding: 20
+      }
+    }, React.createElement('button', {
+      onClick: app.back
+    }, 'Volver al historial'), React.createElement('p', {
+      role: 'status'
+    }, operations.state().phase === 'error' ? 'No pudimos actualizar el seguimiento.' : operations.state().phase === 'loaded' ? 'La solicitud no está disponible en tu historial.' : 'Actualizando seguimiento…'), operations.state().phase === 'error' && React.createElement('button', {
+      onClick: operations.retry
+    }, 'Reintentar'));
     const m = META[s.estado] || META.revision;
     return React.createElement('div', {
       style: {
@@ -19605,7 +19637,8 @@ Object.assign(window, {
         fontFamily: 'var(--mono)'
       }
     }, s.id)), React.createElement(StatusPill, {
-      estado: s.estado
+      estado: s.estado,
+      requestStatus: s.requestStatus
     })), React.createElement('div', {
       style: {
         display: 'flex',
@@ -25549,7 +25582,7 @@ Object.assign(window, {
       fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
       plazo: (isLoan || isProductPayment) && r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : isQuote ? approved ? 'Cotización recibida' : 'Por cotizar' : state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
       subtipo: isLoan ? 'Préstamo' : isProductPayment ? 'Producto vía nómina' : r.empresaNombre || r.program_id || '',
-      motivo: rejected ? r.company_notes || 'La solicitud fue cerrada por el área responsable.' : '',
+      motivo: rejected ? r.decision_comment || 'La solicitud fue cerrada por el área responsable.' : '',
       steps: flow.steps,
       workflowAvailable: flow.available,
       workflowMessage: flow.message,
@@ -25561,56 +25594,131 @@ Object.assign(window, {
   const requestRow = r => common(r, 'benefit'),
     quoteRow = r => common(r, 'quote'),
     loanRow = r => common(r, 'loan');
-  async function load(force) {
-    if (promise && !force) return promise;
-    phase = 'loading';
+  let epoch = null,
+    generation = 0,
+    refreshAgain = false,
+    stopWatching = null;
+  function invalidate() {
+    generation++;
+    promise = null;
+    rows = [];
+    phase = 'idle';
+    error = null;
+    refreshAgain = false;
     emit();
-    promise = (async () => {
+  }
+  function syncContext() {
+    const next = window.PrivateResourceDemand.context();
+    if (next !== epoch) {
+      epoch = next;
+      invalidate();
+    }
+    return next;
+  }
+  async function load(force) {
+    if (syncContext() === null) return store;
+    if (promise) {
+      if (force) refreshAgain = true;
+      return promise;
+    }
+    const version = generation,
+      requestEpoch = epoch;
+    phase = rows.length ? 'loaded' : 'loading';
+    emit();
+    const pending = (async () => {
       try {
         const requests = await window.ProgramRequestRepository.listHistory();
-        rows = requests.map(r => r.program_id === 'prestamo' ? loanRow(r) : r.request_type === 'quote' ? quoteRow(r) : requestRow(r)).sort((a, b) => b.ts - a.ts);
+        if (syncContext() !== requestEpoch || version !== generation) return store;
+        rows = requests.map(r => Object.freeze(Object.assign({}, r.program_id === 'prestamo' ? loanRow(r) : r.request_type === 'quote' ? quoteRow(r) : requestRow(r), {
+          requestStatus: r.status
+        }))).sort((a, b) => b.ts - a.ts);
         phase = 'loaded';
         error = null;
       } catch (e) {
+        if (version !== generation) return store;
         rows = [];
         phase = 'error';
         error = e;
+      } finally {
+        if (version === generation) {
+          promise = null;
+          emit();
+          if (refreshAgain && listeners.size) {
+            refreshAgain = false;
+            load(false);
+          }
+        }
       }
-      emit();
       return store;
     })();
-    return promise;
+    promise = pending;
+    return pending;
+  }
+  function watch() {
+    let channel = null;
+    const refresh = () => {
+      if (!document.hidden && listeners.size) load(true);
+    };
+    const connect = () => {
+      if (channel) {
+        window.SutiSupabase.getClient().removeChannel(channel);
+        channel = null;
+      }
+      syncContext();
+      if (epoch === null) return;
+      channel = window.SutiSupabase.getClient().channel('self-request-history-' + epoch).on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'program_requests'
+      }, refresh).subscribe(status => {
+        if (status === 'SUBSCRIBED') refresh();
+      });
+      refresh();
+    };
+    const unbind = window.PrivateResourceDemand.subscribe(connect);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('suti:request-changed', refresh);
+    // A bounded foreground refresh also recovers a temporarily disconnected realtime channel.
+    const timer = setInterval(refresh, 15000);
+    connect();
+    return () => {
+      unbind();
+      clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('suti:request-changed', refresh);
+      if (channel) window.SutiSupabase.getClient().removeChannel(channel);
+    };
   }
   const store = {
     state: () => ({
       phase,
       error
     }),
-    all: () => rows.slice(),
+    all: () => {
+      syncContext();
+      return rows.slice();
+    },
     load,
-    invalidate: () => {
-      promise = null;
-      rows = [];
-      phase = 'idle';
-      error = null;
-      emit();
-    },
-    retry: () => {
-      promise = null;
-      return load(true);
-    },
+    invalidate,
+    retry: () => load(true),
     subscribe: fn => {
       listeners.add(fn);
-      return () => listeners.delete(fn);
+      if (listeners.size === 1) stopWatching = watch();
+      return () => {
+        listeners.delete(fn);
+        if (!listeners.size && stopWatching) {
+          stopWatching();
+          stopWatching = null;
+        }
+      };
     }
   };
   window.operationsStore = store;
   window.useOperationsStore = function () {
     const [, setV] = useState(0);
     useEffect(() => store.subscribe(() => setV(n => n + 1)), []);
-    useEffect(() => {
-      if (store.state().phase === 'idle') store.load(false);
-    }, []);
     return store;
   };
 })();
@@ -35857,6 +35965,8 @@ Object.assign(window, {
     if (/CONDITIONS_CHANGED/.test(code)) return 'Las condiciones cambiaron; revisa nuevamente antes de aprobar.';
     if (/APPROVED_FINANCIAL_REQUEST_STATUS_IMMUTABLE/.test(code)) return 'La solicitud aprobada ya no admite ese cambio de estado.';
     if (/QUOTE_AMOUNT_REQUIRED/.test(code)) return 'Captura un monto válido para aprobar la cotización.';
+    if (/FINANCIAL_PROGRAM_NOT_ELIGIBLE/.test(code)) return 'El fondo o sus condiciones cambiaron; revisa las condiciones de esta solicitud antes de autorizar.';
+    if (/REQUIRED_PRIVATE_DOCUMENT_MISSING|GUARANTOR_DOCUMENTS_NOT_AVAILABLE/.test(code)) return 'Faltan documentos vinculados a esta solicitud para autorizarla.';
     if (/REQUEST_WORKFLOW_ALREADY_COMPLETE/.test(code)) return 'El flujo ya se encuentra en su última etapa.';
     if (/REQUEST_WORKFLOW_|TRACKING_/.test(code)) return 'El flujo cambió o no está disponible. Se recargó la etapa vigente.';
     if (/SPECIALIZED_FINANCIAL_APPROVAL_REQUIRED/.test(code)) return 'Esta aprobación requiere el proceso financiero autorizado.';
@@ -36280,7 +36390,7 @@ Object.assign(window, {
         label: 'Iniciar revisión'
       });
       if (target) {
-        if (statusRefs.includes('approved') && detail.request_type === 'quote' && detail.financial_processing_status == null) options.push({
+        if (statusRefs.includes('approved') && detail.request_type === 'quote' && (workflowOf(detail).can_quote === true || detail.financial_processing_status == null)) options.push({
           id: 'quoteAdvance',
           label: 'Guardar cotización y aprobar etapa'
         });else if (statusRefs.includes('approved') && detail.financial_processing_status != null) options.push({
@@ -36291,7 +36401,7 @@ Object.assign(window, {
           label: statusRefs.includes('approved') ? 'Aprobar etapa' : 'Avanzar a siguiente etapa'
         });
       }
-      if (!['approved', 'rejected', 'cancelled'].includes(detail.status) && (workflowOf(detail).stages || []).some(stage => stage.outcome === 'failure')) options.push({
+      if (!['approved', 'rejected', 'cancelled'].includes(detail.status) && (workflowOf(detail).can_reject === true || (workflowOf(detail).stages || []).some(stage => stage.outcome === 'failure'))) options.push({
         id: 'reject',
         label: 'Rechazar etapa'
       });
@@ -36362,7 +36472,7 @@ Object.assign(window, {
       const confirmations = {
         advance: '¿Avanzar la solicitud de “' + transitionText + '”? El afiliado verá la nueva etapa inmediatamente.',
         approveLoan: '¿Aprobar la etapa “' + transitionText + '”? Se guardará la autorización en Supabase y el backend continuará con la gestión financiera autorizada.',
-        approveProduct: '¿Aprobar la etapa “' + transitionText + '” en Supabase? No se enviará información a Google.',
+        approveProduct: '¿Aprobar la etapa “' + transitionText + '” en Supabase? Se actualizará el estado de esta misma solicitud en Google.',
         quoteAdvance: '¿Guardar la cotización por ' + moneyValue(quoteAmount) + ' y avanzar “' + transitionText + '”? El afiliado verá la cotización disponible.',
         handoff: '¿Enviar esta solicitud aprobada a la gestión financiera de Google?',
         reject: '¿Rechazar la etapa actual “' + (currentBefore && currentBefore.label || 'actual') + '”? El afiliado verá la solicitud como rechazada.',
@@ -36401,14 +36511,14 @@ Object.assign(window, {
           verifiedDetail = await window.ProgramRequestRepository.adminFlowDetail(currentId),
           verifiedCurrent = currentStage(verifiedDetail);
         let valid = Boolean(verified);
-        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.financial_processing_status === 'handed_off';
+        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.status === 'approved' && (verified.financial_processing_status === 'handed_off' || verifiedDetail.google_sync && ['pending', 'processing', 'error'].includes(verifiedDetail.google_sync.phase));
         if (valid && persistedEvent) valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
         if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
         actionAttempts.current.delete(fingerprint);
         setDetail(verifiedDetail);
         setFeedback({
           tone: 'success',
-          text: '✓ Guardado · Admin y afiliado ya muestran la etapa vigente'
+          text: verifiedDetail.google_sync && verifiedDetail.google_sync.phase === 'synced' ? '✓ Guardado · Google actualizado' : '✓ Guardado en Supabase · Registro en Google pendiente de reintento'
         });
         setRowFeedback(all => Object.assign({}, all, {
           [currentId]: 'success'
@@ -36671,7 +36781,12 @@ Object.assign(window, {
         style: {
           marginTop: 10
         }
-      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderWorkflow(), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderWorkflow(), h('section', {
+        className: 'finwb-card',
+        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
+      }, h('h3', null, 'Registro en Google'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {

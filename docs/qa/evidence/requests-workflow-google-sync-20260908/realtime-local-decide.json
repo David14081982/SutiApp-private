@@ -1,0 +1,185 @@
+{
+  "status": "PASS",
+  "mode": "decide",
+  "target": "local",
+  "dataSource": "live authenticated self RPC and realtime; no intercepted responses",
+  "javascriptErrors": [],
+  "before": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "in_review"
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "in_review"
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "in_review"
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "in_review"
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "in_review"
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "in_review"
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "in_review"
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "in_review"
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "in_review"
+    }
+  ],
+  "changes": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "in_review",
+      "time": 1788889015304
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "approved",
+      "time": 1788889020752
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "rejected",
+      "time": 1788889028185
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "cancelled",
+      "time": 1788889037729
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "approved",
+      "time": 1788889049043
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "rejected",
+      "time": 1788889060592
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "cancelled",
+      "time": 1788889072205
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "approved",
+      "time": 1788889080665
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "rejected",
+      "time": 1788889089724
+    },
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "cancelled",
+      "time": 1788889098089
+    }
+  ],
+  "realtimeEvents": 15,
+  "latencies": [
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "approved",
+      "milliseconds": 199
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "rejected",
+      "milliseconds": 0
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "cancelled",
+      "milliseconds": 181
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "approved",
+      "milliseconds": 195
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "rejected",
+      "milliseconds": 0
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "cancelled",
+      "milliseconds": 269
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "approved",
+      "milliseconds": 244
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "rejected",
+      "milliseconds": 247
+    },
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "cancelled",
+      "milliseconds": 196
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "mode": "configure-worker",
+  "workerProbe": true,
+  "cron": "program-request-google-sync",
+  "secretsLogged": false
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "temporaryAccess": "MYSELF",
+  "productionReceiverChanged": false,
+  "secretsLogged": false,
+  "propertyInitialized": true,
+  "sharedSecretMismatch": true,
+  "headRestored": true,
+  "temporaryDeploymentRemoved": true
+}

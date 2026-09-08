@@ -1,5 +1,35 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-105 — Registro de solicitudes A:AG y estado derivado en Google
+
+- **Autoridad y autorización:** H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001, instrucción expresa del
+  propietario del 2026-09-08. Supabase conserva la autoridad de creación, estados, workflow, tracking y
+  auditoría. Google recibe un registro derivado para todas las familias de solicitudes.
+- **Contrato posterior:** primero se confirma `program_requests`; su UUID real se escribe en A de
+  `SutiApp Final / Historial de solicitudes`. Al crear, Y=`PENDIENTE`; al aprobar, Y=`APROBADO`; al
+  rechazar/cancelar, Y=`Rechazado`. Un UUID tiene una sola fila. Después del alta sólo se modifica Y.
+- **Aclaración owner:** “DE LAS COLUMNAS AH Y SIGUIENTES NO LAS CONSIDERES”. El writer abarca A:AG;
+  AH en adelante no se mapea, rellena, borra ni actualiza. Datos ausentes en A:AG quedan vacíos; no se inventan.
+- **Excepción delimitada:** sustituye el contrato V1 de append sólo posterior a aprobación, A vacío e
+  `Iniciado`, y la exclusión Google para productos de INV-153. No autoriza amortización, pagos, saldos,
+  ejecución de depósito, criterios, fórmulas, reescrituras históricas ni otros módulos.
+- **Entrega:** `program_request_google_sync` registra exclusivamente transporte/revisión/lease/error;
+  trigger transaccional, worker service-only y cron con credenciales Vault permiten recuperar cierres de
+  navegador/timeouts. El receptor Apps Script existente conserva deployment, OAuth, secreto y LockService;
+  su registry técnico conserva UUID, hash inicial, revisión y fila. Una entrega antigua no regresa Y.
+- **Compatibilidad:** snapshots financieros V1 existentes permanecen inmutables. `google_export` V1 se
+  conserva como metadata requerida por el writer financiero actual, pero no alimenta el nuevo registro.
+  `financial_request_export_audit` no se reutiliza como cola de membresías o solicitudes sin aprobar.
+- **Workflow:** se persiste el destino exacto de `workflow_snapshot`, incluso si comparte status con otra
+  etapa; el frontend relee la proyección. No se completa un depósito/servicio sin transición persistida.
+  Una etapa de autorización con outcome `process` y referencia explícita `approved` en el snapshot sigue
+  ese mapeo: la autorización queda completada sin completar automáticamente las etapas posteriores.
+  Cotizaciones no financiadas conservan el contrato previo de cotización aprobada antes de solicitar un
+  plan de producto; la marca legacy `pending` no puede convertirlas en aprobaciones de préstamo.
+- **Verificación y recuperación:** pruebas focales reales bajo ROLLBACK, bridge aislado, navegador y
+  comprobación live antes de cierre. Backups privados del receptor/Edge, funciones originales versionadas
+  y SQL de recuperación que retiene historial. El estado de despliegue está en la evidencia de esta H.
+
 | ADR | Decisión | Estado |
 |---|---|---|
 | ADR-104 | El mapa owner `Usuarios (8).csv` puede corregir vínculos Auth existentes sólo en pares completamente unívocos; conserva el UUID, mueve `auth_user_id`, deja histórico/ambiguos intactos y limita la excepción runtime a evidencia service-only exacta y reversible. | Aceptada / APPLIED / VERIFIED |

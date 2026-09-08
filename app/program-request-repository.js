@@ -9,6 +9,12 @@
   const benefitState={submitted:'pendiente',in_review:'revision',approved:'aprobada',rejected:'rechazada',cancelled:'cancelada',requires_financial_processing:'revision'};
   const quoteState={submitted:'solicitada',in_review:'solicitada',approved:'cotizada',rejected:'vencida',cancelled:'vencida',requires_financial_processing:'solicitada'};
   function key(){return crypto.randomUUID();}
+  async function refreshRequest(id){
+    window.dispatchEvent(new Event('suti:request-changed'));
+    // The backend outbox already owns delivery; a closed tab or failed request cannot lose it.
+    // Refresh the persisted action immediately; Google latency does not hold the Admin UI.
+    Promise.resolve().then(()=>window.FinancialLegacyRepository.invoke({action:'syncRequest',request_id:id})).catch(()=>{/* The durable job remains pending. */});
+  }
   async function getWorkflowState(id){const r=await db().rpc('get_self_request_workflow_state',{p_request_id:id});return Object.freeze(r.error?{available:false,reason:'WORKFLOW_PROJECTION_UNAVAILABLE',message:'Seguimiento no disponible temporalmente.'}:r.data||{available:false,message:'Seguimiento no disponible temporalmente.'});}
   async function withWorkflow(row){const projected=project(row);if(projected.workflow_state)return projected;const workflow_state=await getWorkflowState(projected.id);return Object.freeze(Object.assign({},projected,{workflow_state}));}
   function project(row){
@@ -42,9 +48,9 @@
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
-    if(r.error)throw r.error;return withWorkflow(r.data);
+    if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -89,7 +95,8 @@
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
     const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
-    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents]);
+    const sync=db().rpc('get_program_request_google_sync',{p_request_id:id});
+    const parts=await Promise.all([documents,terms,currentDocuments,adminEvents,sync]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
     const currentById=new Map(currentRows.map((document)=>[document.id,document]));
     const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
@@ -102,14 +109,15 @@
       current_documents_available:!parts[2].error,
       admin_events:Object.freeze(parts[3].error?[]:parts[3].data||[]),
       admin_events_available:!parts[3].error,
+      google_sync:parts[4].error?{phase:'error',error_code:'REQUEST_SYNC_STATUS_UNAVAILABLE'}:parts[4].data,
     }));
   }
   async function financialDetail(id){const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
   async function adminFlowDetail(id){const base=await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
-  async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;return project(r.data);}
-  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return Object.freeze(r.data);}
-  async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;return project(r.data);}
-  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;return project(r.data);}
-  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;return Object.freeze(r.data);}
+  async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
+  async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
   window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
 })();

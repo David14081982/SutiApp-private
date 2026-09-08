@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { BUSINESS_TIME_ZONE, evaluateVisibility } from "./visibility-policy.js";
+import { deliverRequestRegister, capturedDocumentReferences } from "./request-google-sync.js";
 
 // Supabase is intentionally schema-untyped in this standalone Edge bundle; database
 // contracts are enforced by migrations/RLS/RPCs and validated again at this boundary.
@@ -25,6 +26,8 @@ const ACTION_KEYS: Record<string, Set<string>> = {
   resolveSimulation: new Set(["action", "program_id", "amount", "term"]),
   approve: new Set(["action", "request_id", "comment"]),
   handoff: new Set(["action", "request_id"]),
+  syncRequest: new Set(["action", "request_id"]),
+  syncRequestQueue: new Set(["action"]),
 };
 
 function reply(status: number, body: Record<string, unknown>, origin?: string | null) {
@@ -126,7 +129,7 @@ function validPayload(body: Record<string, unknown>) {
       Array.isArray(body.document_ids) && body.document_ids.length <= 50 && body.document_ids.every((id) => typeof id === "string" && UUID_PATTERN.test(id)) &&
       typeof body.idempotency_key === "string" && UUID_PATTERN.test(body.idempotency_key);
   }
-  if (action === "handoff" || action === "approve") {
+  if (action === "handoff" || action === "approve" || action === "syncRequest") {
     return typeof body.request_id === "string" && (body.comment === undefined ||
       typeof body.comment === "string" && body.comment.length <= 2000) &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.request_id);
@@ -840,7 +843,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
   if (!privilegedKey) return { status: 503, body: { error: "APPROVAL_WRITER_NOT_CONFIGURED" } };
   const privileged = createClient(supabaseUrl, privilegedKey, { auth: { persistSession: false } });
   const { data: request, error: requestError } = await privileged.from("program_requests")
-    .select("id,affiliate_id,numero_control,program_id,program_item_id,product_id,request_type,status,financial_processing_status,requested_amount,requested_term,requested_term_semantics,financial_approval_snapshot,signature_data,terms_accepted,created_at")
+    .select("id,affiliate_id,numero_control,program_id,program_item_id,product_id,request_type,status,financial_processing_status,requested_amount,requested_term,requested_term_semantics,financial_submission_snapshot,financial_approval_snapshot,signature_data,terms_accepted,created_at")
     .eq("id", String(body.request_id)).maybeSingle();
   if (requestError) return { status: 500, body: { error: "REQUEST_LOOKUP_FAILED" } };
   if (!request || request.financial_processing_status == null) return { status: 404, body: { error: "FINANCIAL_REQUEST_NOT_FOUND" } };
@@ -872,33 +875,29 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
   try {
     process = processForCategory(category);
     affiliation = affiliationForUnion(union);
-    if (process === "3") throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
     const rules = await readCriteriaRules(privileged);
     const termPolicy = await readTermPolicy(userClient);
+    const criterionIdentity = request.financial_submission_snapshot?.criterion_identity;
+    const selectedRules = rules.filter((rule) => rule.criterion_identity === criterionIdentity);
+    if (!criterionIdentity || selectedRules.length !== 1) throw new Error("CONDITIONS_CHANGED");
     result = await resolveQuote(privileged, rules, {
       numero_control: request.numero_control, financial_union: union,
       financial_employee_category: category, financial_profile_version: affiliate.financial_profile_version,
-    }, { action: "quote", program_id: request.program_id, amount: Number(request.requested_amount), term: Number(request.requested_term) }, termPolicy);
+    }, { action: "quote", program_id: selectedRules[0].id, amount: Number(request.requested_amount), term: Number(request.requested_term) }, termPolicy);
   } catch (error) {
     const code = error instanceof Error ? error.message : "FINANCIAL_RESOLUTION_FAILED";
     return { status: code === "FINANCIAL_CRITERIA_NOT_CONFIGURED" ? 503 : 409, body: { error: code } };
   }
-  const requiredDocuments = [
-    ["Photo", "DK"], ["INE FRENTE", "AG"], ["INE REVERSO", "AH"],
-    ["TALON PENULTIMA QUINCENA", "DM"], ["TALON ULTIMA QUINCENA", "AI"],
-  ];
-  const { data: files, error: filesError } = await privileged.from("affiliate_files")
-    .select("private_asset_id,classification,source_column,source_column_letter,sha256,status")
-    .eq("affiliate_id", request.affiliate_id).eq("classification", "PRIVATE").eq("status", "READY")
-    .in("source_column", requiredDocuments.map(([column]) => column));
-  if (filesError) return { status: 500, body: { error: "PRIVATE_DOCUMENT_LOOKUP_FAILED" } };
-  const documentRefs: string[] = [];
+  const { data: submittedDocuments, error: documentsError } = await privileged.from("request_documents")
+    .select("private_asset_id,asset_sha256,document_type:document_types!document_type_id(code)").eq("request_id", request.id);
+  if (documentsError) return { status: 500, body: { error: "PRIVATE_DOCUMENT_LOOKUP_FAILED" } };
+  let documentRefs: string[], guarantorRefs: string[];
   try {
-    for (const [column, letter] of requiredDocuments) {
-      const matches = (files || []).filter((file) => file.source_column === column && file.source_column_letter === letter);
-      if (matches.length !== 1) throw new Error(matches.length ? "PRIVATE_DOCUMENT_AMBIGUOUS" : "REQUIRED_PRIVATE_DOCUMENT_MISSING");
-      documentRefs.push(privateAssetReference(matches[0] as Record<string, unknown>));
-    }
+    const refs = capturedDocumentReferences(submittedDocuments);
+    documentRefs = ["profile_photo","ine_front","ine_back","payroll_previous","payroll_latest"].map((code) => refs[code]);
+    if (documentRefs.some((ref) => !ref)) throw new Error("REQUIRED_PRIVATE_DOCUMENT_MISSING");
+    guarantorRefs = ["guarantor_photo","guarantor_ine_front","guarantor_ine_back","guarantor_payroll_latest"].map((code) => refs[code] || "");
+    if (process === "3" && guarantorRefs.some((ref) => !ref)) throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
   } catch (error) {
     return { status: 409, body: { error: error instanceof Error ? error.message : "PRIVATE_DOCUMENT_CONTRACT_INVALID" } };
   }
@@ -908,7 +907,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     "", request.numero_control, String(affiliate.full_name), process!, String(result.fund), Number(result.rate) / 100,
     Number(result.paymentCount), Number(request.requested_amount), Number(result.total), new Date(request.created_at).toISOString(),
     category, union, affiliation!, Number(result.maxAmount), ...documentRefs,
-    "", "", "", "", true, "Iniciado", "", "", "", "", "", "", signatureRef, String(affiliate.phone_raw),
+    ...guarantorRefs, true, "Iniciado", "", "", "", "", "", "", signatureRef, String(affiliate.phone_raw),
     "", "", "", "", "",
   ];
   const exportPayload = {
@@ -1035,6 +1034,36 @@ async function handoffRequest(
   } } };
 }
 
+async function synchronizeRequestRegister(privileged: SupabaseClientLike, requestId: string) {
+  try {
+    const queued = await privileged.rpc("request_program_request_google_sync", { p_request_id: requestId });
+    if (queued.error) throw new Error("REQUEST_SYNC_ENQUEUE_FAILED");
+    const delivered = await deliverRequestRegister(privileged, requestId, (name: string) => Deno.env.get(name), sha256);
+    if (delivered) return delivered;
+    const { data, error } = await privileged.rpc("get_program_request_google_sync", { p_request_id: requestId });
+    if (error) throw new Error("REQUEST_SYNC_STATUS_UNAVAILABLE");
+    return data;
+  } catch { return { phase: "pending", error_code: "REQUEST_SYNC_RETRY_PENDING" }; }
+}
+async function attachRequestRegister(outcome: any, privileged: SupabaseClientLike) {
+  if (outcome.status === 200 && outcome.body?.data?.request_id) {
+    const delivery = synchronizeRequestRegister(privileged, outcome.body.data.request_id);
+    const runtime = (globalThis as any).EdgeRuntime;
+    if (runtime?.waitUntil) {
+      // The committed trigger owns retries if this background invocation is interrupted.
+      runtime.waitUntil(delivery);
+      outcome.body.data.google_sync = { phase: "pending" };
+    } else outcome.body.data.google_sync = await delivery;
+  }
+  return outcome;
+}
+function requestWorkerAuthorized(value: string | null) {
+  const expected = Deno.env.get("REQUEST_GOOGLE_SYNC_WORKER_SECRET") || "";
+  const received = value || ""; let difference = received.length ^ expected.length;
+  for (let i = 0; i < Math.max(received.length, expected.length); i++) difference |= (received.charCodeAt(i) || 0) ^ (expected.charCodeAt(i) || 0);
+  return expected.length >= 32 && difference === 0;
+}
+
 Deno.serve(async (req) => {
   const origin = allowedOrigin(req);
   if (origin === false) return reply(403, { error: "ORIGIN_NOT_ALLOWED" });
@@ -1054,6 +1083,17 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return reply(400, { error: "INVALID_JSON" }, origin || null); }
   if (!validPayload(body)) return reply(400, { error: "INVALID_REQUEST" }, origin || null);
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  if (body.action === "syncRequestQueue") {
+    if (!requestWorkerAuthorized(req.headers.get("x-request-sync-key"))) return reply(403, { error: "REQUEST_SYNC_WORKER_DENIED" }, origin || null);
+    const privileged = privilegedClient(supabaseUrl); let processed = 0;
+    try {
+      for (let i = 0; i < 1; i++) {
+        const result = await deliverRequestRegister(privileged, null, (name: string) => Deno.env.get(name), sha256);
+        if (!result) break; processed++;
+      }
+      return reply(200, { data: { processed } }, origin || null);
+    } catch { return reply(503, { error: "REQUEST_SYNC_RETRY_PENDING" }, origin || null); }
+  }
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
   const supabase = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } }, auth: { persistSession: false },
@@ -1061,14 +1101,20 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.slice(7));
   if (userError || !userData.user) return reply(401, { error: "AUTH_INVALID" }, origin || null);
 
-  if (body.action === "handoff") {
-    const outcome = await handoffRequest(body, supabaseUrl, authHeader, userData.user.id);
-    return reply(outcome.status, outcome.body, origin || null);
+  if (body.action === "syncRequest" || body.action === "handoff") {
+    if (body.action === "handoff" && !await requireExportPermission(supabase)) return reply(403, { error: "ADMIN_APPROVAL_REQUIRED" }, origin || null);
+    if (body.action === "handoff") {
+      const { data: request, error: requestError } = await supabase.from("program_requests").select("status,program_id").eq("id", body.request_id).single();
+      if (requestError || !request || request.status !== "approved" || request.program_id !== "prestamo") return reply(409, { error: "APPROVED_LOAN_REQUIRED" }, origin || null);
+    }
+    const { error } = await supabase.rpc("request_program_request_google_sync", { p_request_id: body.request_id });
+    if (error) return reply(403, { error: "REQUEST_SYNC_DENIED" }, origin || null);
+    return reply(200, { data: { google_sync: await synchronizeRequestRegister(privilegedClient(supabaseUrl), String(body.request_id)) } }, origin || null);
   }
   if (body.action === "approve") {
     const approval = await approveRequest(body, supabaseUrl, authHeader, userData.user.id);
     if (approval.status !== 200) return reply(approval.status, approval.body, origin || null);
-    const outcome = await handoffRequest(body, supabaseUrl, authHeader, userData.user.id);
+    const outcome = await attachRequestRegister(approval, privilegedClient(supabaseUrl));
     return reply(outcome.status, outcome.body, origin || null);
   }
 
@@ -1115,6 +1161,7 @@ Deno.serve(async (req) => {
 
     if (body.action === "programPaymentSessionConfirm") {
       const outcome = await confirmProgramPaymentSession(body, supabase, privileged, context, crypto.randomUUID());
+      await attachRequestRegister(outcome, privileged);
       return reply(outcome.status, outcome.body, origin || null);
     }
 
@@ -1160,6 +1207,7 @@ Deno.serve(async (req) => {
     }
 
     const outcome = await confirmPersonalizedLoanSession(body, supabase, privileged, context, crypto.randomUUID());
+    await attachRequestRegister(outcome, privileged);
     return reply(outcome.status, outcome.body, origin || null);
   }
 

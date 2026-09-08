@@ -1,5 +1,24 @@
 # Fuentes de verdad
 
+## Contrato posterior autorizado — ADR-105, 2026-09-08
+
+`program_requests`, su `workflow_snapshot` inmutable, `operational_request_tracking` y
+`program_request_admin_events` conservan la autoridad de toda solicitud. Historial/Tracking/Admin consumen
+esa misma proyección; Realtime sólo invalida lecturas y nunca introduce otra fuente.
+
+`program_request_google_sync` es metadata de entrega, no workflow ni ledger. Cada UUID confirmado genera
+una sola fila en `SutiApp Final / Historial de solicitudes`, A:AG, Y=`PENDIENTE`; sólo Y se actualiza a
+`APROBADO` o `Rechazado` desde estados persistidos. AH en adelante está excluido por el propietario.
+Google no escribe de regreso en Supabase. El receiver existente usa su registry técnico, lock, OAuth y
+secretos server-side. Préstamos, membresías, productos y servicios comparten únicamente esta entrega.
+
+Esta instrucción reemplaza las exclusiones de registro inicial y de productos del contrato Google V1
+descrito en cortes anteriores; no reemplaza cálculos, criterios, ejecución financiera ni históricos.
+La metadata `google_export` V1 de aprobaciones financieras permanece por compatibilidad del writer; el
+nuevo registro consume datos confirmados y conserva su primera fila/hash en la cola. Los documentos usan
+`request_documents`, y el teléfono de préstamo su `loan_request_deposit_snapshots`, sin copiar instrumentos
+bancarios ni URLs firmadas. Estado de despliegue y evidencia: `docs/qa/H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001.md`.
+
 ## Corte ADR-104 — reparación certificada de vínculos Auth por mapa CSV
 
 Supabase Auth continúa como autoridad del principal y `public.affiliates` como autoridad del padrón, `numero_control` y vínculo nullable. Por decisión explícita del propietario, `Usuarios (8).csv` con SHA-256 `3AB97E9F16951E523301E1A080A1DB965F12739207798490022308FCF1F28E29` fue evidencia superior a `historical_email_*` exclusivamente para reconciliar los vínculos Auth existentes en este lote; el archivo no queda conectado al runtime ni se convierte en maestro general.

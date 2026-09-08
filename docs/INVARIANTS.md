@@ -1,5 +1,24 @@
 # Invariantes
 
+## Registro requerido de solicitudes — ADR-105, 2026-09-08
+
+- **INV-211:** Toda solicitud confirmada primero en Supabase genera una entrega idempotente a
+  `Historial de solicitudes`: UUID real en A, Y inicial `PENDIENTE`. Tras aprobación, Y=`APROBADO`;
+  rechazo/cancelación, Y=`Rechazado`. Después de crear la fila sólo puede actualizarse Y para ese UUID.
+- **INV-212:** La frontera de escritura inicial es A:AG. AH y columnas posteriores están excluidas por
+  instrucción del propietario. Valores ausentes quedan vacíos; documentos usan referencias privadas
+  trazables, nunca URLs públicas ni firmadas persistentes. Google no decide estados ni workflow.
+- **INV-213:** La cola de entrega pertenece al backend, es durable y no concede escrituras directas al
+  navegador. UUID único, lease, revisión monotónica, lock Google y lectura de confirmación impiden
+  duplicados y regresiones por respuestas tardías. Un fallo Google conserva la solicitud Supabase.
+- **INV-214:** Etapas, fechas y motivos provienen del snapshot/tracking/eventos persistidos. Los cambios
+  de estado no sustituyen el destino explícito de una transición. Autoservicio invalida su lectura ante
+  cambios reales y descarta respuestas de otra sesión o afiliado. Cotizaciones no financiadas usan la
+  aprobación comercial existente; préstamos y planes de pago conservan sus writers especializados.
+
+INV-211 a INV-214 sustituyen exclusivamente las restricciones V1 incompatibles de INV-065/068/071/072/074/079
+y la exclusión del registro Google en INV-153. Las demás restricciones financieras y de datos permanecen.
+
 - **INV-210:** La reconciliación owner-authorized `Usuarios (8).csv → Auth` sólo puede mover un `auth.users.id` existente cuando correo CSV, control destino, fila Supabase destino y control/email de la fila actualmente vinculada son todos unívocos. Conserva UUID, no usa nombre, no modifica Auth ni `historical_email_*`, toma snapshot previo y audita cada movimiento. Una excepción de resolución sólo es válida mientras batch, UUID, correo Auth confirmado, afiliado y control destino coinciden exactamente; duplicados, vacíos, archivados y no mapeables permanecen intactos. Esta excepción específica supersede INV-208 únicamente para los vínculos certificados por ADR-104 y amplía INV-207 sin debilitar su fallo cerrado para cualquier otra fila.
 
 - **INV-209:** La exportación reservada de Afiliados presenta `Correo histórico` desde `public.affiliates.historical_email_raw` y `Correo de acceso` desde el usuario Auth exactamente enlazado por `auth_user_id`. Ninguno sustituye al otro; ausencia de vínculo produce celda vacía, el UUID no se exporta y la proyección no modifica ni reasigna identidad.

@@ -1,0 +1,111 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_CANDIDATE",
+  "started": "2026-09-08T17:30:40.096Z",
+  "types": {
+    "loan": {
+      "rows": 18,
+      "images": 18,
+      "decoded": 18,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "membership": {
+      "rows": 18,
+      "images": 18,
+      "decoded": 18,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "quote": {
+      "rows": 18,
+      "images": 18,
+      "decoded": 18,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    },
+    "benefit": {
+      "rows": 17,
+      "images": 17,
+      "decoded": 17,
+      "errors": 0,
+      "pdfs": 0,
+      "sections": true,
+      "history": true,
+      "workflow": true
+    }
+  },
+  "signedRequests": 40,
+  "storageFailures": [],
+  "businessWrites": 0,
+  "fullscreen": "PASS",
+  "viewports": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "centerHeight": 674,
+      "overflow": false,
+      "locked": true,
+      "fixed": true,
+      "controlsVisible": true
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "centerHeight": 442,
+      "overflow": false,
+      "locked": true,
+      "fixed": true,
+      "controlsVisible": true
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "centerHeight": 732,
+      "overflow": false,
+      "locked": true,
+      "fixed": true,
+      "controlsVisible": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "centerHeight": 538,
+      "overflow": false,
+      "locked": true,
+      "fixed": true,
+      "controlsVisible": true
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "centerHeight": 346,
+      "overflow": false,
+      "locked": true,
+      "fixed": true,
+      "controlsVisible": true
+    }
+  ],
+  "modalClose": "PASS",
+  "mobile": "PASS",
+  "ended": "2026-09-08T17:31:14.220Z"
+}

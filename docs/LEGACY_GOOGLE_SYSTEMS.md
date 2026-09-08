@@ -1,5 +1,17 @@
 # Sistemas Google legacy
 
+## Excepción posterior expresa — solicitudes A:AG, ADR-105
+
+H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001 autoriza registrar todas las solicitudes después del commit
+Supabase en `SutiApp Final / Historial de solicitudes`: UUID en A y Y inicial `PENDIENTE`; aprobación
+actualiza únicamente Y a `APROBADO`, rechazo/cancelación a `Rechazado`. Mismo UUID, misma fila.
+El propietario excluyó AH y las columnas siguientes: el nuevo writer toca sólo A:AG al crear y Y después.
+
+Este contrato reemplaza el append-only posterior a aprobación, A vacío e `Iniciado` descritos en el corte
+V1 de abajo. Conserva el mismo Apps Script/deployment/registry y su autenticación. No crea triggers Google,
+no ejecuta procesamiento financiero posterior y no cambia criterios, fórmulas, saldos, pagos, Ahorro ni
+otras hojas. La cola/cron Supabase es transporte recuperable, nunca una nueva autoridad financiera.
+
 Google Sheets y Apps Script actuales son sistemas externos productivos, no tecnología descartable.
 
 ```text

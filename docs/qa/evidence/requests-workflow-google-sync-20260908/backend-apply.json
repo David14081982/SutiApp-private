@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "mode": "apply-sql",
+  "migrationSha256": "4cef2a21f4fea0bac3b6e5d63f6ed8f3193daecb4a2f02715d50ffc0b75da233",
+  "beforeFunctionsVerified": [
+    "sync_program_request_tracking_from_status",
+    "resolve_program_request_workflow_state",
+    "transition_program_request_workflow",
+    "list_self_program_request_history",
+    "create_program_request"
+  ],
+  "requestRowsRewritten": 0
+}

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "mode": "deploy-edge",
+  "files": [
+    "index.ts",
+    "visibility-policy.js",
+    "request-google-sync.js"
+  ],
+  "sourceSha256": "1a1e35e53e5fb64497504d6d6b32617b3ab101f394a89297dddb37f92a0fee18",
+  "liveVersionBefore": 36,
+  "liveVersionAfter": 37,
+  "verifyJwt": true,
+  "resultVersion": 37
+}

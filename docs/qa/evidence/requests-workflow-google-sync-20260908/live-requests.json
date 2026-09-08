@@ -1,0 +1,468 @@
+[
+  {
+    "family": "loan",
+    "branch": "approve",
+    "idempotencyKey": "093b18bc-bb1f-4c13-9502-c20c3900300f",
+    "actions": {
+      "review": "6ad15a6c-2cd9-4e2d-ab03-c39faf29a60c",
+      "decision": "eca6cbb2-b789-4866-9759-3339e46bd734"
+    },
+    "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+    "folio": "SR-2026-000167",
+    "workflowId": "10000000-0000-4000-8000-000000000001",
+    "initialStatus": "requires_financial_processing",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000001",
+      "20000000-0000-4000-8000-000000000002",
+      "20000000-0000-4000-8000-000000000003",
+      "20000000-0000-4000-8000-000000000004"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2317,
+      "synced_revision": 3
+    },
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "approved",
+    "currentStage": "20000000-0000-4000-8000-000000000003",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000001",
+        "state": "done",
+        "date": "2026-09-08T17:19:19.644385+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000002",
+        "state": "done",
+        "date": "2026-09-08 17:31:55.638854+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000003",
+        "state": "done",
+        "date": "2026-09-08T17:36:59.239952+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000004",
+        "state": "upcoming",
+        "date": null
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "loan",
+    "branch": "reject",
+    "idempotencyKey": "3048398b-9e24-4b64-b397-8c49bd15db92",
+    "actions": {
+      "review": "45334712-bbb7-46bf-a9c0-ae3fbeadcd3b",
+      "decision": "0022d086-6eac-43ec-8425-08a82c06b570"
+    },
+    "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+    "folio": "SR-2026-000168",
+    "workflowId": "10000000-0000-4000-8000-000000000001",
+    "initialStatus": "requires_financial_processing",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000001",
+      "20000000-0000-4000-8000-000000000002",
+      "20000000-0000-4000-8000-000000000003",
+      "20000000-0000-4000-8000-000000000004"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2318,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "rejected",
+    "currentStage": "20000000-0000-4000-8000-000000000005",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000001",
+        "state": "done",
+        "date": "2026-09-08T17:28:34.119606+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000002",
+        "state": "done",
+        "date": "2026-09-08 17:32:05.103551+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000003",
+        "state": "upcoming",
+        "date": null
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000005",
+        "state": "done",
+        "date": "2026-09-08T17:37:07.477404+00:00"
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "loan",
+    "branch": "cancel",
+    "idempotencyKey": "1d0e2ccf-8583-4892-b24e-ffcda4fe28e1",
+    "actions": {
+      "review": "046d534d-90ab-4cab-9108-54d67bbcbe34",
+      "decision": "5f3c5d7e-5586-4969-9af1-4f856f596166"
+    },
+    "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+    "folio": "SR-2026-000169",
+    "workflowId": "10000000-0000-4000-8000-000000000001",
+    "initialStatus": "requires_financial_processing",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000001",
+      "20000000-0000-4000-8000-000000000002",
+      "20000000-0000-4000-8000-000000000003",
+      "20000000-0000-4000-8000-000000000004"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2319,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "cancelled",
+    "currentStage": "20000000-0000-4000-8000-000000000005",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000001",
+        "state": "done",
+        "date": "2026-09-08T17:29:07.580353+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000002",
+        "state": "done",
+        "date": "2026-09-08 17:32:13.1608+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000003",
+        "state": "upcoming",
+        "date": null
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000005",
+        "state": "done",
+        "date": "2026-09-08T17:37:16.868557+00:00"
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "membership",
+    "branch": "approve",
+    "idempotencyKey": "47b7b830-c225-4dba-bc43-4b7daf0a1d02",
+    "actions": {
+      "review": "766f6d4a-6543-49fe-ad03-b2e5e51f077a",
+      "decision": "4c0e774a-bebe-4521-8ae2-b20c046ecc5d"
+    },
+    "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+    "folio": "SR-2026-000170",
+    "workflowId": "10000000-0000-4000-8000-000000000002",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000011",
+      "20000000-0000-4000-8000-000000000012",
+      "20000000-0000-4000-8000-000000000013",
+      "20000000-0000-4000-8000-000000000014"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2320,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "approved",
+    "currentStage": "20000000-0000-4000-8000-000000000013",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000011",
+        "state": "done",
+        "date": "2026-09-08T17:29:19.034802+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000012",
+        "state": "done",
+        "date": "2026-09-08 17:32:20.4789+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000013",
+        "state": "done",
+        "date": "2026-09-08T17:37:27.775411+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000014",
+        "state": "upcoming",
+        "date": null
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "membership",
+    "branch": "reject",
+    "idempotencyKey": "73343a5e-90ca-423f-922c-a38e40504e71",
+    "actions": {
+      "review": "f5c64390-45af-4d1e-a620-4b581e18b9fb",
+      "decision": "894ba5a1-ecb9-46d8-abd5-c4ad77ff758c"
+    },
+    "id": "025015eb-3346-4640-802d-62a70f538b7a",
+    "folio": "SR-2026-000171",
+    "workflowId": "10000000-0000-4000-8000-000000000002",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000011",
+      "20000000-0000-4000-8000-000000000012",
+      "20000000-0000-4000-8000-000000000013",
+      "20000000-0000-4000-8000-000000000014"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2321,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "rejected",
+    "currentStage": "20000000-0000-4000-8000-000000000015",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000011",
+        "state": "done",
+        "date": "2026-09-08T17:29:30.733537+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000012",
+        "state": "done",
+        "date": "2026-09-08 17:32:27.54499+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000015",
+        "state": "done",
+        "date": "2026-09-08T17:37:38.944427+00:00"
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "membership",
+    "branch": "cancel",
+    "idempotencyKey": "f7b5b84c-2d05-44b7-afad-f9610f9d4c85",
+    "actions": {
+      "review": "bf39a02d-f799-4e64-bd12-c7894c766856",
+      "decision": "26fa18fe-1527-41d2-ba32-38b116287adb"
+    },
+    "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+    "folio": "SR-2026-000172",
+    "workflowId": "10000000-0000-4000-8000-000000000002",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000011",
+      "20000000-0000-4000-8000-000000000012",
+      "20000000-0000-4000-8000-000000000013",
+      "20000000-0000-4000-8000-000000000014"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2322,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "cancelled",
+    "currentStage": "20000000-0000-4000-8000-000000000015",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000011",
+        "state": "done",
+        "date": "2026-09-08T17:29:43.387085+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000012",
+        "state": "done",
+        "date": "2026-09-08 17:32:39.636398+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000015",
+        "state": "done",
+        "date": "2026-09-08T17:37:51.006452+00:00"
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "service",
+    "branch": "approve",
+    "idempotencyKey": "92ab76cd-1a81-468c-a309-c86e4ad98a64",
+    "actions": {
+      "review": "fc8d7845-3581-41b3-babb-0754115e6650",
+      "decision": "d0ab4e67-6b29-4646-8285-c1019bb726c2"
+    },
+    "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+    "folio": "SR-2026-000173",
+    "workflowId": "10000000-0000-4000-8000-000000000003",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000021",
+      "20000000-0000-4000-8000-000000000022",
+      "20000000-0000-4000-8000-000000000023",
+      "20000000-0000-4000-8000-000000000024"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2323,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "approved",
+    "currentStage": "20000000-0000-4000-8000-000000000023",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000021",
+        "state": "done",
+        "date": "2026-09-08T17:29:53.999032+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000022",
+        "state": "done",
+        "date": "2026-09-08 17:32:50.141596+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000023",
+        "state": "done",
+        "date": "2026-09-08T17:37:59.518821+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000024",
+        "state": "upcoming",
+        "date": null
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "service",
+    "branch": "reject",
+    "idempotencyKey": "d859ce1a-c598-4ca9-b6e0-2920b1aa6ce1",
+    "actions": {
+      "review": "9ce6a560-00a3-4de5-8cac-a9dc6a77b6bb",
+      "decision": "46af5b73-7b6b-4eab-ab45-26749ad9109c"
+    },
+    "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+    "folio": "SR-2026-000174",
+    "workflowId": "10000000-0000-4000-8000-000000000003",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000021",
+      "20000000-0000-4000-8000-000000000022",
+      "20000000-0000-4000-8000-000000000023",
+      "20000000-0000-4000-8000-000000000024"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2324,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "rejected",
+    "currentStage": "20000000-0000-4000-8000-000000000025",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000021",
+        "state": "done",
+        "date": "2026-09-08T17:30:09.951802+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000022",
+        "state": "done",
+        "date": "2026-09-08 17:33:02.623459+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000025",
+        "state": "done",
+        "date": "2026-09-08T17:38:08.34981+00:00"
+      }
+    ],
+    "decision": "PASS"
+  },
+  {
+    "family": "service",
+    "branch": "cancel",
+    "idempotencyKey": "8e84a915-4c16-4ccf-b059-8f879b6877cd",
+    "actions": {
+      "review": "3a89ebcf-f1f3-4a90-b7f6-5f936501ec68",
+      "decision": "ad17ec97-d1e6-43fb-837b-5b354944264f"
+    },
+    "id": "31fce914-3e81-4865-b673-180d588f0d50",
+    "folio": "SR-2026-000175",
+    "workflowId": "10000000-0000-4000-8000-000000000003",
+    "initialStatus": "submitted",
+    "creationIdempotent": true,
+    "snapshotStageIds": [
+      "20000000-0000-4000-8000-000000000021",
+      "20000000-0000-4000-8000-000000000022",
+      "20000000-0000-4000-8000-000000000023",
+      "20000000-0000-4000-8000-000000000024"
+    ],
+    "google_sync": {
+      "phase": "synced",
+      "revision": 3,
+      "google_row": 2325,
+      "synced_revision": 3
+    },
+    "initialGoogle": "PENDIENTE",
+    "review": "PASS",
+    "selfHistory": "PASS",
+    "status": "cancelled",
+    "currentStage": "20000000-0000-4000-8000-000000000025",
+    "stageStates": [
+      {
+        "id": "20000000-0000-4000-8000-000000000021",
+        "state": "done",
+        "date": "2026-09-08T17:30:25.155808+00:00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000022",
+        "state": "done",
+        "date": "2026-09-08 17:33:09.695964+00"
+      },
+      {
+        "id": "20000000-0000-4000-8000-000000000025",
+        "state": "done",
+        "date": "2026-09-08T17:38:16.679014+00:00"
+      }
+    ],
+    "decision": "PASS",
+    "automaticCronDelivery": "PASS"
+  }
+]

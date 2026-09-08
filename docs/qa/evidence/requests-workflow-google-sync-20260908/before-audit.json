@@ -1,0 +1,236 @@
+[
+  {
+    "proof": {
+      "request": {
+        "id": "5cd836ad-3681-40c8-8cfc-803ac1af2e34",
+        "folio": "SR-2026-000121",
+        "events": [
+          {
+            "action": "MARK_IN_REVIEW",
+            "to_status": "in_review",
+            "created_at": "2026-09-08T16:00:29.297674+00:00",
+            "from_status": "requires_financial_processing",
+            "to_stage_id": "20000000-0000-4000-8000-000000000002",
+            "from_stage_id": "20000000-0000-4000-8000-000000000002"
+          }
+        ],
+        "status": "in_review",
+        "tracking": {
+          "stage_dates": {
+            "20000000-0000-4000-8000-000000000001": "2026-09-07T04:35:41.511697+00:00",
+            "20000000-0000-4000-8000-000000000002": "2026-09-07T04:35:41.511697+00:00"
+          },
+          "current_stage_id": "20000000-0000-4000-8000-000000000002"
+        },
+        "processing": "pending",
+        "workflow_state": {
+          "stages": [
+            {
+              "id": "20000000-0000-4000-8000-000000000001",
+              "date": "2026-09-07T04:35:41.511697+00:00",
+              "label": "Solicitud enviada",
+              "state": "done",
+              "outcome": "process",
+              "sort_order": 10,
+              "description": "La solicitud quedó registrada con su folio.",
+              "responsible": "Sistema",
+              "captures_date": true,
+              "status_references": []
+            },
+            {
+              "id": "20000000-0000-4000-8000-000000000002",
+              "date": "2026-09-07T04:35:41.511697+00:00",
+              "label": "Revisión de documentos",
+              "state": "current",
+              "outcome": "process",
+              "sla_days": 1,
+              "sort_order": 20,
+              "description": "El comité revisa el expediente de la solicitud.",
+              "responsible": "Finanzas",
+              "captures_date": true,
+              "status_references": [
+                "submitted",
+                "in_review",
+                "requires_financial_processing"
+              ]
+            },
+            {
+              "id": "20000000-0000-4000-8000-000000000003",
+              "label": "Autorización",
+              "state": "upcoming",
+              "outcome": "success",
+              "sort_order": 30,
+              "description": "El área responsable comunica la resolución de la solicitud.",
+              "responsible": "Finanzas",
+              "captures_date": true,
+              "status_references": [
+                "approved"
+              ]
+            },
+            {
+              "id": "20000000-0000-4000-8000-000000000004",
+              "label": "Depósito vía nómina",
+              "state": "upcoming",
+              "outcome": "success",
+              "sort_order": 40,
+              "description": "El depósito se gestiona conforme al proceso autorizado.",
+              "responsible": "Finanzas",
+              "captures_date": true,
+              "status_references": []
+            }
+          ],
+          "available": true,
+          "active_note": "El comité revisa el expediente de la solicitud.",
+          "workflow_id": "10000000-0000-4000-8000-000000000001",
+          "current_stage": {
+            "id": "20000000-0000-4000-8000-000000000002",
+            "label": "Revisión de documentos",
+            "outcome": "process",
+            "sla_days": 1,
+            "sort_order": 20,
+            "description": "El comité revisa el expediente de la solicitud.",
+            "responsible": "Finanzas",
+            "captures_date": true,
+            "status_references": [
+              "submitted",
+              "in_review",
+              "requires_financial_processing"
+            ]
+          },
+          "workflow_name": "Financiamiento vía nómina",
+          "request_status": "in_review",
+          "current_stage_id": "20000000-0000-4000-8000-000000000002",
+          "workflow_version": 13,
+          "workflow_description": "Seguimiento de solicitudes con revisión financiera y depósito vía nómina."
+        },
+        "submission_keys": [
+          "deposit",
+          "affiliate_id",
+          "confirmed_at",
+          "financialResult",
+          "profile_version",
+          "criterion_identity",
+          "profile_fingerprint",
+          "actor_real_auth_user_id",
+          "term_policy_fingerprint",
+          "impersonation_session_id",
+          "criteria_source_fingerprint",
+          "calculation_contract_version"
+        ],
+        "snapshot_version": 13,
+        "request_documents": 8,
+        "legacy_ready_files": 14
+      },
+      "families": [
+        {
+          "count": 3,
+          "membership": false,
+          "program_id": "tours",
+          "request_type": "quote"
+        },
+        {
+          "count": 2,
+          "membership": false,
+          "program_id": "aires",
+          "request_type": "benefit"
+        },
+        {
+          "count": 1,
+          "membership": false,
+          "program_id": "aires",
+          "request_type": "quote"
+        },
+        {
+          "count": 30,
+          "membership": false,
+          "program_id": "prestamo",
+          "request_type": "quote"
+        },
+        {
+          "count": 2,
+          "membership": false,
+          "program_id": "puertas",
+          "request_type": "benefit"
+        },
+        {
+          "count": 9,
+          "membership": true,
+          "program_id": "membership",
+          "request_type": "benefit"
+        },
+        {
+          "count": 1,
+          "membership": false,
+          "program_id": "auto",
+          "request_type": "quote"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "program_requests_00_financial_snapshot",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_00_financial_snapshot BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_financial_request_snapshots()"
+        },
+        {
+          "name": "program_requests_01_protect_approved_financial_state",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_01_protect_approved_financial_state BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_approved_financial_request_state()"
+        },
+        {
+          "name": "program_requests_02_personalized_financial_submission",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_02_personalized_financial_submission BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_personalized_financial_submission()"
+        },
+        {
+          "name": "program_requests_admin_audit",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION audit_admin_write()"
+        },
+        {
+          "name": "program_requests_capture_document_requirements",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_capture_document_requirements BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_document_requirements_snapshot()"
+        },
+        {
+          "name": "program_requests_capture_impersonation",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()"
+        },
+        {
+          "name": "program_requests_capture_workflow_snapshot",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_capture_workflow_snapshot BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_workflow_snapshot()"
+        },
+        {
+          "name": "program_requests_catalog_requestability",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_catalog_requestability BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_program_catalog_requestability()"
+        },
+        {
+          "name": "program_requests_guard_archived_affiliate",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_guard_archived_affiliate BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION guard_archived_affiliate_new_operation()"
+        },
+        {
+          "name": "program_requests_protect_workflow_snapshot",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_protect_workflow_snapshot BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_program_request_workflow_snapshot()"
+        },
+        {
+          "name": "program_requests_sync_workflow_tracking",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_sync_workflow_tracking AFTER INSERT OR UPDATE OF status ON public.program_requests FOR EACH ROW EXECUTE FUNCTION sync_program_request_tracking_from_status()"
+        },
+        {
+          "name": "program_requests_updated_at",
+          "enabled": "O",
+          "definition": "CREATE TRIGGER program_requests_updated_at BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()"
+        }
+      ],
+      "extensions": [
+        "supabase_vault"
+      ],
+      "realtime_tables": null
+    }
+  }
+]

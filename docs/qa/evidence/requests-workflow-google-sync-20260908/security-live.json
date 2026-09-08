@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "tests": [
+    {
+      "test": "anonymous summary denied",
+      "http": 401,
+      "result": "PASS"
+    },
+    {
+      "test": "browser transport claim denied",
+      "http": 403,
+      "result": "PASS"
+    },
+    {
+      "test": "browser outbox table denied",
+      "http": 403,
+      "result": "PASS"
+    },
+    {
+      "test": "unauthenticated Edge denied",
+      "http": 401,
+      "result": "PASS"
+    },
+    {
+      "test": "valid gateway JWT without worker secret denied",
+      "http": 403,
+      "result": "PASS"
+    }
+  ],
+  "unlinkedIdentity": "PASS in installed-sql.json; real SECURITY DEFINER functions, transaction rolled back",
+  "secretsLogged": false,
+  "permissionWrites": 0
+}

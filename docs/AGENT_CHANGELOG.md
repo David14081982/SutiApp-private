@@ -1,5 +1,18 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001
+
+- Corrige la autorización del préstamo usando la identidad de criterio capturada, los documentos de la
+  solicitud y el writer financiero existente. Conserva snapshots, tasas, cálculos y permisos.
+- Persiste la etapa exacta y respeta su mapeo de estado, incluido el flujo v16; Historial/Seguimiento releen
+  la proyección Supabase por Realtime y descartan datos de otra sesión. El depósito no se completa por aprobar.
+- El receptor Google existente registra UUID en A y PENDIENTE en Y; actualizaciones posteriores sólo en Y,
+  APROBADO/Rechazado, con cola durable, reintentos e idempotencia. A:AG únicamente; AH en adelante excluidas.
+- Configuración OAuth y clave compartida reconciliadas por canales administrativos privados; no hay secretos
+  en frontend, evidencia ni repositorio. Nueve solicitudes QA reales conservadas; sin pagos ni borrado histórico.
+- Pruebas focales de SQL, bridge, acciones, seguimiento, seguridad y modal con documentos reales; sin suites
+  globales. [Resultado, publicación y evidencia](qa/H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001.md).
+
 ## 2026-09-08 — H-FINANCE-REQUESTS-DETAIL-MODAL-UX-001
 
 - Admin / Finanzas / Solicitudes abre el detalle en un modal amplio con encabezado y acciones visibles,

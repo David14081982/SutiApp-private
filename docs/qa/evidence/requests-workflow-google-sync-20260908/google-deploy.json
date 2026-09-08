@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "mode": "deploy-google",
+  "version": 13,
+  "sourceSha256": "9af9c2d247c16683b347c7aa237ece2c0b1493edd6d74d35c33f0b93883674f0",
+  "sameDeployment": true,
+  "access": "ANYONE",
+  "writeBoundary": "A:AG, then Y only"
+}

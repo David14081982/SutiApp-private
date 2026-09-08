@@ -2,13 +2,15 @@
 (function () {
   const { useState } = React;
   const I = window.Icon;
+  const REQUEST_LABELS={submitted:'Enviada',requires_financial_processing:'Pendiente de revisión',in_review:'En revisión',approved:'Aprobada',rejected:'Rechazada',cancelled:'Cancelada'};
   const META={revision:{tone:'amber',icon:'clock',label:'En revisión'},aprobado:{tone:'green',icon:'checkCircle',label:'Aprobada'},depositado:{tone:'green',icon:'checkCircle',label:'Completada'},rechazado:{tone:'red',icon:'close',label:'No aprobada'}};
 
-  function StatusPill({ estado }) {
+  function StatusPill({ estado, requestStatus }) {
     const m = META[estado]||META.revision;
     // Icono v\u00eda registro (F1.6): 'hist.estado.<estado>' \u2192 icono de estadoMeta.
     const r = window.AssetsResolver ? window.AssetsResolver.resolve('hist.estado.' + estado) : null;
-    return React.createElement(window.Badge, { tone: m.tone, icon: (r && r.icon) || m.icon }, m.label);
+    const label=REQUEST_LABELS[requestStatus]||m.label;
+    return React.createElement(window.Badge, { tone: m.tone, icon: (r && r.icon) || m.icon }, label);
   }
 
   function HistorialScreen({ app }) {
@@ -49,7 +51,7 @@
           React.createElement('div', { ref: progRef, style: { display: 'flex', gap: 5, marginTop: 14 } },
             activa.steps.map((st, i) => React.createElement('div', { key: i, style: { flex: 1, height: 5, borderRadius: 999, transformOrigin: 'left center', background: st.done ? '#fff' : st.active ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)' } }))),
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } },
-            React.createElement('span', { style: { fontSize: 13, fontWeight: 700 } }, 'En revisión'),
+            React.createElement('span', { style: { fontSize: 13, fontWeight: 700 } }, REQUEST_LABELS[activa.requestStatus]||'En revisión'),
             React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 } }, 'Ver seguimiento', React.createElement(I, { name: 'arrowR', size: 15, stroke: 2.2 }))))),
       // filters (C5.2 · indicador deslizante compartido)
       React.createElement(window.ChipBar, { items: filters, value: filter, onChange: setFilter, style: { padding: '16px 16px 2px' } }),
@@ -66,7 +68,7 @@
               React.createElement('span', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 700, fontFamily: 'var(--mono)' } }, s.id)),
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 } },
               React.createElement('span', { style: { fontSize: 16, fontWeight: 800, color: 'var(--guinda)' } }, s.monto==null?'Por cotizar':window.money(s.monto)),
-              React.createElement(StatusPill, { estado: s.estado })),
+              React.createElement(StatusPill, { estado: s.estado, requestStatus: s.requestStatus })),
             React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 5 } }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : ''))))),
           list.length === 0 && React.createElement(window.EmptyState, { icon: 'receipt', title: 'Sin solicitudes aquí', sub: 'Cuando solicites un beneficio aparecerá en esta lista.' })),
     );
@@ -74,7 +76,13 @@
 
   // ---------- TRACKING DETAIL ----------
   function TrackingScreen({ app, params }) {
-    const s = params.s;
+    const operations=window.useOperationsStore();
+    const requestId=params.s&&params.s.sourceId;
+    const s=operations.all().find((row)=>row.sourceId===requestId);
+    if(!s)return React.createElement('div',{style:{padding:20}},
+      React.createElement('button',{onClick:app.back},'Volver al historial'),
+      React.createElement('p',{role:'status'},operations.state().phase==='error'?'No pudimos actualizar el seguimiento.':operations.state().phase==='loaded'?'La solicitud no está disponible en tu historial.':'Actualizando seguimiento…'),
+      operations.state().phase==='error'&&React.createElement('button',{onClick:operations.retry},'Reintentar'));
     const m = META[s.estado]||META.revision;
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
@@ -88,7 +96,7 @@
             React.createElement('div', { style: { flex: 1 } },
               React.createElement('div', { style: { fontSize: 17, fontWeight: 800 } }, s.tipo),
               React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 700, fontFamily: 'var(--mono)' } }, s.id)),
-            React.createElement(StatusPill, { estado: s.estado })),
+            React.createElement(StatusPill, { estado: s.estado, requestStatus: s.requestStatus })),
           React.createElement('div', { style: { display: 'flex', gap: 18, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' } },
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600 } }, 'Monto'), React.createElement('div', { style: { fontSize: 18, fontWeight: 800, color: 'var(--guinda)', marginTop: 2 } }, s.monto==null?'Por cotizar':window.money(s.monto))),
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600 } }, 'Plazo'), React.createElement('div', { style: { fontSize: 18, fontWeight: 800, marginTop: 2 } }, s.plazo)),

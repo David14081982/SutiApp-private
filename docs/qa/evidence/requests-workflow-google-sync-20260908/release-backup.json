@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "mode": "backup",
+  "edgeVersion": 36,
+  "verifyJwt": true,
+  "edgeSha256": "8538aef3cfc61e42e3d901d14731af8bd015aaee4cf0141d6a6d449542d44226",
+  "googleVersion": 9,
+  "googleSourceSha256": "e69c91b66a50bbda9614061a2da4cf863db199e7463e06cb87c291ba30d46f36",
+  "authenticatedReceiverJson": true,
+  "sheetWrites": 0,
+  "backupDirectory": "C:/tmp/sutiapp-requests-workflow-sync-backup-20260908"
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "mode": "verify-recovery",
+  "transaction": "ROLLBACK",
+  "functionsRestored": [
+    "validate_operational_request_tracking",
+    "resolve_program_request_workflow_state"
+  ],
+  "committedWrites": 0
+}

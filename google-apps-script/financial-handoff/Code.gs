@@ -214,9 +214,78 @@ function receiveHandoff_(payload) {
   } finally { lock.releaseLock(); }
 }
 
+// Required request register: same workbook/registry/lock, UUID in A, only Y changes after creation.
+function receiveRequestSync_(payload) {
+  const registerHeaders=TARGET_HEADERS.slice(0,33); // A:AG only; owner excludes AH onward.
+  // A newly inserted row inherits the sheet's unchecked terms checkbox in X.
+  // Only an otherwise empty reserved row may be initialized; no identified row is overwritten.
+  const emptyReservedRow=function(values){return values.every(function(value,index){return blank_(value)||(index===23&&value===false);});};
+  const expected=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!expected||!constantTimeEqual_(payload.secret,expected))return failure_('UNAUTHORIZED');
+  const keys=new Set(['action','secret','contract_version','program_request_id','affiliate_id','numero_control','program','product_id','request_type','request_status','requested_amount','request_created_at','revision','desired_status','row','payload_sha256']);
+  if(Object.keys(payload).some(function(key){return !keys.has(key);})||payload.contract_version!=='REQUEST_REGISTER_V1')return failure_('INVALID_REQUEST_SYNC_CONTRACT');
+  const id=String(payload.program_request_id||'').toLowerCase(),row=payload.row;
+  const desired=payload.request_status==='approved'?'APROBADO':['rejected','cancelled'].includes(payload.request_status)?'Rechazado':'PENDIENTE';
+  if(!validUuid_(id)||!validUuid_(payload.affiliate_id)||!Number.isSafeInteger(payload.revision)||payload.revision<1||
+    !['submitted','requires_financial_processing','in_review','approved','rejected','cancelled'].includes(payload.request_status)||payload.desired_status!==desired||
+    !Array.isArray(row)||row.length!==registerHeaders.length||row[0]!==id||row[1]!==payload.numero_control||row[24]!=='PENDIENTE'||
+    row.some(function(value){return value!==null&&!['string','number','boolean'].includes(typeof value);})||
+    hexDigest_(JSON.stringify(row))!==payload.payload_sha256)return failure_('INVALID_REQUEST_SYNC_PAYLOAD');
+  const lock=LockService.getScriptLock();if(!lock.tryLock(20000))return failure_('HANDOFF_BUSY');
+  try {
+    const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID),target=book.getSheetByName(TARGET_SHEET_NAME),registry=book.getSheetByName(HANDOFF_SHEET_NAME);
+    validateSheet_(target,registerHeaders,'TARGET');validateSheet_(registry,HANDOFF_HEADERS,'HANDOFF');
+    if(String(book.getId())!==HANDOFF_SPREADSHEET_ID||Number(target.getSheetId())!==TARGET_SHEET_ID)throw new Error('TARGET_SHEET_ID_MISMATCH');
+    const matches=target.getRange(2,1,Math.max(1,target.getLastRow()-1),1).createTextFinder(id).matchEntireCell(true).findAll();
+    const registrations=registry.getRange(2,1,Math.max(1,registry.getLastRow()-1),1).createTextFinder(id).matchEntireCell(true).findAll();
+    if(matches.length>1||registrations.length>1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
+    let targetRow=matches.length?matches[0].getRow():null,registryRow=registrations.length?registrations[0].getRow():registry.getLastRow()+1;
+    let saved=registrations.length?registry.getRange(registryRow,1,1,HANDOFF_HEADERS.length).getValues()[0]:null,meta=null;
+    if(saved){
+      if(!String(saved[12]).startsWith('REQUEST_SYNC_V1:'))throw new Error('REQUEST_SYNC_LEGACY_REGISTRY_REQUIRES_REVIEW');
+      meta=JSON.parse(String(saved[12]).slice('REQUEST_SYNC_V1:'.length));
+      if(meta.initial_sha256!==payload.payload_sha256)throw new Error('REGISTRY_HASH_MISMATCH');
+      const reference=String(saved[11]).match(/^Historial de solicitudes!A(\d+)$/);
+      if(!reference||Number(reference[1])<2||Number(reference[1])>target.getMaxRows()+1)throw new Error('REGISTRY_REFERENCE_INVALID');
+      if(targetRow&&targetRow!==Number(reference[1]))throw new Error('REGISTRY_REFERENCE_INVALID');
+      if(!targetRow){targetRow=Number(reference[1]);if(targetRow<=target.getMaxRows()){const reserved=target.getRange(targetRow,1,1,registerHeaders.length).getValues()[0];if(!emptyReservedRow(reserved))throw new Error('TARGET_RESERVED_ROW_MISMATCH');}}
+    }
+    if(!targetRow)targetRow=target.getLastRow()+1;
+    if(targetRow>target.getMaxRows())target.insertRowsAfter(target.getMaxRows(),targetRow-target.getMaxRows());
+    if(registryRow>registry.getMaxRows())registry.insertRowsAfter(registry.getMaxRows(),registryRow-registry.getMaxRows());
+    const now=new Date().toISOString(),reference=TARGET_SHEET_NAME+'!A'+targetRow;
+    if(!saved){
+      meta={revision:0,initial_sha256:payload.payload_sha256};
+      registry.getRange(registryRow,1,1,5).setNumberFormat('@');
+      registry.getRange(registryRow,1,1,HANDOFF_HEADERS.length).setValues([[id,payload.affiliate_id,payload.numero_control,payload.program,payload.product_id||'',payload.request_type,payload.request_status,payload.requested_amount==null?'':payload.requested_amount,payload.request_created_at,now,'processing',reference,'REQUEST_SYNC_V1:'+JSON.stringify(meta),now,'','']]);
+      registry.getRange(registryRow,1,1,5).setNumberFormat('@');SpreadsheetApp.flush();
+    }
+    const existing=target.getRange(targetRow,1,1,registerHeaders.length).getValues()[0];
+    if(emptyReservedRow(existing)){
+      if(meta.initial_sha256!==payload.payload_sha256)throw new Error('REGISTRY_HASH_MISMATCH');
+      if(target.getRange(targetRow,1,1,registerHeaders.length).getFormulas()[0].some(Boolean))throw new Error('TARGET_RESERVED_ROW_MISMATCH');
+      const range=target.getRange(targetRow,1,1,registerHeaders.length);range.setNumberFormat('@');range.setValues([row.map(function(value){return typeof value==='string'&&/^[=+@]/.test(value)?"'"+value:value;})]);
+      SpreadsheetApp.flush();
+      if(!sameRow_(range.getValues()[0],row))throw new Error('TARGET_VERIFICATION_FAILED');
+    }
+    if(target.getRange(targetRow,1).getDisplayValue()!==id||String(target.getRange(targetRow,2).getValue())!==String(payload.numero_control))throw new Error('TARGET_VERIFICATION_FAILED');
+    if(payload.revision>Number(meta.revision||0)){
+      const stateCell=target.getRange(targetRow,25);
+      if(stateCell.getFormula())throw new Error('REQUEST_SYNC_STATUS_FORMULA_PROTECTED');
+      stateCell.setValue(desired);SpreadsheetApp.flush();
+      if(stateCell.getDisplayValue()!==desired)throw new Error('TARGET_VERIFICATION_FAILED');
+      meta.revision=payload.revision;meta.status=desired;
+      registry.getRange(registryRow,7).setValue(payload.request_status);
+      registry.getRange(registryRow,11,1,6).setValues([['processed',reference,'REQUEST_SYNC_V1:'+JSON.stringify(meta),now,'','']]);SpreadsheetApp.flush();
+    }
+    return jsonResponse_({ok:true,action:'sync_request',accepted:true,program_request_id:id,google_row:targetRow,revision:meta.revision,desired_status:meta.status,idempotent:matches.length>0});
+  }finally{lock.releaseLock();}
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
+    if(payload.action==='sync_request')return receiveRequestSync_(payload);
     if(payload.action==='visibility_initialize')return initializeVisibility_(payload);
     if(payload.action==='visibility_write')return writeVisibility_(payload);
     return receiveHandoff_(payload);
@@ -225,7 +294,8 @@ function doPost(event) {
     const allowed=['WORKBOOK_ID_MISMATCH','HANDOFF_MISSING','HANDOFF_SCHEMA_MISMATCH','TARGET_MISSING','TARGET_SCHEMA_MISMATCH','TARGET_SHEET_ID_MISMATCH',
       'REGISTRY_HASH_MISMATCH','REGISTRY_REFERENCE_INVALID','TARGET_RESERVED_ROW_MISMATCH','TARGET_VERIFICATION_FAILED','REGISTRY_STATE_INVALID',
       'CRITERIA_SHEET_MISSING','CRITERIA_SCHEMA_MISMATCH','VISIBILITY_HEADER_MISMATCH','VISIBILITY_COLUMN_NOT_UNUSED','VISIBILITY_HEADER_WRITE_FAILED',
-      'CRITERION_ROW_NOT_FOUND','CRITERION_FINGERPRINT_MISMATCH','VISIBILITY_TARGET_FORMULA_PROTECTED','VISIBILITY_VALUE_INVALID','VISIBILITY_READBACK_FAILED'];
+      'CRITERION_ROW_NOT_FOUND','CRITERION_FINGERPRINT_MISMATCH','VISIBILITY_TARGET_FORMULA_PROTECTED','VISIBILITY_VALUE_INVALID','VISIBILITY_READBACK_FAILED',
+      'REQUEST_SYNC_DUPLICATE_ID','REQUEST_SYNC_LEGACY_REGISTRY_REQUIRES_REVIEW','REQUEST_SYNC_STATUS_FORMULA_PROTECTED'];
     const code=error&&allowed.includes(error.message)?error.message:'INVALID_REQUEST'; return failure_(code);
   }
 }

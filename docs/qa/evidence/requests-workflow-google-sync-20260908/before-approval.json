@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "edgeOutcome": {
+    "status": 409,
+    "body": {
+      "error": "FINANCIAL_PROGRAM_NOT_ELIGIBLE"
+    }
+  },
+  "reads": [
+    "has_admin_permission",
+    "has_admin_permission",
+    "get_financial_runtime_rules",
+    "get_current_loan_term_policy",
+    "resolve_suti_loan_quote_contract"
+  ],
+  "writerReached": false,
+  "committedWrites": 0
+}

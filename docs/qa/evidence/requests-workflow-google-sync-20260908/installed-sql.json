@@ -1,0 +1,80 @@
+{
+  "status": "PASS",
+  "environment": "installed backend",
+  "transaction": "ROLLBACK",
+  "committedRequestWrites": 0,
+  "results": [
+    {
+      "results": [
+        {
+          "test": "initial queue lease and late-response idempotency",
+          "result": "PASS"
+        },
+        {
+          "test": "membership: create idempotency review self timeline advance",
+          "result": "PASS"
+        },
+        {
+          "test": "membership: create idempotency review self timeline cancel",
+          "result": "PASS"
+        },
+        {
+          "test": "membership: create idempotency review self timeline reject",
+          "result": "PASS"
+        },
+        {
+          "test": "persisted review and rejection availability",
+          "result": "PASS"
+        },
+        {
+          "test": "prestamo: create idempotency review self timeline advance",
+          "result": "PASS"
+        },
+        {
+          "test": "prestamo: create idempotency review self timeline cancel",
+          "result": "PASS"
+        },
+        {
+          "test": "prestamo: create idempotency review self timeline reject",
+          "result": "PASS"
+        },
+        {
+          "test": "product: create idempotency review self timeline advance",
+          "result": "PASS"
+        },
+        {
+          "test": "product: create idempotency review self timeline cancel",
+          "result": "PASS"
+        },
+        {
+          "test": "product: create idempotency review self timeline reject",
+          "result": "PASS"
+        },
+        {
+          "test": "recovery disables delivery and restores workflow",
+          "result": "PASS"
+        },
+        {
+          "test": "rejection audit timeline snapshot and duplicate action",
+          "result": "PASS"
+        },
+        {
+          "test": "same row rejection monotonic delivery",
+          "result": "PASS"
+        },
+        {
+          "test": "self history RPC candidate compatibility",
+          "result": "PASS"
+        },
+        {
+          "test": "transport service-only grants",
+          "result": "PASS"
+        },
+        {
+          "test": "unlinked authenticated identity denied without nullable permission bypass",
+          "result": "PASS"
+        }
+      ]
+    }
+  ]
+}

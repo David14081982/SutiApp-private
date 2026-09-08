@@ -1,0 +1,107 @@
+{
+  "status": "PASS",
+  "source": "Independent Google Drive connector readback",
+  "range": "Historial de solicitudes!A2317:AL2325",
+  "review": {
+    "status": "PASS",
+    "nineRowsUnchanged": true,
+    "reviewY": "PENDIENTE"
+  },
+  "checks": [
+    {
+      "row": 2317,
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "initialY": "PENDIENTE",
+      "finalY": "APROBADO",
+      "expectedY": "APROBADO",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2318,
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2319,
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2320,
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "initialY": "PENDIENTE",
+      "finalY": "APROBADO",
+      "expectedY": "APROBADO",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2321,
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2322,
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2323,
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "initialY": "PENDIENTE",
+      "finalY": "APROBADO",
+      "expectedY": "APROBADO",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2324,
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    },
+    {
+      "row": 2325,
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "initialY": "PENDIENTE",
+      "finalY": "Rechazado",
+      "expectedY": "Rechazado",
+      "sameIdentity": true,
+      "occurrences": 1,
+      "nonYChanges": []
+    }
+  ],
+  "duplicates": 0,
+  "changedColumnsAfterCreation": [
+    "Y"
+  ],
+  "excludedColumnsUntouched": "AH onward"
+}

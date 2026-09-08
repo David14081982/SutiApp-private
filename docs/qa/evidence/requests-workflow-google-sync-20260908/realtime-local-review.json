@@ -1,0 +1,185 @@
+{
+  "status": "PASS",
+  "mode": "review",
+  "target": "local",
+  "dataSource": "live authenticated self RPC and realtime; no intercepted responses",
+  "javascriptErrors": [],
+  "before": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "submitted"
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "submitted"
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "submitted"
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "submitted"
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "submitted"
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "submitted"
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "requires_financial_processing"
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "requires_financial_processing"
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "requires_financial_processing"
+    }
+  ],
+  "changes": [
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "submitted",
+      "time": 1788888713766
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "submitted",
+      "time": 1788888713767
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "submitted",
+      "time": 1788888713767
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "submitted",
+      "time": 1788888713767
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "submitted",
+      "time": 1788888713767
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "submitted",
+      "time": 1788888713767
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "requires_financial_processing",
+      "time": 1788888713767
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "requires_financial_processing",
+      "time": 1788888713767
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "requires_financial_processing",
+      "time": 1788888713767
+    },
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "in_review",
+      "time": 1788888716913
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "in_review",
+      "time": 1788888725952
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "in_review",
+      "time": 1788888734418
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "in_review",
+      "time": 1788888741288
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "in_review",
+      "time": 1788888748734
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "in_review",
+      "time": 1788888762202
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "in_review",
+      "time": 1788888771335
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "in_review",
+      "time": 1788888783996
+    },
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "in_review",
+      "time": 1788888790880
+    }
+  ],
+  "realtimeEvents": 9,
+  "latencies": [
+    {
+      "id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+      "status": "in_review",
+      "milliseconds": 190
+    },
+    {
+      "id": "43576bc5-4b24-4a7a-81aa-56560fc2c0f3",
+      "status": "in_review",
+      "milliseconds": 218
+    },
+    {
+      "id": "647c1e53-b02e-43a2-8701-8d587e2ce500",
+      "status": "in_review",
+      "milliseconds": 206
+    },
+    {
+      "id": "f4bbc6aa-bda5-4628-949a-4e1948ee98a4",
+      "status": "in_review",
+      "milliseconds": 195
+    },
+    {
+      "id": "025015eb-3346-4640-802d-62a70f538b7a",
+      "status": "in_review",
+      "milliseconds": 228
+    },
+    {
+      "id": "61f2b91c-076d-4d34-abde-a0803b845233",
+      "status": "in_review",
+      "milliseconds": 1456
+    },
+    {
+      "id": "fb21b750-6421-4dfc-9435-9b25b081e5d5",
+      "status": "in_review",
+      "milliseconds": 264
+    },
+    {
+      "id": "316220a0-d21d-4e9c-b61b-5d7b65a265de",
+      "status": "in_review",
+      "milliseconds": 246
+    },
+    {
+      "id": "31fce914-3e81-4865-b673-180d588f0d50",
+      "status": "in_review",
+      "milliseconds": 271
+    }
+  ]
+}

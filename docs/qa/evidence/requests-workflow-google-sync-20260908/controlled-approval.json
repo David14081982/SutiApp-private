@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "edgeOutcome": {
+    "status": 200,
+    "body": {
+      "data": {
+        "request_id": "d7de2952-727a-4e69-b1b1-fdb7183a38a6",
+        "status": "approved",
+        "processing_status": "ready_for_handoff",
+        "idempotent": false
+      }
+    }
+  },
+  "reads": [
+    "has_admin_permission",
+    "has_admin_permission",
+    "get_financial_runtime_rules",
+    "get_current_loan_term_policy",
+    "resolve_suti_loan_quote_contract"
+  ],
+  "writerReached": true,
+  "committedWrites": 0,
+  "trackingMigration": true,
+  "transactionalApproval": {
+    "httpStatus": 201,
+    "result": [
+      {
+        "status": "approved",
+        "financial_processing_status": "ready_for_handoff"
+      }
+    ]
+  },
+  "candidateMigration": false
+}

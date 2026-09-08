@@ -36227,6 +36227,49 @@ Object.assign(window, {
       failed: (key, url) => act('failed', key, url)
     };
   }
+  function RequestBankReference({
+    reference
+  }) {
+    const available = reference && reference.status === 'available';
+    const messages = {
+      forbidden: 'Requiere permiso para consultar datos bancarios.',
+      not_selected: 'La solicitud se envió sin seleccionar una cuenta bancaria.',
+      not_recorded: 'Esta solicitud no conserva una cuenta bancaria registrada.'
+    };
+    const fields = available ? [['Banco', reference.bank_name], ['Titular', reference.account_holder], ['Tarjeta', reference.card_number], ['CLABE', reference.clabe]].filter(item => item[1]) : [];
+    return h('div', {
+      'data-financial-bank-reference': reference && reference.status || 'unavailable',
+      style: {
+        borderTop: '1px solid var(--hairline)',
+        marginTop: 12,
+        paddingTop: 12
+      }
+    }, h('h4', {
+      style: {
+        margin: '0 0 8px',
+        fontSize: 12,
+        color: 'var(--ink)'
+      }
+    }, 'Cuenta elegida al enviar'), available ? h('div', {
+      className: 'finwb-kv'
+    }, fields.map(([label, value]) => h('div', {
+      key: label
+    }, h('span', null, label), h('strong', {
+      style: label === 'Tarjeta' || label === 'CLABE' ? {
+        fontFamily: 'var(--mono)',
+        fontVariantNumeric: 'tabular-nums',
+        userSelect: 'text',
+        overflowWrap: 'anywhere'
+      } : null
+    }, value)))) : h('p', {
+      style: {
+        margin: 0,
+        color: 'var(--ink-3)',
+        fontSize: 12,
+        lineHeight: 1.5
+      }
+    }, messages[reference && reference.status] || 'No fue posible consultar la referencia bancaria.'));
+  }
 
   // Presentation only: native modal focus containment and a reversible page scroll lock.
   function FinancialRequestDetailModal({
@@ -36822,7 +36865,9 @@ Object.assign(window, {
         stroke: 2
       }), 'Solicitante'), h('div', {
         className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detail.nombre)), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia')))), h('section', {
+      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detail.nombre)), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
+        reference: detail.deposit_reference
+      })), h('section', {
         className: 'finwb-card'
       }, h('h3', null, h(I, {
         name: 'receipt',

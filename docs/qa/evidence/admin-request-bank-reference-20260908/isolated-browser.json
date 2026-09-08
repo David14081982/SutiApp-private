@@ -1,0 +1,277 @@
+{
+  "status": "PASS",
+  "receipts": [
+    {
+      "case": "captured bank, holder, card and CLABE displayed distinctly",
+      "status": "PASS"
+    },
+    {
+      "case": "exact visible content compared with released screen",
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "action": "review",
+      "width": 1267.1875,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 683,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "action": "advance",
+      "width": 1267.1875,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 649,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "action": "review",
+      "width": 901.109375,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 451,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "action": "advance",
+      "width": 901.109375,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 417,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "action": "review",
+      "width": 752,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 743,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "action": "advance",
+      "width": 752,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 709,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "action": "review",
+      "width": 390,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 515,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "action": "advance",
+      "width": 390,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 471,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "action": "review",
+      "width": 320,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 338,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "action": "advance",
+      "width": 320,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 281,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "action": "review",
+      "width": 828,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 148,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "responsive sticky controls",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "action": "advance",
+      "width": 828,
+      "overflow": false,
+      "scrolled": true,
+      "centerHeight": 114,
+      "locked": true,
+      "buttonsVisible": true,
+      "fixed": true,
+      "status": "PASS"
+    },
+    {
+      "case": "no snapshot, no selection, permission denied, absent projection, card-only, CLABE-only, navigation has no stale bank values",
+      "status": "PASS"
+    },
+    {
+      "case": "X, Escape, nested document viewer, draft retention, focus trap/restore, backdrop scroll lock, previous/next, zero writes",
+      "status": "PASS"
+    },
+    {
+      "case": "quote inputs on short/mobile/tablet viewports, read error navigation and close",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "review",
+      "method": "recordAdminAction",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "reject",
+      "method": "transitionWorkflow",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "advance",
+      "method": "transitionWorkflow",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "cancel",
+      "method": "recordAdminAction",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "note",
+      "method": "recordAdminAction",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "quoteAdvance",
+      "method": "transitionWorkflow",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "approveProduct",
+      "method": "approveProductPayment",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "approveLoan",
+      "method": "approveRequest",
+      "status": "PASS"
+    },
+    {
+      "case": "identical baseline callback and confirmation",
+      "action": "handoff",
+      "method": "handoffRequest",
+      "status": "PASS"
+    },
+    {
+      "case": "confirmation cancel, error keeps dossier, busy/retry, selected request only, no approval calls",
+      "status": "PASS"
+    }
+  ],
+  "consoleErrors": [],
+  "backendConnections": 0
+}

@@ -1,5 +1,13 @@
 # Fuentes de verdad
 
+## Cuenta de la solicitud — ADR-109, 2026-09-08
+
+La referencia bancaria mostrada en Solicitante deriva exclusivamente de la captura inmutable
+`loan_request_deposit_snapshots`, por request_id y affiliate_id. El lector existente
+`get_admin_finance_request_flow_detail` añade `deposit_reference` sujeto al permiso bancario.
+`affiliate_bank_accounts` sigue siendo el maestro vigente; este bloque no lo consulta.
+No existen escritores nuevos, backfill, fallback ni autoridad adicional.
+
 ## Referencias de sincronización — ADR-107, 2026-09-08
 
 Supabase program_requests conserva UUID/folio y negocio; program_request_google_sync.initial_row conserva

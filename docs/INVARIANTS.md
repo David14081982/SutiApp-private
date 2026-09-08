@@ -1,5 +1,12 @@
 # Invariantes
 
+## Cuenta de la solicitud — ADR-109
+
+- **INV-220:** El detalle Admin muestra sólo la cuenta capturada en `loan_request_deposit_snapshots`,
+  vinculada por solicitud y afiliado. Banco, titular, tarjeta y CLABE requieren conjuntamente
+  `program_requests.read` y `bank_accounts.read` en backend. No se infiere número de cuenta,
+  no se sustituye con una cuenta vigente y no se amplía el acceso directo a la tabla privada.
+
 ## Eliminación de solicitudes — ADR-108
 
 - **INV-218:** Eliminar una solicitud requiere permiso backend, confirmación de folio/revisión,

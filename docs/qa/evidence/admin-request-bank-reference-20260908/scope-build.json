@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseline": "91f3e32",
+  "changedBundleModules": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "approvalCallbackUnchanged": true,
+  "sharedImageAndAuthSourcesUnchanged": true,
+  "cachebustersOnly": true,
+  "secretScan": "PASS",
+  "unexpectedFiles": [],
+  "globalImageRegression": "NOT APPLICABLE: generated bundle/cachebusters only; shared image sources unchanged",
+  "bundleSha256": "961e5b70f16429850164fb2833a95ee6c423cd4c66bf6c440fc1fdd4be36f835"
+}

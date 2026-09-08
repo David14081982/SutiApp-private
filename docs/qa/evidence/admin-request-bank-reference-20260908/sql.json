@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "receipt": [
+    {
+      "status": "PASS",
+      "requests_compared": 51,
+      "available": 23,
+      "not_recorded": 23,
+      "not_selected": 5
+    }
+  ],
+  "existingFieldsIdentical": true,
+  "bankPermissionDenial": true,
+  "anonymousAndUnassignedDenied": true,
+  "privateTableNoSelect": true,
+  "dataHashesIdentical": true,
+  "recoveryAndRollbackVerified": true,
+  "migrationSha256": "1b00877dc356dc0a96cf763f2707d2012d4c5ce57d41896b6e363a29c0155ae1"
+}

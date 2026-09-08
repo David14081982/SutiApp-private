@@ -1,5 +1,22 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-109 — Cuenta capturada en el detalle administrativo, 2026-09-08
+
+El propietario solicita referencias bancarias en Solicitante y elige explícitamente la cuenta
+seleccionada al enviar esa solicitud. `loan_request_deposit_snapshots` conserva esa evidencia;
+no se consulta ni sustituye con `affiliate_bank_accounts` vigente. La captura no tiene
+`account_number`: Tarjeta y CLABE se muestran con su nombre y valor propio, sin inferencias.
+
+Se autoriza exclusivamente la proyección de lectura `deposit_reference` del RPC existente
+`get_admin_finance_request_flow_detail`, con `program_requests.read` y `bank_accounts.read`
+comprobados en backend. Devuelve banco, titular y los instrumentos capturados completos sólo
+al administrador autorizado; no devuelve teléfono ni identificadores bancarios internos.
+Sin permiso, sin captura o sin selección hay estados explícitos, sin fallback. No cambia la
+proyección enmascarada de autoservicio ni concede acceso browser a la tabla privada (INV-136).
+
+No modifica cuentas, solicitudes, documentos, estados, callbacks, pagos o sincronización Google.
+La migración 20260908000500 conserva firma, OID y grants; recovery restaura el lector exacto.
+
 ## ADR-108 — Eliminación administrativa de una solicitud, 2026-09-08
 
 El propietario autoriza el botón Eliminar solicitud y confirma incluir su registro Google,

@@ -1,5 +1,13 @@
 # Reglas de seguridad
 
+## Referencia bancaria en solicitudes — ADR-109
+
+El RPC de detalle conserva su gate `program_requests.read` y sólo proyecta banco, titular,
+tarjeta/CLABE capturados si `has_admin_permission('bank_accounts.read')` es verdadero.
+La restricción se aplica en backend; un cliente sin ese permiso recibe sólo `status=forbidden`.
+La consulta vincula request_id y affiliate_id. La tabla privada mantiene RLS/grants sin cambios.
+Los recibos de pruebas nunca contienen instrumentos reales, tokens ni capturas con esos valores.
+
 ## Reparación certificada de vínculos Auth — ADR-104
 
 El writer `apply_affiliate_csv_auth_link_repair` está revocado a `public`, `anon` y `authenticated` y concedido sólo a `service_role`. Fija hash/947 filas, vuelve a calcular el universo bajo lock, exige unicidad del control y email en ambos extremos, correo Auth confirmado, afiliados no archivados/elegibles y target libre o perteneciente a la misma permutación determinística. Primero guarda snapshot y auditoría; después despeja los UUID origen y los asigna a sus destinos dentro de la misma transacción. Cualquier conteo, ocupación, principal perdido o postcondición distinta aborta todo.

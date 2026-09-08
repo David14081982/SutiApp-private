@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "engine": "isolated PostgreSQL 18 localhost:55498",
+  "productionWrites": 0,
+  "syntheticRowsOnly": true,
+  "realMigrationAndRecoveryExecuted": true,
+  "checks": [
+    "relocation and locator audit",
+    "immutable payload rejection",
+    "stale lease rejection",
+    "equal-revision retry and missing/restored errors",
+    "lease release",
+    "business request preserved",
+    "RLS/grants",
+    "recovery"
+  ],
+  "transaction": "ROLLBACK"
+}

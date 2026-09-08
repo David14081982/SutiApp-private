@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "name": "moved folio resolves actual row, repairs registry, preserves cells, then updates only Y",
+      "status": "PASS"
+    },
+    {
+      "name": "old reference beyond reduced grid can relocate upward by folio",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed missing row never recreates, including empty/reused/out-of-grid old position",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate folio, wrong control/date, and formula locator cannot relocate",
+      "status": "PASS"
+    },
+    {
+      "name": "interrupted initial reservation still recovers exactly one row",
+      "status": "PASS"
+    },
+    {
+      "name": "same/stale revision repairs locator without resetting later legacy Iniciado",
+      "status": "PASS"
+    }
+  ],
+  "externalWrites": 0,
+  "AHOnward": "untouched"
+}

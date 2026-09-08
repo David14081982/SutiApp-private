@@ -1,0 +1,18 @@
+{
+  "status": "BLOCKED",
+  "managementSql": {"http": 544, "message": "Failed to run sql query: Connection terminated due to connection timeout", "repeated": true, "selectOneAlsoFailed": true},
+  "managementProjectStatus": "ACTIVE_HEALTHY",
+  "actualServiceHealth": [
+    {"name": "db", "healthy": false, "status": "UNHEALTHY", "error": "Failed to connect to database"},
+    {"name": "rest", "healthy": false, "status": "UNHEALTHY", "error": "Failed to retrieve project's rest service health"}
+  ],
+  "externalWritesThisTask": 0,
+  "productionMigrationApplied": false,
+  "receiverDeployed": false,
+  "referencesChanged": false,
+  "candidateTests": "PASS isolated actual GAS and PostgreSQL18 migration/recovery",
+  "plan": {"moved": 3, "missingHistoricalQaRows": 9, "alreadyCorrect": 1},
+  "requiredNextCondition": "Restore database availability, then fresh backup/dry-run before applying",
+  "restartPerformed": false,
+  "scopeReason": "Production project restart affects all modules; owner decision required before expanding the focal reference repair"
+}

@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "environment": "isolated; no external writes",
+  "tests": [
+    {
+      "test": "prestamo: create, review, approve, reject/cancel, same A/Y and no duplicates",
+      "result": "PASS"
+    },
+    {
+      "test": "membership: create, review, approve, reject/cancel, same A/Y and no duplicates",
+      "result": "PASS"
+    },
+    {
+      "test": "puertas: create, review, approve, reject/cancel, same A/Y and no duplicates",
+      "result": "PASS"
+    },
+    {
+      "test": "owner exclusion: AH onward is never mapped or written, including existing formulas",
+      "result": "PASS"
+    },
+    {
+      "test": "interrupted first insert recovers reserved row without duplicate",
+      "result": "PASS"
+    },
+    {
+      "test": "new reserved row inherits unchecked terms checkbox; recovery preserves other cells",
+      "result": "PASS"
+    },
+    {
+      "test": "crash after Y write and before registry update recovers and remains monotonic",
+      "result": "PASS"
+    },
+    {
+      "test": "duplicate UUID, header drift, formula in Y, wrong identity and unauthorized calls are denied",
+      "result": "PASS"
+    },
+    {
+      "test": "reserved row at grid boundary recovers before append",
+      "result": "PASS"
+    }
+  ],
+  "duplicates": 0,
+  "ownerColumnBoundary": "A:AG; AH onward excluded"
+}

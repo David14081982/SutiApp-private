@@ -27,14 +27,13 @@ run('valid leap date and ISO calendar day preserved; malformed dates/folios fail
   for(const bad of ['2026-02-29T00:00:00Z','2026-13-01T00:00:00Z','not-date']){const f=fixture(),p=v2();p.row[9]=bad;p.payload_sha256=sha(p.row);assert.equal(f.send(p).error,'REQUEST_SYNC_DATE_INVALID');assert.equal(f.writes.length,0);}
   for(const bad of ['',undefined,'=formula','SR-2026-1']){const f=fixture(),p=v2();p.request_folio=bad;assert.equal(f.send(p).error,'REQUEST_SYNC_FOLIO_INVALID');assert.equal(f.writes.length,0);}
 });
-run('folio collision, changed folio, identity/date formula and relocated row fail closed',()=>{
-  for(const problem of ['collision','changed-folio','identity-formula','date-formula','moved']){
+run('folio collision, changed folio and identity/date formula fail closed',()=>{
+  for(const problem of ['collision','changed-folio','identity-formula','date-formula']){
     const f=fixture(),p=v2();assert(f.send(p).ok);
     if(problem==='collision'){f.target.rows.push(f.target.rows[1].slice());f.target.maxRows++;}
     if(problem==='changed-folio')p.request_folio='SR-2026-000999';
     if(problem==='identity-formula')f.target.formulas['2:1']='="SR-2026-000121"';
     if(problem==='date-formula')f.target.formulas['2:10']='=TODAY()';
-    if(problem==='moved'){f.target.rows.splice(1,0,[]);f.target.maxRows++;}
     f.writes.length=0;assert(!f.send(p).ok,problem);assert.equal(f.writes.length,0,problem);
   }
 });

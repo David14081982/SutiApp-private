@@ -265,9 +265,13 @@ function receiveRequestSync_(payload) {
     let targetRow=matches.length?matches[0].getRow():null;
     if(saved){
       const reference=String(saved[11]).match(/^Historial de solicitudes!A(\d+)$/);
-      if(!reference||Number(reference[1])<2||Number(reference[1])>target.getMaxRows()+1)throw new Error('REGISTRY_REFERENCE_INVALID');
-      if(targetRow&&targetRow!==Number(reference[1]))throw new Error('REGISTRY_REFERENCE_INVALID');
-      if(!targetRow){targetRow=Number(reference[1]);if(targetRow<=target.getMaxRows()){const reserved=target.getRange(targetRow,1,1,registerHeaders.length).getValues()[0];if(!emptyReservedRow(reserved))throw new Error('TARGET_RESERVED_ROW_MISMATCH');}}
+      if(!reference||Number(reference[1])<2)throw new Error('REGISTRY_REFERENCE_INVALID');
+      // A confirmed row that disappeared must never be recreated at a reused position.
+      if(!targetRow&&Number(meta.revision||0)>0)throw new Error('REQUEST_SYNC_TARGET_MISSING');
+      if(!targetRow){
+        if(Number(reference[1])>target.getMaxRows()+1)throw new Error('REGISTRY_REFERENCE_INVALID');
+        targetRow=Number(reference[1]);if(targetRow<=target.getMaxRows()){const reserved=target.getRange(targetRow,1,1,registerHeaders.length).getValues()[0];if(!emptyReservedRow(reserved))throw new Error('TARGET_RESERVED_ROW_MISMATCH');}
+      }
     }
     if(!targetRow)targetRow=target.getLastRow()+1;
     if(targetRow>target.getMaxRows())target.insertRowsAfter(target.getMaxRows(),targetRow-target.getMaxRows());
@@ -301,6 +305,13 @@ function receiveRequestSync_(payload) {
       if(dateDisplay!==date.display){dateCell.setValue(date.serial);dateCell.setNumberFormat('dd/MM/yyyy');SpreadsheetApp.flush();}
       if(identityCell.getDisplayValue()!==folio||dateCell.getDisplayValue()!==date.display)throw new Error('TARGET_VERIFICATION_FAILED');
     }
+    // Only after unique identity, control, date and hash verification may the locator move.
+    if(saved&&(String(saved[11])!==reference||['error','failed'].includes(saved[10]))){
+      const referenceCell=registry.getRange(registryRow,12);
+      if(referenceCell.getFormula())throw new Error('REGISTRY_REFERENCE_INVALID');
+      registry.getRange(registryRow,11,1,6).setValues([['processed',reference,'REQUEST_SYNC_V1:'+JSON.stringify(meta),now,'','']]);SpreadsheetApp.flush();
+      if(referenceCell.getDisplayValue()!==reference)throw new Error('TARGET_VERIFICATION_FAILED');
+    }
     if(payload.revision>Number(meta.revision||0)){
       const stateCell=target.getRange(targetRow,25);
       if(stateCell.getFormula())throw new Error('REQUEST_SYNC_STATUS_FORMULA_PROTECTED');
@@ -329,7 +340,7 @@ function doPost(event) {
       'CRITERIA_SHEET_MISSING','CRITERIA_SCHEMA_MISMATCH','VISIBILITY_HEADER_MISMATCH','VISIBILITY_COLUMN_NOT_UNUSED','VISIBILITY_HEADER_WRITE_FAILED',
       'CRITERION_ROW_NOT_FOUND','CRITERION_FINGERPRINT_MISMATCH','VISIBILITY_TARGET_FORMULA_PROTECTED','VISIBILITY_VALUE_INVALID','VISIBILITY_READBACK_FAILED',
       'REQUEST_SYNC_DUPLICATE_ID','REQUEST_SYNC_LEGACY_REGISTRY_REQUIRES_REVIEW','REQUEST_SYNC_STATUS_FORMULA_PROTECTED',
-      'REQUEST_SYNC_DATE_INVALID','REQUEST_SYNC_FOLIO_INVALID','REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED'];
+      'REQUEST_SYNC_DATE_INVALID','REQUEST_SYNC_FOLIO_INVALID','REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED','REQUEST_SYNC_TARGET_MISSING'];
     const code=error&&allowed.includes(error.message)?error.message:'INVALID_REQUEST'; return failure_(code);
   }
 }

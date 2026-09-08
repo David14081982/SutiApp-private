@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-08T03:25:52.626Z",
+  "status": "PASS",
+  "version": 11,
+  "verify_jwt": true,
+  "eszip_sha256": "fcb1388be60f70384eccb99c010691c6f9929f983c9fb26b192cdfb7840ecbac",
+  "source_sha256": "d7806e71e724992433745c7d0632f04ecdc34cbb5636e6afc94ed71c4bf80a23",
+  "compiled_sha256": "f39238a6316d2a48ea99f0db45e332e7d40c8972523a9d15c889b5503b48ac3f",
+  "astEquivalent": true,
+  "formatReference": "https://raw.githubusercontent.com/denoland/deno/main/libs/eszip/v2.rs",
+  "archiveBackup": "C:/tmp/sutiapp-h07-data-exports-v11.eszip"
+}

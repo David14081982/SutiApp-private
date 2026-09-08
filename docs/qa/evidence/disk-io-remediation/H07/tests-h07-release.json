@@ -1,0 +1,18 @@
+{
+  "at": "2026-09-08T03:49:24.980Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "test": "test-n-plus-one-reads.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"case\":\"export-0\",\"before\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-1\",\"before\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-3\",\"before\":{\"pages\":1,\"auth\":2,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-999\",\"before\":{\"pages\":1,\"auth\":799,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-1000\",\"before\":{\"pages\":2,\"auth\":800,\"batch\":0,\"audits\":0},\"after\":{\"pages\":2,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-1001\",\"before\":{\"pages\":2,\"auth\":800,\"batch\":0,\"audits\":0},\"after\":{\"pages\":2,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-20000\",\"before\":{\"pages\":21,\"auth\":16000,\"batch\":0,\"audits\":0},\"after\":{\"pages\":21,\"auth\":0,\"batch\":16,\"audits\":0}},{\"case\":\"export-20001\",\"before\":{\"pages\":21,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":21,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-permissions-missing-duplicate-cross-id-null-email\",\"status\":\"PASS\"},{\"case\":\"portal-0-admin\",\"before\":6,\"after\":6,\"rows\":0,\"promotions\":0},{\"case\":\"portal-1-admin\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":0},{\"case\":\"portal-1-admin\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":3},{\"case\":\"portal-3-admin\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":8},{\"case\":\"portal-33-admin\",\"before\":39,\"after\":7,\"rows\":33,\"promotions\":66},{\"case\":\"portal-101-admin\",\"before\":107,\"after\":8,\"rows\":101,\"promotions\":101},{\"case\":\"portal-3-admin\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":3000},{\"case\":\"portal-3-member\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":4},{\"case\":\"portal-3-public\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":6},{\"case\":\"reorder-preserves-partial-commit-stop-on-error\",\"before\":2,\"after\":2,\"action\":\"UNCHANGED_TRANSACTIONAL_BATCH_NOT_EQUIVALENT\"}]}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-n-plus-one-previews-browser.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"stage\":\"before\",\"zero\":0,\"initial\":8,\"arrayRerenders\":8,\"allScrolled\":8,\"afterExplicitOpen\":8,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"stage\":\"after\",\"zero\":0,\"initial\":3,\"arrayRerenders\":3,\"allScrolled\":8,\"afterExplicitOpen\":9,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"expiry300\":\"PASS\",\"hiddenReuse\":\"PASS\",\"deniedNoLoop\":\"PASS\",\"contextLogout\":\"PASS\",\"unavailableRejected\":\"PASS\"}],\"productionMutations\":0}\n",
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-08T04:00:56.153Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "passed": true,
+      "other_instance_omitted": true
+    }
+  ],
+  "method": "Exact candidate function with only relation/name redirected to isolated temporary fixtures; no auth.users mutation."
+}

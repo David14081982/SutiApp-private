@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-08T03:44:49.016Z",
+  "exit": 0,
+  "stdout": "{\"credentials_exposed\": false, \"mode\": \"APPLY\", \"slug\": \"data-exports\", \"status\": \"PASS\", \"verify_jwt\": true, \"version\": 12}\r\n",
+  "stderr": ""
+}

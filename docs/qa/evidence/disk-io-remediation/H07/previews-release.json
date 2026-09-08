@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-08T03:50:23.008Z",
+  "exit": 0,
+  "stdout": "{\"status\":\"PASS\",\"results\":[{\"stage\":\"before\",\"zero\":0,\"initial\":8,\"arrayRerenders\":8,\"allScrolled\":8,\"afterExplicitOpen\":8,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"stage\":\"after\",\"zero\":0,\"initial\":3,\"arrayRerenders\":3,\"allScrolled\":8,\"afterExplicitOpen\":9,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"expiry300\":\"PASS\",\"hiddenReuse\":\"PASS\",\"deniedNoLoop\":\"PASS\",\"contextLogout\":\"PASS\",\"unavailableRejected\":\"PASS\"}],\"productionMutations\":0}\n",
+  "stderr": ""
+}

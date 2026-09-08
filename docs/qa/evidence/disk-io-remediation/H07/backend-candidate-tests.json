@@ -1,0 +1,59 @@
+{
+  "at": "2026-09-08T04:00:11.852Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "label": "1000_allowed",
+      "passed": true
+    },
+    {
+      "label": "1001_rejected",
+      "passed": true
+    },
+    {
+      "label": "all_linked_exact",
+      "passed": true
+    },
+    {
+      "label": "anon_denied",
+      "passed": true
+    },
+    {
+      "label": "authenticated_denied",
+      "passed": true
+    },
+    {
+      "label": "empty",
+      "passed": true
+    },
+    {
+      "label": "grants",
+      "passed": true
+    },
+    {
+      "label": "missing_no_identity_invention",
+      "passed": true
+    },
+    {
+      "label": "null_element_rejected",
+      "passed": true
+    },
+    {
+      "label": "null_rejected",
+      "passed": true
+    },
+    {
+      "label": "owner_search_path_stable",
+      "passed": true
+    },
+    {
+      "label": "recovery_removes_only_new_rpc",
+      "passed": true
+    },
+    {
+      "label": "service_empty",
+      "passed": true
+    }
+  ],
+  "persistentMutations": 0
+}

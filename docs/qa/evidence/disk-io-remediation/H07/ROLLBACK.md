@@ -1,0 +1,11 @@
+# H07 — recuperación
+
+Base publicada a0159d761bd1b03fe6cf3ec3971f58ce49f9d521 (H06). Las fuentes exactas anteriores están en before/published. Edge v11: before/edge-live.js, fuente TypeScript before/published/supabase/functions/data-exports/index.ts y prueba AST en edge-live-proof.json; archive completo C:/tmp/sutiapp-h07-data-exports-v11.eszip. No secretos de despliegue en evidencia.
+
+Orden backend: desplegar primero la fuente Edge v11 mediante el deploy oficial Management API (misma entrada index.ts, verify_jwt=true, mismos origins). Verificar descarga CSV/XLSX y auditoría; después aplicar supabase/recovery/20260907000600_n_plus_one_reads.sql, que retira exclusivamente get_data_export_auth_emails(uuid[]). Mantener RPC mientras el consumidor nuevo pueda ejecutarse; su existencia no cambia ningún lector antiguo. No borrar bitácoras ni archivos exportados ajenos. El forward y recovery se ejecutaron juntos en una transacción revertida, con 13 checks y retiro de la función comprobado.
+
+Para reproducir las dependencias efectivas v11, fijar su import supabase-js a 2.115.0 antes del redeploy; el literal abierto @2 ya resolvió otra versión durante esta H. Esto no cambia el reader anterior y evita un upgrade incidental en recuperación. Verificar el SDK efectivo y el AST del bundle Edge, además del resultado. La versión final H07 es v13 con ese SDK; v12 es evidencia intermedia, supersedida.
+
+Orden frontend: en un checkout aislado del main vigente restaurar únicamente company-store.jsx, marketplace-repository.js, screens-admin-affiliates.jsx (DocumentCard), private-resource-demand.js y screens-documentos.jsx desde la base, regenerar bundle y aumentar versiones por encima de las publicadas (225/172 si siguen vigentes 224/171). No restaurar el workspace completo ni publicar trabajo pendiente de Admin Savings. Regresión focal y global local/pública; confirmar 21 archivos publicados contra blobs del commit.
+
+La reversión restaura costes anticipados y comportamiento de miniaturas anteriores; no cambia RLS, buckets, TTL, reglas financieras ni autoridad. No requiere revertir H01–H06 ni datos. Los checks de firma/owner/ACL/policies y hashes permiten detectar drift antes de cualquier retiro. No ensayar un rollback productivo sin regresión que lo motive; el candidato y la fuente anterior se certifican sin quitar historia.

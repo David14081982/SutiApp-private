@@ -1,0 +1,268 @@
+{
+  "at": "2026-09-08T03:47:17.198Z",
+  "target": "http://localhost:8080/",
+  "status": "PASS",
+  "store": {
+    "phase": "error",
+    "error": {
+      "code": "42501",
+      "message": "permission denied for table program_requests"
+    },
+    "companies": 0
+  },
+  "result": {
+    "companies": 33,
+    "promotions": 0,
+    "ms": 239.30000007152557,
+    "sha256": "1513fc19cabd4f49b7d9967c2b23827a3191629030bccd0ef424dbf9c37c05da"
+  },
+  "metrics": [
+    {
+      "stage": "login",
+      "table": "app_settings",
+      "http": 200,
+      "bytes": 2696,
+      "rows": 1
+    },
+    {
+      "stage": "login",
+      "table": "app_assets",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "get_admin_access_context",
+      "http": 200,
+      "bytes": 1241,
+      "rows": null
+    },
+    {
+      "stage": "login",
+      "table": "get_current_affiliate_access_state",
+      "http": 200,
+      "bytes": 8,
+      "rows": null
+    },
+    {
+      "stage": "login",
+      "table": "get_effective_affiliate_id",
+      "http": 200,
+      "bytes": 38,
+      "rows": null
+    },
+    {
+      "stage": "login",
+      "table": "get_impersonation_context",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "affiliates",
+      "http": 200,
+      "bytes": 1046,
+      "rows": 1
+    },
+    {
+      "stage": "login",
+      "table": "company_benefit_profiles",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "segmentation_catalog_entries",
+      "http": 200,
+      "bytes": 5986,
+      "rows": 20
+    },
+    {
+      "stage": "login",
+      "table": "admin_roles",
+      "http": 200,
+      "bytes": 2213,
+      "rows": 1
+    },
+    {
+      "stage": "login",
+      "table": "companies",
+      "http": 200,
+      "bytes": 20839,
+      "rows": 33
+    },
+    {
+      "stage": "login",
+      "table": "screen_access_policies",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "company_benefits",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "company_audience_rules",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 14729,
+      "rows": 23
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "institutional_documents",
+      "http": 200,
+      "bytes": 6192,
+      "rows": 7
+    },
+    {
+      "stage": "login",
+      "table": "affiliate_files",
+      "http": 200,
+      "bytes": 594,
+      "rows": 1
+    },
+    {
+      "stage": "login",
+      "table": "minutes",
+      "http": 200,
+      "bytes": 2724,
+      "rows": 5
+    },
+    {
+      "stage": "login",
+      "table": "institutional_programs",
+      "http": 200,
+      "bytes": 11617,
+      "rows": 17
+    },
+    {
+      "stage": "login",
+      "table": "directory_members",
+      "http": 200,
+      "bytes": 13282,
+      "rows": 28
+    },
+    {
+      "stage": "login",
+      "table": "list_self_marketplace_quote_notifications",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 4820,
+      "rows": 10
+    },
+    {
+      "stage": "login",
+      "table": "get_self_savings_if_changed",
+      "http": 200,
+      "bytes": 903,
+      "rows": null
+    },
+    {
+      "stage": "login",
+      "table": "popups",
+      "http": 200,
+      "bytes": 3953,
+      "rows": 7
+    },
+    {
+      "stage": "login",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22224,
+      "rows": 33
+    },
+    {
+      "stage": "login",
+      "table": "news_articles",
+      "http": 200,
+      "bytes": 3146,
+      "rows": 2
+    },
+    {
+      "stage": "store",
+      "table": "list_self_marketplace_quote_notifications",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "store",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22054,
+      "rows": 33
+    },
+    {
+      "stage": "store",
+      "table": "company_portal_subscriptions",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "store",
+      "table": "company_popup_proposals",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "store",
+      "table": "company_portal_plans",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0
+    },
+    {
+      "stage": "store",
+      "table": "program_requests",
+      "http": 403,
+      "bytes": 211,
+      "rows": null
+    },
+    {
+      "stage": "promotions",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22054,
+      "rows": 33
+    },
+    {
+      "stage": "promotions",
+      "table": "companies",
+      "http": 200,
+      "bytes": 2143,
+      "rows": 33
+    }
+  ],
+  "errors": [],
+  "productionMutations": 0
+}

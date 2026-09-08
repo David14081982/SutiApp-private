@@ -1,0 +1,114 @@
+{
+  "at": "2026-09-08T03:46:50.022Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "test": "test-program-catalog-cutover.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"items\":134,\"counts\":{\"aires\":16,\"auto\":3,\"casa\":35,\"computo\":1,\"donativos\":1,\"farma\":50,\"puertas\":3,\"renta\":1,\"solar\":4,\"terrenos\":3,\"tours\":17},\"snapshot\":\"37FA2B489B0E33E56E833FD0854AF87FE542705BB739228E27DF7946ACC43D00\"}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-products-admin-cutover.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"priced\":65,\"aires\":16,\"puertas\":3,\"authority\":\"program_catalog_items\",\"marketplaceTouched\":0}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-product-commercial-mode-and-sold.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"authority\":\"program_catalog_items\",\"commercialModes\":3,\"soldIndependent\":true,\"casaClassification\":\"DIRECT_CONTACT\",\"serverGuard\":true,\"recovery\":true,\"marketplaceTouched\":false,\"panelEmpresarialTouched\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-products-save-contract-audit.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"contract\":\"delta-aware\",\"historicalImages\":\"8→8, 9→9, 9→8 allowed; 8→9, 9→10 denied\",\"specificErrors\":true,\"recovery\":true,\"outOfScopeTouched\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-catalog-cirugias-bootstrap.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"program\":\"cirugias\",\"emptyAdminProgram\":true,\"syntheticProducts\":0,\"market\":false,\"rifas\":false,\"terrenosUnchanged\":3,\"authority\":\"program_catalog_items\"}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-membership-document-thumbnail-viewer.js",
+      "exit": 0,
+      "stdout": "Membership document thumbnail and in-app viewer contract PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-loan-document-flow.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"cases\":10,\"fresh_signing\":true,\"physical_availability\":true,\"replacement_history\":true,\"camera\":true,\"upload\":true,\"exact_missing_list\":true}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-loan-document-context-isolation.js",
+      "exit": 0,
+      "stdout": "Loan document context isolation PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-required-document-uploads.js",
+      "exit": 0,
+      "stdout": "Required document upload resilience PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-global-document-image-ux-consistency.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"sharedReplace\":true,\"consumers\":[\"Documentos\",\"Suti Prestamo\",\"Membresias\",\"Program Product Payment\"],\"viewerConsumers\":\"GLOBAL\",\"safeArea\":true,\"overlayTargetGuard\":true,\"scrollRestore\":true,\"rawDocumentNavigation\":false,\"backendChanged\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-admin-document-workbench.js",
+      "exit": 0,
+      "stdout": "Admin document workbench static contract PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-catalog-resource-demand.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"checks\":[\"default contract excludes disabled items and unrelated links\",\"program filter preserves values with zero eager signatures\",\"admin summary fetches no links or images\",\"empty program remains empty\",\"one demanded asset, original TTL\",\"simultaneously visible resources share one Storage batch\",\"identical in-flight dedup, no settled signature cache\",\"effective affiliate change rejects late response\",\"actor invalidates pending authorization\",\"session invalidates pending authorization\",\"impersonation invalidates pending authorization\",\"permission invalidates pending authorization\",\"document overlap dedup and fresh explicit open\",\"purpose, mode and target never share authorization\",\"admin denial and private Storage denial propagate\",\"logout rejects requests\",\"marketplace bootstrap never preloads program catalog\",\"scoped program navigation and authoritative favorite refresh\",\"admin metadata summary and toggle preserve every original asset and price\",\"failed selected-program reload cannot expose empty replacement links\",\"late failed favorite cannot restore data after logout\",\"catalog projections clear on logout\"]}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-catalog-resource-demand-browser.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"stage\":\"before\",\"first\":8,\"afterFourReferenceRenders\":40,\"afterScroll\":40,\"explicitOpen\":1,\"listExtra\":8,\"rejectedAndArchived\":\"DENIED\"},{\"stage\":\"after\",\"first\":6,\"afterFourReferenceRenders\":6,\"afterScroll\":8,\"explicitOpen\":1,\"listExtra\":0,\"rejectedAndArchived\":\"DENIED\"},{\"expiry\":\"PASS\",\"requests\":6},{\"programImageVisibilityReuse\":\"PASS\",\"assetReplacement\":\"PASS\",\"programExpiry\":\"PASS\"},{\"logout\":\"PASS\"}]}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-data-exports.js",
+      "exit": 0,
+      "stdout": "DATA EXPORTS CONTRACT: PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-phase6.js",
+      "exit": 0,
+      "stdout": "Phase 6 static verification PASS: empty Supabase plan authority, subscriptions/RLS, Admin CRUD routing and real operation metrics.\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-admin-affiliates.js",
+      "exit": 0,
+      "stdout": "Admin affiliates productive workbench static contract PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-n-plus-one-reads.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"case\":\"export-0\",\"before\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-1\",\"before\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-3\",\"before\":{\"pages\":1,\"auth\":2,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-999\",\"before\":{\"pages\":1,\"auth\":799,\"batch\":0,\"audits\":0},\"after\":{\"pages\":1,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-1000\",\"before\":{\"pages\":2,\"auth\":800,\"batch\":0,\"audits\":0},\"after\":{\"pages\":2,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-1001\",\"before\":{\"pages\":2,\"auth\":800,\"batch\":0,\"audits\":0},\"after\":{\"pages\":2,\"auth\":0,\"batch\":1,\"audits\":0}},{\"case\":\"export-20000\",\"before\":{\"pages\":21,\"auth\":16000,\"batch\":0,\"audits\":0},\"after\":{\"pages\":21,\"auth\":0,\"batch\":16,\"audits\":0}},{\"case\":\"export-20001\",\"before\":{\"pages\":21,\"auth\":0,\"batch\":0,\"audits\":0},\"after\":{\"pages\":21,\"auth\":0,\"batch\":0,\"audits\":0}},{\"case\":\"export-permissions-missing-duplicate-cross-id-null-email\",\"status\":\"PASS\"},{\"case\":\"portal-0-admin\",\"before\":6,\"after\":6,\"rows\":0,\"promotions\":0},{\"case\":\"portal-1-admin\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":0},{\"case\":\"portal-1-admin\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":3},{\"case\":\"portal-3-admin\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":8},{\"case\":\"portal-33-admin\",\"before\":39,\"after\":7,\"rows\":33,\"promotions\":66},{\"case\":\"portal-101-admin\",\"before\":107,\"after\":8,\"rows\":101,\"promotions\":101},{\"case\":\"portal-3-admin\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":3000},{\"case\":\"portal-3-member\",\"before\":7,\"after\":7,\"rows\":1,\"promotions\":4},{\"case\":\"portal-3-public\",\"before\":9,\"after\":7,\"rows\":3,\"promotions\":6},{\"case\":\"reorder-preserves-partial-commit-stop-on-error\",\"before\":2,\"after\":2,\"action\":\"UNCHANGED_TRANSACTIONAL_BATCH_NOT_EQUIVALENT\"}]}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-n-plus-one-previews-browser.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"stage\":\"before\",\"zero\":0,\"initial\":8,\"arrayRerenders\":8,\"allScrolled\":8,\"afterExplicitOpen\":8,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"stage\":\"after\",\"zero\":0,\"initial\":3,\"arrayRerenders\":3,\"allScrolled\":8,\"afterExplicitOpen\":9,\"uiSha256\":\"95abf1b35311bf862c6f4685ddfce619940ee50335b0585a023a238c38a8698f\"},{\"expiry300\":\"PASS\",\"hiddenReuse\":\"PASS\",\"deniedNoLoop\":\"PASS\",\"contextLogout\":\"PASS\",\"unavailableRejected\":\"PASS\"}],\"productionMutations\":0}\n",
+      "stderr": ""
+    }
+  ]
+}

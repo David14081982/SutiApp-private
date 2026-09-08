@@ -1,0 +1,23 @@
+{
+  "at": "2026-09-08T03:43:23.999Z",
+  "release": "C:/tmp/sutiapp-h07-release-20260907",
+  "site": "C:/tmp/sutiapp-h07-site-1788839002357",
+  "bundle": 224,
+  "worker": 171,
+  "runtime": [
+    "app/company-store.jsx",
+    "app/marketplace-repository.js",
+    "app/private-resource-demand.js",
+    "app/screens-documentos.jsx",
+    "app/screens-admin-affiliates.jsx"
+  ],
+  "other": [
+    "supabase/functions/data-exports/index.ts",
+    "supabase/migrations/20260907000600_n_plus_one_reads.sql",
+    "supabase/recovery/20260907000600_n_plus_one_reads.sql",
+    "scripts/test-data-exports.js",
+    "scripts/test-n-plus-one-reads.js",
+    "scripts/test-n-plus-one-previews-browser.js"
+  ],
+  "pendingAdminChangesPublished": false
+}

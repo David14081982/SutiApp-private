@@ -70,11 +70,13 @@
   }
 
   function DocumentCard({row,affiliateId}){
-    const[source,setSource]=React.useState(''),[viewing,setViewing]=React.useState(false),[error,setError]=React.useState(''),[busy,setBusy]=React.useState(false),mime=String(row.mime_type||row.mimeType||''),image=mime.startsWith('image/');
-    const sign=React.useCallback(async()=>{if(source)return source;if(row.available===false||row.previewUnavailable)return null;setBusy(true);setError('');try{const preview=await window.AdminAffiliatesRepository.previewDocument(row.id,affiliateId);setSource(preview.signedUrl);return preview.signedUrl;}catch(_){setError('Vista no disponible');return null;}finally{setBusy(false);}},[row.id,row.available,row.previewUnavailable,affiliateId,source]);
-    React.useEffect(()=>{if(image&&row.available!==false&&!row.previewUnavailable)sign();},[image,row.available,row.previewUnavailable,sign]);
-    const open=async()=>{if(await sign())setViewing(true);};
-    return h(React.Fragment,null,h('button',{type:'button',className:'aff-document-card',disabled:busy||row.available===false||row.previewUnavailable,onClick:open},h('span',{className:'aff-document-thumb'},image&&source?h('img',{src:source,alt:''}):h(I,{name:mime==='application/pdf'?'doc':'image',size:22})),h('span',null,h('strong',null,row.type_label||row.document_type&&row.document_type.label||'Documento'),h('small',null,'Versión '+(row.version||1)+' · '+row.status+' · '+date(row.updated_at)),h('small',null,(row.verificationProvenance||'WORKFLOW_STATUS')+(error?' · '+error:''))),h(I,{name:'eye',size:17})),source&&viewing&&h(window.DocumentViewer,{source,mimeType:mime,title:row.type_label||'Documento',onClose:()=>setViewing(false)}));
+    const demand=window.PrivateResourceDemand,ref=React.useRef(null),context=demand.useContext(),visible=demand.useVisible(ref);
+    const[viewer,setViewer]=React.useState(null),[error,setError]=React.useState(''),[busy,setBusy]=React.useState(false),mime=String(row.mime_type||row.mimeType||''),image=mime.startsWith('image/');
+    const available=row.available!==false&&!row.previewUnavailable,key=JSON.stringify(['ADMIN_AFFILIATE_PROFILE',affiliateId,row.id,row.updated_at,row.status,available,mime]);
+    const thumbnail=demand.useSource(available?key:'',()=>window.AdminAffiliatesRepository.previewDocument(row.id,affiliateId),image&&visible&&available,300);
+    const open=async()=>{if(!available||busy)return;setBusy(true);setError('');try{const preview=await window.AdminAffiliatesRepository.previewDocument(row.id,affiliateId);if(demand.context()===context)setViewer({source:preview.signedUrl,context,key});}catch(_){if(demand.context()===context)setError('Vista no disponible');}finally{setBusy(false);}};
+    const message=error||(thumbnail.error?'Vista no disponible':''),authorizing=image&&visible&&available&&context!==null&&!thumbnail.url&&!thumbnail.error;
+    return h(React.Fragment,null,h('button',{ref,type:'button',className:'aff-document-card',disabled:busy||authorizing||!available,onClick:open},h('span',{className:'aff-document-thumb'},image&&thumbnail.url?h('img',{src:thumbnail.url,alt:'',onError:thumbnail.onError}):h(I,{name:mime==='application/pdf'?'doc':'image',size:22})),h('span',null,h('strong',null,row.type_label||row.document_type&&row.document_type.label||'Documento'),h('small',null,'Versión '+(row.version||1)+' · '+row.status+' · '+date(row.updated_at)),h('small',null,(row.verificationProvenance||'WORKFLOW_STATUS')+(message?' · '+message:''))),h(I,{name:'eye',size:17})),viewer&&viewer.context===context&&viewer.key===key&&h(window.DocumentViewer,{source:viewer.source,mimeType:mime,title:row.type_label||'Documento',onClose:()=>setViewer(null)}));
   }
 
   function EditProfile({profile,options,onSaved,onCancel}){

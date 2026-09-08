@@ -1,0 +1,478 @@
+{
+  "at": "2026-09-08T04:09:43.933Z",
+  "target": "http://localhost:8080/",
+  "status": "PASS",
+  "store": {
+    "phase": "error",
+    "error": {
+      "code": "42501",
+      "message": "permission denied for table program_requests"
+    },
+    "companies": 0
+  },
+  "result": {
+    "companies": 33,
+    "promotions": 0,
+    "ms": 177.10000002384186,
+    "sha256": "1513fc19cabd4f49b7d9967c2b23827a3191629030bccd0ef424dbf9c37c05da"
+  },
+  "metrics": [
+    {
+      "stage": "login",
+      "table": "app_assets",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 974,
+        "responseBodySize": 826,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "app_settings",
+      "http": 200,
+      "bytes": 2696,
+      "rows": 1,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2556,
+        "responseBodySize": 2726,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "get_current_affiliate_access_state",
+      "http": 200,
+      "bytes": 8,
+      "rows": null,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1704,
+        "responseBodySize": 718,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "get_admin_access_context",
+      "http": 200,
+      "bytes": 1241,
+      "rows": null,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1684,
+        "responseBodySize": 1132,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "get_effective_affiliate_id",
+      "http": 200,
+      "bytes": 38,
+      "rows": null,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1688,
+        "responseBodySize": 752,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "affiliates",
+      "http": 200,
+      "bytes": 1046,
+      "rows": 1,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2314,
+        "responseBodySize": 1753,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "get_impersonation_context",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1686,
+        "responseBodySize": 713,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "admin_roles",
+      "http": 200,
+      "bytes": 2213,
+      "rows": 1,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1733,
+        "responseBodySize": 1372,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "segmentation_catalog_entries",
+      "http": 200,
+      "bytes": 5986,
+      "rows": 20,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1786,
+        "responseBodySize": 2135,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "screen_access_policies",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1647,
+        "responseBodySize": 764,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "company_audience_rules",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1648,
+        "responseBodySize": 766,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "company_benefits",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1653,
+        "responseBodySize": 772,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "company_benefit_profiles",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1652,
+        "responseBodySize": 767,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 14729,
+      "rows": 23,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1914,
+        "responseBodySize": 3785,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "companies",
+      "http": 200,
+      "bytes": 20839,
+      "rows": 33,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1989,
+        "responseBodySize": 6089,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "affiliate_files",
+      "http": 200,
+      "bytes": 594,
+      "rows": 1,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2032,
+        "responseBodySize": 1473,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 4820,
+      "rows": 10,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1885,
+        "responseBodySize": 2183,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "institutional_programs",
+      "http": 200,
+      "bytes": 11617,
+      "rows": 17,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1981,
+        "responseBodySize": 4039,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "institutional_documents",
+      "http": 200,
+      "bytes": 6192,
+      "rows": 7,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2065,
+        "responseBodySize": 2618,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "news_articles",
+      "http": 200,
+      "bytes": 3146,
+      "rows": 2,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1899,
+        "responseBodySize": 2512,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "directory_members",
+      "http": 200,
+      "bytes": 13282,
+      "rows": 28,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1831,
+        "responseBodySize": 4974,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "list_self_marketplace_quote_notifications",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1718,
+        "responseBodySize": 714,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "popups",
+      "http": 200,
+      "bytes": 3953,
+      "rows": 7,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1953,
+        "responseBodySize": 2422,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "minutes",
+      "http": 200,
+      "bytes": 2724,
+      "rows": 5,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2012,
+        "responseBodySize": 1949,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "banners",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1892,
+        "responseBodySize": 945,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "get_self_savings_if_changed",
+      "http": 200,
+      "bytes": 903,
+      "rows": null,
+      "transfer": {
+        "requestBodySize": 24,
+        "requestHeadersSize": 1691,
+        "responseBodySize": 1284,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "login",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22224,
+      "rows": 33,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2048,
+        "responseBodySize": 6150,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "list_self_marketplace_quote_notifications",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 1718,
+        "responseBodySize": 712,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22054,
+      "rows": 33,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1622,
+        "responseBodySize": 3452,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "company_portal_plans",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1644,
+        "responseBodySize": 766,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "company_portal_subscriptions",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1639,
+        "responseBodySize": 754,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "company_popup_proposals",
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1925,
+        "responseBodySize": 959,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "store",
+      "table": "program_requests",
+      "http": 403,
+      "bytes": 211,
+      "rows": null,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2888,
+        "responseBodySize": 905,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "promotions",
+      "table": "companies",
+      "http": 200,
+      "bytes": 22054,
+      "rows": 33,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 1622,
+        "responseBodySize": 3452,
+        "responseHeadersSize": 0
+      }
+    },
+    {
+      "stage": "promotions",
+      "table": "companies",
+      "http": 200,
+      "bytes": 2143,
+      "rows": 33,
+      "transfer": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 2976,
+        "responseBodySize": 2559,
+        "responseHeadersSize": 0
+      }
+    }
+  ],
+  "errors": [],
+  "productionMutations": 0
+}

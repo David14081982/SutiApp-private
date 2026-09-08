@@ -77,7 +77,7 @@
         }finally{inFlight.delete(doc.id);}
       };
       thumbnailRefresh.current=doc=>{if(thumbnailRetries.current.has(doc.id)){put(doc,{phase:'error',url:''});return;}thumbnailRetries.current.add(doc.id);load(doc,true);};
-      const observer=window.IntersectionObserver?new IntersectionObserver(entries=>{for(const entry of entries){const doc=thumbnailCandidates.find(d=>thumbnailNodes.current.get(d.id)===entry.target);if(!doc)continue;if(entry.isIntersecting&&entry.intersectionRatio>0){visible.add(doc.id);load(doc,false);}else visible.delete(doc.id);}}):null;
+      const observer=window.IntersectionObserver?new IntersectionObserver(entries=>{for(const entry of entries){const doc=thumbnailCandidates.find(d=>thumbnailNodes.current.get(d.id)===entry.target);if(!doc)continue;if(entry.isIntersecting&&entry.intersectionRatio>0){visible.add(doc.id);load(doc,false);}else visible.delete(doc.id);}},{threshold:[0,0.000001]}):null;
       for(const doc of thumbnailCandidates){const node=thumbnailNodes.current.get(doc.id);if(observer&&node)observer.observe(node);else if(!observer){visible.add(doc.id);load(doc,false);}}
       const foreground=()=>{if(!document.hidden)thumbnailCandidates.forEach(doc=>load(doc,false));};
       document.addEventListener('visibilitychange',foreground);

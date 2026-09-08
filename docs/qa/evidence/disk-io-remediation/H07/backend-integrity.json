@@ -1,0 +1,44 @@
+{
+  "at": "2026-09-08T03:57:52.483Z",
+  "status": "PASS",
+  "functionsExisting": 253,
+  "policies": 228,
+  "added": "get_data_export_auth_emails(uuid[])",
+  "fingerprints": [
+    {
+      "relation": "companies",
+      "rows": 33,
+      "hash": "4893d326abd27bba59a28950651f3806"
+    },
+    {
+      "relation": "marketplace_promotions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "marketplace_company_memberships",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "company_portal_plans",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "company_portal_subscriptions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "affiliates",
+      "rows": 954,
+      "hash": "77d7db3937cf8d0bb2e6c8b26ab76c7f"
+    }
+  ],
+  "authIdentity": {
+    "users": 135,
+    "soft_deleted": 0,
+    "hash": "e2a3977409e299beac90e2fe03dad316"
+  }
+}

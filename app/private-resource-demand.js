@@ -45,7 +45,7 @@
       if (!node) return;
       const visibility = () => setForeground(!document.hidden);
       document.addEventListener('visibilitychange', visibility);
-      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => setIntersects(entries.some(e => e.isIntersecting && e.intersectionRatio > 0))) : null;
+      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => setIntersects(entries.some(e => e.isIntersecting && e.intersectionRatio > 0)), {threshold:[0,0.000001]}) : null;
       if (observer) observer.observe(node); else setIntersects(true);
       return () => { if (observer) observer.disconnect(); document.removeEventListener('visibilitychange', visibility); };
     }, [ref]);

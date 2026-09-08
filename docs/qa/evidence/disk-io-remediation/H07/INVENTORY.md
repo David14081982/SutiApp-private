@@ -1,0 +1,17 @@
+# H07 — inventario individual
+
+| Patrón | Caller / autoridad | BEFORE | AFTER | Acción / equivalencia |
+|---|---|---:|---:|---|
+| Empresa → promociones | company-store.load → MarketplaceRepository, companies + marketplace_promotions/RLS | 6+C; C=33:39 | 6+ceil(C/100); C=33:7 | Embed FK por conjunto explícito, mismo orden/proyección y límite por empresa. 0 empresas no consulta promociones. |
+| Correo Auth de exportación | data-exports.rowsFor → affiliates.auth_user_id → Auth API | P+U; población actual 1+123 | P+ceil(U/1000); población actual 1+1 | RPC service-only, UUID exacto, sin unir por email/control. Headers/columnas/celda/filtrado y audit insert iguales. |
+| Miniatura Admin afiliado | DocumentCard → AdminAffiliatesRepository → DocumentWorkflowRepository → document-access | N firmas/descargas anticipadas; ocho tarjetas:8 | V visibles; viewport probado:3 | Coordinador H06 en vuelo, TTL300/contexto/visibilidad. Al recorrer ocho, ocho autorizaciones necesarias. Apertura explícita autoriza de nuevo; no reutiliza indefinidamente una firma vieja. |
+| Miniatura autoservicio/Membership | DocumentRequirementList y helper H06 | Ya deduplicado por contenido/contexto; 40→6 en H06 | Se conserva; se corrige transición área cero→visible | No se agrupan documentos distintos eludiendo su autorización/auditoría individual. |
+| Reordenar recursos gestionados | admin-repository.reorderManaged; banners/news/education/etc. | N UPDATE HTTP + recarga | N UPDATE HTTP + recarga | NOT APPLICABLE a agrupación transaccional equivalente: cada UPDATE confirma antes del siguiente; falla y conserva los anteriores. Test real del código con error en segundo ID demuestra primer cambio durable y tercero no llamado. Una sola transacción alteraría atomicidad/error, timestamps y observabilidad. Fuente intacta. |
+| Reordenar convenios | admin-cutover-store.reorderConvenios → saveConvenio y beneficios/assets | N saves concurrentes, sus writers y recargas | Igual | No son simples sort_order: cada save reescribe su agregado y audita; fallos parciales/concurrencia no equivalen a una sola transacción. Sin cambio. |
+| Reordenar contenido sindical | sindicato-store.reorder → saveBlock | N saves concurrentes + recargas | Igual | Atomicidad parcial y fallos por elemento; misma restricción. Sin cambio. |
+| Etapas / productos programa | reorder_operational_workflow_stages / reorder_program_catalog_items | Una RPC por operación | Una RPC | Ya son batch backend, no N+1 HTTP. Snapshots/orden financieros protegidos; no modificados. |
+| Historial workflow | ProgramRequestRepository.listHistory | Una RPC | Una RPC | No se demostró N+1 por elemento; no modificar. |
+
+Los N=0 y N=1 no tienen amplificación que reducir. Las autorizaciones de documentos distintos siguen siendo trabajo obligatorio. La condición del propietario sobre orden/auditoría/atomicidad/error excluye los reordenamientos anteriores; no se solicita ni se presume un cambio de contrato para reducir su contador.
+
+Producción antes del cambio: con la cuenta controlada, companyStore termina en 42501 de program_requests, antes de alcanzar el bucle de promociones. Por ello la medición real de 34→2 es del lector empresas/promociones autorizado invocado directamente; 39→7 corresponde al store completo en fixtures aisladas con respuestas válidas. portal-before/local.json conserva el mismo fallo productivo previo, sin presentarlo como portal reparado. Los casos no vacíos y diferentes roles se comparan con fixtures transaccionales RLS y React/VM aislados.

@@ -1,0 +1,11 @@
+{
+  "at": "2026-09-08T03:58:50.727Z",
+  "rows": [
+    {
+      "users": 135,
+      "default_instance": 135,
+      "null_instance": 0
+    }
+  ],
+  "reference": "https://raw.githubusercontent.com/supabase/auth/master/internal/models/user.go"
+}

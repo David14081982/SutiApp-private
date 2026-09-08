@@ -1,0 +1,17 @@
+{
+  "at": "2026-09-08T03:44:43.728Z",
+  "status": "PASS",
+  "service": {
+    "http": 200,
+    "rows": 123
+  },
+  "anon": {
+    "http": 401,
+    "code": "42501"
+  },
+  "authenticatedAdmin": {
+    "http": 403,
+    "code": "42501"
+  },
+  "privateRowsLogged": false
+}

@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-08T03:50:46.605Z",
+  "exit": 1,
+  "stdout": "",
+  "stderr": "{\"http\":404,\"endpoint\":\"/.image-slots.state.json\",\"code\":\"UNKNOWN\"}\n{\"networkErrors\":[{\"endpoint\":\"/rest/v1/rpc\",\"error\":\"net::ERR_CONNECTION_CLOSED\"}]}\n{\"status\":\"FAIL\",\"error\":\"page.evaluate: Error: Admin tab unavailable\\n    at eval (eval at evaluate (:311:30), <anonymous>:3:24)\\n    at UtilityScript.evaluate (<anonymous>:313:16)\\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\"}\n"
+}

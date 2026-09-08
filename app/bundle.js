@@ -7866,7 +7866,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       if (!node) return;
       const visibility = () => setForeground(!document.hidden);
       document.addEventListener('visibilitychange', visibility);
-      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => setIntersects(entries.some(e => e.isIntersecting && e.intersectionRatio > 0))) : null;
+      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => setIntersects(entries.some(e => e.isIntersecting && e.intersectionRatio > 0)), {threshold:[0,0.000001]}) : null;
       if (observer) observer.observe(node); else setIntersects(true);
       return () => { if (observer) observer.disconnect(); document.removeEventListener('visibilitychange', visibility); };
     }, [ref]);
@@ -8119,10 +8119,26 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function removePortalPlan(id){const r=await db().from('company_portal_plans').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('PORTAL_PLAN_DELETE_COUNT');}
   async function setPortalSubscription(companyId,planId,cycle){const start=new Date(),end=new Date(start);if(cycle==='mensual')end.setMonth(end.getMonth()+1);else end.setFullYear(end.getFullYear()+1);const iso=(d)=>d.toISOString().slice(0,10);const r=await db().from('company_portal_subscriptions').upsert({company_id:companyId,plan_id:planId,billing_cycle:cycle==='mensual'?'monthly':'annual',status:'active',starts_on:iso(start),ends_on:iso(end)},{onConflict:'company_id'}).select('*').single();if(r.error)throw r.error;return r.data;}
   async function updateCompany(row){const r=await db().rpc('update_marketplace_company_profile',{p_company_id:row.id,p_description:row.desc||row.description||'',p_phone_raw:row.tel||row.phone_raw||null,p_whatsapp_raw:row.whatsapp_raw||null,p_email_raw:row.email||row.email_raw||null,p_website_url:row.web||row.website_url||null,p_address_raw:row.address_raw||null,p_social_links:row.redes||row.social_links||{}});if(r.error)throw r.error;}
-  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select('*').order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled}))));}
+  const projectPromotion=(x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled}));
+  async function listPromotionsForCompanies(companyIds){
+    if(!Array.isArray(companyIds)||companyIds.some(id=>typeof id!=='string'||!id))throw new Error('COMPANY_IDS_REQUIRED');
+    const ids=[...new Set(companyIds)],output=[];
+    for(let from=0;from<ids.length;from+=100){
+      const batch=ids.slice(from,from+100),expected=new Set(batch);
+      const r=await db().from('companies').select('id,promotions:marketplace_promotions(*)').in('id',batch).order('sort_order',{ascending:true,referencedTable:'promotions'});
+      if(r.error)throw r.error;
+      for(const company of r.data||[]){
+        if(!expected.delete(company.id)||!Array.isArray(company.promotions))throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');
+        for(const promotion of company.promotions){if(promotion.company_id!==company.id)throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');output.push(projectPromotion(promotion));}
+      }
+      if(expected.size)throw new Error('COMPANY_PROMOTIONS_CONTEXT_CHANGED');
+    }
+    return Object.freeze(output);
+  }
+  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select('*').order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(projectPromotion));}
   async function savePromotion(row){const values={company_id:row.company_id,title:String(row.title||row.name||'').trim(),description:row.description||row.desc||'',benefit_text:row.benefit_text||row.beneficio||null,restrictions:row.restrictions||row.restric||null,discount_percent:row.discount_percent==null?(row.disc==null?null:Number(row.disc)):Number(row.discount_percent),start_date:row.start_date||row.start||null,end_date:row.end_date||row.end||null,enabled:row.enabled!==false&&row.active!==false,approval_status:'pending',sort_order:Number(row.sort_order||1),record_origin:row.record_origin||'ADMIN_PHASE3'};const q=row.id?db().from('marketplace_promotions').update(values).eq('id',row.id):db().from('marketplace_promotions').insert(values);const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
   async function removePromotion(id){const r=await db().from('marketplace_promotions').delete().eq('id',id).select('id');if(r.error)throw r.error;}
-  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,savePromotion,removePromotion,projectProduct,projectQuote});
+  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,listPromotionsForCompanies,savePromotion,removePromotion,projectProduct,projectQuote});
 })();
 })();
 /* @@file program-catalog-repository.js */
@@ -21432,6 +21448,8 @@ Object.assign(window, {
             load(doc, false);
           } else visible.delete(doc.id);
         }
+      }, {
+        threshold: [0, 0.000001]
       }) : null;
       for (const doc of thumbnailCandidates) {
         const node = thumbnailNodes.current.get(doc.id);
@@ -50241,55 +50259,60 @@ Object.assign(window, {
     row,
     affiliateId
   }) {
-    const [source, setSource] = React.useState(''),
-      [viewing, setViewing] = React.useState(false),
+    const demand = window.PrivateResourceDemand,
+      ref = React.useRef(null),
+      context = demand.useContext(),
+      visible = demand.useVisible(ref);
+    const [viewer, setViewer] = React.useState(null),
       [error, setError] = React.useState(''),
       [busy, setBusy] = React.useState(false),
       mime = String(row.mime_type || row.mimeType || ''),
       image = mime.startsWith('image/');
-    const sign = React.useCallback(async () => {
-      if (source) return source;
-      if (row.available === false || row.previewUnavailable) return null;
+    const available = row.available !== false && !row.previewUnavailable,
+      key = JSON.stringify(['ADMIN_AFFILIATE_PROFILE', affiliateId, row.id, row.updated_at, row.status, available, mime]);
+    const thumbnail = demand.useSource(available ? key : '', () => window.AdminAffiliatesRepository.previewDocument(row.id, affiliateId), image && visible && available, 300);
+    const open = async () => {
+      if (!available || busy) return;
       setBusy(true);
       setError('');
       try {
         const preview = await window.AdminAffiliatesRepository.previewDocument(row.id, affiliateId);
-        setSource(preview.signedUrl);
-        return preview.signedUrl;
+        if (demand.context() === context) setViewer({
+          source: preview.signedUrl,
+          context,
+          key
+        });
       } catch (_) {
-        setError('Vista no disponible');
-        return null;
+        if (demand.context() === context) setError('Vista no disponible');
       } finally {
         setBusy(false);
       }
-    }, [row.id, row.available, row.previewUnavailable, affiliateId, source]);
-    React.useEffect(() => {
-      if (image && row.available !== false && !row.previewUnavailable) sign();
-    }, [image, row.available, row.previewUnavailable, sign]);
-    const open = async () => {
-      if (await sign()) setViewing(true);
     };
+    const message = error || (thumbnail.error ? 'Vista no disponible' : ''),
+      authorizing = image && visible && available && context !== null && !thumbnail.url && !thumbnail.error;
     return h(React.Fragment, null, h('button', {
+      ref,
       type: 'button',
       className: 'aff-document-card',
-      disabled: busy || row.available === false || row.previewUnavailable,
+      disabled: busy || authorizing || !available,
       onClick: open
     }, h('span', {
       className: 'aff-document-thumb'
-    }, image && source ? h('img', {
-      src: source,
-      alt: ''
+    }, image && thumbnail.url ? h('img', {
+      src: thumbnail.url,
+      alt: '',
+      onError: thumbnail.onError
     }) : h(I, {
       name: mime === 'application/pdf' ? 'doc' : 'image',
       size: 22
-    })), h('span', null, h('strong', null, row.type_label || row.document_type && row.document_type.label || 'Documento'), h('small', null, 'Versión ' + (row.version || 1) + ' · ' + row.status + ' · ' + date(row.updated_at)), h('small', null, (row.verificationProvenance || 'WORKFLOW_STATUS') + (error ? ' · ' + error : ''))), h(I, {
+    })), h('span', null, h('strong', null, row.type_label || row.document_type && row.document_type.label || 'Documento'), h('small', null, 'Versión ' + (row.version || 1) + ' · ' + row.status + ' · ' + date(row.updated_at)), h('small', null, (row.verificationProvenance || 'WORKFLOW_STATUS') + (message ? ' · ' + message : ''))), h(I, {
       name: 'eye',
       size: 17
-    })), source && viewing && h(window.DocumentViewer, {
-      source,
+    })), viewer && viewer.context === context && viewer.key === key && h(window.DocumentViewer, {
+      source: viewer.source,
       mimeType: mime,
       title: row.type_label || 'Documento',
-      onClose: () => setViewing(false)
+      onClose: () => setViewer(null)
     }));
   }
   function EditProfile({
@@ -55368,7 +55391,14 @@ Object.assign(window, {
         quotes = values[4].slice();
         popupProposals = values[5].slice();
         const base = values[0].map(project);
-        for (const co of base) co.promos = (await repo.listPromotions(co.id)).slice();
+        const promotions = await repo.listPromotionsForCompanies(base.map(co => co.id));
+        const byCompany = new Map(base.map(co => [co.id, []]));
+        for (const promo of promotions) {
+          const group = byCompany.get(promo.company_id);
+          if (!group) throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');
+          group.push(promo);
+        }
+        for (const co of base) co.promos = byCompany.get(co.id);
         companies = base.map(Object.freeze);
         if (authId && !companies.some(x => x.id === authId)) authId = null;
         phase = 'loaded';

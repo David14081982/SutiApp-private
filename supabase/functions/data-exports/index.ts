@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.115.0";
 import ExcelJS from "npm:exceljs@4.4.0";
 
 type ExportFormat = "xlsx" | "csv";
@@ -160,15 +160,17 @@ async function rowsFor(privileged: ReturnType<typeof createClient>, spec: Domain
   if(output.length>MAX_ROWS)throw new Error("EXPORT_ROW_LIMIT_EXCEEDED");
   if(!spec.linkedAuthEmail)return { rows:output, filters:auditFilters };
   const authIds=[...new Set(output.map((row)=>row.auth_user_id).filter((value): value is string=>typeof value==="string"&&value.length>0))];
-  const authEmails=new Map<string,string>();let next=0;
-  async function resolveLinkedAuthEmails(){
-    while(next<authIds.length){
-      const authId=authIds[next++];const found=await privileged.auth.admin.getUserById(authId);
-      if(found.error||!found.data.user||found.data.user.id!==authId)throw new Error("AUTH_EMAIL_LOOKUP_FAILED");
-      authEmails.set(authId,found.data.user.email||"");
+  const authEmails=new Map<string,string>();
+  for(let from=0;from<authIds.length;from+=PAGE_SIZE){
+    const ids=authIds.slice(from,from+PAGE_SIZE),expected=new Set(ids);
+    const found=await privileged.rpc("get_data_export_auth_emails",{p_auth_user_ids:ids});
+    if(found.error||!Array.isArray(found.data)||found.data.length!==ids.length)throw new Error("AUTH_EMAIL_LOOKUP_FAILED");
+    for(const row of found.data){
+      if(!expected.delete(row.auth_user_id)||typeof row.email!=="string")throw new Error("AUTH_EMAIL_LOOKUP_FAILED");
+      authEmails.set(row.auth_user_id,row.email);
     }
+    if(expected.size)throw new Error("AUTH_EMAIL_LOOKUP_FAILED");
   }
-  await Promise.all(Array.from({length:Math.min(12,authIds.length)},()=>resolveLinkedAuthEmails()));
   return { rows:output.map((row)=>{const projected={...row,auth_email:typeof row.auth_user_id==="string"?authEmails.get(row.auth_user_id)||"":""};delete projected.auth_user_id;return projected;}), filters:auditFilters };
 }
 

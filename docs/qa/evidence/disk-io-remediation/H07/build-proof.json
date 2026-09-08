@@ -1,0 +1,18 @@
+{
+  "at": "2026-09-08T03:51:33.398Z",
+  "status": "PASS",
+  "reconstructedBefore": "bb019f597f5acd86490599aa9b3e4ee2b82e1a596a103935899240304bebe8a6",
+  "workspaceBefore": "bb019f597f5acd86490599aa9b3e4ee2b82e1a596a103935899240304bebe8a6",
+  "workspaceAfter": "8f0d67920523a34fa15ffc88b7ab453a5b82de49593d79ae3627621c486ed29d",
+  "releaseModules": 109,
+  "changed": [
+    "company-store.jsx",
+    "marketplace-repository.js",
+    "private-resource-demand.js",
+    "screens-admin-affiliates.jsx",
+    "screens-documentos.jsx"
+  ],
+  "removed": [],
+  "releaseBundle": "562c30041b69e72493a27c532e100623d136e606eeb19d10b34b863bcc1e8d35",
+  "unpublishedWorkPreserved": true
+}

@@ -59,8 +59,24 @@
   async function removePortalPlan(id){const r=await db().from('company_portal_plans').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('PORTAL_PLAN_DELETE_COUNT');}
   async function setPortalSubscription(companyId,planId,cycle){const start=new Date(),end=new Date(start);if(cycle==='mensual')end.setMonth(end.getMonth()+1);else end.setFullYear(end.getFullYear()+1);const iso=(d)=>d.toISOString().slice(0,10);const r=await db().from('company_portal_subscriptions').upsert({company_id:companyId,plan_id:planId,billing_cycle:cycle==='mensual'?'monthly':'annual',status:'active',starts_on:iso(start),ends_on:iso(end)},{onConflict:'company_id'}).select('*').single();if(r.error)throw r.error;return r.data;}
   async function updateCompany(row){const r=await db().rpc('update_marketplace_company_profile',{p_company_id:row.id,p_description:row.desc||row.description||'',p_phone_raw:row.tel||row.phone_raw||null,p_whatsapp_raw:row.whatsapp_raw||null,p_email_raw:row.email||row.email_raw||null,p_website_url:row.web||row.website_url||null,p_address_raw:row.address_raw||null,p_social_links:row.redes||row.social_links||{}});if(r.error)throw r.error;}
-  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select('*').order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled}))));}
+  const projectPromotion=(x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled}));
+  async function listPromotionsForCompanies(companyIds){
+    if(!Array.isArray(companyIds)||companyIds.some(id=>typeof id!=='string'||!id))throw new Error('COMPANY_IDS_REQUIRED');
+    const ids=[...new Set(companyIds)],output=[];
+    for(let from=0;from<ids.length;from+=100){
+      const batch=ids.slice(from,from+100),expected=new Set(batch);
+      const r=await db().from('companies').select('id,promotions:marketplace_promotions(*)').in('id',batch).order('sort_order',{ascending:true,referencedTable:'promotions'});
+      if(r.error)throw r.error;
+      for(const company of r.data||[]){
+        if(!expected.delete(company.id)||!Array.isArray(company.promotions))throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');
+        for(const promotion of company.promotions){if(promotion.company_id!==company.id)throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');output.push(projectPromotion(promotion));}
+      }
+      if(expected.size)throw new Error('COMPANY_PROMOTIONS_CONTEXT_CHANGED');
+    }
+    return Object.freeze(output);
+  }
+  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select('*').order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(projectPromotion));}
   async function savePromotion(row){const values={company_id:row.company_id,title:String(row.title||row.name||'').trim(),description:row.description||row.desc||'',benefit_text:row.benefit_text||row.beneficio||null,restrictions:row.restrictions||row.restric||null,discount_percent:row.discount_percent==null?(row.disc==null?null:Number(row.disc)):Number(row.discount_percent),start_date:row.start_date||row.start||null,end_date:row.end_date||row.end||null,enabled:row.enabled!==false&&row.active!==false,approval_status:'pending',sort_order:Number(row.sort_order||1),record_origin:row.record_origin||'ADMIN_PHASE3'};const q=row.id?db().from('marketplace_promotions').update(values).eq('id',row.id):db().from('marketplace_promotions').insert(values);const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
   async function removePromotion(id){const r=await db().from('marketplace_promotions').delete().eq('id',id).select('id');if(r.error)throw r.error;}
-  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,savePromotion,removePromotion,projectProduct,projectQuote});
+  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,listPromotionsForCompanies,savePromotion,removePromotion,projectProduct,projectQuote});
 })();

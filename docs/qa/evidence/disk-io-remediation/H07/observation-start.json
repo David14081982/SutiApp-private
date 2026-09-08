@@ -1,0 +1,13 @@
+{
+  "captured_at": "2026-09-08 03:46:11.187403+00",
+  "xact_commit": 1604209,
+  "xact_rollback": 350498307,
+  "blks_read": 3152,
+  "blks_hit": 3949562649,
+  "temp_files": 36284,
+  "temp_bytes": 119201952903,
+  "deadlocks": 0,
+  "stats_reset": "2026-07-24 11:23:13.916197+00",
+  "connections": 55,
+  "lock_waiters": 0
+}

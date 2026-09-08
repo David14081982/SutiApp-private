@@ -1,0 +1,167 @@
+{
+  "at": "2026-09-08T03:41:27.080Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "mode": "anon",
+      "n": 0,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "anon",
+      "n": 1,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": "42501",
+      "after_sqlstate": "42501"
+    },
+    {
+      "mode": "anon",
+      "n": 2,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": "42501",
+      "after_sqlstate": "42501"
+    },
+    {
+      "mode": "anon",
+      "n": 3,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": "42501",
+      "after_sqlstate": "42501"
+    },
+    {
+      "mode": "member",
+      "n": 0,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "member",
+      "n": 1,
+      "equivalent": true,
+      "companies": 1,
+      "promotions": 6,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "member",
+      "n": 2,
+      "equivalent": true,
+      "companies": 2,
+      "promotions": 6,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "member",
+      "n": 3,
+      "equivalent": true,
+      "companies": 3,
+      "promotions": 7,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "other",
+      "n": 0,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "other",
+      "n": 1,
+      "equivalent": true,
+      "companies": 1,
+      "promotions": 1,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "other",
+      "n": 2,
+      "equivalent": true,
+      "companies": 2,
+      "promotions": 1,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "other",
+      "n": 3,
+      "equivalent": true,
+      "companies": 3,
+      "promotions": 2,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "principal",
+      "n": 0,
+      "equivalent": true,
+      "companies": 0,
+      "promotions": 0,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "principal",
+      "n": 1,
+      "equivalent": true,
+      "companies": 1,
+      "promotions": 6,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "principal",
+      "n": 2,
+      "equivalent": true,
+      "companies": 2,
+      "promotions": 6,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    },
+    {
+      "mode": "principal",
+      "n": 3,
+      "equivalent": true,
+      "companies": 3,
+      "promotions": 12,
+      "private_other_company": 0,
+      "before_sqlstate": null,
+      "after_sqlstate": null
+    }
+  ],
+  "fixturesRolledBack": true
+}

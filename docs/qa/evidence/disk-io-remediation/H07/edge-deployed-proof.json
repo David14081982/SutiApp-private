@@ -1,0 +1,13 @@
+{
+  "at": "2026-09-08T03:57:30.039Z",
+  "status": "PASS",
+  "version": 12,
+  "verify_jwt": true,
+  "astEquivalent": true,
+  "source_sha256": "1bf91af67ab571ede2ecc78385dd020fecf285069132be5319a71485c47d66fa",
+  "compiled_sha256": "317e761d4306973a9ff9d809e3fddedc2f552c88a301910f43452ed5255f1f05",
+  "eszip_sha256": "4c207625796b6906da642600753e9c89b4b4028a5e77cc203966d5557b711fc6",
+  "sdk": [
+    "https://esm.sh/@supabase/supabase-js@2.116.0"
+  ]
+}

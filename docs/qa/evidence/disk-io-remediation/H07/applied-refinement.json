@@ -1,0 +1,32 @@
+{
+  "at": "2026-09-08T04:00:58.557Z",
+  "status": "PASS",
+  "before": {
+    "schema": "public",
+    "signature": "get_data_export_auth_emails(uuid[])",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_data_export_auth_emails(p_auth_user_ids uuid[])\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if p_auth_user_ids is null or cardinality(p_auth_user_ids)>1000\n     or array_position(p_auth_user_ids,null) is not null then\n    raise exception 'INVALID_AUTH_EMAIL_BATCH' using errcode='22023';\n  end if;\n  return (\n    select coalesce(jsonb_agg(jsonb_build_object('auth_user_id',u.id,'email',coalesce(u.email,'')) order by u.id),'[]'::jsonb)\n    from auth.users u where u.id=any(p_auth_user_ids)\n  );\nend;\n$function$\n",
+    "definition_md5": "0f70d712289a5a12a4677cb5dadc795c",
+    "owner": "postgres",
+    "prosecdef": true,
+    "provolatile": "s",
+    "proconfig": [
+      "search_path=\"\""
+    ],
+    "acl": "{postgres=X/postgres,service_role=X/postgres}"
+  },
+  "after": {
+    "schema": "public",
+    "signature": "get_data_export_auth_emails(uuid[])",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_data_export_auth_emails(p_auth_user_ids uuid[])\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if p_auth_user_ids is null or cardinality(p_auth_user_ids)>1000\n     or array_position(p_auth_user_ids,null) is not null then\n    raise exception 'INVALID_AUTH_EMAIL_BATCH' using errcode='22023';\n  end if;\n  return (\n    select coalesce(jsonb_agg(jsonb_build_object('auth_user_id',u.id,'email',coalesce(u.email,'')) order by u.id),'[]'::jsonb)\n    from auth.users u where u.id=any(p_auth_user_ids)\n      and u.instance_id='00000000-0000-0000-0000-000000000000'::uuid\n  );\nend;\n$function$\n",
+    "definition_md5": "9b119b68c2b43da34183addede3f2914",
+    "owner": "postgres",
+    "prosecdef": true,
+    "provolatile": "s",
+    "proconfig": [
+      "search_path=\"\""
+    ],
+    "acl": "{postgres=X/postgres,service_role=X/postgres}"
+  },
+  "reason": "Preserve exact GoTrue instance_id predicate",
+  "dataMutations": 0
+}

@@ -1,0 +1,63 @@
+{
+  "at": "2026-09-08T03:45:10.048Z",
+  "status": "PASS",
+  "rows": 954,
+  "headers": [
+    "id",
+    "numero_control",
+    "full_name",
+    "display_name",
+    "Correo histórico",
+    "Correo de acceso",
+    "affiliate_status_raw",
+    "phone_raw",
+    "address_raw",
+    "birth_date_raw",
+    "gender_raw",
+    "marital_status_raw",
+    "children_count_raw",
+    "rfc_raw",
+    "curp_raw",
+    "unit_raw",
+    "city_raw",
+    "employment_position_raw",
+    "employment_entry_date_raw",
+    "occupation_raw",
+    "institute_entry_date_raw",
+    "employment_area_raw",
+    "employment_level_raw",
+    "pension_raw",
+    "subdirectorate_raw",
+    "union_enrollment_date_raw",
+    "affiliation_raw",
+    "union_position_raw",
+    "termination_date_raw",
+    "financial_union_code",
+    "financial_employee_category_code",
+    "financial_employee_type",
+    "financial_affiliation_status",
+    "financial_employment_status",
+    "created_at",
+    "updated_at"
+  ],
+  "measures": [
+    {
+      "format": "csv",
+      "ms": 2424,
+      "bytes": 409408,
+      "canonical_sha256": "55e137204e954155401d6ef7fddbec7cf41c3f5a93ec63123fe6e6fe3ab9af95"
+    },
+    {
+      "format": "xlsx",
+      "ms": 2571,
+      "bytes": 249297,
+      "canonical_sha256": "d13d405fc6f7bde8f28089acebd64d3f6b537678ba634c754384685258ae2eaa"
+    }
+  ],
+  "anonymous": 401,
+  "deniedOrigin": 403,
+  "auditDelta": 2,
+  "completeFieldComparison": true,
+  "encryptedBaseline": true,
+  "privatePayloadExportedToRepo": false
+}

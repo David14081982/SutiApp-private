@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-08T04:01:04.299Z",
+  "exit": 0,
+  "stdout": "{\"credentials_exposed\": false, \"mode\": \"APPLY\", \"slug\": \"data-exports\", \"status\": \"PASS\", \"verify_jwt\": true, \"version\": 13}\r\n",
+  "stderr": "",
+  "baselineSdkPinned": "2.115.0"
+}

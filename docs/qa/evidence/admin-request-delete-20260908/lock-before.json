@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "expectedBaselineConflict": true,
+  "results": [
+    {
+      "ok": false,
+      "deadlock": true,
+      "error": "DEADLOCK"
+    },
+    {
+      "ok": true
+    }
+  ],
+  "persistentWrites": 0
+}

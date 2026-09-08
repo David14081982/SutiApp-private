@@ -11,6 +11,10 @@ SQL/recovery, 5 casos GAS, 8 Edge, 25 browser, 9 bridge y validación local con 
 Callbacks existentes, Auth, Storage y viewers compartidos sin cambios. ADR-108 / INV-218/219.
 Evidencia y estado de publicación: docs/qa/H-ADMIN-REQUEST-DELETE-001.md.
 
+Cierre: Pages 34277616430 y validacion publica PASS, con 70 imagenes decodificadas y cero errores.
+La revision detecto y reprodujo una inversion de locks; 20260908000401 la corrige solo en el nuevo
+guard de borrado. Matriz/recovery y concurrencia posterior PASS, cero escrituras de negocio.
+
 ## 2026-09-08 — H-REQUESTS-GOOGLE-REFERENCE-RECONCILIATION-001
 
 Aplicación autorizada después del reinicio separado de Supabase. Migración 20260908000300 y GAS15

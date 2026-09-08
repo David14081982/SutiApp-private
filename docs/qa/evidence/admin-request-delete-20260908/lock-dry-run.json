@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "migrationSha256": "48dc1623f77db06bf2dfe3e1b0fc7678fb0e3938aefa34ff6bce437fea2aae03",
+  "deletionMatrixAndExactRecovery": true,
+  "persistentWrites": 0
+}

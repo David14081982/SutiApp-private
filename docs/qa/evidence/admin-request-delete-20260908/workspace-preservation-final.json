@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "mirroredFiles": [
+    "docs/AGENT_CHANGELOG.md",
+    "docs/MIGRATION_RULES.md",
+    "docs/qa/H-ADMIN-REQUEST-DELETE-001.md",
+    "docs/qa/evidence/admin-request-delete-20260908/ARCHITECT-REVIEW.md",
+    "docs/qa/evidence/admin-request-delete-20260908/lock-after.json",
+    "docs/qa/evidence/admin-request-delete-20260908/lock-apply.json",
+    "docs/qa/evidence/admin-request-delete-20260908/lock-before.json",
+    "docs/qa/evidence/admin-request-delete-20260908/lock-dry-run.json",
+    "docs/qa/evidence/admin-request-delete-20260908/modal-live/production.json",
+    "docs/qa/evidence/admin-request-delete-20260908/public-artifact.json",
+    "scripts/verify-admin-request-delete-scope.js",
+    "scripts/verify-request-delete-lock-order.js",
+    "supabase/migrations/20260908000401_request_delete_sync_lock_order.sql",
+    "supabase/recovery/20260908000401_request_delete_sync_lock_order_recovery.sql"
+  ],
+  "unrelatedFilesVerified": 2303,
+  "primaryHeadAndIndexPreserved": true,
+  "primaryDerivedRegistry": "left unchanged because it indexes unrelated primary-workspace work; release registry is independently regenerated"
+}

@@ -78,3 +78,30 @@ Known limitations: no destructive end-to-end test against an existing production
   is cancelled. Unverifiable legacy identity or a dependent quotation fails closed. A prepared deletion
   locks transitions until resumed. Private audit/recovery snapshots intentionally remain; no automatic restore.
 Evidence: docs/qa/evidence/admin-request-delete-20260908 (JSON receipts and synthetic screenshots only).
+
+## Final review scope refinement
+
+Review identifies reverse parent/outbox lock order when an ordinary sync worker updates an existing
+outbox row while a request writer holds the parent. Migration/recovery 20260908000401 will refine only
+the newly introduced child guard: unchanged outbox identities already serialize with prepare through
+the outbox row lock, so they do not need a second parent lock. Inserts/identity changes retain parent
+locking. Validate concurrent rollback-only updates and the complete deletion matrix before applying.
+
+## Final delivery - PASS
+
+Runtime commit 740767a8bf439057219ab61b85637c0834185c5a pushed to main; Pages run 34277616430
+completed successfully, including Auth/request backend compatibility and production artifact checks.
+Public HTML/bundle/SW match the candidate hashes exactly. Authenticated production modal acceptance
+PASS: all four request types, 70 image placements decoded, zero preview/storage errors, fullscreen,
+five responsive sizes, sticky controls and real delete preview cancelled; zero business writes.
+
+Final review reproduced a lock inversion between a parent request writer and an existing outbox update.
+Migration 20260908000401 refines only the new deletion guard: an unchanged outbox identity is serialized
+by its row lock already taken by prepare, avoiding the redundant reverse parent lock. INSERT and
+identity changes keep parent locking. Exact forward/recovery plus full deletion matrix PASS in ROLLBACK;
+both concurrent no-op transactions then PASS with identical request/outbox hashes. Same OID/grants.
+
+Final status: PASS. Existing approval/workflow persistence and all shared image/Auth sources remain
+unchanged. No production request was deleted by the implementation or verification. The isolated
+release contains only declared files; primary source changes were merged without changing its HEAD,
+index or 2,259 unrelated files. Derived registry is finalized with the closure evidence.

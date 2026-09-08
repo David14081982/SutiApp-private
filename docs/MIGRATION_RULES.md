@@ -203,3 +203,11 @@ rows. Deployment receipts, source hashes and final status: docs/qa/evidence/admi
 For post-use recovery retain the journal, inspect the private request/children/Google backup, verify all
 foreign keys and current Google identity, and prepare a separate operation-specific recovery transaction.
 Never run empty-schema recovery after real deletion or automatically replay business sync/workflows.
+
+## 20260908000401 - Request delete sync lock order
+
+APPLIED / VERIFIED - PASS. Refines only the new child deletion guard, preserving OID/grants. Ordinary
+updates to an existing outbox identity use its already-held row lock; inserts/identity changes still
+lock the parent. The baseline deadlock was reproduced with concurrent rollback-only no-op updates.
+The refined guard passed the same two transactions, the complete deletion matrix and exact function
+recovery in ROLLBACK. No request, outbox payload or business state was changed. See lock-*.json evidence.

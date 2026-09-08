@@ -1,0 +1,719 @@
+{
+  "at": "2026-09-08T02:41:57.343Z",
+  "target": "http://localhost:8080/",
+  "status": "PASS",
+  "summaries": [
+    {
+      "stage": "affiliate-full-compatibility",
+      "items": 134,
+      "ms": 6232.5,
+      "sha256": "99e55ed28c9876de8d4bde9f795e246d27949223a500f08f5890a7cddcff2ed0",
+      "equivalent": true
+    },
+    {
+      "stage": "admin-full-compatibility",
+      "items": 135,
+      "ms": 5213.100000023842,
+      "sha256": "f74afa3e4d9a5454e82ce1c4bd410a53cad27ad86158e0e6a2bceee13f1c64f7",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "aires",
+      "items": 16,
+      "ms": 1061.2000000476837,
+      "sha256": "bde16be97e7137c5c8f6afa22bdc00dfa9167af31197428074c317849e5b88c5",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "auto",
+      "items": 3,
+      "ms": 441.7000000476837,
+      "sha256": "90712adea4c551c24be2fc4cab821b4d8dcc7d62aab181111a93aed93f475d38",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "casa",
+      "items": 35,
+      "ms": 620.8000000715256,
+      "sha256": "37748e6c52e0142e9effffaf546350f5e198bc4ddcff159f81aadcaf931765a7",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "cirugias",
+      "items": 0,
+      "ms": 389.5,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "computo",
+      "items": 1,
+      "ms": 448.7000000476837,
+      "sha256": "be8f2215eea06c4e944c0fddbaeb7ac1964f4609008b19e1e610b017e222a87b",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "donativos",
+      "items": 0,
+      "ms": 218.60000002384186,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "farma",
+      "items": 50,
+      "ms": 616.3000000715256,
+      "sha256": "1454d08179f3d3abfcdfb33e8bc2179e5c9bdafac008e879249e851bd7e217f0",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "prestamo",
+      "items": 1,
+      "ms": 401.2999999523163,
+      "sha256": "e6964c3227a3f71bf090f8a55abdc8ffda735553c05b4c327d6843e839c5bdbf",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "puertas",
+      "items": 3,
+      "ms": 385.3000000715256,
+      "sha256": "f1f35cdb881063decbf4c924c6f0eff0f4bf0c7051661a94e9e46e9648fea3dc",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "renta",
+      "items": 1,
+      "ms": 743,
+      "sha256": "8ebbf43cc509874805a7bf52cd8b0978925d857110ea1c1950e38ae1f27482f1",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "solar",
+      "items": 4,
+      "ms": 365.60000002384186,
+      "sha256": "64eb7ef08779ef2142b40c982bf2ce8888821e64f8d055579bca3224b8803e19",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "terrenos",
+      "items": 3,
+      "ms": 404.5,
+      "sha256": "9e564867c66e93ef9b605ca424b42b9c60cae776315ba5149c2c1ec90470846d",
+      "equivalent": true
+    },
+    {
+      "stage": "all-programs-scoped",
+      "key": "tours",
+      "items": 17,
+      "ms": 366.5,
+      "sha256": "f190dda1573880019e56ed7f6b6d01440d434978154b1563438bfae59b0f14d9",
+      "equivalent": true
+    }
+  ],
+  "adminSummary": {
+    "items": 135,
+    "links": 0,
+    "ms": 198.29999995231628
+  },
+  "top": {
+    "products": 3,
+    "loadedImages": 6,
+    "text": true
+  },
+  "gallery": {
+    "slides": 9,
+    "loaded": 1,
+    "sources": 1
+  },
+  "metrics": [
+    {
+      "stage": "login",
+      "kind": "app_assets",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 715.933
+    },
+    {
+      "stage": "login",
+      "kind": "app_settings",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2696,
+      "rows": 1,
+      "ms": 730.807
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 34012,
+      "rows": 0,
+      "ms": 202.149
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:get_current_affiliate_access_state",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 8,
+      "rows": 0,
+      "ms": 471.025
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:get_admin_access_context",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 1241,
+      "rows": 0,
+      "ms": 471.677
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:get_effective_affiliate_id",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 38,
+      "rows": 0,
+      "ms": 291.922
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:get_impersonation_context",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 303.271
+    },
+    {
+      "stage": "login",
+      "kind": "affiliates",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 1046,
+      "rows": 1,
+      "ms": 370.962
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 83070,
+      "rows": 0,
+      "ms": 4.98
+    },
+    {
+      "stage": "login",
+      "kind": "company_audience_rules",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 284.06
+    },
+    {
+      "stage": "login",
+      "kind": "company_benefits",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 293.941
+    },
+    {
+      "stage": "login",
+      "kind": "company_benefit_profiles",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 316.558
+    },
+    {
+      "stage": "login",
+      "kind": "screen_access_policies",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 362.313
+    },
+    {
+      "stage": "login",
+      "kind": "banners",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 14729,
+      "rows": 23,
+      "ms": 378.116
+    },
+    {
+      "stage": "login",
+      "kind": "popups",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3953,
+      "rows": 7,
+      "ms": 541.155
+    },
+    {
+      "stage": "login",
+      "kind": "institutional_documents",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 6192,
+      "rows": 7,
+      "ms": 550.016
+    },
+    {
+      "stage": "login",
+      "kind": "minutes",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2724,
+      "rows": 5,
+      "ms": 550.88
+    },
+    {
+      "stage": "login",
+      "kind": "companies",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 20839,
+      "rows": 33,
+      "ms": 708.578
+    },
+    {
+      "stage": "login",
+      "kind": "companies",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 22224,
+      "rows": 33,
+      "ms": 612.054
+    },
+    {
+      "stage": "login",
+      "kind": "affiliate_files",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 594,
+      "rows": 1,
+      "ms": 725.222
+    },
+    {
+      "stage": "login",
+      "kind": "directory_members",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 13282,
+      "rows": 28,
+      "ms": 619.445
+    },
+    {
+      "stage": "login",
+      "kind": "segmentation_catalog_entries",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 5986,
+      "rows": 20,
+      "ms": 731.357
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:list_self_marketplace_quote_notifications",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 642.458
+    },
+    {
+      "stage": "login",
+      "kind": "admin_roles",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2213,
+      "rows": 1,
+      "ms": 753.568
+    },
+    {
+      "stage": "login",
+      "kind": "banners",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 4820,
+      "rows": 10,
+      "ms": 673.114
+    },
+    {
+      "stage": "login",
+      "kind": "banners",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 680.927
+    },
+    {
+      "stage": "login",
+      "kind": "institutional_programs",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 11617,
+      "rows": 17,
+      "ms": 731.652
+    },
+    {
+      "stage": "login",
+      "kind": "news_articles",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3146,
+      "rows": 2,
+      "ms": 729.86
+    },
+    {
+      "stage": "login",
+      "kind": "rpc:get_self_savings_if_changed",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 903,
+      "rows": 0,
+      "ms": 797.671
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 61470,
+      "rows": 0,
+      "ms": 252.632
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 5078,
+      "rows": 0,
+      "ms": 172.592
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3524,
+      "rows": 0,
+      "ms": 172.228
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3010,
+      "rows": 0,
+      "ms": 169.437
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3202,
+      "rows": 0,
+      "ms": 199.981
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3028,
+      "rows": 0,
+      "ms": 214.486
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 4476,
+      "rows": 0,
+      "ms": 211.783
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 354489,
+      "rows": 0,
+      "ms": 288.601
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 3556,
+      "rows": 0,
+      "ms": 215.842
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 21428,
+      "rows": 0,
+      "ms": 295.44
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 30786,
+      "rows": 0,
+      "ms": 325.146
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 52678,
+      "rows": 0,
+      "ms": 149.978
+    },
+    {
+      "stage": "login",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 131114,
+      "rows": 0,
+      "ms": 434.091
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "finance_catalog_presentation",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 1845,
+      "rows": 9,
+      "ms": 176.197
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "membership_offerings",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2967,
+      "rows": 6,
+      "ms": 194.428
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "rpc:get_self_savings_if_changed",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 312,
+      "rows": 0,
+      "ms": 255.645
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 5953,
+      "rows": 0,
+      "ms": 116.647
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 6034,
+      "rows": 0,
+      "ms": 119.059
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 71327,
+      "rows": 0,
+      "ms": 122.871
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 39329,
+      "rows": 0,
+      "ms": 147.707
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 37282,
+      "rows": 0,
+      "ms": 153.699
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 6103,
+      "rows": 0,
+      "ms": 192.842
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_favorites",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2,
+      "rows": 0,
+      "ms": 159.745
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_items",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 2109,
+      "rows": 3,
+      "ms": 174.747
+    },
+    {
+      "stage": "navigation-auto",
+      "kind": "program_catalog_item_assets",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 14596,
+      "rows": 27,
+      "ms": 253.947
+    },
+    {
+      "stage": "scroll-auto",
+      "kind": "sign",
+      "requestedObjects": 2,
+      "http": 200,
+      "bytes": 1129,
+      "rows": 2,
+      "ms": 279.265
+    },
+    {
+      "stage": "detail-auto",
+      "kind": "sign",
+      "requestedObjects": 1,
+      "http": 200,
+      "bytes": 565,
+      "rows": 1,
+      "ms": 349.306
+    },
+    {
+      "stage": "detail-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 433185,
+      "rows": 0,
+      "ms": 323.179
+    },
+    {
+      "stage": "detail-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 437601,
+      "rows": 0,
+      "ms": 361.016
+    },
+    {
+      "stage": "detail-auto",
+      "kind": "sign",
+      "requestedObjects": 1,
+      "http": 200,
+      "bytes": 565,
+      "rows": 1,
+      "ms": 219.368
+    },
+    {
+      "stage": "detail-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 429294,
+      "rows": 0,
+      "ms": 612.852
+    },
+    {
+      "stage": "lightbox-auto",
+      "kind": "sign",
+      "requestedObjects": 1,
+      "http": 200,
+      "bytes": 565,
+      "rows": 1,
+      "ms": 354.881
+    },
+    {
+      "stage": "lightbox-auto",
+      "kind": "sign",
+      "requestedObjects": 1,
+      "http": 200,
+      "bytes": 565,
+      "rows": 1,
+      "ms": 210.768
+    },
+    {
+      "stage": "lightbox-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 437601,
+      "rows": 0,
+      "ms": 380.378
+    },
+    {
+      "stage": "lightbox-auto",
+      "kind": "image",
+      "requestedObjects": 0,
+      "http": 200,
+      "bytes": 7549119,
+      "rows": 0,
+      "ms": 1144.281
+    }
+  ],
+  "errors": []
+}

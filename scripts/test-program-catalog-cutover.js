@@ -39,7 +39,7 @@ assert(repository.includes("from('program_catalog_items')"));
 assert(repository.includes('createSignedUrls'));
 assert(repository.includes("from('program_catalog_favorites')"));
 assert(!repository.includes('source_payload'));
-assert(store.includes('ProgramCatalogRepository.listItems()'));
+assert(store.includes('ProgramCatalogRepository.listItems({programKey:key,deferImages:true})'));
 assert(finance.includes("id:'farma'") && finance.includes("id:'donativos'") && !finance.includes('window.DATA'));
 assert(product.includes("title: 'Disponibles ahora'") && product.includes('Revisa tu conexión e inténtalo de nuevo'));
 assert(detail.includes("item.catalogSource === 'program'") && detail.includes('SOLICITAR ESTE BENEFICIO'));

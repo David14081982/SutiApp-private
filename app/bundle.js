@@ -5590,7 +5590,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     sources,
     startIndex = 0,
     alt = '',
-    onClose
+    onClose,
+    imageComponent
   }) {
     const items = normaliseSources(sources);
     const [index, setIndex] = useState(clamp(Number(startIndex) || 0, 0, Math.max(0, items.length - 1)));
@@ -5791,7 +5792,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         touchAction: 'none',
         cursor: view.scale > 1 ? 'grab' : 'zoom-in'
       }
-    }, React.createElement('img', {
+    }, React.createElement(imageComponent || 'img', {
       src: items[index],
       alt: alt || 'Imagen ampliada',
       draggable: false,
@@ -7816,6 +7817,100 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
 })();
 })();
+/* @@file private-resource-demand.js */
+(function(){
+/* Ephemeral request coordination. Backend authorization remains authoritative. */
+(function () {
+  'use strict';
+  const pending = new Map(), listeners = new Set();
+  let subject = '', generation = 0, authBound = false, adminBound = false;
+  function context() {
+    const auth = window.AffiliateAuth && window.AffiliateAuth.getState();
+    if (!auth || auth.phase !== 'authenticated' || !auth.session || !auth.session.user || !auth.session.user.id || !(auth.session.access_token || auth.session.session_id)) return '';
+    const affiliate = auth.affiliate || {}, imp = auth.impersonation || affiliate._impersonation || {};
+    const admin = window.AdminRepository && window.AdminRepository.getState ? window.AdminRepository.getState() : {};
+    // The token is used only inside this closure, never returned, persisted or logged.
+    return JSON.stringify([auth.session.user.id, auth.session.access_token || auth.session.session_id || '', affiliate.id || '', imp,
+      admin.phase || '', admin.subjectKey || '', admin.assignment || null]);
+  }
+  function sync() {
+    if (!authBound && window.AffiliateAuth) { authBound = true; window.AffiliateAuth.subscribe(sync); }
+    if (!adminBound && window.AdminRepository && window.AdminRepository.subscribe) { adminBound = true; window.AdminRepository.subscribe(sync); }
+    const next = context();
+    if (next !== subject) { subject = next; generation++; pending.clear(); listeners.forEach(fn => fn()); }
+    return subject ? generation : null;
+  }
+  const changed = () => Object.assign(new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED'), {code:'PRIVATE_RESOURCE_CONTEXT_CHANGED'});
+  function run(key, load) {
+    const epoch = sync();
+    if (epoch === null) return Promise.reject(changed());
+    if (pending.has(key)) return pending.get(key);
+    const request = Promise.resolve().then(() => {
+      if (sync() !== epoch) throw changed();
+      return load();
+    }).then(value => { if (sync() !== epoch) throw changed(); return value; })
+      .finally(() => { if (pending.get(key) === request) pending.delete(key); });
+    pending.set(key, request);
+    return request;
+  }
+  function subscribe(fn) { sync(); listeners.add(fn); return () => listeners.delete(fn); }
+  function useContext() {
+    const [,render] = React.useState(0);
+    React.useEffect(() => subscribe(() => render(n => n + 1)), []);
+    return sync();
+  }
+  function useVisible(ref) {
+    const [intersects,setIntersects] = React.useState(false), [foreground,setForeground] = React.useState(!document.hidden);
+    React.useEffect(() => {
+      const node = ref.current;
+      if (!node) return;
+      const visibility = () => setForeground(!document.hidden);
+      document.addEventListener('visibilitychange', visibility);
+      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => setIntersects(entries.some(e => e.isIntersecting && e.intersectionRatio > 0))) : null;
+      if (observer) observer.observe(node); else setIntersects(true);
+      return () => { if (observer) observer.disconnect(); document.removeEventListener('visibilitychange', visibility); };
+    }, [ref]);
+    return intersects && foreground;
+  }
+  // One component intention, no shared settled cache. Expired sources are removed;
+  // signing resumes only while visible. A failed image gets one fresh attempt.
+  function useSource(key, load, visible, ttlSeconds) {
+    const epoch = useContext(), loader = React.useRef(load), [result,setResult] = React.useState(null), [retry,setRetry] = React.useState(0);
+    loader.current = load;
+    const identity = JSON.stringify([epoch,key,retry]);
+    React.useEffect(() => {
+      if (!visible || !key || epoch === null) return;
+      let active = true, timer;
+      const expire = () => { if (active) { setResult(null); setRetry(n => n + 1); } };
+      if (result && result.identity === identity && result.expires > Date.now()) {
+        timer = setTimeout(expire, result.expires - Date.now());
+        return () => { active = false; clearTimeout(timer); };
+      }
+      if (result && result.identity === identity && result.error) return;
+      const started = Date.now();
+      loader.current().then(value => {
+        if (!active || sync() !== epoch) return;
+        const url = typeof value === 'string' ? value : value.signedUrl;
+        const expires = started + Math.min(ttlSeconds, Number(value.expiresIn) || ttlSeconds) * 1000;
+        if (expires <= Date.now()) { setResult({identity,error:true}); return; }
+        setResult({identity,url,expires});
+        timer = setTimeout(expire, expires - Date.now());
+      }, () => { if (active) setResult({identity,error:true}); });
+      return () => { active = false; clearTimeout(timer); };
+    }, [identity,visible]);
+    // Retain only this mounted intention within its original deadline. Remounts
+    // authorize afresh; no expired source can be returned after visibility changes.
+    const valid = result && result.identity === identity && result.expires > Date.now();
+    const failed = result && result.identity === identity && result.error;
+    const attempted = React.useRef('');
+    return {url:valid ? result.url : '',error:!!failed,onError:() => {
+      if (attempted.current === key + ':' + epoch) { setResult({identity,error:true}); return; }
+      attempted.current = key + ':' + epoch; setResult(null); setRetry(n => n + 1);
+    }};
+  }
+  window.PrivateResourceDemand = Object.freeze({run,context:sync,subscribe,useContext,useVisible,useSource});
+})();
+})();
 /* @@file document-workflow-repository.js */
 (function(){
 /* Canonical document workflow over private Supabase Storage. */
@@ -7837,8 +7932,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function listSelfDocuments(purpose){const allowed=['SELF_SERVICE_EXPEDIENTE','SELF_SERVICE_LOAN','SELF_SERVICE_MEMBERSHIP'];if(!allowed.includes(purpose))throw failure('INVALID_DOCUMENT_ACCESS_PURPOSE');const[listed,effective]=await Promise.all([db().rpc('list_effective_affiliate_documents',{p_purpose:purpose}),db().rpc('get_effective_affiliate_id')]);if(listed.error)throw listed.error;if(effective.error||!effective.data)throw effective.error||failure('AFFILIATE_IDENTITY_REQUIRED');const rows=(listed.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==effective.data))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
   async function listAdminDocuments(affiliateId,purpose){if(!affiliateId)throw failure('TARGET_AFFILIATE_REQUIRED');const r=await db().rpc('list_admin_affiliate_documents',{p_target_affiliate_id:affiliateId,p_purpose:purpose});if(r.error)throw r.error;const rows=(r.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==affiliateId))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
   async function preview(body){const result=await db().functions.invoke('document-access',{body});if(result.error){let code=result.data&&result.data.error;try{if(!code&&result.error.context){const payload=await result.error.context.clone().json();code=payload&&payload.error;}}catch(_){}throw failure(code||'DOCUMENT_PREVIEW_UNAVAILABLE');}if(!result.data||!result.data.signedUrl)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return Object.freeze(result.data);}
-  async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
-  async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return preview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
+  function coordinatedPreview(body){return window.PrivateResourceDemand.run(JSON.stringify(['document-preview',body]),()=>preview(body));}
+  async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return coordinatedPreview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
+  async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return coordinatedPreview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
   async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
   async function prepareFile(type,file,onProgress,source){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');const origin=source==='camera'?'camera':'file',limit=Math.min(MAX,Number(type.max_file_size_bytes)||MAX);if(origin==='camera'&&type.camera_allowed===false||origin==='file'&&type.file_upload_allowed===false)throw failure('DOCUMENT_SOURCE_NOT_ALLOWED');if(origin==='camera'&&!String(file.type||'').startsWith('image/'))throw failure('INVALID_DOCUMENT_FILE');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>limit||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
   async function upload(type,file,options){const settings=options||{},source=settings.source==='camera'?'camera':'file',progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress,source);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha,p_source:source.toUpperCase()});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
@@ -8059,25 +8155,48 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function listItems(options){
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
-    const api=db();
+    const api=db(),settings=options||{};
     let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
-    const [rows,links]=await Promise.all([
-      itemQuery,
-      api.from('program_catalog_item_assets').select(`id,item_id,public_asset_id,private_asset_id,role,sort_order,enabled,source_column,source_column_letter,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).eq('enabled',true).order('sort_order',{ascending:true}),
-    ]);
+    if(settings.programKey)itemQuery=itemQuery.eq('program_key',settings.programKey);
+    if(settings.itemId)itemQuery=itemQuery.eq('id',settings.itemId);
+    const rows=await itemQuery;
     if(rows.error)throw rows.error;
+    const ids=(rows.data||[]).map(row=>row.id);
+    const links=settings.includeAssets===false||!ids.length?{data:[]}:await api.from('program_catalog_item_assets').select(`id,item_id,public_asset_id,private_asset_id,role,sort_order,enabled,source_column,source_column_letter,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).eq('enabled',true).in('item_id',ids).order('sort_order',{ascending:true});
     if(links.error)throw links.error;
-    const allLinks=links.data||[],assetUrls=await resolveAssetUrls(allLinks),byItem=new Map();
+    const allLinks=links.data||[],assetUrls=settings.deferImages?new Map():await resolveAssetUrls(allLinks),byItem=new Map();
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}
     const projected=[];
     for(const row of rows.data||[]){
       const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
-      const imageAssets=itemLinks.map((link)=>Object.freeze({link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null}));
+      const imageAssets=itemLinks.map((link)=>{const asset={link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null};Object.defineProperty(asset,'resource',{value:link,enumerable:false});return Object.freeze(asset);});
       const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
       projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
+  }
+  function imageAssets(item){return(item&&item.imagenAssets||[]).filter(asset=>asset.resource&&(asset.resource.public_asset||asset.resource.private_asset)||asset.url);}
+  let imageQueue=[],imageFlush=null;
+  function signDemanded(link){
+    return new Promise((resolve,reject)=>{
+      imageQueue.push({link,resolve,reject,context:window.PrivateResourceDemand.context()});
+      if(imageFlush)return;
+      imageFlush=Promise.resolve().then(async()=>{
+        const queue=imageQueue;imageQueue=[];imageFlush=null;
+        const current=window.PrivateResourceDemand.context(),valid=queue.filter(job=>job.context===current&&current!==null);
+        queue.filter(job=>!valid.includes(job)).forEach(job=>job.reject(new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED')));
+        if(!valid.length)return;
+        try{const urls=await resolveAssetUrls(valid.map(job=>job.link));for(const job of valid){const signedUrl=urls.get(job.link);if(signedUrl)job.resolve(Object.freeze({signedUrl,expiresIn:3600}));else job.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));}}
+        catch(error){valid.forEach(job=>job.reject(error));}
+      });
+    });
+  }
+  function resolveImage(asset){
+    if(!asset||!asset.resource)return Promise.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));
+    const link=asset.resource,resource=link.public_asset||link.private_asset;
+    if(!resource)return Promise.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));
+    return window.PrivateResourceDemand.run(JSON.stringify(['program-image',resource.id,resource.storage_bucket,resource.storage_path,resource.status]),()=>signDemanded(link));
   }
   async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
     return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
@@ -8128,7 +8247,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
 })();
 })();
 /* @@file popup-proposal-repository.js */
@@ -14757,7 +14876,10 @@ Object.assign(window, {
           setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');
           return;
         }
-        const items = await window.ProgramCatalogRepository.listItems();
+        const items = await window.ProgramCatalogRepository.listItems({
+          programKey: 'prestamo',
+          includeAssets: false
+        });
         const item = items.find(value => value.program_key === 'prestamo' && value.requestMode === 'supabase');
         if (!item) throw new Error('PROGRAM_NOT_REQUESTABLE');
         const result = simulation.result;
@@ -15076,7 +15198,9 @@ Object.assign(window, {
   }) {
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const cs = window.useCatalogStore ? window.useCatalogStore() : null;
+    const cs = window.useCatalogStore ? window.useCatalogStore({
+      programKey: params.id
+    }) : null;
     if (!found) return null;
     const {
       it
@@ -21115,6 +21239,8 @@ Object.assign(window, {
       cameraVideo = useRef(null),
       cameraStream = useRef(null),
       thumbnailRetries = useRef(new Set()),
+      thumbnailNodes = useRef(new Map()),
+      thumbnailRefresh = useRef(() => {}),
       [busy, setBusy] = useState(null),
       [error, setError] = useState(''),
       [origin, setOrigin] = useState(null),
@@ -21122,6 +21248,9 @@ Object.assign(window, {
       [cameraError, setCameraError] = useState(''),
       [thumbnails, setThumbnails] = useState({}),
       [viewer, setViewer] = useState(null);
+    const resourceContext = window.PrivateResourceDemand.useContext();
+    const thumbnailCandidates = variant === 'tiles' ? (requirements || []).map(req => newest(documents || [], (req.document_type || req).id)).filter(doc => doc && ACCEPTED.has(doc.status) && physicalAvailable(doc) && String(doc.mimeType || '').toLowerCase().startsWith('image/')) : [];
+    const thumbnailKey = JSON.stringify([accessPurpose || 'SELF_SERVICE_EXPEDIENTE', thumbnailCandidates]);
     const pick = (type, source) => {
       selection.current = {
         type,
@@ -21229,72 +21358,101 @@ Object.assign(window, {
     };
     useEffect(() => {
       let active = true;
+      const visible = new Set(),
+        inFlight = new Set(),
+        ready = new Map(),
+        timers = new Map();
       thumbnailRetries.current = new Set();
-      const candidates = (requirements || []).map(req => newest(documents || [], (req.document_type || req).id)).filter(doc => doc && ACCEPTED.has(doc.status) && physicalAvailable(doc) && String(doc.mimeType || '').toLowerCase().startsWith('image/'));
-      const candidateIds = new Set(candidates.map(doc => doc.id));
-      setThumbnails(current => Object.fromEntries(Object.entries(current).filter(([id]) => candidateIds.has(id))));
-      candidates.forEach(async doc => {
-        setThumbnails(current => current[doc.id] ? current : Object.assign({}, current, {
-          [doc.id]: {
-            phase: 'authorizing',
-            url: ''
-          }
+      setThumbnails({});
+      const valid = () => active && window.PrivateResourceDemand.context() === resourceContext;
+      const put = (doc, value) => {
+        if (valid()) setThumbnails(current => Object.assign({}, current, {
+          [doc.id]: Object.assign({
+            context: resourceContext,
+            key: thumbnailKey
+          }, value)
         }));
-        try {
-          const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
-          if (active) setThumbnails(current => Object.assign({}, current, {
-            [doc.id]: {
-              phase: 'ready',
-              url: preview.signedUrl
-            }
-          }));
-        } catch (_) {
-          if (active) setThumbnails(current => Object.assign({}, current, {
-            [doc.id]: {
-              phase: 'error',
-              url: ''
-            }
-          }));
-        }
-      });
-      return () => {
-        active = false;
       };
-    }, [requirements, documents, accessPurpose]);
-    const refreshThumbnail = async doc => {
-      if (thumbnailRetries.current.has(doc.id)) {
-        setThumbnails(current => Object.assign({}, current, {
-          [doc.id]: {
-            phase: 'error',
-            url: ''
-          }
-        }));
-        return;
-      }
-      thumbnailRetries.current.add(doc.id);
-      setThumbnails(current => Object.assign({}, current, {
-        [doc.id]: {
+      const load = async (doc, force) => {
+        if (!valid() || document.hidden || !visible.has(doc.id) || inFlight.has(doc.id)) return;
+        if (!force && ready.has(doc.id)) return;
+        inFlight.add(doc.id);
+        const started = Date.now();
+        put(doc, {
           phase: 'authorizing',
           url: ''
-        }
-      }));
-      try {
-        const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
-        setThumbnails(current => Object.assign({}, current, {
-          [doc.id]: {
+        });
+        try {
+          const preview = await window.DocumentWorkflowRepository.selfPreview(doc, accessPurpose || 'SELF_SERVICE_EXPEDIENTE');
+          if (!valid()) return;
+          const expires = started + Math.min(300, Number(preview.expiresIn) || 300) * 1000;
+          if (expires <= Date.now()) throw new Error('DOCUMENT_PREVIEW_EXPIRED');
+          ready.set(doc.id, true);
+          put(doc, {
             phase: 'ready',
-            url: preview.signedUrl
-          }
-        }));
-      } catch (_) {
-        setThumbnails(current => Object.assign({}, current, {
-          [doc.id]: {
+            url: preview.signedUrl,
+            expires
+          });
+          clearTimeout(timers.get(doc.id));
+          timers.set(doc.id, setTimeout(() => {
+            ready.delete(doc.id);
+            put(doc, {
+              phase: 'expired',
+              url: ''
+            });
+            load(doc, false);
+          }, expires - Date.now()));
+        } catch (_) {
+          ready.set(doc.id, true);
+          put(doc, {
             phase: 'error',
             url: ''
-          }
-        }));
+          });
+        } finally {
+          inFlight.delete(doc.id);
+        }
+      };
+      thumbnailRefresh.current = doc => {
+        if (thumbnailRetries.current.has(doc.id)) {
+          put(doc, {
+            phase: 'error',
+            url: ''
+          });
+          return;
+        }
+        thumbnailRetries.current.add(doc.id);
+        load(doc, true);
+      };
+      const observer = window.IntersectionObserver ? new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          const doc = thumbnailCandidates.find(d => thumbnailNodes.current.get(d.id) === entry.target);
+          if (!doc) continue;
+          if (entry.isIntersecting && entry.intersectionRatio > 0) {
+            visible.add(doc.id);
+            load(doc, false);
+          } else visible.delete(doc.id);
+        }
+      }) : null;
+      for (const doc of thumbnailCandidates) {
+        const node = thumbnailNodes.current.get(doc.id);
+        if (observer && node) observer.observe(node);else if (!observer) {
+          visible.add(doc.id);
+          load(doc, false);
+        }
       }
-    };
+      const foreground = () => {
+        if (!document.hidden) thumbnailCandidates.forEach(doc => load(doc, false));
+      };
+      document.addEventListener('visibilitychange', foreground);
+      return () => {
+        active = false;
+        thumbnailRefresh.current = () => {};
+        if (observer) observer.disconnect();
+        timers.forEach(clearTimeout);
+        document.removeEventListener('visibilitychange', foreground);
+      };
+    }, [thumbnailKey, resourceContext]);
+    const refreshThumbnail = doc => thumbnailRefresh.current(doc);
     const open = async (doc, type) => {
       if (!doc) return;
       setError('');
@@ -21308,7 +21466,8 @@ Object.assign(window, {
           source: preview.signedUrl,
           mimeType: doc.mimeType || '',
           title: type.label,
-          documentId: doc.id
+          documentId: doc.id,
+          context: resourceContext
         });
       } catch (e) {
         const code = e && (e.code || e.message);
@@ -21509,7 +21668,7 @@ Object.assign(window, {
           canUpload = capabilities.any && (!!editable || !doc || ['REJECTED', 'REUPLOAD_REQUIRED'].includes(doc.status)),
           preview = accepted && available;
         const thumbnail = doc && thumbnails[doc.id],
-          image = !!(preview && thumbnail && thumbnail.phase === 'ready' && thumbnail.url && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
+          image = !!(preview && thumbnail && thumbnail.context === resourceContext && thumbnail.key === thumbnailKey && thumbnail.expires > Date.now() && thumbnail.phase === 'ready' && thumbnail.url && String(doc.mimeType || '').toLowerCase().startsWith('image/')),
           isBusy = !!(busy && busy.id === type.id);
         const action = preview ? 'preview' : canUpload ? 'upload' : 'unavailable',
           actionCopy = doc ? state.label : 'Adjuntar',
@@ -21523,6 +21682,11 @@ Object.assign(window, {
         };
         return h('article', {
           key: type.id,
+          ref: node => {
+            if (doc) {
+              if (node) thumbnailNodes.current.set(doc.id, node);else thumbnailNodes.current.delete(doc.id);
+            }
+          },
           className: classes,
           'data-document-type': type.code,
           'data-document-type-id': type.id,
@@ -21597,7 +21761,7 @@ Object.assign(window, {
         }, state.label), doc && doc.review_observation && h('p', {
           className: 'mr-doc-observation'
         }, doc.review_observation));
-      })), originSheet, cameraSheet, viewer && h(window.DocumentViewer, {
+      })), originSheet, cameraSheet, viewer && viewer.context === resourceContext && h(window.DocumentViewer, {
         source: viewer.source,
         mimeType: viewer.mimeType,
         title: viewer.title,
@@ -21725,7 +21889,7 @@ Object.assign(window, {
         type,
         replacing: !!doc
       }), isBusy, doc ? 'replace' : 'upload')));
-    })), originSheet, cameraSheet, viewer && h(window.DocumentViewer, {
+    })), originSheet, cameraSheet, viewer && viewer.context === resourceContext && h(window.DocumentViewer, {
       source: viewer.source,
       mimeType: viewer.mimeType,
       title: viewer.title,
@@ -55406,10 +55570,26 @@ Object.assign(window, {
     phase = 'idle',
     error = null,
     promise = null;
+  const programs = new Map();
+  let programFavorites = new Set();
+  window.PrivateResourceDemand.subscribe(() => {
+    items = [];
+    programItems = [];
+    cats = [];
+    favorites = new Set();
+    programFavorites = new Set();
+    companyFavorites = new Set();
+    phase = 'idle';
+    error = null;
+    promise = null;
+    programs.clear();
+    emit();
+  });
   const emit = () => listeners.forEach(fn => fn());
   const sort = (a, b) => (a.orden || 0) - (b.orden || 0);
   async function load(force) {
     if (promise && !force) return promise;
+    const epoch = window.PrivateResourceDemand.context();
     phase = 'loading';
     error = null;
     emit();
@@ -55418,14 +55598,15 @@ Object.assign(window, {
         const admin = Boolean(window.AdminRepository && window.AdminRepository.has('marketplace.read'));
         const out = await Promise.all([window.MarketplaceRepository.listCategories(admin), window.MarketplaceRepository.listProducts({
           admin
-        }), window.MarketplaceRepository.listFavorites().catch(() => []), window.MarketplaceRepository.listCompanyFavorites().catch(() => []), window.ProgramCatalogRepository.listItems(), window.ProgramCatalogRepository.listFavorites().catch(() => [])]);
+        }), window.MarketplaceRepository.listFavorites().catch(() => []), window.MarketplaceRepository.listCompanyFavorites().catch(() => [])]);
+        if (window.PrivateResourceDemand.context() !== epoch) return store;
         cats = out[0].slice();
         items = out[1].slice();
-        favorites = new Set(out[2].concat(out[5]));
+        favorites = new Set([...out[2], ...programFavorites]);
         companyFavorites = new Set(out[3]);
-        programItems = out[4].slice();
         phase = 'loaded';
       } catch (e) {
+        if (window.PrivateResourceDemand.context() !== epoch) return store;
         phase = 'error';
         error = e;
       }
@@ -55434,6 +55615,39 @@ Object.assign(window, {
     })();
     return promise;
   }
+  function loadProgram(key, force) {
+    const old = programs.get(key);
+    if (old && old.promise && !force) return old.promise;
+    const epoch = window.PrivateResourceDemand.context(),
+      entry = {
+        phase: 'loading',
+        error: null,
+        promise: null
+      };
+    programs.set(key, entry);
+    emit();
+    entry.promise = (async () => {
+      try {
+        const [rows, favs] = await Promise.all([window.ProgramCatalogRepository.listItems({
+          programKey: key,
+          deferImages: true
+        }), window.ProgramCatalogRepository.listFavorites().catch(() => [])]);
+        if (window.PrivateResourceDemand.context() !== epoch || programs.get(key) !== entry) return store;
+        programItems = programItems.filter(x => x.program_key !== key).concat(rows);
+        favorites = new Set([...Array.from(favorites).filter(id => !programFavorites.has(id)), ...favs]);
+        programFavorites = new Set(favs);
+        entry.phase = 'loaded';
+      } catch (e) {
+        if (window.PrivateResourceDemand.context() !== epoch || programs.get(key) !== entry) return store;
+        programItems = programItems.filter(x => x.program_key !== key);
+        entry.phase = 'error';
+        entry.error = e;
+      }
+      emit();
+      return store;
+    })();
+    return entry.promise;
+  }
   function next(scope, scopeId) {
     return items.filter(x => x.scope === scope && x.scopeId === scopeId).length + 1;
   }
@@ -55441,7 +55655,7 @@ Object.assign(window, {
     bootstrap: () => load(false),
     retry: () => {
       promise = null;
-      return load(true);
+      return Promise.all([load(true), ...Array.from(programs.keys()).map(key => loadProgram(key, true))]);
     },
     state: () => ({
       phase,
@@ -55532,27 +55746,37 @@ Object.assign(window, {
     replaceProductAssets: (id, ids) => window.MarketplaceRepository.replaceProductAssets(id, ids),
     isFavorite: id => favorites.has(id),
     toggleFavorite: async id => {
-      const on = !favorites.has(id),
+      const epoch = window.PrivateResourceDemand.context(),
+        on = !favorites.has(id),
         program = programItems.some(item => item.id === id),
         repository = program ? window.ProgramCatalogRepository : window.MarketplaceRepository;
       on ? favorites.add(id) : favorites.delete(id);
+      if (program) {
+        on ? programFavorites.add(id) : programFavorites.delete(id);
+      }
       emit();
       try {
         await repository.setFavorite(id, on);
       } catch (e) {
+        if (window.PrivateResourceDemand.context() !== epoch) throw e;
         on ? favorites.delete(id) : favorites.add(id);
+        if (program) {
+          on ? programFavorites.delete(id) : programFavorites.add(id);
+        }
         emit();
         throw e;
       }
     },
     isCompanyFavorite: id => companyFavorites.has(id),
     toggleCompanyFavorite: async id => {
-      const on = !companyFavorites.has(id);
+      const epoch = window.PrivateResourceDemand.context(),
+        on = !companyFavorites.has(id);
       on ? companyFavorites.add(id) : companyFavorites.delete(id);
       emit();
       try {
         await window.MarketplaceRepository.setCompanyFavorite(id, on);
       } catch (e) {
+        if (window.PrivateResourceDemand.context() !== epoch) throw e;
         on ? companyFavorites.delete(id) : companyFavorites.add(id);
         emit();
         throw e;
@@ -55565,13 +55789,24 @@ Object.assign(window, {
     }
   };
   window.catalogStore = store;
-  window.useCatalogStore = function () {
+  window.useCatalogStore = function (options) {
+    const key = options && options.programKey,
+      epoch = window.PrivateResourceDemand.useContext();
     const [, setVersion] = useState(0);
     useEffect(() => store.subscribe(() => setVersion(n => n + 1)), []);
     useEffect(() => {
-      store.bootstrap();
-    }, []);
-    return store;
+      if (epoch !== null) {
+        if (key) loadProgram(key, false);else store.bootstrap();
+      }
+    }, [key, epoch]);
+    return React.useMemo(() => key ? Object.assign({}, store, {
+      state: () => programs.get(key) || {
+        phase: 'loading',
+        error: null
+      },
+      retry: () => loadProgram(key, true),
+      bootstrap: () => loadProgram(key, false)
+    }) : store, [key]);
   };
 })();
 })();
@@ -56517,6 +56752,25 @@ Object.assign(window, {
   } = React;
   const I = window.Icon;
   const precioTxt = it => it.precio != null && !it.cotiza ? window.money(it.precio) : it.catalogSource === 'program' && !it.cotiza ? 'Consulta disponibilidad' : 'Se cotiza';
+  function ProgramCatalogImage({
+    asset,
+    ...props
+  }) {
+    const ref = useRef(null),
+      demand = window.PrivateResourceDemand,
+      visible = demand.useVisible(ref);
+    const source = demand.useSource(asset && JSON.stringify(asset.resource || asset), () => window.ProgramCatalogRepository.resolveImage(asset), visible, 3600);
+    return React.createElement('img', Object.assign({}, props, {
+      ref,
+      src: source.url || undefined,
+      onError: source.onError,
+      'data-resource-phase': source.error ? 'error' : source.url ? 'ready' : 'loading',
+      style: Object.assign({}, props.style, {
+        opacity: source.url ? 1 : 0
+      })
+    }));
+  }
+  window.ProgramCatalogImage = ProgramCatalogImage;
 
   // ── Rejilla de productos (usada en Finanzas y en Convenios) ──
   // F1.8: la portada de cada producto se resuelve por el registro
@@ -56530,6 +56784,7 @@ Object.assign(window, {
     onOpen
   }) {
     const r = window.useAsset ? window.useAsset('cat.item.' + l.id) : null;
+    const asset = l.catalogSource === 'program' && window.ProgramCatalogRepository.imageAssets(l)[0];
     const cover = l.imagenes && l.imagenes[0] || r && r.kind === 'image' && r.url;
     return React.createElement('div', {
       className: 'su-press',
@@ -56548,7 +56803,8 @@ Object.assign(window, {
         position: 'relative',
         background: `linear-gradient(135deg, hsl(${hue + i * 12} 42% 52%), hsl(${hue + i * 12} 48% 36%))`
       }
-    }, cover ? React.createElement('img', {
+    }, asset || cover ? React.createElement(asset ? ProgramCatalogImage : 'img', {
+      asset: asset || undefined,
       src: cover,
       alt: l.nombre,
       style: {
@@ -56651,7 +56907,8 @@ Object.assign(window, {
     icon,
     onZoom
   }) {
-    const imgs = item.imagenes || [];
+    const program = item.catalogSource === 'program',
+      imgs = program ? window.ProgramCatalogRepository.imageAssets(item) : item.imagenes || [];
     const [idx, setIdx] = useState(0);
     const ref = useRef(null);
     const onScroll = e => {
@@ -56709,8 +56966,9 @@ Object.assign(window, {
         scrollSnapAlign: 'start',
         cursor: 'zoom-in'
       }
-    }, React.createElement('img', {
-      src,
+    }, React.createElement(program ? ProgramCatalogImage : 'img', {
+      asset: program ? src : undefined,
+      src: program ? undefined : src,
       alt: item.nombre + ' ' + (i + 1),
       style: {
         width: '100%',
@@ -56763,11 +57021,22 @@ Object.assign(window, {
   }
   function Lightbox({
     imgs,
+    item,
     start,
     onClose
   }) {
+    const assets = item && item.catalogSource === 'program' ? window.ProgramCatalogRepository.imageAssets(item) : null;
+    const imageComponent = React.useMemo(() => assets ? function CatalogViewerImage({
+      src,
+      ...props
+    }) {
+      return React.createElement(ProgramCatalogImage, Object.assign({}, props, {
+        asset: assets.find(asset => asset.link_id === src)
+      }));
+    } : null, [item]);
     return React.createElement(window.ImageViewer, {
-      sources: imgs,
+      sources: assets ? assets.map(asset => asset.link_id) : imgs,
+      imageComponent,
       startIndex: start || 0,
       alt: 'Imagen del producto',
       onClose
@@ -56903,7 +57172,9 @@ Object.assign(window, {
     app,
     params
   }) {
-    const catalog = window.useCatalogStore ? window.useCatalogStore() : window.catalogStore;
+    const catalog = window.useCatalogStore ? window.useCatalogStore(params.item.catalogSource === 'program' ? {
+      programKey: params.item.program_key
+    } : undefined) : window.catalogStore;
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
     const live = window.catalogStore ? window.catalogStore.get(params.item.id) : null;
     const item = live || params.item;
@@ -57230,6 +57501,7 @@ Object.assign(window, {
         gap: 10
       }
     }, cta)), zoom != null && React.createElement(Lightbox, {
+      item,
       imgs: item.imagenes || [],
       start: zoom,
       onClose: () => setZoom(null)
@@ -57494,7 +57766,17 @@ Object.assign(window, {
   let items = [],
     phase = 'idle',
     error = null,
+    promise = null,
+    selectedProgram = null,
+    loadVersion = 0;
+  window.PrivateResourceDemand.subscribe(() => {
+    items = [];
+    phase = 'idle';
+    error = null;
     promise = null;
+    loadVersion++;
+    emit();
+  });
   const labels = Object.freeze({
     aires: 'Aires acondicionados',
     auto: 'Autos',
@@ -57527,18 +57809,32 @@ Object.assign(window, {
   });
   const declaredEmptyPrograms = Object.freeze(['cirugias']);
   const emit = () => listeners.forEach(fn => fn());
+  const fetchProgram = key => window.PrivateResourceDemand.run('admin-program:' + key, () => window.ProgramCatalogRepository.listItems({
+    admin: true,
+    programKey: key,
+    deferImages: true
+  }));
   async function load(force) {
     if (promise && !force) return promise;
+    const epoch = window.PrivateResourceDemand.context(),
+      version = ++loadVersion;
     phase = 'loading';
     error = null;
     emit();
     promise = (async () => {
       try {
-        items = (await window.ProgramCatalogRepository.listItems({
-          admin: true
-        })).slice();
+        const rows = await window.ProgramCatalogRepository.listItems({
+            admin: true,
+            includeAssets: false
+          }),
+          selected = selectedProgram,
+          details = selected ? await fetchProgram(selected) : [];
+        if (window.PrivateResourceDemand.context() !== epoch || version !== loadVersion) return store;
+        const byId = new Map(details.map(row => [row.id, row]));
+        items = rows.map(row => byId.get(row.id) || row);
         phase = 'loaded';
       } catch (e) {
+        if (window.PrivateResourceDemand.context() !== epoch || version !== loadVersion) return store;
         phase = 'error';
         error = e;
       }
@@ -57547,11 +57843,33 @@ Object.assign(window, {
     })();
     return promise;
   }
+  async function loadProgram(key) {
+    const epoch = window.PrivateResourceDemand.context();
+    selectedProgram = key;
+    try {
+      const rows = await fetchProgram(key);
+      if (window.PrivateResourceDemand.context() !== epoch || selectedProgram !== key) return false;
+      items = items.filter(x => x.program_key !== key).concat(rows);
+      phase = 'loaded';
+      emit();
+      return true;
+    } catch (e) {
+      if (window.PrivateResourceDemand.context() !== epoch || selectedProgram !== key) return false;
+      phase = 'error';
+      error = e;
+      emit();
+      return false;
+    }
+  }
   async function refreshConsumers() {
     await load(true);
     if (window.catalogStore) await window.catalogStore.retry();
   }
   const store = {
+    loadProgram,
+    clearSelection: () => {
+      selectedProgram = null;
+    },
     bootstrap: () => load(false),
     retry: () => {
       promise = null;
@@ -57649,11 +57967,12 @@ Object.assign(window, {
   };
   window.programCatalogAdminStore = store;
   window.useProgramCatalogAdminStore = function () {
+    const epoch = window.PrivateResourceDemand.useContext();
     const [, render] = useState(0);
     useEffect(() => store.subscribe(() => render(n => n + 1)), []);
     useEffect(() => {
-      store.bootstrap();
-    }, []);
+      if (epoch !== null) store.retry();
+    }, [epoch]);
     return store;
   };
 })();
@@ -57757,9 +58076,7 @@ Object.assign(window, {
       [program, setProgram] = useState(null),
       [editing, setEditing] = useState(null);
     const canWrite = app.admin.has('program_catalog.write');
-    useEffect(() => {
-      store.retry();
-    }, []);
+    useEffect(() => () => store.clearSelection(), []);
     if (store.state().phase === 'loading' && store.all().length === 0) return React.createElement('div', null, header({
       title: 'Programas · Productos',
       sub: 'Cargando catálogo autoritativo',
@@ -57793,7 +58110,10 @@ Object.assign(window, {
     return React.createElement('div', null, header({
       title: program ? program.label : 'Programas · Productos',
       sub: program ? `${rows.length} productos · ${rows.filter(x => x.activo !== false).length} activos` : `${programs.length} programas · ${store.all().length} productos`,
-      onBack: program ? () => setProgram(null) : onBack
+      onBack: program ? () => {
+        store.clearSelection();
+        setProgram(null);
+      } : onBack
     }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
       className: 'su-app-scroll su-stagger',
       style: {
@@ -57816,7 +58136,9 @@ Object.assign(window, {
     }, programs.map(p => React.createElement('button', {
       key: p.key,
       'data-program-key': p.key,
-      onClick: () => setProgram(p),
+      onClick: async () => {
+        if (await store.loadProgram(p.key)) setProgram(p);
+      },
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -57952,8 +58274,8 @@ Object.assign(window, {
         cursor: 'pointer',
         flexShrink: 0
       }
-    }, p.imagenes && p.imagenes[0] ? React.createElement('img', {
-      src: p.imagenes[0],
+    }, window.ProgramCatalogRepository.imageAssets(p)[0] ? React.createElement(window.ProgramCatalogImage, {
+      asset: window.ProgramCatalogRepository.imageAssets(p)[0],
       alt: '',
       style: {
         width: '100%',
@@ -57994,7 +58316,7 @@ Object.assign(window, {
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
-    }, `${p.category_raw || 'Sin categoría'} · Orden ${p.orden} · ${(p.imagenes || []).length} img`), React.createElement('div', {
+    }, `${p.category_raw || 'Sin categoría'} · Orden ${p.orden} · ${window.ProgramCatalogRepository.imageAssets(p).length} img`), React.createElement('div', {
       style: {
         display: 'flex',
         gap: 6,
@@ -58030,6 +58352,17 @@ Object.assign(window, {
       [busy, setBusy] = useState(false),
       [error, setError] = useState(''),
       [preview, setPreview] = useState(null);
+    const previewImage = React.useMemo(() => function EditorPreviewImage({
+      src,
+      ...props
+    }) {
+      const entry = media.find(x => (x.asset && x.asset.link_id || x.url) === src);
+      return entry && entry.asset && entry.asset.resource ? React.createElement(window.ProgramCatalogImage, Object.assign({}, props, {
+        asset: entry.asset
+      })) : React.createElement('img', Object.assign({}, props, {
+        src: entry && entry.url
+      }));
+    }, [media]);
     const originalImageCount = (item.imagenAssets || []).length,
       imageLimit = item.id ? Math.max(8, originalImageCount) : 8;
     const set = (key, value) => setDraft(old => Object.assign({}, old, {
@@ -58183,7 +58516,8 @@ Object.assign(window, {
         background: 'none',
         cursor: 'zoom-in'
       }
-    }, React.createElement('img', {
+    }, React.createElement(entry.asset && entry.asset.resource ? window.ProgramCatalogImage : 'img', {
+      asset: entry.asset,
       src: entry.url,
       alt: '',
       style: {
@@ -58460,7 +58794,8 @@ Object.assign(window, {
       disabled: busy,
       onClick: save
     }, busy ? 'Guardando…' : 'Guardar'))), preview != null && React.createElement(window.ImageViewer, {
-      sources: media.map(x => x.url),
+      sources: media.map(x => x.asset && x.asset.link_id || x.url),
+      imageComponent: previewImage,
       startIndex: preview,
       alt: 'Imagen del producto',
       onClose: () => setPreview(null)

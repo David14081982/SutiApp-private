@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('fs'),path=require('path'),cp=require('child_process'),vm=require('vm'),crypto=require('crypto'),assert=require('assert').strict,a=require('./audit.cjs');
+const root=process.cwd(),sha=x=>crypto.createHash('sha256').update(x).digest('hex');let reconstructed;
+const original=fs.readFileSync(a.dir+'/before/workspace/build-bundle.js','utf8');
+const virtualFs={...fs,readFileSync(file,options){const candidate=a.dir+'/before/workspace/'+path.basename(file);return fs.readFileSync(path.resolve(file).startsWith(path.resolve(root,'app')+path.sep)&&fs.existsSync(candidate)?candidate:file,options);},writeFileSync(file,data){assert.equal(path.resolve(file),path.resolve(root,'app/bundle.js'));reconstructed=Buffer.from(data);}};
+vm.runInNewContext(original,{require:name=>name==='fs'?virtualFs:require(name),__dirname:path.join(root,'scripts'),process:{argv:['node','builder','C:/tmp/babel-standalone-7.28.4.min.js'],stdout:{write(){}}}});
+const before=JSON.parse(fs.readFileSync(a.dir+'/workspace-before.json')).hashes['app/bundle.js'];assert.equal(sha(reconstructed),before,'preexisting workspace bundle reconstruction');
+function chunks(text){const marks=[...text.matchAll(/^\/\* @@file ([^\r\n]+) \*\/$/gm)];return new Map(marks.map((m,i)=>[m[1],text.slice(m.index,marks[i+1]?.index||text.length)]));}
+const release='C:/tmp/sutiapp-h06-release-20260907',base=chunks(cp.execFileSync('git',['show','c047eec:app/bundle.js'],{cwd:release,encoding:'utf8',maxBuffer:15000000})),after=chunks(fs.readFileSync(release+'/app/bundle.js','utf8'));
+const changed=[...after].filter(([name,text])=>base.get(name)!==text).map(([name])=>name),removed=[...base.keys()].filter(name=>!after.has(name));
+assert.deepEqual(removed,[]);const allowed=new Set(a.files.filter(x=>x.startsWith('app/')).map(x=>path.basename(x)).concat('private-resource-demand.js','image-viewer.jsx'));assert(changed.every(name=>allowed.has(name)));assert.equal(changed.length,11);
+a.save('build-proof',{at:new Date().toISOString(),status:'PASS',workspaceBefore:before,reconstructedBefore:sha(reconstructed),workspaceAfter:sha(fs.readFileSync('app/bundle.js')),releaseBeforeModules:base.size,releaseAfterModules:after.size,changed,removed,releaseBundle:sha(fs.readFileSync(release+'/app/bundle.js')),method:'Original builder executed in read-only virtual FS; baseline sources substituted, destination captured in memory'});console.log(JSON.stringify({status:'PASS',changed,modules:[base.size,after.size]}));

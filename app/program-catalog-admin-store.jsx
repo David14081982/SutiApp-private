@@ -1,15 +1,18 @@
 /* Admin-only in-memory projection over ProgramCatalogRepository. */
 (function () {
   const {useEffect,useState}=React,listeners=new Set();
-  let items=[],phase='idle',error=null,promise=null;
+  let items=[],phase='idle',error=null,promise=null,selectedProgram=null,loadVersion=0;
+  window.PrivateResourceDemand.subscribe(()=>{items=[];phase='idle';error=null;promise=null;loadVersion++;emit();});
   const labels=Object.freeze({aires:'Aires acondicionados',auto:'Autos',casa:'Casa',cirugias:'Suti Cirugías',computo:'Cómputo',donativos:'Donativos',farma:'Suti Farma',prestamo:'Suti Préstamo',puertas:'Puertas de seguridad',renta:'Renta de vehículos',solar:'Paneles solares',terrenos:'Terrenos',tours:'Tours'});
   const icons=Object.freeze({aires:'snow',auto:'car',casa:'home',cirugias:'surgery',computo:'laptop',donativos:'heart',farma:'health',prestamo:'cash',puertas:'shield',renta:'car',solar:'sun',terrenos:'pin',tours:'plane'});
   const declaredEmptyPrograms=Object.freeze(['cirugias']);
   const emit=()=>listeners.forEach((fn)=>fn());
-  async function load(force){if(promise&&!force)return promise;phase='loading';error=null;emit();promise=(async()=>{try{items=(await window.ProgramCatalogRepository.listItems({admin:true})).slice();phase='loaded';}catch(e){phase='error';error=e;}emit();return store;})();return promise;}
+  const fetchProgram=key=>window.PrivateResourceDemand.run('admin-program:'+key,()=>window.ProgramCatalogRepository.listItems({admin:true,programKey:key,deferImages:true}));
+  async function load(force){if(promise&&!force)return promise;const epoch=window.PrivateResourceDemand.context(),version=++loadVersion;phase='loading';error=null;emit();promise=(async()=>{try{const rows=await window.ProgramCatalogRepository.listItems({admin:true,includeAssets:false}),selected=selectedProgram,details=selected?await fetchProgram(selected):[];if(window.PrivateResourceDemand.context()!==epoch||version!==loadVersion)return store;const byId=new Map(details.map(row=>[row.id,row]));items=rows.map(row=>byId.get(row.id)||row);phase='loaded';}catch(e){if(window.PrivateResourceDemand.context()!==epoch||version!==loadVersion)return store;phase='error';error=e;}emit();return store;})();return promise;}
+  async function loadProgram(key){const epoch=window.PrivateResourceDemand.context();selectedProgram=key;try{const rows=await fetchProgram(key);if(window.PrivateResourceDemand.context()!==epoch||selectedProgram!==key)return false;items=items.filter(x=>x.program_key!==key).concat(rows);phase='loaded';emit();return true;}catch(e){if(window.PrivateResourceDemand.context()!==epoch||selectedProgram!==key)return false;phase='error';error=e;emit();return false;}}
   async function refreshConsumers(){await load(true);if(window.catalogStore)await window.catalogStore.retry();}
   const store={
-    bootstrap:()=>load(false),retry:()=>{promise=null;return load(true);},state:()=>({phase,error}),all:()=>items.slice(),
+    loadProgram,clearSelection:()=>{selectedProgram=null;},bootstrap:()=>load(false),retry:()=>{promise=null;return load(true);},state:()=>({phase,error}),all:()=>items.slice(),
     programs:()=>Array.from(new Set(items.map((x)=>x.program_key).concat(declaredEmptyPrograms))).sort((a,b)=>(labels[a]||a).localeCompare(labels[b]||b)).map((key)=>{const rows=items.filter((x)=>x.program_key===key);return{key,label:labels[key]||key,icon:icons[key]||'grid',count:rows.length,active:rows.filter((x)=>x.activo!==false).length,fixed:rows.filter((x)=>x.commercialMode==='PAYROLL_FIXED').length,quote:rows.filter((x)=>x.commercialMode==='PAYROLL_QUOTE').length,direct:rows.filter((x)=>x.commercialMode==='DIRECT_CONTACT').length,sold:rows.filter((x)=>x.sold===true).length};}),
     byProgram:(key)=>items.filter((x)=>x.program_key===key).sort((a,b)=>(a.orden||0)-(b.orden||0)||String(a.nombre).localeCompare(String(b.nombre))),
     get:(id)=>items.find((x)=>x.id===id)||null,
@@ -20,5 +23,5 @@
     subscribe:(fn)=>{listeners.add(fn);return()=>listeners.delete(fn);}
   };
   window.programCatalogAdminStore=store;
-  window.useProgramCatalogAdminStore=function(){const[,render]=useState(0);useEffect(()=>store.subscribe(()=>render((n)=>n+1)),[]);useEffect(()=>{store.bootstrap();},[]);return store;};
+  window.useProgramCatalogAdminStore=function(){const epoch=window.PrivateResourceDemand.useContext();const[,render]=useState(0);useEffect(()=>store.subscribe(()=>render((n)=>n+1)),[]);useEffect(()=>{if(epoch!==null)store.retry();},[epoch]);return store;};
 })();

@@ -8,20 +8,28 @@
 
   const precioTxt = (it) => (it.precio != null && !it.cotiza ? window.money(it.precio) : it.catalogSource === 'program' && !it.cotiza ? 'Consulta disponibilidad' : 'Se cotiza');
 
+  function ProgramCatalogImage({asset,...props}) {
+    const ref=useRef(null),demand=window.PrivateResourceDemand,visible=demand.useVisible(ref);
+    const source=demand.useSource(asset&&JSON.stringify(asset.resource||asset),()=>window.ProgramCatalogRepository.resolveImage(asset),visible,3600);
+    return React.createElement('img',Object.assign({},props,{ref,src:source.url||undefined,onError:source.onError,'data-resource-phase':source.error?'error':source.url?'ready':'loading',style:Object.assign({},props.style,{opacity:source.url?1:0})}));
+  }
+  window.ProgramCatalogImage=ProgramCatalogImage;
+
   // ── Rejilla de productos (usada en Finanzas y en Convenios) ──
   // F1.8: la portada de cada producto se resuelve por el registro
   // (cat.item.<id>); la galería multi-imagen sigue leyendo `imagenes[]`
   // (EXEMPT 'catalogo.galeria', autoridad de catalogStore).
   function CatalogCard({ l, i, hue, icon, onOpen }) {
     const r = window.useAsset ? window.useAsset('cat.item.' + l.id) : null;
+    const asset=l.catalogSource==='program'&&window.ProgramCatalogRepository.imageAssets(l)[0];
     const cover = (l.imagenes&&l.imagenes[0])||(r && r.kind === 'image' && r.url);
     return React.createElement('div', {
       className: 'su-press', onClick: () => onOpen(l),
       style: { background: 'var(--surface)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--neo-sm)', cursor: 'pointer', opacity: 1 },
     },
       React.createElement('div', { style: { height: 92, position: 'relative', background: `linear-gradient(135deg, hsl(${hue + i * 12} 42% 52%), hsl(${hue + i * 12} 48% 36%))` } },
-        cover
-          ? React.createElement('img', { src: cover, alt: l.nombre, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })
+        asset||cover
+          ? React.createElement(asset?ProgramCatalogImage:'img', { asset:asset||undefined,src: cover, alt: l.nombre, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })
           : React.createElement('div', { style: { position: 'absolute', right: -6, bottom: -10, opacity: .2 } }, React.createElement(I, { name: icon || (r && r.icon), size: 70, stroke: 1, style: { color: '#fff' } })),
         l.badge && React.createElement('div', { style: { position: 'absolute', top: 8, left: 8 } }, React.createElement(window.Badge, { tone: 'gold', solid: true }, l.badge)),
         l.sold && React.createElement('div', { 'data-program-product-sold-badge': 'card', style: { position: 'absolute', top: 8, right: 8, background: 'rgba(126,18,43,.94)',color:'#fff',fontSize:10,fontWeight:900,letterSpacing:'.08em',padding:'5px 8px',borderRadius:999 } }, 'VENDIDO')),
@@ -38,7 +46,7 @@
 
   // ── Galería con carrusel + lightbox ──
   function Gallery({ item, hue, icon, onZoom }) {
-    const imgs = (item.imagenes || []);
+    const program=item.catalogSource==='program',imgs = program?window.ProgramCatalogRepository.imageAssets(item):(item.imagenes || []);
     const [idx, setIdx] = useState(0);
     const ref = useRef(null);
     const onScroll = (e) => { const w = e.target.clientWidth || 1; setIdx(Math.round(e.target.scrollLeft / w)); };
@@ -52,15 +60,17 @@
         style: { position: 'absolute', inset: 0, display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollbarWidth: 'none' },
       },
         imgs.map((src, i) => React.createElement('div', { key: i, onClick: () => onZoom(i), 'data-press': 'subtle', style: { flex: '0 0 100%', height: '100%', scrollSnapAlign: 'start', cursor: 'zoom-in' } },
-          React.createElement('img', { src, alt: item.nombre + ' ' + (i + 1), style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } })))),
+          React.createElement(program?ProgramCatalogImage:'img', { asset:program?src:undefined,src:program?undefined:src,alt: item.nombre + ' ' + (i + 1), style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } })))),
       imgs.length > 1 && React.createElement('div', { style: { position: 'absolute', bottom: 12, left: 0, right: 0, display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'none' } },
         imgs.map((_, i) => React.createElement('span', { key: i, style: { width: i === idx ? 20 : 7, height: 7, borderRadius: 999, background: i === idx ? '#fff' : 'rgba(255,255,255,.5)', transition: 'width .25s' } }))),
       React.createElement('div', { style: { position: 'absolute', top: 14, right: 12, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(0,0,0,.34)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: 11.5, fontWeight: 700, padding: '7px 11px', borderRadius: 999, pointerEvents: 'none' } },
         React.createElement(I, { name: 'search', size: 14, stroke: 2.4 }), imgs.length > 1 ? (idx + 1) + ' / ' + imgs.length : 'Ampliar'));
   }
 
-  function Lightbox({ imgs, start, onClose }) {
-    return React.createElement(window.ImageViewer, { sources: imgs, startIndex: start || 0, alt: 'Imagen del producto', onClose });
+  function Lightbox({ imgs, item, start, onClose }) {
+    const assets=item&&item.catalogSource==='program'?window.ProgramCatalogRepository.imageAssets(item):null;
+    const imageComponent=React.useMemo(()=>assets?function CatalogViewerImage({src,...props}){return React.createElement(ProgramCatalogImage,Object.assign({},props,{asset:assets.find(asset=>asset.link_id===src)}));}:null,[item]);
+    return React.createElement(window.ImageViewer, { sources: assets?assets.map(asset=>asset.link_id):imgs,imageComponent, startIndex: start || 0, alt: 'Imagen del producto', onClose });
   }
 
   function DirectContactPanel({item,app}) {
@@ -78,7 +88,7 @@
   // ── Detalle del producto ──
   // params: { item, ctx } — ctx: { id, label, icon, hue } de la categoría o convenio
   function CatalogItemScreen({ app, params }) {
-    const catalog=window.useCatalogStore?window.useCatalogStore():window.catalogStore;
+    const catalog=window.useCatalogStore?window.useCatalogStore(params.item.catalogSource==='program'?{programKey:params.item.program_key}:undefined):window.catalogStore;
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
     const live = window.catalogStore ? window.catalogStore.get(params.item.id) : null;
     const item = live || params.item;
@@ -165,7 +175,7 @@
                     ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.'
                     : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))),
         cta && React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } }, cta)),
-      zoom != null && React.createElement(Lightbox, { imgs: item.imagenes || [], start: zoom, onClose: () => setZoom(null) }),
+      zoom != null && React.createElement(Lightbox, { item, imgs: item.imagenes || [], start: zoom, onClose: () => setZoom(null) }),
       window.FinanceSimSheet && React.createElement(window.FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing: true, producto: item, quote: quoteReady ? quote : null }),
       window.QuoteRequestSheet && React.createElement(window.QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app, producto: item }),
       !sold&&commercialMode!=='DIRECT_CONTACT'&&React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));

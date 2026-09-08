@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-08T03:02:16.336Z",
+  "status": "PASS",
+  "workspaceBefore": "ab92b5dfbbd95f26d227638039ec00ff6f1c165ebd1d2a149ef891c532b35af2",
+  "reconstructedBefore": "ab92b5dfbbd95f26d227638039ec00ff6f1c165ebd1d2a149ef891c532b35af2",
+  "workspaceAfter": "bb019f597f5acd86490599aa9b3e4ee2b82e1a596a103935899240304bebe8a6",
+  "releaseBeforeModules": 108,
+  "releaseAfterModules": 109,
+  "changed": [
+    "image-viewer.jsx",
+    "private-resource-demand.js",
+    "document-workflow-repository.js",
+    "program-catalog-repository.js",
+    "screens-loan.jsx",
+    "screens-marketplace.jsx",
+    "screens-documentos.jsx",
+    "catalog-store.jsx",
+    "screens-catalogo.jsx",
+    "program-catalog-admin-store.jsx",
+    "screens-admin-program-products.jsx"
+  ],
+  "removed": [],
+  "releaseBundle": "a21d29434b03ed10cb678ca9d5a13052d4a6bdd703d0077952857e2312dc3882",
+  "method": "Original builder executed in read-only virtual FS; baseline sources substituted, destination captured in memory"
+}

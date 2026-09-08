@@ -1,0 +1,295 @@
+{
+  "at": "2026-09-08T02:08:17.095Z",
+  "source": "published H05",
+  "summaries": [
+    {
+      "label": "affiliate",
+      "ms": 3138.600000023842,
+      "items": 134,
+      "links": 267,
+      "images": 267,
+      "payload_sha256": "99e55ed28c9876de8d4bde9f795e246d27949223a500f08f5890a7cddcff2ed0",
+      "programs": [
+        {
+          "key": "aires",
+          "items": 16,
+          "sha256": "bde16be97e7137c5c8f6afa22bdc00dfa9167af31197428074c317849e5b88c5"
+        },
+        {
+          "key": "auto",
+          "items": 3,
+          "sha256": "90712adea4c551c24be2fc4cab821b4d8dcc7d62aab181111a93aed93f475d38"
+        },
+        {
+          "key": "casa",
+          "items": 35,
+          "sha256": "37748e6c52e0142e9effffaf546350f5e198bc4ddcff159f81aadcaf931765a7"
+        },
+        {
+          "key": "computo",
+          "items": 1,
+          "sha256": "be8f2215eea06c4e944c0fddbaeb7ac1964f4609008b19e1e610b017e222a87b"
+        },
+        {
+          "key": "farma",
+          "items": 50,
+          "sha256": "1454d08179f3d3abfcdfb33e8bc2179e5c9bdafac008e879249e851bd7e217f0"
+        },
+        {
+          "key": "prestamo",
+          "items": 1,
+          "sha256": "e6964c3227a3f71bf090f8a55abdc8ffda735553c05b4c327d6843e839c5bdbf"
+        },
+        {
+          "key": "puertas",
+          "items": 3,
+          "sha256": "f1f35cdb881063decbf4c924c6f0eff0f4bf0c7051661a94e9e46e9648fea3dc"
+        },
+        {
+          "key": "renta",
+          "items": 1,
+          "sha256": "8ebbf43cc509874805a7bf52cd8b0978925d857110ea1c1950e38ae1f27482f1"
+        },
+        {
+          "key": "solar",
+          "items": 4,
+          "sha256": "64eb7ef08779ef2142b40c982bf2ce8888821e64f8d055579bca3224b8803e19"
+        },
+        {
+          "key": "terrenos",
+          "items": 3,
+          "sha256": "9e564867c66e93ef9b605ca424b42b9c60cae776315ba5149c2c1ec90470846d"
+        },
+        {
+          "key": "tours",
+          "items": 17,
+          "sha256": "f190dda1573880019e56ed7f6b6d01440d434978154b1563438bfae59b0f14d9"
+        }
+      ]
+    },
+    {
+      "label": "admin",
+      "ms": 763.5,
+      "items": 135,
+      "links": 268,
+      "images": 268,
+      "payload_sha256": "f74afa3e4d9a5454e82ce1c4bd410a53cad27ad86158e0e6a2bceee13f1c64f7",
+      "programs": [
+        {
+          "key": "aires",
+          "items": 16,
+          "sha256": "bde16be97e7137c5c8f6afa22bdc00dfa9167af31197428074c317849e5b88c5"
+        },
+        {
+          "key": "auto",
+          "items": 3,
+          "sha256": "90712adea4c551c24be2fc4cab821b4d8dcc7d62aab181111a93aed93f475d38"
+        },
+        {
+          "key": "casa",
+          "items": 35,
+          "sha256": "37748e6c52e0142e9effffaf546350f5e198bc4ddcff159f81aadcaf931765a7"
+        },
+        {
+          "key": "computo",
+          "items": 1,
+          "sha256": "be8f2215eea06c4e944c0fddbaeb7ac1964f4609008b19e1e610b017e222a87b"
+        },
+        {
+          "key": "donativos",
+          "items": 1,
+          "sha256": "6e6d742284e24d637fe9325986eb65ffb09679302c6378e31f2ee8f722f8e34e"
+        },
+        {
+          "key": "farma",
+          "items": 50,
+          "sha256": "1454d08179f3d3abfcdfb33e8bc2179e5c9bdafac008e879249e851bd7e217f0"
+        },
+        {
+          "key": "prestamo",
+          "items": 1,
+          "sha256": "e6964c3227a3f71bf090f8a55abdc8ffda735553c05b4c327d6843e839c5bdbf"
+        },
+        {
+          "key": "puertas",
+          "items": 3,
+          "sha256": "f1f35cdb881063decbf4c924c6f0eff0f4bf0c7051661a94e9e46e9648fea3dc"
+        },
+        {
+          "key": "renta",
+          "items": 1,
+          "sha256": "8ebbf43cc509874805a7bf52cd8b0978925d857110ea1c1950e38ae1f27482f1"
+        },
+        {
+          "key": "solar",
+          "items": 4,
+          "sha256": "64eb7ef08779ef2142b40c982bf2ce8888821e64f8d055579bca3224b8803e19"
+        },
+        {
+          "key": "terrenos",
+          "items": 3,
+          "sha256": "9e564867c66e93ef9b605ca424b42b9c60cae776315ba5149c2c1ec90470846d"
+        },
+        {
+          "key": "tours",
+          "items": 17,
+          "sha256": "f190dda1573880019e56ed7f6b6d01440d434978154b1563438bfae59b0f14d9"
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 2,
+      "objects": 0,
+      "ms": 433.5
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 13282,
+      "objects": 28,
+      "ms": 517.2000000476837
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 3146,
+      "objects": 2,
+      "ms": 554.6999999284744
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 2,
+      "objects": 0,
+      "ms": 573.8999999761581
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 3953,
+      "objects": 7,
+      "ms": 1806.3999999761581
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 11617,
+      "objects": 17,
+      "ms": 1807.3999999761581
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 903,
+      "objects": 0,
+      "ms": 1805.8000000715256
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 4820,
+      "objects": 10,
+      "ms": 1807.3000000715256
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 2724,
+      "objects": 5,
+      "ms": 1809.0999999046326
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 6192,
+      "objects": 7,
+      "ms": 1935.1000000238419
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 22224,
+      "objects": 33,
+      "ms": 1965.1000000238419
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 123470,
+      "objects": 134,
+      "ms": 2061.899999976158
+    },
+    {
+      "label": "affiliate",
+      "kind": "query",
+      "http": 200,
+      "bytes": 145277,
+      "objects": 268,
+      "ms": 2063.7000000476837
+    },
+    {
+      "label": "affiliate",
+      "kind": "sign",
+      "http": 200,
+      "bytes": 462,
+      "objects": 0,
+      "ms": 893.5
+    },
+    {
+      "label": "affiliate",
+      "kind": "edge",
+      "http": 200,
+      "bytes": 14724,
+      "objects": 0,
+      "ms": 2879.899999976158
+    },
+    {
+      "label": "affiliate",
+      "kind": "sign",
+      "http": 200,
+      "bytes": 151169,
+      "objects": 268,
+      "ms": 1066.2000000476837
+    },
+    {
+      "label": "admin",
+      "kind": "query",
+      "http": 200,
+      "bytes": 145277,
+      "objects": 268,
+      "ms": 262.2999999523163
+    },
+    {
+      "label": "admin",
+      "kind": "query",
+      "http": 200,
+      "bytes": 124267,
+      "objects": 135,
+      "ms": 321.8000000715256
+    },
+    {
+      "label": "admin",
+      "kind": "sign",
+      "http": 200,
+      "bytes": 151169,
+      "objects": 268,
+      "ms": 428.2999999523163
+    }
+  ]
+}

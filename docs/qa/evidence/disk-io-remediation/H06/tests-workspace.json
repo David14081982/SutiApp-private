@@ -1,0 +1,84 @@
+{
+  "at": "2026-09-08T02:42:10.554Z",
+  "status": "PASS",
+  "rows": [
+    {
+      "test": "test-program-catalog-cutover.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"items\":134,\"counts\":{\"aires\":16,\"auto\":3,\"casa\":35,\"computo\":1,\"donativos\":1,\"farma\":50,\"puertas\":3,\"renta\":1,\"solar\":4,\"terrenos\":3,\"tours\":17},\"snapshot\":\"37FA2B489B0E33E56E833FD0854AF87FE542705BB739228E27DF7946ACC43D00\"}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-products-admin-cutover.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"priced\":65,\"aires\":16,\"puertas\":3,\"authority\":\"program_catalog_items\",\"marketplaceTouched\":0}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-product-commercial-mode-and-sold.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"authority\":\"program_catalog_items\",\"commercialModes\":3,\"soldIndependent\":true,\"casaClassification\":\"DIRECT_CONTACT\",\"serverGuard\":true,\"recovery\":true,\"marketplaceTouched\":false,\"panelEmpresarialTouched\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-products-save-contract-audit.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"contract\":\"delta-aware\",\"historicalImages\":\"8→8, 9→9, 9→8 allowed; 8→9, 9→10 denied\",\"specificErrors\":true,\"recovery\":true,\"outOfScopeTouched\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-program-catalog-cirugias-bootstrap.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"program\":\"cirugias\",\"emptyAdminProgram\":true,\"syntheticProducts\":0,\"market\":false,\"rifas\":false,\"terrenosUnchanged\":3,\"authority\":\"program_catalog_items\"}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-membership-document-thumbnail-viewer.js",
+      "exit": 0,
+      "stdout": "Membership document thumbnail and in-app viewer contract PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-loan-document-flow.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"cases\":10,\"fresh_signing\":true,\"physical_availability\":true,\"replacement_history\":true,\"camera\":true,\"upload\":true,\"exact_missing_list\":true}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-loan-document-context-isolation.js",
+      "exit": 0,
+      "stdout": "Loan document context isolation PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-required-document-uploads.js",
+      "exit": 0,
+      "stdout": "Required document upload resilience PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-global-document-image-ux-consistency.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"sharedReplace\":true,\"consumers\":[\"Documentos\",\"Suti Prestamo\",\"Membresias\",\"Program Product Payment\"],\"viewerConsumers\":\"GLOBAL\",\"safeArea\":true,\"overlayTargetGuard\":true,\"scrollRestore\":true,\"rawDocumentNavigation\":false,\"backendChanged\":false}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-admin-document-workbench.js",
+      "exit": 0,
+      "stdout": "Admin document workbench static contract PASS\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-catalog-resource-demand.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"checks\":[\"default contract excludes disabled items and unrelated links\",\"program filter preserves values with zero eager signatures\",\"admin summary fetches no links or images\",\"empty program remains empty\",\"one demanded asset, original TTL\",\"simultaneously visible resources share one Storage batch\",\"identical in-flight dedup, no settled signature cache\",\"effective affiliate change rejects late response\",\"actor invalidates pending authorization\",\"session invalidates pending authorization\",\"impersonation invalidates pending authorization\",\"permission invalidates pending authorization\",\"document overlap dedup and fresh explicit open\",\"purpose, mode and target never share authorization\",\"admin denial and private Storage denial propagate\",\"logout rejects requests\",\"marketplace bootstrap never preloads program catalog\",\"scoped program navigation and authoritative favorite refresh\",\"admin metadata summary and toggle preserve every original asset and price\",\"failed selected-program reload cannot expose empty replacement links\",\"late failed favorite cannot restore data after logout\",\"catalog projections clear on logout\"]}\n",
+      "stderr": ""
+    },
+    {
+      "test": "test-catalog-resource-demand-browser.js",
+      "exit": 0,
+      "stdout": "{\"status\":\"PASS\",\"results\":[{\"stage\":\"before\",\"first\":8,\"afterFourReferenceRenders\":40,\"afterScroll\":40,\"explicitOpen\":1,\"listExtra\":8,\"rejectedAndArchived\":\"DENIED\"},{\"stage\":\"after\",\"first\":6,\"afterFourReferenceRenders\":6,\"afterScroll\":8,\"explicitOpen\":1,\"listExtra\":0,\"rejectedAndArchived\":\"DENIED\"},{\"expiry\":\"PASS\",\"requests\":6},{\"programImageVisibilityReuse\":\"PASS\",\"assetReplacement\":\"PASS\",\"programExpiry\":\"PASS\"},{\"logout\":\"PASS\"}]}\n",
+      "stderr": ""
+    }
+  ]
+}

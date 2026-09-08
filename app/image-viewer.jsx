@@ -48,7 +48,7 @@
     return { dialogRef, closeButtonRef, close, backdropClick };
   }
 
-  function ImageViewer({ sources, startIndex = 0, alt = '', onClose }) {
+  function ImageViewer({ sources, startIndex = 0, alt = '', onClose, imageComponent }) {
     const items = normaliseSources(sources);
     const [index, setIndex] = useState(clamp(Number(startIndex) || 0, 0, Math.max(0, items.length - 1)));
     const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
@@ -127,7 +127,7 @@
         onDoubleClick: () => zoomTo(view.scale > 1 ? 1 : 2.5),
         onWheel: (event) => { event.preventDefault(); zoomTo(view.scale + (event.deltaY < 0 ? .35 : -.35)); },
         style: { flex: 1, minHeight: 0, overflow: 'hidden', display: 'grid', placeItems: 'center', touchAction: 'none', cursor: view.scale > 1 ? 'grab' : 'zoom-in' }
-      }, React.createElement('img', {
+      }, React.createElement(imageComponent || 'img', {
         src: items[index], alt: alt || 'Imagen ampliada', draggable: false,
         style: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', userSelect: 'none', transform: `translate3d(${view.x}px,${view.y}px,0) scale(${view.scale})`, transition: points.current.size ? 'none' : 'transform .16s ease', willChange: 'transform' }
       })),

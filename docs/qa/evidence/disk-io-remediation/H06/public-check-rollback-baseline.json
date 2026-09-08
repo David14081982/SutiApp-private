@@ -1,0 +1,175 @@
+{
+  "at": "2026-09-08T03:03:20.428Z",
+  "status": "PASS",
+  "commit": "c047eec42ca66d5fab105feca662a9657aac83b0",
+  "rows": [
+    {
+      "file": "SutiApp.html",
+      "http": 200,
+      "bytes": 22255,
+      "expected_sha256": "331c1ac9ace2da20eb0d4ee8eac80e74a167968508d92a8ab477d2b71aa58afc",
+      "actual_sha256": "331c1ac9ace2da20eb0d4ee8eac80e74a167968508d92a8ab477d2b71aa58afc",
+      "equal": true
+    },
+    {
+      "file": "sw.js",
+      "http": 200,
+      "bytes": 4811,
+      "expected_sha256": "1469968eb22074630c78bd89393d174a2e994faf4bf7bed0d3aa16208fa277e9",
+      "actual_sha256": "1469968eb22074630c78bd89393d174a2e994faf4bf7bed0d3aa16208fa277e9",
+      "equal": true
+    },
+    {
+      "file": "manifest.webmanifest",
+      "http": 200,
+      "bytes": 807,
+      "expected_sha256": "6a5a6b907351115de1baa1e58ae9086bbef8a824b33b582a35e659c2e4d5cdbc",
+      "actual_sha256": "6a5a6b907351115de1baa1e58ae9086bbef8a824b33b582a35e659c2e4d5cdbc",
+      "equal": true
+    },
+    {
+      "file": "icon-180.png",
+      "http": 200,
+      "bytes": 45569,
+      "expected_sha256": "cefbf47013168085566668153e4031bedc2994ae5a5e00d17c7ce2ac599d050e",
+      "actual_sha256": "cefbf47013168085566668153e4031bedc2994ae5a5e00d17c7ce2ac599d050e",
+      "equal": true
+    },
+    {
+      "file": "icon-192.png",
+      "http": 200,
+      "bytes": 51510,
+      "expected_sha256": "87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc",
+      "actual_sha256": "87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc",
+      "equal": true
+    },
+    {
+      "file": "icon-512.png",
+      "http": 200,
+      "bytes": 354489,
+      "expected_sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+      "actual_sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+      "equal": true
+    },
+    {
+      "file": "icon-maskable-512.png",
+      "http": 200,
+      "bytes": 354489,
+      "expected_sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+      "actual_sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+      "equal": true
+    },
+    {
+      "file": "assets/branding/home-header-collapsed.webp",
+      "http": 200,
+      "bytes": 83070,
+      "expected_sha256": "1dee759148b7d510d201c418fcc9918f14039f6248810a8ec5e21efb1ede4cc9",
+      "actual_sha256": "1dee759148b7d510d201c418fcc9918f14039f6248810a8ec5e21efb1ede4cc9",
+      "equal": true
+    },
+    {
+      "file": "app/bundle.js",
+      "http": 200,
+      "bytes": 2350452,
+      "expected_sha256": "81921d0609964f513e943b7cdc567c20f554d07be140f68dc042871779e31056",
+      "actual_sha256": "81921d0609964f513e943b7cdc567c20f554d07be140f68dc042871779e31056",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/react-18.3.1/react.production.min.js",
+      "http": 200,
+      "bytes": 10751,
+      "expected_sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+      "actual_sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/react-18.3.1/LICENSE",
+      "http": 200,
+      "bytes": 1086,
+      "expected_sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "actual_sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/react-dom-18.3.1/react-dom.production.min.js",
+      "http": 200,
+      "bytes": 131835,
+      "expected_sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+      "actual_sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/react-dom-18.3.1/LICENSE",
+      "http": 200,
+      "bytes": 1086,
+      "expected_sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "actual_sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/supabase-js-2.112.3/supabase.min.js",
+      "http": 200,
+      "bytes": 212199,
+      "expected_sha256": "cf529fe8980cbe6f2dd3e3930ecf96352ed3d3d71233b6760e4f927f89b94b9f",
+      "actual_sha256": "cf529fe8980cbe6f2dd3e3930ecf96352ed3d3d71233b6760e4f927f89b94b9f",
+      "equal": true
+    },
+    {
+      "file": "app/vendor/supabase-js-2.112.3/LICENSE",
+      "http": 200,
+      "bytes": 1065,
+      "expected_sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+      "actual_sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+      "equal": true
+    },
+    {
+      "file": "app/supabase-client.js",
+      "http": 200,
+      "bytes": 1163,
+      "expected_sha256": "42a852138f9ed2cb4c6e9bef92d60b7a2840a491cd58db2610e42da76f8b3bf2",
+      "actual_sha256": "42a852138f9ed2cb4c6e9bef92d60b7a2840a491cd58db2610e42da76f8b3bf2",
+      "equal": true
+    },
+    {
+      "file": "app/affiliate-repository.js",
+      "http": 200,
+      "bytes": 15824,
+      "expected_sha256": "31afabd5a63c5bace58a0ffed60640d05cc088c4a38b9344049f9c10226d6efd",
+      "actual_sha256": "31afabd5a63c5bace58a0ffed60640d05cc088c4a38b9344049f9c10226d6efd",
+      "equal": true
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "http": 200,
+      "bytes": 20994,
+      "expected_sha256": "ad024f69031794b96bc56351f168b3a2c176e9981ee6bd3b534c51c562f16c20",
+      "actual_sha256": "ad024f69031794b96bc56351f168b3a2c176e9981ee6bd3b534c51c562f16c20",
+      "equal": true
+    },
+    {
+      "file": "app/payroll-declaration-repository.js",
+      "http": 200,
+      "bytes": 1995,
+      "expected_sha256": "3e8434d7818e5488393a5bd7b8a92d14916c3847f7260440945bffbcd6ac1ccd",
+      "actual_sha256": "3e8434d7818e5488393a5bd7b8a92d14916c3847f7260440945bffbcd6ac1ccd",
+      "equal": true
+    },
+    {
+      "file": "index.html",
+      "http": 200,
+      "bytes": 22255,
+      "expected_sha256": "331c1ac9ace2da20eb0d4ee8eac80e74a167968508d92a8ab477d2b71aa58afc",
+      "actual_sha256": "331c1ac9ace2da20eb0d4ee8eac80e74a167968508d92a8ab477d2b71aa58afc",
+      "equal": true
+    },
+    {
+      "file": "app/supabase-config.js",
+      "http": 200,
+      "bytes": 191,
+      "expected_sha256": "dfde0e9a0862f4996b321a9a4a639e30e95674e91555771460b0354ce7f32cb1",
+      "actual_sha256": "dfde0e9a0862f4996b321a9a4a639e30e95674e91555771460b0354ce7f32cb1",
+      "equal": true
+    }
+  ]
+}

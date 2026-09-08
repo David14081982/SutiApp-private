@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-08T02:48:12.716Z",
+  "status": "PASS",
+  "logoutClearsCatalog": true,
+  "logoutRemovesPrivateImages": true,
+  "loginCreatesNewContext": true,
+  "noProgramPrefetchAfterLogin": true
+}

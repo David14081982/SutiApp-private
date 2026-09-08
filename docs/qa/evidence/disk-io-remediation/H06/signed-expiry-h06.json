@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-08T02:23:36.639Z",
+  "status": "PASS",
+  "initial_http": 200,
+  "expired_http": 400,
+  "expired_token_rejected": true,
+  "error_code": "InvalidJWT",
+  "ttl_seconds": 2,
+  "urls_logged": 0
+}

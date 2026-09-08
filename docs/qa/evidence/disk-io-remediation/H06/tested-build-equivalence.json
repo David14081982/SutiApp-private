@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "testedSite": "C:/tmp/sutiapp-h06-site-1788835082732",
+  "canonicalSite": "C:/tmp/sutiapp-h06-site-1788836525126",
+  "normalizedSha256": "a21d29434b03ed10cb678ca9d5a13052d4a6bdd703d0077952857e2312dc3882",
+  "onlyDifference": "CRLF versus LF",
+  "runtimeSourcesChangedAfterGlobalTest": 0
+}

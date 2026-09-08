@@ -1,0 +1,53 @@
+{
+  "at": "2026-09-08T02:42:36.036Z",
+  "status": "PASS",
+  "checks": {
+    "functions": {
+      "status": "PASS",
+      "rows": 253
+    },
+    "policies": {
+      "status": "PASS",
+      "rows": 228
+    },
+    "tables": {
+      "status": "PASS",
+      "rows": 9
+    },
+    "columns": {
+      "status": "PASS",
+      "rows": 180
+    },
+    "constraints": {
+      "status": "PASS",
+      "rows": 73
+    }
+  },
+  "fingerprints": [
+    {
+      "relation": "program_catalog_items",
+      "rows": 135,
+      "hash": "a927a9d69e5a2e9a5e11168776f90b66"
+    },
+    {
+      "relation": "program_catalog_item_assets",
+      "rows": 268,
+      "hash": "0484fb726fb7850520d3c2c5e5837f39"
+    },
+    {
+      "relation": "affiliate_documents",
+      "rows": 3525,
+      "hash": "c2c7644fc972c89558c79ef9690b5dd3"
+    }
+  ],
+  "edge": [
+    {
+      "name": "document-access",
+      "version": 4,
+      "status": "ACTIVE",
+      "verify_jwt": true,
+      "updated_at": 1788107342021
+    }
+  ],
+  "sqlApplied": 0
+}

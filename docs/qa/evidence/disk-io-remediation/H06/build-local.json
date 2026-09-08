@@ -1,0 +1,25 @@
+{
+  "at": "2026-09-08T03:02:06.746Z",
+  "release": "C:/tmp/sutiapp-h06-release-20260907",
+  "site": "C:/tmp/sutiapp-h06-site-1788836525126",
+  "files": [
+    "app/program-catalog-repository.js",
+    "app/catalog-store.jsx",
+    "app/program-catalog-admin-store.jsx",
+    "app/screens-marketplace.jsx",
+    "app/screens-catalogo.jsx",
+    "app/screens-admin-program-products.jsx",
+    "app/document-workflow-repository.js",
+    "app/screens-documentos.jsx",
+    "app/screens-loan.jsx",
+    "app/private-resource-demand.js",
+    "app/image-viewer.jsx",
+    "scripts/test-catalog-resource-demand.js",
+    "scripts/test-catalog-resource-demand-browser.js",
+    "scripts/test-program-catalog-cutover.js",
+    "scripts/test-program-products-admin-cutover.js",
+    "scripts/test-membership-document-thumbnail-viewer.js"
+  ],
+  "bundle": 223,
+  "worker": 170
+}

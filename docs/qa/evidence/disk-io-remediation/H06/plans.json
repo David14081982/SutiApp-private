@@ -1,0 +1,518 @@
+{
+  "at": "2026-09-08T02:29:12.106Z",
+  "scope": "Representative authenticated RLS SQL shapes; embedded REST query overhead not inferred",
+  "plans": {
+    "itemsBefore": {
+      "ms": 36.183,
+      "hits": 51,
+      "reads": 0,
+      "nodes": [
+        {
+          "node": "Sort",
+          "relation": null,
+          "index": null,
+          "rows": 134,
+          "removed": 0,
+          "loops": 1,
+          "hits": 51,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_items",
+          "index": null,
+          "rows": 134,
+          "removed": 1,
+          "loops": 1,
+          "hits": 45,
+          "reads": 0,
+          "subplan": null
+        }
+      ]
+    },
+    "itemsAfter": {
+      "ms": 0.183,
+      "hits": 4,
+      "reads": 0,
+      "nodes": [
+        {
+          "node": "Index Scan",
+          "relation": "program_catalog_items",
+          "index": "program_catalog_items_program_order_idx",
+          "rows": 3,
+          "removed": 0,
+          "loops": 1,
+          "hits": 4,
+          "reads": 0,
+          "subplan": null
+        }
+      ]
+    },
+    "linksBefore": {
+      "ms": 244.264,
+      "hits": 1026,
+      "reads": 0,
+      "nodes": [
+        {
+          "node": "Sort",
+          "relation": null,
+          "index": null,
+          "rows": 267,
+          "removed": 0,
+          "loops": 1,
+          "hits": 1026,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 267,
+          "removed": 0,
+          "loops": 1,
+          "hits": 1023,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 267,
+          "removed": 0,
+          "loops": 1,
+          "hits": 1014,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_item_assets",
+          "index": null,
+          "rows": 267,
+          "removed": 1,
+          "loops": 1,
+          "hits": 51,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_items",
+          "index": null,
+          "rows": 134,
+          "removed": 1,
+          "loops": 1,
+          "hits": 46,
+          "reads": 0,
+          "subplan": "SubPlan 2"
+        },
+        {
+          "node": "Memoize",
+          "relation": null,
+          "index": null,
+          "rows": 1,
+          "removed": 0,
+          "loops": 267,
+          "hits": 963,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "private_assets",
+          "index": "private_assets_pkey",
+          "rows": 1,
+          "removed": 0,
+          "loops": 248,
+          "hits": 963,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 267,
+          "removed": 0,
+          "loops": 1,
+          "hits": 219,
+          "reads": 0,
+          "subplan": "SubPlan 8"
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_item_assets",
+          "index": null,
+          "rows": 267,
+          "removed": 1,
+          "loops": 1,
+          "hits": 51,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_items",
+          "index": null,
+          "rows": 134,
+          "removed": 1,
+          "loops": 1,
+          "hits": 46,
+          "reads": 0,
+          "subplan": "SubPlan 7"
+        },
+        {
+          "node": "Memoize",
+          "relation": null,
+          "index": null,
+          "rows": 1,
+          "removed": 0,
+          "loops": 267,
+          "hits": 168,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "program_catalog_items",
+          "index": "program_catalog_items_pkey",
+          "rows": 1,
+          "removed": 0,
+          "loops": 84,
+          "hits": 168,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Heap Scan",
+          "relation": "affiliate_files",
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": "SubPlan 9"
+        },
+        {
+          "node": "BitmapAnd",
+          "relation": null,
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Index Scan",
+          "relation": null,
+          "index": "affiliate_files_private_asset_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Index Scan",
+          "relation": null,
+          "index": "affiliate_files_affiliate_key_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": "SubPlan 12"
+        },
+        {
+          "node": "Index Scan",
+          "relation": "affiliate_documents",
+          "index": "affiliate_documents_latest_type_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "affiliate_files",
+          "index": "affiliate_files_pkey",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Materialize",
+          "relation": null,
+          "index": null,
+          "rows": 176,
+          "removed": 0,
+          "loops": 267,
+          "hits": 9,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "app_assets",
+          "index": null,
+          "rows": 176,
+          "removed": 0,
+          "loops": 1,
+          "hits": 9,
+          "reads": 0,
+          "subplan": null
+        }
+      ]
+    },
+    "linksAfter": {
+      "ms": 3.612,
+      "hits": 375,
+      "reads": 0,
+      "nodes": [
+        {
+          "node": "Sort",
+          "relation": null,
+          "index": null,
+          "rows": 27,
+          "removed": 0,
+          "loops": 1,
+          "hits": 375,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 27,
+          "removed": 0,
+          "loops": 1,
+          "hits": 372,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 27,
+          "removed": 0,
+          "loops": 1,
+          "hits": 363,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "program_catalog_item_assets",
+          "index": "program_catalog_item_assets_item_idx",
+          "rows": 27,
+          "removed": 0,
+          "loops": 1,
+          "hits": 63,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "program_catalog_items",
+          "index": "program_catalog_items_pkey",
+          "rows": 1,
+          "removed": 0,
+          "loops": 27,
+          "hits": 54,
+          "reads": 0,
+          "subplan": "SubPlan 1"
+        },
+        {
+          "node": "Index Scan",
+          "relation": "private_assets",
+          "index": "private_assets_pkey",
+          "rows": 1,
+          "removed": 0,
+          "loops": 27,
+          "hits": 300,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 267,
+          "removed": 0,
+          "loops": 1,
+          "hits": 219,
+          "reads": 0,
+          "subplan": "SubPlan 8"
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_item_assets",
+          "index": null,
+          "rows": 267,
+          "removed": 1,
+          "loops": 1,
+          "hits": 51,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "program_catalog_items",
+          "index": null,
+          "rows": 134,
+          "removed": 1,
+          "loops": 1,
+          "hits": 46,
+          "reads": 0,
+          "subplan": "SubPlan 7"
+        },
+        {
+          "node": "Memoize",
+          "relation": null,
+          "index": null,
+          "rows": 1,
+          "removed": 0,
+          "loops": 267,
+          "hits": 168,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "program_catalog_items",
+          "index": "program_catalog_items_pkey",
+          "rows": 1,
+          "removed": 0,
+          "loops": 84,
+          "hits": 168,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Heap Scan",
+          "relation": "affiliate_files",
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": "SubPlan 9"
+        },
+        {
+          "node": "BitmapAnd",
+          "relation": null,
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Index Scan",
+          "relation": null,
+          "index": "affiliate_files_private_asset_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Bitmap Index Scan",
+          "relation": null,
+          "index": "affiliate_files_affiliate_key_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Nested Loop",
+          "relation": null,
+          "index": null,
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": "SubPlan 12"
+        },
+        {
+          "node": "Index Scan",
+          "relation": "affiliate_documents",
+          "index": "affiliate_documents_latest_type_idx",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Index Scan",
+          "relation": "affiliate_files",
+          "index": "affiliate_files_pkey",
+          "rows": 0,
+          "removed": 0,
+          "loops": 0,
+          "hits": 0,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Materialize",
+          "relation": null,
+          "index": null,
+          "rows": 176,
+          "removed": 0,
+          "loops": 27,
+          "hits": 9,
+          "reads": 0,
+          "subplan": null
+        },
+        {
+          "node": "Seq Scan",
+          "relation": "app_assets",
+          "index": null,
+          "rows": 176,
+          "removed": 0,
+          "loops": 1,
+          "hits": 9,
+          "reads": 0,
+          "subplan": null
+        }
+      ]
+    }
+  }
+}

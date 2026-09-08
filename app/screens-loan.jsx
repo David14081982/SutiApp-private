@@ -866,7 +866,7 @@
         const freshDocuments=resolveLoanDocuments(freshDocumentState.requirements,freshDocumentState.documents);
         if(freshDocuments.missing.length){setDocumentRecovery(freshDocuments.missing);setSubmitError('');return;}
         if(!freshDocumentState.terms){setStep(3);setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');return;}
-        const items = await window.ProgramCatalogRepository.listItems();
+        const items = await window.ProgramCatalogRepository.listItems({programKey:'prestamo',includeAssets:false});
         const item = items.find((value) => value.program_key === 'prestamo' && value.requestMode === 'supabase');
         if (!item) throw new Error('PROGRAM_NOT_REQUESTABLE');
         const result = simulation.result;

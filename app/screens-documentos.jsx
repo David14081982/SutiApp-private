@@ -18,7 +18,10 @@
   const sourceCapabilities=(type)=>{const mime=(type&&type.accepted_mime_types)||[];const camera=!!(type&&type.camera_allowed!==false&&mime.some((value)=>String(value).startsWith('image/'))),file=!!(type&&type.file_upload_allowed!==false);return{camera,file,any:camera||file};};
 
   function DocumentRequirementList({requirements,documents,onChanged,compact,variant,highlightedId,editable,accessPurpose}){
-    const selection=useRef(null),input=useRef(null),cameraVideo=useRef(null),cameraStream=useRef(null),thumbnailRetries=useRef(new Set()),[busy,setBusy]=useState(null),[error,setError]=useState(''),[origin,setOrigin]=useState(null),[camera,setCamera]=useState(null),[cameraError,setCameraError]=useState(''),[thumbnails,setThumbnails]=useState({}),[viewer,setViewer]=useState(null);
+    const selection=useRef(null),input=useRef(null),cameraVideo=useRef(null),cameraStream=useRef(null),thumbnailRetries=useRef(new Set()),thumbnailNodes=useRef(new Map()),thumbnailRefresh=useRef(()=>{}),[busy,setBusy]=useState(null),[error,setError]=useState(''),[origin,setOrigin]=useState(null),[camera,setCamera]=useState(null),[cameraError,setCameraError]=useState(''),[thumbnails,setThumbnails]=useState({}),[viewer,setViewer]=useState(null);
+    const resourceContext=window.PrivateResourceDemand.useContext();
+    const thumbnailCandidates=variant==='tiles'?(requirements||[]).map(req=>newest(documents||[],(req.document_type||req).id)).filter(doc=>doc&&ACCEPTED.has(doc.status)&&physicalAvailable(doc)&&String(doc.mimeType||'').toLowerCase().startsWith('image/')):[];
+    const thumbnailKey=JSON.stringify([accessPurpose||'SELF_SERVICE_EXPEDIENTE',thumbnailCandidates]);
     const pick=(type,source)=>{
       selection.current={type,source};
       setError('');
@@ -52,38 +55,42 @@
     const openCamera=(type)=>{if(window.innerWidth>768&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){setCamera(type);return;}pick(type,'camera');};
     const captureCamera=async()=>{const video=cameraVideo.current,type=camera;if(!video||!type||!video.videoWidth||!video.videoHeight)return;const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.9));if(!blob){setCameraError('No fue posible capturar la foto.');return;}setCamera(null);selection.current={type,source:'camera'};await upload({target:{files:[new File([blob],'captura-'+Date.now()+'.jpg',{type:'image/jpeg'})],value:''}});};
     useEffect(()=>{
-      let active=true;
+      let active=true;const visible=new Set(),inFlight=new Set(),ready=new Map(),timers=new Map();
       thumbnailRetries.current=new Set();
-      const candidates=(requirements||[]).map((req)=>newest(documents||[],(req.document_type||req).id)).filter((doc)=>doc&&ACCEPTED.has(doc.status)&&physicalAvailable(doc)&&String(doc.mimeType||'').toLowerCase().startsWith('image/'));
-      const candidateIds=new Set(candidates.map((doc)=>doc.id));
-      setThumbnails((current)=>Object.fromEntries(Object.entries(current).filter(([id])=>candidateIds.has(id))));
-      candidates.forEach(async(doc)=>{
-        setThumbnails((current)=>current[doc.id]?current:Object.assign({},current,{[doc.id]:{phase:'authorizing',url:''}}));
+      setThumbnails({});
+      const valid=()=>active&&window.PrivateResourceDemand.context()===resourceContext;
+      const put=(doc,value)=>{if(valid())setThumbnails(current=>Object.assign({},current,{[doc.id]:Object.assign({context:resourceContext,key:thumbnailKey},value)}));};
+      const load=async(doc,force)=>{
+        if(!valid()||document.hidden||!visible.has(doc.id)||inFlight.has(doc.id))return;
+        if(!force&&ready.has(doc.id))return;
+        inFlight.add(doc.id);const started=Date.now();
+        put(doc,{phase:'authorizing',url:''});
         try{
           const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
-          if(active)setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'ready',url:preview.signedUrl}}));
+          if(!valid())return;
+          const expires=started+Math.min(300,Number(preview.expiresIn)||300)*1000;
+          if(expires<=Date.now())throw new Error('DOCUMENT_PREVIEW_EXPIRED');
+          ready.set(doc.id,true);put(doc,{phase:'ready',url:preview.signedUrl,expires});
+          clearTimeout(timers.get(doc.id));timers.set(doc.id,setTimeout(()=>{ready.delete(doc.id);put(doc,{phase:'expired',url:''});load(doc,false);},expires-Date.now()));
         }catch(_){
-          if(active)setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'error',url:''}}));
-        }
-      });
-      return()=>{active=false;};
-    },[requirements,documents,accessPurpose]);
-    const refreshThumbnail=async(doc)=>{
-      if(thumbnailRetries.current.has(doc.id)){setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'error',url:''}}));return;}
-      thumbnailRetries.current.add(doc.id);
-      setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'authorizing',url:''}}));
-      try{
-        const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
-        setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'ready',url:preview.signedUrl}}));
-      }catch(_){setThumbnails((current)=>Object.assign({},current,{[doc.id]:{phase:'error',url:''}}));}
-    };
+          ready.set(doc.id,true);put(doc,{phase:'error',url:''});
+        }finally{inFlight.delete(doc.id);}
+      };
+      thumbnailRefresh.current=doc=>{if(thumbnailRetries.current.has(doc.id)){put(doc,{phase:'error',url:''});return;}thumbnailRetries.current.add(doc.id);load(doc,true);};
+      const observer=window.IntersectionObserver?new IntersectionObserver(entries=>{for(const entry of entries){const doc=thumbnailCandidates.find(d=>thumbnailNodes.current.get(d.id)===entry.target);if(!doc)continue;if(entry.isIntersecting&&entry.intersectionRatio>0){visible.add(doc.id);load(doc,false);}else visible.delete(doc.id);}}):null;
+      for(const doc of thumbnailCandidates){const node=thumbnailNodes.current.get(doc.id);if(observer&&node)observer.observe(node);else if(!observer){visible.add(doc.id);load(doc,false);}}
+      const foreground=()=>{if(!document.hidden)thumbnailCandidates.forEach(doc=>load(doc,false));};
+      document.addEventListener('visibilitychange',foreground);
+      return()=>{active=false;thumbnailRefresh.current=()=>{};if(observer)observer.disconnect();timers.forEach(clearTimeout);document.removeEventListener('visibilitychange',foreground);};
+    },[thumbnailKey,resourceContext]);
+    const refreshThumbnail=doc=>thumbnailRefresh.current(doc);
     const open=async(doc,type)=>{
       if(!doc)return;
       setError('');
       setBusy({id:type.id,phase:'authorizing'});
       try{
         const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
-        setViewer({source:preview.signedUrl,mimeType:doc.mimeType||'',title:type.label,documentId:doc.id});
+        setViewer({source:preview.signedUrl,mimeType:doc.mimeType||'',title:type.label,documentId:doc.id,context:resourceContext});
       }catch(e){
         const code=e&&(e.code||e.message);
         setError(type.label+': '+(code==='DOCUMENT_OBJECT_MISSING'
@@ -113,11 +120,11 @@
         h('div',{className:'mr-doc-grid','data-document-grid':'membership'},requirements.map((req)=>{
           const type=req.document_type||req,doc=newest(documents,type.id),state=documentState(doc)||{fg:'#B0002A',bg:'#FCE9EE',label:'Pendiente',icon:'upload'};
           const verified=!!(doc&&doc.status==='VERIFIED'),accepted=!!(doc&&ACCEPTED.has(doc.status)),available=physicalAvailable(doc),capabilities=sourceCapabilities(type),canUpload=capabilities.any&&(!!editable||!doc||['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)),preview=accepted&&available;
-          const thumbnail=doc&&thumbnails[doc.id],image=!!(preview&&thumbnail&&thumbnail.phase==='ready'&&thumbnail.url&&String(doc.mimeType||'').toLowerCase().startsWith('image/')),isBusy=!!(busy&&busy.id===type.id);
+          const thumbnail=doc&&thumbnails[doc.id],image=!!(preview&&thumbnail&&thumbnail.context===resourceContext&&thumbnail.key===thumbnailKey&&thumbnail.expires>Date.now()&&thumbnail.phase==='ready'&&thumbnail.url&&String(doc.mimeType||'').toLowerCase().startsWith('image/')),isBusy=!!(busy&&busy.id===type.id);
           const action=preview?'preview':canUpload?'upload':'unavailable',actionCopy=doc?state.label:'Adjuntar',hint=type.description||state.label;
           const classes=['mr-doc-tile',accepted&&available?'is-filled':'',image?'has-thumbnail':'',highlightedId===type.id&&(!accepted||!available)?'is-highlighted':'',doc&&(['REJECTED','REUPLOAD_REQUIRED'].includes(doc.status)||!available)?'is-error':''].filter(Boolean).join(' ');
           const act=()=>{if(preview)open(doc,type);else if(canUpload)setOrigin({type,replacing:!!doc});};
-          return h('article',{key:type.id,className:classes,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-id':doc&&doc.id||'','data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING','data-document-required':req.required===false?'false':'true'},
+          return h('article',{key:type.id,ref:node=>{if(doc){if(node)thumbnailNodes.current.set(doc.id,node);else thumbnailNodes.current.delete(doc.id);}},className:classes,'data-document-type':type.code,'data-document-type-id':type.id,'data-document-id':doc&&doc.id||'','data-document-status':doc?doc.status:'MISSING','data-document-availability':doc&&doc.availability||'MISSING','data-document-required':req.required===false?'false':'true'},
             h('button',{type:'button',className:'mr-doc-pick',disabled:isBusy||action==='unavailable',onClick:act,'data-document-action':action,'aria-label':(preview?'Ver ':canUpload?(doc?'Reemplazar ':'Adjuntar '):'Vista no disponible de ')+type.label},
               image&&h('img',{className:'mr-doc-thumb',src:thumbnail.url,alt:'Miniatura de '+type.label,onError:()=>refreshThumbnail(doc)}),
               image&&h('span',{className:'mr-doc-veil','aria-hidden':'true'}),
@@ -128,7 +135,7 @@
             preview&&canUpload&&h('button',{type:'button',className:'mr-doc-replace','aria-label':'Reemplazar '+type.label,onClick:()=>setOrigin({type,replacing:true})},h(I,{name:'camera',size:13,stroke:2}),'Reemplazar'),
             accepted&&available&&h('span',{className:'mr-doc-status'},state.label),
             doc&&doc.review_observation&&h('p',{className:'mr-doc-observation'},doc.review_observation));
-        })),originSheet,cameraSheet,viewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
+        })),originSheet,cameraSheet,viewer&&viewer.context===resourceContext&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
     }
 
     return h(React.Fragment,null,
@@ -145,7 +152,7 @@
               doc&&doc.review_observation&&h('div',{style:{fontSize:11,color:'#9B2743',marginTop:3}},doc.review_observation)),
             canView&&h('button',{type:'button','aria-label':'Ver '+type.label,disabled:isBusy,onClick:()=>open(doc,type),style:{width:38,height:38,borderRadius:11,border:'1px solid var(--hairline-strong)',background:'#fff',display:'grid',placeItems:'center',color:'var(--ink-3)'}},h(I,{name:'eye',size:18,stroke:2}))),
           canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},actionButton(doc?'Reemplazar':'Adjuntar','upload',()=>setOrigin({type,replacing:!!doc}),isBusy,doc?'replace':'upload')));
-      })),originSheet,cameraSheet,viewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
+      })),originSheet,cameraSheet,viewer&&viewer.context===resourceContext&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
   }
 
   const UNIFIED_CSS=`

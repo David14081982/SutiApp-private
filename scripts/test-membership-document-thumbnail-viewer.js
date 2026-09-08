@@ -15,11 +15,11 @@ assert.match(documents,/String\(doc\.mimeType\|\|''\)\.toLowerCase\(\)\.startsWi
 assert.match(documents,/DocumentWorkflowRepository\.selfPreview\(doc,accessPurpose\|\|'SELF_SERVICE_EXPEDIENTE'\)/);
 assert.match(documents,/className:'mr-doc-thumb',src:thumbnail\.url/);
 assert.match(documents,/onError:\(\)=>refreshThumbnail\(doc\)/);
-assert.match(documents,/viewer&&h\(window\.DocumentViewer/);
+assert.match(documents,/viewer&&viewer\.context===resourceContext&&h\(window\.DocumentViewer/);
 assert.match(documents,/data-document-action':action/);
 assert.match(documents,/className:'mr-doc-replace'/);
 assert.match(documents,/await onChanged\(\)/);
-assert.match(documents,/\},\[requirements,documents,accessPurpose\]\)/);
+assert.match(documents,/\},\[thumbnailKey,resourceContext\]\)/);
 assert.doesNotMatch(documents,/doc\.signedUrl|window\.open|about:blank/);
 
 assert.match(membership,/\.mr-doc-thumb\{[^}]*object-fit:cover/);

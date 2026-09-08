@@ -633,7 +633,7 @@
         var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
         // Keep this version aligned with sw.js CACHE. CDN caches can outlive
         // the browser cache even when updateViaCache is disabled.
-        var serviceWorkerUrl = "./sw.js?v=169";
+        var serviceWorkerUrl = "./sw.js?v=170";
         navigator.serviceWorker.addEventListener("controllerchange", function () {
           if (!hadControllerAtBoot || reloadingForWorker) return;
           reloadingForWorker = true;
@@ -692,7 +692,7 @@
     <script src="app/supabase-client.js" onerror="window.__sutiStartupFail('SUPABASE_CLIENT_LOAD_FAILED')"></script>
     <script src="app/affiliate-repository.js?v=5" onerror="window.__sutiStartupFail('AFFILIATE_REPOSITORY_LOAD_FAILED')"></script>
     <script src="app/financial-legacy-repository.js?v=10" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
-  <script src="app/bundle.js?v=222" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
+  <script src="app/bundle.js?v=223" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
   </body>
 </html>

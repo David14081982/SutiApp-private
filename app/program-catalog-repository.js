@@ -26,25 +26,48 @@
   async function listItems(options){
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
-    const api=db();
+    const api=db(),settings=options||{};
     let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
-    const [rows,links]=await Promise.all([
-      itemQuery,
-      api.from('program_catalog_item_assets').select(`id,item_id,public_asset_id,private_asset_id,role,sort_order,enabled,source_column,source_column_letter,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).eq('enabled',true).order('sort_order',{ascending:true}),
-    ]);
+    if(settings.programKey)itemQuery=itemQuery.eq('program_key',settings.programKey);
+    if(settings.itemId)itemQuery=itemQuery.eq('id',settings.itemId);
+    const rows=await itemQuery;
     if(rows.error)throw rows.error;
+    const ids=(rows.data||[]).map(row=>row.id);
+    const links=settings.includeAssets===false||!ids.length?{data:[]}:await api.from('program_catalog_item_assets').select(`id,item_id,public_asset_id,private_asset_id,role,sort_order,enabled,source_column,source_column_letter,public_asset:app_assets!public_asset_id(${publicFields}),private_asset:private_assets!private_asset_id(${privateFields})`).eq('enabled',true).in('item_id',ids).order('sort_order',{ascending:true});
     if(links.error)throw links.error;
-    const allLinks=links.data||[],assetUrls=await resolveAssetUrls(allLinks),byItem=new Map();
+    const allLinks=links.data||[],assetUrls=settings.deferImages?new Map():await resolveAssetUrls(allLinks),byItem=new Map();
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}
     const projected=[];
     for(const row of rows.data||[]){
       const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
-      const imageAssets=itemLinks.map((link)=>Object.freeze({link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null}));
+      const imageAssets=itemLinks.map((link)=>{const asset={link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null};Object.defineProperty(asset,'resource',{value:link,enumerable:false});return Object.freeze(asset);});
       const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
       projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
+  }
+  function imageAssets(item){return(item&&item.imagenAssets||[]).filter(asset=>asset.resource&&(asset.resource.public_asset||asset.resource.private_asset)||asset.url);}
+  let imageQueue=[],imageFlush=null;
+  function signDemanded(link){
+    return new Promise((resolve,reject)=>{
+      imageQueue.push({link,resolve,reject,context:window.PrivateResourceDemand.context()});
+      if(imageFlush)return;
+      imageFlush=Promise.resolve().then(async()=>{
+        const queue=imageQueue;imageQueue=[];imageFlush=null;
+        const current=window.PrivateResourceDemand.context(),valid=queue.filter(job=>job.context===current&&current!==null);
+        queue.filter(job=>!valid.includes(job)).forEach(job=>job.reject(new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED')));
+        if(!valid.length)return;
+        try{const urls=await resolveAssetUrls(valid.map(job=>job.link));for(const job of valid){const signedUrl=urls.get(job.link);if(signedUrl)job.resolve(Object.freeze({signedUrl,expiresIn:3600}));else job.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));}}
+        catch(error){valid.forEach(job=>job.reject(error));}
+      });
+    });
+  }
+  function resolveImage(asset){
+    if(!asset||!asset.resource)return Promise.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));
+    const link=asset.resource,resource=link.public_asset||link.private_asset;
+    if(!resource)return Promise.reject(new Error('PROGRAM_IMAGE_UNAVAILABLE'));
+    return window.PrivateResourceDemand.run(JSON.stringify(['program-image',resource.id,resource.storage_bucket,resource.storage_path,resource.status]),()=>signDemanded(link));
   }
   async function createRequest(itemId,quantity,message,signature,terms,idempotencyKey,documentIds){
     return window.ProgramRequestRepository.create({programItemId:itemId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});
@@ -95,5 +118,5 @@
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
 })();

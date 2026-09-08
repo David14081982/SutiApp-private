@@ -1,0 +1,24 @@
+/* Phase 3 Marketplace store: in-memory projection over MarketplaceRepository. */
+(function () {
+  const { useEffect,useState }=React;const listeners=new Set();let items=[],programItems=[],cats=[],favorites=new Set(),companyFavorites=new Set(),phase='idle',error=null,promise=null;
+  const emit=()=>listeners.forEach((fn)=>fn());const sort=(a,b)=>(a.orden||0)-(b.orden||0);
+  async function load(force){if(promise&&!force)return promise;phase='loading';error=null;emit();promise=(async()=>{try{const admin=Boolean(window.AdminRepository&&window.AdminRepository.has('marketplace.read'));const out=await Promise.all([window.MarketplaceRepository.listCategories(admin),window.MarketplaceRepository.listProducts({admin}),window.MarketplaceRepository.listFavorites().catch(()=>[]),window.MarketplaceRepository.listCompanyFavorites().catch(()=>[]),window.ProgramCatalogRepository.listItems(),window.ProgramCatalogRepository.listFavorites().catch(()=>[])]);cats=out[0].slice();items=out[1].slice();favorites=new Set(out[2].concat(out[5]));companyFavorites=new Set(out[3]);programItems=out[4].slice();phase='loaded';}catch(e){phase='error';error=e;}emit();return store;})();return promise;}
+  function next(scope,scopeId){return items.filter((x)=>x.scope===scope&&x.scopeId===scopeId).length+1;}
+  const store={
+    bootstrap:()=>load(false),retry:()=>{promise=null;return load(true);},state:()=>({phase,error}),
+    all:()=>items.slice().sort(sort),byScope:(scope,scopeId)=>(scope==='fin'?programItems:items).filter((x)=>scope==='convenio'?x.empresaId===scopeId:x.scope===scope&&x.scopeId===scopeId).sort(sort),
+    live:(scope,scopeId)=>store.byScope(scope,scopeId).filter((x)=>x.activo!==false),byCompany:(id)=>items.filter((x)=>x.empresaId===id).sort(sort),get:(id)=>items.find((x)=>x.id===id)||programItems.find((x)=>x.id===id)||null,count:(scope,id)=>store.byScope(scope,id).length,
+    blank:(scope,scopeId,empresaId)=>({id:null,scope:scope||'marketplace',scopeId:scopeId||'',category_id:scope==='marketplace'?scopeId:null,empresaId:empresaId||null,company_id:empresaId||null,nombre:'',ficha:'',precio:null,cotiza:true,desc:'',badge:'',discount_percent:null,stock:null,imagenes:[],imagenAssets:[],activo:true,orden:next(scope,scopeId)}),
+    save:async(item)=>{const saved=await window.MarketplaceRepository.saveProduct(Object.assign({},item,{company_id:item.company_id||item.empresaId,category_id:item.category_id||(item.scope==='marketplace'?item.scopeId:null)}));await load(true);return saved;},
+    remove:async(id)=>{await window.MarketplaceRepository.removeProduct(id);await load(true);},
+    toggle:async(id)=>{const item=store.get(id);if(item)await store.save(Object.assign({},item,{activo:item.activo===false}));},
+    move:async(id,dir)=>{const item=store.get(id);if(!item)return;const list=store.byScope(item.scope,item.scopeId),i=list.findIndex((x)=>x.id===id),j=i+dir;if(i<0||j<0||j>=list.length)return;const other=list[j],a=Object.assign({},item,{orden:other.orden}),b=Object.assign({},other,{orden:item.orden});await window.MarketplaceRepository.saveProduct(a);await window.MarketplaceRepository.saveProduct(b);await load(true);},
+    categories:()=>cats.filter((x)=>!x.parent_id).map((x)=>({id:x.id,scope:'marketplace',scopeId:x.id,label:x.name,group:'Marketplace',icon:'cart',raw:x.category_raw,enabled:x.enabled})),
+    rawCategories:()=>cats.slice(),saveCategory:async(row)=>{await window.MarketplaceRepository.saveCategory(row);await load(true);},removeCategory:async(id)=>{await window.MarketplaceRepository.removeCategory(id);await load(true);},
+    uploadProductAsset:(file,companyId)=>window.MarketplaceRepository.uploadProductAsset(file,companyId),replaceProductAssets:(id,ids)=>window.MarketplaceRepository.replaceProductAssets(id,ids),
+    isFavorite:(id)=>favorites.has(id),toggleFavorite:async(id)=>{const on=!favorites.has(id),program=programItems.some((item)=>item.id===id),repository=program?window.ProgramCatalogRepository:window.MarketplaceRepository;on?favorites.add(id):favorites.delete(id);emit();try{await repository.setFavorite(id,on);}catch(e){on?favorites.delete(id):favorites.add(id);emit();throw e;}},
+    isCompanyFavorite:(id)=>companyFavorites.has(id),toggleCompanyFavorite:async(id)=>{const on=!companyFavorites.has(id);on?companyFavorites.add(id):companyFavorites.delete(id);emit();try{await window.MarketplaceRepository.setCompanyFavorite(id,on);}catch(e){on?companyFavorites.delete(id):companyFavorites.add(id);emit();throw e;}},
+    resetAll:()=>Promise.reject(new Error('NO_PRODUCTIVE_SEED_RESET')),subscribe:(fn)=>{listeners.add(fn);return()=>listeners.delete(fn);},
+  };
+  window.catalogStore=store;window.useCatalogStore=function(){const[,setVersion]=useState(0);useEffect(()=>store.subscribe(()=>setVersion((n)=>n+1)),[]);useEffect(()=>{store.bootstrap();},[]);return store;};
+})();

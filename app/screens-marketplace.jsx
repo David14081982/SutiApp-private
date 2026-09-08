@@ -41,7 +41,7 @@
   function ProductScreen({ app, params }) {
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const cs = window.useCatalogStore ? window.useCatalogStore() : null;
+    const cs = window.useCatalogStore ? window.useCatalogStore({programKey:params.id}) : null;
     if (!found) return null;
     const { it } = found;
     const hue = { guinda: 345, green: 150, blue: 210, amber: 36 }[found.g.tone];

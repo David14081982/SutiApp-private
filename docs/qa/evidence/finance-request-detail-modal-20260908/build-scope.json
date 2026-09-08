@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "modules": 109,
+  "changedModules": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "source": "3546a41884246ae4c25b92ce82e67333d8fbd221ce280f592f8d3c05cff69d8a",
+  "bundle": "42417cdbb2b2cad77c463151858fb55704ea3b19a4a7397a9092b74ade3ad774"
+}

@@ -35774,6 +35774,17 @@ Object.assign(window, {
       @media(max-width:1359px){.finwb-queue-head,.finwb-row{grid-template-columns:68px minmax(0,1fr) 92px;gap:5px;padding-left:8px;padding-right:8px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3){display:none}.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:none}.finwb-badge{box-sizing:border-box;max-width:100%;padding:0 6px;font-size:9.5px}}
       @media(min-width:1280px){.finwb-filters{grid-template-columns:minmax(180px,1.5fr) repeat(6,minmax(96px,1fr))}.finwb-grid{grid-template-columns:minmax(470px,1fr) minmax(440px,1fr)}}
       @media(max-width:1023px){.finwb-filters{grid-template-columns:1fr 1fr}.finwb-grid{grid-template-columns:1fr;max-height:none;min-height:0}.finwb-queue{max-height:390px}.finwb-detail{min-height:680px}.finwb-detail-scroll{overflow:visible}.finwb-actionbar{position:sticky}.finwb-doc{grid-template-columns:58px minmax(0,1fr) auto}.finwb-doc-preview{width:58px;height:50px}}
+      .finwb-grid{display:block;min-height:0;max-height:none}.finwb-queue{max-height:calc(100dvh - 285px);min-height:240px}
+      .finwb-modal{box-sizing:border-box;width:88vw;max-width:1600px;height:calc(100dvh - 40px);max-height:calc(100dvh - 40px);min-height:0;margin:auto;padding:0;border:1px solid #DCE1EA;border-radius:22px;background:#F3F5F9;color:var(--ink);font-family:inherit;overflow:hidden;box-shadow:0 24px 100px #14203855}
+      .finwb-modal[open]{display:flex;flex-direction:column}.finwb-modal::backdrop{background:rgba(15,23,42,.58)}
+      .finwb-modal .finwb-detail-head{flex:none;align-items:center;padding:18px 24px;gap:16px;background:#fff}.finwb-modal-heading{min-width:0;flex:1}.finwb-modal .finwb-detail-head strong{font-size:13px;color:var(--guinda)}.finwb-modal-heading h2{font-size:21px;line-height:1.2;margin:5px 0;color:var(--ink);overflow-wrap:anywhere}.finwb-modal .finwb-detail-head .finwb-sub{white-space:normal;font-size:12px;line-height:1.4}
+      .finwb-modal-close{flex:none;align-self:flex-start;display:grid;place-items:center;width:44px;height:44px;border:1px solid #DCE1EA;border-radius:12px;background:#F3F5F9;color:var(--ink);font-size:26px;cursor:pointer}.finwb-modal :focus-visible{outline:3px solid var(--guinda);outline-offset:2px}.finwb-modal .finwb-badge{font-size:12px;min-height:28px}
+      .finwb-modal .finwb-detail-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:start;gap:16px;scrollbar-gutter:stable}.finwb-modal .finwb-card{min-width:0;margin:0;padding:18px}.finwb-modal .finwb-card h3{font-size:15px;margin-bottom:14px}.finwb-modal .finwb-kv{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.finwb-modal .finwb-kv span{font-size:11px}.finwb-modal .finwb-kv strong{font-size:13px;line-height:1.45}.finwb-modal .finwb-doc .finwb-person,.finwb-modal .finwb-doc .finwb-sub{white-space:normal;overflow-wrap:anywhere}.finwb-modal .finwb-flow-current .finwb-sub{display:block;margin-bottom:4px}.finwb-modal .finwb-flow-current{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-responsible{justify-self:start;white-space:normal}.finwb-modal .finwb-step strong{font-size:13px}.finwb-modal .finwb-step p,.finwb-modal .finwb-event p{font-size:12px;overflow-wrap:anywhere}.finwb-modal .finwb-event strong{font-size:13px}
+      .finwb-modal .finwb-actionbar{position:static;flex:none;padding:14px 24px;background:#fff;box-shadow:0 -6px 20px #14203808;backdrop-filter:none}.finwb-modal .finwb-action-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}.finwb-modal .finwb-action-grid .finwb-sub{display:block;white-space:normal}.finwb-modal .finwb-note{min-height:44px;height:44px;resize:none;margin-top:8px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-buttons button{min-height:44px;font-size:13px}.finwb-modal .finwb-next-action{margin-top:6px;padding:6px 10px}.finwb-modal .finwb-empty{flex:1;min-height:0;overflow:auto}.finwb-modal .finwb-feedback{overflow-wrap:anywhere}
+      @media(min-width:768px){.finwb-queue-head,.finwb-row{grid-template-columns:100px minmax(0,1fr) 140px 180px 64px;gap:12px;padding:14px 16px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3),.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:block}}
+      @media(max-width:1023px){.finwb-modal{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:16px}.finwb-modal .finwb-detail-head{padding:14px 18px}.finwb-modal .finwb-detail-scroll{padding:16px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:12px 18px}}
+      @media(max-width:600px){.finwb-modal{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}.finwb-modal .finwb-detail-head{padding:12px;gap:8px;flex-wrap:wrap}.finwb-modal-heading h2{font-size:17px}.finwb-modal .finwb-detail-head .finwb-badge{max-width:100%;font-size:11px;min-height:24px}.finwb-modal .finwb-detail-head .finwb-sub{font-size:11px}.finwb-modal .finwb-detail-scroll{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-grid{gap:8px}.finwb-modal .finwb-action-select{font-size:12px;min-width:0;padding:8px}.finwb-modal .finwb-buttons{grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.finwb-modal .finwb-primary{grid-column:1/-1}.finwb-modal .finwb-buttons button{padding:8px;font-size:12px}.finwb-modal .finwb-next-action{font-size:10px;line-height:1.3}.finwb-modal .finwb-note{margin-top:6px}.finwb-modal .finwb-feedback{font-size:10px;margin-top:4px}}
+      @media(max-height:600px){.finwb-modal .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:16px;margin:2px 0}.finwb-modal .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-note{height:36px;min-height:36px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-primary{grid-column:auto}}
     `;
     document.head.appendChild(style);
   }
@@ -36088,11 +36099,81 @@ Object.assign(window, {
       failed: (key, url) => act('failed', key, url)
     };
   }
+
+  // Presentation only: native modal focus containment and a reversible page scroll lock.
+  function FinancialRequestDetailModal({
+    header,
+    children,
+    onClose,
+    onEscape,
+    titleId
+  }) {
+    const dialogRef = React.useRef(null),
+      closeRef = React.useRef(null);
+    useEffect(() => {
+      const dialog = dialogRef.current,
+        opener = document.activeElement;
+      const bodyOverflow = document.body.style.overflow,
+        htmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      dialog.showModal();
+      closeRef.current.focus({
+        preventScroll: true
+      });
+      return () => {
+        dialog.close();
+        document.body.style.overflow = bodyOverflow;
+        document.documentElement.style.overflow = htmlOverflow;
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    return h('dialog', {
+      ref: dialogRef,
+      className: 'finwb-modal',
+      'data-financial-request-detail': 'true',
+      'aria-modal': 'true',
+      'aria-labelledby': titleId,
+      onCancel: event => {
+        event.preventDefault();
+        onEscape();
+      },
+      onKeyDown: event => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onEscape();
+        }
+        if (event.key === 'Tab') {
+          const root = dialogRef.current.querySelector('[data-image-viewer],[data-document-viewer]') || dialogRef.current;
+          const controls = Array.from(root.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')).filter(node => node.getClientRects().length);
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (first && (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+          }
+        }
+      }
+    }, h('header', {
+      className: 'finwb-detail-head'
+    }, header, h('button', {
+      ref: closeRef,
+      type: 'button',
+      className: 'finwb-modal-close',
+      onClick: onClose,
+      'aria-label': 'Cerrar detalle de solicitud'
+    }, '×')), children);
+  }
   function DesktopFinancialWorkbench({
     app,
     onCount,
     initialAffiliateId
   }) {
+    const [detailOpen, setDetailOpen] = useState(false),
+      modalTitleId = React.useId();
     const [rows, setRows] = useState([]),
       [phase, setPhase] = useState('loading'),
       [error, setError] = useState('');
@@ -36350,18 +36431,21 @@ Object.assign(window, {
       }
     };
     const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
+    const closeDetail = () => {
+      setViewer(null);
+      setDetailOpen(false);
+    };
     const onKeyDown = event => {
-      if (/INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
+      if (detailOpen || /INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         move(1);
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         move(-1);
-      } else if (event.key === 'Enter') {
+      } else if (event.key === 'Enter' && selectedId) {
         event.preventDefault();
-        const panel = document.querySelector('[data-financial-request-detail]');
-        if (panel) panel.focus();
+        setDetailOpen(true);
       }
     };
     const renderConditions = (title, result, fallback) => h('section', {
@@ -36530,6 +36614,17 @@ Object.assign(window, {
         className: 'finwb-sub'
       }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
+    const renderNavigation = () => h('div', {
+      className: 'finwb-buttons'
+    }, h('button', {
+      className: 'finwb-secondary',
+      disabled: index <= 0 || busy,
+      onClick: () => move(-1)
+    }, 'Anterior'), h('button', {
+      className: 'finwb-secondary',
+      disabled: index < 0 || index >= visible.length - 1 || busy,
+      onClick: () => move(1)
+    }, 'Siguiente solicitud'));
     const renderDetail = () => {
       if (detailPhase === 'loading') return h('div', {
         className: 'finwb-empty'
@@ -36553,12 +36648,6 @@ Object.assign(window, {
         productPayment = detail.financial_submission_snapshot && detail.financial_submission_snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1' ? detail.financial_submission_snapshot : null,
         events = timelineEvents(detail);
       return h(React.Fragment, null, h('div', {
-        className: 'finwb-detail-head'
-      }, h('div', null, h('span', {
-        className: 'finwb-sub'
-      }, 'SOLICITUD DE ' + requestTypeLabel(detail).toLocaleUpperCase('es-MX')), h('strong', null, detail.folio), h('div', {
-        className: 'finwb-sub'
-      }, index + 1 + ' de ' + visible.length + ' · ' + programLabel(detail))), badge(statusMeta(detail.status), 'data-financial-human-status', statusMeta(detail.status).label)), h('div', {
         className: 'finwb-detail-scroll'
       }, h('section', {
         className: 'finwb-card',
@@ -36712,9 +36801,9 @@ Object.assign(window, {
         className: 'finwb-feedback',
         'data-financial-action-feedback': feedback.tone,
         'data-tone': feedback.tone
-      }, feedback.text)) : h('div', {
+      }, feedback.text)) : h(React.Fragment, null, renderNavigation(), h('div', {
         className: 'finwb-sub'
-      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.')), viewer && viewer.context === previews.identity && window.DocumentViewer && h(window.DocumentViewer, {
+      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.'))), viewer && viewer.context === previews.identity && window.DocumentViewer && h(window.DocumentViewer, {
         source: viewer.source,
         mimeType: viewer.mimeType,
         title: viewer.title,
@@ -36836,7 +36925,11 @@ Object.assign(window, {
       className: 'finwb-row',
       'data-financial-queue-row': row.id,
       'aria-selected': row.id === selectedId,
-      onClick: () => setSelectedId(row.id)
+      'aria-haspopup': 'dialog',
+      onClick: () => {
+        setSelectedId(row.id);
+        setDetailOpen(true);
+      }
     }, h('span', {
       className: 'finwb-folio'
     }, row.folio), h('span', null, h('span', {
@@ -36855,14 +36948,21 @@ Object.assign(window, {
       'data-financial-inline-feedback': rowFeedback[row.id]
     }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', {
       className: 'finwb-age'
-    }, ageLabel(row.created_at)))))), h('section', {
-      className: 'finwb-panel finwb-detail',
-      tabIndex: -1,
-      'data-financial-request-detail': 'true',
-      style: {
-        position: 'relative'
-      }
-    }, renderDetail())));
+    }, ageLabel(row.created_at)))))), detailOpen && h(FinancialRequestDetailModal, {
+      titleId: modalTitleId,
+      onClose: closeDetail,
+      onEscape: () => viewer ? setViewer(null) : closeDetail(),
+      header: h(React.Fragment, null, h('div', {
+        className: 'finwb-modal-heading'
+      }, h('strong', null, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).folio), h('h2', {
+        id: modalTitleId
+      }, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).nombre), h('div', {
+        className: 'finwb-sub'
+      }, requestTypeLabel(selected) + ' \u00b7 ' + programLabel(selected) + ' \u00b7 ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
+    }, renderDetail(), detailPhase !== 'loaded' && h('footer', {
+      className: 'finwb-actionbar',
+      'data-financial-safe-action-bar': 'true'
+    }, renderNavigation()))));
   }
   function EstadoBadge({
     estado

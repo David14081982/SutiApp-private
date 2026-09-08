@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-FINANCE-REQUESTS-DETAIL-MODAL-UX-001
+
+- Admin / Finanzas / Solicitudes abre el detalle en un modal amplio con encabezado y acciones visibles,
+  contenido central desplazable, X/Escape, foco contenido y restaurado, y navegación anterior/siguiente.
+- Conserva todo el contenido, comentarios y callbacks existentes; comparación exacta de lógica y documento,
+  nueve acciones contrastadas contra la versión publicada en fixtures aislados. Sin cambios backend ni datos.
+- Build de 109 módulos con una sola sección alterada; validación focal adaptable y lectura real de cuatro tipos
+  de solicitud. Sin suites globales. [Resultado y evidencia](qa/H-FINANCE-REQUESTS-DETAIL-MODAL-UX-001.md).
+
 ## 2026-09-08 — H-ADMIN-REQUEST-IMAGES-001
 
 - Corrige miniaturas intermitentes en Admin / Solicitudes: identidad documental estable, confirmación de

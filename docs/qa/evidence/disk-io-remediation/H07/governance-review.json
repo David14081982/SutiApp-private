@@ -1,0 +1,81 @@
+{
+  "at": "2026-09-08T04:16:35.371Z",
+  "files": [
+    {
+      "file": "AGENTS.md",
+      "bytes": 6109,
+      "sha256": "64dc43ca45f6e99b8378563679a3d41a0f0701d7788cdef8e340fbe7d786bc1a",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/WORK_QUEUE.md",
+      "bytes": 2146,
+      "sha256": "ca3675cc8c12cdc5752b388d2f43cc39ec04f6ef5d6cfd329a968262bdd54a45",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/WORK_QUEUE_HISTORY.md",
+      "missing": true
+    },
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "bytes": 69406,
+      "sha256": "a2b91419a4098093b7f5b55733662ee4a7eec164cf1e63244a8371e417366534",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/INVARIANTS.md",
+      "bytes": 60823,
+      "sha256": "a2a38a4fbec40ee35af8b7daab558a168cef1ae3b914a2ce8c02c95c7d01d46a",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "bytes": 159715,
+      "sha256": "9f214ae5dcbb884c5b5bba35efa21ee9ab06763d1a8602e20ef6c3738620cdac",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/DATA_GOVERNANCE.md",
+      "bytes": 4731,
+      "sha256": "cdbd09f2591b9894b91e665ec2837f67d7490b7b5718a86f20733b864fd3bb79",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/MIGRATION_RULES.md",
+      "bytes": 26399,
+      "sha256": "d9b9f8c5fc7b6232968c4dcba754832efd42de09a287119e11a64f264243ad16",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "bytes": 6760,
+      "sha256": "6f86095487f1d1d3bae02140251780051d24f871ddabc9f59fc46e8dcea36fc0",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "bytes": 40948,
+      "sha256": "e2577af8fdc6fcea3d64c4d94b1efc0a3ac745c48316f25fe346253b810563f7",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/DATA_MAPPING.md",
+      "bytes": 52232,
+      "sha256": "c325eb48aa2334e8ce5926c955af9ea71e871156f998fb0529c903925082323f",
+      "unchanged_since_h06": true
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "bytes": 290598,
+      "sha256": "720703b4c48e748a7cf61537addd61b63b3e051c57713f030cffd59885527a62",
+      "unchanged_since_h06": false
+    }
+  ],
+  "full_read_in_session": true,
+  "changed_read": "AGENT_CHANGELOG H06 entry read; no normative authority changed",
+  "missing": [
+    "docs/WORK_QUEUE_HISTORY.md"
+  ],
+  "next_phase_authorized": false
+}

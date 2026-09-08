@@ -1,0 +1,6 @@
+
+## 2026-09-08 — Disk I/O H07 — N+1 implementado; gate público BLOCKED
+
+Solicitud explícita H07 y precondiciones H01–H06 PASS. Publicación aislada 7cecf8a: portal batch FK/RLS 39→7 en store válido aislado; lector real 34→2, transferencia instrumentada87.405→10.609 B. Edge data-exports v13 + RPC service-only limitada1000:123 lookups Auth→1 lote; CSV completo/XLSX campo por campo idénticos de954 afiliados. Históricos/identidades/headers/permisos/audit intactos. Miniaturas Admin demandadas,8→3 iniciales en viewport aislado, scroll completo equivalente. Reordenamientos con commits parciales no agrupados. Recovery disponible;17 suites focales, Registry y regresión global local PASS. Backend253 funciones anteriores/228 policies y hashes maestros/Auth iguales. Workflow SUCCESS y21 archivos públicos exactos.
+
+H07 STATUS: BLOCKED: regresión global pública detenida por Auth400 invalid_credentials de la cuenta controlada; diagnóstico independiente confirma. No se cambian credenciales ni se omite el gate. Se pidió actualizar supabase.env local sin enviar contraseña al chat. Evidencia: docs/qa/evidence/disk-io-remediation/H07/VERIFICATION.md y ARCHITECT_REVIEW.md. H08 no iniciado. Cambios financieros previos del workspace no publicados.

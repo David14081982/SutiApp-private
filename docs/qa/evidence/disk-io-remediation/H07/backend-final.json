@@ -1,0 +1,60 @@
+{
+  "at": "2026-09-08T04:15:28.396Z",
+  "status": "PASS",
+  "functionsExisting": 253,
+  "policies": 228,
+  "added": {
+    "schema": "public",
+    "signature": "get_data_export_auth_emails(uuid[])",
+    "definition": "CREATE OR REPLACE FUNCTION public.get_data_export_auth_emails(p_auth_user_ids uuid[])\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  if p_auth_user_ids is null or cardinality(p_auth_user_ids)>1000\n     or array_position(p_auth_user_ids,null) is not null then\n    raise exception 'INVALID_AUTH_EMAIL_BATCH' using errcode='22023';\n  end if;\n  return (\n    select coalesce(jsonb_agg(jsonb_build_object('auth_user_id',u.id,'email',coalesce(u.email,'')) order by u.id),'[]'::jsonb)\n    from auth.users u where u.id=any(p_auth_user_ids)\n      and u.instance_id='00000000-0000-0000-0000-000000000000'::uuid\n  );\nend;\n$function$\n",
+    "definition_md5": "9b119b68c2b43da34183addede3f2914",
+    "owner": "postgres",
+    "prosecdef": true,
+    "provolatile": "s",
+    "proconfig": [
+      "search_path=\"\""
+    ],
+    "acl": "{postgres=X/postgres,service_role=X/postgres}"
+  },
+  "fingerprints": [
+    {
+      "relation": "companies",
+      "rows": 33,
+      "hash": "4893d326abd27bba59a28950651f3806"
+    },
+    {
+      "relation": "marketplace_promotions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "marketplace_company_memberships",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "company_portal_plans",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "company_portal_subscriptions",
+      "rows": 0,
+      "hash": null
+    },
+    {
+      "relation": "affiliates",
+      "rows": 954,
+      "hash": "77d7db3937cf8d0bb2e6c8b26ab76c7f"
+    }
+  ],
+  "authIdentity": {
+    "users": 135,
+    "soft_deleted": 0,
+    "hash": "e2a3977409e299beac90e2fe03dad316"
+  },
+  "edge": {
+    "version": 13,
+    "verify_jwt": true
+  }
+}

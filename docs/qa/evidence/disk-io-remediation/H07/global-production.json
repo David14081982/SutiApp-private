@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-08T04:16:27.715Z",
+  "exit": 1,
+  "stdout": "",
+  "stderr": "{\"http\":400,\"endpoint\":\"/auth/v1/token\",\"code\":\"UNKNOWN\"}\n{\"status\":\"FAIL\",\"error\":\"page.waitForFunction: Timeout 30000ms exceeded.\"}\n"
+}

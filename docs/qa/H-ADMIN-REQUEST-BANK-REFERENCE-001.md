@@ -38,7 +38,10 @@ The earlier interrupted report about session verification is not claimed fixed b
 
 - `node scripts/build-bundle.js C:/tmp/babel-standalone-7.28.4.min.js`: 110 modules.
 - `node scripts/verify-admin-request-bank-reference.js`: transactional migration/recovery PASS;
-  52 original responses identical after excluding the new field; 23 selected, 24 missing, 5 unselected.
+  Initial run: 52 responses; final pre-apply run: 51 (23 selected, 23 missing, 5 unselected).
+  Both compare all original fields excluding only the new projection within their own transaction.
+  The database is live; counts at different instants are not claimed globally frozen. The stored
+  sql.json is the final pre-apply receipt. All within-transaction domain hashes remained identical.
   Every projected value compared inside PostgreSQL against its exact request/affiliate snapshot.
   Real permission removal inside a reverted savepoint confirms no bank leakage. Anonymous/unassigned
   denied, private table privileges preserved, business hashes identical. No test data persisted.
@@ -86,10 +89,72 @@ Files changed: focal screen, generated bundle/cachebusters, one reader migration
 four focal scripts, governance, QA/evidence and derived architecture index at final closure.
 Source-of-truth verdict: PASS — captured account only, no fallback or master-account lookup.
 Invariant verdict: PASS — ADR-109 / INV-220, existing workflow and dossier untouched.
-Build: PASS. Tests: 27 isolated cases + 52 SQL comparisons + real read-only local acceptance PASS.
+Build: PASS. Tests: 27 isolated cases + 51 final SQL comparisons + real read-only local acceptance PASS.
 Security: PASS — real backend permission checks, private snapshot grants preserved, no PII evidence.
 Legacy impact: NOT APPLICABLE — no Google or financial execution changes/calls.
 Unexpected files changed: none.
 Known limitations: historical requests without a captured selection cannot show invented references;
 unrelated earlier session-verification report remains outside this H, although test login succeeded.
 Evidence: docs/qa/evidence/admin-request-bank-reference-20260908/.
+
+## Production acceptance — PASS
+
+Runtime commit: a1d9fc12db8759d715bb23a53a5d2d07b4ae23bc.
+Pages run 34280145252: SUCCESS, including existing backend compatibility and production guards.
+Public HTML, bundle and SW match the candidate hashes exactly (public-artifact.json).
+`node scripts/test-admin-request-bank-reference-live.js https://sutiapp.com`: PASS;
+real login, exact historical bank reference for the owner's target, three additional request types,
+five viewports, all 71 displayed images decoded, fullscreen, footer/scroll/close preserved,
+zero business writers and zero storage errors. Evidence: live/production.json.
+No real banking values were exported in artifacts. Screenshots are synthetic fixtures only.
+Primary workspace mirror: 28 scoped files, 2309 unrelated files hash-verified, HEAD/index preserved.
+
+H-ADMIN-REQUEST-BANK-REFERENCE-001 RESULT
+Status: PASS
+Files changed: candidate inventory above plus final evidence and derived registry refresh.
+Source-of-truth verdict: PASS — immutable captured account, single existing reader, no fallback.
+Invariant verdict: PASS — all prior detail fields and callbacks preserved; ADR-109 / INV-220.
+Build: PASS — 110 modules, only the focal screen differs; published artifact matches.
+Tests: PASS — SQL/recovery/permissions, 27 isolated cases, local and production read-only acceptance.
+Security: PASS — bank permission enforced in backend, table still private, evidence sanitized.
+Legacy impact: NOT APPLICABLE — no Google/calculation/writer changes.
+Unexpected files changed: none; user workspace preserved.
+Known limitations: no invented references for requests without a captured account;
+prior interrupted session-verification incident is outside scope (test sessions succeeded).
+Evidence: sql.json, migration.json, isolated-browser.json, scope-build.json,
+live/local_candidate.json, live/production.json, public-artifact.json, workspace-preservation.json.
+
+## ARCHITECT REVIEW
+
+Task reviewed: H-ADMIN-REQUEST-BANK-REFERENCE-001.
+Verdict: APPROVED.
+Reconstructed from owner account-selection answer, actual source/SQL diff, original RPC backup,
+before/after callback tests, SQL receipts and both real browser runs. No separate agent used.
+What Codex did correctly: preserved historical authority, distinct bank instruments, existing
+backend permissions, all prior JSON fields and all business writers; provided exact recovery.
+Important findings: the first and final SQL executions observed 52 and 51 live requests respectively;
+the final persisted receipt is 51. Corrected documentation instead of claiming a frozen database.
+Problems detected: none remaining. Test harness-only comparison defects corrected and checks rerun.
+Architecture implications: one additional projection in the same existing reader; no new repository,
+flow, source, permission, data writer or runtime service. Registry refresh is derived documentation.
+Source-of-truth implications: historical snapshot only; current master remains untouched.
+Security implications: no permission expansion/table grant; no bank values for restricted roles.
+Data implications: zero business-row writes; no request creation/deletion or bank update in acceptance.
+Legacy: no changes/calls. WORK_QUEUE_HISTORY.md absent; master queue is historical and is not used
+to authorize any new task. Explicit owner instruction authorizes this scoped implementation.
+Owner decision required: NO.
+Recommended next action: commit final evidence/registry, verify final Pages artifact and stop.
+
+### RESPONSE TO CODEX
+
+Approve H-ADMIN-REQUEST-BANK-REFERENCE-001. Finish only evidence and the derived registry,
+verify the final publication contains the already-tested runtime and stop. Do not start another H.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-ADMIN-REQUEST-BANK-REFERENCE-001
+Verdict: APPROVED
+Critical findings: none remaining.
+Source of truth: PASS. Architecture: PASS. Security: PASS. Data: PASS. Legacy: NOT APPLICABLE.
+Owner decision: NO.
+Next action: close this H after final publication verification; no automatic queue continuation.
+Response generated for Codex: YES.

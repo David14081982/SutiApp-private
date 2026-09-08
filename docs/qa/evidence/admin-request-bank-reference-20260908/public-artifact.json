@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "commit": "a1d9fc12db8759d715bb23a53a5d2d07b4ae23bc",
+  "files": [
+    {
+      "file": "SutiApp.html",
+      "status": "PASS",
+      "sha256": "903d4569a1ed645445d89b2a6cde11a4614cf1a3cc1056156e6a2aed5ce2c48e"
+    },
+    {
+      "file": "app/bundle.js",
+      "status": "PASS",
+      "sha256": "961e5b70f16429850164fb2833a95ee6c423cd4c66bf6c440fc1fdd4be36f835"
+    },
+    {
+      "file": "sw.js",
+      "status": "PASS",
+      "sha256": "7f85517a2511516de527bd165306b117b610f2950a2c32f71151498e3122d8db"
+    }
+  ]
+}

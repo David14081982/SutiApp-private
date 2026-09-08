@@ -4,10 +4,11 @@
 
 Solicitante muestra la cuenta seleccionada al enviar: banco, titular, tarjeta/CLABE capturados.
 Lectura histórica privada por el RPC existente y permisos existentes; sin fallback a la cuenta vigente.
-Migración/recovery 20260908000500 verificados; 52 detalles conservan todos sus campos anteriores,
-23 capturas disponibles, 24 sin captura y 5 sin selección. Denegaciones backend y hashes de datos PASS.
+Migración/recovery 20260908000500 verificados; 51 detalles en la prueba final conservan sus campos,
+23 capturas disponibles, 23 sin captura y 5 sin selección. Denegaciones backend y hashes de datos PASS.
 Build de 110 módulos: sólo cambia screens-admin-finanzas.jsx; callbacks/shared sources idénticos.
-27 casos browser focales y lectura autenticada local de cuatro tipos PASS; cinco tamaños sin overflow.
+27 casos browser focales y lectura autenticada local/productiva de cuatro tipos PASS; cinco tamaños sin overflow.
+Publicado a1d9fc12 mediante Pages 34280145252 SUCCESS; HTML/bundle/SW productivos idénticos al candidato.
 Evidencia: docs/qa/H-ADMIN-REQUEST-BANK-REFERENCE-001.md y evidence/admin-request-bank-reference-20260908.
 
 ## 2026-09-08 — H-ADMIN-REQUEST-DELETE-001

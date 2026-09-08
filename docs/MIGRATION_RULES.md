@@ -5,7 +5,7 @@
 APPLIED / VERIFIED. Modifica sólo la proyección del lector existente; firma, OID, ACL y todos los
 campos previos idénticos. Backup privado en C:/tmp/sutiapp-request-banking-20260908/before.json.
 Recovery versionado restaura exactamente la función anterior. Dry-run/recovery con ROLLBACK y
-comparación de las 52 solicitudes PASS; hashes de solicitudes, capturas y cuentas intactos.
+comparación de las 51 solicitudes de la ejecución final PASS; hashes de solicitudes, capturas y cuentas intactos.
 Pruebas de denegación bancarias usan un savepoint revertido, sin persistir cambios de permisos.
 No cambia tablas, constraints, índices, políticas, triggers ni writers de negocio.
 

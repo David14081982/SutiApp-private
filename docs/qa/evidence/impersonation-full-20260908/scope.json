@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "base": "0d2a9544f0fd37e5fe6ee00a033f531aed2c8f92",
+  "modules": 112,
+  "changedModules": [
+    "screens-admin.jsx",
+    "app.jsx"
+  ],
+  "unchangedModules": 110,
+  "bundleSha256": "139a5620c6e9d3b342cfad91f730081c876c3a6001c0e571eb39e6fa39e24885",
+  "authRepositoriesRpcRlsBusinessLogic": "UNCHANGED"
+}

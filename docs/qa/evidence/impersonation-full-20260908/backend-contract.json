@@ -1,0 +1,9 @@
+{
+  "functions": 4,
+  "sha256": "f3e58324b3bf4982ad7fd496a2e891525577f8341e125a6038802a24e6a90941",
+  "expiryPredicate": true,
+  "thirtyMinutes": true,
+  "actorSessionBinding": true,
+  "permissionBinding": true,
+  "readOnly": true
+}

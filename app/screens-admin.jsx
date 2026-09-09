@@ -107,7 +107,7 @@
   function AdminMenu({ app, onOpen, desktop, modules, header }) {
     const access=adminModuleAccess(app);
     const visibleModules=modules||access.mobileModules;
-    const heading=desktop&&header?header({title:'Panel Administrativo',sub:'Cuenta administrativa autorizada'}):React.createElement(AdminHeader, { title: 'Panel Administrativo', sub: 'Cuenta administrativa autorizada' });
+    const heading=header?header({title:'Panel Administrativo',sub:'Cuenta administrativa autorizada'}):React.createElement(AdminHeader, { title: 'Panel Administrativo', sub: 'Cuenta administrativa autorizada', onViewApp: app.viewApp });
     return React.createElement('div', { 'data-admin-view':'menu', style:desktop?{minHeight:'100%'}:undefined },
       heading,
       React.createElement('div', { className: 'su-app-scroll su-stagger', style: desktop?{padding:'26px 28px 36px'}:{ padding: 18 } },
@@ -138,7 +138,11 @@
       React.createElement('div', { style: { fontSize: 11.5, fontWeight: 700, opacity: accent ? .9 : .6, marginTop: 1 } }, label));
   }
 
-  function AdminHeader({ title, sub, onBack }) {
+  function ViewAppButton({ onClick }) {
+    return React.createElement('button', { type:'button', 'data-admin-view-app':'true', onClick, style:{minHeight:40,padding:'9px 12px',borderRadius:12,border:'1px solid #E4E4E8',background:'#fff',color:'#8A1538',fontFamily:'inherit',fontWeight:800,whiteSpace:'nowrap',cursor:'pointer',flexShrink:0} }, 'Ver app');
+  }
+
+  function AdminHeader({ title, sub, onBack, onViewApp }) {
     return React.createElement('div', { style: { background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '10px 14px 16px', position: 'relative', overflow: 'hidden' } },
       React.createElement('div', { style: { position: 'absolute', right: -40, top: -40, opacity: .12 } }, React.createElement(window.SutiSeal, { size: 150 })),
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, position: 'relative' } },
@@ -147,6 +151,7 @@
         React.createElement('div', { style: { flex: 1, minWidth: 0 } },
           React.createElement('div', { style: { fontSize: 19, fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1.1 } }, title),
           sub && React.createElement('div', { style: { fontSize: 12, fontWeight: 600, opacity: .82, marginTop: 2 } }, sub)),
+        onViewApp && React.createElement(ViewAppButton, { onClick:onViewApp }),
         React.createElement('button', { onClick: () => window.AffiliateAuth.signOut(), 'aria-label': 'Cerrar sesión', style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0 } }, React.createElement(I, { name: 'logout', size: 20, stroke: 2 }))));
   }
 
@@ -162,7 +167,7 @@
     return desktop;
   }
 
-  function AdminDesktopHeader({ title, sub, onBack }) {
+  function AdminDesktopHeader({ title, sub, onBack, onViewApp }) {
     return React.createElement('header', { 'data-admin-desktop-header':'true', style:{position:'sticky',top:0,zIndex:12,minHeight:82,display:'flex',alignItems:'center',gap:14,padding:'14px 28px',background:'rgba(255,255,255,.96)',borderBottom:'1px solid #E3E3E7',backdropFilter:'blur(14px)'} },
       onBack&&React.createElement('button',{onClick:onBack,'aria-label':'Volver al panel administrativo',style:{width:40,height:40,borderRadius:12,border:'1px solid #E4E4E8',background:'#F7F7F8',color:'#343438',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}},React.createElement(I,{name:'arrowL',size:20,stroke:2.1})),
       !onBack&&React.createElement('div',{style:{width:40,height:40,borderRadius:12,background:'#F5E9ED',color:'#8A1538',display:'grid',placeItems:'center',flexShrink:0}},React.createElement(I,{name:'shield',size:21,stroke:2.1})),
@@ -170,6 +175,7 @@
         React.createElement('div',{style:{fontSize:11,fontWeight:800,letterSpacing:'.08em',textTransform:'uppercase',color:'#8A1538',marginBottom:3}},'Panel administrativo'),
         React.createElement('h1',{tabIndex:-1,style:{fontSize:22,fontWeight:800,letterSpacing:'-.025em',lineHeight:1.12,color:'#202024',margin:0,outline:'none'}},title),
         sub&&React.createElement('div',{style:{fontSize:12.5,fontWeight:600,color:'#73737A',marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},sub)),
+      onViewApp && React.createElement(ViewAppButton, { onClick:onViewApp }),
       React.createElement('div',{style:{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 11px',borderRadius:999,background:'#E8F5EE',color:'#176B47',fontSize:11.5,fontWeight:800,whiteSpace:'nowrap'}},React.createElement(I,{name:'checkCircle',size:15,stroke:2.2}),'Acceso verificado'),
       React.createElement('button',{onClick:()=>window.AffiliateAuth.signOut(),'aria-label':'Cerrar sesión',title:'Cerrar sesión',style:{width:40,height:40,borderRadius:12,border:'1px solid #E4E4E8',background:'#fff',color:'#57575E',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}},React.createElement(I,{name:'logout',size:19,stroke:2})));
   }
@@ -487,7 +493,7 @@
     const access=adminModuleAccess(app);
     const activeModule=MODULES.find((m)=>m.id===view);
     if(activeModule&&!access.stateFor(activeModule).canView){setView('menu');return null;}
-    const headerFn = (props) => React.createElement(desktop?AdminDesktopHeader:AdminHeader, props);
+    const headerFn = (props) => React.createElement(desktop?AdminDesktopHeader:AdminHeader, Object.assign({}, props, { onViewApp:app.viewApp }));
     const openView=(id)=>{setViewContext(null);setView(id);};
     const affiliateContext=viewContext&&viewContext.from==='affiliates'?viewContext:null;
     const backFromAffiliateLink=()=>{if(affiliateContext)setView('affiliates');else openView('menu');};

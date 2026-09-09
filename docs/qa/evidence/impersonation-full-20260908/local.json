@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "target": "LOCAL",
+  "checks": {
+    "viewAppOwnContext": "PASS",
+    "startHome": "PASS",
+    "actorAndEffectiveIdentity": "PASS",
+    "backendThirtyMinuteTTL": "PASS",
+    "normalTabBar": "PASS",
+    "returnAdminKeepsSession": "PASS",
+    "viewAppSameUser": "PASS",
+    "selfDocumentsAndHistory": "PASS",
+    "mobileBanner": "PASS",
+    "refresh": "PASS",
+    "failedStopKeepsContext": "PASS",
+    "exitRestoresActor": "PASS",
+    "secondUserNoRetainedIdentity": "PASS",
+    "expiryHidesPreviousContent": "PASS",
+    "expiryRefreshRestoresAdmin": "PASS",
+    "multipleScreens": "PASS"
+  },
+  "screens": [
+    "home",
+    "financiera",
+    "convenios",
+    "historial",
+    "credencial",
+    "notifications",
+    "profile",
+    "documents",
+    "union",
+    "programs",
+    "membership",
+    "savings"
+  ],
+  "businessWrites": 0,
+  "pageErrors": [],
+  "navigationComparison": "Same normal TABS and screen visibility predicates; no credentials for separate normal-user login"
+}

@@ -315,21 +315,23 @@
   }
 
   // ---------- ROOT APP ----------
-  function ImpersonationBanner({ auth, onLoan }) {
+  function ImpersonationBanner({ auth, onAdmin }) {
     const context=auth.impersonation;
     const affiliate=auth.affiliateView||{};
     const affiliateName=affiliate.name||affiliate.displayName||affiliate.fullName||'el afiliado';
     const [busy,setBusy]=useState(false);
+    const [error,setError]=useState('');
     if(!context)return null;
-    const stop=async()=>{setBusy(true);try{await window.AdminRepository.stopImpersonation();}finally{setBusy(false);}};
-    return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize:12,fontWeight:800,zIndex:60}},
-      React.createElement('span',null,'Estás viendo SutiApp como ',affiliateName,' · actor real auditado'),
-      React.createElement('div',{style:{display:'flex',gap:6,alignItems:'center'}},
-        React.createElement('button',{type:'button',onClick:onLoan,disabled:busy,'data-assisted-loan-cta':'',style:{border:'none',borderRadius:9,padding:'7px 10px',background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},'Solicitar préstamo'),
-        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'7px 10px',background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')));
+    const stop=async()=>{setBusy(true);setError('');try{await window.AdminRepository.stopImpersonation();}catch(_){setError('No se pudo cerrar la sesión. Reintenta salir de tomar control.');}finally{setBusy(false);}};
+    return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',flexShrink:0,flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize:12,fontWeight:800,zIndex:60}},
+      React.createElement('span',null,'Estás viendo SutiApp como ',affiliateName,' · Control ',affiliate.numeroControl),
+      React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:6,alignItems:'center'}},
+        React.createElement('button',{type:'button',onClick:onAdmin,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},'Volver al Admin'),
+        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')),
+      error&&React.createElement('span',{role:'alert',style:{width:'100%'}},error));
   }
 
-  function App({ auth }) {
+  function App({ auth, initialTab }) {
     const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
     const institutional = window.useInstitutionalContent();
     const visual = window.useVisualContent();
@@ -337,8 +339,8 @@
     const admin = window.useAdminAuth();
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(auth.affiliateView ? (window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin');
-    const [stack, setStack] = useState(() => window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
+    const [tab, setTabState] = useState(initialTab || (auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
+    const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null);   // pop-ups administrables mostrándose
     const [outgoing, setOutgoing] = useState(null);       // ruta saliendo (capa de presencia · A)
@@ -398,6 +400,11 @@
       return true;
     }, [adminAuthorized,auth.affiliateView,auth.refreshContext,commitTab]);
     const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); }, []);
+    const viewApp = useCallback(() => {
+      if (!auth.affiliateView) return showToast('Esta cuenta tiene acceso administrativo. Selecciona un usuario en Tomar control para ver su app.');
+      setPopupItems(null);
+      commitTab('home');
+    }, [auth.affiliateView, commitTab, showToast]);
   const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
 
     useEffect(() => {
@@ -411,7 +418,7 @@
       return () => window.removeEventListener('hashchange', openRequest);
     }, [auth.affiliateView && auth.affiliateView.id]);
     const logout = async () => { try { await window.RequestPush.clearDevice(); } catch (_) { /* Privacy gate closes before network; Auth logout remains available. */ } return auth.signOut(); };
-    const app = { push, back, setTab, toast: showToast, openFinanceItem, logout, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
+    const app = { push, back, setTab, viewApp, toast: showToast, openFinanceItem, logout, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
 
     useEffect(()=>{
       if(adminAuthorized)return;
@@ -539,7 +546,7 @@
 
     return React.createElement(React.Fragment, null,
       React.createElement('div', { 'data-a11y': t.a11y ? 'on' : 'off', style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--header-bg, var(--grad-guinda))', overflow: 'hidden', fontSize: t.a11y ? 17 : 16, paddingTop: 'env(safe-area-inset-top)' } },
-      React.createElement(ImpersonationBanner,{auth,onLoan:()=>push('loan')}),
+      React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);setTab('admin');}}),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
         React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },
@@ -547,7 +554,7 @@
             ? React.createElement(tabScreen, { app, t })
             : React.createElement(window.ScreenLocked, { screen: tab })),
         // bottom nav
-        React.createElement(BottomNav, { tab, setTab, adminOnly: !auth.affiliateView, showAdmin: adminAuthorized }),
+        React.createElement(BottomNav, { tab, setTab, adminOnly: !auth.affiliateView || (!!auth.impersonation && tab === 'admin'), showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin') }),
         // pushed full-screen routes (capa de presencia · entrada + salida)
         // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.
         // Mientras únicamente queda la capa saliente (pointer-events:none), el
@@ -590,8 +597,39 @@
 
   function Root() {
     const auth = window.useAffiliateAuth();
+    const context = auth.impersonation;
+    const contextKey = [auth.session && auth.session.user.id, auth.affiliateView && auth.affiliateView.id, context && context.session_id].join(':');
+    const [identity, setIdentity] = useState({ key: contextKey, impersonating: !!context, initialTab: null });
+    const [, tick] = useState(0);
+    const expiresAt = context ? Date.parse(context.expires_at) : null;
+    const expired = !!context && (!Number.isFinite(expiresAt) || expiresAt <= Date.now());
+    // Backend certifies identity. A new context must never reuse the previous
+    // affiliate's component state, route parameters, dialogs or outgoing layers.
+    if (auth.phase === 'authenticated' && identity.key !== contextKey) {
+      setIdentity({ key: contextKey, impersonating: !!context, initialTab: identity.impersonating && !context ? 'admin' : context ? 'home' : null });
+    }
+    useEffect(() => {
+      if (!context) return;
+      let pending = false;
+      const refreshExpired = () => {
+        if (Number.isFinite(expiresAt) && Date.now() < expiresAt) return;
+        tick(value => value + 1);
+        if (pending) return;
+        pending = true;
+        window.AffiliateAuth.refreshContext().catch(() => {}).finally(() => { pending = false; });
+      };
+      const timer = window.setTimeout(refreshExpired, Math.max(0, (expiresAt || 0) - Date.now()) + 1);
+      window.addEventListener('focus', refreshExpired);
+      document.addEventListener('visibilitychange', refreshExpired);
+      return () => { window.clearTimeout(timer); window.removeEventListener('focus', refreshExpired); document.removeEventListener('visibilitychange', refreshExpired); };
+    }, [contextKey, expiresAt]);
+    // Expiry removes affiliate content immediately, including when offline.
+    // Only an authoritative refresh can restore a valid context.
+    if (auth.phase === 'authenticated' && expired) return React.createElement('div', { 'data-impersonation-expired': 'true', role: 'status', style: { padding: 24 } },
+      React.createElement('p', null, 'La sesión de tomar control terminó. Verificando tu contexto…'),
+      React.createElement('button', { onClick: () => window.AffiliateAuth.refreshContext().catch(() => {}), style: { padding: 12 } }, 'Reintentar'));
     return auth.phase === 'authenticated'
-      ? React.createElement(App, { auth })
+      ? React.createElement(App, { key: contextKey, auth, initialTab: identity.initialTab })
       : React.createElement(window.AffiliateLoginScreen, { auth });
   }
 

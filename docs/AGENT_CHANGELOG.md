@@ -2805,3 +2805,8 @@ H07 STATUS: BLOCKED: regresión global pública detenida por Auth400 invalid_cre
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
 
 Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.
+
+
+## H-IMPERSONATION-FULL-USER-EXPERIENCE-001 ? 2026-09-08
+
+Correcci?n focal del shell: Tomar control abre Inicio con identidad efectiva certificada y navegaci?n normal; banner persistente con nombre/control, Volver al Admin sin terminar y salida con restauraci?n de actor. Ver app disponible en ambos headers Admin. El estado de componentes se descarta al cambiar identidad; vencimiento retira contenido y exige refresh autoritativo. Auth/repositorios/RPC/RLS/permisos y negocio intactos. Build y 17 checks focales en 12 superficies PASS local; 110 de 112 m?dulos del bundle id?nticos. Sin suites globales por mandato espec?fico. Publicaci?n y evidencia: [informe de la H](qa/H-IMPERSONATION-FULL-USER-EXPERIENCE-001.md).

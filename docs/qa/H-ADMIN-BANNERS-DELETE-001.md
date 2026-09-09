@@ -53,7 +53,7 @@ Verdict: PASS.
 
 ## H-ADMIN-BANNERS-DELETE-001 RESULT
 
-Status: PASS — implementación y validación focal; la publicación se acredita en production.json y publication.json al completar el despliegue.
+Status: PASS — implementado, publicado y verificado en producción.
 Files changed: módulo visual focal; dos migraciones y dos recovery; cinco scripts focales; informe/evidencias; anexos de gobierno/changelog; Registry derivado; bundle y tokens HTML/worker.
 Source-of-truth verdict: PASS; banners original + metadata de ciclo de vida, sin copia de contenido/fallback.
 Invariant verdict: PASS; históricos, imágenes, ordenamiento, creación y activación preservados.
@@ -64,3 +64,13 @@ Legacy impact: NOT APPLICABLE; cero cambios Google/financieros.
 Unexpected files changed: ninguno en release aislado; vendors sin diff, workspace previo preservado.
 Known limitations: no confirmaciones destructivas persistentes sobre banners reales durante QA; no interfaz nueva de restauración (fuera de alcance); diagnóstico heredado del validador general del Registry explicado arriba.
 Evidence: docs/qa/evidence/admin-banners-delete-20260908/.
+
+## Publicación verificada
+
+Runtime commit: c83539da1cc83a7ba8568892a45befd5f9364100. GitHub Pages run 34318895511: SUCCESS, incluidos gates existentes de compatibilidad backend y verificación posterior. https://sutiapp.com/ sirve bundle235/worker183.
+
+production.json: sesión real, todos los banners con botón, modal/miniatura legítima/cancelación en 1440px y 390px, lista/orden/controles conservados, RPC existente y anónimo DENIED; cero errores de página y cero escrituras de negocio. publication.json: HTML, bundle y worker coinciden byte a byte con los blobs Git publicados; comparación usa LF del commit, no CRLF del checkout Windows.
+
+Registry: FRESH y lookup archive_admin_banner resuelto antes del commit runtime. Las evidencias/documentación posteriores al despliegue son cierre documental; no añaden arquitectura. La copia del workspace original conserva íntegramente sus módulos de bundle ajenos a Banners y agrega sólo los anexos de esta H a su gobierno previo.
+
+Instrucción final: publicación certificada; detenerse. No iniciar otra H.

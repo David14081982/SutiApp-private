@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "commit": "c83539da1cc83a7ba8568892a45befd5f9364100",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/34318895511",
+  "workflowConclusion": "success",
+  "site": "https://sutiapp.com/",
+  "bundleVersion": 235,
+  "workerVersion": 183,
+  "reference": "exact committed Git blobs (LF); Windows checkout may use CRLF",
+  "checks": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "faf32174c4341f6c38f3f68c70ac52e372ad5ff2439da5f968df406a6efba8f2",
+      "match": true
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "806f07370a558f96883e02e82cb347d6851fb3ec4c644be988aa88dee1be3298",
+      "match": true
+    },
+    {
+      "file": "sw.js",
+      "sha256": "b1c4cc08aba1f115177e03640a302e75c90f062cf733d2bec55674b02681916d",
+      "match": true
+    }
+  ],
+  "realBannersDeletedDuringQa": 0
+}

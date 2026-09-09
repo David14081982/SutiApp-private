@@ -29,3 +29,7 @@ Critical findings: none in the requested feature; inherited index-test diagnosti
 Owner decision: NO
 Next action: publish, verify delivery, stop.
 Response generated for Codex: YES
+
+## Delivery review
+
+APPROVED: production.json confirms the authenticated published UI at both viewports, real thumbnails, unchanged list after cancel, existing deployed RPC and anonymous denial. publication.json confirms all three public artifact hashes match commit c83539d exactly; Pages run 34318895511 succeeded. No real banner was deleted during QA. Final instruction: publication verified; stop, no next H.

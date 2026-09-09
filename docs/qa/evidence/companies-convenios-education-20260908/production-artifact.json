@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "commit": "19722ccb65d4e4f9304761a495c333ed9239736e",
+  "sites": [
+    {
+      "site": "https://sutiapp.com/",
+      "assets": [
+        {
+          "file": "app/bundle.js",
+          "sha256": "38dd01df136e4e50988a0a89ed482c6f810e359637866161bffbfac3c36267ed",
+          "matchesCommit": true
+        },
+        {
+          "file": "SutiApp.html",
+          "sha256": "efbbe8cf0ffab776782920b641dbd8a86cc8ee922591c3f9412eae4ca7a1d942",
+          "matchesCommit": true
+        },
+        {
+          "file": "sw.js",
+          "sha256": "1108b6d51e18da494456ce6ba7879e82ae6eb599528ca9ef58c9bec8281bc06b",
+          "matchesCommit": true
+        }
+      ]
+    },
+    {
+      "site": "https://david14081982.github.io/SutiApp-private/",
+      "assets": [
+        {
+          "file": "app/bundle.js",
+          "sha256": "38dd01df136e4e50988a0a89ed482c6f810e359637866161bffbfac3c36267ed",
+          "matchesCommit": true
+        },
+        {
+          "file": "SutiApp.html",
+          "sha256": "efbbe8cf0ffab776782920b641dbd8a86cc8ee922591c3f9412eae4ca7a1d942",
+          "matchesCommit": true
+        },
+        {
+          "file": "sw.js",
+          "sha256": "1108b6d51e18da494456ce6ba7879e82ae6eb599528ca9ef58c9bec8281bc06b",
+          "matchesCommit": true
+        }
+      ]
+    }
+  ],
+  "checkedAt": "2026-09-09T08:22:10.573Z"
+}

@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "migrationSha256": "65e9131cdceda8a81a7fcc5ef481979e420c1791ace129314a0f84cfb36ea8a8",
+  "before": [
+    {
+      "count": 4,
+      "hash": "c9012a86a4e9fd61bd06611fac5bbef2"
+    }
+  ],
+  "after": [
+    {
+      "count": 4,
+      "hash": "c9012a86a4e9fd61bd06611fac5bbef2"
+    }
+  ],
+  "schema": [
+    {
+      "name": "marketplace_categories_historical_source_idx",
+      "definition": "CREATE UNIQUE INDEX marketplace_categories_historical_source_idx ON public.marketplace_categories USING btree (source_snapshot_hash, source_sheet, source_row_ordinal) NULLS NOT DISTINCT WHERE (record_origin = 'HISTORICAL_IMPORT'::text)"
+    },
+    {
+      "name": "marketplace_categories_history",
+      "definition": "CHECK ((((record_origin = 'HISTORICAL_IMPORT'::text) AND (source_sheet IS NOT NULL) AND (source_row_ordinal > 1) AND (source_snapshot_hash ~ '^[A-F0-9]{64}$'::text)) OR ((record_origin = 'ADMIN_PHASE3'::text) AND (source_sheet IS NULL) AND (source_row_ordinal IS NULL) AND (source_snapshot_hash IS NULL))))"
+    },
+    {
+      "name": "marketplace_categories_image_asset_id_fkey",
+      "definition": "FOREIGN KEY (image_asset_id) REFERENCES app_assets(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "marketplace_categories_name_check",
+      "definition": "CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 100)))"
+    },
+    {
+      "name": "marketplace_categories_not_self",
+      "definition": "CHECK (((parent_id IS NULL) OR (parent_id <> id)))"
+    },
+    {
+      "name": "marketplace_categories_parent_id_fkey",
+      "definition": "FOREIGN KEY (parent_id) REFERENCES marketplace_categories(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "marketplace_categories_parent_sort_idx",
+      "definition": "CREATE INDEX marketplace_categories_parent_sort_idx ON public.marketplace_categories USING btree (parent_id, enabled, sort_order)"
+    },
+    {
+      "name": "marketplace_categories_pkey",
+      "definition": "CREATE UNIQUE INDEX marketplace_categories_pkey ON public.marketplace_categories USING btree (id)"
+    },
+    {
+      "name": "marketplace_categories_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "marketplace_categories_record_origin_check",
+      "definition": "CHECK ((record_origin = ANY (ARRAY['HISTORICAL_IMPORT'::text, 'ADMIN_PHASE3'::text])))"
+    },
+    {
+      "name": "marketplace_categories_slug_check",
+      "definition": "CHECK ((slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'::text))"
+    },
+    {
+      "name": "marketplace_categories_slug_key",
+      "definition": "CREATE UNIQUE INDEX marketplace_categories_slug_key ON public.marketplace_categories USING btree (slug)"
+    },
+    {
+      "name": "marketplace_categories_slug_key",
+      "definition": "UNIQUE (slug)"
+    },
+    {
+      "name": "marketplace_categories_sort_order_check",
+      "definition": "CHECK ((sort_order > 0))"
+    }
+  ],
+  "persistentBusinessWrites": 0
+}

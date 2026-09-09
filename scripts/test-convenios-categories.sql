@@ -1,0 +1,20 @@
+-- Invoked inside BEGIN/ROLLBACK only. No fixtures persist.
+create function pg_temp.assert_true(v boolean,m text) returns void language plpgsql as $$begin if v is distinct from true then raise exception 'ASSERT:%',m;end if;end$$;
+create function pg_temp.expect_denied(q text) returns void language plpgsql as $$begin begin execute q;exception when others then return;end;raise exception 'UNEXPECTED_ALLOWED';end$$;
+select set_config('request.jwt.claim.sub',current_setting('test.category_admin'),true),set_config('request.jwt.claim.role','authenticated',true);
+set local role authenticated;
+insert into public.marketplace_categories(id,name,slug,enabled,sort_order,record_origin) values('cd000000-0000-4000-8000-000000000001','QA Category','qa-category-rollback',true,9901,'ADMIN_PHASE3');
+select pg_temp.assert_true((select name='QA Category' from public.marketplace_categories where id='cd000000-0000-4000-8000-000000000001'),'admin create/read');
+select pg_temp.expect_denied($q$insert into public.marketplace_categories select (jsonb_populate_record(null::public.marketplace_categories,to_jsonb(c)||'{"id":"cd000000-0000-4000-8000-000000000099","slug":"qa-duplicate-history"}')).* from public.marketplace_categories c where record_origin='HISTORICAL_IMPORT' limit 1$q$);
+select pg_temp.expect_denied($q$insert into public.marketplace_categories(name,slug,enabled,sort_order,record_origin) values('Duplicate','qa-category-rollback',true,9902,'ADMIN_PHASE3')$q$);
+select set_config('test.category_company',public.save_agreement_ficha('{"company":{"display_name":"QA CATEGORY AGREEMENT","enabled":true},"profile":{"category_label":"QA Category"}}')::text,true);
+select pg_temp.assert_true(exists(select 1 from jsonb_array_elements(public.list_public_convenios()) r where r->>'id'=current_setting('test.category_company') and r->>'category_raw'='QA Category'),'agreement assignment reflected publicly');
+insert into public.educational_resources(id,title,description,resource_kind,published,sort_order,provenance,public_details) values('cd000000-0000-4000-8000-000000000002','QA CATEGORY EDUCATION','','education',true,9903,'ADMIN_PHASE2','{"category_label":"QA Category","offer":"Preserved offer"}');
+select pg_temp.assert_true(exists(select 1 from jsonb_array_elements(public.list_public_convenios()) r where r->>'id'='cd000000-0000-4000-8000-000000000002' and r->>'category_raw'='Educación' and r->'public_details'->>'category_label'='QA Category' and r->>'agreement_description'='Preserved offer'),'education umbrella plus classification, content preserved');
+update public.marketplace_categories set enabled=false where id='cd000000-0000-4000-8000-000000000001';
+select pg_temp.assert_true(exists(select 1 from public.company_benefit_profiles where company_id=current_setting('test.category_company')::uuid and category_label='QA Category'),'deactivation preserves historical assignments');
+select set_config('request.jwt.claim.sub',current_setting('test.category_user'),true);
+select pg_temp.assert_true(not exists(select 1 from public.marketplace_categories where id='cd000000-0000-4000-8000-000000000001'),'inactive category hidden to member');
+select pg_temp.expect_denied($q$insert into public.marketplace_categories(name,slug,enabled,sort_order,record_origin) values('DENIED','qa-denied',true,9904,'ADMIN_PHASE3')$q$);
+with changed as(update public.marketplace_categories set name='DENIED' where id='cd000000-0000-4000-8000-000000000001' returning id) select pg_temp.assert_true((select count(*)=0 from changed),'member cannot update global category');
+reset role;

@@ -1,0 +1,70 @@
+{
+  "status": "PASS",
+  "target": "LOCAL",
+  "viewports": [
+    {
+      "width": 390,
+      "publicRecords": 42,
+      "education": 9,
+      "plans": [
+        {
+          "name": "Esencial",
+          "max": 5,
+          "price": 299,
+          "popups": false,
+          "history": false
+        },
+        {
+          "name": "Impulso",
+          "max": 15,
+          "price": 599,
+          "popups": true,
+          "history": false
+        },
+        {
+          "name": "Destacado",
+          "max": 50,
+          "price": 999,
+          "popups": true,
+          "history": true
+        }
+      ],
+      "structure": "PASS",
+      "tutorials": "PRESERVED",
+      "paymentConfirmation": "REQUIRED"
+    },
+    {
+      "width": 1440,
+      "publicRecords": 42,
+      "education": 9,
+      "plans": [
+        {
+          "name": "Esencial",
+          "max": 5,
+          "price": 299,
+          "popups": false,
+          "history": false
+        },
+        {
+          "name": "Impulso",
+          "max": 15,
+          "price": 599,
+          "popups": true,
+          "history": false
+        },
+        {
+          "name": "Destacado",
+          "max": 50,
+          "price": 999,
+          "popups": true,
+          "history": true
+        }
+      ],
+      "structure": "PASS",
+      "tutorials": "PRESERVED",
+      "paymentConfirmation": "REQUIRED"
+    }
+  ],
+  "errors": [],
+  "businessWrites": 0
+}

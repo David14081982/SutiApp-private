@@ -2826,3 +2826,8 @@ Banner delete action with accessible confirmation, backend archive preserving hi
 Implementación focal de la proyección pública de empresas, convenios y Educación con las autoridades existentes. Se amplían ficha/Admin y acceso empresarial, límites backend, imágenes, aprobación de promociones, lectura comercial mínima y acreditación presencial. Owner autorizó crear planes/precios/límites: Esencial 299/5, Impulso 599/15+pop-ups, Destacado 999/50+pop-ups+historial; mensual MXN, anual ×12.
 
 Las migraciones 20260908000900 y 20260909000100 se probaron con ROLLBACK y recuperación antes de aplicar; hashes de filas originales preservados, sólo tres planes de configuración añadidos. Ningún pago/suscripción/Auth inventado. Candidato aislado sobre origin/main 315f9b2 excluye cambios previos de Ahorro. Evidencia/resultado y SHA de publicación se mantienen en docs/qa/H-COMPANIES-CONVENIOS-EDUCATION-UNIFICATION-001.md y su directorio de evidencia.
+
+
+## H-CONVENIOS-CATEGORIES-001 — 2026-09-09
+
+Nueva categoría junto a los selectores y administración en Convenios → Catálogos; clasificación opcional de Educación conservando su grupo general. Se reutilizan catálogo, writers y RLS existentes. Corrección focal del constraint de procedencia que bloqueaba la segunda categoría administrativa, con dry-run/recovery y hashes intactos. Formularios, duplicados, errores y filtros probados en browser aislado 390/1440; pruebas de producción y cierre en docs/qa/H-CONVENIOS-CATEGORIES-001.md. Sin cambios a Google, finanzas, Auth ni infraestructura compartida de imágenes.

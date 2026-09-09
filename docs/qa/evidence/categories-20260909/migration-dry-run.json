@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "forward": true,
+  "rls": true,
+  "recoveryExact": true,
+  "before": [
+    {
+      "count": 4,
+      "hash": "c9012a86a4e9fd61bd06611fac5bbef2"
+    }
+  ],
+  "migrationSha256": "65e9131cdceda8a81a7fcc5ef481979e420c1791ace129314a0f84cfb36ea8a8",
+  "recoverySha256": "7fb0f7d77a7e1395e39104d4fcc4fd0b48ffd0d69ed7faf00669fd79ef0d6263",
+  "persistentBusinessWrites": 0
+}

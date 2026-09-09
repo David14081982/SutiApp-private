@@ -178,7 +178,7 @@
         React.createElement(window.SectionResponsibilityPanel,{sectionKey:'marketplace',allowedActions:['read','create','update','delete','publish','order','assets'],app}),
         React.createElement('div', { style: { fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 14 } },
           'Lo que configures aquí es lo que el afiliado ve en ', React.createElement('b', { style: { color: 'var(--ink-2)' } }, '"Disponibles ahora"'), ' dentro de cada servicio. Los productos de empresas con convenio también los edita cada empresa desde su panel.'),
-        permissions.create&&React.createElement('button',{onClick:()=>setEditCat({name:'',slug:'',description:'',enabled:true,sort_order:cats.length+1}),style:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,width:'100%',height:44,borderRadius:13,border:'none',background:'var(--grad-guinda-soft)',color:'#fff',fontWeight:800,marginBottom:16}},React.createElement(I,{name:'plus',size:18}),'Nueva categoría'),
+        permissions.create&&React.createElement('button',{onClick:()=>setEditCat({name:'',slug:'',description:'',enabled:permissions.publish,sort_order:cats.length+1}),style:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,width:'100%',height:44,borderRadius:13,border:'none',background:'var(--grad-guinda-soft)',color:'#fff',fontWeight:800,marginBottom:16}},React.createElement(I,{name:'plus',size:18}),'Nueva categoría'),
         groups.map((g) => React.createElement('div', { key: g.title, style: { marginBottom: 18 } },
           React.createElement('div', { style: { fontSize: 11, fontWeight: 800, letterSpacing: '.1em', color: 'var(--ink-3)', marginBottom: 9 } }, g.title.toUpperCase()),
           React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
@@ -199,26 +199,50 @@
         editCat&&React.createElement(CategoryEditor,{item:editCat,store,onClose:()=>setEditCat(null)})));
   }
 
-  function CategoryEditor({ item, store, onClose }) {
+  const categoryNameKey=value=>String(value||'').trim().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-MX');
+  const categoryPermissions=()=>Object.fromEntries(['create','update','publish'].map(action=>[action,!!window.AdminRepository?.has('marketplace.'+action)]));
+  function CategoryEditor({ item, store, onClose, onSaved }) {
     const [d,setD]=useState(()=>Object.assign({},item));
     const [err,setErr]=useState('');
     const [busy,setBusy]=useState(false);
     const set=(key,value)=>setD((old)=>Object.assign({},old,{[key]:value}));
-    const save=async()=>{if(!String(d.name||'').trim()||!String(d.slug||'').trim()){setErr('Nombre y slug son obligatorios.');return;}try{setBusy(true);await store.saveCategory(d);onClose();}catch(_){setErr('No se pudo guardar la categoría.');setBusy(false);}};
-    return React.createElement('div',{style:{position:'absolute',inset:0,zIndex:79,background:'var(--bg)',display:'flex',flexDirection:'column'}},
+    const permissions=categoryPermissions();
+    const save=async()=>{const name=String(d.name||'').trim();if(!name){setErr('Escribe el nombre de la categoría.');return;}if(store.rawCategories().some(row=>row.id!==d.id&&categoryNameKey(row.name)===categoryNameKey(name))){setErr('Ya existe una categoría con ese nombre.');return;}const slug=d.slug||categoryNameKey(name).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'categoria-'+crypto.randomUUID();try{setBusy(true);const value={...d,name,slug};await store.saveCategory(value);onSaved&&onSaved(value);onClose();}catch(error){setErr(error.code==='23505'?'Ya existe una categoría con ese nombre.':'No se pudo guardar la categoría. Revisa tus permisos e inténtalo de nuevo.');setBusy(false);}};
+    return React.createElement('div',{'data-category-editor':'',role:'dialog','aria-label':d.id?'Editar categoría':'Nueva categoría',style:{position:'absolute',inset:0,zIndex:79,background:'var(--bg)',display:'flex',flexDirection:'column'}},
       React.createElement('div',{style:{display:'flex',alignItems:'center',padding:12,background:'var(--surface)'}},
-        React.createElement('button',{onClick:onClose,style:{width:40,height:40,border:'none',background:'none'}},React.createElement(I,{name:'close',size:22})),
+        React.createElement('button',{'aria-label':'Cerrar categoría',disabled:busy,onClick:onClose,style:{width:40,height:40,border:'none',background:'none'}},React.createElement(I,{name:'close',size:22})),
         React.createElement('b',{style:{flex:1}},d.id?'Editar categoría':'Nueva categoría')),
       React.createElement('div',{className:'su-app-scroll',style:{padding:16}},
         React.createElement('label',{style:lbl},'Nombre'),
-        React.createElement('input',{value:d.name||'',onChange:(e)=>set('name',e.target.value),style:{...inputBase,marginBottom:12}}),
-        React.createElement('label',{style:lbl},'Slug'),
-        React.createElement('input',{value:d.slug||'',onChange:(e)=>set('slug',e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')),style:{...inputBase,marginBottom:12}}),
+        React.createElement('input',{'aria-label':'Nombre de categoría',value:d.name||'',onChange:(e)=>set('name',e.target.value),style:{...inputBase,marginBottom:12}}),
         React.createElement('label',{style:lbl},'Descripción'),
-        React.createElement('textarea',{value:d.description||'',onChange:(e)=>set('description',e.target.value),style:{...inputBase,marginBottom:12}}),
-        err&&React.createElement('div',{style:{color:'#C0341D',fontWeight:700,marginBottom:10}},err),
+        React.createElement('textarea',{'aria-label':'Descripción de categoría',value:d.description||'',onChange:(e)=>set('description',e.target.value),style:{...inputBase,marginBottom:12}}),
+        permissions.publish&&React.createElement('label',{style:{...lbl,marginBottom:14}},React.createElement('input',{type:'checkbox',checked:d.enabled!==false,onChange:e=>set('enabled',e.target.checked)}),' Categoría activa'),
+        err&&React.createElement('div',{role:'alert',style:{color:'#C0341D',fontWeight:700,marginBottom:10}},err),
         React.createElement(window.Btn,{full:true,icon:'check',disabled:busy,onClick:save},busy?'Guardando…':'Guardar')));
   }
 
-  Object.assign(window, { MarketplaceModule, CatalogEditorList });
+  function CommercialCategoryField({value,onChange,label='Categoría',allowCreate=true}){
+    const store=window.useCatalogStore(),state=store.state(),permissions=categoryPermissions();
+    const[creating,setCreating]=useState(false);
+    const categories=store.categories().filter(c=>c.enabled!==false),current=String(value||'');
+    return React.createElement('div',{'data-commercial-category-field':'',style:{minWidth:0,marginBottom:14}},
+      React.createElement('label',{style:lbl},label,React.createElement('select',{'aria-label':label,value:current,disabled:state.phase!=='loaded',onChange:e=>onChange(e.target.value),style:{...inputBase,marginTop:6}},React.createElement('option',{value:''},'Sin categoría'),current&&!categories.some(c=>c.label===current)&&React.createElement('option',{value:current},current),categories.map(c=>React.createElement('option',{key:c.id,value:c.label},c.label)))),
+      state.phase==='loading'&&React.createElement('div',{role:'status',style:{fontSize:12,marginTop:6}},'Cargando categorías…'),
+      state.phase==='error'&&React.createElement('div',{role:'alert'},'No pudimos cargar las categorías. ',React.createElement('button',{onClick:store.retry},'Reintentar categorías')),
+      allowCreate&&permissions.create&&React.createElement('button',{type:'button',disabled:state.phase!=='loaded',onClick:()=>setCreating(true),style:{border:'none',background:'none',color:'var(--guinda)',fontWeight:800,padding:'10px 0',cursor:'pointer'}},'+ Nueva categoría'),
+      creating&&React.createElement(CategoryEditor,{item:{name:'',enabled:permissions.publish,sort_order:store.rawCategories().length+1},store,onClose:()=>setCreating(false),onSaved:row=>{if(row.enabled!==false)onChange(row.name);}}));
+  }
+  function CommercialCategoriesManager(){
+    const store=window.useCatalogStore(),state=store.state(),permissions=categoryPermissions();const[editing,setEditing]=useState(null);
+    return React.createElement('section',{'data-commercial-categories':'',style:{marginBottom:22}},
+      React.createElement('h3',{style:{fontSize:16,margin:'0 0 10px'}},'Categorías comerciales y educativas'),
+      React.createElement('p',{style:{fontSize:12.5,color:'var(--ink-3)',lineHeight:1.5}},'Categorías disponibles para empresas, convenios, instituciones educativas y Marketplace.'),
+      state.phase==='error'?React.createElement('div',{role:'alert'},'No pudimos cargar las categorías. ',React.createElement('button',{onClick:store.retry},'Reintentar categorías')):state.phase!=='loaded'?React.createElement('div',{role:'status'},'Cargando categorías…'):React.createElement('div',null,
+        permissions.create&&React.createElement(window.Btn,{onClick:()=>setEditing({name:'',enabled:permissions.publish,sort_order:store.rawCategories().length+1})},'Nueva categoría'),
+        store.rawCategories().filter(c=>!c.parent_id).map(c=>React.createElement('div',{key:c.id,style:{display:'flex',alignItems:'center',gap:10,background:'var(--surface)',padding:12,borderRadius:13,marginTop:9}},React.createElement('span',{style:{flex:1}},c.name,c.enabled===false?' · Inactiva':''),permissions.update&&React.createElement('button',{'aria-label':'Editar categoría '+c.name,onClick:()=>setEditing(c),style:{border:'none',background:'var(--surface-2)',padding:10,borderRadius:10,color:'var(--guinda)',fontWeight:800}},'Editar'))),
+        !permissions.create&&React.createElement('p',{style:{fontSize:12}},'El administrador del catálogo puede agregar categorías.')),
+      editing&&React.createElement(CategoryEditor,{item:editing,store,onClose:()=>setEditing(null)}));
+  }
+  Object.assign(window, { MarketplaceModule, CatalogEditorList, CommercialCategoryField, CommercialCategoriesManager });
 })();

@@ -21,7 +21,7 @@
     const items = store.conveniosAll();
     const ads = store.anunciosAll();
 
-    const seg = (id, label) => (id==='anuncios'&&!app.admin.has('banners.read'))||(id==='catalogos'&&!app.admin.has('segmentation.read'))?null:React.createElement('button', { onClick: () => setTab(id), style: { flex: 1, height: 38, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: tab === id ? 'var(--surface)' : 'transparent', color: tab === id ? 'var(--guinda)' : 'var(--ink-3)', boxShadow: tab === id ? 'var(--neo-sm)' : 'none' } }, label);
+    const seg = (id, label) => (id==='anuncios'&&!app.admin.has('banners.read'))?null:React.createElement('button', { onClick: () => setTab(id), style: { flex: 1, height: 38, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: tab === id ? 'var(--surface)' : 'transparent', color: tab === id ? 'var(--guinda)' : 'var(--ink-3)', boxShadow: tab === id ? 'var(--neo-sm)' : 'none' } }, label);
 
     return React.createElement('div', null,
       header({ title: 'Convenios y beneficios', sub: items.length + ' convenios · ' + items.filter((c) => c.visible !== false).length + ' visibles', onBack }),
@@ -33,7 +33,7 @@
           app.admin.has('marketplace.update')&&app.admin.has('marketplace.publish')&&seg('promotions','Promociones')),
 
         tab === 'promotions' ? React.createElement(CompanyPromotionReview,{app}) : tab === 'catalogos'
-          ? React.createElement(CatalogsManager, { store, P })
+          ? React.createElement(React.Fragment,null,React.createElement(window.CommercialCategoriesManager),app.admin.has('segmentation.read')&&React.createElement(CatalogsManager, { store, P }))
           : tab === 'anuncios'
           ? React.createElement('div', null,
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 } },
@@ -192,7 +192,6 @@
     const upload=async(file,role)=>{setBusy(true);setError('');try{let id=d.id;if(!id){id=await store.saveConvenio({...d,visible:false});set({id});}const asset=await window.ConveniosRepository.uploadImage(file,id);await window.ConveniosRepository.attachImage(id,asset.id,role);set({id,[role+'_url']:asset.url});}catch(_){setError('No fue posible guardar la imagen.');}finally{setBusy(false);}};
     const del = () => { store.removeConvenio(d.id); onClose(); };
     const lbl = { fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 7 };
-    const cats = (window.catalogStore && window.catalogStore.categories ? window.catalogStore.categories() : []);
 
     return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 72, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)', flexShrink: 0 } },
@@ -205,11 +204,7 @@
         [['Sobre la empresa','description'],['Descripción del convenio','agreement_description'],['Condiciones y requisitos','conditions'],['Teléfono','phone_raw'],['WhatsApp','whatsapp_raw'],['Correo','email_raw'],['Sitio web','website_url']].map(([label,key])=>React.createElement('label',{key,style:{...lbl,marginBottom:14}},label,React.createElement(['description','agreement_description','conditions'].includes(key)?'textarea':'input',{value:d[key]||'',onChange:e=>set({[key]:e.target.value}),style:inputBase}))),
         [['Logo','logo'],['Portada','cover']].map(([label,role])=>React.createElement('label',{key:role,style:{...lbl,marginBottom:14}},label,d[role+'_url']&&React.createElement('img',{src:d[role+'_url'],alt:label,style:{width:'100%',height:110,objectFit:'contain'}}),React.createElement('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled:busy||!d.name.trim(),onChange:e=>{if(e.target.files[0])upload(e.target.files[0],role);e.target.value='';}}))),
         React.createElement('div', { style: { display: 'flex', gap: 12, marginBottom: 16 } },
-          React.createElement('div', { style: { flex: 1 } }, React.createElement('label', { style: lbl }, 'Categoría'),
-            React.createElement('div', { style: { position: 'relative' } },
-              React.createElement('select', { value: d.cat, onChange: (e) => set({ cat: e.target.value }), style: { ...inputBase, appearance: 'none', WebkitAppearance: 'none', paddingRight: 36, cursor: 'pointer' } },
-                cats.map((c) => React.createElement('option', { key: c.id, value: c.label }, c.label))),
-              React.createElement(I, { name: 'chevD', size: 18, stroke: 2.2, style: { position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' } }))),
+          React.createElement('div', { style: { flex: 1,minWidth:0 } },React.createElement(window.CommercialCategoryField,{value:d.cat,onChange:cat=>set({cat})})),
           React.createElement('div', { style: { width: 100 } }, React.createElement('label', { style: lbl }, '% Desc.'), React.createElement('input', { type: 'number', min: 0, max: 100, value: d.disc, onChange: (e) => set({ disc: parseInt(e.target.value || '0', 10) }), style: inputBase }))),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Dirección / cobertura'), React.createElement('input', { value: d.addr, placeholder: 'Ej. 120 sucursales en Sonora', onChange: (e) => set({ addr: e.target.value }), style: inputBase })),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Etiquetas (separadas por coma)'), React.createElement('input', { value: (d.tags || []).join(', '), placeholder: 'Medicamento, Consulta', onChange: (e) => set({ tags: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }), style: inputBase })),

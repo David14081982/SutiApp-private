@@ -18795,7 +18795,7 @@ Object.assign(window, {
         padding: '4px 10px',
         borderRadius: 999
       }
-    }, company.category_raw))));
+    }, company.source_kind === 'education' && company.public_details?.category_label ? company.category_raw + ' / ' + company.public_details.category_label : company.category_raw))));
   }
   function LoadingLayout({
     app
@@ -18880,10 +18880,11 @@ Object.assign(window, {
         }
       }, 'Reintentar')
     }));
+    const classifications = c => [c.category_raw, c.source_kind === 'education' ? c.public_details?.category_label : null].map(v => String(v || '').trim()).filter(Boolean);
     const base = directory.rows;
-    const cats = ['Todos', ...Array.from(new Set(base.map(c => String(c.category_raw || '').trim()).filter(Boolean)))];
+    const cats = ['Todos', ...Array.from(new Set(base.flatMap(classifications)))];
     const needle = q.trim().toLocaleLowerCase('es-MX');
-    const list = base.filter(c => (cat === 'Todos' || c.category_raw === cat) && (!needle || [c.display_name, c.description, c.category_raw].concat(catalog.byCompany(c.id).map(p => p.nombre)).some(x => String(x || '').toLocaleLowerCase('es-MX').includes(needle))));
+    const list = base.filter(c => (cat === 'Todos' || classifications(c).includes(cat)) && (!needle || [c.display_name, c.description, ...classifications(c)].concat(catalog.byCompany(c.id).map(p => p.nombre)).some(x => String(x || '').toLocaleLowerCase('es-MX').includes(needle))));
     const isFav = c => c.source_kind === 'education' ? directory.favorites.includes(c.id) : catalog.isCompanyFavorite(c.id);
     const toggleFav = c => window.ConveniosRepository.favorite(c, !isFav(c)).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
     const selectCat = value => {
@@ -19134,7 +19135,7 @@ Object.assign(window, {
       }
     }, React.createElement(window.Pill, {
       tone: 'guinda'
-    }, company.category_raw)), React.createElement('div', {
+    }, company.source_kind === 'education' && company.public_details?.category_label ? company.category_raw + ' / ' + company.public_details.category_label : company.category_raw)), React.createElement('div', {
       style: {
         marginTop: 18
       }
@@ -32457,7 +32458,7 @@ Object.assign(window, {
     };
     const items = store.conveniosAll();
     const ads = store.anunciosAll();
-    const seg = (id, label) => id === 'anuncios' && !app.admin.has('banners.read') || id === 'catalogos' && !app.admin.has('segmentation.read') ? null : React.createElement('button', {
+    const seg = (id, label) => id === 'anuncios' && !app.admin.has('banners.read') ? null : React.createElement('button', {
       onClick: () => setTab(id),
       style: {
         flex: 1,
@@ -32497,10 +32498,10 @@ Object.assign(window, {
       }
     }, seg('list', 'Convenios'), seg('anuncios', 'Anuncios'), seg('catalogos', 'Catálogos'), app.admin.has('marketplace.update') && app.admin.has('marketplace.publish') && seg('promotions', 'Promociones')), tab === 'promotions' ? React.createElement(CompanyPromotionReview, {
       app
-    }) : tab === 'catalogos' ? React.createElement(CatalogsManager, {
+    }) : tab === 'catalogos' ? React.createElement(React.Fragment, null, React.createElement(window.CommercialCategoriesManager), app.admin.has('segmentation.read') && React.createElement(CatalogsManager, {
       store,
       P
-    }) : tab === 'anuncios' ? React.createElement('div', null, React.createElement('div', {
+    })) : tab === 'anuncios' ? React.createElement('div', null, React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -33346,7 +33347,6 @@ Object.assign(window, {
       display: 'block',
       marginBottom: 7
     };
-    const cats = window.catalogStore && window.catalogStore.categories ? window.catalogStore.categories() : [];
     return React.createElement('div', {
       style: {
         position: 'absolute',
@@ -33456,42 +33456,15 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        flex: 1
+        flex: 1,
+        minWidth: 0
       }
-    }, React.createElement('label', {
-      style: lbl
-    }, 'Categoría'), React.createElement('div', {
-      style: {
-        position: 'relative'
-      }
-    }, React.createElement('select', {
+    }, React.createElement(window.CommercialCategoryField, {
       value: d.cat,
-      onChange: e => set({
-        cat: e.target.value
-      }),
-      style: {
-        ...inputBase,
-        appearance: 'none',
-        WebkitAppearance: 'none',
-        paddingRight: 36,
-        cursor: 'pointer'
-      }
-    }, cats.map(c => React.createElement('option', {
-      key: c.id,
-      value: c.label
-    }, c.label))), React.createElement(I, {
-      name: 'chevD',
-      size: 18,
-      stroke: 2.2,
-      style: {
-        position: 'absolute',
-        right: 11,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: 'var(--ink-3)',
-        pointerEvents: 'none'
-      }
-    }))), React.createElement('div', {
+      onChange: cat => set({
+        cat
+      })
+    })), React.createElement('div', {
       style: {
         width: 100
       }
@@ -47444,7 +47417,17 @@ Object.assign(window, {
         padding: 16,
         flex: 1
       }
-    }, kind === 'banners' && field('Ubicación', 'placement', form, setForm, [['home', 'Inicio'], ['marketplace', 'Marketplace']]), kind === 'companies' && field('Nombre visible', 'display_name', form, setForm), kind === 'directory' && field('Nombre', 'name', form, setForm), kind === 'directory' && field('Cargo', 'role', form, setForm), kind !== 'companies' && kind !== 'programs' && kind !== 'directory' && field('Título', 'title', form, setForm), kind === 'programs' && field('Nombre del programa', 'category', form, setForm), kind === 'popups' && field('Contenido', 'body', form, setForm), kind !== 'popups' && kind !== 'directory' && field('Descripción', 'description', form, setForm), (kind === 'banners' || kind === 'popups') && field('Texto de acción', 'action_label', form, setForm), (kind === 'banners' || kind === 'popups') && field('URL de acción', 'action_url', form, setForm), kind === 'documents' && field('Tipo', 'kind', form, setForm, [['download', 'Descarga'], ['form', 'Formato'], ['regulation', 'Norma o reglamento']].filter(option => !filterKinds || filterKinds.includes(option[0]))), kind === 'education' && field('Tipo', 'resource_kind', form, setForm, [['education', 'Información educativa'], ['tutorial', 'Tutorial']]), kind === 'education' && field('Enlace HTTPS', 'external_url', form, setForm), kind === 'education' && form.resource_kind === 'education' && React.createElement('div', null, [['Ubicación', 'address'], ['Oferta o beneficio', 'offer'], ['Condiciones y requisitos', 'conditions'], ['Teléfono', 'phone'], ['WhatsApp', 'whatsapp'], ['Descuento (%)', 'discount_percent']].map(([label, key]) => React.createElement('label', {
+    }, kind === 'banners' && field('Ubicación', 'placement', form, setForm, [['home', 'Inicio'], ['marketplace', 'Marketplace']]), kind === 'companies' && field('Nombre visible', 'display_name', form, setForm), kind === 'directory' && field('Nombre', 'name', form, setForm), kind === 'directory' && field('Cargo', 'role', form, setForm), kind !== 'companies' && kind !== 'programs' && kind !== 'directory' && field('Título', 'title', form, setForm), kind === 'programs' && field('Nombre del programa', 'category', form, setForm), kind === 'popups' && field('Contenido', 'body', form, setForm), kind !== 'popups' && kind !== 'directory' && field('Descripción', 'description', form, setForm), (kind === 'banners' || kind === 'popups') && field('Texto de acción', 'action_label', form, setForm), (kind === 'banners' || kind === 'popups') && field('URL de acción', 'action_url', form, setForm), kind === 'documents' && field('Tipo', 'kind', form, setForm, [['download', 'Descarga'], ['form', 'Formato'], ['regulation', 'Norma o reglamento']].filter(option => !filterKinds || filterKinds.includes(option[0]))), kind === 'education' && field('Tipo', 'resource_kind', form, setForm, [['education', 'Información educativa'], ['tutorial', 'Tutorial']]), kind === 'education' && field('Enlace HTTPS', 'external_url', form, setForm), kind === 'education' && form.resource_kind === 'education' && React.createElement('div', null, React.createElement(window.CommercialCategoryField, {
+      label: 'Categoría de la institución',
+      value: form.public_details?.category_label || '',
+      onChange: value => setForm(old => ({
+        ...old,
+        public_details: {
+          ...old.public_details,
+          category_label: value
+        }
+      }))
+    }), [['Ubicación', 'address'], ['Oferta o beneficio', 'offer'], ['Condiciones y requisitos', 'conditions'], ['Teléfono', 'phone'], ['WhatsApp', 'whatsapp'], ['Descuento (%)', 'discount_percent']].map(([label, key]) => React.createElement('label', {
       key,
       style: labelStyle
     }, label, React.createElement('input', {
@@ -47483,7 +47466,14 @@ Object.assign(window, {
       accept: 'image/png,image/jpeg,image/webp,image/gif',
       busy,
       onFile: file => upload('cover_asset_id', file, 'app-assets', 'EDUCATIONAL_IMAGE')
-    }), kind === 'companies' && [['Categoría comercial', 'category_raw'], ['Ubicación', 'address_raw'], ['Teléfono', 'phone_raw'], ['WhatsApp', 'whatsapp_raw'], ['Correo', 'email_raw'], ['Sitio web', 'website_url']].map(([label, key]) => field(label, key, form, setForm)), kind !== 'documents' && kind !== 'minutes' && window.AdminRepository.has(sectionKey + '.assets') && React.createElement(AssetPicker, {
+    }), kind === 'companies' && React.createElement(window.CommercialCategoryField, {
+      label: 'Categoría comercial',
+      value: form.category_raw || '',
+      onChange: value => setForm(old => ({
+        ...old,
+        category_raw: value
+      }))
+    }), kind === 'companies' && [['Ubicación', 'address_raw'], ['Teléfono', 'phone_raw'], ['WhatsApp', 'whatsapp_raw'], ['Correo', 'email_raw'], ['Sitio web', 'website_url']].map(([label, key]) => field(label, key, form, setForm)), kind !== 'documents' && kind !== 'minutes' && window.AdminRepository.has(sectionKey + '.assets') && React.createElement(AssetPicker, {
       label: kind === 'companies' ? 'Logo' : 'Imagen',
       url: imageUrl,
       accept: 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml',
@@ -61162,7 +61152,7 @@ Object.assign(window, {
         name: '',
         slug: '',
         description: '',
-        enabled: true,
+        enabled: permissions.publish,
         sort_order: cats.length + 1
       }),
       style: {
@@ -61282,10 +61272,13 @@ Object.assign(window, {
       onClose: () => setEditCat(null)
     })));
   }
+  const categoryNameKey = value => String(value || '').trim().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX');
+  const categoryPermissions = () => Object.fromEntries(['create', 'update', 'publish'].map(action => [action, !!window.AdminRepository?.has('marketplace.' + action)]));
   function CategoryEditor({
     item,
     store,
-    onClose
+    onClose,
+    onSaved
   }) {
     const [d, setD] = useState(() => Object.assign({}, item));
     const [err, setErr] = useState('');
@@ -61293,21 +61286,37 @@ Object.assign(window, {
     const set = (key, value) => setD(old => Object.assign({}, old, {
       [key]: value
     }));
+    const permissions = categoryPermissions();
     const save = async () => {
-      if (!String(d.name || '').trim() || !String(d.slug || '').trim()) {
-        setErr('Nombre y slug son obligatorios.');
+      const name = String(d.name || '').trim();
+      if (!name) {
+        setErr('Escribe el nombre de la categoría.');
         return;
       }
+      if (store.rawCategories().some(row => row.id !== d.id && categoryNameKey(row.name) === categoryNameKey(name))) {
+        setErr('Ya existe una categoría con ese nombre.');
+        return;
+      }
+      const slug = d.slug || categoryNameKey(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'categoria-' + crypto.randomUUID();
       try {
         setBusy(true);
-        await store.saveCategory(d);
+        const value = {
+          ...d,
+          name,
+          slug
+        };
+        await store.saveCategory(value);
+        onSaved && onSaved(value);
         onClose();
-      } catch (_) {
-        setErr('No se pudo guardar la categoría.');
+      } catch (error) {
+        setErr(error.code === '23505' ? 'Ya existe una categoría con ese nombre.' : 'No se pudo guardar la categoría. Revisa tus permisos e inténtalo de nuevo.');
         setBusy(false);
       }
     };
     return React.createElement('div', {
+      'data-category-editor': '',
+      role: 'dialog',
+      'aria-label': d.id ? 'Editar categoría' : 'Nueva categoría',
       style: {
         position: 'absolute',
         inset: 0,
@@ -61324,6 +61333,8 @@ Object.assign(window, {
         background: 'var(--surface)'
       }
     }, React.createElement('button', {
+      'aria-label': 'Cerrar categoría',
+      disabled: busy,
       onClick: onClose,
       style: {
         width: 40,
@@ -61346,6 +61357,7 @@ Object.assign(window, {
     }, React.createElement('label', {
       style: lbl
     }, 'Nombre'), React.createElement('input', {
+      'aria-label': 'Nombre de categoría',
       value: d.name || '',
       onChange: e => set('name', e.target.value),
       style: {
@@ -61354,23 +61366,25 @@ Object.assign(window, {
       }
     }), React.createElement('label', {
       style: lbl
-    }, 'Slug'), React.createElement('input', {
-      value: d.slug || '',
-      onChange: e => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')),
-      style: {
-        ...inputBase,
-        marginBottom: 12
-      }
-    }), React.createElement('label', {
-      style: lbl
     }, 'Descripción'), React.createElement('textarea', {
+      'aria-label': 'Descripción de categoría',
       value: d.description || '',
       onChange: e => set('description', e.target.value),
       style: {
         ...inputBase,
         marginBottom: 12
       }
-    }), err && React.createElement('div', {
+    }), permissions.publish && React.createElement('label', {
+      style: {
+        ...lbl,
+        marginBottom: 14
+      }
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: d.enabled !== false,
+      onChange: e => set('enabled', e.target.checked)
+    }), ' Categoría activa'), err && React.createElement('div', {
+      role: 'alert',
       style: {
         color: '#C0341D',
         fontWeight: 700,
@@ -61383,9 +61397,151 @@ Object.assign(window, {
       onClick: save
     }, busy ? 'Guardando…' : 'Guardar')));
   }
+  function CommercialCategoryField({
+    value,
+    onChange,
+    label = 'Categoría',
+    allowCreate = true
+  }) {
+    const store = window.useCatalogStore(),
+      state = store.state(),
+      permissions = categoryPermissions();
+    const [creating, setCreating] = useState(false);
+    const categories = store.categories().filter(c => c.enabled !== false),
+      current = String(value || '');
+    return React.createElement('div', {
+      'data-commercial-category-field': '',
+      style: {
+        minWidth: 0,
+        marginBottom: 14
+      }
+    }, React.createElement('label', {
+      style: lbl
+    }, label, React.createElement('select', {
+      'aria-label': label,
+      value: current,
+      disabled: state.phase !== 'loaded',
+      onChange: e => onChange(e.target.value),
+      style: {
+        ...inputBase,
+        marginTop: 6
+      }
+    }, React.createElement('option', {
+      value: ''
+    }, 'Sin categoría'), current && !categories.some(c => c.label === current) && React.createElement('option', {
+      value: current
+    }, current), categories.map(c => React.createElement('option', {
+      key: c.id,
+      value: c.label
+    }, c.label)))), state.phase === 'loading' && React.createElement('div', {
+      role: 'status',
+      style: {
+        fontSize: 12,
+        marginTop: 6
+      }
+    }, 'Cargando categorías…'), state.phase === 'error' && React.createElement('div', {
+      role: 'alert'
+    }, 'No pudimos cargar las categorías. ', React.createElement('button', {
+      onClick: store.retry
+    }, 'Reintentar categorías')), allowCreate && permissions.create && React.createElement('button', {
+      type: 'button',
+      disabled: state.phase !== 'loaded',
+      onClick: () => setCreating(true),
+      style: {
+        border: 'none',
+        background: 'none',
+        color: 'var(--guinda)',
+        fontWeight: 800,
+        padding: '10px 0',
+        cursor: 'pointer'
+      }
+    }, '+ Nueva categoría'), creating && React.createElement(CategoryEditor, {
+      item: {
+        name: '',
+        enabled: permissions.publish,
+        sort_order: store.rawCategories().length + 1
+      },
+      store,
+      onClose: () => setCreating(false),
+      onSaved: row => {
+        if (row.enabled !== false) onChange(row.name);
+      }
+    }));
+  }
+  function CommercialCategoriesManager() {
+    const store = window.useCatalogStore(),
+      state = store.state(),
+      permissions = categoryPermissions();
+    const [editing, setEditing] = useState(null);
+    return React.createElement('section', {
+      'data-commercial-categories': '',
+      style: {
+        marginBottom: 22
+      }
+    }, React.createElement('h3', {
+      style: {
+        fontSize: 16,
+        margin: '0 0 10px'
+      }
+    }, 'Categorías comerciales y educativas'), React.createElement('p', {
+      style: {
+        fontSize: 12.5,
+        color: 'var(--ink-3)',
+        lineHeight: 1.5
+      }
+    }, 'Categorías disponibles para empresas, convenios, instituciones educativas y Marketplace.'), state.phase === 'error' ? React.createElement('div', {
+      role: 'alert'
+    }, 'No pudimos cargar las categorías. ', React.createElement('button', {
+      onClick: store.retry
+    }, 'Reintentar categorías')) : state.phase !== 'loaded' ? React.createElement('div', {
+      role: 'status'
+    }, 'Cargando categorías…') : React.createElement('div', null, permissions.create && React.createElement(window.Btn, {
+      onClick: () => setEditing({
+        name: '',
+        enabled: permissions.publish,
+        sort_order: store.rawCategories().length + 1
+      })
+    }, 'Nueva categoría'), store.rawCategories().filter(c => !c.parent_id).map(c => React.createElement('div', {
+      key: c.id,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        background: 'var(--surface)',
+        padding: 12,
+        borderRadius: 13,
+        marginTop: 9
+      }
+    }, React.createElement('span', {
+      style: {
+        flex: 1
+      }
+    }, c.name, c.enabled === false ? ' · Inactiva' : ''), permissions.update && React.createElement('button', {
+      'aria-label': 'Editar categoría ' + c.name,
+      onClick: () => setEditing(c),
+      style: {
+        border: 'none',
+        background: 'var(--surface-2)',
+        padding: 10,
+        borderRadius: 10,
+        color: 'var(--guinda)',
+        fontWeight: 800
+      }
+    }, 'Editar'))), !permissions.create && React.createElement('p', {
+      style: {
+        fontSize: 12
+      }
+    }, 'El administrador del catálogo puede agregar categorías.')), editing && React.createElement(CategoryEditor, {
+      item: editing,
+      store,
+      onClose: () => setEditing(null)
+    }));
+  }
   Object.assign(window, {
     MarketplaceModule,
-    CatalogEditorList
+    CatalogEditorList,
+    CommercialCategoryField,
+    CommercialCategoriesManager
   });
 })();
 })();
@@ -64127,10 +64283,11 @@ Object.assign(window, {
       label: 'Razón social',
       value: d.razon,
       onChange: v => set('razon', v)
-    }), Field({
+    }), React.createElement(window.CommercialCategoryField, {
       label: 'Giro',
       value: d.giro,
-      onChange: v => set('giro', v)
+      onChange: v => set('giro', v),
+      allowCreate: false
     }), Field({
       label: 'Descripción',
       value: d.desc,

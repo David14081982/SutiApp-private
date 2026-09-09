@@ -369,3 +369,8 @@ Esta sección actualiza los conteos y límites históricos Phase 2/3/6 de la tab
 | Favoritos educativos | educational_resource_favorites con FK al recurso original | Auth sólo sus vínculos; no autoridad de contenido. |
 
 La memoria de Convenios/companyStore es derivada, se invalida al guardar, cambiar contexto o recargar; error visible sin DATA/mock/localStorage. Publicidad aprobada conserva popups/banners y sus reglas actuales. Recovery técnico nunca elimina actividad comercial posterior.
+
+
+## H-CONVENIOS-CATEGORIES-001 — categorías administrables
+
+marketplace_categories conserva la autoridad compartida de categorías comerciales para Marketplace, Empresas y Convenios. Admin reutiliza el mismo writer y permisos desde los selectores y Convenios → Catálogos. educational_resources.public_details.category_label guarda la clasificación específica opcional de una institución; resource_kind sigue definiendo Educación y nunca pierde ese filtro general. Asignaciones de empresas/convenios conservan category_raw/category_label históricos. Renombrar o desactivar una categoría no reescribe las fichas existentes. No hay listas paralelas ni categorías laborales mezcladas. Migración 20260909000200 corrige el constraint residual que limitaba las altas ADMIN_PHASE3 a una fila; el índice histórico conserva unicidad y NULLS NOT DISTINCT, sin modificar filas.

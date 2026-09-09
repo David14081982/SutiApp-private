@@ -44,7 +44,7 @@
         SecTitle('handshake', 'Datos generales'),
         Field({ label: 'Nombre comercial', value: d.name, onChange: (v) => set('name', v) }),
         Field({ label: 'Razón social', value: d.razon, onChange: (v) => set('razon', v) }),
-        Field({ label: 'Giro', value: d.giro, onChange: (v) => set('giro', v) }),
+        React.createElement(window.CommercialCategoryField,{label:'Giro',value:d.giro,onChange:v=>set('giro',v),allowCreate:false}),
         Field({ label: 'Descripción', value: d.desc, onChange: (v) => set('desc', v), area: true }),
         Field({ label: 'Historia', value: d.historia, onChange: (v) => set('historia', v), area: true, ph: 'Reseña de la empresa…' }),
         SecTitle('image', 'Galería de imágenes'),

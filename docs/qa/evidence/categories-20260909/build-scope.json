@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "baseline": "1ac2ccbe30b9407cc02c37a1c48491b574fa015d",
+  "runtimeFiles": [
+    "app/screens-admin-catalogo.jsx",
+    "app/screens-admin-convenios.jsx",
+    "app/screens-admin-visual-crud.jsx",
+    "app/screens-company-modules.jsx",
+    "app/screens-convenios.jsx",
+    "app/bundle.js",
+    "SutiApp.html",
+    "sw.js",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/AGENT_CHANGELOG.md"
+  ],
+  "modules": 113,
+  "originalWorkspaceModules": 116,
+  "pagesFiles": 23,
+  "bundleSha256": "72a56fddfde8b2ff2b050ec27a549875cd9a5c1a555f305ba60a363db774793a",
+  "bundleVersion": 237,
+  "workerVersion": 185,
+  "globalImageRegression": "NOT APPLICABLE: focal category UI and category uniqueness only; no shared repository/helper/Auth/viewer/asset/runtime infrastructure changes"
+}

@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "schemaChanges": 0,
+  "persistentBusinessWrites": 0,
+  "checks": [
+    "admin create/read",
+    "duplicate slug rejected",
+    "agreement category public",
+    "education umbrella plus specific category",
+    "deactivation preserves assignments",
+    "member create/update denied"
+  ],
+  "inventory": [
+    {
+      "domain": "marketplace_categories",
+      "count": 4,
+      "hash": "c9012a86a4e9fd61bd06611fac5bbef2"
+    },
+    {
+      "domain": "companies",
+      "count": 33,
+      "hash": "a3c7dc4adfe3077cdc18d4fb74385aab"
+    },
+    {
+      "domain": "company_benefit_profiles",
+      "count": 1,
+      "hash": "33e9f235d0f87b212f67960894aa388d"
+    },
+    {
+      "domain": "educational_resources",
+      "count": 32,
+      "hash": "bb197d0aed48a26ee42a6aaad5fb7b91"
+    },
+    {
+      "domain": "admin_assignments",
+      "count": 5,
+      "hash": "7b3bfba3ceb11ee504fcb9dbf2694b83"
+    }
+  ]
+}

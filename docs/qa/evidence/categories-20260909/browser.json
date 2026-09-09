@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "target": "http://localhost:8080/SutiApp.html",
+  "mode": "ISOLATED_BROWSER_WRITES",
+  "viewports": [
+    {
+      "width": 390,
+      "categoryManager": true,
+      "inlineCreate": "CREATE_ERROR_RETRY_DUPLICATE_PASS",
+      "parentFormPreserved": true,
+      "education": "SAVE_AND_FILTER_PASS"
+    },
+    {
+      "width": 1440,
+      "categoryManager": true,
+      "inlineCreate": "CREATE_ERROR_RETRY_DUPLICATE_PASS",
+      "parentFormPreserved": true,
+      "education": "SAVE_AND_FILTER_PASS"
+    }
+  ],
+  "productionBusinessWrites": 0
+}

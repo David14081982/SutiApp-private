@@ -328,3 +328,7 @@ permission-checked preview and request-delete. The Edge coordinates prepare -> v
 -> transactional finish. program_request_deletions is private durable audit/recovery evidence, never a
 runtime substitute. Dossier/assets keep their existing authority, records and files. Google A:AG is a
 derived request register; its technical tombstone prevents resurrection. No financial writer changes.
+
+## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
+
+Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.

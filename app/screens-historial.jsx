@@ -38,6 +38,7 @@
 
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
+      React.createElement(window.RequestAuthorizationNotice, { app, requests: mine }),
       // active tracker hero
       activa && React.createElement('div', { style: { padding: '4px 16px 0' } },
         React.createElement('div', { onClick: () => app.push('tracking', { s: activa }), className: 'su-press', style: { cursor: 'pointer', background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))', borderRadius: 22, padding: 18, color: '#fff', boxShadow: 'var(--neo-md)', position: 'relative', overflow: 'hidden' } },
@@ -51,7 +52,7 @@
           React.createElement('div', { ref: progRef, style: { display: 'flex', gap: 5, marginTop: 14 } },
             activa.steps.map((st, i) => React.createElement('div', { key: i, style: { flex: 1, height: 5, borderRadius: 999, transformOrigin: 'left center', background: st.done ? '#fff' : st.active ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)' } }))),
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } },
-            React.createElement('span', { style: { fontSize: 13, fontWeight: 700 } }, REQUEST_LABELS[activa.requestStatus]||'En revisión'),
+            React.createElement('span', { style: { fontSize: 13, fontWeight: 700 } }, (activa.steps.find(step => step.active) || {}).label || REQUEST_LABELS[activa.requestStatus] || 'En revisión'),
             React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 } }, 'Ver seguimiento', React.createElement(I, { name: 'arrowR', size: 15, stroke: 2.2 }))))),
       // filters (C5.2 · indicador deslizante compartido)
       React.createElement(window.ChipBar, { items: filters, value: filter, onChange: setFilter, style: { padding: '16px 16px 2px' } }),
@@ -69,7 +70,7 @@
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 } },
               React.createElement('span', { style: { fontSize: 16, fontWeight: 800, color: 'var(--guinda)' } }, s.monto==null?'Por cotizar':window.money(s.monto)),
               React.createElement(StatusPill, { estado: s.estado, requestStatus: s.requestStatus })),
-            React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 5 } }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : ''))))),
+            React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 5 } }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : '') + ((s.steps.find(step => step.active) || {}).label ? ' · Etapa: ' + s.steps.find(step => step.active).label : ''))))),
           list.length === 0 && React.createElement(window.EmptyState, { icon: 'receipt', title: 'Sin solicitudes aquí', sub: 'Cuando solicites un beneficio aparecerá en esta lista.' })),
     );
   }

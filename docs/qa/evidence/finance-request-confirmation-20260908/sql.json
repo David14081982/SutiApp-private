@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "migrationSha256": "767a24e55082e7f512a54633fc4cb561dfdbacb478081a6afb36d12717de3ec9",
+  "migrationCompile": "PASS",
+  "recoveryCompile": "PASS",
+  "selfRead": "PASS",
+  "crossUser": "PASS",
+  "atomicSeen": "PASS",
+  "duplicateReceipts": 0,
+  "rls": "PASS",
+  "businessRowsUnchanged": true,
+  "transaction": "ROLLBACK",
+  "before": [
+    {
+      "requests": 13,
+      "events": 39,
+      "tracking": 13
+    }
+  ],
+  "after": [
+    {
+      "requests": 13,
+      "events": 39,
+      "tracking": 13
+    }
+  ]
+}

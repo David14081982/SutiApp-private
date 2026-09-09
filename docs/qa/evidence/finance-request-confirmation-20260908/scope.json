@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "protectedSections": 6,
+  "workflowCallsUnchanged": true,
+  "routingAndAuthUnchanged": true,
+  "browserStorageFallbacks": 0,
+  "changedBundleModules": [
+    "request-notifications.js",
+    "screens-historial.jsx",
+    "screens-admin-finanzas.jsx",
+    "app.jsx"
+  ],
+  "bundleSha256": "0ab9b5cec98fb29d53f9f91471eb499dff80f2743b2e31667049616ab486cc60"
+}

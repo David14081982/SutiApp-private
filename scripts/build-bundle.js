@@ -22,7 +22,7 @@ const files = [
   'admin-request-deletion-repository.js', 'institutional-repositories.js', 'institutional-content.js', 'tweaks-panel.jsx', 'signature.jsx',
   'screens-home-r2.jsx', 'screens-financiera.jsx', 'screens-savings.jsx', 'screens-inversion.jsx', 'screens-loan.jsx',
   'screens-marketplace.jsx', 'screens-terreno.jsx', 'screens-convenios.jsx',
-  'screens-historial.jsx', 'screens-credencial.jsx', 'image-slot.js',
+  'request-notifications.js', 'screens-historial.jsx', 'screens-credencial.jsx', 'image-slot.js',
   'screens-documentos.jsx', 'admin-store.jsx', 'admin-cutover-store.jsx', 'custom-screen.jsx',
   'sindicato-store.jsx', 'finance-store.jsx', 'savings-store.jsx', 'quotes-store.jsx', 'operations-store.jsx', 'flow-store.jsx',
   'funds-store.jsx', 'admin-popup-editor.jsx', 'savings-review-repository.js', 'savings-access-admin.jsx', 'savings-recorded-history.jsx', 'savings-withdrawal-list.jsx', 'savings-review-admin.jsx',

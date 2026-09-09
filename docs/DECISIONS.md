@@ -1008,3 +1008,7 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 - **Impacto:** todas las variantes de Suti Préstamo que comparten `loanSessionConfirm` quedan corregidas. Membership, `ProgramRequestRepository.create` y pagos reales de `program_catalog_items` usan writers distintos y no estaban afectados.
 - **Límites:** cero rediseño, cero cambio de cálculos/fondos/documentos/Marketplace/Google, cero suites globales. `request-submission-success.jsx` y su confeti se preservan.
 - **Aprobación:** `H-REQUEST-SUBMISSION-CRITICAL-REMEDIATION-001` y `H-REQUEST-SUBMISSION-PERMANENT-GUARD-001`, instrucción explícita del propietario, 2026-09-02.
+
+## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
+
+Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.

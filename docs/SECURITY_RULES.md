@@ -273,3 +273,7 @@ request UUID, confirmed folio/revision and reason; Google coordinates and snapsh
 server reads. The journal forces RLS, denies browser access, grants service SELECT only, and restricts
 finalization/Google receipts to service RPCs. No dossier/Storage DELETE exists in this feature. Prepare
 locks the parent and sync lease; child guards serialize writes and prohibit changes after prepare.
+
+## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
+
+Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.

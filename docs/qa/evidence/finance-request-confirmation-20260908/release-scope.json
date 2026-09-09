@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseline": "f7e5646",
+  "changedBundleModules": [
+    "screens-admin-finanzas.jsx",
+    "screens-historial.jsx",
+    "app.jsx",
+    "request-notifications.js"
+  ],
+  "unrelatedModulesPreserved": true,
+  "bundleSha256": "495fe6a03186febc8906a41ca38bd2840502998e8be4c71776a9b3826786113f",
+  "bundleVersion": 232,
+  "workerVersion": 179
+}

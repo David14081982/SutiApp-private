@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "receipts": [
+    {
+      "action": "advance",
+      "final": false,
+      "status": "PASS",
+      "doubleClick": "PASS",
+      "backendFailure": "PASS"
+    },
+    {
+      "action": "advance",
+      "final": true,
+      "status": "PASS",
+      "doubleClick": "PASS",
+      "backendFailure": "PASS"
+    },
+    {
+      "action": "reject",
+      "final": false,
+      "status": "PASS",
+      "doubleClick": "PASS",
+      "backendFailure": "PASS"
+    },
+    {
+      "action": "cancel",
+      "final": false,
+      "status": "PASS",
+      "doubleClick": "PASS",
+      "backendFailure": "PASS"
+    },
+    {
+      "action": "review",
+      "final": false,
+      "status": "PASS",
+      "doubleClick": "PASS",
+      "backendFailure": "PASS"
+    },
+    {
+      "action": "quoteAdvance",
+      "method": "transitionWorkflow",
+      "authorization": "PASS"
+    },
+    {
+      "action": "approveProduct",
+      "method": "approveProductPayment",
+      "authorization": "PASS"
+    },
+    {
+      "action": "approveLoan",
+      "method": "approveRequest",
+      "authorization": "PASS"
+    },
+    {
+      "readbackMismatch": "PASS"
+    }
+  ],
+  "errors": [],
+  "backendConnections": 0
+}

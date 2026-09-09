@@ -220,3 +220,7 @@ updates to an existing outbox identity use its already-held row lock; inserts/id
 lock the parent. The baseline deadlock was reproduced with concurrent rollback-only no-op updates.
 The refined guard passed the same two transactions, the complete deletion matrix and exact function
 recovery in ROLLBACK. No request, outbox payload or business state was changed. See lock-*.json evidence.
+
+## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
+
+Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.

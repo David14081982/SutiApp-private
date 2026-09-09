@@ -19227,6 +19227,75 @@ Object.assign(window, {
   });
 })();
 })();
+/* @@file request-notifications.js */
+(function(){
+/* Workflow event notifications. Durable read state belongs exclusively to Supabase. */
+(function () {
+  const h = React.createElement;
+  async function list() {
+    const { data, error } = await window.SutiSupabase.getClient().rpc('list_self_request_event_notifications');
+    if (error) throw error;
+    return data || [];
+  }
+  async function markSeen(id) {
+    const { data, error } = await window.SutiSupabase.getClient().rpc('mark_self_request_event_seen', { p_event_id: id });
+    if (error) throw error;
+    return data === true;
+  }
+  function useRequestNotifications() {
+    const [state, setState] = React.useState({ phase: 'loading', rows: [] });
+    const [revision, setRevision] = React.useState(0);
+    React.useEffect(() => {
+      let active = true, loading = false, context = window.PrivateResourceDemand.context();
+      const refresh = async () => {
+        if (loading || document.hidden) return;
+        loading = true;
+        try {
+          const rows = await list();
+          if (active && context === window.PrivateResourceDemand.context()) setState({ phase: 'loaded', rows });
+        } catch (_) { if (active) setState({ phase: 'error', rows: [] }); }
+        finally { loading = false; }
+      };
+      setState({ phase: 'loading', rows: [] }); refresh();
+      const unbind = window.PrivateResourceDemand.subscribe(() => { active = false; setState({ phase: 'loading', rows: [] }); setRevision(v => v + 1); });
+      const timer = setInterval(refresh, 15000);
+      window.addEventListener('focus', refresh); window.addEventListener('suti:request-changed', refresh); document.addEventListener('visibilitychange', refresh);
+      return () => { active = false; clearInterval(timer); unbind(); window.removeEventListener('focus', refresh); window.removeEventListener('suti:request-changed', refresh); document.removeEventListener('visibilitychange', refresh); };
+    }, [revision]);
+    return { ...state, retry: () => setRevision(v => v + 1) };
+  }
+  function RequestAuthorizationNotice({ app, requests }) {
+    const notifications = useRequestNotifications(), [notice, setNotice] = React.useState(null), [error, setError] = React.useState(false);
+    const pending = React.useRef(new Set()), ref = React.useRef(null);
+    React.useEffect(() => {
+      if (notice) return;
+      const event = notifications.rows.find(row => row.authorized && !row.seen_at && requests.some(request => request.sourceId === row.request_id && request.requestStatus === 'approved'));
+      if (!event || pending.current.has(event.id) || document.hidden) return;
+      const context = window.PrivateResourceDemand.context(); pending.current.add(event.id);
+      markSeen(event.id).then(claimed => {
+        // Only the transaction that first acknowledged this event may celebrate, across tabs/devices.
+        if (claimed && context === window.PrivateResourceDemand.context()) { setNotice(event); setError(false); }
+      }).catch(() => { pending.current.delete(event.id); setError(true); });
+    }, [notifications.rows, requests, notice]);
+    React.useEffect(() => window.PrivateResourceDemand.subscribe(() => { setNotice(null); setError(false); pending.current.clear(); }), []);
+    React.useEffect(() => {
+      if (!notice || !ref.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen())) return;
+      const animations = Array.from(ref.current.querySelectorAll('i')).map((piece, i) => piece.animate([{ transform: 'translateY(-20px)', opacity: 0 }, { opacity: 1, offset: .1 }, { transform: 'translateY(190px) rotate(420deg)', opacity: 0 }], { duration: 1300, delay: i * 17, fill: 'both' }));
+      return () => animations.forEach(animation => animation.cancel());
+    }, [notice]);
+    if (!notice) return (error || notifications.phase === 'error') ? h('p', { role: 'status', style: { margin: 16, color: 'var(--ink-2)' } }, 'No pudimos consultar los avisos de tus solicitudes. ', h('button', { onClick: notifications.retry }, 'Reintentar')) : null;
+    const request = requests.find(row => row.sourceId === notice.request_id);
+    return h('section', { ref, role: 'status', 'data-user-authorization': notice.id, style: { position: 'relative', overflow: 'hidden', background: '#E7F6ED', color: '#13794A', padding: 18, borderRadius: 18, margin: 16 } },
+      h('div', { 'aria-hidden': 'true', style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, Array.from({ length: 24 }, (_, i) => h('i', { key: i, style: { position: 'absolute', top: 0, opacity: 0, left: ((i * 37) % 100) + '%', width: 6, height: 10, background: ['#901040', '#D9A441', '#13794A'][i % 3] } }))),
+      h('strong', { style: { fontSize: 19 } }, '¡Tu solicitud fue autorizada!'),
+      h('p', null, notice.folio + ' · ' + (request ? request.tipo : notice.program_id)),
+      request && request.steps.find(step => step.active) && h('p', null, 'Ahora continúa: ' + request.steps.find(step => step.active).label),
+      h('button', { onClick: () => { setNotice(null); app.push('tracking', { s: { sourceId: notice.request_id } }); } }, 'Ver seguimiento'),
+      h('button', { onClick: () => { setNotice(null); notifications.retry(); }, style: { marginLeft: 12 } }, 'Entendido'));
+  }
+  Object.assign(window, { RequestEventNotifications: { list, markSeen }, useRequestNotifications, RequestAuthorizationNotice });
+})();
+})();
 /* @@file screens-historial.jsx */
 (function(){
 /* screens-historial.jsx — Mi Historial: solicitudes + tracking timeline */
@@ -19319,6 +19388,9 @@ Object.assign(window, {
     }, React.createElement(window.TopBar, {
       app,
       variant: 'historial'
+    }), React.createElement(window.RequestAuthorizationNotice, {
+      app,
+      requests: mine
     }),
     // active tracker hero
     activa && React.createElement('div', {
@@ -19417,7 +19489,7 @@ Object.assign(window, {
         fontSize: 13,
         fontWeight: 700
       }
-    }, REQUEST_LABELS[activa.requestStatus] || 'En revisión'), React.createElement('span', {
+    }, (activa.steps.find(step => step.active) || {}).label || REQUEST_LABELS[activa.requestStatus] || 'En revisión'), React.createElement('span', {
       style: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -19544,7 +19616,7 @@ Object.assign(window, {
         fontWeight: 600,
         marginTop: 5
       }
-    }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : ''))))), list.length === 0 && React.createElement(window.EmptyState, {
+    }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : '') + ((s.steps.find(step => step.active) || {}).label ? ' · Etapa: ' + s.steps.find(step => step.active).label : ''))))), list.length === 0 && React.createElement(window.EmptyState, {
       icon: 'receipt',
       title: 'Sin solicitudes aquí',
       sub: 'Cuando solicites un beneficio aparecerá en esta lista.'
@@ -36338,6 +36410,231 @@ Object.assign(window, {
       'aria-label': 'Cerrar detalle de solicitud'
     }, '×')), children);
   }
+  function FinancialActionDialog({
+    model,
+    busy,
+    error,
+    onConfirm,
+    onClose
+  }) {
+    const ref = React.useRef(null),
+      titleId = React.useId();
+    useEffect(() => {
+      const opener = document.activeElement,
+        dialog = ref.current;
+      dialog.showModal();
+      return () => {
+        dialog.close();
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    return h('dialog', {
+      ref,
+      className: 'finwb-action-dialog',
+      'data-financial-confirmation': model.action,
+      'aria-labelledby': titleId,
+      'aria-modal': 'true',
+      'aria-busy': busy,
+      onCancel: event => {
+        event.preventDefault();
+        if (!busy) onClose();
+      },
+      onKeyDown: event => {
+        event.stopPropagation();
+        if (event.key === 'Tab') {
+          const controls = Array.from(ref.current.querySelectorAll('button:not(:disabled)'));
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (!first) {
+            event.preventDefault();
+            return;
+          }
+          if (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+          }
+        }
+      },
+      style: {
+        width: 'min(520px, calc(100vw - 24px))',
+        maxHeight: 'calc(100dvh - 24px)',
+        overflowY: 'auto',
+        border: '1px solid var(--hairline)',
+        borderRadius: 22,
+        padding: 24,
+        background: 'var(--surface)',
+        color: 'var(--ink)',
+        boxShadow: '0 24px 80px #0005'
+      }
+    }, h('style', null, '.finwb-action-dialog::backdrop{background:#17203366}.finwb-action-dialog button{min-height:44px;border:0;border-radius:12px;padding:10px 18px;font:750 14px var(--font, sans-serif);cursor:pointer}.finwb-action-dialog button:disabled{opacity:.55;cursor:wait}.finwb-action-dialog button:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}'), h('h2', {
+      id: titleId,
+      style: {
+        margin: '0 0 18px',
+        fontSize: 23
+      }
+    }, model.title), h('dl', {
+      className: 'finwb-kv'
+    }, model.fields.map(([label, value]) => h('div', {
+      key: label,
+      style: {
+        overflowWrap: 'anywhere'
+      }
+    }, h('dt', {
+      style: {
+        color: 'var(--ink-3)',
+        fontSize: 12
+      }
+    }, label), h('dd', {
+      style: {
+        margin: '4px 0 12px',
+        fontWeight: 750
+      }
+    }, value)))), h('p', {
+      style: {
+        padding: 14,
+        borderRadius: 14,
+        background: model.warning ? '#FFF3DC' : 'var(--surface-2)',
+        lineHeight: 1.5
+      }
+    }, model.message), error && h('p', {
+      role: 'alert',
+      style: {
+        color: '#A32921',
+        lineHeight: 1.5
+      }
+    }, error), h('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        gap: 10,
+        marginTop: 20
+      }
+    }, h('button', {
+      type: 'button',
+      className: 'finwb-secondary',
+      autoFocus: true,
+      disabled: busy,
+      onClick: onClose
+    }, 'Volver'), h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onConfirm,
+      style: model.warning ? {
+        background: '#A32921'
+      } : undefined
+    }, busy ? 'Procesando…' : model.label)));
+  }
+  function FinancialAuthorizationResult({
+    result,
+    onClose
+  }) {
+    const ref = React.useRef(null);
+    const titleId = React.useId();
+    useEffect(() => {
+      const dialog = ref.current,
+        opener = document.activeElement;
+      dialog.showModal();
+      return () => {
+        dialog.close();
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    useEffect(() => {
+      if (!result.celebrate || window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen())) return;
+      const animations = Array.from(ref.current.querySelectorAll('i')).map((piece, i) => piece.animate([{
+        transform: 'translateY(-20px) rotate(0)',
+        opacity: 0
+      }, {
+        opacity: 1,
+        offset: .1
+      }, {
+        transform: 'translateY(230px) rotate(420deg)',
+        opacity: 0
+      }], {
+        duration: 1300,
+        delay: i * 17,
+        fill: 'both'
+      }));
+      return () => animations.forEach(animation => animation.cancel());
+    }, [result]);
+    return h('dialog', {
+      ref,
+      'aria-labelledby': titleId,
+      'aria-modal': 'true',
+      onCancel: event => {
+        event.preventDefault();
+        onClose();
+      },
+      onKeyDown: event => {
+        event.stopPropagation();
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          ref.current.querySelector('button').focus();
+        }
+      },
+      'data-financial-result': result.kind,
+      style: {
+        width: 'min(480px, calc(100vw - 24px))',
+        maxHeight: 'calc(100dvh - 24px)',
+        overflowY: 'auto',
+        padding: 24,
+        border: 0,
+        borderRadius: 20,
+        background: result.warning ? '#FFF3DC' : '#E7F6ED',
+        color: result.warning ? '#704D13' : '#13794A'
+      }
+    }, result.celebrate && h('div', {
+      'aria-hidden': 'true',
+      'data-authorization-confetti': 'true',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none'
+      }
+    }, Array.from({
+      length: 24
+    }, (_, i) => h('i', {
+      key: i,
+      style: {
+        position: 'absolute',
+        opacity: 0,
+        top: 0,
+        left: i * 37 % 100 + '%',
+        width: 6,
+        height: 10,
+        background: ['#901040', '#D9A441', '#13794A'][i % 3]
+      }
+    }))), h('h2', {
+      id: titleId,
+      style: {
+        display: 'block',
+        fontSize: 21,
+        margin: 0
+      }
+    }, result.title), h('p', {
+      style: {
+        margin: '8px 0',
+        overflowWrap: 'anywhere'
+      }
+    }, result.folio + ' · ' + result.name), result.next && h('p', null, 'Ahora continúa: ' + result.next), h('button', {
+      className: 'finwb-secondary',
+      onClick: onClose,
+      style: {
+        minHeight: 44,
+        padding: '10px 18px',
+        border: 0,
+        borderRadius: 12,
+        font: '750 14px var(--font, sans-serif)',
+        cursor: 'pointer'
+      }
+    }, 'Entendido'));
+  }
   function DesktopFinancialWorkbench({
     app,
     onCount,
@@ -36368,7 +36665,10 @@ Object.assign(window, {
       [feedback, setFeedback] = useState(null),
       [rowFeedback, setRowFeedback] = useState({}),
       [viewer, setViewer] = useState(null);
-    const actionAttempts = React.useRef(new Map());
+    const actionAttempts = React.useRef(new Map()),
+      actionLock = React.useRef(false);
+    const [confirmation, setConfirmation] = useState(null),
+      [actionResult, setActionResult] = useState(null);
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async quiet => {
       try {
@@ -36498,8 +36798,8 @@ Object.assign(window, {
       const next = Math.max(0, Math.min(visible.length - 1, (index < 0 ? 0 : index) + delta));
       setSelectedId(visible[next].id);
     };
-    const save = async advance => {
-      if (!detail || !action || busy) return;
+    const save = async (advance, confirmed = false) => {
+      if (!detail || !action || busy || actionLock.current) return;
       const targetBefore = nextStage(detail),
         currentBefore = currentStage(detail);
       if (actionNote.trim().length > 0 && actionNote.trim().length < 3) {
@@ -36530,23 +36830,30 @@ Object.assign(window, {
         });
         return;
       }
-      const transitionText = currentBefore && targetBefore ? currentBefore.label + ' → ' + targetBefore.label : '';
-      const confirmations = {
-        advance: '¿Avanzar la solicitud de “' + transitionText + '”? El afiliado verá la nueva etapa inmediatamente.',
-        approveLoan: '¿Aprobar la etapa “' + transitionText + '”? Se guardará la autorización en Supabase y el backend continuará con la gestión financiera autorizada.',
-        approveProduct: '¿Aprobar la etapa “' + transitionText + '” en Supabase? Se actualizará el estado de esta misma solicitud en Google.',
-        quoteAdvance: '¿Guardar la cotización por ' + moneyValue(quoteAmount) + ' y avanzar “' + transitionText + '”? El afiliado verá la cotización disponible.',
-        handoff: '¿Enviar esta solicitud aprobada a la gestión financiera de Google?',
-        reject: '¿Rechazar la etapa actual “' + (currentBefore && currentBefore.label || 'actual') + '”? El afiliado verá la solicitud como rechazada.',
-        cancel: '¿Cancelar esta solicitud? Esta acción quedará registrada en la bitácora.'
-      };
-      if (confirmations[action] && !window.confirm(confirmations[action])) return;
+      const finalApproval = ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
+      if (!confirmed && action !== 'note') {
+        const warning = ['reject', 'cancel'].includes(action);
+        const label = action === 'reject' ? 'Rechazar solicitud' : action === 'cancel' ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
+        const destination = action === 'reject' ? 'Rechazada' : action === 'cancel' ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
+        setFeedback(null);
+        setConfirmation({
+          action,
+          advance,
+          warning,
+          label,
+          title: label === 'Aprobar etapa' ? '¿Aprobar esta etapa?' : '¿' + label + '?',
+          fields: [['Solicitud', detail.folio], ['Afiliado', detail.nombre], ['Programa', programLabel(detail)], ...(detail.requested_amount != null ? [['Monto', moneyValue(detail.requested_amount)]] : []), ...(detail.requested_term ? [['Plazo', detail.requested_term + ' ' + (detail.requested_term_semantics || 'pagos')]] : []), ...(action === 'quoteAdvance' ? [['Cotización', moneyValue(quoteAmount)]] : []), ['Etapa actual', stageLabel(detail)], ['Estado / etapa resultante', destination], ...(actionNote.trim() ? [['Comentario', actionNote.trim()]] : [])],
+          message: action === 'handoff' ? 'Se enviará la solicitud con la autorización ya registrada. El resultado de la gestión se mostrará al terminar.' : warning ? 'Al confirmar, la solicitud quedará ' + destination.toLowerCase() + '. El afiliado podrá consultar el resultado y el motivo en su historial.' : 'Al confirmar, la solicitud avanzará a ' + destination + ' y el afiliado verá la nueva etapa en su historial.'
+        });
+        return;
+      }
+      actionLock.current = true;
       const currentId = detail.id,
         nextId = visible[index + 1] && visible[index + 1].id || visible[index - 1] && visible[index - 1].id || currentId;
       setBusy(true);
       setFeedback({
         tone: 'saving',
-        text: 'Guardando…'
+        text: 'Procesando…'
       });
       setRowFeedback(all => Object.assign({}, all, {
         [currentId]: 'saving'
@@ -36578,10 +36885,23 @@ Object.assign(window, {
         if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
         actionAttempts.current.delete(fingerprint);
         setDetail(verifiedDetail);
-        setFeedback({
-          tone: 'success',
-          text: verifiedDetail.google_sync && verifiedDetail.google_sync.phase === 'synced' ? '✓ Guardado · Google actualizado' : '✓ Guardado en Supabase · Registro en Google pendiente de reintento'
+        setConfirmation(null);
+        const authorized = finalApproval && verifiedDetail.status === 'approved' && detail.status !== 'approved';
+        const title = action === 'reject' ? 'Solicitud rechazada' : action === 'cancel' ? 'Solicitud cancelada' : authorized ? '✓ Solicitud autorizada' : action === 'review' ? 'Revisión iniciada' : action === 'note' ? 'Observación guardada' : action === 'handoff' ? 'Gestión actualizada' : '✓ Etapa aprobada';
+        setActionResult({
+          title,
+          kind: authorized ? 'authorized' : action,
+          warning: ['reject', 'cancel'].includes(action),
+          celebrate: authorized,
+          folio: detail.folio,
+          name: detail.nombre,
+          next: ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && verifiedCurrent && verifiedCurrent.label
         });
+        setFeedback({
+          tone: ['reject', 'cancel'].includes(action) ? 'warning' : 'success',
+          text: title
+        });
+        window.dispatchEvent(new CustomEvent('suti:request-changed'));
         setRowFeedback(all => Object.assign({}, all, {
           [currentId]: 'success'
         }));
@@ -36589,22 +36909,21 @@ Object.assign(window, {
         setQuoteAmount('');
         if (advance && nextId !== currentId) setSelectedId(nextId);
       } catch (actionError) {
-        await load(true);
-        setDetailNonce(value => value + 1);
         setFeedback({
           tone: 'error',
-          text: humanActionError(actionError) + ' · Se verificó el estado persistido; puedes reintentar.'
+          text: humanActionError(actionError) + ' No se confirmó el cambio; puedes reintentar.'
         });
         setRowFeedback(all => Object.assign({}, all, {
           [currentId]: 'error'
         }));
       } finally {
+        actionLock.current = false;
         setBusy(false);
       }
     };
     const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
     const closeDetail = () => {
-      if (deleting) return;
+      if (busy || confirmation) return;
       setViewer(null);
       setDetailOpen(false);
     };
@@ -37009,7 +37328,7 @@ Object.assign(window, {
         className: 'finwb-primary',
         disabled: busy || !action,
         onClick: () => save(false)
-      }, busy ? 'Guardando…' : (actionOptions.find(item => item.id === action) || {
+      }, busy ? 'Procesando…' : (actionOptions.find(item => item.id === action) || {
         label: 'Confirmar acción'
       }).label), h('button', {
         type: 'button',
@@ -37179,7 +37498,18 @@ Object.assign(window, {
       }, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).nombre), h('div', {
         className: 'finwb-sub'
       }, requestTypeLabel(selected) + ' \u00b7 ' + programLabel(selected) + ' \u00b7 ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
-    }, renderDetail(), detailPhase !== 'loaded' && h('footer', {
+    }, actionResult && h(FinancialAuthorizationResult, {
+      result: actionResult,
+      onClose: () => setActionResult(null)
+    }), confirmation && h(FinancialActionDialog, {
+      model: confirmation,
+      busy,
+      error: feedback && feedback.tone === 'error' ? feedback.text : null,
+      onClose: () => {
+        if (!actionLock.current) setConfirmation(null);
+      },
+      onConfirm: () => save(confirmation.advance, true)
+    }), renderDetail(), detailPhase !== 'loaded' && h('footer', {
       className: 'finwb-actionbar',
       'data-financial-safe-action-bar': 'true'
     }, renderNavigation()))));
@@ -66710,7 +67040,8 @@ Object.assign(window, {
     }, [variant, u.id]);
     const availableCredit = homeFinancialUser === u.id && financial.status === 'ready' && window.FinancialLegacyRepository && typeof window.FinancialLegacyRepository.availableCreditTotal === 'function' ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const availableCreditReady = availableCredit !== null;
-    const unread = qs ? qs.readyUnseen().length : 0;
+    const requestNotifications = window.useRequestNotifications();
+    const unread = (qs ? qs.readyUnseen().length : 0) + requestNotifications.rows.filter(event => !event.seen_at).length;
     const titles = {
       financiera: 'SUTIFINANZAS',
       convenios: 'Convenios',
@@ -67213,6 +67544,7 @@ Object.assign(window, {
     app
   }) {
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
+    const events = window.useRequestNotifications();
     const quoteState = qs ? qs.state() : {
       phase: 'error'
     };
@@ -67244,8 +67576,29 @@ Object.assign(window, {
       time: r.fechaHora,
       unread: false
     });
-    const items = quoteNotifs;
-    const statusCard = quoteState.phase === 'error' ? React.createElement('div', {
+    const eventNotifs = events.rows.map(event => ({
+      id: 'event_' + event.id,
+      icon: event.authorized ? 'checkCircle' : 'clock',
+      tone: ['rejected', 'cancelled'].includes(event.status) ? 'amber' : event.authorized ? 'green' : 'blue',
+      title: event.authorized ? 'Solicitud autorizada' : event.status === 'rejected' ? 'Solicitud rechazada' : event.status === 'cancelled' ? 'Solicitud cancelada' : 'Solicitud actualizada',
+      body: 'Tu solicitud ' + event.folio + (event.authorized ? ' fue autorizada.' : event.status === 'rejected' ? ' fue rechazada.' : event.status === 'cancelled' ? ' fue cancelada.' : ' avanzó a ' + (event.stage || 'una nueva etapa') + '.'),
+      time: new Date(event.created_at).toLocaleString('es-MX'),
+      unread: !event.seen_at,
+      go: async () => {
+        try {
+          await window.RequestEventNotifications.markSeen(event.id);
+          app.push('tracking', {
+            s: {
+              sourceId: event.request_id
+            }
+          });
+        } catch (_) {
+          app.toast('No se pudo marcar la notificación como vista');
+        }
+      }
+    }));
+    const items = eventNotifs.concat(quoteNotifs);
+    const statusCard = quoteState.phase === 'error' || events.phase === 'error' ? React.createElement('div', {
       'data-notifications-state': 'error',
       style: {
         background: 'var(--surface)',
@@ -67267,7 +67620,10 @@ Object.assign(window, {
         marginTop: 5
       }
     }, 'Revisa tu conexión e inténtalo de nuevo.'), React.createElement('button', {
-      onClick: () => qs && qs.retry(),
+      onClick: () => {
+        qs && qs.retry();
+        events.retry();
+      },
       style: {
         marginTop: 12,
         border: 'none',
@@ -67278,7 +67634,7 @@ Object.assign(window, {
         fontWeight: 800,
         cursor: 'pointer'
       }
-    }, 'Reintentar')) : quoteState.phase !== 'loaded' ? React.createElement('div', {
+    }, 'Reintentar')) : quoteState.phase !== 'loaded' || events.phase !== 'loaded' ? React.createElement('div', {
       'data-notifications-state': 'loading',
       style: {
         background: 'var(--surface)',
@@ -67364,6 +67720,14 @@ Object.assign(window, {
       return React.createElement('div', {
         key: n.id,
         onClick: n.go,
+        role: n.go ? 'button' : undefined,
+        tabIndex: n.go ? 0 : undefined,
+        onKeyDown: event => {
+          if (n.go && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            n.go();
+          }
+        },
         'data-notification-id': n.id,
         'data-notification-unread': n.unread ? 'true' : 'false',
         className: n.go ? 'su-press' : '',

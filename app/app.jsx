@@ -48,7 +48,8 @@
       typeof window.FinancialLegacyRepository.availableCreditTotal === 'function'
       ? window.FinancialLegacyRepository.availableCreditTotal(financial.overview) : null;
     const availableCreditReady = availableCredit !== null;
-    const unread = qs ? qs.readyUnseen().length : 0;
+    const requestNotifications = window.useRequestNotifications();
+    const unread = (qs ? qs.readyUnseen().length : 0) + requestNotifications.rows.filter(event => !event.seen_at).length;
     const titles = { financiera: 'SUTIFINANZAS', convenios: 'Convenios', historial: 'Mi Historial', credencial: 'Mi Credencial' };
     const subtitles = { financiera: 'Tu dinero, tu sindicato', convenios: 'Descuentos para afiliados', historial: 'Seguimiento de solicitudes', credencial: 'Identidad sindical digital' };
 
@@ -196,18 +197,27 @@
   // ---------- NOTIFICATIONS ----------
   function NotifsScreen({ app }) {
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
+    const events = window.useRequestNotifications();
     const quoteState = qs ? qs.state() : { phase: 'error' };
     // Avisos derivados exclusivamente de solicitudes de cotización reales.
     const quoteNotifs = (qs ? qs.mine() : []).filter((r) => r.estado === 'solicitada' || r.estado === 'cotizada').map((r) => (r.estado === 'cotizada'
       ? { id: 'q_' + r.id, icon: 'cash', tone: 'green', title: 'Tu cotización está lista', body: r.productoNombre + ' · ' + window.money((r.cotizacion || {}).monto || 0) + ' · ' + r.folio + '. Ya puedes simular tu financiamiento.', time: (r.cotizacion || {}).fechaHora || r.fechaHora, unread: !r.visto, go: async () => { try { await qs.markVisto(r.id); app.push('product', { id: r.productoId }); } catch (_) { app.toast('No se pudo marcar la notificación como vista'); } } }
       : { id: 'q_' + r.id, icon: 'clock', tone: 'amber', title: 'Cotización en proceso', body: r.productoNombre + ' · ' + r.folio + ' · ' + (r.empresaNombre || 'Área de Finanzas'), time: r.fechaHora, unread: false }));
-    const items = quoteNotifs;
-    const statusCard = quoteState.phase === 'error'
+    const eventNotifs = events.rows.map(event => ({
+      id: 'event_' + event.id, icon: event.authorized ? 'checkCircle' : 'clock',
+      tone: ['rejected','cancelled'].includes(event.status) ? 'amber' : event.authorized ? 'green' : 'blue',
+      title: event.authorized ? 'Solicitud autorizada' : event.status === 'rejected' ? 'Solicitud rechazada' : event.status === 'cancelled' ? 'Solicitud cancelada' : 'Solicitud actualizada',
+      body: 'Tu solicitud ' + event.folio + (event.authorized ? ' fue autorizada.' : event.status === 'rejected' ? ' fue rechazada.' : event.status === 'cancelled' ? ' fue cancelada.' : ' avanzó a ' + (event.stage || 'una nueva etapa') + '.'),
+      time: new Date(event.created_at).toLocaleString('es-MX'), unread: !event.seen_at,
+      go: async () => { try { await window.RequestEventNotifications.markSeen(event.id); app.push('tracking', { s: { sourceId: event.request_id } }); } catch (_) { app.toast('No se pudo marcar la notificación como vista'); } }
+    }));
+    const items = eventNotifs.concat(quoteNotifs);
+    const statusCard = quoteState.phase === 'error' || events.phase === 'error'
       ? React.createElement('div', { 'data-notifications-state': 'error', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center' } },
         React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' } }, 'No pudimos cargar tus notificaciones'),
         React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-2)', marginTop: 5 } }, 'Revisa tu conexión e inténtalo de nuevo.'),
-        React.createElement('button', { onClick: () => qs && qs.retry(), style: { marginTop: 12, border: 'none', borderRadius: 12, padding: '9px 14px', background: 'var(--guinda)', color: '#fff', fontWeight: 800, cursor: 'pointer' } }, 'Reintentar'))
-      : quoteState.phase !== 'loaded'
+        React.createElement('button', { onClick: () => { qs && qs.retry(); events.retry(); }, style: { marginTop: 12, border: 'none', borderRadius: 12, padding: '9px 14px', background: 'var(--guinda)', color: '#fff', fontWeight: 800, cursor: 'pointer' } }, 'Reintentar'))
+      : quoteState.phase !== 'loaded' || events.phase !== 'loaded'
         ? React.createElement('div', { 'data-notifications-state': 'loading', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'Cargando notificaciones…')
         : items.length === 0
           ? React.createElement('div', { 'data-notifications-state': 'empty', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'No tienes notificaciones.')
@@ -220,7 +230,7 @@
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11 } },
           statusCard || items.map((n) => {
             const tones = { guinda: ['var(--guinda-50)', 'var(--guinda)'], green: ['#E7F6ED', '#13794A'], amber: ['#FFF3DC', '#9A6B16'], blue: ['#E8F0FE', '#2456C7'], red: ['#FDEAEA', '#C0341D'] }[n.tone];
-            return React.createElement('div', { key: n.id, onClick: n.go, 'data-notification-id': n.id, 'data-notification-unread': n.unread ? 'true' : 'false', className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
+            return React.createElement('div', { key: n.id, onClick: n.go, role: n.go ? 'button' : undefined, tabIndex: n.go ? 0 : undefined, onKeyDown: event => { if (n.go && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); n.go(); } }, 'data-notification-id': n.id, 'data-notification-unread': n.unread ? 'true' : 'false', className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
               React.createElement('div', { style: { width: 44, height: 44, borderRadius: 13, background: tones[0], color: tones[1], display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: n.icon, size: 23, stroke: 2 })),
               React.createElement('div', { style: { flex: 1 } },
                 React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, lineHeight: 1.25, color: 'var(--ink)' } }, n.title),

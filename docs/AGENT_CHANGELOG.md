@@ -1,5 +1,15 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-AFFILIATES-EDIT-DOCUMENTS-001
+
+Publicación autorizada expresamente. Afiliados conserva sus 27 campos, mantiene
+motivo/Guardar fuera del área desplazable y explica validación/errores. Carga antes
+de las tarjetas y reemplazo individual con tipo/afiliado fijados. Sin cambio backend,
+Storage, Auth, SW ni datos. Pruebas focales, RPC con rollback y build local PASS.
+Entrega aislada sobre origin/main 3958020; sólo cambia el chunk de Afiliados del
+bundle publicado y su cachebuster 237→238. Evidencia de publicación en
+docs/qa/H-AFFILIATES-EDIT-DOCUMENTS-001.md y carpeta de evidencia asociada.
+
 ## 2026-09-08 — H-WEB-PUSH-NOTIFICATION-BADGE-001 — PASS
 
 Corrige el cuadro blanco Android con el puño transparente proporcionado por el propietario,

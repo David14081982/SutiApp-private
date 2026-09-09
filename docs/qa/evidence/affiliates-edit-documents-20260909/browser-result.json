@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Save reaches actual repository with minimal patch, version, target and reason; validation, conflict, duplicate, busy, retry, readback",
+    "Replacement selects exact document type; actual repository upload/hash/register; preserves verified history; invalid MIME never uploaded",
+    "Upload to empty second affiliate targets that affiliate and does not reuse first profile",
+    "Preview/navigation preserve affiliate context; upload denial keeps file/reason and cleans staged object; unavailable type and missing write permission fail closed",
+    "Layout 1440x900: all original fields, independent scroll, save visible, no horizontal overflow",
+    "Layout 1100x849: all original fields, independent scroll, save visible, no horizontal overflow",
+    "Layout 1024x768: all original fields, independent scroll, save visible, no horizontal overflow",
+    "Layout 390x844: all original fields, independent scroll, save visible, no horizontal overflow",
+    "Layout 390x600: all original fields, independent scroll, save visible, no horizontal overflow"
+  ],
+  "pageErrors": [],
+  "productionTraffic": false
+}

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "base": "39580205d80c6659cad5c17d99e6a6553ac820af",
+  "sources": 113,
+  "changedBundleChunks": [
+    "screens-admin-affiliates.jsx"
+  ],
+  "checks": [
+    {
+      "script": "scripts/verify-auth-deployment-contract-live.js",
+      "result": "{\"status\":\"PASS\",\"contract\":\"AUTH_BACKEND_COMPATIBLE_AND_ANON_DENIED\",\"rpcs\":[{\"rpc\":\"get_current_affiliate_access_state\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_effective_affiliate_id\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_impersonation_context\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_admin_access_context\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_current_company_access\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"}],\"activation\":{\"rpc\":\"get_affiliate_activation_status\",\"status\":200,\"verdict\":\"PRESENT_MINIMAL_PUBLIC\"}}"
+    },
+    {
+      "script": "scripts/verify-request-submission-deployment-contract-live.js",
+      "result": "{\"status\":\"PASS\",\"contractVersion\":\"SUTI_REQUEST_SUBMISSION_V2\",\"backendReady\":true,\"writer\":\"create_validated_financial_program_request\",\"edgeAction\":\"loanSessionConfirm\",\"depositContract\":\"BANK_AND_CARD_OR_CLABE\",\"idempotency\":\"affiliate_id+idempotency_key\",\"secretsUsed\":false}"
+    },
+    {
+      "script": "scripts/build-pages-site.js",
+      "result": "{\"status\":\"PASS\",\"output\":\"C:\\\\tmp\\\\sutiapp-affiliates-edit-release\\\\_site\",\"files\":23}"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "changedBundleChunks": [
+    "screens-admin-affiliates.jsx"
+  ],
+  "newPaths": [
+    "docs/qa/H-AFFILIATES-EDIT-DOCUMENTS-001.md",
+    "docs/qa/evidence/affiliates-edit-documents-20260909/",
+    "scripts/test-affiliates-edit-documents-browser.js",
+    "scripts/test-affiliates-edit-documents-live.js"
+  ],
+  "unexpectedNewPaths": [],
+  "initialDirtyPaths": 303,
+  "hashes": {
+    "app/screens-admin-affiliates.jsx": "8abc007195acd102f12f1bda52dc2405b946e917a3480abe146374bc875ee190",
+    "app/bundle.js": "cf57237b1f008acde956fa18d987224df58eb9d28eab38580a8609582ee3cdc4",
+    "SutiApp.html": "256c9af39b4bf18cc262f2a0b7809d20baba23f18804006b286232928c8b2438"
+  },
+  "globalImageRegression": "NOT APPLICABLE: focal screen and generated artifact only"
+}

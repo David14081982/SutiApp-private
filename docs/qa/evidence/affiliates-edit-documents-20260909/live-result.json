@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "profileSaveAndReadback": true,
+  "requiredReason": true,
+  "optimisticConflict": true,
+  "identityPreserved": true,
+  "documentRegistration": true,
+  "verifiedReplacementPreservesHistory": true,
+  "audit": true,
+  "unauthorizedDenied": true,
+  "persistedFixtureRows": 0,
+  "physicalStorageUploadTested": false,
+  "scope": "Existing deployed RPCs under authenticated role, transaction rollback; Storage metadata fixture only"
+}

@@ -51574,6 +51574,7 @@ Object.assign(window, {
   function DocumentUploadModal({
     profile,
     documents,
+    initialTypeId,
     onClose,
     onUploaded
   }) {
@@ -51589,7 +51590,8 @@ Object.assign(window, {
       window.AdminAffiliatesRepository.documentTypes().then(rows => {
         if (!active) return;
         setTypes(rows);
-        setTypeId(rows[0] && rows[0].id || '');
+        setTypeId(initialTypeId || rows[0] && rows[0].id || '');
+        if (initialTypeId && !rows.some(row => row.id === initialTypeId)) setError('Este tipo de documento no permite cargar archivos.');else if (!rows.length) setError('No hay tipos de documento habilitados para cargar archivos.');
         setLoading(false);
       }).catch(() => {
         if (active) {
@@ -51600,11 +51602,11 @@ Object.assign(window, {
       return () => {
         active = false;
       };
-    }, []);
+    }, [initialTypeId]);
     const selected = types.find(row => row.id === typeId),
       accept = selected && selected.accepted_mime_types || [],
       replacing = Boolean(selected && (documents || []).some(row => row.document_type_id === selected.id || row.type_id === selected.id)),
-      limitMb = selected ? Math.round((Number(selected.max_file_size_bytes) || 10485760) / 1048576) : 10;
+      limitMb = selected ? Math.min(10, (Number(selected.max_file_size_bytes) || 10485760) / 1048576) : 10;
     const submit = async () => {
       if (!selected || !file || reason.trim().length < 8 || busy) return;
       if (!window.confirm(replacing ? '¿Crear una nueva versión? El documento anterior conservará su historial y procedencia.' : '¿Cargar este documento al expediente privado del afiliado?')) return;
@@ -51614,8 +51616,7 @@ Object.assign(window, {
         await window.AdminAffiliatesRepository.uploadDocument(profile.id, selected, file, reason);
         onUploaded();
       } catch (value) {
-        const code = String(value && value.message || '');
-        setError(code.includes('INVALID_DOCUMENT_FILE') ? 'El archivo no cumple tipo, origen o tamaño permitido.' : 'No fue posible guardar el documento en Supabase. Verifica permisos y vuelve a intentar.');
+        setError(mutationError(value, true));
       } finally {
         setBusy(false);
       }
@@ -51623,7 +51624,9 @@ Object.assign(window, {
     return h(Overlay, {
       title: replacing ? 'Crear nueva versión' : 'Cargar documento',
       description: 'Expediente privado de ' + text(profile.display_name || profile.full_name, 'afiliado') + ' · máximo ' + limitMb + ' MB',
-      onClose
+      onClose: () => {
+        if (!busy) onClose();
+      }
     }, h('div', {
       'data-admin-affiliate-upload': profile.id,
       className: 'aff-modal-body'
@@ -51632,9 +51635,11 @@ Object.assign(window, {
     }, 'Cargando tipos documentales…') : h('label', null, h('span', null, 'Tipo de documento'), h('select', {
       className: inputClass,
       value: typeId,
+      disabled: busy || Boolean(initialTypeId),
       onChange: event => {
         setTypeId(event.target.value);
         setFile(null);
+        setError('');
       }
     }, types.map(row => h('option', {
       key: row.id,
@@ -51645,13 +51650,15 @@ Object.assign(window, {
       key: typeId,
       className: inputClass,
       type: 'file',
+      disabled: busy || !selected,
       accept: accept.join(','),
       onChange: event => setFile(event.target.files && event.target.files[0] || null)
-    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga'), h('textarea', {
+    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga (obligatorio, 8 caracteres como mínimo)'), h('textarea', {
       className: inputClass,
       value: reason,
       maxLength: 500,
       rows: 3,
+      disabled: busy,
       onChange: event => setReason(event.target.value),
       placeholder: 'Mínimo 8 caracteres'
     })), error && h('div', {
@@ -51661,6 +51668,7 @@ Object.assign(window, {
       className: 'aff-modal-actions'
     }, h('button', {
       className: 'aff-secondary',
+      disabled: busy,
       onClick: onClose
     }, 'Cancelar'), h('button', {
       className: 'aff-primary',
@@ -51728,6 +51736,20 @@ Object.assign(window, {
       onClose: () => setViewer(null)
     }));
   }
+  function mutationError(value, document) {
+    const code = String(value && value.message || '');
+    if (code.includes('VERSION')) return 'El perfil cambió en otra sesión. Cancela y recarga el perfil antes de volver a editar.';
+    if (code.includes('REASON')) return 'Escribe un motivo de al menos 8 caracteres para registrar el cambio.';
+    if (code.includes('NO_CHANGE')) return 'No hay cambios por guardar.';
+    if (code.includes('RFC_DUPLICATE')) return 'El RFC ya está registrado en otro afiliado. Revisa el dato.';
+    if (code.includes('CURP_DUPLICATE')) return 'La CURP ya está registrada en otro afiliado. Revisa el dato.';
+    if (code.includes('UNION_INVALID')) return 'El sindicato seleccionado ya no está disponible. Recarga el perfil.';
+    if (code.includes('CATEGORY_INVALID')) return 'La categoría seleccionada ya no está disponible. Recarga el perfil.';
+    if (code.includes('INVALID_DOCUMENT_FILE')) return 'El archivo no cumple los formatos o el tamaño permitido para este documento.';
+    if (code.includes('DOCUMENT_TYPE_UNAVAILABLE')) return 'Este tipo de documento ya no está disponible para cargar archivos.';
+    if (code.includes('DENIED') || code.includes('row-level security') || String(value && value.code) === '42501') return 'Tu cuenta no tiene permiso para guardar este cambio. Solicita la revisión de tus permisos.';
+    return document ? 'No fue posible guardar el documento. Conserva el archivo y vuelve a intentar.' : 'No fue posible guardar los cambios. Tus datos siguen en el formulario; vuelve a intentar.';
+  }
   function EditProfile({
     profile,
     options,
@@ -51738,44 +51760,60 @@ Object.assign(window, {
       [reason, setReason] = React.useState(''),
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState('');
-    const unions = options.union || [],
+    const reasonRef = React.useRef(null),
+      unions = options.union || [],
       categories = options.employment_category || [];
-    const set = (key, value) => setForm(Object.assign({}, form, {
-      [key]: value
-    }));
+    const set = (key, value) => {
+      setForm(current => Object.assign({}, current, {
+        [key]: value
+      }));
+      setError('');
+    };
     const save = async () => {
+      if (busy) return;
+      if (reason.trim().length < 8) {
+        setError('Escribe un motivo de al menos 8 caracteres para guardar los cambios.');
+        reasonRef.current && reasonRef.current.focus();
+        return;
+      }
       const patch = {};
-      EDIT_FIELDS.forEach(([key]) => {
-        if (String(form[key] || '') !== String(profile[key] || '')) patch[key] = form[key] || null;
-      });
-      ['financial_union_code', 'financial_employee_category_code'].forEach(key => {
-        if (String(form[key] || '') !== String(profile[key] || '')) patch[key] = form[key] || null;
+      EDIT_FIELDS.concat([['financial_union_code'], ['financial_employee_category_code']]).forEach(([key]) => {
+        const next = String(form[key] ?? '').trim(),
+          prior = String(profile[key] ?? '').trim();
+        if (next !== prior) patch[key] = next || null;
       });
       if (!Object.keys(patch).length) {
         setError('No hay cambios por guardar.');
         return;
       }
-      if (!window.confirm('¿Guardar estos cambios en el expediente autoritativo?')) return;
+      if (!window.confirm('¿Guardar estos cambios en el expediente del afiliado?')) return;
       setBusy(true);
       setError('');
       try {
         onSaved(await window.AdminAffiliatesRepository.update(profile.id, profile.updated_at, patch, reason));
       } catch (value) {
-        setError(String(value && value.message).includes('VERSION') ? 'El perfil cambió en otra sesión. Recarga antes de editar.' : 'No fue posible guardar. Revisa duplicados, valores y permisos.');
+        setError(mutationError(value, false));
       } finally {
         setBusy(false);
       }
     };
-    return h('div', {
+    return h('form', {
       'data-affiliate-edit-form': 'true',
-      className: 'aff-edit'
+      className: 'aff-edit',
+      onSubmit: event => {
+        event.preventDefault();
+        save();
+      }
     }, h('div', {
-      className: 'aff-edit-grid'
+      className: 'aff-edit-heading'
+    }, h('strong', null, 'Editar información'), h('small', null, text(profile.display_name || profile.full_name) + ' · Control ' + text(profile.numero_control))), h('fieldset', {
+      className: 'aff-edit-grid',
+      disabled: busy
     }, EDIT_FIELDS.map(([key, label]) => h('label', {
       key
     }, h('span', null, label), h('input', {
       className: inputClass,
-      value: form[key] || '',
+      value: form[key] ?? '',
       maxLength: 240,
       onChange: event => set(key, event.target.value)
     }))), h('label', null, h('span', null, 'Sindicato'), h('select', {
@@ -51796,28 +51834,38 @@ Object.assign(window, {
     }, 'Sin dato'), categories.map(row => h('option', {
       key: row.code,
       value: row.code
-    }, row.label)))), h('label', {
-      className: 'aff-span-2'
-    }, h('span', null, 'Motivo del cambio'), h('textarea', {
+    }, row.label))))), h('div', {
+      className: 'aff-edit-footer'
+    }, h('label', null, h('span', null, 'Motivo del cambio (obligatorio)'), h('textarea', {
+      ref: reasonRef,
       className: inputClass,
       value: reason,
-      rows: 3,
+      rows: 2,
       maxLength: 500,
-      onChange: event => setReason(event.target.value),
-      placeholder: 'Mínimo 8 caracteres'
-    }))), error && h('div', {
+      disabled: busy,
+      'aria-describedby': 'aff-edit-reason-help',
+      onChange: event => {
+        setReason(event.target.value);
+        setError('');
+      },
+      placeholder: 'Describe por qué se actualiza la información'
+    })), h('small', {
+      id: 'aff-edit-reason-help'
+    }, 'Mínimo 8 caracteres. El motivo quedará en la auditoría del afiliado.'), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, error), h('div', {
       className: 'aff-edit-actions'
     }, h('button', {
+      type: 'button',
       className: 'aff-secondary',
+      disabled: busy,
       onClick: onCancel
     }, 'Cancelar'), h('button', {
+      type: 'submit',
       className: 'aff-primary',
-      disabled: busy || reason.trim().length < 8,
-      onClick: save
-    }, busy ? 'Guardando…' : 'Guardar cambios auditados')));
+      disabled: busy
+    }, busy ? 'Guardando…' : 'Guardar cambios auditados'))));
   }
   function DetailContent({
     data,
@@ -51933,20 +51981,11 @@ Object.assign(window, {
       label: 'pendientes',
       tone: pending ? 'warn' : ''
     })), h('div', {
-      className: 'aff-document-grid'
-    }, documents.length ? documents.map(row => h(DocumentCard, {
-      key: row.id,
-      row,
-      affiliateId: p.id
-    })) : h(Empty, {
-      title: 'Expediente vacío',
-      sub: 'No hay documentos canónicos relacionados.'
-    })), h('div', {
-      className: 'aff-action-pair'
+      className: 'aff-action-pair aff-document-actions'
     }, app.admin.has('documents.write') && h('button', {
       'data-affiliate-upload-open': 'true',
       className: 'aff-primary',
-      onClick: onUpload
+      onClick: () => onUpload()
     }, h(I, {
       name: 'upload',
       size: 16
@@ -51955,7 +51994,24 @@ Object.assign(window, {
       onClick: () => onOpenModule('documents_admin', {
         affiliateId: p.id
       })
-    }, 'Abrir Document Workbench')));else if (tab === 'requests') content = !cap.requests ? h('div', {
+    }, 'Abrir Document Workbench')), h('div', {
+      className: 'aff-document-grid'
+    }, documents.length ? documents.map(row => h('div', {
+      key: row.id,
+      className: 'aff-document-entry'
+    }, h(DocumentCard, {
+      row,
+      affiliateId: p.id
+    }), app.admin.has('documents.write') && h('button', {
+      type: 'button',
+      className: 'aff-secondary aff-document-replace',
+      'data-affiliate-document-replace': row.id,
+      'aria-label': 'Reemplazar ' + (row.type_label || row.document_type && row.document_type.label || 'documento'),
+      onClick: () => onUpload(row.document_type_id || row.type_id)
+    }, 'Reemplazar documento'))) : h(Empty, {
+      title: 'Expediente vacío',
+      sub: 'No hay documentos canónicos relacionados.'
+    })));else if (tab === 'requests') content = !cap.requests ? h('div', {
       className: 'aff-boundary'
     }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
       className: 'aff-list'
@@ -52135,7 +52191,7 @@ Object.assign(window, {
       [showNew, setShowNew] = React.useState(false),
       [showStatus, setShowStatus] = React.useState(false),
       [showArchive, setShowArchive] = React.useState(false),
-      [showUpload, setShowUpload] = React.useState(false),
+      [showUpload, setShowUpload] = React.useState(null),
       [exporting, setExporting] = React.useState(false),
       [nonce, setNonce] = React.useState(0);
     const updateFilter = (key, value) => setFilters(current => Object.assign({}, current, {
@@ -52181,6 +52237,7 @@ Object.assign(window, {
       let active = true;
       setDetailPhase('loading');
       setEditing(false);
+      setShowUpload(null);
       window.AdminAffiliatesRepository.detail(selectedId).then(async result => {
         if (!active) return;
         setDetail(result);
@@ -52430,6 +52487,7 @@ Object.assign(window, {
       className: 'aff-secondary',
       onClick: () => setNonce(value => value + 1)
     }, 'Reintentar')) : detail && editing ? h(EditProfile, {
+      key: detail.profile.id + ':' + detail.profile.updated_at,
       profile: detail.profile,
       options: detail.options || {},
       onSaved: useSaved,
@@ -52443,7 +52501,10 @@ Object.assign(window, {
       onEdit: () => setEditing(true),
       onStatus: () => setShowStatus(true),
       onArchive: () => setShowArchive(true),
-      onUpload: () => setShowUpload(true),
+      onUpload: typeId => setShowUpload({
+        affiliateId: detail.profile.id,
+        typeId: typeId || ''
+      }),
       onReload: () => setNonce(value => value + 1),
       onOpenModule: (id, context) => onOpenModule(id, Object.assign({
         from: 'affiliates'
@@ -52464,7 +52525,9 @@ Object.assign(window, {
       profile: detail.profile,
       onClose: () => setShowArchive(false),
       onSaved: useSaved
-    }), showUpload && detail && h(DocumentUploadModal, {
+    }), showUpload && detail && showUpload.affiliateId === detail.profile.id && h(DocumentUploadModal, {
+      key: showUpload.affiliateId + ':' + showUpload.typeId,
+      initialTypeId: showUpload.typeId,
       profile: detail.profile,
       documents: detail.documents || [],
       onClose: () => setShowUpload(false),
@@ -52475,7 +52538,7 @@ Object.assign(window, {
     return h('style', null, `
     .aff-danger-button{border:1px solid #F4C9D4;border-radius:11px;min-height:38px;padding:0 13px;background:#FCE9EE;color:#A00027;font:850 11.5px var(--font);cursor:pointer}
     .aff-view-switch{display:inline-flex;gap:4px;margin-bottom:10px;padding:4px;border-radius:12px;background:var(--surface-2)}.aff-view-switch button{border:0;border-radius:9px;padding:8px 14px;background:transparent;color:var(--ink-3);font:850 11px var(--font);cursor:pointer}.aff-view-switch button[aria-current=page]{background:#fff;color:var(--guinda);box-shadow:var(--neo-sm)}.aff-archive-note,.aff-archive-summary{margin-top:10px;padding:11px 12px;border-radius:11px;background:#FFF3D8;color:#704900;font-size:10.5px;line-height:1.45}.aff-archive-summary{display:grid;gap:3px;margin:0 0 10px}.aff-archive-summary strong{font-size:12px}.aff-document-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.aff-document-card{display:grid;grid-template-columns:48px minmax(0,1fr) 18px;align-items:center;gap:9px;border:1px solid var(--hairline);border-radius:12px;padding:8px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}.aff-document-card>span:nth-child(2){min-width:0}.aff-document-card strong,.aff-document-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-document-card strong{font-size:10.5px}.aff-document-card small{margin-top:3px;color:var(--ink-3);font-size:8.5px}.aff-document-thumb{width:48px;height:48px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:var(--surface-2);color:var(--guinda)}.aff-document-thumb img{width:100%;height:100%;object-fit:cover}
-    .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-profile-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}.aff-profile-identity{flex:1 1 125px;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-profile-updated{display:block;margin-top:5px;color:var(--ink-3);font-size:8.5px}.aff-profile-actions{flex:1 1 280px;justify-content:flex-end;flex-wrap:wrap}.aff-profile-actions button{min-height:36px;padding:0 10px;white-space:nowrap;font-size:10px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;overflow:auto;padding:14px}.aff-edit-actions{justify-content:flex-end;margin-top:12px}
+    .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-profile-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}.aff-profile-identity{flex:1 1 125px;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-profile-updated{display:block;margin-top:5px;color:var(--ink-3);font-size:8.5px}.aff-profile-actions{flex:1 1 280px;justify-content:flex-end;flex-wrap:wrap}.aff-profile-actions button{min-height:36px;padding:0 10px;white-space:nowrap;font-size:10px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;min-height:0;height:min(820px,calc(100dvh - 110px));padding:14px}.aff-edit-heading{flex:none;padding-bottom:10px}.aff-edit-heading strong,.aff-edit-heading small{display:block}.aff-edit-heading small{margin-top:4px;color:var(--ink-3);font-size:10px}.aff-edit>.aff-edit-grid{flex:1;min-height:0;overflow:auto;border:0;margin:0;padding:2px;align-content:start}.aff-edit-footer{flex:none;padding-top:10px;border-top:1px solid var(--hairline);background:var(--surface)}.aff-edit-footer>small{display:block;font-size:10px;color:var(--ink-3);margin:4px 0}.aff-edit-actions{justify-content:flex-end;margin-top:8px}.aff-document-entry{min-width:0}.aff-document-entry>.aff-document-card{width:100%}.aff-document-replace{width:100%;margin-top:5px}.aff-document-actions{margin:0 0 10px;flex-wrap:wrap}
     @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
     @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-control,.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(5),.aff-table-body .aff-docs{display:none}.aff-table-body .aff-cell:nth-child(4){display:block}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-profile-actions{order:4;flex-basis:100%;justify-content:stretch}.aff-profile-actions button{flex:1 1 auto}.aff-detail-scroll{max-height:none}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts,.aff-document-grid{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}

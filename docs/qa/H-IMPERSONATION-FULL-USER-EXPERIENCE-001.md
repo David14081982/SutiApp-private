@@ -32,18 +32,18 @@ Banner persistente fuera del scroll y de las capas de rutas: nombre y control au
 
 El TTL se toma de `expires_at` backend. Al vencer se retira el contenido antes de refrescar, también sin red; únicamente una resolución autoritativa permite volver a mostrar la app. No se modifica el plazo ni las reglas de sesión.
 
-| Validación solicitada | Local |
+| Validación solicitada | Local / producci?n |
 | --- | --- |
-| Tomar control abre Inicio correcto | PASS |
-| Tab bar normal visible | PASS |
-| Recorrido de varias pantallas | PASS |
-| Datos de usuario_contexto | PASS |
-| Volver al Admin conserva impersonación | PASS |
-| Ver app vuelve al mismo usuario | PASS |
-| Salir restaura actor_real | PASS |
-| Ningún dato cruzado en casos comprobados | PASS |
-| Refresh conserva contexto seguro | PASS |
-| Expiración de 30 minutos | PASS |
+| Tomar control abre Inicio correcto | PASS / PASS |
+| Tab bar normal visible | PASS / PASS |
+| Recorrido de varias pantallas | PASS / PASS |
+| Datos de usuario_contexto | PASS / PASS |
+| Volver al Admin conserva impersonación | PASS / PASS |
+| Ver app vuelve al mismo usuario | PASS / PASS |
+| Salir restaura actor_real | PASS / PASS |
+| Ningún dato cruzado en casos comprobados | PASS / PASS |
+| Refresh conserva contexto seguro | PASS / PASS |
+| Expiración de 30 minutos | PASS / PASS |
 
 Recorridas: Inicio, Finanzas, Convenios, Historial, Credencial, Notificaciones, Perfil, Documentos, Tu Sindicato, Programas, Membresía y Ahorro. Documentos e historial se cotejan contra el afiliado efectivo. Se comprueba una segunda identidad real, cierre fallido sin perder contexto y View app del administrador.
 
@@ -52,7 +52,7 @@ Prueba TTL: inicio real devuelve vencimiento a 30 minutos; lectura de las cuatro
 - `node scripts/build-bundle.js C:/tmp/babel-standalone-7.28.4.min.js`: PASS; release 112 módulos, sólo `screens-admin.jsx` y `app.jsx` cambian, otros 110 idénticos.
 - `node scripts/build-pages-site.js`: PASS; 23 archivos públicos. El entorno Windows de pruebas restaura los tres vendors desde blobs Git para conservar SRI exacto (CRLF de checkout no pertenece al deploy Linux).
 - `node scripts/test-admin-access-impersonation-global-permissions.js`: PASS; 38 contratos focales, no suite global.
-- `node scripts/test-impersonation-full-experience.js`: PASS; navegador Chrome real, 17 comprobaciones, 12 superficies, cero errores de página y cero writes de negocio detectados.
+- `node scripts/test-impersonation-full-experience.js`: PASS; navegador Chrome real, 16 comprobaciones, 12 superficies, cero errores de página y cero writes de negocio detectados.
 - Evidencia: [local.json](evidence/impersonation-full-20260908/local.json), [scope.json](evidence/impersonation-full-20260908/scope.json), [backend-contract.json](evidence/impersonation-full-20260908/backend-contract.json). Captura móvil privada, inspeccionada, fuera del repo por datos personales.
 
 ## CLAUDE UI PRESERVATION REVIEW
@@ -81,3 +81,11 @@ Legacy impact: READ ONLY; lógica y datos de negocio intactos.
 Unexpected files changed: ninguno en release; trabajo previo del workspace conservado.
 Known limitations: validación TTL compuesta descrita arriba; Admin sin afiliación propia no recibe identidad inventada; no suites globales por mandato expreso.
 Evidence: docs/qa/evidence/impersonation-full-20260908/.
+
+## Publicaci?n y cierre productivo
+
+Commit runtime `3eec5a4f4c1ed8c6c355c049b1c003e2aac6daac`, GitHub Pages workflow `34315864822`: SUCCESS. `https://sutiapp.com/` entrega HTML, bundle234 y worker182 con bytes exactos del commit. `node scripts/test-impersonation-full-experience.js https://sutiapp.com/`: PASS, 16 checks/12 superficies, 0 errores de p?gina, 0 writes de negocio. Ambas sesiones controladas terminadas mediante RPC normal. Evidencia: [production.json](evidence/impersonation-full-20260908/production.json), [publication.json](evidence/impersonation-full-20260908/publication.json).
+
+Registry del release: FRESH antes de publicar; nodos de ImpersonationBanner/ViewAppButton y referencias de grafo validados focalmente. El cierre posterior s?lo agrega evidencia/documentaci?n y puede marcar freshness documental stale; no cambia arquitectura ni exige regenerar el ?ndice productivo. No se declara una suite global PASS.
+
+Architect review final: APPROVED. No acci?n adicional autorizada/pendiente en esta H. Detener.

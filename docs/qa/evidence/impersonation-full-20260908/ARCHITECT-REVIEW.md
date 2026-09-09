@@ -5,7 +5,7 @@ Verdict: APPROVED para publicar el candidato local validado; cierre productivo r
 
 What Codex did correctly: dos módulos fuente; mismo router/TABS y repositorios; banner fuera de scroll/capas; descarte de estado al cambiar identidad; View app y regreso Admin; error de cierre recuperable y expiración fail-closed.
 
-Important findings: `scope.json` compara el bundle completo contra origin/main 0d2a954 y demuestra 110 módulos idénticos, únicamente shell y header Admin modificados. `local.json` prueba 17 controles con navegador/backend reales y 12 superficies. `backend-contract.json` verifica las cuatro funciones de sesión por lectura productiva. La prueba de vencimiento usa tiempo simulado únicamente en browser, no DML ni espera real de 30 minutos. Ver app sin afiliación propia conserva el contexto administrativo legítimo y explica la alternativa autorizada.
+Important findings: `scope.json` compara el bundle completo contra origin/main 0d2a954 y demuestra 110 módulos idénticos, únicamente shell y header Admin modificados. `local.json` prueba 16 controles con navegador/backend reales y 12 superficies. `backend-contract.json` verifica las cuatro funciones de sesión por lectura productiva. La prueba de vencimiento usa tiempo simulado únicamente en browser, no DML ni espera real de 30 minutos. Ver app sin afiliación propia conserva el contexto administrativo legítimo y explica la alternativa autorizada.
 
 Problems detected: ninguno pendiente en alcance. El primer build Windows tenía vendors con CRLF incompatibles con SRI; el artefacto local se corrigió con bytes Git originales, igual que deploy Linux. Las fallas iniciales de selectores/instalación tardía del reloj correspondían al harness y fueron corregidas antes del PASS. No se cambió código productivo para omitir checks.
 
@@ -25,7 +25,7 @@ Aprobar el candidato focal de H-IMPERSONATION-FULL-USER-EXPERIENCE-001 para la p
 SUTIAPP ARCHITECT REVIEW
 
 Task: H-IMPERSONATION-FULL-USER-EXPERIENCE-001.
-Verdict: APPROVED (candidato local).
+Verdict: APPROVED (local y producci?n).
 Critical findings: ninguno pendiente; verificación pública es gate de cierre.
 Source of truth: PASS.
 Architecture: PASS.
@@ -35,3 +35,11 @@ Legacy: READ ONLY.
 Owner decision: NO.
 Next action: publicación autorizada, prueba productiva y detener.
 Response generated for Codex: YES.
+
+## Revisi?n productiva final
+
+Contrastados production.json y publication.json: workflow34315864822 SUCCESS, tres archivos p?blicos con SHA exacto del commit3eec5a4, 16 checks focales PASS, 12 superficies, 0 errores/0 writes de negocio. Limitaciones de prueba TTL y login secundario descritas expl?citamente en informe; no se modific? backend para facilitar pruebas. Cierre APPROVED.
+
+# RESPONSE TO CODEX ? final
+
+Aprobar y cerrar H-IMPERSONATION-FULL-USER-EXPERIENCE-001. Conservar evidencia y trabajo previo. Producci?n verificada; detener sin iniciar otra H.

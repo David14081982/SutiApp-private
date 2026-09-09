@@ -62,16 +62,16 @@ Ninguna mutación de solicitudes, eventos históricos, datos financieros ni Goog
 
 | Validación | Resultado y evidencia |
 |---|---|
-| Android PWA | FAIL de validación: ningún dispositivo conectado; emulador disponible sin acelerador y sin espacio suficiente para arrancar. No afirma fallo funcional de Android. |
+| Android PWA | PASS, Moto g82 5G físico: opt-in, cuatro avisos recibidos para cinco envíos, apertura del historial confirmada por el propietario y revocación con limpieza backend. Evidencia android-*.json. |
 | iPhone PWA compatible | PENDING REAL DEVICE, permitido por el propietario |
 | Suscripción | PASS, RPC real + Firefox normal con SW real |
-| Revocación | PASS, navegador/proveedor/RPC; endpoints y claves limpiados |
+| Revocación | PASS, Firefox y Moto g82 real; readback backend confirma endpoint y claves limpiados |
 | Autorizada | PASS, SQL en rollback + emisor real, proveedor Mozilla, payload descifrado |
 | Rechazada | PASS, emisor real/proveedor Mozilla, payload descifrado |
 | Cancelada | PASS, emisor real/proveedor Mozilla, payload descifrado |
 | Cambio de etapa | PASS, emisor real/proveedor Mozilla, payload descifrado |
-| notificationclick | PASS, handler real en harness; enlace real carga Tracking y rechaza solicitud ajena/inexistente |
-| Duplicados | 0 en pruebas SQL, receptor concurrente/reinicio y Firefox Push real |
+| notificationclick | PASS, Moto g82 abre historial según observación del propietario; handler real en harness y guard de Tracking para solicitud ajena/inexistente |
+| Duplicados | 0 en SQL, receptor concurrente/reinicio, Firefox Push real y Moto g82: cinco envíos, cuatro eventos únicos y cuatro avisos observados |
 | Cross-user delivery | 0; validación SQL de propietario/destino + rechazo local de binding distinto |
 | Secretos frontend | 0, comparación contra secretos reales en fuentes y artefacto público |
 
@@ -98,24 +98,38 @@ Registry actualizado para código/schema; su freshness restante corresponde sól
 
 ```text
 H-WEB-PUSH-REQUEST-EVENTS-001 RESULT
-Status: BLOCKED — falta evidencia Android PWA en dispositivo utilizable.
+Status: PASS — publicado y verificado, incluido Android PWA físico.
 Files changed: app/request-push.js, app/app.jsx, sw.js, build recipe/artifacts,
   Edge request-push, migraciones/recovery 20260908000700 y 20260908000710,
   herramientas/tests focales, documentos de gobierno, QA/evidencia y Registry derivado.
 Source-of-truth verdict: PASS — eventos/solicitudes e identidad existentes; sólo metadata de transporte nueva.
-Invariant verdict: PASS para controles ejecutables; aceptación Android pendiente.
+Invariant verdict: PASS — autoridad única, deduplicación y aislamiento; Android físico verificado.
 Build: PASS — bundle publicado 233, SW 180, hashes canónicos coincidentes en ambos dominios.
 Tests: PASS SQL rollback, emitter, browser, transporte real, Firefox local/productivo,
-  notificaciones internas existentes y regresión global local/GitHub Pages.
+  Android PWA real asistido por propietario, notificaciones internas existentes
+  y regresión global local/GitHub Pages.
 Security: PASS — RLS forzada, RPC self, worker secreto, 0 secretos frontend y 0 entregas cruzadas probadas.
 Legacy impact: NONE — no cambios de Google, cálculos, writers financieros ni históricos.
 Unexpected files changed: 0 en release; trabajo local previo del propietario conservado.
-Known limitations: Android sin dispositivo (0 ADB); emulador sin acelerador/espacio;
+Known limitations: Android verificado mediante observación del propietario y backend/proveedor;
+  no se afirma automatización USB. Las notificaciones quedaron desactivadas tras probar revocación.
   iPhone PENDING REAL DEVICE permitido; Chrome automatizado no completa suscripción.
   No se produjo una transición financiera artificial para probar Push productivo.
 Evidence: docs/qa/evidence/request-push-20260908/*.json y ARCHITECT-REVIEW.md.
 ```
 
-La H de confirmaciones anterior permanece cerrada PASS. Este bloqueo de validación
-no reabre su publicación ni su alcance. Se pidió conectar Android, sin solicitar nuevas
-decisiones de arquitectura, permisos de despliegue ni configuración manual de VAPID.
+La H de confirmaciones anterior permanece cerrada PASS. La validación Android se completó
+sin reabrir esa publicación ni su alcance. El propietario activó la PWA en su Moto g82 y
+proporcionó su número de control; la consulta acotada encontró exactamente una suscripción
+nueva activa vinculada por la autoridad de afiliados existente. Se enviaron cuatro avisos
+explícitos de prueba y una repetición del mismo event_id, todos aceptados con HTTP 201.
+El propietario confirmó recepción de los cuatro avisos y apertura del historial al tocar uno.
+Después desactivó el dispositivo; el readback confirma revocación y eliminación de endpoint,
+p256dh y auth_key. Las pruebas no insertan eventos ni transiciones financieras. Los cuatro
+mensajes fueron fixtures técnicos explícitos: la elegibilidad post-commit se prueba por separado
+en SQL transaccional revertido, sin fabricar cambios de negocio productivos.
+Evidencia adicional: android-subscription.json, android-send.json, android-observation.json y
+android-revocation.json; herramienta focal scripts/test-request-push-android.js.
+El cierre sólo modifica evidencia, bitácora y herramienta de prueba; no cambia arquitectura
+ni producto. No se regenera el Registry ni se repite la regresión global ya PASS sin nuevos
+cambios de aplicación/SW. No se requieren permisos de despliegue ni VAPID manual.

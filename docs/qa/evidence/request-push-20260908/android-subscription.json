@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "platform": "Moto g82 5G Android PWA, owner assisted",
+  "targetDevices": 1,
+  "authority": "owner-provided numero_control + existing affiliate resolver + own opt-in subscription",
+  "crossUserTargets": 0,
+  "frontEndSecrets": 0
+}

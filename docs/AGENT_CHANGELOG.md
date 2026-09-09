@@ -1,14 +1,17 @@
 # Bitácora de agentes
 
-## 2026-09-08 — H-WEB-PUSH-REQUEST-EVENTS-001 (en verificación)
+## 2026-09-08 — H-WEB-PUSH-REQUEST-EVENTS-001 — PASS
 
 Infraestructura separada de la H UX publicada. Suscripciones self privadas, outbox post-commit,
 VAPID/worker secretos backend, Edge request-push, cron, deduplicación y auditoría de intentos.
 Opt-in en Notificaciones, revocación local/remota, límite de espera, handlers SW y enlace al historial.
 SQL ROLLBACK y emisor/browser aislados PASS; migración aplicada y Edge desplegada.
 Cuatro tipos entregados y descifrados por proveedor Mozilla real, con RPC self real, sin escribir
-solicitudes/eventos de prueba productivos. Ver QA para límites de dispositivo y cierre vigente.
-
+solicitudes/eventos de prueba productivos. Producción publicada en 5066344; regresión global
+local/Pages PASS. Moto g82 físico: cuatro avisos recibidos para cinco envíos, apertura de historial
+confirmada por propietario y revocación con endpoint/claves limpiados según readback backend.
+Duplicados, entregas cruzadas y secretos frontend: 0 en pruebas. iPhone PENDING REAL DEVICE
+según autorización expresa. Cierre con evidencia android-*.json y revisión arquitectónica.
 
 ## 2026-09-08 — H-ADMIN-REQUEST-BANK-REFERENCE-001
 

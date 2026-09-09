@@ -1,63 +1,69 @@
 # ARCHITECT REVIEW
 
 Task reviewed: H-WEB-PUSH-REQUEST-EVENTS-001.
-Verdict: BLOCKED.
+Verdict: APPROVED.
 
-What Codex did correctly: implementó una infraestructura independiente autorizada por OWNER
-DECISION, preservó solicitudes/eventos/identidad y publicó un diff focal. Las tablas nuevas
-son privadas y no conceden lectura/escritura directa al navegador. El trigger AFTER INSERT
-queda dentro de la transacción; cron/Edge reclaman después del commit. La key privada nunca
-llega al build. Las suscripciones son self, múltiples y revocables, con limpieza de expirados.
+What Codex did correctly: infraestructura independiente autorizada por OWNER DECISION,
+publicada en 5066344 y documentada en 2af8cf3. Suscripciones privadas self y múltiples,
+outbox transaccional desde los eventos existentes, Edge backend con secreto de worker,
+VAPID privada sólo backend, opt-in explícito y handlers push/notificationclick.
 
-Important findings: SQL transaccional revertido prueba rollback sin entrega, leases, reintentos,
-denegaciones, ownership y limpieza. El emisor real entregó cuatro payloads cifrados al proveedor
-Mozilla y el receptor controlado los descifró. Firefox normal local/productivo recibió Push
-real por el SW publicado, sin duplicado visible, y revocó con limpieza backend. Las pruebas
-aisladas cubren permiso por gesto, denegación, concurrencia/reinicio, notificationclick y
-rechazo de bindings distintos. El enlace real conserva la autorización del historial.
+Important findings: se contrastaron diff 9b87c70..5066344, fuentes Edge/SW, grants/RLS,
+migraciones/recovery y JSON de evidencia. SQL revertido prueba ausencia de envío tras
+rollback, ownership, reintentos/leases y limpieza. Emisor y transporte Mozilla real prueban
+los cuatro tipos cifrados; Firefox normal con SW productivo prueba recepción/deduplicación.
+Regresiones globales local/Pages PASS, cero errores browser y cero mutaciones de negocio.
+El fallo histórico live-local.json corresponde a Chrome automatizado; queda conservado
+y explicado, junto con las ejecuciones Firefox y Android reales que sí pasan.
 
-Problems detected: no hay evidencia Android PWA ejecutada. ADB devuelve cero dispositivos;
-el SDK no dispone de acelerador y el intento de emulación terminó por espacio insuficiente.
-Chrome automatizado tampoco completó la suscripción, con error controlado. No es válido
-convertir Firefox desktop o viewport móvil en PASS Android. iPhone PENDING REAL DEVICE está
-expresamente permitido. H debe permanecer abierta aunque implementación/publicación estén listas.
+El gate Android queda satisfecho por evidencia adicional comprobable: consulta acotada a
+la cuenta indicada por el propietario encuentra exactamente una suscripción nueva propia;
+el proveedor acepta cinco mensajes para cuatro event_id únicos; el propietario confirma
+cuatro avisos y apertura del historial al tocar uno. Después confirma desactivación y el
+readback verifica revoked_at y endpoint/p256dh/auth_key nulos. Ver android-subscription.json,
+android-send.json, android-observation.json y android-revocation.json. Se distingue observación
+humana en dispositivo físico de automatización; no se infiere recepción únicamente de HTTP 201.
+Los mensajes Android son pruebas técnicas explícitas, sin eventos financieros persistidos;
+la semántica post-commit se valida por separado en SQL revertido.
 
-Architecture implications: un módulo frontend nuevo, handlers SW y routing focal, cuatro tablas,
-RPCs privados/self, cron y una Edge. Registry actualizado; staleness final sólo documental.
-Source-of-truth implications: ninguna segunda autoridad de solicitudes. IndexedDB contiene
-binding/IDs, sin estados financieros ni Auth tokens. La vigencia visible se consulta en Supabase.
-Security implications: backend valida destinatario de nuevo; no auth por URL ni por UI.
-Data implications: no backfill de Push ni cambios históricos. Recovery retiene auditoría;
-UUIDs de auditoría sobreviven a eliminación autorizada de su solicitud/dispositivo.
-Owner decision required: NO — falta un medio de verificación, no una nueva decisión de negocio.
+Problems detected: ninguno bloqueante en el alcance autorizado. iPhone permanece PENDING
+REAL DEVICE por permiso expreso del propietario. No afirmar una prueba física iPhone.
 
-La revisión contrasta commit 5066344, diff contra 9b87c70, migraciones/recovery, source del
-emisor/SW, hashes de publicación y JSON de evidencia. No sustituye las pruebas reales pendientes.
-WORK_QUEUE.md existe y gobierna el Master Plan; no autoriza Phase 8 ni fixtures financieros
-persistentes. WORK_QUEUE_HISTORY.md no existe. La autorización de esta H viene directamente del
-propietario. No se modifica la cola histórica ni se inicia otra H.
+Architecture implications: módulo frontend, handlers SW/routing focal, cuatro tablas,
+RPCs, cron y Edge ya indexados. Este cierre sólo añade evidencia, bitácora y herramienta
+de verificación; no cambia arquitectura ni requiere regenerar Registry/producto.
+Source-of-truth implications: solicitudes, eventos, actores y afiliados conservan autoridades.
+IndexedDB contiene binding/IDs de deduplicación, sin estados financieros ni tokens Auth.
+Security implications: tablas sin lectura directa browser y RLS forzada; RPC self,
+destinatario revalidado en backend y binding en SW. Cero secretos frontend/cross-user probados.
+Data implications: no backfill Push ni cambios históricos. Recovery conserva auditoría;
+desactivar limpia material de suscripción. No se fabricaron transiciones financieras.
+Owner decision required: NO.
 
-Recommended next action: completar Android con dispositivo disponible; mantener iPhone marcado
-PENDING REAL DEVICE hasta su prueba; cerrar PASS sólo cuando se cumpla el gate Android.
+WORK_QUEUE.md existe para Master Plan; WORK_QUEUE_HISTORY.md no existe. La autorización
+de esta H procede directamente del propietario. No se modifica la cola histórica ni se
+autoriza Phase 8 u otra H. La H de confirmaciones anterior permanece cerrada PASS.
+
+Recommended next action: publicar evidencia de cierre y comprobar integridad del producto
+publicado. Conservar iPhone PENDING REAL DEVICE; no iniciar una H nueva sin autorización.
 
 # RESPONSE TO CODEX
 
-No cierres H-WEB-PUSH-REQUEST-EVENTS-001 como PASS. Conserva 5066344 y sus evidencias.
-Cuando haya Android disponible, verifica PWA instalada, opt-in, suscripción, recepción cifrada,
-cuatro tipos de payload, revocación, notificationclick y duplicados/cross-user igual a cero,
-con cuenta/receptor controlado y sin fabricar transiciones financieras persistentes.
-Si falla, corrige exclusivamente el defecto comprobado y repite su regresión. No avances a otra H.
+Aprueba H-WEB-PUSH-REQUEST-EVENTS-001 como PASS con la limitación iPhone autorizada.
+Publica exclusivamente el cierre, evidencia Android y herramienta focal revisados.
+Comprueba Pages y hashes de los artefactos ya publicados. Conserva solicitudes/eventos,
+secretos, módulos locales no publicados y configuración productiva. No avances a otra H.
 
 SUTIAPP ARCHITECT REVIEW
 
 Task: H-WEB-PUSH-REQUEST-EVENTS-001
-Verdict: BLOCKED
-Critical findings: aceptación Android sin evidencia real.
+Verdict: APPROVED
+Critical findings: ninguno; gate Android satisfecho por prueba física asistida y readback.
 Source of truth: PASS
 Architecture: PASS
-Security: PASS en controles ejecutados
+Security: PASS
 Data: PASS
 Legacy: NONE
 Owner decision: NO
-Next action: prueba Android pendiente; H de confirmaciones conserva PASS.
+Next action: publicar cierre; iPhone PENDING REAL DEVICE como limitación expresa.
 Response generated for Codex: YES

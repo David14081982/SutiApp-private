@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-09-09T02:50:53Z",
+  "platform": "Moto g82 5G Android PWA",
+  "method": "Owner-assisted physical-device observation, correlated with the scoped real subscription and provider acceptance evidence",
+  "ownerStatement": "todo quedó excelente si llegaron llos 4 avisos, al dar clik en uno de ellos lleva al historial",
+  "receivedDistinctNotifications": 4,
+  "submittedMessages": 5,
+  "uniqueEventIds": 4,
+  "visibleDuplicates": 0,
+  "notificationclick": "PASS: owner confirms opening request history",
+  "receipt": "PASS",
+  "automatedPhysicalDeviceObservation": false,
+  "scope": "Explicit technical test messages; no persisted financial transitions. Backend event eligibility is covered separately by transactional rollback tests.",
+  "revocation": "PASS: owner confirmed deactivation; android-revocation.json verifies backend revocation and endpoint/key scrubbing"
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "provider": "real Web Push",
+  "acceptedAttempts": 5,
+  "uniqueEvents": 4,
+  "duplicateAttempt": 1,
+  "expectedDistinctNotifications": 4,
+  "targetDevices": 1,
+  "crossUserTargets": 0,
+  "financialMutations": 0,
+  "scope": "explicit technical fixtures to owner-confirmed device; no request/event persisted",
+  "deliveryConfirmation": "PENDING OWNER DEVICE OBSERVATION"
+}

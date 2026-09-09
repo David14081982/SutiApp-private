@@ -1,5 +1,44 @@
 # H-AFFILIATES-EDIT-DOCUMENTS-001
 
+## Resultado de publicación — PASS
+
+Publicado en https://sutiapp.com/ mediante el workflow Pages
+https://github.com/David14081982/SutiApp-private/actions/runs/34398897722.
+Commit funcional `44a1c83`; commit desplegado `862194a21ae7401feb406df555dcac4b408d07b4`.
+Bundle v238, SHA-256 `16f28f00f8ea794ec80e77175fededf3a1e0c16a79b5a95daeeb0e68e8cf4ed9`.
+
+`test-affiliates-edit-documents-production.js https://sutiapp.com/` ejecutado desde
+el checkout de publicación: PASS. Bytes publicados idénticos al bundle de entrega;
+sesión Admin real; 27 campos; Guardar visible; motivo ausente explicado sin enviar
+RPC; carga con 13 tipos; reemplazo individual con tipo fijado; refresh autenticado
+con v238. Cero errores de página y cero writes de perfil/documento durante la prueba.
+Evidencia: `production-result.json` y `release-preflight.json` en la carpeta de la H.
+
+H-AFFILIATES-EDIT-DOCUMENTS-001 RESULT
+Status: PASS — publicado y verificado.
+Files changed: pantalla, bundle/cachebuster, pruebas y evidencia focales.
+Source-of-truth verdict: SAFE, sin cambio.
+Invariant verdict: PASS, identidad e historia conservadas.
+Build: PASS local y GitHub Pages.
+Tests: PASS focal y producción; aserción histórica ajena documentada abajo.
+Security: permisos existentes; ningún secreto o dato de prueba publicado.
+Legacy impact: NOT APPLICABLE.
+Unexpected files changed: ninguno en la entrega.
+Known limitations: no se subió un archivo físico nuevo a un expediente real.
+Evidence: workflow y JSON anteriores.
+
+SUTIAPP ARCHITECT REVIEW
+Task: publicación expresamente autorizada de esta H.
+Verdict: APPROVED.
+Critical findings: diff focal sobre main vigente y bytes publicados comprobados;
+no se publicaron los otros cambios locales ni se modificaron backends/Storage/SW.
+Owner decision: NO.
+Next action: entregar el enlace publicado; no iniciar otra H.
+Response generated for Codex: YES.
+
+RESPONSE TO CODEX: Cerrar esta publicación como PASS. Informar que Afiliados ya
+incluye las acciones corregidas y que los expedientes reales permanecieron intactos.
+
 ## Continuación: publicación autorizada
 
 El propietario ordenó «HAZLO» después de informarle que faltaba publicar. Esa

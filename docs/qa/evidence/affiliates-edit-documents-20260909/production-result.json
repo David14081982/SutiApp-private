@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/",
+  "bundleVersion": 238,
+  "bundleSha256": "16f28f00f8ea794ec80e77175fededf3a1e0c16a79b5a95daeeb0e68e8cf4ed9",
+  "checks": [
+    "Authenticated editor, required reason, document upload catalog and per-document replacement",
+    "Authenticated refresh uses bundle v238"
+  ],
+  "documentTypes": 13,
+  "profileAndDocumentWrites": 0,
+  "pageErrors": []
+}

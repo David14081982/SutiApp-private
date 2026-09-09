@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "sourceSha256": "f97b5a819d6aa09aaef7a5bf4efed08296ccde7146e46d6a9f929b53e4b4cbbd",
+  "auth": "private worker key checked before every dispatch",
+  "verifyJwt": false
+}

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "provider": "Mozilla Web Push production",
+  "client": "isolated protocol receiver; not an Android/iPhone device",
+  "publicConfig": "PASS",
+  "selfSubscription": "PASS",
+  "tableReadDenied": "PASS",
+  "selfRevocation": "PASS",
+  "keyCleanup": "PASS",
+  "accepted": 4,
+  "receivedAndDecrypted": 4,
+  "authorized": "PASS",
+  "rejected": "PASS",
+  "cancelled": "PASS",
+  "stage": "PASS",
+  "duplicates": 0,
+  "crossUserDelivery": 0,
+  "businessWrites": 0,
+  "queue": "isolated fixture; actual emitter source and real provider HTTP; SQL queue tested separately with rollback"
+}

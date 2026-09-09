@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "migrationSha256": "db92d9957292df772658bb705e9b424ee08d446cebb5bfff16d9d302e151f0db",
+  "recoverySha256": "0ea80618d424ce9e8c8fa9b8c464455ee0bda9ec2ceb22bed841de36225d4dcd",
+  "transaction": "ROLLBACK",
+  "multipleDevices": "PASS",
+  "selfRevoke": "PASS",
+  "crossUser": "PASS",
+  "expiredCleanup": "PASS",
+  "leasesRetries": "PASS",
+  "rollbackNoPush": "PASS",
+  "rls": "PASS",
+  "duplicates": 0,
+  "crossUserDelivery": 0,
+  "businessUnchanged": true
+}

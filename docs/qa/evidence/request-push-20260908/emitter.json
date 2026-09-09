@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "authorized": "PASS",
+  "rejected": "PASS",
+  "cancelled": "PASS",
+  "stage": "PASS",
+  "vapid": "PASS",
+  "encryption": "aes128gcm verified on all four payloads",
+  "ssrf": "PASS",
+  "networkFailure": "PASS",
+  "expired": "PASS",
+  "duplicates": 0,
+  "environment": "isolated queue and HTTP transport; actual backend module"
+}

@@ -1,5 +1,18 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-110 — Web Push independiente para eventos confirmados, 2026-09-08
+
+OWNER DECISION — CONTINUAR separa Web Push de la H de confirmaciones, que se publicó PASS.
+Autoriza iniciar automáticamente H-WEB-PUSH-REQUEST-EVENTS-001 con suscripciones opt-in por
+dispositivo, VAPID backend, cola con deduplicación/reintentos/auditoría, emisor Edge y SW.
+La autoridad de solicitudes, identidad, actor y destinatario no cambia. No se envía por intentos
+fallidos ni se crean estados paralelos. No hay backfill de Push al registrar un dispositivo.
+Se autorizan múltiples dispositivos, revocación/expiración y enlace a Historial/Seguimiento.
+La migración 20260908000700 añade infraestructura privada; recovery detiene cron/trigger y
+conserva auditoría. VAPID se genera y configura mediante Management API, sin acción manual.
+Android requiere evidencia específica; iPhone admite PENDING REAL DEVICE según instrucción expresa.
+
+
 ## ADR-109 — Cuenta capturada en el detalle administrativo, 2026-09-08
 
 El propietario solicita referencias bancarias en Solicitante y elige explícitamente la cuenta

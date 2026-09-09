@@ -1,5 +1,15 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-WEB-PUSH-REQUEST-EVENTS-001 (en verificación)
+
+Infraestructura separada de la H UX publicada. Suscripciones self privadas, outbox post-commit,
+VAPID/worker secretos backend, Edge request-push, cron, deduplicación y auditoría de intentos.
+Opt-in en Notificaciones, revocación local/remota, límite de espera, handlers SW y enlace al historial.
+SQL ROLLBACK y emisor/browser aislados PASS; migración aplicada y Edge desplegada.
+Cuatro tipos entregados y descifrados por proveedor Mozilla real, con RPC self real, sin escribir
+solicitudes/eventos de prueba productivos. Ver QA para límites de dispositivo y cierre vigente.
+
+
 ## 2026-09-08 — H-ADMIN-REQUEST-BANK-REFERENCE-001
 
 Solicitante muestra la cuenta seleccionada al enviar: banco, titular, tarjeta/CLABE capturados.

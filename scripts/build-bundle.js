@@ -38,7 +38,7 @@ const files = [
   'screens-admin-catalogo.jsx', 'screens-admin-planes.jsx', 'membership-repository.js', 'membership-store.jsx',
   'screens-membresias.jsx', 'screens-membership-application.jsx', 'screens-admin-membresias.jsx',
   'screens-company-modules.jsx', 'screens-company.jsx',
-  'affiliate-view-model.js', 'affiliate-auth.js', 'app.jsx',
+  'affiliate-view-model.js', 'affiliate-auth.js', 'request-push.js', 'app.jsx',
 ];
 
 const chunks = files.map((file) => {

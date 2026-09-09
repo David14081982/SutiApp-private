@@ -1,5 +1,5 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v179';
+const CACHE = 'sutiapp-v180';
 const SHELL_URL = './SutiApp.html';
 const CORE = [
   './',
@@ -7,7 +7,7 @@ const CORE = [
   './app/vendor/react-18.3.1/react.production.min.js',
   './app/vendor/react-dom-18.3.1/react-dom.production.min.js',
   './app/vendor/supabase-js-2.112.3/supabase.min.js',
-  './app/bundle.js?v=232',
+  './app/bundle.js?v=233',
   './app/supabase-client.js',
   './app/affiliate-repository.js?v=5',
   './app/financial-legacy-repository.js?v=11',
@@ -19,6 +19,55 @@ const CORE = [
   './icon-maskable-512.png',
   './assets/branding/home-header-collapsed.webp',
 ];
+
+// Device privacy binding and event IDs only; no cached request state or Auth token.
+function pushDatabase() {
+  return new Promise((resolve,reject)=>{
+    const open=indexedDB.open('sutiapp-request-push-v1',1);
+    open.onupgradeneeded=()=>{open.result.createObjectStore('device');open.result.createObjectStore('events');};
+    open.onsuccess=()=>resolve(open.result);open.onerror=()=>reject(open.error);
+  });
+}
+async function claimPush(payload) {
+  const db=await pushDatabase();
+  try{return await new Promise((resolve,reject)=>{
+    const tx=db.transaction(['device','events'],'readwrite'),binding=tx.objectStore('device').get('binding');let claimed=false;
+    binding.onsuccess=()=>{
+      if(!binding.result||binding.result.subscription_id!==payload.subscription_id)return;
+      const events=tx.objectStore('events'),prior=events.get(payload.event_id);
+      prior.onsuccess=()=>{if(prior.result)return;events.put(Date.now(),payload.event_id);claimed=true;};
+      const cursor=events.openCursor();cursor.onsuccess=()=>{const row=cursor.result;if(row){if(row.value<Date.now()-7*86400000)row.delete();row.continue();}};
+    };
+    tx.oncomplete=()=>resolve(claimed);tx.onerror=()=>reject(tx.error);
+  });}finally{db.close();}
+}
+self.addEventListener('push',event=>{
+  event.waitUntil((async()=>{
+    let payload;try{payload=event.data.json();}catch{return;}
+    const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if(!payload||payload.v!==1||!uuid.test(payload.event_id)||!uuid.test(payload.request_id)||!uuid.test(payload.subscription_id)||typeof payload.title!=='string'||typeof payload.body!=='string')return;
+    if(!await claimPush(payload))return;
+    await self.registration.showNotification(payload.title.slice(0,100),{
+      body:payload.body.slice(0,240),icon:new URL('./icon-192.png',self.registration.scope).href,
+      badge:new URL('./icon-192.png',self.registration.scope).href,tag:'request-event-'+payload.event_id,renotify:false,
+      data:{request_id:payload.request_id,subscription_id:payload.subscription_id},
+    });
+  })());
+});
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const data=event.notification.data||{};
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.request_id||''))return;
+    const db=await pushDatabase();
+    const binding=await new Promise((resolve,reject)=>{const tx=db.transaction('device'),r=tx.objectStore('device').get('binding');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});db.close();
+    if(!binding||binding.subscription_id!==data.subscription_id)return;
+    const url=new URL('./SutiApp.html',self.registration.scope);url.hash='/historial?request='+data.request_id;
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    const existing=windows.find(client=>client.url.startsWith(self.registration.scope));
+    if(existing){await existing.navigate(url.href);await existing.focus();}else await self.clients.openWindow(url.href);
+  })());
+});
 
 self.addEventListener('install', (e) => {
   // El worker nuevo sólo toma control cuando el shell completo quedó guardado.

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "migrationSha256": "9a1b956eb0ceb38a25985ebfd70aca02195d4e3d7388d76fcb6a990fb4d85eee",
+  "selfStatus": "PASS",
+  "crossUserStatus": "PASS",
+  "expiredCleanupWithoutEvents": "PASS",
+  "recovery": "PASS",
+  "transaction": "ROLLBACK",
+  "businessUnchanged": true
+}

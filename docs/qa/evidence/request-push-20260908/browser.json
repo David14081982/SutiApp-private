@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "environment": "Chrome desktop, mobile viewport; isolated browser/RPC/worker contract, actual production JS and IndexedDB",
+  "optIn": "PASS",
+  "noAutomaticPermission": true,
+  "denial": "PASS",
+  "subscription": "PASS",
+  "revocation": "PASS",
+  "notificationclick": "PASS",
+  "restartDedup": "PASS",
+  "duplicates": 0,
+  "crossUserDelivery": 0,
+  "errors": []
+}

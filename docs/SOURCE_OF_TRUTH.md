@@ -1,5 +1,20 @@
 # Fuentes de verdad
 
+## Web Push de solicitudes — ADR-110, 2026-09-08
+
+`program_request_admin_events` y `program_requests` siguen siendo la única autoridad de
+transiciones y destinatario. `get_effective_affiliate_id()` resuelve identidad; un helper privado
+reutiliza ese resolvedor sin contexto de impersonación al despachar a un usuario Auth.
+`request_push_subscriptions` es la autoridad privada del consentimiento por dispositivo;
+`request_push_deliveries` y `request_push_attempts` contienen únicamente transporte y auditoría.
+El trigger encola en la transacción del evento, sin red ni backfill. La Edge `request-push`
+reclama después del commit y nunca escribe solicitudes. RPCs self registran/revocan sólo al dueño.
+`request_push_config` expone mediante RPC únicamente la clave pública VAPID y disponibilidad.
+IndexedDB contiene vinculación local del dispositivo e IDs de eventos recibidos durante siete días,
+sin Auth tokens ni estados de solicitud; no es fuente de solicitudes ni fallback.
+Private key en Edge secrets; token del worker en Edge secrets/Vault. Google y finanzas permanecen intactos.
+
+
 ## Cuenta de la solicitud — ADR-109, 2026-09-08
 
 La referencia bancaria mostrada en Solicitante deriva exclusivamente de la captura inmutable

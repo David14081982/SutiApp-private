@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "publicKeySha256": "05d26732275c7246f82826fc7694cab4563743820f217a051d1e3ec1782a1600",
+  "privateKey": "Supabase Edge secret only; private recovery copy outside repository",
+  "workerKey": "Edge secret + Vault",
+  "manualVapidActionRequired": false
+}

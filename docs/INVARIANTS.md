@@ -1,5 +1,17 @@
 # Invariantes
 
+## Web Push de solicitudes — ADR-110
+
+- **INV-221:** Web Push sólo proyecta eventos confirmados; rollback no deja entrega. Un evento y
+  dispositivo tienen una única fila de transporte, lease y máximo cinco intentos. Reintentos ambiguos
+  se deduplican en el receptor por event_id; la aceptación del proveedor no equivale a lectura.
+- **INV-222:** El permiso se solicita sólo por gesto explícito. Cada dispositivo pertenece a su
+  usuario Auth y afiliado resuelto; impersonación nunca registra avisos de otro afiliado. RLS y
+  grants impiden acceso browser a suscripciones/cola/auditoría; secretos permanecen backend.
+  Revocar limpia endpoints/claves; cerrar sesión cierra primero la vinculación local y cancela
+  suscripción. Error, permiso denegado o navegador incompatible conservan el uso normal de SutiApp.
+
+
 ## Cuenta de la solicitud — ADR-109
 
 - **INV-220:** El detalle Admin muestra sólo la cuenta capturada en `loan_request_deposit_snapshots`,

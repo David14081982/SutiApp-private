@@ -228,6 +228,7 @@
         React.createElement('span', { style: { fontSize: 16.5, fontWeight: 800 } }, 'Notificaciones')),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 16 } },
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11 } },
+          React.createElement(window.RequestPushInvitation),
           statusCard || items.map((n) => {
             const tones = { guinda: ['var(--guinda-50)', 'var(--guinda)'], green: ['#E7F6ED', '#13794A'], amber: ['#FFF3DC', '#9A6B16'], blue: ['#E8F0FE', '#2456C7'], red: ['#FDEAEA', '#C0341D'] }[n.tone];
             return React.createElement('div', { key: n.id, onClick: n.go, role: n.go ? 'button' : undefined, tabIndex: n.go ? 0 : undefined, onKeyDown: event => { if (n.go && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); n.go(); } }, 'data-notification-id': n.id, 'data-notification-unread': n.unread ? 'true' : 'false', className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
@@ -399,7 +400,18 @@
     const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); }, []);
   const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
 
-    const app = { push, back, setTab, toast: showToast, openFinanceItem, logout: auth.signOut, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
+    useEffect(() => {
+      const openRequest = () => {
+        const match = /^#\/historial\?request=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(window.location.hash);
+        if (!match || !auth.affiliateView) return;
+        setTabState('historial'); setOutgoing(null); setStack([{ name: 'tracking', params: { s: { sourceId: match[1] } } }]);
+        history.replaceState(history.state, '', window.location.pathname + window.location.search);
+      };
+      openRequest(); window.addEventListener('hashchange', openRequest);
+      return () => window.removeEventListener('hashchange', openRequest);
+    }, [auth.affiliateView && auth.affiliateView.id]);
+    const logout = async () => { try { await window.RequestPush.clearDevice(); } catch (_) { /* Privacy gate closes before network; Auth logout remains available. */ } return auth.signOut(); };
+    const app = { push, back, setTab, toast: showToast, openFinanceItem, logout, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
 
     useEffect(()=>{
       if(adminAuthorized)return;

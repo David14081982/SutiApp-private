@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "changedModules": [
+    "app.jsx"
+  ],
+  "addedModules": [
+    "request-push.js"
+  ],
+  "unrelatedModulesPreserved": 110,
+  "generatedArtifact": "app/bundle.js",
+  "versions": {
+    "bundle": 233,
+    "serviceWorker": 180
+  }
+}

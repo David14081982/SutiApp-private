@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "cron": 1,
+  "configured": 1,
+  "active_devices": 0,
+  "deliveries": 0,
+  "attempts": 0,
+  "request_events": 39,
+  "enabled_trigger": 1
+}

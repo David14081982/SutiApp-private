@@ -1,0 +1,11 @@
+{
+  "status": "FAIL",
+  "engine": "chromium",
+  "target": "LOCAL_RELEASE",
+  "businessWrites": 0,
+  "errors": [],
+  "publicConfig": "PASS",
+  "error": "locator.waitFor: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-request-push=\"active\"]') to be visible\u001b[22m\n",
+  "deviceUi": "Avisos de tus solicitudesRecibe un aviso cuando tu solicitud sea autorizada, rechazada, cancelada o cambie de etapa.Activar notificacionesNo pudimos actualizar las notificaciones. Intenta de nuevo.",
+  "deviceError": null
+}

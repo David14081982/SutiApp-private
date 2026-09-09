@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "frontendSecrets": 0,
+  "unexpectedTrackedFiles": 0,
+  "globalSourcesChanged": [
+    "sw.js",
+    "app/app.jsx"
+  ],
+  "protectedModulesIdentical": 110,
+  "localCache": "device binding + event IDs only; no request state"
+}

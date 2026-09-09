@@ -19,7 +19,7 @@ async function main(){
     const claimed=!__seen.has(args.p_event_id);__seen.add(args.p_event_id);return{data:claimed};
    }})};
    window.__app={push:(...args)=>__push.push(args),toast:()=>{}};window.__requests=[{sourceId:'r1',requestStatus:'approved',tipo:'Programa de prueba',steps:[{active:true,label:'Autorización'}]}];
-   window.Icon=()=>null;window.useQuoteStore=()=>({state:()=>({phase:'loaded'}),mine:()=>[],retry:()=>{}});
+   window.Icon=()=>null;window.RequestPushInvitation=()=>null;window.useQuoteStore=()=>({state:()=>({phase:'loaded'}),mine:()=>[],retry:()=>{}});
   });
   await page.addScriptTag({content:read('app/request-notifications.js')});
   await page.evaluate(()=>{

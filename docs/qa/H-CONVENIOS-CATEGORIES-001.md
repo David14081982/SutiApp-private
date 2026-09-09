@@ -43,6 +43,56 @@ RLS live inspeccionado: lectura enabled o marketplace.read, escritura y triggers
 | Nueve módulos empresariales | isolated-panel-regression.json | PASS, fixtures sólo browser |
 | Build | build-scope.json | Resultado registrado antes de publicar |
 
-Evidencia: docs/qa/evidence/categories-20260909. La publicación y su verificación se registran en el cierre final.
+Evidencia: docs/qa/evidence/categories-20260909. Publicación y verificación completas, ver cierre.
 
 Límites: las categorías se comparten con Marketplace como antes. El permiso para crear/editar el catálogo sigue siendo el de Marketplace; ser responsable de Convenios o Educación no lo concede automáticamente. Renombrar/desactivar no reescribe etiquetas históricas de las fichas. Recovery aborta si existen nuevas categorías administrativas; jamás las elimina para recuperar la antigua restricción.
+
+## H-CONVENIOS-CATEGORIES-001 RESULT
+
+Status: PASS
+Files changed: cinco pantallas focales, bundle/HTML/cachebusters generados, migración/recovery 20260909000200, cuatro scripts focales, gobierno, Registry y evidencia. Diff e297d6940b7a0a8e6f3dfd942699785dbb04ed50.
+Source-of-truth verdict: PASS. Catálogo Supabase único existente; asignaciones originales y clasificación educativa en su propia entidad.
+Invariant verdict: PASS. Educación conserva agrupación; categorías laborales independientes; históricos intactos; cero mocks productivos.
+Build: PASS. 113 módulos publicados; 116 en workspace original con sus cambios previos. Artefacto Pages de 23 archivos; bundle237/worker185.
+Tests: PASS. SQL forward/rollback/recovery exacto, rechazo de duplicado histórico y slug, permisos; browser aislado 390/1440; regresión focal pública/Admin y nueve módulos de empresa; producción read-only 390/1440.
+Security: PASS. Mismos RLS, grants, Auth y triggers. La empresa no crea/edita categorías globales; responsables mantienen sus permisos originales.
+Legacy impact: NOT APPLICABLE para Google/finanzas. Únicamente metadata de procedencia Supabase inspeccionada; unicidad histórica conservada.
+Unexpected files changed: ninguno. Comparación contra baseline original: diez archivos preexistentes cambiados dentro del alcance; fuentes anteriores preservadas. Registry derivado actualizado por los componentes/conexiones nuevos.
+Known limitations: catálogo compartido; renombrados sin cascada histórica; recovery protegido tras nuevas altas. No se publicaron categorías de ejemplo.
+Evidence: migration-dry-run.json, migration-apply.json, sql.json, browser.json, local-live-regression.json, isolated-panel-regression.json, build-scope.json, production-browser.json, production-artifact.json, deployment.json, original-scope.json y capturas correspondientes.
+
+Código publicado: e297d6940b7a0a8e6f3dfd942699785dbb04ed50.
+Despliegue: https://github.com/David14081982/SutiApp-private/actions/runs/34334571430 — success.
+Producción: https://sutiapp.com/ y https://david14081982.github.io/SutiApp-private/ coinciden byte a byte con HTML, bundle y SW del commit. Browser de producción no escribió datos comerciales. El commit posterior sólo registra evidencia/cierre.
+
+## ARCHITECT REVIEW
+
+Task reviewed: H-CONVENIOS-CATEGORIES-001
+Verdict: APPROVED
+What Codex did correctly: reutilizó CategoryEditor, catálogo, readers/writers, permisos y UI; encontró y corrigió el bloqueo SQL real, no sólo el selector.
+Important findings: el intento histórico de retirar el constraint usaba otro nombre; la unicidad NULLS NOT DISTINCT global bloqueaba una segunda alta administrativa. Se preservó la semántica histórica con el índice existente.
+Problems detected: ninguno pendiente en el alcance solicitado.
+Architecture implications: dos componentes visuales focales nuevos, sin helpers de infraestructura ni repositorios nuevos; Registry derivado actualizado.
+Source-of-truth implications: no duplicación de catálogos ni instituciones; etiquetas históricas conservadas.
+Security implications: no elevación de privilegios; SQL negativo con otro principal y guards existentes; categorías globales no editables por empresa.
+Data implications: cuatro categorías previas intactas; cero fixtures persistidos; ninguna fila histórica modificada por la migración.
+Owner decision required: NO.
+Recommended next action: entregar rutas de uso y evidencia; detenerse sin iniciar otra H.
+
+## RESPONSE TO CODEX
+
+Aprobar H-CONVENIOS-CATEGORIES-001. Registrar este cierre documental, comprobar que su despliegue conserva el mismo artefacto probado y explicar al propietario dónde agregar categorías. No modificar datos comerciales ni iniciar otra H. No se avanza WORK_QUEUE ni se atribuye autorización de otra tarea a este reviewer.
+
+## SUTIAPP ARCHITECT REVIEW
+
+Task: H-CONVENIOS-CATEGORIES-001
+Verdict: APPROVED
+Critical findings: ninguno abierto.
+Source of truth: PASS.
+Architecture: PASS.
+Security: PASS.
+Data: PASS.
+Legacy: PASS, sin cambios externos/financieros.
+Owner decision: NO.
+Next action: entregar evidencia e instrucciones de uso y detenerse.
+Response generated for Codex: YES.

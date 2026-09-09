@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "mode": "REAL_BACKEND_READ_ONLY",
+  "viewports": [
+    {
+      "width": 390,
+      "categoryManager": true,
+      "inlineCreate": "FORM_VERIFIED",
+      "parentFormPreserved": true,
+      "education": "SELECTOR_VERIFIED"
+    },
+    {
+      "width": 1440,
+      "categoryManager": true,
+      "inlineCreate": "FORM_VERIFIED",
+      "parentFormPreserved": true,
+      "education": "SELECTOR_VERIFIED"
+    }
+  ],
+  "productionBusinessWrites": 0
+}

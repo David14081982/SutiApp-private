@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "trackedChecked": 1236,
+  "changed": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/screens-admin-catalogo.jsx",
+    "app/screens-admin-convenios.jsx",
+    "app/screens-admin-visual-crud.jsx",
+    "app/screens-company-modules.jsx",
+    "app/screens-convenios.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "sw.js"
+  ],
+  "unexpectedFiles": []
+}

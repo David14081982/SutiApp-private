@@ -1,5 +1,5 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v180';
+const CACHE = 'sutiapp-v181';
 const SHELL_URL = './SutiApp.html';
 const CORE = [
   './',
@@ -14,6 +14,7 @@ const CORE = [
   './app/payroll-declaration-repository.js',
   './manifest.webmanifest',
   './icon-192.png',
+  './icon-notification-badge.png',
   './icon-512.png',
   './icon-180.png',
   './icon-maskable-512.png',
@@ -49,7 +50,7 @@ self.addEventListener('push',event=>{
     if(!await claimPush(payload))return;
     await self.registration.showNotification(payload.title.slice(0,100),{
       body:payload.body.slice(0,240),icon:new URL('./icon-192.png',self.registration.scope).href,
-      badge:new URL('./icon-192.png',self.registration.scope).href,tag:'request-event-'+payload.event_id,renotify:false,
+      badge:new URL('./icon-notification-badge.png',self.registration.scope).href,tag:'request-event-'+payload.event_id,renotify:false,
       data:{request_id:payload.request_id,subscription_id:payload.subscription_id},
     });
   })());

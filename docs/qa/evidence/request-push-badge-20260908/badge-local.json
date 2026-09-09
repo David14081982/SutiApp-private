@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "target": "http://localhost:8080/",
+  "serviceWorker": 181,
+  "assetSha256": "cbd41b39c7cef9ea64b8fa0a3b6c80d9a556aab003e8e7e41abb3a771754e70d",
+  "image": {
+    "width": 500,
+    "height": 500,
+    "transparentPixels": 147808,
+    "visiblePixels": 102192,
+    "cornerAlpha": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "badge": "dedicated transparent owner-supplied fist",
+  "colorIcon": "unchanged icon-192.png",
+  "duplicateNotifications": 0,
+  "notificationclick": "PASS",
+  "method": "actual SW handler in isolated browser contract; real fetched asset decoded in canvas; no production business writes or device messages",
+  "physicalAndroidAppearance": "NOT EXECUTED by this automated test"
+}

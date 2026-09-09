@@ -25,6 +25,7 @@ const publicFiles = [
   'manifest.webmanifest',
   'icon-180.png',
   'icon-192.png',
+  'icon-notification-badge.png',
   'icon-512.png',
   'icon-maskable-512.png',
   'assets/branding/home-header-collapsed.webp',

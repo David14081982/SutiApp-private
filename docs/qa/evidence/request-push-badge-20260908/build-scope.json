@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "baseline": "b104a8c713037216c44d5f4f4810295591f6cd0d",
+  "ownerAssetExactCopy": true,
+  "assetSha256": "cbd41b39c7cef9ea64b8fa0a3b6c80d9a556aab003e8e7e41abb3a771754e70d",
+  "bundleUnchanged": true,
+  "colorIconUnchanged": true,
+  "manifestUnchanged": true,
+  "workerBehaviorUnchangedExceptBadgeAndPrecache": true,
+  "publicBuildFiles": 23,
+  "frontendSecrets": 0,
+  "backendChanges": 0,
+  "businessWrites": 0,
+  "registry": "No architecture change: notification artwork/reference and cache version only"
+}

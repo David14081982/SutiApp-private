@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "commit": "506634444368088f5ec00eef1a11845ce36f8fda",
+  "bundle": 233,
+  "serviceWorker": 180,
+  "sites": [
+    {
+      "origin": "https://sutiapp.com/",
+      "status": "PASS",
+      "files": [
+        {
+          "file": "SutiApp.html",
+          "sha256": "c78447bcfed1df412493175cc8ac71f0fbf8f20a1c757613c84944350d18ed91"
+        },
+        {
+          "file": "sw.js",
+          "sha256": "af294dd15de9cdb3b2fb087c3b5175c6c46eee013f3c6d7c802e0e545c93d2aa"
+        },
+        {
+          "file": "app/bundle.js",
+          "sha256": "5b39d98579a810a0fd63f5649c2abf2d92b88e951d0cf4f941ec2a9bd1151e6a"
+        }
+      ]
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/",
+      "status": "PASS",
+      "files": [
+        {
+          "file": "SutiApp.html",
+          "sha256": "c78447bcfed1df412493175cc8ac71f0fbf8f20a1c757613c84944350d18ed91"
+        },
+        {
+          "file": "sw.js",
+          "sha256": "af294dd15de9cdb3b2fb087c3b5175c6c46eee013f3c6d7c802e0e545c93d2aa"
+        },
+        {
+          "file": "app/bundle.js",
+          "sha256": "5b39d98579a810a0fd63f5649c2abf2d92b88e951d0cf4f941ec2a9bd1151e6a"
+        }
+      ]
+    }
+  ]
+}

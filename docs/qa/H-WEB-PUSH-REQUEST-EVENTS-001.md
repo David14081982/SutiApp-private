@@ -89,4 +89,33 @@ badge, estados, scroll y navegación. Se añade únicamente invitación opt-in. 
 solicitud hacia el Tracking existente; logout mantiene Auth y cierra primero el dispositivo.
 Missing sections: 0. Unauthorized redesign: NO. Verdict: PASS.
 
-Publicación/verificación productiva del candidato: pendiente. La H no se cierra PASS sin Android.
+Publicado `506634444368088f5ec00eef1a11845ce36f8fda` mediante
+[Pages 34303314037 SUCCESS](https://github.com/David14081982/SutiApp-private/actions/runs/34303314037).
+SutiApp.com y GitHub Pages coinciden byte a byte con HTML, SW y bundle del commit.
+Firefox productivo: suscripción, Push real cifrado, deduplicación, revocación y guard de enlace PASS.
+Regresión global GitHub Pages PASS, incluido PDF legítimo; 0 errores browser y 0 mutaciones de negocio.
+Registry actualizado para código/schema; su freshness restante corresponde sólo a narrativa/evidencia QA.
+
+```text
+H-WEB-PUSH-REQUEST-EVENTS-001 RESULT
+Status: BLOCKED — falta evidencia Android PWA en dispositivo utilizable.
+Files changed: app/request-push.js, app/app.jsx, sw.js, build recipe/artifacts,
+  Edge request-push, migraciones/recovery 20260908000700 y 20260908000710,
+  herramientas/tests focales, documentos de gobierno, QA/evidencia y Registry derivado.
+Source-of-truth verdict: PASS — eventos/solicitudes e identidad existentes; sólo metadata de transporte nueva.
+Invariant verdict: PASS para controles ejecutables; aceptación Android pendiente.
+Build: PASS — bundle publicado 233, SW 180, hashes canónicos coincidentes en ambos dominios.
+Tests: PASS SQL rollback, emitter, browser, transporte real, Firefox local/productivo,
+  notificaciones internas existentes y regresión global local/GitHub Pages.
+Security: PASS — RLS forzada, RPC self, worker secreto, 0 secretos frontend y 0 entregas cruzadas probadas.
+Legacy impact: NONE — no cambios de Google, cálculos, writers financieros ni históricos.
+Unexpected files changed: 0 en release; trabajo local previo del propietario conservado.
+Known limitations: Android sin dispositivo (0 ADB); emulador sin acelerador/espacio;
+  iPhone PENDING REAL DEVICE permitido; Chrome automatizado no completa suscripción.
+  No se produjo una transición financiera artificial para probar Push productivo.
+Evidence: docs/qa/evidence/request-push-20260908/*.json y ARCHITECT-REVIEW.md.
+```
+
+La H de confirmaciones anterior permanece cerrada PASS. Este bloqueo de validación
+no reabre su publicación ni su alcance. Se pidió conectar Android, sin solicitar nuevas
+decisiones de arquitectura, permisos de despliegue ni configuración manual de VAPID.

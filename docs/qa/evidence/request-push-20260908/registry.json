@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "requiredNodes": 5,
+  "stale": "QA narrative/evidence only; runtime sources indexed",
+  "authority": "DERIVED_TECHNICAL_INDEX"
+}

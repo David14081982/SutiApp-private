@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "engine": "firefox",
+  "target": "PRODUCTION",
+  "businessWrites": 0,
+  "errors": [],
+  "publicConfig": "PASS",
+  "subscription": "PASS",
+  "providerAccepted": "PASS",
+  "realEncryptedDelivery": "PASS",
+  "duplicates": 0,
+  "revocation": "PASS",
+  "deepLinkAuthorityGuard": "PASS"
+}

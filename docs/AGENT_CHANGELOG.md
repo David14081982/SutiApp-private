@@ -2815,3 +2815,7 @@ Correcci?n focal del shell: Tomar control abre Inicio con identidad efectiva cer
 ## H-ADMIN-APP-SHELL-NAVIGATION-001 ? 2026-09-08 ? PASS
 
 El runtime 3eec5a4 ya satisface la navegaci?n bidireccional solicitada. Verificaci?n focal productiva: 8/8 criterios PASS, seis ciclos propios en1440/390px y caso impersonado en ambos; mismo actor/session_id/permisos, un ?nico login, cero errores/writes de negocio. HTML/bundle234/worker182 exactos. Sin cambios runtime, Supabase, permisos, l?gica, pantallas o Registry; s?lo prueba y evidencia. [Informe](qa/H-ADMIN-APP-SHELL-NAVIGATION-001.md). Reviewer APPROVED; publicar evidencia y detener.
+
+## H-ADMIN-BANNERS-DELETE-001 - 2026-09-08
+
+Banner delete action with accessible confirmation, backend archive preserving historical rows/assets, exact existing delete authorization, actor/time audit and idempotency. Focal SQL/Chrome/error/double-click/denial tests PASS. Migration 20260908000800 plus service ACL hardening 20260908000801 applied without business row changes. Only visual CRUD banner branch and generated bundle235/worker183 version tokens changed. Isolated release from 91069eb; original dirty workspace preserved. Report: docs/qa/H-ADMIN-BANNERS-DELETE-001.md; publication evidence in docs/qa/evidence/admin-banners-delete-20260908/. Publish authorized; stop after delivery verification.

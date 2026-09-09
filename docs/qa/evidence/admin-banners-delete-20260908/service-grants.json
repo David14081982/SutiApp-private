@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "dryRun": "PASS",
+  "recovery": "PASS",
+  "version": "20260908000801",
+  "grants": [
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    }
+  ],
+  "businessRowsChanged": 0
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "base": "91069eb",
+  "changedBundleModules": [
+    "screens-admin-visual-crud.jsx"
+  ],
+  "workerLogicChanged": false,
+  "sharedRepositoriesChanged": false,
+  "otherScreensChanged": false,
+  "existingEditorAndActionsUnchanged": true,
+  "unexpectedFiles": [],
+  "bundleSha256": "806f07370a558f96883e02e82cb347d6851fb3ec4c644be988aa88dee1be3298"
+}

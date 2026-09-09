@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "version": "20260908000800",
+  "migrationSha256": "b43188a582c08c6806e1ef6e0ae48932f9f3c0caf9615f2e45bfc7e3f2d929bf",
+  "before": {
+    "banners": 23,
+    "banner_hash": "531dd42f6afd48954ad2ab953c921db3",
+    "assets": 176,
+    "objects": 13377
+  },
+  "after": {
+    "banners": 23,
+    "banner_hash": "531dd42f6afd48954ad2ab953c921db3",
+    "assets": 176,
+    "objects": 13377
+  },
+  "businessRowsChanged": 0
+}

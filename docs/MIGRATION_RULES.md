@@ -224,3 +224,7 @@ recovery in ROLLBACK. No request, outbox payload or business state was changed. 
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
 
 Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.
+
+## 20260908000800 — archivo de banners
+
+APPLIED / VERIFIED. Aditiva: tabla privada de metadata, dos funciones focales y tres filtros RLS restrictivos; no reemplaza permisos ni triggers existentes. Dry-run y recovery vacío PASS con ROLLBACK; recovery con historia aborta con BANNER_ARCHIVE_HISTORY_MUST_BE_PRESERVED. Pruebas SQL sobre backend real se revierten completas, incluidos cambios de permisos y restricción temporal para simular fallo de auditoría. Apply conservó hash y 23 banners, 176 assets y 13,377 objetos Storage; cero filas de negocio modificadas. Recovery versionado: supabase/recovery/20260908000800_admin_banners_archive.sql.

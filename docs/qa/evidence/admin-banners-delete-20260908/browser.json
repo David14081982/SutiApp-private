@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_BROWSER_WITH_COMPILED_MODULE",
+  "checks": {
+    "modalAndKeyboard": "PASS",
+    "cancel": "PASS",
+    "backendFailureRetainsCard": "PASS",
+    "doubleClick": "PASS",
+    "activeDeleteAndPublicRefresh": "PASS",
+    "inactiveDeleteAndEmpty": "PASS",
+    "noDeletePermission": "DENIED",
+    "permissionRevokedWhileOpen": "DENIED"
+  },
+  "productionWrites": 0,
+  "errors": []
+}

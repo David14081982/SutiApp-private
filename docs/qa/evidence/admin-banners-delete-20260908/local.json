@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "target": "http://127.0.0.1:8186/",
+  "checks": {
+    "existingControlsAndOrder": "PASS",
+    "allBannersHaveDelete": "PASS",
+    "rpcDeployedAuthenticated": "PASS",
+    "anonHttp": "DENIED"
+  },
+  "deleteRequests": 1,
+  "pageErrors": [],
+  "viewports": [
+    {
+      "width": 1440,
+      "thumbnail": "PASS",
+      "dialog": "PASS",
+      "cancel": "PASS"
+    },
+    {
+      "width": 390,
+      "thumbnail": "PASS",
+      "dialog": "PASS",
+      "cancel": "PASS"
+    }
+  ],
+  "businessWrites": 0
+}

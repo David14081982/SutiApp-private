@@ -1,0 +1,16 @@
+'use strict';
+const fs=require('fs'),assert=require('assert').strict,{execFileSync}=require('child_process'),path=require('path'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),base='91069eb',read=f=>fs.readFileSync(path.join(root,f),'utf8').replace(/\r/g,''),old=f=>execFileSync('git',['show',base+':'+f],{cwd:root,encoding:'utf8',maxBuffer:20*1024*1024}).replace(/\r/g,'');
+function chunks(s){return new Map(s.split('/* @@file ').slice(1).map(c=>[c.slice(0,c.indexOf(' */')),c]));}
+const before=chunks(old('app/bundle.js')),after=chunks(read('app/bundle.js'));assert.deepEqual([...after.keys()],[...before.keys()]);const changed=[...after.keys()].filter(k=>after.get(k)!==before.get(k));assert.deepEqual(changed,['screens-admin-visual-crud.jsx']);
+assert.equal(read('sw.js'),old('sw.js').replace('sutiapp-v182','sutiapp-v183').replace('bundle.js?v=234','bundle.js?v=235'));
+assert.equal(read('SutiApp.html'),old('SutiApp.html').replace('bundle.js?v=234','bundle.js?v=235').replace('sw.js?v=182','sw.js?v=183'));
+const source=read('app/screens-admin-visual-crud.jsx'),prior=old('app/screens-admin-visual-crud.jsx');assert.equal(source.split('  // Banner-only repository')[0],prior.split('  function VisualCrudModule')[0]);
+for(const start of ['    const load=','    const refreshConsumers=','    const toggle=','    const move=','    const remove='])assert.equal(source.split('\n').find(l=>l.startsWith(start)),prior.split('\n').find(l=>l.startsWith(start)));
+assert(!/window\.confirm|\.delete\(/.test(source.slice(source.indexOf('// Banner-only repository'),source.indexOf('  function VisualCrudModule'))));
+const tracked=execFileSync('git',['diff',base,'--name-only'],{cwd:root,encoding:'utf8'}).trim().split('\n'),untracked=execFileSync('git',['ls-files','--others','--exclude-standard'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean),files=[...new Set([...tracked,...untracked])];
+const exact=new Set(['SutiApp.html','sw.js','app/bundle.js','app/screens-admin-visual-crud.jsx','docs/AGENT_CHANGELOG.md','docs/SOURCE_OF_TRUTH.md','docs/DATA_GOVERNANCE.md','docs/DECISIONS.md','docs/SECURITY_RULES.md','docs/MIGRATION_RULES.md','docs/qa/H-ADMIN-BANNERS-DELETE-001.md','scripts/release-admin-banners-delete.js','scripts/test-admin-banners-delete.sql','scripts/test-admin-banners-delete-browser.js','scripts/test-admin-banners-delete-live.js','scripts/test-admin-banners-delete-scope.js','supabase/migrations/20260908000800_admin_banners_archive.sql','supabase/recovery/20260908000800_admin_banners_archive.sql']);
+exact.add('supabase/migrations/20260908000801_banner_archive_service_grants.sql');exact.add('supabase/recovery/20260908000801_banner_archive_service_grants.sql');
+assert.deepEqual(files.filter(f=>!exact.has(f)&&!f.startsWith('docs/architecture/')&&!f.startsWith('docs/qa/evidence/admin-banners-delete-20260908/')),[]);
+const proof={status:'PASS',base,changedBundleModules:changed,workerLogicChanged:false,sharedRepositoriesChanged:false,otherScreensChanged:false,existingEditorAndActionsUnchanged:true,unexpectedFiles:[],bundleSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'app/bundle.js'))).digest('hex')};
+fs.writeFileSync(path.join(root,'docs/qa/evidence/admin-banners-delete-20260908/scope.json'),JSON.stringify(proof,null,2));console.log(JSON.stringify(proof));

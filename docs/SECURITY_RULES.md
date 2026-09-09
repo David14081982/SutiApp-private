@@ -277,3 +277,7 @@ locks the parent and sync lease; child guards serialize writes and prohibit chan
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
 
 Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.
+
+## Eliminación de Banners — H-ADMIN-BANNERS-DELETE-001
+
+archive_admin_banner(uuid) exige auth.uid() y has_admin_permission('banners.write') OR has_section_action('banners','delete'), contrato existente de AdminRepository.has. SECURITY DEFINER con search_path vacío, ejecución anon revocada. banner_deletions fuerza RLS, sin grants browser y SELECT service-only. Actor y tiempo derivados en backend; nada del cliente concede permisos. Tres policies restrictivas excluyen archivados de SELECT/UPDATE/DELETE bajo los permisos originales. La consulta booleana de archivo no expone actor ni auditoría. PK y lock de fila garantizan idempotencia; fallo al auditar revierte todo.

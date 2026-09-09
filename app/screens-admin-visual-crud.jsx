@@ -70,6 +70,28 @@
         window.AdminRepository.has(sectionKey+'.publish')&&React.createElement('label',{style:{display:'flex',alignItems:'center',gap:9,fontSize:13,fontWeight:800,margin:'13px 0'}},React.createElement('input',{type:'checkbox',checked:!!(kind==='education'?form.published:form.enabled),onChange:(e)=>setForm(Object.assign({},form,{[kind==='education'?'published':'enabled']:e.target.checked}))}),'Publicado / activo'),
         React.createElement('button',{'data-h009-save':kind,onClick:save,disabled:busy,style:{width:'100%',border:'none',borderRadius:13,padding:13,background:'var(--guinda)',color:'#fff',fontWeight:900}},busy?'Guardando…':'Guardar')));
   }
+  // Banner-only repository boundary; shared CRUD and other resource contracts stay intact.
+  const BannerDeletionRepository=Object.freeze({async archive(id){
+    if(!window.AdminRepository.has('banners.delete'))throw new Error('BANNERS_DELETE_DENIED');
+    const result=await window.SutiSupabase.getClient().rpc('archive_admin_banner',{p_banner_id:id});
+    if(result.error||!result.data||result.data.id!==id||result.data.deleted!==true)throw new Error('BANNER_DELETE_FAILED');
+    return result.data;
+  }});
+  function BannerDeleteDialog({item,busy,error,onCancel,onDelete}){
+    const ref=React.useRef(null);
+    React.useEffect(()=>{const previous=document.activeElement;ref.current.showModal();return()=>{if(previous&&previous.isConnected)previous.focus();};},[]);
+    const keyboard=(e)=>{if(e.key!=='Tab')return;const buttons=Array.from(ref.current.querySelectorAll('button:not(:disabled)'));if(!buttons.length){e.preventDefault();return;}const first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}};
+    return React.createElement('dialog',{ref,'data-banner-delete-dialog':'','aria-labelledby':'banner-delete-title','aria-describedby':'banner-delete-message',onKeyDown:keyboard,onCancel:(e)=>{e.preventDefault();if(!busy)onCancel();},style:{border:'none',borderRadius:20,padding:24,width:'min(420px, calc(100vw - 32px))',boxSizing:'border-box',background:'var(--surface)',color:'var(--ink)',boxShadow:'0 18px 65px rgba(0,0,0,.3)'}},
+      React.createElement('h2',{id:'banner-delete-title',style:{fontSize:21,margin:'0 0 18px',fontWeight:900}},'¿Eliminar banner?'),
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:14}},
+        item.image_url?React.createElement('img',{src:item.image_url,alt:'Miniatura del banner',style:{width:76,height:76,objectFit:'cover',borderRadius:12}}):React.createElement('div',{style:{width:76,height:76,display:'grid',placeItems:'center',borderRadius:12,background:'var(--surface-2)'}},React.createElement(I,{name:'image',size:28})),
+        React.createElement('div',null,React.createElement('div',{style:{fontWeight:850,overflowWrap:'anywhere'}},item.title||'Sin título'),React.createElement('div',{style:{fontSize:12,marginTop:6,color:item.enabled?'#13794A':'var(--ink-3)'}},item.enabled?'ACTIVO':'INACTIVO'))),
+      React.createElement('p',{id:'banner-delete-message',style:{fontSize:14,lineHeight:1.5}},'Esta acción eliminará el banner de la aplicación.'),
+      error&&React.createElement('p',{role:'alert',style:{fontSize:13,color:'#C0341D'}},error),
+      React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:20}},
+        React.createElement('button',{type:'button',autoFocus:true,disabled:busy,onClick:onCancel,style:{border:'none',borderRadius:12,padding:'12px 16px',background:'var(--surface-2)',color:'var(--ink)',fontWeight:800}},'Cancelar'),
+        React.createElement('button',{type:'button',disabled:busy,onClick:onDelete,'aria-busy':busy,'data-banner-delete-confirm':'',style:{border:'none',borderRadius:12,padding:'12px 16px',background:'#C0341D',color:'#fff',fontWeight:850,opacity:busy?.6:1}},busy?'Eliminando…':'Eliminar banner')));
+  }
   function VisualCrudModule({kind,app,onBack,header,filterKinds,title}){
     const cfg=configs[kind];const[items,setItems]=React.useState([]);const[phase,setPhase]=React.useState('loading');const[editing,setEditing]=React.useState(null);const[educationKind,setEducationKind]=React.useState(()=>kind==='education'&&!window.AdminRepository.has('education.read')?'tutorial':'education');
     const load=async()=>{setPhase('loading');try{setItems(await window.AdminRepository.listManaged(kind));setPhase('loaded');}catch(_){setPhase('error');}};
@@ -79,11 +101,25 @@
     const move=async(list,index,delta)=>{const next=list.map((item)=>item.id);const target=index+delta;if(target<0||target>=next.length)return;const hold=next[index];next[index]=next[target];next[target]=hold;try{await window.AdminRepository.reorderManaged(kind,next);await refreshConsumers();}catch(_){app.toast('No fue posible cambiar el orden');}};
     const sectionKey=kind==='education'?(educationKind==='tutorial'?'tutorials':'education'):kind==='directory'?'documents':kind;
     const can=(action)=>window.AdminRepository.has(sectionKey+'.'+action);
+    const[deleting,setDeleting]=React.useState(null);const[deleteBusy,setDeleteBusy]=React.useState(false);const[deleteError,setDeleteError]=React.useState('');const deleteLock=React.useRef(false);
+    const deleteBanner=async()=>{
+      if(deleteLock.current||!deleting)return;
+      if(!window.AdminRepository.has('banners.delete')){setDeleteError('No tienes permiso para eliminar banners.');return;}
+      deleteLock.current=true;setDeleteBusy(true);setDeleteError('');
+      try{
+        await BannerDeletionRepository.archive(deleting.id);
+        setItems(old=>old.filter(item=>item.id!==deleting.id));setDeleting(null);app.toast('Banner eliminado');
+        // Existing public projection invalidation; no alternative content source.
+        if(app.visual&&app.visual.retry)await app.visual.retry().catch(()=>app.toast('Banner eliminado. No fue posible actualizar la vista pública; vuelve a cargarla.'));
+      }catch(_){setDeleteError('No fue posible eliminar el banner. Intenta de nuevo.');}
+      finally{deleteLock.current=false;setDeleteBusy(false);}
+    };
     const deletable=(item)=>kind==='education'?item.provenance==='ADMIN_PHASE2':['ADMIN_H009','ADMIN_SECTION_ROLLOUT'].includes(item.record_origin);
     const remove=async(item)=>{if(!deletable(item))return;if(!window.confirm('¿Eliminar definitivamente este contenido? Esta acción no se puede deshacer.'))return;try{await window.AdminRepository.removeManaged(kind,item.id);await refreshConsumers();app.toast('Contenido eliminado');}catch(_){app.toast('No fue posible eliminar el contenido');}};
     const shown=kind==='education'?items.filter((item)=>item.resource_kind===educationKind):filterKinds&&filterKinds.length?items.filter((item)=>filterKinds.includes(item.kind)):items;
     const sectionTitle=title||(kind==='education'?(educationKind==='education'?'Información educativa':'Tutoriales'):cfg.title);
     return React.createElement('div',{'data-h009-module':kind,'data-h009-state':phase,'data-education-section':kind==='education'?educationKind:undefined},header({title:sectionTitle,sub:'Contenido administrable de la aplicación',onBack}),
+      kind==='banners'&&React.createElement('style',null,'@media(max-width:480px){[data-h009-item="banners"]{gap:6px!important}}'),
       React.createElement('div',{className:'su-app-scroll',style:{padding:16}},
         React.createElement(window.SectionResponsibilityPanel,{sectionKey,allowedActions:['read','create','update','delete','publish','order','assets'],app}),
         kind==='education'&&React.createElement('div',{'data-education-admin-tabs':'',style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}},[['education','Educación'],['tutorial','Tutoriales']].filter(([value])=>window.AdminRepository.has((value==='tutorial'?'tutorials':'education')+'.read')).map(([value,label])=>React.createElement('button',{key:value,onClick:()=>setEducationKind(value),'aria-pressed':educationKind===value,style:{border:'none',borderRadius:12,padding:10,background:educationKind===value?'var(--guinda)':'var(--surface-2)',color:educationKind===value?'#fff':'var(--ink-2)',fontWeight:850}},label))),
@@ -96,10 +132,11 @@
           can('publish')&&React.createElement('button',{onClick:()=>toggle(item),'aria-label':active?'Desactivar':'Activar',style:{border:'none',borderRadius:10,padding:9,background:'var(--surface-2)',color:'var(--ink-2)'}},React.createElement(I,{name:active?'power':'checkCircle',size:18})),
           can('order')&&React.createElement('button',{onClick:()=>move(shown,index,-1),disabled:index===0,'aria-label':'Subir',style:{border:'none',borderRadius:10,padding:9,background:'var(--surface-2)',color:'var(--ink-2)'}},React.createElement(I,{name:'chevU',size:18})),
           can('order')&&React.createElement('button',{onClick:()=>move(shown,index,1),disabled:index===shown.length-1,'aria-label':'Bajar',style:{border:'none',borderRadius:10,padding:9,background:'var(--surface-2)',color:'var(--ink-2)'}},React.createElement(I,{name:'chevD',size:18})),
-          can('delete')&&deletable(item)&&React.createElement('button',{onClick:()=>remove(item),'aria-label':'Eliminar',style:{border:'none',borderRadius:10,padding:9,background:'#FDEAEA',color:'#C0341D'}},React.createElement(I,{name:'trash',size:18})),
+          can('delete')&&(kind==='banners'||deletable(item))&&React.createElement('button',{onClick:()=>{if(kind==='banners'){setDeleteError('');setDeleting(item);}else remove(item);},'aria-label':kind==='banners'?'Eliminar banner':'Eliminar',style:{border:'none',borderRadius:10,padding:9,background:'#FDEAEA',color:'#C0341D'}},React.createElement(I,{name:'trash',size:18})),
           can('update')&&React.createElement('button',{onClick:()=>setEditing(item),'aria-label':'Editar',style:{border:'none',borderRadius:10,padding:9,background:'var(--guinda-50)',color:'var(--guinda)'}},React.createElement(I,{name:'edit',size:18}))) }),
           shown.length===0&&React.createElement(window.EmptyState,{icon:cfg.icon,title:'Sin '+sectionTitle.toLowerCase()}))),
-      editing&&React.createElement(Editor,{kind,item:editing.id?editing:null,app,onDone:refreshConsumers,onCancel:()=>setEditing(null),sectionKey,filterKinds}));
+      editing&&React.createElement(Editor,{kind,item:editing.id?editing:null,app,onDone:refreshConsumers,onCancel:()=>setEditing(null),sectionKey,filterKinds}),
+      kind==='banners'&&deleting&&React.createElement(BannerDeleteDialog,{item:deleting,busy:deleteBusy,error:deleteError,onCancel:()=>{if(!deleteLock.current)setDeleting(null);},onDelete:deleteBanner}));
   }
   window.VisualCrudModule=VisualCrudModule;
 })();

@@ -1025,3 +1025,7 @@ La obligatoriedad bancaria de esta decisión queda sustituida únicamente por AD
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
 
 Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.
+
+## H-ADMIN-BANNERS-DELETE-001 — archivo focal autorizado, 2026-09-08
+
+El propietario solicita eliminar banners existentes, incluidos activos/inactivos, sin perder históricos ni modificar permisos. El botón anterior estaba oculto para HISTORICAL_IMPORT. Se conserva la autoridad banners y se añade exclusivamente metadata privada de archivo, RPC auditada y filtros RLS restrictivos. La acción reutiliza banners.write técnico OR la responsabilidad exacta banners/delete vigente; no cambia asignaciones ni funciones compartidas de permisos. Modal específico, sin window.confirm en esta ruta. No se rediseña ni se modifica creación, activación, orden, otras pantallas o Google. Publicación autorizada y detenerse al finalizar.

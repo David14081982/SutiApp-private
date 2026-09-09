@@ -47127,6 +47127,163 @@ Object.assign(window, {
       }
     }, busy ? 'Guardando…' : 'Guardar')));
   }
+  // Banner-only repository boundary; shared CRUD and other resource contracts stay intact.
+  const BannerDeletionRepository = Object.freeze({
+    async archive(id) {
+      if (!window.AdminRepository.has('banners.delete')) throw new Error('BANNERS_DELETE_DENIED');
+      const result = await window.SutiSupabase.getClient().rpc('archive_admin_banner', {
+        p_banner_id: id
+      });
+      if (result.error || !result.data || result.data.id !== id || result.data.deleted !== true) throw new Error('BANNER_DELETE_FAILED');
+      return result.data;
+    }
+  });
+  function BannerDeleteDialog({
+    item,
+    busy,
+    error,
+    onCancel,
+    onDelete
+  }) {
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+      const previous = document.activeElement;
+      ref.current.showModal();
+      return () => {
+        if (previous && previous.isConnected) previous.focus();
+      };
+    }, []);
+    const keyboard = e => {
+      if (e.key !== 'Tab') return;
+      const buttons = Array.from(ref.current.querySelectorAll('button:not(:disabled)'));
+      if (!buttons.length) {
+        e.preventDefault();
+        return;
+      }
+      const first = buttons[0],
+        last = buttons[buttons.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    return React.createElement('dialog', {
+      ref,
+      'data-banner-delete-dialog': '',
+      'aria-labelledby': 'banner-delete-title',
+      'aria-describedby': 'banner-delete-message',
+      onKeyDown: keyboard,
+      onCancel: e => {
+        e.preventDefault();
+        if (!busy) onCancel();
+      },
+      style: {
+        border: 'none',
+        borderRadius: 20,
+        padding: 24,
+        width: 'min(420px, calc(100vw - 32px))',
+        boxSizing: 'border-box',
+        background: 'var(--surface)',
+        color: 'var(--ink)',
+        boxShadow: '0 18px 65px rgba(0,0,0,.3)'
+      }
+    }, React.createElement('h2', {
+      id: 'banner-delete-title',
+      style: {
+        fontSize: 21,
+        margin: '0 0 18px',
+        fontWeight: 900
+      }
+    }, '¿Eliminar banner?'), React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14
+      }
+    }, item.image_url ? React.createElement('img', {
+      src: item.image_url,
+      alt: 'Miniatura del banner',
+      style: {
+        width: 76,
+        height: 76,
+        objectFit: 'cover',
+        borderRadius: 12
+      }
+    }) : React.createElement('div', {
+      style: {
+        width: 76,
+        height: 76,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: 12,
+        background: 'var(--surface-2)'
+      }
+    }, React.createElement(I, {
+      name: 'image',
+      size: 28
+    })), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontWeight: 850,
+        overflowWrap: 'anywhere'
+      }
+    }, item.title || 'Sin título'), React.createElement('div', {
+      style: {
+        fontSize: 12,
+        marginTop: 6,
+        color: item.enabled ? '#13794A' : 'var(--ink-3)'
+      }
+    }, item.enabled ? 'ACTIVO' : 'INACTIVO'))), React.createElement('p', {
+      id: 'banner-delete-message',
+      style: {
+        fontSize: 14,
+        lineHeight: 1.5
+      }
+    }, 'Esta acción eliminará el banner de la aplicación.'), error && React.createElement('p', {
+      role: 'alert',
+      style: {
+        fontSize: 13,
+        color: '#C0341D'
+      }
+    }, error), React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        gap: 10,
+        marginTop: 20
+      }
+    }, React.createElement('button', {
+      type: 'button',
+      autoFocus: true,
+      disabled: busy,
+      onClick: onCancel,
+      style: {
+        border: 'none',
+        borderRadius: 12,
+        padding: '12px 16px',
+        background: 'var(--surface-2)',
+        color: 'var(--ink)',
+        fontWeight: 800
+      }
+    }, 'Cancelar'), React.createElement('button', {
+      type: 'button',
+      disabled: busy,
+      onClick: onDelete,
+      'aria-busy': busy,
+      'data-banner-delete-confirm': '',
+      style: {
+        border: 'none',
+        borderRadius: 12,
+        padding: '12px 16px',
+        background: '#C0341D',
+        color: '#fff',
+        fontWeight: 850,
+        opacity: busy ? .6 : 1
+      }
+    }, busy ? 'Eliminando…' : 'Eliminar banner')));
+  }
   function VisualCrudModule({
     kind,
     app,
@@ -47184,6 +47341,33 @@ Object.assign(window, {
     };
     const sectionKey = kind === 'education' ? educationKind === 'tutorial' ? 'tutorials' : 'education' : kind === 'directory' ? 'documents' : kind;
     const can = action => window.AdminRepository.has(sectionKey + '.' + action);
+    const [deleting, setDeleting] = React.useState(null);
+    const [deleteBusy, setDeleteBusy] = React.useState(false);
+    const [deleteError, setDeleteError] = React.useState('');
+    const deleteLock = React.useRef(false);
+    const deleteBanner = async () => {
+      if (deleteLock.current || !deleting) return;
+      if (!window.AdminRepository.has('banners.delete')) {
+        setDeleteError('No tienes permiso para eliminar banners.');
+        return;
+      }
+      deleteLock.current = true;
+      setDeleteBusy(true);
+      setDeleteError('');
+      try {
+        await BannerDeletionRepository.archive(deleting.id);
+        setItems(old => old.filter(item => item.id !== deleting.id));
+        setDeleting(null);
+        app.toast('Banner eliminado');
+        // Existing public projection invalidation; no alternative content source.
+        if (app.visual && app.visual.retry) await app.visual.retry().catch(() => app.toast('Banner eliminado. No fue posible actualizar la vista pública; vuelve a cargarla.'));
+      } catch (_) {
+        setDeleteError('No fue posible eliminar el banner. Intenta de nuevo.');
+      } finally {
+        deleteLock.current = false;
+        setDeleteBusy(false);
+      }
+    };
     const deletable = item => kind === 'education' ? item.provenance === 'ADMIN_PHASE2' : ['ADMIN_H009', 'ADMIN_SECTION_ROLLOUT'].includes(item.record_origin);
     const remove = async item => {
       if (!deletable(item)) return;
@@ -47206,7 +47390,7 @@ Object.assign(window, {
       title: sectionTitle,
       sub: 'Contenido administrable de la aplicación',
       onBack
-    }), React.createElement('div', {
+    }), kind === 'banners' && React.createElement('style', null, '@media(max-width:480px){[data-h009-item="banners"]{gap:6px!important}}'), React.createElement('div', {
       className: 'su-app-scroll',
       style: {
         padding: 16
@@ -47352,9 +47536,14 @@ Object.assign(window, {
       }, React.createElement(I, {
         name: 'chevD',
         size: 18
-      })), can('delete') && deletable(item) && React.createElement('button', {
-        onClick: () => remove(item),
-        'aria-label': 'Eliminar',
+      })), can('delete') && (kind === 'banners' || deletable(item)) && React.createElement('button', {
+        onClick: () => {
+          if (kind === 'banners') {
+            setDeleteError('');
+            setDeleting(item);
+          } else remove(item);
+        },
+        'aria-label': kind === 'banners' ? 'Eliminar banner' : 'Eliminar',
         style: {
           border: 'none',
           borderRadius: 10,
@@ -47390,6 +47579,14 @@ Object.assign(window, {
       onCancel: () => setEditing(null),
       sectionKey,
       filterKinds
+    }), kind === 'banners' && deleting && React.createElement(BannerDeleteDialog, {
+      item: deleting,
+      busy: deleteBusy,
+      error: deleteError,
+      onCancel: () => {
+        if (!deleteLock.current) setDeleting(null);
+      },
+      onDelete: deleteBanner
     }));
   }
   window.VisualCrudModule = VisualCrudModule;

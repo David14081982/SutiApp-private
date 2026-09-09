@@ -1,0 +1,139 @@
+{
+  "status": "PASS",
+  "counts": {
+    "banners": 23,
+    "banner_hash": "531dd42f6afd48954ad2ab953c921db3",
+    "assets": 176,
+    "objects": 13377
+  },
+  "schema": [
+    {
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "placement",
+      "data_type": "text"
+    },
+    {
+      "column_name": "title",
+      "data_type": "text"
+    },
+    {
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "column_name": "action_label",
+      "data_type": "text"
+    },
+    {
+      "column_name": "action_url",
+      "data_type": "text"
+    },
+    {
+      "column_name": "company_raw",
+      "data_type": "text"
+    },
+    {
+      "column_name": "category_raw",
+      "data_type": "text"
+    },
+    {
+      "column_name": "image_asset_id",
+      "data_type": "uuid"
+    },
+    {
+      "column_name": "enabled",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "start_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "end_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "sort_order",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "source_sheet",
+      "data_type": "text"
+    },
+    {
+      "column_name": "source_row_ordinal",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "source_column",
+      "data_type": "text"
+    },
+    {
+      "column_name": "source_snapshot_hash",
+      "data_type": "text"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "column_name": "record_origin",
+      "data_type": "text"
+    }
+  ],
+  "policies": [
+    {
+      "policyname": "banners_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled = true)",
+      "with_check": null
+    },
+    {
+      "policyname": "banners_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('banners.read'::text)",
+      "with_check": null
+    },
+    {
+      "policyname": "banners_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'delete'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'create'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))"
+    },
+    {
+      "policyname": "banners_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('banners'::text, 'read'::text)",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    {
+      "definition": "CREATE TRIGGER banners_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.banners FOR EACH ROW EXECUTE FUNCTION audit_admin_write()"
+    },
+    {
+      "definition": "CREATE TRIGGER banners_section_action_audit AFTER INSERT OR DELETE OR UPDATE ON public.banners FOR EACH ROW EXECUTE FUNCTION audit_section_row_action('banners', 'enabled', 'sort_order', 'image_asset_id')"
+    },
+    {
+      "definition": "CREATE TRIGGER banners_section_action_guard BEFORE INSERT OR DELETE OR UPDATE ON public.banners FOR EACH ROW EXECUTE FUNCTION enforce_section_row_action('banners', 'banners.write', 'enabled', 'sort_order', 'image_asset_id', 'record_origin', 'ADMIN_H009')"
+    },
+    {
+      "definition": "CREATE TRIGGER banners_set_updated_at BEFORE UPDATE ON public.banners FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()"
+    }
+  ]
+}

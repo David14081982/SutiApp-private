@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "migrationSha256": "b43188a582c08c6806e1ef6e0ae48932f9f3c0caf9615f2e45bfc7e3f2d929bf",
+  "result": [
+    {
+      "result": "PASS"
+    }
+  ],
+  "persistentBusinessWrites": 0,
+  "checks": [
+    "active",
+    "inactive",
+    "historical",
+    "adminHidden",
+    "publicHidden",
+    "normalDenied",
+    "updateOnlyDenied",
+    "deleteOnlyAllowed",
+    "auditActorTime",
+    "idempotentRetry",
+    "archivedWritesDenied",
+    "privateMetadataDenied",
+    "auditFailureAtomic",
+    "masterRowsUnchanged"
+  ],
+  "recovery": "PASS_EMPTY_AND_HISTORY_GUARD"
+}

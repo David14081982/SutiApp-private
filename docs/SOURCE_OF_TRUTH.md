@@ -347,3 +347,7 @@ derived request register; its technical tombstone prevents resurrection. No fina
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 ? release autorizado
 
 Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 20260908000600 est? APPLIED / VERIFIED: eventos Supabase como autoridad; acuses ?nicos por evento con actor Auth, RLS forzada y RPC self-only. Cero writers de solicitudes/workflow/c?lculos modificados. Recovery conserva acuses. La publicaci?n frontend se verifica en la evidencia de esta H; los estados PREPARED/NOT APPLIED anteriores son hist?ricos y quedan supersedidos.
+
+## Banners: eliminación conservando historia — H-ADMIN-BANNERS-DELETE-001
+
+public.banners conserva toda la fila original, enabled, procedencia e imagen. public.banner_deletions contiene exclusivamente metadata privada de archivo 1:1 (banner_id, actor_auth_user_id, deleted_at); no copia contenido ni opera como fallback. archive_admin_banner(uuid) es el escritor de esta acción desde Admin Banners. Los lectores existentes siguen consultando banners; RLS restrictiva excluye archivados de Admin y público sin ampliar permisos. Borrado lógico autorizado para todos los orígenes; no DELETE físico ni modificación de assets.

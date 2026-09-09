@@ -147,6 +147,7 @@
     const [planId, setPlanId] = useState(co.plan);
     const [ciclo, setCiclo] = useState(co.billing === 'mensual' ? 'mensual' : 'anual');
     const [busy, setBusy] = useState(false);
+    const [payment,setPayment]=useState({reference:'',received:false,email:''});
     const plans = store.plans().filter((p) => p.activo !== false || p.id === co.plan);
     return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 76, background: 'rgba(10,14,22,.5)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }, onClick: onClose },
       React.createElement('div', { onClick: (e) => e.stopPropagation(), style: { background: 'var(--bg)', borderRadius: '22px 22px 0 0', padding: '18px 16px calc(16px + env(safe-area-inset-bottom))', maxHeight: '86%', overflowY: 'auto' } },
@@ -165,13 +166,16 @@
                 React.createElement('div', { style: { fontSize: 13.5, fontWeight: 900, color: 'var(--guinda)' } }, (window.money ? window.money(ciclo === 'mensual' ? p.precioMensual || 0 : p.precioAnual || 0) : '')),
                 React.createElement('div', { style: { fontSize: 10, fontWeight: 700, color: 'var(--ink-3)' } }, ciclo === 'mensual' ? 'al mes' : 'al año')));
           })),
+        React.createElement('label',{style:planesLbl},'Referencia del pago presencial',React.createElement('input',{value:payment.reference,onChange:e=>setPayment({...payment,reference:e.target.value}),style:planesInput})),
+        React.createElement('label',{style:planesLbl},'Correo de cuenta empresarial existente (opcional)',React.createElement('input',{type:'email',value:payment.email,onChange:e=>setPayment({...payment,email:e.target.value}),style:planesInput})),
+        React.createElement('label',{style:planesLbl},React.createElement('input',{type:'checkbox',checked:payment.received,onChange:e=>setPayment({...payment,received:e.target.checked})}),' Confirmo que SutiApp recibió el pago presencial de este plan'),
         React.createElement('label', { style: planesLbl }, 'Ciclo de pago'),
         React.createElement('div', { style: { display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 13, padding: 4, boxShadow: 'var(--neo-inset)', marginBottom: 18 } },
           [['mensual', 'Mensual · vence en 1 mes'], ['anual', 'Anual · vence en 1 año']].map(([v, l]) =>
             React.createElement('button', { key: v, onClick: () => setCiclo(v), style: { flex: 1, height: 40, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 800, background: ciclo === v ? 'var(--surface)' : 'transparent', color: ciclo === v ? 'var(--guinda)' : 'var(--ink-3)', boxShadow: ciclo === v ? 'var(--neo-sm)' : 'none' } }, l))),
         React.createElement('div', { style: { display: 'flex', gap: 12 } },
           React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, disabled: busy, onClick: onClose }, 'Cancelar'),
-          React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: busy || !planId || planId === 'pending', onClick: async() => { setBusy(true); try { await store.setCompanyPlan(co.id, planId, ciclo); app.toast('Plan actualizado para ' + co.name); onClose(); } catch (_) { app.toast('No se pudo actualizar el plan de la empresa'); } finally { setBusy(false); } } }, busy ? 'Guardando…' : 'Guardar cambio'))));
+          React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: busy || !payment.received || payment.reference.trim().length<3 || !planId || planId === 'pending', onClick: async() => { setBusy(true); try { await store.setCompanyPlan(co.id, planId, ciclo,payment); app.toast('Plan actualizado para ' + co.name); onClose(); } catch (_) { app.toast('No se pudo actualizar el plan de la empresa'); } finally { setBusy(false); } } }, busy ? 'Guardando…' : 'Acreditar pago y activar'))));
   }
 
   window.PlanesModule = PlanesModule;

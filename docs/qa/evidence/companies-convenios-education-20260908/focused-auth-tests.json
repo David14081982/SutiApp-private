@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "tests": [
+    {
+      "command": "node scripts/test-companies-convenios-education-auth.js",
+      "result": {
+        "status": "PASS",
+        "explicitCompanyEntry": true,
+        "companyWithoutAffiliate": true,
+        "noAdminOrAffiliatePrivileges": true,
+        "noPlanDenied": true,
+        "backendFailureClosed": true,
+        "logout": true
+      }
+    },
+    {
+      "command": "node scripts/test-auth-session-regression.js",
+      "result": {
+        "status": "PASS",
+        "repository": "ACTUAL_AFFILIATE_REPOSITORY",
+        "validLogin": true,
+        "invalidCredentials": true,
+        "missingRpcControlled": true,
+        "restoredSession": true,
+        "refresh": true,
+        "logout": true
+      }
+    },
+    {
+      "command": "node scripts/test-auth-prod-activation.js",
+      "result": {
+        "status": "PASS",
+        "observability": true,
+        "callbackPasswordSetup": true,
+        "failClosedPreflight": true,
+        "sourceOfTruth": "Supabase Auth + public.affiliates",
+        "secretsExposed": false
+      }
+    },
+    {
+      "command": "node scripts/test-auth-deployment-contract.js",
+      "result": {
+        "status": "PASS",
+        "protectedRpcs": 5,
+        "publicActivationRpcs": 1,
+        "missingSchemaBlocked": true,
+        "anonymousExposureBlocked": true,
+        "activationSchemaBlocked": true
+      }
+    }
+  ],
+  "sourceSha256": "ace87aec5095885b9b203cab16e6138454a82dae80d05b5f2dfd0702f6b3bdd1"
+}

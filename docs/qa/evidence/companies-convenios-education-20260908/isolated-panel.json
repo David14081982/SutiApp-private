@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_BROWSER_FIXTURES",
+  "productionBusinessWrites": 0,
+  "viewports": [
+    {
+      "width": 390,
+      "modules": 9,
+      "profileSave": "PASS",
+      "failedSaveRetainsForm": "PASS",
+      "logoCoverGallery": "PASS",
+      "promotionImage": "PASS",
+      "popupImage": "PASS",
+      "planGate": "PASS"
+    },
+    {
+      "width": 1440,
+      "modules": 9,
+      "profileSave": "PASS",
+      "failedSaveRetainsForm": "PASS",
+      "logoCoverGallery": "PASS",
+      "promotionImage": "PASS",
+      "popupImage": "PASS",
+      "planGate": "PASS"
+    }
+  ]
+}

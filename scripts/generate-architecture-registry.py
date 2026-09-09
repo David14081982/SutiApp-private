@@ -185,7 +185,7 @@ def analyze_code_file(path: Path, overrides: dict) -> dict:
     collect(r"functions\.invoke\(\s*" + STRING + r"\s*[,)]", "edge_functions", "supabase_literal_function")
     collect(r"storage\.from\(\s*" + STRING + r"\s*\)", "storage_buckets", "supabase_literal_bucket")
     collect(r"['\"]([a-z][a-z0-9_]*\.(?:read|write|create|update|delete|publish|order|assets|export|impersonate|visibility\.write))['\"]", "permissions", "permission_literal")
-    collect(r"(?:navigate|push|setRoute|openRoute|goTo)\s*\(\s*" + STRING, "routes", "literal_navigation")
+    collect(r"(?<![\w$])(?:navigate|push|setRoute|openRoute|goTo)\s*\(\s*" + STRING, "routes", "literal_navigation")
 
     service_file = any(token in path.stem for token in ("-auth", "-client", "-resolver", "-view-model", "-content", "-state"))
     if service_file:
@@ -605,7 +605,11 @@ def lookup(query: str, limit: int = 10) -> dict:
         for file in n["files"]:
             penalty = 100 if file == "app/bundle.js" else 8 if file.startswith("docs/") else 1
             file_scores[file] += base / penalty
-    primary_files = [file for file, _ in sorted(file_scores.items(), key=lambda x: (-x[1], x[0]))[:10]]
+    # An exact screen/alias match must remain discoverable as its dependency graph grows.
+    exact_surfaces = {file for n in focus_nodes if n["type"] in {"screen", "admin_screen"}
+                      and q in {normalize(n["name"]), *(normalize(alias) for alias in n["aliases"])}
+                      for file in n["files"]}
+    primary_files = [file for file, _ in sorted(file_scores.items(), key=lambda x: (x[0] not in exact_surfaces, -x[1], x[0]))[:10]]
     by_type = defaultdict(list)
     for n in sorted(focus_nodes, key=lambda x: (x["type"], x["name"])): by_type[n["type"]].append(n["name"])
     return {

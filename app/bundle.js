@@ -7265,13 +7265,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const managed = Object.freeze({
     banners: { table:'banners',section:'banners',permission:'banners.write',origin:'ADMIN_H009',fields:`id,placement,title,description,action_label,action_url,company_raw,category_raw,image_asset_id,enabled,start_at,end_at,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['placement','title','description','action_label','action_url','company_raw','category_raw','image_asset_id','enabled','start_at','end_at','sort_order'] },
     popups: { table:'popups',section:'popups',permission:'popups.write',origin:'ADMIN_H009',fields:`id,title,body,image_asset_id,action_label,action_url,audience_raw,enabled,start_at,end_at,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['title','body','image_asset_id','action_label','action_url','audience_raw','enabled','start_at','end_at','sort_order'] },
-    companies: { table:'companies',section:'companies',permission:'companies.write',origin:'ADMIN_H009',fields:`id,display_name,description,logo_asset_id,enabled,sort_order,record_origin,logo_asset:app_assets!logo_asset_id(${assetFields}),company_assets(role,sort_order,asset:app_assets!asset_id(${assetFields}))`,editable:['display_name','description','logo_asset_id','enabled','sort_order'] },
+    companies: { table:'companies',section:'companies',permission:'companies.write',origin:'ADMIN_H009',fields:`id,display_name,description,category_raw,address_raw,location_raw,phone_raw,whatsapp_raw,email_raw,website_url,public_details,logo_asset_id,enabled,sort_order,record_origin,logo_asset:app_assets!logo_asset_id(${assetFields}),company_assets(role,sort_order,asset:app_assets!asset_id(${assetFields}))`,editable:['display_name','description','category_raw','address_raw','location_raw','phone_raw','whatsapp_raw','email_raw','website_url','public_details','logo_asset_id','enabled','sort_order'] },
     documents: { table:'institutional_documents',section:'documents',permission:'documents.write',origin:'ADMIN_H009',fields:`id,kind,title,description,image_asset_id,document_asset_id,enabled,sort_order,record_origin,image_asset:app_assets!institutional_documents_image_asset_id_fkey(${assetFields}),document_asset:app_assets!institutional_documents_document_asset_id_fkey(${assetFields})`,editable:['kind','title','description','image_asset_id','document_asset_id','enabled','sort_order'] },
     minutes: { table:'minutes',section:'minutes',permission:'documents.write',origin:'ADMIN_SECTION_ROLLOUT',fields:`id,title,description,source_date_raw,published_on,sort_order,image_asset_id,document_asset_id,enabled,record_origin,image_asset:app_assets!minutes_image_asset_id_fkey(${assetFields}),document_asset:app_assets!minutes_document_asset_id_fkey(${assetFields})`,editable:['title','description','source_date_raw','published_on','sort_order','image_asset_id','document_asset_id','enabled'] },
     programs: { table:'institutional_programs',section:'programs',permission:'documents.write',origin:'ADMIN_SECTION_ROLLOUT',fields:`id,category,description,phone_raw,whatsapp_raw,facebook_url,instagram_url,share_url,location_raw,whatsapp_url,tiktok_url,sort_order,primary_image_asset_id,enabled,record_origin,primary_image_asset:app_assets!institutional_programs_primary_image_asset_id_fkey(${assetFields})`,editable:['category','description','phone_raw','whatsapp_raw','facebook_url','instagram_url','share_url','location_raw','whatsapp_url','tiktok_url','sort_order','primary_image_asset_id','enabled'] },
     directory: { table:'directory_members',section:'documents',permission:'documents.write',origin:'ADMIN_SECTION_ROLLOUT',fields:`id,name,role,sort_order,image_asset_id,enabled,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['name','role','sort_order','image_asset_id','enabled'] },
     news: { table:'news_articles',section:'news',permission:'news.write',origin:'ADMIN_PHASE2',fields:`id,title,tag,body,image_asset_id,accent_hue,display_date,reading_minutes,published,publish_from,publish_until,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['title','tag','body','image_asset_id','accent_hue','display_date','reading_minutes','published','publish_from','publish_until','sort_order'] },
-    education: { table:'educational_resources',section:'education',permission:'content.write',origin:'ADMIN_PHASE2',fields:`id,resource_kind,title,description,image_asset_id,document_asset_id,external_url,published,sort_order,provenance,image_asset:app_assets!image_asset_id(${assetFields}),document_asset:app_assets!document_asset_id(${assetFields})`,editable:['resource_kind','title','description','image_asset_id','document_asset_id','external_url','published','sort_order'] },
+    education: { table:'educational_resources',section:'education',permission:'content.write',origin:'ADMIN_PHASE2',fields:`id,resource_kind,title,description,public_details,cover_asset_id,image_asset_id,document_asset_id,external_url,published,sort_order,provenance,cover_asset:app_assets!cover_asset_id(${assetFields}),image_asset:app_assets!image_asset_id(${assetFields}),document_asset:app_assets!document_asset_id(${assetFields})`,editable:['resource_kind','title','description','public_details','cover_asset_id','image_asset_id','document_asset_id','external_url','published','sort_order'] },
   });
 
   function client() { return window.SutiSupabase.getClient(); }
@@ -7317,7 +7317,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if (kind==='programs') return Object.assign({},row,{title:row.category,image_url:url(row.primary_image_asset)});
     if (kind==='directory') return Object.assign({},row,{title:row.name,image_url:url(row.image_asset)});
     if (kind==='news') return Object.assign({},row,{hue:row.accent_hue,date:row.display_date||'',read:row.reading_minutes?String(row.reading_minutes)+' min':'',visible:row.published,image_url:url(row.image_asset)});
-    if (kind==='education') return Object.assign({},row,{image_url:url(row.image_asset),document_url:url(row.document_asset)});
+    if (kind==='education') return Object.assign({},row,{image_url:url(row.image_asset),cover_url:url(row.cover_asset),document_url:url(row.document_asset)});
     return Object.assign({},row,{image_url:url(row.image_asset)});
   }
 
@@ -7470,7 +7470,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function listManaged(kind){
     const spec=managed[kind];if(!spec)throw new Error('UNKNOWN_RESOURCE');if(kind==='education')requireAny(['education.read','tutorials.read']);else if(kind==='companies')requireAny(['companies.read','agreements.read']);else requirePermission(spec.section+'.read');
     const result=await client().from(spec.table).select(spec.fields).order('sort_order',{ascending:true});if(result.error)throw result.error;
-    return Object.freeze((result.data||[]).map((row)=>Object.freeze(project(kind,row))));
+    let paid=[];if(kind==='companies'){const r=await client().rpc('list_paid_company_ids');if(r.error)throw r.error;paid=r.data||[];}
+    return Object.freeze((result.data||[]).map((row)=>Object.freeze(project(kind,kind==='companies'?{...row,is_paid:paid.includes(row.id)}:row))));
   }
   async function nextSort(table){const result=await client().from(table).select('sort_order').order('sort_order',{ascending:false}).limit(1);if(result.error)throw result.error;return result.data.length?result.data[0].sort_order+1:1;}
   async function saveManaged(kind,row){
@@ -8070,6 +8071,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function () {
   'use strict';
   const assetFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status,owner_company_id';
+  const companyFields='id,legal_name,display_name,description,category_raw,contact_name,phone_raw,whatsapp_raw,email_raw,website_url,address_raw,location_raw,social_links,status_raw,logo_asset_id,sort_order,enabled,record_origin,public_details,logo_asset:app_assets!logo_asset_id(id,storage_bucket,storage_path,mime_type,status),company_assets(role,sort_order,asset:app_assets!asset_id(id,storage_bucket,storage_path,mime_type,status))';
   function db(){return window.SutiSupabase.getClient();}
   function url(asset){return window.AssetRepository.publicUrl(asset);}
   function productFields(){return `id,company_id,category_id,subcategory_id,category_raw,subcategory_raw,name,short_description,description,price,discount_percent,stock,rating,condition_raw,free_shipping,sizes,colors,requires_quote,badge,enabled,sort_order,record_origin,company:companies!company_id(id,display_name,enabled),marketplace_product_assets(role,sort_order,asset:app_assets!asset_id(${assetFields}))`;}
@@ -8102,6 +8104,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function sha(file){const b=await file.arrayBuffer();return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map((x)=>x.toString(16).padStart(2,'0')).join('').toUpperCase();}
   function ext(file){const m={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif','image/svg+xml':'svg'};if(!file||!m[file.type]||file.size<1||file.size>10485760)throw new Error('INVALID_MARKETPLACE_IMAGE');return m[file.type];}
   async function uploadProductAsset(file,companyId){
+    if(window.AdminRepository&&window.AdminRepository.has('agreements.update')&&!window.AdminRepository.has('marketplace.assets'))return (await window.ConveniosRepository.uploadImage(file,companyId)).id;
     if(window.AdminRepository&&window.AdminRepository.has('marketplace.assets')){const a=await window.AdminRepository.uploadManagedAsset(file,'app-assets','MARKETPLACE_PRODUCT','marketplace.product');return a.id;}
     const digest=await sha(file),path=`marketplace/${companyId}/${digest}.${ext(file)}`,api=db();const existing=await api.from('app_assets').select(assetFields).eq('storage_bucket','company-assets').eq('storage_path',path).maybeSingle();if(existing.error)throw existing.error;if(existing.data)return existing.data.id;
     const up=await api.storage.from('company-assets').upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;let assetId;
@@ -8117,23 +8120,24 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function respondQuote(id,amount,note,validUntil){return window.ProgramRequestRepository.respondQuote(id,amount,note,validUntil);}
   async function markQuoteSeen(id){const r=await db().rpc('mark_marketplace_quote_seen',{p_quote_id:id});if(r.error)throw r.error;return true;}
   async function createRequest(productId,quantity,message,signature,terms,idempotencyKey,documentIds){return window.ProgramRequestRepository.create({productId,quantity,notes:message,signature,terms,idempotencyKey,documentIds:documentIds||[]});}
-  async function listRequests(){return window.ProgramRequestRepository.list({programId:'marketplace',requestType:'benefit'});}
+  async function listCompanyOperations(type){const r=await db().rpc('list_company_commercial_requests');if(r.error)throw r.error;return Object.freeze((r.data||[]).filter(x=>!type||x.request_type===type).map(window.ProgramRequestRepository.project));}
+  async function listRequests(){return listCompanyOperations('benefit');}
   async function updateRequest(id,status,notes){const mapped={pendiente:'submitted',revision:'in_review',aprobada:'approved',rechazada:'rejected',entregada:'approved',cancelada:'cancelled'}[status]||status;return window.ProgramRequestRepository.update(id,mapped,notes);}
-  async function companyContext(){const r=await db().from('marketplace_company_memberships').select('id,company_id,role,enabled,company:companies!company_id(*)').eq('enabled',true);if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>Object.freeze(Object.assign({},x.company,{id:x.company_id,name:x.company.display_name,role:x.role}))));}
-  async function listPortalCompanies(){const r=await db().from('companies').select('*').order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(Object.freeze));}
+  async function companyContext(){const r=await db().from('marketplace_company_memberships').select(`id,company_id,role,enabled,company:companies!company_id(${companyFields})`).eq('enabled',true);if(r.error)throw r.error;return Object.freeze((r.data||[]).map((x)=>Object.freeze(Object.assign({},x.company,{id:x.company_id,name:x.company.display_name,role:x.role}))));}
+  async function listPortalCompanies(){const r=await db().from('companies').select(companyFields).order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(Object.freeze));}
   async function listPortalPlans(){const r=await db().from('company_portal_plans').select('*').order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(Object.freeze));}
   async function listPortalSubscriptions(){const r=await db().from('company_portal_subscriptions').select('*');if(r.error)throw r.error;return Object.freeze((r.data||[]).map(Object.freeze));}
   async function savePortalPlan(row){const values={name:String(row.name||'').trim(),description:row.desc||row.description||null,monthly_price:Number(row.precioMensual==null?row.monthly_price:row.precioMensual)||0,annual_price:Number(row.precioAnual==null?row.annual_price:row.precioAnual)||0,max_products:Number(row.maxProductos==null?row.max_products:row.maxProductos)||1,allows_popups:Boolean(row.popups==null?row.allows_popups:row.popups),allows_stats_history:Boolean(row.statsHistory==null?row.allows_stats_history:row.statsHistory),benefits:Array.isArray(row.beneficios)?row.beneficios:row.benefits||[],enabled:row.activo!==false&&row.enabled!==false,sort_order:Number(row.order||row.sort_order||1)};const q=row.id?db().from('company_portal_plans').update(values).eq('id',row.id):db().from('company_portal_plans').insert(values);const r=await q.select('*').single();if(r.error)throw r.error;return r.data;}
   async function removePortalPlan(id){const r=await db().from('company_portal_plans').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('PORTAL_PLAN_DELETE_COUNT');}
-  async function setPortalSubscription(companyId,planId,cycle){const start=new Date(),end=new Date(start);if(cycle==='mensual')end.setMonth(end.getMonth()+1);else end.setFullYear(end.getFullYear()+1);const iso=(d)=>d.toISOString().slice(0,10);const r=await db().from('company_portal_subscriptions').upsert({company_id:companyId,plan_id:planId,billing_cycle:cycle==='mensual'?'monthly':'annual',status:'active',starts_on:iso(start),ends_on:iso(end)},{onConflict:'company_id'}).select('*').single();if(r.error)throw r.error;return r.data;}
-  async function updateCompany(row){const r=await db().rpc('update_marketplace_company_profile',{p_company_id:row.id,p_description:row.desc||row.description||'',p_phone_raw:row.tel||row.phone_raw||null,p_whatsapp_raw:row.whatsapp_raw||null,p_email_raw:row.email||row.email_raw||null,p_website_url:row.web||row.website_url||null,p_address_raw:row.address_raw||null,p_social_links:row.redes||row.social_links||{}});if(r.error)throw r.error;}
-  const projectPromotion=(x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled}));
+  async function setPortalSubscription(companyId,planId,cycle,payment){const r=await db().rpc('accredit_company_plan',{p_company_id:companyId,p_plan_id:planId,p_cycle:cycle==='mensual'?'monthly':'annual',p_payment_reference:payment&&payment.reference||'',p_received:!!(payment&&payment.received),p_member_email:payment&&payment.email||null});if(r.error)throw r.error;window.ConveniosRepository.invalidate();}
+  async function updateCompany(row){return window.ConveniosRepository.saveCompany(row.id,{display_name:row.name,legal_name:row.razon,category_raw:row.giro,description:row.desc,phone_raw:row.tel||null,whatsapp_raw:row.whatsapp_raw||null,email_raw:row.email||null,website_url:row.web||null,address_raw:(row.sucursales||[])[0]?.dir||null,social_links:row.redes||{},public_details:{...row.public_details,history:row.historia||'',video:row.video||'',hours:row.horario||'',branches:row.sucursales||[],map_url:row.mapUrl||''}});}
+  const projectPromotion=(x)=>Object.freeze(Object.assign({},x,{name:x.title,desc:x.description,beneficio:x.benefit_text,restric:x.restrictions,disc:x.discount_percent,start:x.start_date,end:x.end_date,active:x.enabled,image_url:url(x.image_asset)}));
   async function listPromotionsForCompanies(companyIds){
     if(!Array.isArray(companyIds)||companyIds.some(id=>typeof id!=='string'||!id))throw new Error('COMPANY_IDS_REQUIRED');
     const ids=[...new Set(companyIds)],output=[];
     for(let from=0;from<ids.length;from+=100){
       const batch=ids.slice(from,from+100),expected=new Set(batch);
-      const r=await db().from('companies').select('id,promotions:marketplace_promotions(*)').in('id',batch).order('sort_order',{ascending:true,referencedTable:'promotions'});
+      const r=await db().from('companies').select(`id,promotions:marketplace_promotions(*,image_asset:app_assets!image_asset_id(${assetFields}))`).in('id',batch).order('sort_order',{ascending:true,referencedTable:'promotions'});
       if(r.error)throw r.error;
       for(const company of r.data||[]){
         if(!expected.delete(company.id)||!Array.isArray(company.promotions))throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');
@@ -8143,10 +8147,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }
     return Object.freeze(output);
   }
-  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select('*').order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(projectPromotion));}
-  async function savePromotion(row){const values={company_id:row.company_id,title:String(row.title||row.name||'').trim(),description:row.description||row.desc||'',benefit_text:row.benefit_text||row.beneficio||null,restrictions:row.restrictions||row.restric||null,discount_percent:row.discount_percent==null?(row.disc==null?null:Number(row.disc)):Number(row.discount_percent),start_date:row.start_date||row.start||null,end_date:row.end_date||row.end||null,enabled:row.enabled!==false&&row.active!==false,approval_status:'pending',sort_order:Number(row.sort_order||1),record_origin:row.record_origin||'ADMIN_PHASE3'};const q=row.id?db().from('marketplace_promotions').update(values).eq('id',row.id):db().from('marketplace_promotions').insert(values);const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
+  async function listPromotions(companyId){let q=db().from('marketplace_promotions').select(`*,image_asset:app_assets!image_asset_id(${assetFields})`).order('sort_order',{ascending:true});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(projectPromotion));}
+  async function savePromotion(row){const values={company_id:row.company_id,image_asset_id:row.image_asset_id||null,title:String(row.title||row.name||'').trim(),description:row.description||row.desc||'',benefit_text:row.benefit_text||row.beneficio||null,restrictions:row.restrictions||row.restric||null,discount_percent:row.discount_percent==null?(row.disc==null?null:Number(row.disc)):Number(row.discount_percent),start_date:row.start_date||row.start||null,end_date:row.end_date||row.end||null,enabled:row.enabled!==false&&row.active!==false,approval_status:'pending',sort_order:Number(row.sort_order||1),record_origin:row.record_origin||'ADMIN_PHASE3'};const q=row.id?db().from('marketplace_promotions').update(values).eq('id',row.id):db().from('marketplace_promotions').insert(values);const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
   async function removePromotion(id){const r=await db().from('marketplace_promotions').delete().eq('id',id).select('id');if(r.error)throw r.error;}
-  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,listPromotionsForCompanies,savePromotion,removePromotion,projectProduct,projectQuote});
+  window.MarketplaceRepository=Object.freeze({listCategories,listProducts,saveProduct,removeProduct,saveCategory,removeCategory,replaceProductAssets,uploadProductAsset,listFavorites,setFavorite,listCompanyFavorites,setCompanyFavorite,createQuote,listQuotes,respondQuote,markQuoteSeen,createRequest,listRequests,listCompanyOperations,updateRequest,companyContext,listPortalCompanies,listPortalPlans,listPortalSubscriptions,savePortalPlan,removePortalPlan,setPortalSubscription,updateCompany,listPromotions,listPromotionsForCompanies,savePromotion,removePromotion,projectProduct,projectQuote});
 })();
 })();
 /* @@file program-catalog-repository.js */
@@ -8280,8 +8284,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function(){
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
-  const fields='id,company_id,popup_id,title,body,action_label,action_type,action_target,custom_screen,image_asset_id,audience_raw,accent_hue,start_at,end_at,status,rejection_reason,created_at,reviewed_at,company:companies!company_id(display_name)';
-  function project(row){return Object.freeze(Object.assign({},row,{titulo:row.title,contenido:row.body||'',ctaText:row.action_label||'',actionType:row.action_type,actionTarget:row.action_target||'',custom:row.custom_screen||null,audience:row.audience_raw||{mode:'all',cargos:[],sindicatos:[],niveles:[]},hue:row.accent_hue||345,startDate:row.start_at?row.start_at.slice(0,10):'',endDate:row.end_at?row.end_at.slice(0,10):'',ownerCompany:row.company_id,empresaNombre:row.company&&row.company.display_name||'',rejectReason:row.rejection_reason||'',slotId:'company_popup_'+row.id}));}
+  const fields='id,company_id,popup_id,title,body,action_label,action_type,action_target,custom_screen,image_asset_id,audience_raw,accent_hue,start_at,end_at,status,rejection_reason,created_at,reviewed_at,company:companies!company_id(display_name),image_asset:app_assets!image_asset_id(id,storage_bucket,storage_path,mime_type,status)';
+  function project(row){return Object.freeze(Object.assign({},row,{image_url:window.AssetRepository.publicUrl(row.image_asset),titulo:row.title,contenido:row.body||'',ctaText:row.action_label||'',actionType:row.action_type,actionTarget:row.action_target||'',custom:row.custom_screen||null,audience:row.audience_raw||{mode:'all',cargos:[],sindicatos:[],niveles:[]},hue:row.accent_hue||345,startDate:row.start_at?row.start_at.slice(0,10):'',endDate:row.end_at?row.end_at.slice(0,10):'',ownerCompany:row.company_id,empresaNombre:row.company&&row.company.display_name||'',rejectReason:row.rejection_reason||'',slotId:'company_popup_'+row.id}));}
   async function list(companyId){let q=db().from('company_popup_proposals').select(fields).order('created_at',{ascending:false});if(companyId)q=q.eq('company_id',companyId);const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));}
   async function submit(companyId,row){const v={company_id:companyId,title:String(row.titulo||'').trim(),body:row.contenido||'',action_label:row.ctaText||null,action_type:row.actionType||'none',action_target:row.actionTarget||null,custom_screen:row.custom||null,image_asset_id:row.image_asset_id||null,audience_raw:row.audience||{mode:'all',cargos:[],sindicatos:[],niveles:[]},accent_hue:Number(row.hue)||345,start_at:row.startDate?row.startDate+'T00:00:00Z':null,end_at:row.endDate?row.endDate+'T23:59:59Z':null};const r=await db().from('company_popup_proposals').insert(v).select(fields).single();if(r.error)throw r.error;return project(r.data);}
   async function review(id,approve,reason){const r=await db().rpc('review_company_popup_proposal',{p_proposal_id:id,p_approve:Boolean(approve),p_reason:reason||null});if(r.error)throw r.error;return project(r.data);}
@@ -18309,6 +18313,58 @@ Object.assign(window, {
   window.TerrenoScreen = TerrenoScreen;
 })();
 })();
+/* @@file convenios-repository.js */
+(function(){
+/* Unified public view, preserving each Supabase master and original UUID. */
+(function(){
+  'use strict';
+  const db=()=>window.SutiSupabase.getClient(),listeners=new Set();
+  const assetFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
+  const invalidate=()=>listeners.forEach(fn=>fn());
+  async function rpc(name,args){const r=await db().rpc(name,args);if(r.error)throw r.error;return r.data;}
+  function key(row){return row.source_kind==='education'?'education:'+row.id:row.id;}
+  async function list(){
+    const rows=await rpc('list_public_convenios');
+    if(!Array.isArray(rows))throw new Error('INVALID_CONVENIOS_PROJECTION');
+    const ids=[...new Set(rows.flatMap(r=>[r.logo_asset_id,r.cover_asset_id,r.document_asset_id,...(r.gallery_asset_ids||[]),...(r.promotions||[]).map(p=>p.image_asset_id)]).filter(Boolean))];
+    let assets=[];if(ids.length){const r=await db().from('app_assets').select(assetFields).in('id',ids);if(r.error)throw r.error;assets=r.data||[];}
+    const urls=new Map(assets.map(a=>[a.id,window.AssetRepository.publicUrl(a)]));
+    return rows.map(r=>Object.freeze({...r,public_key:key(r),logo_url:urls.get(r.logo_asset_id)||null,cover_url:urls.get(r.cover_asset_id)||null,document_url:urls.get(r.document_asset_id)||null,gallery_urls:(r.gallery_asset_ids||[]).map(id=>urls.get(id)).filter(Boolean),promotions:(r.promotions||[]).map(p=>({...p,image_url:urls.get(p.image_asset_id)||null}))}));
+  }
+  async function listEducationFavorites(){const r=await db().from('educational_resource_favorites').select('resource_id');if(r.error)throw r.error;return (r.data||[]).map(r=>r.resource_id);}
+  async function favorite(row,on){
+    if(row.source_kind!=='education')return window.catalogStore.toggleCompanyFavorite(row.id);
+    const api=db(),u=await api.auth.getUser();if(u.error||!u.data.user)throw u.error||new Error('AUTH_REQUIRED');
+    const r=on?await api.from('educational_resource_favorites').insert({auth_user_id:u.data.user.id,resource_id:row.id}):await api.from('educational_resource_favorites').delete().eq('resource_id',row.id);
+    if(r.error)throw r.error;invalidate();
+  }
+  async function saveCompany(id,fields){const saved=await rpc('save_company_ficha',{p_company_id:id||null,p_fields:fields});invalidate();return {id:saved};}
+  async function saveAgreement(row){const saved=await rpc('save_agreement_ficha',{p_fields:row});invalidate();return saved;}
+  async function uploadImage(file,companyId){
+    const mimeExt={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif'};
+    if(!mimeExt[file.type]||file.size<1||file.size>10485760)throw new Error('INVALID_COMPANY_IMAGE');
+    const api=db(),u=await api.auth.getUser();if(u.error||!u.data.user)throw u.error||new Error('AUTH_REQUIRED');
+    const bytes=await file.arrayBuffer(),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+    const existing=await api.from('app_assets').select(assetFields).eq('owner_company_id',companyId).eq('content_sha256',hash.toUpperCase()).eq('status','READY').limit(1);
+    if(existing.error)throw existing.error;
+    if(existing.data?.length)return {id:existing.data[0].id,url:window.AssetRepository.publicUrl(existing.data[0])};
+    const path='convenios/'+u.data.user.id+'/'+companyId+'/'+hash+'.'+mimeExt[file.type];
+    const up=await api.storage.from('company-assets').upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;
+    const id=await rpc('register_company_ficha_image',{p_company_id:companyId,p_path:path,p_sha256:hash,p_mime:file.type,p_size:file.size});
+    return {id,url:api.storage.from('company-assets').getPublicUrl(path).data.publicUrl};
+  }
+  async function attachImage(companyId,assetId,role){await rpc('attach_company_ficha_image',{p_company_id:companyId,p_asset_id:assetId,p_role:role});invalidate();}
+  window.ConveniosRepository=Object.freeze({list,key,invalidate,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},favorite,saveCompany,saveAgreement,uploadImage,attachImage,activity:id=>rpc('get_company_activity',{p_company_id:id})});
+  window.useConvenios=function(){
+    const epoch=window.PrivateResourceDemand.useContext();
+    const[state,setState]=React.useState({phase:'loading',rows:[],favorites:[],error:null});
+    const[version,setVersion]=React.useState(0);
+    React.useEffect(()=>{const reload=()=>setVersion(v=>v+1);const off=window.ConveniosRepository.subscribe(reload);window.addEventListener('focus',reload);return()=>{off();window.removeEventListener('focus',reload);};},[]);
+    React.useEffect(()=>{let live=true;setState({phase:'loading',rows:[],favorites:[],error:null});Promise.all([list(),listEducationFavorites()]).then(([rows,favorites])=>{if(live)setState({phase:'loaded',rows,favorites,error:null});}).catch(error=>{if(live)setState({phase:'error',rows:[],favorites:[],error});});return()=>{live=false;};},[epoch,version]);
+    return {...state,retry:()=>setVersion(v=>v+1)};
+  };
+})();
+})();
 /* @@file screens-convenios.jsx */
 (function(){
 /* Convenios Claude Design contract + Supabase authority (H-007.3/H-009). */
@@ -18620,8 +18676,8 @@ Object.assign(window, {
         overflow: 'hidden',
         background: 'var(--surface-2)'
       }
-    }, company.cover_url ? React.createElement('img', {
-      src: company.cover_url,
+    }, company.cover_url || company.logo_url ? React.createElement('img', {
+      src: company.cover_url || company.logo_url,
       alt: company.display_name,
       loading: 'lazy',
       style: {
@@ -18644,11 +18700,13 @@ Object.assign(window, {
       stroke: 1.5
     })));
   }
-  function PendingDiscount() {
-    return React.createElement(window.Badge, {
+  function CompanyDiscount({
+    company
+  }) {
+    return Number(company.discount_percent) > 0 ? React.createElement(window.Badge, {
       tone: 'amber',
       solid: true
-    }, 'DESCUENTO PENDIENTE');
+    }, '-' + Number(company.discount_percent) + '%') : null;
   }
   function ConvenioCard({
     company,
@@ -18679,7 +18737,9 @@ Object.assign(window, {
         top: 12,
         left: 12
       }
-    }, React.createElement(PendingDiscount)), React.createElement(window.FavHeart, {
+    }, React.createElement(CompanyDiscount, {
+      company
+    })), React.createElement(window.FavHeart, {
       on: fav,
       onClick: e => {
         e.stopPropagation();
@@ -18719,7 +18779,7 @@ Object.assign(window, {
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap'
       }
-    }, company.address_raw || company.location_raw || 'Ubicación pendiente')), company.category_raw && React.createElement('div', {
+    }, company.address_raw || company.location_raw || '')), company.category_raw && React.createElement('div', {
       style: {
         display: 'flex',
         gap: 7,
@@ -18789,14 +18849,15 @@ Object.assign(window, {
     app
   }) {
     const visual = app.visual;
+    const directory = window.useConvenios();
     const catalog = window.useCatalogStore();
     const [cat, setCat] = useState('Todos');
     const [q, setQ] = useState('');
     const [filters, setFilters] = useState(false);
-    if (visual.phase === 'loading') return React.createElement(LoadingLayout, {
+    if (visual.phase === 'loading' || directory.phase === 'loading') return React.createElement(LoadingLayout, {
       app
     });
-    if (visual.phase === 'error') return React.createElement('div', {
+    if (visual.phase === 'error' || directory.phase === 'error') return React.createElement('div', {
       className: 'su-route',
       'data-convenios-state': 'error',
       'data-h0073-state': 'error',
@@ -18813,14 +18874,18 @@ Object.assign(window, {
       title: 'No pudimos cargar las empresas',
       sub: 'Comprueba tu conexión e inténtalo de nuevo.',
       action: React.createElement(window.Btn, {
-        onClick: visual.retry
+        onClick: () => {
+          visual.retry();
+          directory.retry();
+        }
       }, 'Reintentar')
     }));
-    const base = visual.companies || [];
+    const base = directory.rows;
     const cats = ['Todos', ...Array.from(new Set(base.map(c => String(c.category_raw || '').trim()).filter(Boolean)))];
     const needle = q.trim().toLocaleLowerCase('es-MX');
     const list = base.filter(c => (cat === 'Todos' || c.category_raw === cat) && (!needle || [c.display_name, c.description, c.category_raw].concat(catalog.byCompany(c.id).map(p => p.nombre)).some(x => String(x || '').toLocaleLowerCase('es-MX').includes(needle))));
-    const toggleFav = id => catalog.toggleCompanyFavorite(id).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+    const isFav = c => c.source_kind === 'education' ? directory.favorites.includes(c.id) : catalog.isCompanyFavorite(c.id);
+    const toggleFav = c => window.ConveniosRepository.favorite(c, !isFav(c)).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
     const selectCat = value => {
       setCat(value);
       setFilters(false);
@@ -18866,22 +18931,31 @@ Object.assign(window, {
       title: 'Destacados',
       icon: 'star'
     })), React.createElement('div', {
-      'data-convenios-featured-state': 'pending',
+      'data-convenios-featured-state': base.some(c => c.featured) ? 'loaded' : 'empty',
       style: {
         margin: '0 16px',
-        height: 130,
-        borderRadius: 18,
-        background: 'var(--surface)',
-        boxShadow: 'var(--neo-sm)',
-        display: 'grid',
-        placeItems: 'center',
-        padding: 16,
-        textAlign: 'center',
-        color: 'var(--ink-3)',
-        fontSize: 12.5,
-        fontWeight: 700
+        minHeight: 130,
+        display: 'flex',
+        gap: 14,
+        overflowX: 'auto'
       }
-    }, 'Pendiente de clasificación destacada')), React.createElement('section', {
+    }, base.some(c => c.featured) ? base.filter(c => c.featured).map(company => React.createElement('div', {
+      key: company.public_key,
+      style: {
+        minWidth: 260,
+        maxWidth: 300
+      }
+    }, React.createElement(ConvenioCard, {
+      company,
+      fav: isFav(company),
+      onFav: () => toggleFav(company),
+      onClick: () => app.push('convenio', {
+        company
+      })
+    }))) : React.createElement(window.EmptyState, {
+      icon: 'star',
+      title: 'Sin convenios destacados'
+    }))), React.createElement('section', {
       'data-convenios-section': 'all',
       style: {
         padding: '20px 16px 0'
@@ -18897,10 +18971,10 @@ Object.assign(window, {
         gap: 14
       }
     }, list.map(company => React.createElement(ConvenioCard, {
-      key: company.id,
+      key: company.public_key,
       company,
-      fav: catalog.isCompanyFavorite(company.id),
-      onFav: () => toggleFav(company.id),
+      fav: isFav(company),
+      onFav: () => toggleFav(company),
       onClick: () => app.push('convenio', {
         company
       })
@@ -18925,13 +18999,23 @@ Object.assign(window, {
     app,
     params
   }) {
-    const company = params.company;
+    const directory = window.useConvenios();
     const catalog = window.useCatalogStore();
     const [viewer, setViewer] = useState(null);
-    if (!company) return null;
-    const fav = catalog.isCompanyFavorite(company.id);
+    const company = directory.rows.find(c => c.public_key === window.ConveniosRepository.key(params.company || {}));
+    if (directory.phase === 'loading') return React.createElement(LoadingLayout, {
+      app
+    });
+    if (!company) return React.createElement(window.EmptyState, {
+      icon: 'tag',
+      title: directory.phase === 'error' ? 'No pudimos cargar la ficha' : 'Este convenio ya no está disponible',
+      action: React.createElement(window.Btn, {
+        onClick: directory.phase === 'error' ? directory.retry : app.back
+      }, directory.phase === 'error' ? 'Reintentar' : 'Volver')
+    });
+    const fav = company.source_kind === 'education' ? directory.favorites.includes(company.id) : catalog.isCompanyFavorite(company.id);
     const products = catalog.byCompany(company.id).filter(p => p.activo !== false);
-    const images = [company.cover_url].concat(company.gallery_urls || []).filter(Boolean);
+    const images = [company.cover_url || company.logo_url].concat(company.gallery_urls || []).filter(Boolean);
     const phone = String(company.phone_raw || '').trim();
     const wa = String(company.whatsapp_raw || '').replace(/\D/g, '');
     return React.createElement('div', {
@@ -18951,11 +19035,11 @@ Object.assign(window, {
         paddingBottom: 110
       }
     }, React.createElement('div', {
-      'data-convenio-cover-zoom': company.cover_url ? 'enabled' : 'disabled',
+      'data-convenio-cover-zoom': company.cover_url || company.logo_url ? 'enabled' : 'disabled',
       style: {
         position: 'relative'
       },
-      onClick: () => company.cover_url && setViewer(0)
+      onClick: () => images.length && setViewer(0)
     }, React.createElement(CompanyImage, {
       company,
       height: 240
@@ -18987,7 +19071,7 @@ Object.assign(window, {
       on: fav,
       onClick: event => {
         event && event.stopPropagation && event.stopPropagation();
-        catalog.toggleCompanyFavorite(company.id).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+        window.ConveniosRepository.favorite(company, !fav).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
       },
       size: 40,
       iconSize: 21,
@@ -19001,7 +19085,9 @@ Object.assign(window, {
         top: 12,
         left: 60
       }
-    }, React.createElement(PendingDiscount)), company.cover_url && React.createElement('div', {
+    }, React.createElement(CompanyDiscount, {
+      company
+    })), company.cover_url && React.createElement('div', {
       style: {
         position: 'absolute',
         right: 13,
@@ -19039,7 +19125,7 @@ Object.assign(window, {
       resKey: 'convenios.card.pin',
       size: 15,
       stroke: 2
-    }), company.address_raw || company.location_raw || 'Ubicación pendiente'), company.category_raw && React.createElement('div', {
+    }), company.address_raw || company.location_raw || ''), company.category_raw && React.createElement('div', {
       style: {
         display: 'flex',
         gap: 8,
@@ -19062,25 +19148,78 @@ Object.assign(window, {
         lineHeight: 1.6,
         margin: 0
       }
-    }, company.description || 'Información pendiente de publicación.')), React.createElement('div', {
-      'data-convenio-benefits-state': 'pending',
+    }, company.description || 'Consulta los beneficios y medios de contacto disponibles.')), React.createElement('div', {
+      'data-convenio-benefits-state': (company.benefits || []).length ? 'loaded' : 'empty',
       style: {
         marginTop: 18
       }
     }, React.createElement(window.SectionHead, {
       title: 'Beneficios disponibles',
       icon: 'gift'
-    }), React.createElement('div', {
+    }), company.agreement_description && React.createElement('p', null, company.agreement_description), (company.benefits || []).map((b, i) => React.createElement('div', {
+      key: b.id || i,
       style: {
         background: 'var(--surface)',
         borderRadius: 14,
         padding: '13px 14px',
-        boxShadow: 'var(--neo-sm)',
-        fontSize: 12.5,
-        color: 'var(--ink-3)',
-        fontWeight: 700
+        marginBottom: 8,
+        boxShadow: 'var(--neo-sm)'
       }
-    }, 'Pendiente de información estructurada')), React.createElement('div', {
+    }, React.createElement('strong', null, b.label), b.description && React.createElement('p', {
+      style: {
+        margin: '6px 0 0',
+        lineHeight: 1.5
+      }
+    }, b.description))), company.conditions && React.createElement('div', null, React.createElement('strong', null, 'Condiciones y requisitos'), React.createElement('p', null, company.conditions)), !(company.benefits || []).length && !company.agreement_description && React.createElement('p', null, 'Consulta las condiciones del beneficio con la institución.')), (company.promotions || []).length > 0 && React.createElement('div', {
+      style: {
+        marginTop: 20
+      }
+    }, React.createElement(window.SectionHead, {
+      title: 'Promociones',
+      icon: 'gift'
+    }), company.promotions.map(p => React.createElement('div', {
+      key: p.id,
+      style: {
+        padding: 12
+      }
+    }, p.image_url && React.createElement('img', {
+      src: p.image_url,
+      alt: p.label,
+      style: {
+        width: '100%',
+        maxHeight: 180,
+        objectFit: 'cover',
+        borderRadius: 14
+      }
+    }), React.createElement('strong', null, p.label), Number(p.discount_percent) > 0 && React.createElement(window.Badge, {
+      tone: 'amber'
+    }, '-' + Number(p.discount_percent) + '%'), React.createElement('p', null, p.description), p.benefit_text && React.createElement('p', null, p.benefit_text), p.restrictions && React.createElement('p', null, 'Condiciones: ' + p.restrictions), p.end_date && React.createElement('p', null, 'Vigencia: ' + p.end_date)))), (company.services || []).length > 0 && React.createElement('div', {
+      style: {
+        marginTop: 20
+      }
+    }, React.createElement(window.SectionHead, {
+      title: 'Oferta educativa',
+      icon: 'book'
+    }), company.services.map((p, i) => React.createElement('div', {
+      key: i,
+      style: {
+        padding: 12
+      }
+    }, p.image_url && React.createElement('img', {
+      src: p.image_url,
+      alt: p.label,
+      style: {
+        width: '100%',
+        maxHeight: 180,
+        objectFit: 'cover',
+        borderRadius: 14
+      }
+    }), React.createElement('strong', null, p.label), React.createElement('p', null, p.description)))), React.createElement(CompanyPublicDetails, {
+      company
+    }), company.website_url && React.createElement(window.Btn, {
+      variant: 'outline',
+      onClick: () => window.openSafeContentUrl(company.website_url)
+    }, 'Sitio web'), React.createElement('div', {
       'data-marketplace-company-products': products.length,
       style: {
         marginTop: 20
@@ -19220,6 +19359,53 @@ Object.assign(window, {
       alt: company.display_name,
       onClose: () => setViewer(null)
     }));
+  }
+  function CompanyPublicDetails({
+    company
+  }) {
+    const details = company.public_details || {},
+      branches = Array.isArray(details.branches) ? details.branches : [];
+    const paragraph = (title, text) => text && React.createElement('section', {
+      style: {
+        marginTop: 18
+      }
+    }, React.createElement(window.SectionHead, {
+      title
+    }), React.createElement('p', {
+      style: {
+        whiteSpace: 'pre-line',
+        lineHeight: 1.6
+      }
+    }, text));
+    const links = [['Video institucional', details.video], ['Ver ubicación', details.map_url], ['Facebook', company.social_links?.fb], ['Instagram', company.social_links?.ig]].filter(([, url]) => url);
+    return React.createElement(React.Fragment, null, paragraph('Nuestra historia', details.history), paragraph('Horarios', details.hours), branches.length > 0 && React.createElement('section', {
+      style: {
+        marginTop: 18
+      }
+    }, React.createElement(window.SectionHead, {
+      title: 'Sucursales',
+      icon: 'pin'
+    }), branches.map((b, i) => React.createElement('div', {
+      key: i,
+      style: {
+        padding: '10px 0'
+      }
+    }, React.createElement('strong', null, b.nombre), React.createElement('p', {
+      style: {
+        margin: '5px 0'
+      }
+    }, b.dir)))), links.length > 0 && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap',
+        margin: '16px 0'
+      }
+    }, links.map(([label, url]) => React.createElement(window.Btn, {
+      key: label,
+      variant: 'outline',
+      onClick: () => window.openSafeContentUrl(url)
+    }, label))), company.email_raw && React.createElement('p', null, company.email_raw));
   }
   Object.assign(window, {
     ConveniosScreen,
@@ -24432,23 +24618,27 @@ Object.assign(window, {
   function convenio(c) {
     const p = companyProfiles.find(x => x.company_id === c.id) || {};
     return {
+      ...c,
       id: c.id,
       name: c.display_name,
-      cat: p.category_label || '',
+      description: c.description || '',
+      agreement_description: p.description || '',
+      conditions: p.conditions || '',
+      cat: p.category_label || c.category_raw || '',
       disc: p.discount_percent || 0,
       hue: p.accent_hue || 210,
       tags: p.tags || [],
-      addr: p.address || '',
+      addr: p.address || c.address_raw || '',
       fav: !!p.favorite,
       featured: !!p.featured,
       slotId: 'company_' + c.id,
       visible: c.enabled,
-      order: p.sort_order || c.sort_order || 0,
+      order: c.sort_order || p.sort_order || 0,
       audience: companyAudience(c.id),
       beneficios: (p.company_benefits || []).map(benefit)
     };
   }
-  store.conveniosAll = () => companies.map(convenio).sort((a, b) => a.order - b.order);
+  store.conveniosAll = () => companies.filter(c => !c.is_paid).map(convenio).sort((a, b) => a.order - b.order);
   store.getConvenio = id => store.conveniosAll().find(x => x.id === id);
   store.conveniosLive = v => store.conveniosAll().filter(x => x.visible && store.audienceMatch(x, v || store.viewer()));
   store.convenioVisibleFor = (c, v) => c.visible && store.audienceMatch(c, v || store.viewer());
@@ -24474,65 +24664,60 @@ Object.assign(window, {
     beneficios: []
   });
   store.saveConvenio = async c => {
-    try {
-      if (!c.id && !window.AdminRepository.has('companies.create')) throw new Error('COMPANY_CREATE_DENIED');
-      const saved = c.id && !window.AdminRepository.has('companies.update') ? {
-        id: c.id
-      } : await window.AdminRepository.saveManaged('companies', {
-        id: c.id || undefined,
+    const audience = a => ({
+      audience_mode: a.mode || 'all',
+      union_codes: toCodes('union', a.sindicatos),
+      employment_category_codes: toCodes('employment_category', a.niveles),
+      gender_codes: toCodes('gender', a.generos),
+      tag_codes: toCodes('tag', a.cargos)
+    });
+    const id = await window.ConveniosRepository.saveAgreement({
+      id: c.id || null,
+      company: {
         display_name: c.name,
-        description: c.addr || '',
+        description: c.description || '',
+        phone_raw: c.phone_raw || null,
+        whatsapp_raw: c.whatsapp_raw || null,
+        email_raw: c.email_raw || null,
+        website_url: c.website_url || null,
         enabled: c.visible !== false,
-        sort_order: c.order || 0
-      });
-      const id = c.id || saved.id,
-        a = c.audience || {},
-        old = companyProfiles.find(x => x.company_id === id),
-        kept = new Set((c.beneficios || []).map(b => b.id).filter(Boolean));
-      await Promise.all([repo.saveCompanyProfile({
-        company_id: id,
+        sort_order: c.order || 1
+      },
+      profile: {
         category_label: c.cat || '',
         discount_percent: c.disc || 0,
         accent_hue: c.hue || 210,
         tags: c.tags || [],
         address: c.addr || '',
-        favorite: !!c.fav,
         featured: !!c.featured,
-        sort_order: c.order || 0
-      }), repo.saveCompanyRule({
-        company_id: id,
-        audience_mode: a.mode || 'all',
-        union_codes: toCodes('union', a.sindicatos),
-        employment_category_codes: toCodes('employment_category', a.niveles),
-        gender_codes: toCodes('gender', a.generos),
-        tag_codes: toCodes('tag', a.cargos)
-      }), ...(old && old.company_benefits || []).filter(b => !kept.has(b.id)).map(b => repo.deleteCompanyBenefit(b.id))]);
-      for (const b of c.beneficios || []) {
-        const ba = b.audience || {};
-        await repo.saveCompanyBenefit({
-          id: b.id || undefined,
-          company_id: id,
-          label: b.label || '',
-          description: b.desc || '',
-          enabled: b.visible !== false,
-          sort_order: b.order || 0,
-          audience_mode: ba.mode || 'all',
-          union_codes: toCodes('union', ba.sindicatos),
-          employment_category_codes: toCodes('employment_category', ba.niveles),
-          gender_codes: toCodes('gender', ba.generos),
-          tag_codes: toCodes('tag', ba.cargos)
-        });
-      }
-      await load();
-    } catch (e) {
-      fail(e);
-    }
+        sort_order: c.order || 1,
+        description: c.agreement_description || '',
+        conditions: c.conditions || ''
+      },
+      audience: audience(c.audience || {}),
+      benefits: (c.beneficios || []).map((b, i) => ({
+        id: b.id || null,
+        label: b.label || '',
+        description: b.desc || '',
+        enabled: b.visible !== false,
+        sort_order: i + 1,
+        ...audience(b.audience || {})
+      }))
+    });
+    await load();
+    return id;
   };
-  store.toggleConvenio = id => {
+  store.toggleConvenio = async id => {
     const c = store.getConvenio(id);
     if (c) {
-      c.visible = !c.visible;
-      store.saveConvenio(c);
+      try {
+        await window.ConveniosRepository.saveCompany(id, {
+          enabled: !c.visible
+        });
+        await load();
+      } catch (e) {
+        fail(e);
+      }
     }
   };
   store.removeConvenio = id => window.AdminRepository.removeManaged('companies', id).then(load).catch(fail);
@@ -24548,11 +24733,9 @@ Object.assign(window, {
       store.saveConvenio(c);
     }
   };
-  store.reorderConvenios = ids => Promise.all(ids.map((id, i) => {
-    const c = store.getConvenio(id);
-    c.order = i + 1;
-    return store.saveConvenio(c);
-  })).then(load).catch(fail);
+  store.reorderConvenios = ids => Promise.all(ids.map((id, i) => window.ConveniosRepository.saveCompany(id, {
+    sort_order: i + 1
+  }))).then(load).catch(fail);
   store.convenioBeneficios = id => (store.getConvenio(id) || {
     beneficios: []
   }).beneficios;
@@ -32267,10 +32450,10 @@ Object.assign(window, {
       eliminar: app.admin.has('agreements.delete'),
       publicar: app.admin.has('agreements.publish'),
       reordenar: app.admin.has('agreements.order'),
-      baseCreate: app.admin.has('companies.create'),
+      baseCreate: app.admin.has('companies.create') || app.admin.has('agreements.create'),
       baseDelete: app.admin.has('companies.delete'),
-      basePublish: app.admin.has('companies.publish'),
-      baseOrder: app.admin.has('companies.order')
+      basePublish: app.admin.has('companies.publish') || app.admin.has('agreements.publish'),
+      baseOrder: app.admin.has('companies.order') || app.admin.has('agreements.order')
     };
     const items = store.conveniosAll();
     const ads = store.anunciosAll();
@@ -32312,7 +32495,9 @@ Object.assign(window, {
         padding: 4,
         marginBottom: 16
       }
-    }, seg('list', 'Convenios'), seg('anuncios', 'Anuncios'), seg('catalogos', 'Catálogos')), tab === 'catalogos' ? React.createElement(CatalogsManager, {
+    }, seg('list', 'Convenios'), seg('anuncios', 'Anuncios'), seg('catalogos', 'Catálogos'), app.admin.has('marketplace.update') && app.admin.has('marketplace.publish') && seg('promotions', 'Promociones')), tab === 'promotions' ? React.createElement(CompanyPromotionReview, {
+      app
+    }) : tab === 'catalogos' ? React.createElement(CatalogsManager, {
       store,
       P
     }) : tab === 'anuncios' ? React.createElement('div', null, React.createElement('div', {
@@ -32497,6 +32682,76 @@ Object.assign(window, {
   }
 
   // ── Catálogos dinámicos ──
+  function CompanyPromotionReview({
+    app
+  }) {
+    const [items, setItems] = useState([]),
+      [phase, setPhase] = useState('loading');
+    const load = async () => {
+      setPhase('loading');
+      try {
+        setItems(await window.MarketplaceRepository.listPromotions());
+        setPhase('loaded');
+      } catch (_) {
+        setPhase('error');
+      }
+    };
+    useEffect(() => {
+      load();
+    }, []);
+    const review = async (row, status) => {
+      try {
+        const r = await window.SutiSupabase.getClient().from('marketplace_promotions').update({
+          approval_status: status
+        }).eq('id', row.id).eq('approval_status', 'pending').select('id').single();
+        if (r.error) throw r.error;
+        window.ConveniosRepository.invalidate();
+        await load();
+        app.toast(status === 'approved' ? 'Promoción aprobada' : 'Promoción rechazada');
+      } catch (_) {
+        app.toast('No fue posible revisar la promoción');
+      }
+    };
+    if (phase === 'error') return React.createElement(window.EmptyState, {
+      icon: 'alert',
+      title: 'No pudimos cargar las promociones',
+      action: React.createElement(window.Btn, {
+        onClick: load
+      }, 'Reintentar')
+    });
+    if (phase === 'loading') return React.createElement(window.Skeleton, {
+      h: 120,
+      r: 14
+    });
+    return React.createElement('div', {
+      'data-company-promotion-review': ''
+    }, items.length ? items.map(row => React.createElement('article', {
+      key: row.id,
+      style: {
+        padding: 14,
+        marginBottom: 12,
+        borderRadius: 14,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('strong', null, row.title), React.createElement('p', null, row.description), React.createElement(window.Badge, {
+      tone: row.approval_status === 'approved' ? 'green' : 'amber'
+    }, row.approval_status === 'approved' ? 'Aprobada' : row.approval_status === 'rejected' ? 'Rechazada' : 'En revisión'), row.approval_status === 'pending' && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        marginTop: 12
+      }
+    }, React.createElement(window.Btn, {
+      onClick: () => review(row, 'approved')
+    }, 'Aprobar'), React.createElement(window.Btn, {
+      variant: 'outline',
+      onClick: () => review(row, 'rejected')
+    }, 'Rechazar')))) : React.createElement(window.EmptyState, {
+      icon: 'gift',
+      title: 'Sin promociones'
+    }));
+  }
   function CatalogsManager({
     store,
     P
@@ -32847,16 +33102,15 @@ Object.assign(window, {
         flexShrink: 0,
         overflow: 'hidden'
       }
-    }, React.createElement('image-slot', {
-      id: c.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: '',
+    }, (c.cover_url || c.logo_url) && React.createElement('img', {
+      src: c.cover_url || c.logo_url,
+      alt: c.name,
       style: {
         position: 'absolute',
         inset: 0,
         width: '100%',
-        height: '100%'
+        height: '100%',
+        objectFit: 'cover'
       }
     })), React.createElement('button', {
       onClick: () => P.editar ? onEdit(c) : null,
@@ -33041,9 +33295,45 @@ Object.assign(window, {
         ...patch
       }
     }));
-    const save = () => {
-      store.saveConvenio(d);
-      onClose();
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const save = async () => {
+      setBusy(true);
+      setError('');
+      try {
+        await store.saveConvenio(d);
+        onClose();
+      } catch (_) {
+        setError('No fue posible guardar. Revisa los datos y tus permisos.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const upload = async (file, role) => {
+      setBusy(true);
+      setError('');
+      try {
+        let id = d.id;
+        if (!id) {
+          id = await store.saveConvenio({
+            ...d,
+            visible: false
+          });
+          set({
+            id
+          });
+        }
+        const asset = await window.ConveniosRepository.uploadImage(file, id);
+        await window.ConveniosRepository.attachImage(id, asset.id, role);
+        set({
+          id,
+          [role + '_url']: asset.url
+        });
+      } catch (_) {
+        setError('No fue posible guardar la imagen.');
+      } finally {
+        setBusy(false);
+      }
     };
     const del = () => {
       store.removeConvenio(d.id);
@@ -33119,7 +33409,46 @@ Object.assign(window, {
         name: e.target.value
       }),
       style: inputBase
-    })), React.createElement('div', {
+    })), error && React.createElement('p', {
+      role: 'alert',
+      style: {
+        color: '#C0341D'
+      }
+    }, error), [['Sobre la empresa', 'description'], ['Descripción del convenio', 'agreement_description'], ['Condiciones y requisitos', 'conditions'], ['Teléfono', 'phone_raw'], ['WhatsApp', 'whatsapp_raw'], ['Correo', 'email_raw'], ['Sitio web', 'website_url']].map(([label, key]) => React.createElement('label', {
+      key,
+      style: {
+        ...lbl,
+        marginBottom: 14
+      }
+    }, label, React.createElement(['description', 'agreement_description', 'conditions'].includes(key) ? 'textarea' : 'input', {
+      value: d[key] || '',
+      onChange: e => set({
+        [key]: e.target.value
+      }),
+      style: inputBase
+    }))), [['Logo', 'logo'], ['Portada', 'cover']].map(([label, role]) => React.createElement('label', {
+      key: role,
+      style: {
+        ...lbl,
+        marginBottom: 14
+      }
+    }, label, d[role + '_url'] && React.createElement('img', {
+      src: d[role + '_url'],
+      alt: label,
+      style: {
+        width: '100%',
+        height: 110,
+        objectFit: 'contain'
+      }
+    }), React.createElement('input', {
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled: busy || !d.name.trim(),
+      onChange: e => {
+        if (e.target.files[0]) upload(e.target.files[0], role);
+        e.target.value = '';
+      }
+    }))), React.createElement('div', {
       style: {
         display: 'flex',
         gap: 12,
@@ -33218,18 +33547,24 @@ Object.assign(window, {
         position: 'relative',
         background: `linear-gradient(150deg, hsl(${d.hue},60%,46%), hsl(${d.hue},62%,30%))`
       }
-    }, React.createElement('image-slot', {
-      id: d.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Arrastra una imagen',
+    }, d.cover_url || d.logo_url ? React.createElement('img', {
+      src: d.cover_url || d.logo_url,
+      alt: d.name,
       style: {
         position: 'absolute',
         inset: 0,
         width: '100%',
-        height: '100%'
+        height: '100%',
+        objectFit: 'cover'
       }
-    }))), React.createElement('div', {
+    }) : React.createElement('span', {
+      style: {
+        display: 'grid',
+        placeItems: 'center',
+        height: '100%',
+        color: '#fff'
+      }
+    }, 'Agrega una portada con el selector de imagen'))), React.createElement('div', {
       style: {
         marginBottom: 16
       }
@@ -33418,6 +33753,20 @@ Object.assign(window, {
       onChange: v => set({
         beneficios: v
       })
+    }), d.id && React.createElement(window.CatalogEditorList, {
+      scope: 'convenio',
+      scopeId: d.id,
+      empresaId: d.id,
+      editable: P.editar,
+      permissions: {
+        create: P.crear,
+        update: P.editar,
+        delete: P.eliminar,
+        publish: P.publicar,
+        order: P.reordenar,
+        assets: P.editar
+      },
+      actor: 'Admin Convenios'
     }), !isNew && P.baseDelete && React.createElement('button', {
       onClick: del,
       style: {
@@ -33465,7 +33814,7 @@ Object.assign(window, {
       style: {
         flex: 2
       },
-      disabled: !d.name.trim(),
+      disabled: busy || !d.name.trim(),
       onClick: save
     }, 'Guardar convenio')));
   }
@@ -46788,7 +47137,7 @@ Object.assign(window, {
       required: ['title', 'document_asset_id']
     },
     education: {
-      title: 'Educación y tutoriales',
+      title: 'Educación',
       singular: 'recurso',
       icon: 'book',
       permission: 'content.write',
@@ -46976,6 +47325,7 @@ Object.assign(window, {
     const [busy, setBusy] = React.useState(false);
     const [pending, setPending] = React.useState({});
     const pendingRef = React.useRef({});
+    const [educationText, setEducationText] = React.useState(() => Object.fromEntries(['benefits', 'services'].map(key => [key, ((item?.public_details || {})[key] || []).map(v => v.label + (v.description ? ' | ' + v.description : '')).join('\n')])));
     const remember = async (key, asset) => {
       if (pendingRef.current[key]) await window.AdminRepository.discardAsset(pendingRef.current[key]);
       pendingRef.current = Object.assign({}, pendingRef.current, {
@@ -47015,16 +47365,31 @@ Object.assign(window, {
       if (kind === 'popups' && form.enabled && !String(form.body || '').trim()) return app.toast('Un pop-up activo requiere contenido');
       setBusy(true);
       try {
-        const saved = await window.AdminRepository.saveManaged(kind, form);
+        const values = kind === 'education' && form.resource_kind === 'education' ? {
+          ...form,
+          public_details: {
+            ...form.public_details,
+            ...Object.fromEntries(['benefits', 'services'].map(key => [key, educationText[key].split('\n').map(line => {
+              const [label, ...parts] = line.split('|');
+              return {
+                label: label.trim(),
+                description: parts.join('|').trim()
+              };
+            }).filter(v => v.label)]))
+          }
+        } : form;
+        const saved = await window.AdminRepository.saveManaged(kind, values);
         const id = form.id || saved.id;
         if (!form.id) setForm(old => Object.assign({}, old, {
           id
         }));
         committed(Object.keys(pendingRef.current).filter(key => key !== 'cover_asset_id'));
+        if (kind === 'education') committed(['cover_asset_id']);
         if (kind === 'companies' && form.cover_asset_id) {
           await window.AdminRepository.replaceCompanyAsset(id, form.cover_asset_id, 'cover');
           committed(['cover_asset_id']);
         }
+        window.ConveniosRepository.invalidate();
         app.toast('Cambios guardados');
         await onDone();
       } catch (_) {
@@ -47079,7 +47444,46 @@ Object.assign(window, {
         padding: 16,
         flex: 1
       }
-    }, kind === 'banners' && field('Ubicación', 'placement', form, setForm, [['home', 'Inicio'], ['marketplace', 'Marketplace']]), kind === 'companies' && field('Nombre visible', 'display_name', form, setForm), kind === 'directory' && field('Nombre', 'name', form, setForm), kind === 'directory' && field('Cargo', 'role', form, setForm), kind !== 'companies' && kind !== 'programs' && kind !== 'directory' && field('Título', 'title', form, setForm), kind === 'programs' && field('Nombre del programa', 'category', form, setForm), kind === 'popups' && field('Contenido', 'body', form, setForm), kind !== 'popups' && kind !== 'directory' && field('Descripción', 'description', form, setForm), (kind === 'banners' || kind === 'popups') && field('Texto de acción', 'action_label', form, setForm), (kind === 'banners' || kind === 'popups') && field('URL de acción', 'action_url', form, setForm), kind === 'documents' && field('Tipo', 'kind', form, setForm, [['download', 'Descarga'], ['form', 'Formato'], ['regulation', 'Norma o reglamento']].filter(option => !filterKinds || filterKinds.includes(option[0]))), kind === 'education' && field('Tipo', 'resource_kind', form, setForm, [['education', 'Información educativa'], ['tutorial', 'Tutorial']]), kind === 'education' && field('Enlace HTTPS', 'external_url', form, setForm), kind !== 'documents' && kind !== 'minutes' && window.AdminRepository.has(sectionKey + '.assets') && React.createElement(AssetPicker, {
+    }, kind === 'banners' && field('Ubicación', 'placement', form, setForm, [['home', 'Inicio'], ['marketplace', 'Marketplace']]), kind === 'companies' && field('Nombre visible', 'display_name', form, setForm), kind === 'directory' && field('Nombre', 'name', form, setForm), kind === 'directory' && field('Cargo', 'role', form, setForm), kind !== 'companies' && kind !== 'programs' && kind !== 'directory' && field('Título', 'title', form, setForm), kind === 'programs' && field('Nombre del programa', 'category', form, setForm), kind === 'popups' && field('Contenido', 'body', form, setForm), kind !== 'popups' && kind !== 'directory' && field('Descripción', 'description', form, setForm), (kind === 'banners' || kind === 'popups') && field('Texto de acción', 'action_label', form, setForm), (kind === 'banners' || kind === 'popups') && field('URL de acción', 'action_url', form, setForm), kind === 'documents' && field('Tipo', 'kind', form, setForm, [['download', 'Descarga'], ['form', 'Formato'], ['regulation', 'Norma o reglamento']].filter(option => !filterKinds || filterKinds.includes(option[0]))), kind === 'education' && field('Tipo', 'resource_kind', form, setForm, [['education', 'Información educativa'], ['tutorial', 'Tutorial']]), kind === 'education' && field('Enlace HTTPS', 'external_url', form, setForm), kind === 'education' && form.resource_kind === 'education' && React.createElement('div', null, [['Ubicación', 'address'], ['Oferta o beneficio', 'offer'], ['Condiciones y requisitos', 'conditions'], ['Teléfono', 'phone'], ['WhatsApp', 'whatsapp'], ['Descuento (%)', 'discount_percent']].map(([label, key]) => React.createElement('label', {
+      key,
+      style: labelStyle
+    }, label, React.createElement('input', {
+      value: (form.public_details || {})[key] || '',
+      type: key === 'discount_percent' ? 'number' : 'text',
+      min: key === 'discount_percent' ? 0 : undefined,
+      max: key === 'discount_percent' ? 100 : undefined,
+      onChange: e => {
+        const value = key === 'discount_percent' ? Number(e.target.value) : e.target.value;
+        setForm(old => ({
+          ...old,
+          public_details: {
+            ...old.public_details,
+            [key]: value
+          }
+        }));
+      },
+      style: inputStyle
+    }))), [['Beneficios (uno por línea: nombre | descripción)', 'benefits'], ['Servicios educativos (uno por línea: nombre | descripción)', 'services']].map(([label, key]) => React.createElement('label', {
+      key,
+      style: labelStyle
+    }, label, React.createElement('textarea', {
+      rows: 4,
+      value: educationText[key],
+      onChange: e => {
+        const value = e.target.value;
+        setEducationText(old => ({
+          ...old,
+          [key]: value
+        }));
+      },
+      style: inputStyle
+    })))), kind === 'education' && form.resource_kind === 'education' && window.AdminRepository.has('education.assets') && React.createElement(AssetPicker, {
+      label: 'Portada',
+      url: form.cover_url || null,
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      busy,
+      onFile: file => upload('cover_asset_id', file, 'app-assets', 'EDUCATIONAL_IMAGE')
+    }), kind === 'companies' && [['Categoría comercial', 'category_raw'], ['Ubicación', 'address_raw'], ['Teléfono', 'phone_raw'], ['WhatsApp', 'whatsapp_raw'], ['Correo', 'email_raw'], ['Sitio web', 'website_url']].map(([label, key]) => field(label, key, form, setForm)), kind !== 'documents' && kind !== 'minutes' && window.AdminRepository.has(sectionKey + '.assets') && React.createElement(AssetPicker, {
       label: kind === 'companies' ? 'Logo' : 'Imagen',
       url: imageUrl,
       accept: 'image/png,image/jpeg,image/gif,image/webp,image/svg+xml',
@@ -53697,7 +54101,7 @@ Object.assign(window, {
     ready: true
   }, {
     id: 'education',
-    label: 'Educación y tutoriales',
+    label: 'Educación',
     icon: 'book',
     desc: 'Recursos, enlaces e imágenes',
     ready: true
@@ -56391,20 +56795,22 @@ Object.assign(window, {
       razon: c.legal_name || '',
       giro: c.category_raw || '',
       desc: c.description || '',
-      historia: '',
+      historia: c.public_details?.history || '',
+      logo_url: window.AssetRepository.publicUrl(c.logo_asset),
+      cover_url: window.AssetRepository.publicUrl((c.company_assets || []).find(a => a.role === 'cover')?.asset),
       slotLogo: null,
-      gallery: c.gallery_urls || [],
-      video: '',
+      gallery: (c.company_assets || []).filter(a => a.role === 'gallery').map(a => window.AssetRepository.publicUrl(a.asset)),
+      video: c.public_details?.video || '',
       web: c.website_url || '',
       tel: c.phone_raw || '',
       email: c.email_raw || '',
       redes: c.social_links || {},
-      horario: '',
-      sucursales: c.address_raw ? [{
+      horario: c.public_details?.hours || '',
+      sucursales: c.public_details?.branches || (c.address_raw ? [{
         nombre: 'Ubicación',
         dir: c.address_raw
-      }] : [],
-      mapUrl: '',
+      }] : []),
+      mapUrl: c.public_details?.map_url || '',
       plan: sub && sub.plan_id || 'pending',
       billing: sub && sub.billing_cycle === 'monthly' ? 'mensual' : sub && sub.billing_cycle === 'annual' ? 'anual' : '',
       subStart: sub && sub.starts_on || null,
@@ -56428,13 +56834,15 @@ Object.assign(window, {
       if (!force) return promise;
       await promise;
     }
+    const epoch = window.PrivateResourceDemand.context();
     phase = 'loading';
     emit();
     promise = (async () => {
       try {
         const repo = window.MarketplaceRepository,
           admin = window.AdminRepository && window.AdminRepository.has('company_portal.read');
-        const values = await Promise.all([admin ? repo.listPortalCompanies() : repo.companyContext(), repo.listPortalPlans(), repo.listPortalSubscriptions(), repo.listRequests(), repo.listQuotes(), window.PopupProposalRepository.list()]);
+        const values = await Promise.all([admin ? repo.listPortalCompanies() : repo.companyContext(), repo.listPortalPlans(), repo.listPortalSubscriptions(), repo.listRequests(), repo.listCompanyOperations('quote'), window.PopupProposalRepository.list()]);
+        if (epoch !== window.PrivateResourceDemand.context()) return store;
         plans = values[1].map(planRow);
         subscriptions = values[2].slice();
         requests = values[3].slice();
@@ -56448,12 +56856,20 @@ Object.assign(window, {
           if (!group) throw new Error('COMPANY_PROMOTIONS_CONTEXT_MISMATCH');
           group.push(promo);
         }
-        for (const co of base) co.promos = byCompany.get(co.id);
+        const products = await repo.listProducts({
+          admin
+        });
+        for (const co of base) {
+          co.promos = byCompany.get(co.id);
+          co.products = products.filter(p => p.company_id === co.id);
+        }
+        if (epoch !== window.PrivateResourceDemand.context()) return store;
         companies = base.map(Object.freeze);
         if (authId && !companies.some(x => x.id === authId)) authId = null;
         phase = 'loaded';
         error = null;
       } catch (e) {
+        if (epoch !== window.PrivateResourceDemand.context()) return store;
         companies = [];
         plans = [];
         subscriptions = [];
@@ -56464,7 +56880,7 @@ Object.assign(window, {
         phase = 'error';
         error = e;
       } finally {
-        promise = null;
+        if (epoch === window.PrivateResourceDemand.context()) promise = null;
       }
       emit();
       return store;
@@ -56472,12 +56888,13 @@ Object.assign(window, {
     return promise;
   }
   function subStatus(co) {
-    if (!co || co.subscriptionStatus === 'pending' || !co.subEnd) return 'vencido';
+    if (!co || !plan(co.plan).activo || !co.subStart || co.subStart > new Date().toISOString().slice(0, 10) || co.subscriptionStatus === 'pending' || !co.subEnd) return 'vencido';
     if (co.subscriptionStatus !== 'active') return 'vencido';
     const days = Math.ceil((new Date(co.subEnd + 'T23:59') - new Date()) / 86400000);
     return days <= 0 ? 'vencido' : days <= 30 ? 'porVencer' : 'activo';
   }
   const store = {
+    quotes: coId => quotes.filter(x => x.company_id === coId),
     ESTADOS,
     state: () => ({
       phase,
@@ -56526,20 +56943,21 @@ Object.assign(window, {
       }));
     },
     resetPlans: () => Promise.reject(new Error('NO_PRODUCTIVE_PLAN_RESET')),
-    setCompanyPlan: async (companyId, planId, cycle) => {
-      await window.MarketplaceRepository.setPortalSubscription(companyId, planId, cycle);
+    setCompanyPlan: async (companyId, planId, cycle, payment) => {
+      await window.MarketplaceRepository.setPortalSubscription(companyId, planId, cycle, payment);
       await load(true);
     },
     companies: () => companies.slice(),
+    portalCompanies: () => companies.filter(c => subStatus(c) !== 'vencido'),
     get: id => companies.find(x => x.id === id) || null,
     current: () => companies.find(x => x.id === authId) || null,
     subStatus,
-    planAllows: (co, key) => Boolean(plan(co && co.plan)[key]),
+    planAllows: (co, key) => Boolean(co && subStatus(co) !== 'vencido' && plan(co.plan).activo && plan(co.plan)[key]),
     isAuth: () => Boolean(authId && companies.some(x => x.id === authId)),
     authId: () => authId,
     login: async id => {
       await load(false);
-      if (!companies.some(x => x.id === id)) return false;
+      if (!companies.some(x => x.id === id && subStatus(x) !== 'vencido')) return false;
       authId = id;
       emit();
       return true;
@@ -56551,6 +56969,12 @@ Object.assign(window, {
     save: async co => {
       await window.MarketplaceRepository.updateCompany(co);
       await load(true);
+    },
+    uploadImage: async (coId, file, role) => {
+      const a = await window.ConveniosRepository.uploadImage(file, coId);
+      await window.ConveniosRepository.attachImage(coId, a.id, role);
+      await load(true);
+      return a;
     },
     saveProduct: (coId, prod) => window.catalogStore.save(Object.assign({}, prod, {
       company_id: coId,
@@ -56588,7 +57012,7 @@ Object.assign(window, {
       await load(true);
     },
     addComentario: async (id, texto) => {
-      await window.MarketplaceRepository.updateRequest(id, undefined, texto);
+      await window.MarketplaceRepository.updateRequest(id, requests.find(r => r.id === id)?.status, texto);
       await load(true);
     },
     stats: coId => (store.get(coId) || {}).stats || {},
@@ -56622,6 +57046,19 @@ Object.assign(window, {
       return () => listeners.delete(fn);
     }
   };
+  window.PrivateResourceDemand.subscribe(() => {
+    companies = [];
+    plans = [];
+    subscriptions = [];
+    requests = [];
+    quotes = [];
+    popupProposals = [];
+    authId = null;
+    promise = null;
+    phase = 'idle';
+    error = null;
+    emit();
+  });
   window.companyStore = store;
   window.useCompanyStore = function () {
     const [, setV] = useState(0);
@@ -61796,6 +62233,11 @@ Object.assign(window, {
     const [planId, setPlanId] = useState(co.plan);
     const [ciclo, setCiclo] = useState(co.billing === 'mensual' ? 'mensual' : 'anual');
     const [busy, setBusy] = useState(false);
+    const [payment, setPayment] = useState({
+      reference: '',
+      received: false,
+      email: ''
+    });
     const plans = store.plans().filter(p => p.activo !== false || p.id === co.plan);
     return React.createElement('div', {
       style: {
@@ -61913,6 +62355,34 @@ Object.assign(window, {
       }, ciclo === 'mensual' ? 'al mes' : 'al año')));
     })), React.createElement('label', {
       style: planesLbl
+    }, 'Referencia del pago presencial', React.createElement('input', {
+      value: payment.reference,
+      onChange: e => setPayment({
+        ...payment,
+        reference: e.target.value
+      }),
+      style: planesInput
+    })), React.createElement('label', {
+      style: planesLbl
+    }, 'Correo de cuenta empresarial existente (opcional)', React.createElement('input', {
+      type: 'email',
+      value: payment.email,
+      onChange: e => setPayment({
+        ...payment,
+        email: e.target.value
+      }),
+      style: planesInput
+    })), React.createElement('label', {
+      style: planesLbl
+    }, React.createElement('input', {
+      type: 'checkbox',
+      checked: payment.received,
+      onChange: e => setPayment({
+        ...payment,
+        received: e.target.checked
+      })
+    }), ' Confirmo que SutiApp recibió el pago presencial de este plan'), React.createElement('label', {
+      style: planesLbl
     }, 'Ciclo de pago'), React.createElement('div', {
       style: {
         display: 'flex',
@@ -61957,11 +62427,11 @@ Object.assign(window, {
       style: {
         flex: 2
       },
-      disabled: busy || !planId || planId === 'pending',
+      disabled: busy || !payment.received || payment.reference.trim().length < 3 || !planId || planId === 'pending',
       onClick: async () => {
         setBusy(true);
         try {
-          await store.setCompanyPlan(co.id, planId, ciclo);
+          await store.setCompanyPlan(co.id, planId, ciclo, payment);
           app.toast('Plan actualizado para ' + co.name);
           onClose();
         } catch (_) {
@@ -61970,7 +62440,7 @@ Object.assign(window, {
           setBusy(false);
         }
       }
-    }, busy ? 'Guardando…' : 'Guardar cambio'))));
+    }, busy ? 'Guardando…' : 'Acreditar pago y activar'))));
   }
   window.PlanesModule = PlanesModule;
 })();
@@ -63484,6 +63954,50 @@ Object.assign(window, {
       'aria-label': 'toggle'
     });
   }
+  function CompanyMediaInput({
+    co,
+    value,
+    onChange
+  }) {
+    const [busy, setBusy] = useState(false),
+      [error, setError] = useState('');
+    const upload = async file => {
+      setBusy(true);
+      setError('');
+      try {
+        onChange(await window.ConveniosRepository.uploadImage(file, co.id));
+      } catch (_) {
+        setError('No fue posible subir la imagen');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return React.createElement('div', {
+      style: {
+        marginBottom: 14
+      }
+    }, value && React.createElement('img', {
+      src: value,
+      alt: 'Imagen',
+      style: {
+        width: '100%',
+        height: 130,
+        objectFit: 'cover',
+        borderRadius: 14
+      }
+    }), React.createElement('input', {
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled: busy,
+      'aria-label': 'Imagen',
+      onChange: e => {
+        if (e.target.files[0]) upload(e.target.files[0]);
+        e.target.value = '';
+      }
+    }), error && React.createElement('p', {
+      role: 'alert'
+    }, error));
+  }
   function SecTitle(icon, label) {
     return React.createElement('div', {
       style: {
@@ -63530,7 +64044,33 @@ Object.assign(window, {
     onBack
   }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(co)));
-    const [okSave, runSave] = window.useBtnConfirm();
+    const [okSave, setOkSave] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const upload = async (file, role) => {
+      setUploading(true);
+      try {
+        const a = await store.uploadImage(co.id, file, role);
+        setD(old => role === 'gallery' ? {
+          ...old,
+          gallery: [...(old.gallery || []), a.url]
+        } : {
+          ...old,
+          [role + '_url']: a.url
+        });
+        app.toast('Imagen guardada');
+      } catch (_) {
+        app.toast('No fue posible subir la imagen');
+      } finally {
+        setUploading(false);
+      }
+    };
+    React.useEffect(() => {
+      if (!okSave) return;
+      const timer = setTimeout(() => setOkSave(false), 600);
+      return () => clearTimeout(timer);
+    }, [okSave]);
     const set = (k, v) => setD(p => ({
       ...p,
       [k]: v
@@ -63554,29 +64094,32 @@ Object.assign(window, {
       sub: 'Perfil público',
       onBack,
       co
-    }), React.createElement('div', scroll, SecTitle('image', 'Logotipo'), React.createElement('div', {
+    }), React.createElement('div', scroll, SecTitle('image', 'Logotipo'), [['Logo', 'logo'], ['Portada', 'cover']].map(([label, role]) => React.createElement('label', {
+      key: role,
       style: {
-        width: 90,
-        height: 90,
-        borderRadius: 18,
-        overflow: 'hidden',
-        boxShadow: 'var(--neo-sm)',
-        position: 'relative',
-        background: `hsl(${co.hue || 210},50%,45%)`,
+        ...lbl,
         marginBottom: 16
       }
-    }, React.createElement('image-slot', {
-      id: d.slotLogo,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Logo',
+    }, label, d[role + '_url'] && React.createElement('img', {
+      src: d[role + '_url'],
+      alt: label,
       style: {
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%'
+        width: role === 'logo' ? 90 : '100%',
+        height: role === 'logo' ? 90 : 150,
+        objectFit: 'contain',
+        display: 'block',
+        borderRadius: 14,
+        marginBottom: 8
       }
-    })), SecTitle('handshake', 'Datos generales'), Field({
+    }), React.createElement('input', {
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled: uploading,
+      onChange: e => {
+        if (e.target.files[0]) upload(e.target.files[0], role);
+        e.target.value = '';
+      }
+    }))), SecTitle('handshake', 'Datos generales'), Field({
       label: 'Nombre comercial',
       value: d.name,
       onChange: v => set('name', v)
@@ -63616,18 +64159,25 @@ Object.assign(window, {
         position: 'relative',
         background: 'var(--surface-2)'
       }
-    }, React.createElement('image-slot', {
-      id: g,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Foto',
+    }, React.createElement('img', {
+      src: g,
+      alt: 'Galería',
       style: {
         position: 'absolute',
         inset: 0,
         width: '100%',
         height: '100%'
       }
-    })))), Field({
+    })))), React.createElement('input', {
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled: uploading,
+      'aria-label': 'Agregar imagen a la galería',
+      onChange: e => {
+        if (e.target.files[0]) upload(e.target.files[0], 'gallery');
+        e.target.value = '';
+      }
+    }), Field({
       label: 'Video institucional (URL)',
       value: d.video,
       onChange: v => set('video', v),
@@ -63636,6 +64186,10 @@ Object.assign(window, {
       label: 'Teléfono',
       value: d.tel,
       onChange: v => set('tel', v)
+    }), Field({
+      label: 'WhatsApp',
+      value: d.whatsapp_raw,
+      onChange: v => set('whatsapp_raw', v)
     }), Field({
       label: 'Correo',
       value: d.email,
@@ -63735,14 +64289,27 @@ Object.assign(window, {
       variant: 'dark',
       icon: 'check',
       success: okSave,
+      disabled: saving || uploading,
       style: {
         marginTop: 6
       },
-      onClick: () => runSave(async () => {
-        await store.save(d);
-        app.toast('Información guardada');
-      })
-    }, 'Guardar cambios')));
+      onClick: async () => {
+        setSaving(true);
+        setSaveError('');
+        setOkSave(false);
+        try {
+          await store.save(d);
+          setOkSave(true);
+          app.toast('Información guardada');
+        } catch (_) {
+          setSaveError('No fue posible guardar. Revisa los datos e intenta nuevamente.');
+        } finally {
+          setSaving(false);
+        }
+      }
+    }, 'Guardar cambios'), saveError && React.createElement('p', {
+      role: 'alert'
+    }, saveError)));
   }
 
   // ── Productos y Servicios ──
@@ -63772,7 +64339,7 @@ Object.assign(window, {
       scope: 'convenio',
       scopeId: co.id,
       empresaId: co.id,
-      editable: true,
+      editable: store.subStatus(co) !== 'vencido',
       actor: 'Empresa · ' + co.name,
       dark: true
     })));
@@ -64073,11 +64640,9 @@ Object.assign(window, {
         position: 'relative',
         background: `linear-gradient(140deg, hsl(${co.hue || 210} 55% 46%), hsl(${co.hue || 210} 60% 30%))`
       }
-    }, React.createElement('image-slot', {
-      id: p.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: '',
+    }, p.image_url && React.createElement('img', {
+      src: p.image_url,
+      alt: p.titulo || p.name || 'Imagen',
       style: {
         position: 'absolute',
         inset: 0,
@@ -64128,6 +64693,19 @@ Object.assign(window, {
       ...p,
       [k]: v
     }));
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const save = async () => {
+      setBusy(true);
+      try {
+        await store.savePromo(co.id, d);
+        onClose();
+      } catch (_) {
+        setError('No fue posible guardar la promoción');
+      } finally {
+        setBusy(false);
+      }
+    };
     const isNew = !(co.promos || []).some(p => p.id === item.id);
     return React.createElement('div', {
       style: {
@@ -64177,28 +64755,17 @@ Object.assign(window, {
         overflowY: 'auto',
         padding: 16
       }
-    }, React.createElement('div', {
-      style: {
-        height: 110,
-        borderRadius: 14,
-        overflow: 'hidden',
-        position: 'relative',
-        background: `hsl(${co.hue || 210},55%,44%)`,
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('image-slot', {
-      id: d.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Imagen',
-      style: {
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%'
-      }
-    })), Field({
+    }, React.createElement(CompanyMediaInput, {
+      co,
+      value: d.image_url,
+      onChange: a => setD(p => ({
+        ...p,
+        image_asset_id: a.id,
+        image_url: a.url
+      }))
+    }), error && React.createElement('p', {
+      role: 'alert'
+    }, error), Field({
       label: 'Nombre de la promoción',
       value: d.name,
       onChange: v => set('name', v)
@@ -64300,11 +64867,8 @@ Object.assign(window, {
       style: {
         flex: 1
       },
-      disabled: !d.name.trim(),
-      onClick: () => {
-        store.savePromo(co.id, d);
-        onClose();
-      }
+      disabled: busy || !d.name.trim(),
+      onClick: save
     }, 'Guardar')));
   }
 
@@ -64347,7 +64911,7 @@ Object.assign(window, {
       style: {
         flexShrink: 0
       }
-    }), 'La administración de Pop-ups no está incluida en tu plan actual (' + CO().PLAN(co.plan).name + '). Contrata un plan Pro o Premium para habilitarla.') : React.createElement('div', null, React.createElement('div', {
+    }), 'La administración de Pop-ups no está incluida en tu plan actual (' + CO().PLAN(co.plan).name + '). Consulta con SutiApp los planes que incluyen esta función.') : React.createElement('div', null, React.createElement('div', {
       style: {
         background: '#E8F0FE',
         color: '#2456C7',
@@ -64575,28 +65139,15 @@ Object.assign(window, {
         overflowY: 'auto',
         padding: 16
       }
-    }, React.createElement('div', {
-      style: {
-        height: 130,
-        borderRadius: 14,
-        overflow: 'hidden',
-        position: 'relative',
-        background: `linear-gradient(150deg, hsl(${d.hue},70%,42%), hsl(${d.hue},65%,26%))`,
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('image-slot', {
-      id: d.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Imagen de cabecera',
-      style: {
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%'
-      }
-    })), Field({
+    }, React.createElement(CompanyMediaInput, {
+      co,
+      value: d.image_url,
+      onChange: a => setD(p => ({
+        ...p,
+        image_asset_id: a.id,
+        image_url: a.url
+      }))
+    }), Field({
       label: 'Título',
       value: d.titulo,
       onChange: v => set('titulo', v)
@@ -64835,7 +65386,20 @@ Object.assign(window, {
     s,
     onClose
   }) {
-    const [cmt, setCmt] = useState('');
+    const [cmt, setCmt] = useState(''),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState('');
+    const act = async fn => {
+      setBusy(true);
+      setError('');
+      try {
+        await fn();
+      } catch (_) {
+        setError('No se pudo actualizar la solicitud. Revisa su estado e intenta nuevamente.');
+      } finally {
+        setBusy(false);
+      }
+    };
     if (!s) return null;
     const row = (k, v) => React.createElement('div', {
       style: {
@@ -64908,7 +65472,8 @@ Object.assign(window, {
       }
     }, CO().ESTADOS.map(e => React.createElement('button', {
       key: e.id,
-      onClick: () => store.setEstado(s.id, e.id),
+      disabled: busy,
+      onClick: () => act(() => store.setEstado(s.id, e.id)),
       style: {
         height: 34,
         padding: '0 12px',
@@ -64928,7 +65493,9 @@ Object.assign(window, {
         color: 'var(--ink-2)',
         margin: '18px 0 8px'
       }
-    }, 'Comentarios internos'), (s.comentarios || []).map((c, i) => React.createElement('div', {
+    }, 'Observaciones de la solicitud'), error && React.createElement('p', {
+      role: 'alert'
+    }, error), s.company_notes && React.createElement('p', null, s.company_notes), (s.comentarios || []).map((c, i) => React.createElement('div', {
       key: i,
       style: {
         background: 'var(--surface-2)',
@@ -64955,11 +65522,12 @@ Object.assign(window, {
         padding: '11px 13px'
       }
     }), React.createElement('button', {
+      disabled: busy,
       onClick: () => {
-        if (cmt.trim()) {
-          store.addComentario(s.id, cmt);
+        if (cmt.trim()) act(async () => {
+          await store.addComentario(s.id, cmt);
           setCmt('');
-        }
+        });
       },
       style: {
         width: 46,
@@ -64985,7 +65553,10 @@ Object.assign(window, {
     store,
     onBack
   }) {
-    const qs = window.useQuoteStore();
+    const qs = {
+      forCompany: id => store.quotes(id),
+      get: id => store.quotes(co.id).find(r => r.id === id)
+    };
     const [open, setOpen] = useState(null);
     const list = qs.forCompany(co.id).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     const pend = list.filter(r => r.estado === 'solicitada').length;
@@ -65086,7 +65657,9 @@ Object.assign(window, {
   }) {
     const [monto, setMonto] = useState('');
     const [nota, setNota] = useState('');
-    const [vig, setVig] = useState('15 días');
+    const [vig, setVig] = useState('15 días'),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState('');
     if (!r) return null;
     const row = (k, v) => React.createElement('div', {
       style: {
@@ -65113,13 +65686,20 @@ Object.assign(window, {
     const enviar = async () => {
       const m = parseFloat(monto);
       if (!m || m <= 0) return;
-      await window.quoteStore.cotizar(r.id, {
-        monto: m,
-        nota: nota.trim(),
-        vigencia: vig
-      }, actor);
-      toast && toast('Cotización enviada al afiliado');
-      onClose();
+      setBusy(true);
+      setError('');
+      try {
+        const until = new Date();
+        until.setDate(until.getDate() + parseInt(vig, 10));
+        await window.MarketplaceRepository.respondQuote(r.id, m, nota.trim(), until.toISOString().slice(0, 10));
+        await window.companyStore.retry();
+        toast && toast('Cotización enviada al afiliado');
+        onClose();
+      } catch (_) {
+        setError('No se pudo enviar la cotización. Intenta nuevamente.');
+      } finally {
+        setBusy(false);
+      }
     };
     return React.createElement('div', {
       onClick: onClose,
@@ -65248,9 +65828,11 @@ Object.assign(window, {
       full: true,
       variant: 'dark',
       icon: 'upload',
-      disabled: !parseFloat(monto),
+      disabled: busy || !parseFloat(monto),
       onClick: enviar
-    }, 'Cargar cotización y notificar'))));
+    }, 'Cargar cotización y notificar'), error && React.createElement('p', {
+      role: 'alert'
+    }, error))));
   }
 
   // ── Estadísticas ──
@@ -65261,6 +65843,20 @@ Object.assign(window, {
     onBack
   }) {
     const st = co.stats || {};
+    const [activity, setActivity] = useState(null);
+    React.useEffect(() => {
+      let live = true;
+      window.ConveniosRepository.activity(co.id).then(v => {
+        if (live) setActivity(v);
+      }).catch(() => {
+        if (live) setActivity({
+          error: true
+        });
+      });
+      return () => {
+        live = false;
+      };
+    }, [co.id]);
     const operations = store.solicitudes(co.id);
     const prods = (co.products || []).slice().map(p => ({
       name: p.name,
@@ -65329,7 +65925,9 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontWeight: 600
       }
-    }, 'Aún no hay productos con solicitudes.')), card('Interacción', [bar('Solicitudes recibidas', st.solicitudes || 0, 'linear-gradient(90deg,#2456C7,#1b2c52)'), bar('Cotizaciones recibidas', st.cotizaciones || 0, 'linear-gradient(90deg,#C8922F,#9A6B16)'), bar('Promociones activas', (co.promos || []).filter(p => p.active).length, 'linear-gradient(90deg,#13794A,#0b5c37)')]), card('Operaciones comerciales', React.createElement('div', {
+    }, 'Aún no hay productos con solicitudes.')), card('Interacción', [bar('Solicitudes recibidas', st.solicitudes || 0, 'linear-gradient(90deg,#2456C7,#1b2c52)'), bar('Cotizaciones recibidas', st.cotizaciones || 0, 'linear-gradient(90deg,#C8922F,#9A6B16)'), bar('Promociones activas', (co.promos || []).filter(p => p.active).length, 'linear-gradient(90deg,#13794A,#0b5c37)')]), activity && activity.history_allowed && card('Historial mensual', (activity.monthly || []).length ? (activity.monthly || []).map(m => bar(m.month, m.requests)) : React.createElement('div', null, 'Sin actividad mensual registrada')), activity && activity.error && React.createElement('div', {
+      role: 'alert'
+    }, 'No pudimos cargar el historial de actividad.'), card('Operaciones comerciales', React.createElement('div', {
       style: {
         textAlign: 'center',
         padding: '6px 0'
@@ -65347,7 +65945,7 @@ Object.assign(window, {
         fontWeight: 600,
         color: 'var(--ink-3)'
       }
-    }, 'solicitudes y cotizaciones registradas en Supabase'))), React.createElement('div', {
+    }, 'solicitudes y cotizaciones registradas'))), React.createElement('div', {
       style: {
         fontSize: 11.5,
         color: 'var(--ink-3)',
@@ -65355,7 +65953,7 @@ Object.assign(window, {
         textAlign: 'center',
         lineHeight: 1.5
       }
-    }, store.planAllows(co, 'statsHistory') ? 'Historial mensual de actividad incluido en tu plan ' + window.COMPANY.PLAN(co.plan).name + '.' : 'Historial mensual de actividad disponible con un plan superior.')));
+    }, store.planAllows(co, 'statsHistory') ? 'Historial mensual de actividad incluido en tu plan ' + window.COMPANY.PLAN(co.plan).name + '.' : 'El historial mensual requiere un plan que lo incluya.')));
   }
 
   // ── Notificaciones ──
@@ -65440,7 +66038,24 @@ Object.assign(window, {
     store,
     onBack
   }) {
-    const logs = window.adminStore && window.adminStore.auditLog ? window.adminStore.auditLog(co.name).concat(window.adminStore.auditLog('Empresa')).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y.ts - x.ts).slice(0, 60) : [];
+    const [activity, setActivity] = useState({
+      logs: []
+    });
+    React.useEffect(() => {
+      let live = true;
+      window.ConveniosRepository.activity(co.id).then(x => {
+        if (live) setActivity(x);
+      }).catch(() => {
+        if (live) setActivity({
+          logs: [],
+          error: true
+        });
+      });
+      return () => {
+        live = false;
+      };
+    }, [co.id]);
+    const logs = activity.logs || [];
     return React.createElement('div', null, H({
       title: 'Bitácora de auditoría',
       sub: 'Registro de actividad',
@@ -65448,8 +66063,8 @@ Object.assign(window, {
       co
     }), React.createElement('div', scroll, logs.length === 0 ? React.createElement(window.EmptyState, {
       icon: 'doc',
-      title: 'Sin registros',
-      sub: 'Las acciones aparecerán aquí.'
+      title: activity.error ? 'No pudimos cargar la bitácora' : 'Sin registros',
+      sub: 'Actividad de esta empresa.'
     }) : React.createElement('div', {
       style: {
         display: 'flex',
@@ -65500,7 +66115,7 @@ Object.assign(window, {
         fontWeight: 600,
         marginTop: 3
       }
-    }, e.actor + ' · ' + new Date(e.ts).toLocaleString('es-MX'))))))));
+    }, new Date(e.ts).toLocaleString('es-MX'))))))));
   }
   Object.assign(window, {
     CoEmpresa,
@@ -65559,11 +66174,10 @@ Object.assign(window, {
     app
   }) {
     const store = useStore();
-    const [id, setId] = useState((store.companies()[0] || {}).id || '');
-    const [pass, setPass] = useState('');
+    const [id, setId] = useState((store.portalCompanies()[0] || {}).id || '');
     const [err, setErr] = useState(false);
     React.useEffect(() => {
-      if (!id && store.companies()[0]) setId(store.companies()[0].id);
+      if (!id && store.portalCompanies()[0]) setId(store.portalCompanies()[0].id);
     }, [store.state().phase, id]);
     const enter = async () => {
       if (!(await store.login(id))) setErr(true);
@@ -65616,7 +66230,7 @@ Object.assign(window, {
         margin: '8px 0 0',
         lineHeight: 1.5
       }
-    }, 'Acceso para empresas con convenio vigente.')), React.createElement('div', {
+    }, 'Acceso para empresas con plan acreditado por SutiApp.')), React.createElement('div', {
       style: {
         position: 'relative',
         background: 'var(--surface)',
@@ -65644,7 +66258,7 @@ Object.assign(window, {
         paddingRight: 40,
         cursor: 'pointer'
       }
-    }, store.companies().map(c => React.createElement('option', {
+    }, store.portalCompanies().map(c => React.createElement('option', {
       key: c.id,
       value: c.id
     }, c.name))), React.createElement(I, {
@@ -65661,7 +66275,7 @@ Object.assign(window, {
       }
     })), React.createElement('label', {
       style: lbl
-    }, 'Contraseña'), React.createElement('div', {
+    }, 'Cuenta verificada'), React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -65679,25 +66293,12 @@ Object.assign(window, {
       style: {
         color: 'var(--ink-3)'
       }
-    }), React.createElement('input', {
-      type: 'password',
-      value: pass,
-      disabled: true,
-      placeholder: 'Sesión Supabase activa',
-      onChange: e => {
-        setPass(e.target.value);
-        setErr(false);
-      },
+    }), React.createElement('span', {
       style: {
-        flex: 1,
-        border: 'none',
-        background: 'none',
-        outline: 'none',
-        fontSize: 15,
-        fontFamily: 'inherit',
-        color: 'var(--ink)'
+        fontSize: 14,
+        fontWeight: 600
       }
-    })), err && React.createElement('div', {
+    }, 'Sesión empresarial iniciada')), err && React.createElement('div', {
       style: {
         fontSize: 12,
         fontWeight: 700,
@@ -65722,8 +66323,66 @@ Object.assign(window, {
         textAlign: 'center',
         marginTop: 14
       }
-    }, store.state().phase === 'loading' ? 'Validando membresía…' : 'Acceso protegido por Supabase Auth y RLS')));
+    }, store.state().phase === 'loading' ? 'Validando membresía…' : 'Selecciona tu empresa para continuar')));
   }
+  window.CompanyPortalRoot = function ({
+    auth
+  }) {
+    const store = window.useCompanyStore();
+    const [notice, setNotice] = useState('');
+    React.useEffect(() => {
+      const refresh = () => {
+        store.retry();
+        auth.refreshContext();
+      };
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }, []);
+    const app = {
+      toast: setNotice,
+      logout: auth.signOut
+    };
+    return React.createElement('div', {
+      'data-company-portal-root': '',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        overflowY: 'auto',
+        background: 'var(--bg)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        padding: 8
+      }
+    }, React.createElement(window.Btn, {
+      variant: 'outline',
+      onClick: auth.signOut
+    }, 'Cerrar sesión')), store.state().phase === 'error' ? React.createElement(window.EmptyState, {
+      icon: 'alert',
+      title: 'No pudimos cargar tu empresa',
+      action: React.createElement(window.Btn, {
+        onClick: store.retry
+      }, 'Reintentar')
+    }) : React.createElement(CompanyScreen, {
+      app
+    }), notice && React.createElement('div', {
+      role: 'status',
+      onClick: () => setNotice(''),
+      style: {
+        position: 'fixed',
+        bottom: 18,
+        left: 18,
+        right: 18,
+        padding: 14,
+        borderRadius: 14,
+        background: 'var(--ink)',
+        color: '#fff',
+        zIndex: 90
+      }
+    }, notice));
+  };
   window.CompanyGate = CompanyGate;
 
   // ── Header ──
@@ -65776,11 +66435,9 @@ Object.assign(window, {
         overflow: 'hidden',
         position: 'relative'
       }
-    }, React.createElement('image-slot', {
-      id: co && co.slotLogo,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: '',
+    }, co && co.logo_url && React.createElement('img', {
+      src: co.logo_url,
+      alt: co.name,
       style: {
         position: 'absolute',
         inset: 0,
@@ -65839,6 +66496,7 @@ Object.assign(window, {
   function CompanyScreen({
     app
   }) {
+    window.useCatalogStore();
     const store = useStore();
     const [view, setView] = useState('home');
     if (!store.isAuth()) return React.createElement(CompanyGate, {
@@ -65934,7 +66592,7 @@ Object.assign(window, {
       icon: 'receipt',
       val: st.solicitudes || 0,
       label: 'Solicitudes recibidas',
-      sub: 'Operaciones registradas en Supabase'
+      sub: 'Operaciones registradas'
     }, {
       icon: 'doc',
       val: st.cotizaciones || 0,
@@ -66636,6 +67294,8 @@ Object.assign(window, {
     return url.toString();
   }
 
+  function companyPortalRequested(){try{return new URL(window.location.href).searchParams.get('company_portal')==='1';}catch(_){return false;}}
+
   function requestedAuthFlow() {
     try { return new URL(window.location.href).searchParams.get('auth_flow') || ''; }
     catch (_) { return ''; }
@@ -66711,6 +67371,18 @@ Object.assign(window, {
       state.session && state.session.user && state.session.user.id === session.user.id;
     if (!preservesAuthenticatedApp) publish({ phase: 'loading', session });
     try {
+      const companySession = async () => {
+        const result = await provideClient().rpc('get_current_company_access');
+        if (result.error) throw result.error;
+        if (!Array.isArray(result.data) || !result.data.length) return false;
+        if (version !== resolutionVersion || recoveryActive) return true;
+        publish({ phase: 'authenticated', session, companyOnly: true });
+        return true;
+      };
+      if (companyPortalRequested()) {
+        if (!await companySession()) await rejectUnusableSession('unlinked', 'COMPANY_PLAN_ACCESS_REQUIRED');
+        return;
+      }
       let archivedIdentity = false;
       const affiliatePromise = (async () => {
         let affiliate = null;
@@ -66736,6 +67408,7 @@ Object.assign(window, {
       if (version !== resolutionVersion || recoveryActive) return;
       if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext, { session, affiliate });
       if (!affiliate && !isAdmin) {
+        if (!archivedIdentity && await companySession()) return;
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;
       }
@@ -67032,6 +67705,7 @@ Object.assign(window, {
     if (stateValue.errorCode === 'INVALID_CREDENTIALS') return 'Correo o contraseña incorrectos.';
     if (stateValue.errorCode === 'ACTIVATION_ALREADY_ACTIVE') return 'Esta cuenta ya está activada. Inicia sesión o recupera tu contraseña.';
     if (stateValue.errorCode === 'ACTIVATION_NOT_REGISTERED') return 'Este correo no está registrado en el padrón de afiliados.';
+    if (stateValue.errorCode === 'COMPANY_PLAN_ACCESS_REQUIRED') return 'Esta cuenta no tiene acceso empresarial con un plan vigente. Contacta a SutiApp.';
     if (stateValue.errorCode === 'ACTIVATION_NOT_ELIGIBLE') return 'Este correo no está habilitado para activar una cuenta.';
     if (stateValue.errorCode === 'ACTIVATION_AMBIGUOUS') return 'El correo coincide con más de un registro. Solicita revisión administrativa.';
     if (stateValue.errorCode === 'ACTIVATION_RATE_LIMIT' || stateValue.errorCode === 'RECOVERY_RATE_LIMIT') return 'Se alcanzó el límite temporal de correos. Espera un momento e intenta nuevamente.';
@@ -67114,7 +67788,7 @@ Object.assign(window, {
         React.createElement('div', { style: { textAlign: 'center', marginBottom: 24 } },
           window.SutiSeal && React.createElement(window.SutiSeal, { size: 82 }),
           React.createElement('h1', { style: { margin: '15px 0 4px', fontSize: 27, color: 'var(--ink)', letterSpacing: '-.02em' } }, 'Bienvenido a SutiApp'),
-          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'activate_password' ? 'Define la contraseña de tu cuenta' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : 'Ingresa con tu cuenta de afiliado')),
+          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'activate_password' ? 'Define la contraseña de tu cuenta' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : companyPortalRequested()?'Ingresa con tu cuenta empresarial':'Ingresa con tu cuenta de afiliado')),
         React.createElement('form', { onSubmit: submit, style: { padding: 20, borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-md)' } },
           React.createElement('div', { style: { display: 'grid', gap: 12 } },
             mode !== 'reset' && mode !== 'activate_password' && field('message', 'email', email, setEmail, 'Email', 'email', busy),
@@ -67130,6 +67804,7 @@ Object.assign(window, {
             style: { marginTop: 16 },
           }, busy ? 'Procesando…' : mode === 'activate' ? 'Enviar correo de activación' : mode === 'activate_password' ? 'Activar cuenta' : mode === 'recover' ? 'Enviar instrucciones' : mode === 'reset' ? 'Guardar contraseña' : 'Entrar'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('recover'), style: { width: '100%', marginTop: 12, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Olvidé mi contraseña'),
+          mode==='login'&&React.createElement('a',{href:companyPortalRequested()?'?':'?company_portal=1',style:{display:'block',textAlign:'center',marginTop:12,color:'var(--guinda)',fontWeight:800}},companyPortalRequested()?'Acceso de afiliados':'Acceso empresarial'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('activate'), style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Activar mi cuenta'),
           mode !== 'login' && mode !== 'reset' && mode !== 'activate_password' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
           (mode === 'reset' || mode === 'activate_password') && React.createElement('button', { type: 'button', onClick: auth.signOut, disabled: busy, style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
@@ -69052,7 +69727,10 @@ Object.assign(window, {
         padding: 12
       }
     }, 'Reintentar'));
-    return auth.phase === 'authenticated' ? React.createElement(App, {
+    return auth.phase === 'authenticated' ? auth.companyOnly ? React.createElement(window.CompanyPortalRoot, {
+      key: contextKey,
+      auth
+    }) : React.createElement(App, {
       key: contextKey,
       auth,
       initialTab: identity.initialTab

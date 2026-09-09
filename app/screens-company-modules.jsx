@@ -17,6 +17,11 @@
   function Toggle({ on, onClick }) {
     return React.createElement(window.Toggle, { on: on, size: 'lg', onClick, 'aria-label': 'toggle', });
   }
+  function CompanyMediaInput({co,value,onChange}){
+    const[busy,setBusy]=useState(false),[error,setError]=useState('');
+    const upload=async file=>{setBusy(true);setError('');try{onChange(await window.ConveniosRepository.uploadImage(file,co.id));}catch(_){setError('No fue posible subir la imagen');}finally{setBusy(false);}};
+    return React.createElement('div',{style:{marginBottom:14}},value&&React.createElement('img',{src:value,alt:'Imagen',style:{width:'100%',height:130,objectFit:'cover',borderRadius:14}}),React.createElement('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled:busy,'aria-label':'Imagen',onChange:e=>{if(e.target.files[0])upload(e.target.files[0]);e.target.value='';}}),error&&React.createElement('p',{role:'alert'},error));
+  }
   function SecTitle(icon, label) {
     return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 12px' } },
       React.createElement('div', { style: { width: 26, height: 26, borderRadius: 8, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: icon, size: 15, stroke: 2 })),
@@ -27,14 +32,15 @@
   // ── Mi Empresa ──
   function CoEmpresa({ app, co, store, onBack }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(co)));
-    const [okSave, runSave] = window.useBtnConfirm();
+    const [okSave,setOkSave]=useState(false);const [saving,setSaving]=useState(false);const [saveError,setSaveError]=useState('');const [uploading,setUploading]=useState(false);const upload=async(file,role)=>{setUploading(true);try{const a=await store.uploadImage(co.id,file,role);setD(old=>role==='gallery'?{...old,gallery:[...(old.gallery||[]),a.url]}:{...old,[role+'_url']:a.url});app.toast('Imagen guardada');}catch(_){app.toast('No fue posible subir la imagen');}finally{setUploading(false);}};
+    React.useEffect(()=>{if(!okSave)return;const timer=setTimeout(()=>setOkSave(false),600);return()=>clearTimeout(timer);},[okSave]);
     const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
     const setRed = (k, v) => setD((p) => ({ ...p, redes: { ...p.redes, [k]: v } }));
     const setSuc = (i, k, v) => setD((p) => ({ ...p, sucursales: p.sucursales.map((s, j) => (j === i ? { ...s, [k]: v } : s)) }));
     return React.createElement('div', null, H({ title: 'Mi Empresa', sub: 'Perfil público', onBack, co }),
       React.createElement('div', scroll,
         SecTitle('image', 'Logotipo'),
-        React.createElement('div', { style: { width: 90, height: 90, borderRadius: 18, overflow: 'hidden', boxShadow: 'var(--neo-sm)', position: 'relative', background: `hsl(${co.hue || 210},50%,45%)`, marginBottom: 16 } }, React.createElement('image-slot', { id: d.slotLogo, shape: 'rect', fit: 'cover', placeholder: 'Logo', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })),
+        [['Logo','logo'],['Portada','cover']].map(([label,role])=>React.createElement('label',{key:role,style:{...lbl,marginBottom:16}},label,d[role+'_url']&&React.createElement('img',{src:d[role+'_url'],alt:label,style:{width:role==='logo'?90:'100%',height:role==='logo'?90:150,objectFit:'contain',display:'block',borderRadius:14,marginBottom:8}}),React.createElement('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled:uploading,onChange:e=>{if(e.target.files[0])upload(e.target.files[0],role);e.target.value='';}}))),
         SecTitle('handshake', 'Datos generales'),
         Field({ label: 'Nombre comercial', value: d.name, onChange: (v) => set('name', v) }),
         Field({ label: 'Razón social', value: d.razon, onChange: (v) => set('razon', v) }),
@@ -43,10 +49,12 @@
         Field({ label: 'Historia', value: d.historia, onChange: (v) => set('historia', v), area: true, ph: 'Reseña de la empresa…' }),
         SecTitle('image', 'Galería de imágenes'),
         React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 16 } },
-          (d.gallery || []).map((g) => React.createElement('div', { key: g, style: { flex: 1, height: 74, borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--neo-sm)', position: 'relative', background: 'var(--surface-2)' } }, React.createElement('image-slot', { id: g, shape: 'rect', fit: 'cover', placeholder: 'Foto', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })))),
+          (d.gallery || []).map((g) => React.createElement('div', { key: g, style: { flex: 1, height: 74, borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--neo-sm)', position: 'relative', background: 'var(--surface-2)' } }, React.createElement('img', { src:g, alt:'Galería', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })))),
+        React.createElement('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled:uploading,'aria-label':'Agregar imagen a la galería',onChange:e=>{if(e.target.files[0])upload(e.target.files[0],'gallery');e.target.value='';}}),
         Field({ label: 'Video institucional (URL)', value: d.video, onChange: (v) => set('video', v), ph: 'https://…' }),
         SecTitle('phone', 'Contacto'),
         Field({ label: 'Teléfono', value: d.tel, onChange: (v) => set('tel', v) }),
+        Field({ label:'WhatsApp',value:d.whatsapp_raw,onChange:v=>set('whatsapp_raw',v)}),
         Field({ label: 'Correo', value: d.email, onChange: (v) => set('email', v) }),
         Field({ label: 'Página web', value: d.web, onChange: (v) => set('web', v) }),
         React.createElement('div', { style: { display: 'flex', gap: 12 } },
@@ -59,7 +67,7 @@
           React.createElement('input', { value: s.dir, placeholder: 'Dirección', onChange: (e) => setSuc(i, 'dir', e.target.value), style: { ...inputBase, padding: '10px 12px', fontSize: 13.5 } }))),
         React.createElement('button', { onClick: () => setD((p) => ({ ...p, sucursales: [...(p.sucursales || []), { nombre: '', dir: '' }] })), style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 40, padding: '0 14px', borderRadius: 12, border: '1.5px dashed var(--hairline-strong)', background: 'transparent', color: 'var(--ink-2)', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 8 } }, React.createElement(I, { name: 'plus', size: 16, stroke: 2.4 }), 'Agregar sucursal'),
         Field({ label: 'Ubicación en mapa (URL)', value: d.mapUrl, onChange: (v) => set('mapUrl', v), ph: 'https://maps…' }),
-        React.createElement(window.Btn, { full: true, variant: 'dark', icon: 'check', success: okSave, style: { marginTop: 6 }, onClick: () => runSave(async() => { await store.save(d); app.toast('Información guardada'); }) }, 'Guardar cambios')));
+        React.createElement(window.Btn, { full: true, variant: 'dark', icon: 'check', success: okSave, disabled:saving||uploading,style: { marginTop: 6 }, onClick:async()=>{setSaving(true);setSaveError('');setOkSave(false);try{await store.save(d);setOkSave(true);app.toast('Información guardada');}catch(_){setSaveError('No fue posible guardar. Revisa los datos e intenta nuevamente.');}finally{setSaving(false);}} }, 'Guardar cambios'),saveError&&React.createElement('p',{role:'alert'},saveError)));
   }
 
   // ── Productos y Servicios ──
@@ -71,7 +79,7 @@
       React.createElement('div', scroll,
         React.createElement('div', { style: { fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 14 } },
           'Lo que publiques aquí aparece en tu convenio dentro de la app, con galería de imágenes, detalle y botón para solicitar el beneficio.'),
-        React.createElement(window.CatalogEditorList, { scope: 'convenio', scopeId: co.id, empresaId: co.id, editable: true, actor: 'Empresa · ' + co.name, dark: true })));
+        React.createElement(window.CatalogEditorList, { scope: 'convenio', scopeId: co.id, empresaId: co.id, editable: store.subStatus(co)!=='vencido', actor: 'Empresa · ' + co.name, dark: true })));
   }
   function ProductEditor({ co, store, item, onClose }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(item)));
@@ -115,7 +123,7 @@
           React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
             list.map((p) => React.createElement('div', { key: p.id, className: 'su-press', onClick: () => setEdit(p), style: { cursor: 'pointer', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--neo-sm)', opacity: p.active ? 1 : .55 } },
               React.createElement('div', { style: { height: 90, position: 'relative', background: `linear-gradient(140deg, hsl(${co.hue || 210} 55% 46%), hsl(${co.hue || 210} 60% 30%))` } },
-                React.createElement('image-slot', { id: p.slotId, shape: 'rect', fit: 'cover', placeholder: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }),
+                p.image_url&&React.createElement('img', { src:p.image_url,alt:p.titulo||p.name||'Imagen', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }),
                 p.disc ? React.createElement('div', { style: { position: 'absolute', top: 10, left: 10 } }, React.createElement(window.Badge, { tone: 'red', solid: true }, p.disc + '% DESC.')) : null),
               React.createElement('div', { style: { padding: '11px 14px' } },
                 React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' } }, p.name || 'Sin nombre'),
@@ -125,13 +133,15 @@
   function PromoEditor({ co, store, item, onClose }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(item)));
     const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
+    const [busy,setBusy]=useState(false);const[error,setError]=useState('');const save=async()=>{setBusy(true);try{await store.savePromo(co.id,d);onClose();}catch(_){setError('No fue posible guardar la promoción');}finally{setBusy(false);}};
     const isNew = !(co.promos || []).some((p) => p.id === item.id);
     return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 74, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
         React.createElement('button', { onClick: onClose, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'close', size: 22, stroke: 2 })),
         React.createElement('span', { style: { flex: 1, fontSize: 16, fontWeight: 800 } }, isNew ? 'Nueva promoción' : 'Editar promoción')),
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: 16 } },
-        React.createElement('div', { style: { height: 110, borderRadius: 14, overflow: 'hidden', position: 'relative', background: `hsl(${co.hue || 210},55%,44%)`, boxShadow: 'var(--neo-sm)', marginBottom: 14 } }, React.createElement('image-slot', { id: d.slotId, shape: 'rect', fit: 'cover', placeholder: 'Imagen', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })),
+        React.createElement(CompanyMediaInput,{co,value:d.image_url,onChange:a=>setD(p=>({...p,image_asset_id:a.id,image_url:a.url}))}),
+        error&&React.createElement('p',{role:'alert'},error),
         Field({ label: 'Nombre de la promoción', value: d.name, onChange: (v) => set('name', v) }),
         React.createElement('div', { style: { display: 'flex', gap: 12 } },
           React.createElement('div', { style: { flex: 1 } }, Field({ label: 'Inicio', value: d.start, onChange: (v) => set('start', v), ph: 'AAAA-MM-DD' })),
@@ -144,7 +154,7 @@
           React.createElement('span', { style: { flex: 1, fontSize: 14, fontWeight: 800 } }, d.active ? 'Activa' : 'Inactiva'), Toggle({ on: d.active, onClick: () => set('active', !d.active) }))),
       React.createElement('div', { style: { display: 'flex', gap: 12, padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', borderTop: '1px solid var(--hairline)' } },
         !isNew && React.createElement('button', { onClick: () => { store.removePromo(co.id, d.id); onClose(); }, style: { width: 50, height: 50, borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', display: 'grid', placeItems: 'center', cursor: 'pointer' } }, React.createElement(I, { name: 'trash', size: 20, stroke: 2 })),
-        React.createElement(window.Btn, { variant: 'dark', icon: 'check', style: { flex: 1 }, disabled: !d.name.trim(), onClick: () => { store.savePromo(co.id, d); onClose(); } }, 'Guardar')));
+        React.createElement(window.Btn, { variant: 'dark', icon: 'check', style: { flex: 1 }, disabled: busy||!d.name.trim(), onClick: save }, 'Guardar')));
   }
 
   // ── Pop-ups (flujo de aprobación) ──
@@ -155,7 +165,7 @@
     const stMap = { pending: ['En revisión', 'amber', 'clock'], approved: ['Aprobado', 'green', 'checkCircle'], rejected: ['Rechazado', 'red', 'close'] };
     return React.createElement('div', null, H({ title: 'Pop-ups', sub: allowed ? mine.length + ' creados' : 'No incluido en tu plan', onBack, co }),
       React.createElement('div', scroll,
-        !allowed ? React.createElement('div', { style: { background: '#FFF3DC', color: '#7a5410', borderRadius: 16, padding: 16, fontSize: 13, fontWeight: 700, lineHeight: 1.5, display: 'flex', gap: 10 } }, React.createElement(I, { name: 'lock', size: 20, stroke: 2, style: { flexShrink: 0 } }), 'La administración de Pop-ups no está incluida en tu plan actual (' + CO().PLAN(co.plan).name + '). Contrata un plan Pro o Premium para habilitarla.') :
+        !allowed ? React.createElement('div', { style: { background: '#FFF3DC', color: '#7a5410', borderRadius: 16, padding: 16, fontSize: 13, fontWeight: 700, lineHeight: 1.5, display: 'flex', gap: 10 } }, React.createElement(I, { name: 'lock', size: 20, stroke: 2, style: { flexShrink: 0 } }), 'La administración de Pop-ups no está incluida en tu plan actual (' + CO().PLAN(co.plan).name + '). Consulta con SutiApp los planes que incluyen esta función.') :
           React.createElement('div', null,
             React.createElement('div', { style: { background: '#E8F0FE', color: '#2456C7', borderRadius: 12, padding: '10px 13px', fontSize: 11.5, fontWeight: 700, lineHeight: 1.45, display: 'flex', gap: 8, marginBottom: 14 } }, React.createElement(I, { name: 'info', size: 15, stroke: 2.2, style: { flexShrink: 0, marginTop: 1 } }), 'Creas el contenido; el administrador debe aprobarlo antes de publicarse.'),
             React.createElement('button', { onClick: () => setEdit(blankCoPopup(co)), style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', height: 46, borderRadius: 13, border: 'none', background: 'linear-gradient(145deg,#1b2c52,#14213d)', color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 800, cursor: 'pointer', marginBottom: 14 } }, React.createElement(I, { name: 'plus', size: 18, stroke: 2.6 }), 'Nuevo pop-up'),
@@ -185,7 +195,7 @@
         React.createElement('button', { onClick: onClose, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'close', size: 22, stroke: 2 })),
         React.createElement('span', { style: { flex: 1, fontSize: 16, fontWeight: 800 } }, 'Nuevo pop-up')),
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: 16 } },
-        React.createElement('div', { style: { height: 130, borderRadius: 14, overflow: 'hidden', position: 'relative', background: `linear-gradient(150deg, hsl(${d.hue},70%,42%), hsl(${d.hue},65%,26%))`, boxShadow: 'var(--neo-sm)', marginBottom: 14 } }, React.createElement('image-slot', { id: d.slotId, shape: 'rect', fit: 'cover', placeholder: 'Imagen de cabecera', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })),
+        React.createElement(CompanyMediaInput,{co,value:d.image_url,onChange:a=>setD(p=>({...p,image_asset_id:a.id,image_url:a.url}))}),
         Field({ label: 'Título', value: d.titulo, onChange: (v) => set('titulo', v) }),
         Field({ label: 'Descripción', value: d.contenido, onChange: (v) => set('contenido', v), area: true }),
         Field({ label: 'Texto del botón', value: d.ctaText, onChange: (v) => set('ctaText', v) }),
@@ -228,7 +238,7 @@
         open && React.createElement(SolicitudSheet, { store, s: store.solicitudes(co.id).find((x) => x.id === open), onClose: () => setOpen(null) })));
   }
   function SolicitudSheet({ store, s, onClose }) {
-    const [cmt, setCmt] = useState('');
+    const [cmt,setCmt]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');const act=async(fn)=>{setBusy(true);setError('');try{await fn();}catch(_){setError('No se pudo actualizar la solicitud. Revisa su estado e intenta nuevamente.');}finally{setBusy(false);}};
     if (!s) return null;
     const row = (k, v) => React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', borderBottom: '1px solid var(--hairline)' } }, React.createElement('span', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600 } }, k), React.createElement('span', { style: { fontSize: 13, color: 'var(--ink)', fontWeight: 700, textAlign: 'right' } }, v));
     return React.createElement('div', { onClick: onClose, style: { position: 'absolute', inset: 0, zIndex: 76, background: 'rgba(16,12,14,.5)', display: 'flex', alignItems: 'flex-end' } },
@@ -238,17 +248,17 @@
         row('Sindicato', s.sindicato), row('Categoría laboral', s.categoria), row('Producto/servicio', s.item), row('Importe', window.money(s.importe)), row('Fecha', s.fecha),
         React.createElement('div', { style: { fontSize: 12, fontWeight: 800, color: 'var(--ink-2)', margin: '16px 0 8px' } }, 'Cambiar estado'),
         React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
-          CO().ESTADOS.map((e) => React.createElement('button', { key: e.id, onClick: () => store.setEstado(s.id, e.id), style: { height: 34, padding: '0 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, background: s.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: s.estado === e.id ? '#fff' : 'var(--ink-2)' } }, e.label))),
-        React.createElement('div', { style: { fontSize: 12, fontWeight: 800, color: 'var(--ink-2)', margin: '18px 0 8px' } }, 'Comentarios internos'),
+          CO().ESTADOS.map((e) => React.createElement('button', { key: e.id, disabled:busy,onClick:()=>act(()=>store.setEstado(s.id,e.id)), style: { height: 34, padding: '0 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, background: s.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: s.estado === e.id ? '#fff' : 'var(--ink-2)' } }, e.label))),
+        React.createElement('div', { style: { fontSize: 12, fontWeight: 800, color: 'var(--ink-2)', margin: '18px 0 8px' } }, 'Observaciones de la solicitud'),error&&React.createElement('p',{role:'alert'},error),s.company_notes&&React.createElement('p',null,s.company_notes),
         (s.comentarios || []).map((c, i) => React.createElement('div', { key: i, style: { background: 'var(--surface-2)', borderRadius: 11, padding: '9px 12px', fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, marginBottom: 8 } }, c.texto)),
         React.createElement('div', { style: { display: 'flex', gap: 8, marginTop: 4 } },
           React.createElement('input', { value: cmt, placeholder: 'Agregar comentario…', onChange: (e) => setCmt(e.target.value), style: { ...inputBase, flex: 1, padding: '11px 13px' } }),
-          React.createElement('button', { onClick: () => { if (cmt.trim()) { store.addComentario(s.id, cmt); setCmt(''); } }, style: { width: 46, borderRadius: 12, border: 'none', background: 'linear-gradient(145deg,#1b2c52,#14213d)', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'arrowR', size: 20, stroke: 2.4 })))));
+          React.createElement('button', { disabled:busy,onClick:()=>{if(cmt.trim())act(async()=>{await store.addComentario(s.id,cmt);setCmt('');});}, style: { width: 46, borderRadius: 12, border: 'none', background: 'linear-gradient(145deg,#1b2c52,#14213d)', color: '#fff', cursor: 'pointer', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'arrowR', size: 20, stroke: 2.4 })))));
   }
 
   // ── Cotizaciones (solicitudes de interés → cargar presupuesto) ──
   function CoCotizaciones({ app, co, store, onBack }) {
-    const qs = window.useQuoteStore();
+    const qs = {forCompany:id=>store.quotes(id),get:id=>store.quotes(co.id).find(r=>r.id===id)};
     const [open, setOpen] = useState(null);
     const list = qs.forCompany(co.id).sort((a, b) => (b.ts || 0) - (a.ts || 0));
     const pend = list.filter((r) => r.estado === 'solicitada').length;
@@ -268,10 +278,10 @@
   function CotizarSheet({ r, actor, onClose, toast }) {
     const [monto, setMonto] = useState('');
     const [nota, setNota] = useState('');
-    const [vig, setVig] = useState('15 días');
+    const [vig,setVig]=useState('15 días'),[busy,setBusy]=useState(false),[error,setError]=useState('');
     if (!r) return null;
     const row = (k, v) => React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', borderBottom: '1px solid var(--hairline)' } }, React.createElement('span', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600 } }, k), React.createElement('span', { style: { fontSize: 13, color: 'var(--ink)', fontWeight: 700, textAlign: 'right' } }, v));
-    const enviar = async () => { const m = parseFloat(monto); if (!m || m <= 0) return; await window.quoteStore.cotizar(r.id, { monto: m, nota: nota.trim(), vigencia: vig }, actor); toast && toast('Cotización enviada al afiliado'); onClose(); };
+    const enviar=async()=>{const m=parseFloat(monto);if(!m||m<=0)return;setBusy(true);setError('');try{const until=new Date();until.setDate(until.getDate()+parseInt(vig,10));await window.MarketplaceRepository.respondQuote(r.id,m,nota.trim(),until.toISOString().slice(0,10));await window.companyStore.retry();toast&&toast('Cotización enviada al afiliado');onClose();}catch(_){setError('No se pudo enviar la cotización. Intenta nuevamente.');}finally{setBusy(false);}};
     return React.createElement('div', { onClick: onClose, style: { position: 'absolute', inset: 0, zIndex: 76, background: 'rgba(16,12,14,.5)', display: 'flex', alignItems: 'flex-end' } },
       React.createElement('div', { onClick: (e) => e.stopPropagation(), style: { width: '100%', background: 'var(--surface)', borderRadius: '24px 24px 0 0', padding: '10px 18px calc(18px + env(safe-area-inset-bottom))', maxHeight: '90%', overflowY: 'auto' } },
         React.createElement('div', { style: { width: 40, height: 4.5, borderRadius: 999, background: 'var(--hairline-strong)', margin: '4px auto 14px' } }),
@@ -291,12 +301,12 @@
               ['7 días', '15 días', '30 días'].map((v) => React.createElement('button', { key: v, onClick: () => setVig(v), style: { flex: 1, height: 38, borderRadius: 11, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: vig === v ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: vig === v ? '#fff' : 'var(--ink-2)' } }, v))),
             React.createElement('label', { style: lbl }, 'Nota (opcional)'),
             React.createElement('textarea', { value: nota, rows: 2, placeholder: 'Detalle de lo cotizado…', onChange: (e) => setNota(e.target.value), style: { ...inputBase, resize: 'vertical', lineHeight: 1.5, marginBottom: 14 } }),
-            React.createElement(window.Btn, { full: true, variant: 'dark', icon: 'upload', disabled: !parseFloat(monto), onClick: enviar }, 'Cargar cotización y notificar'))));
+            React.createElement(window.Btn, { full: true, variant: 'dark', icon: 'upload', disabled:busy||!parseFloat(monto),onClick:enviar }, 'Cargar cotización y notificar'),error&&React.createElement('p',{role:'alert'},error))));
   }
 
   // ── Estadísticas ──
   function CoStats({ app, co, store, onBack }) {
-    const st = co.stats || {};
+    const st = co.stats || {};const [activity,setActivity]=useState(null);React.useEffect(()=>{let live=true;window.ConveniosRepository.activity(co.id).then(v=>{if(live)setActivity(v);}).catch(()=>{if(live)setActivity({error:true});});return()=>{live=false;};},[co.id]);
     const operations = store.solicitudes(co.id);
     const prods = (co.products || []).slice().map((p) => ({ name: p.name, v: operations.filter((r) => r.product_id === p.id).length }));
     const max = Math.max.apply(null, prods.map((p) => p.v).concat([1]));
@@ -312,10 +322,12 @@
           bar('Cotizaciones recibidas', st.cotizaciones || 0, 'linear-gradient(90deg,#C8922F,#9A6B16)'),
           bar('Promociones activas', (co.promos || []).filter((p) => p.active).length, 'linear-gradient(90deg,#13794A,#0b5c37)'),
         ]),
+        activity&&activity.history_allowed&&card('Historial mensual',(activity.monthly||[]).length?(activity.monthly||[]).map(m=>bar(m.month,m.requests)):React.createElement('div',null,'Sin actividad mensual registrada')),
+        activity&&activity.error&&React.createElement('div',{role:'alert'},'No pudimos cargar el historial de actividad.'),
         card('Operaciones comerciales', React.createElement('div', { style: { textAlign: 'center', padding: '6px 0' } },
           React.createElement('div', { style: { fontSize: 40, fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em' } }, (st.solicitudes || 0) + (st.cotizaciones || 0)),
-          React.createElement('div', { style: { fontSize: 12, fontWeight: 600, color: 'var(--ink-3)' } }, 'solicitudes y cotizaciones registradas en Supabase'))),
-        React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, textAlign: 'center', lineHeight: 1.5 } }, store.planAllows(co, 'statsHistory') ? 'Historial mensual de actividad incluido en tu plan ' + window.COMPANY.PLAN(co.plan).name + '.' : 'Historial mensual de actividad disponible con un plan superior.')));
+          React.createElement('div', { style: { fontSize: 12, fontWeight: 600, color: 'var(--ink-3)' } }, 'solicitudes y cotizaciones registradas'))),
+        React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, textAlign: 'center', lineHeight: 1.5 } }, store.planAllows(co, 'statsHistory') ? 'Historial mensual de actividad incluido en tu plan ' + window.COMPANY.PLAN(co.plan).name + '.' : 'El historial mensual requiere un plan que lo incluya.')));
   }
 
   // ── Notificaciones ──
@@ -334,17 +346,17 @@
 
   // ── Bitácora ──
   function CoBitacora({ app, co, store, onBack }) {
-    const logs = (window.adminStore && window.adminStore.auditLog) ? window.adminStore.auditLog(co.name).concat(window.adminStore.auditLog('Empresa')).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y.ts - x.ts).slice(0, 60) : [];
+    const [activity,setActivity]=useState({logs:[]});React.useEffect(()=>{let live=true;window.ConveniosRepository.activity(co.id).then(x=>{if(live)setActivity(x);}).catch(()=>{if(live)setActivity({logs:[],error:true});});return()=>{live=false;};},[co.id]);const logs=activity.logs||[];
     return React.createElement('div', null, H({ title: 'Bitácora de auditoría', sub: 'Registro de actividad', onBack, co }),
       React.createElement('div', scroll,
-        logs.length === 0 ? React.createElement(window.EmptyState, { icon: 'doc', title: 'Sin registros', sub: 'Las acciones aparecerán aquí.' }) :
+        logs.length === 0 ? React.createElement(window.EmptyState, { icon: 'doc', title: activity.error?'No pudimos cargar la bitácora':'Sin registros', sub: 'Actividad de esta empresa.' }) :
           React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
             logs.map((e, i) => React.createElement('div', { key: i, style: { display: 'flex', gap: 11, background: 'var(--surface)', borderRadius: 12, padding: '11px 13px', boxShadow: 'var(--neo-sm)' } },
               React.createElement('div', { style: { width: 8, height: 8, borderRadius: '50%', background: 'var(--guinda)', marginTop: 6, flexShrink: 0 } }),
               React.createElement('div', { style: { flex: 1, minWidth: 0 } },
                 React.createElement('div', { style: { fontSize: 13, fontWeight: 800, color: 'var(--ink)' } }, e.action),
                 e.detail && React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-2)', fontWeight: 500, marginTop: 1 } }, e.detail),
-                React.createElement('div', { style: { fontSize: 11, color: 'var(--ink-3)', fontWeight: 600, marginTop: 3 } }, e.actor + ' · ' + new Date(e.ts).toLocaleString('es-MX'))))))));
+                React.createElement('div', { style: { fontSize: 11, color: 'var(--ink-3)', fontWeight: 600, marginTop: 3 } }, new Date(e.ts).toLocaleString('es-MX'))))))));
   }
 
   Object.assign(window, { CoEmpresa, CoProductos, CoPromos, CoPopups, CoSolicitudes, CoCotizaciones, CoStats, CoNotifs, CoBitacora });

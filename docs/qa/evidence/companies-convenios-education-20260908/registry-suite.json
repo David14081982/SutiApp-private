@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "exit_code": 0,
+  "process_id": 15140,
+  "command": "python scripts/test-architecture-registry.py",
+  "coverage": [
+    "generation",
+    "freshness",
+    "stale",
+    "screen/table/column lookup",
+    "reverse/admin/permissions/tests",
+    "fallback",
+    "incremental add/remove",
+    "secrets",
+    "determinism"
+  ],
+  "generatorSha256": "dddfc51e64007797a52eacb01d09c39404521171b27b7d929641c2c2201435b5"
+}

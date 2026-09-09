@@ -1,0 +1,184 @@
+{
+  "status": "PASS",
+  "method": "Full-file technical scan plus directed code/schema/diff review",
+  "files": [
+    {
+      "name": "AGENTS.md",
+      "status": "READ",
+      "bytes": 6110,
+      "sha256": "d60937e8ea9f4374e6a129123344e3fc8f937d1e265140053d9365ba1a20a874",
+      "relevantSections": [
+        "## Protocolo obligatorio\r"
+      ]
+    },
+    {
+      "name": "docs/WORK_QUEUE.md",
+      "status": "READ",
+      "bytes": 2176,
+      "sha256": "12416d6496739dfda2ff2f0d20d5ad7bc08f456c0ae385bd70b4a7948f2b5238",
+      "relevantSections": []
+    },
+    {
+      "name": "docs/WORK_QUEUE_HISTORY.md",
+      "status": "MISSING"
+    },
+    {
+      "name": "docs/SOURCE_OF_TRUTH.md",
+      "status": "READ",
+      "bytes": 72437,
+      "sha256": "bab31c3aba9cf57eba6da003ea5a5998e2405810b8c3c54838c537eb6eaa99de",
+      "relevantSections": [
+        "## Corte ADR-089 — modalidad comercial y disponibilidad de productos propios\r",
+        "## Corte ADR-087 — plan universal de pago de productos propios\r",
+        "## Corte ADR-082 — notificaciones derivadas de autoridades reales\r",
+        "## Corte ADR-078 — plataforma central de requisitos documentales\r",
+        "## Foto de perfil del afiliado — corte global 2026-08-22\r",
+        "## Descomposición H-001 — Usuarios\r",
+        "## Corte 2026-08-25 — expediente canónico, solicitudes, banco, términos y QR\r",
+        "## Estado vigente de Convenios, Educación y planes — ADR-111"
+      ]
+    },
+    {
+      "name": "docs/INVARIANTS.md",
+      "status": "READ",
+      "bytes": 63708,
+      "sha256": "ca6bdae25c9609a433fbdb681a660e221bdd8f62ad7ea884e9e1b11602faf86a",
+      "relevantSections": [
+        "## Registro requerido de solicitudes — ADR-106, 2026-09-08\r",
+        "## Convenios unificados — ADR-111"
+      ]
+    },
+    {
+      "name": "docs/DECISIONS.md",
+      "status": "READ",
+      "bytes": 167416,
+      "sha256": "e732c8d1b8012a1b2df2313e377807d3fbc97e541766a17ba854adc0289c6842",
+      "relevantSections": [
+        "## ADR-106 — Registro de solicitudes A:AG y estado derivado en Google\r",
+        "### ADR-038 — Solicitud inicial Supabase, procesamiento financiero separado\r",
+        "### ADR-033 — Phase 6: portal empresarial sin términos comerciales inventados\r",
+        "### ADR-032 — Phase 5: operación no financiera sin mezclar historial legacy\r",
+        "### ADR-030 — Phase 3: comercio real sin inventar catálogo ni rediseñar Claude\r",
+        "### ADR-027 — CRUD visual y empresarial sin procedencia inventada\r",
+        "### ADR-024 — Directorio empresarial real y popups sin reglas inventadas\r",
+        "### ADR-023 — Autoridad visual, deduplicación y bloqueo aislado de Empresas\r",
+        "### ADR-022 — Separación catalogal y gate de autoridad\r",
+        "### ADR-014 — Principales y autorización técnica\r",
+        "### ADR-040 — Propuestas empresariales y clasificación estricta de Admin\r",
+        "### ADR-041 — Cutover de las decisiones Admin agrupadas\r",
+        "### ADR-045 — Responsabilidad editorial granular fail-closed\r",
+        "## ADR-082 — Notificaciones derivadas y acuse durable en la autoridad\r",
+        "## ADR-047 — Rollout masivo de responsabilidad granular por sección\r",
+        "# ADR-049 — Dashboard canónico Tu Sindicato y assets relacionales\r",
+        "## ADR-072 — Retiro de la edición global de textos\r",
+        "## ADR-078 — Plataforma central de requisitos y fase documental única\r",
+        "## ADR-086 — Catálogo administrativo de productos propios por programa\r",
+        "## ADR-087 — Simulador universal y solicitud de plan de pago de productos propios\r",
+        "## ADR-088 — Bootstrap administrativo vacío de Suti Cirugías\r",
+        "## ADR-089 — Modalidad comercial y estado Vendido de productos propios\r",
+        "## ADR-092 — Tarjeta OR CLABE y gate de Depósito\r",
+        "## ADR-093 — Archivo reversible de afiliados y Expediente Digital Admin\r",
+        "## ADR-094 — Compatibilidad backend obligatoria antes de desplegar Auth\r",
+        "## ADR-096 — Contrato final de Depósito y guard crítico de solicitudes\r",
+        "### ADR-111 — Convenios unificados y acreditación empresarial presencial"
+      ]
+    },
+    {
+      "name": "docs/DATA_GOVERNANCE.md",
+      "status": "READ",
+      "bytes": 6546,
+      "sha256": "e6a176796c0007568afe030fc60cddaeb44c4128d969cc133a3a1a06daa4b18e",
+      "relevantSections": []
+    },
+    {
+      "name": "docs/MIGRATION_RULES.md",
+      "status": "READ",
+      "bytes": 30887,
+      "sha256": "77f92c013cf95a4a71e8c42f28c904a26080062a2f29e6ecc6bad9d455ed8561",
+      "relevantSections": [
+        "## 20260831000700 — modalidad comercial y Vendido\r",
+        "## Notificaciones reales — ADR-082\r"
+      ]
+    },
+    {
+      "name": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "status": "READ",
+      "bytes": 6908,
+      "sha256": "29e736b695f30a56d5a6d8ec9e570af47191b8eb156fa71fa727bd6fd337b41e",
+      "relevantSections": []
+    },
+    {
+      "name": "docs/SECURITY_RULES.md",
+      "status": "READ",
+      "bytes": 43283,
+      "sha256": "9c0addbf462789e588bfb1f6716e62dd3930f751093ffcd1008b598a4f232fc6",
+      "relevantSections": [
+        "## Notificaciones reales — ADR-082\r",
+        "## Estado H-007.2\r",
+        "## Estado H-007.3\r",
+        "## Estado H-009\r",
+        "## Estado MASTER Phase 3\r",
+        "## Estado MASTER Phase 5\r",
+        "## Estado MASTER Phase 6\r"
+      ]
+    },
+    {
+      "name": "docs/DATA_MAPPING.md",
+      "status": "READ",
+      "bytes": 52259,
+      "sha256": "ba33478d899824f47b8b7866aa4c8773ad74ae5ca97ae4fc4128caea6dbb976d",
+      "relevantSections": [
+        "## Matriz maestra\r",
+        "## Contrato compacto de los 37 dominios\r",
+        "### Convenios\r",
+        "### Marketplace / SutiCompras\r",
+        "## H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001\r",
+        "### Afiliados y puente `numero_control`\r",
+        "### H-008 — Administración técnica y escritura visual\r",
+        "## MASTER ASSET EVACUATION\r"
+      ]
+    },
+    {
+      "name": "docs/AGENT_CHANGELOG.md",
+      "status": "READ",
+      "bytes": 295129,
+      "sha256": "e16caa6806c84c064beda709fc5db28ebd56692bc66987db4d6eb44615402e6b",
+      "relevantSections": [
+        "## 2026-09-03 — H-FINANCE-REQUESTS-FLOW-UX-CORRECTION-001\r",
+        "## 2026-09-02 — H-ADMIN-ACCESS-IMPERSONATION-GLOBAL-PERMISSIONS-001\r",
+        "## 2026-09-01 — H-GLOBAL-IMAGE-REGRESSION-ROOT-CAUSE-001\r",
+        "## 2026-09-01 — H-ADMIN-AFFILIATE-ARCHIVE-AND-DIGITAL-FILE-001 productivo\r",
+        "## 2026-08-31 — H-NOTIFICATIONS-AUTHORITY-CUTOVER-001\r",
+        "## 2026-08-30 — H-DOCUMENT-REQUIREMENTS-PLATFORM-AND-UNIFIED-UI-001\r",
+        "## 2026-08-29 — H-REQUEST-SUBMISSION-SUCCESS-001\r",
+        "## 2026-08-27 — H-HOME-BANNER-EXPANSION-001\r",
+        "## H-ADMIN-DECISIONS-CUTOVER — 2026-08-22\r",
+        "## H-ADMIN-REMAINING-MODULES — 2026-08-22\r",
+        "## H-ADMIN-FULL-PRODUCTIZATION — 2026-08-22\r",
+        "## FRONTEND BOOT RECOVERY — 2026-08-22\r",
+        "## H-001 — 2026-08-21\r",
+        "## H-006 — 2026-08-21\r",
+        "## H-007.1 — 2026-08-21\r",
+        "## H-007.2 — 2026-08-21\r",
+        "## H-007.3 — 2026-08-21\r",
+        "## H-009 — 2026-08-21\r",
+        "## Claude UI Preservation Guardian / Convenios — 2026-08-21\r",
+        "## MASTER Phase 2 — 2026-08-21\r",
+        "## MASTER Phase 3 — 2026-08-21\r",
+        "# 2026-08-21 — Phase 6 Portal Empresarial (BLOCKED en aplicación remota)\r",
+        "# 2026-08-22 — Phase 6 Portal Empresarial (aplicación autorizada)\r",
+        "# 2026-08-22 — MASTER ASSET EVACUATION (bloqueo por pérdida real)\r",
+        "# 2026-08-22 — Phase 7 Opción A autorizada\r",
+        "# 2026-08-22 — MASTER solicitudes reales en Supabase\r",
+        "# 2026-08-23 — H-MASTER-REM-001, primer corte transversal\r",
+        "# 2026-08-23 — TU SINDICATO CANONICAL CUTOVER (active)\r",
+        "## 2026-08-24 - H-CLEANUP-VERIFY-001\r",
+        "## 2026-08-25 — H-ARCH-REGISTRY-NAVIGATOR\r",
+        "## 2026-08-27 — H-LIVE-TEXT-REMOVAL-001\r",
+        "## 2026-08-31 — H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001\r",
+        "## 2026-09-09 — H-COMPANIES-CONVENIOS-EDUCATION-UNIFICATION-001"
+      ]
+    }
+  ],
+  "queueScope": "Existing MASTER Phase 7 not advanced; this H explicitly authorized by owner"
+}

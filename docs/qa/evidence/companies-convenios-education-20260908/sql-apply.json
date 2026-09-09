@@ -1,0 +1,121 @@
+{
+  "status": "PASS",
+  "version": "20260908000900",
+  "migrationSha256": "b884b23f5ab4b41b7eeeef7170cb28d95a512d507db7bcd83cedd6bf739fc559",
+  "before": [
+    {
+      "domain": "companies",
+      "count": 33,
+      "hash": "7aae40d6724690c55601d0c7a4761d35"
+    },
+    {
+      "domain": "company_assets",
+      "count": 35,
+      "hash": "8c85ac2d56b3018cee080a3d3229ac6b"
+    },
+    {
+      "domain": "company_benefit_profiles",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_benefits",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_audience_rules",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "educational_resources",
+      "count": 32,
+      "hash": "39a743d415962aef48721caa9b70a2ca"
+    },
+    {
+      "domain": "marketplace_products",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "marketplace_promotions",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_portal_plans",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_portal_subscriptions",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "marketplace_company_memberships",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "after": [
+    {
+      "domain": "companies",
+      "count": 33,
+      "hash": "6e698fab82a221ac0ae0b48cd9498f45"
+    },
+    {
+      "domain": "company_assets",
+      "count": 35,
+      "hash": "8c85ac2d56b3018cee080a3d3229ac6b"
+    },
+    {
+      "domain": "company_benefit_profiles",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_benefits",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_audience_rules",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "educational_resources",
+      "count": 32,
+      "hash": "bb197d0aed48a26ee42a6aaad5fb7b91"
+    },
+    {
+      "domain": "marketplace_products",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "marketplace_promotions",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "company_portal_plans",
+      "count": 3,
+      "hash": "e989d7ce4512e0af6391bd11d292ba5e"
+    },
+    {
+      "domain": "company_portal_subscriptions",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "marketplace_company_memberships",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "originalBusinessRows": "UNCHANGED",
+  "authorizedPlansCreated": 3
+}

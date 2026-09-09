@@ -67,6 +67,8 @@
     return url.toString();
   }
 
+  function companyPortalRequested(){try{return new URL(window.location.href).searchParams.get('company_portal')==='1';}catch(_){return false;}}
+
   function requestedAuthFlow() {
     try { return new URL(window.location.href).searchParams.get('auth_flow') || ''; }
     catch (_) { return ''; }
@@ -142,6 +144,18 @@
       state.session && state.session.user && state.session.user.id === session.user.id;
     if (!preservesAuthenticatedApp) publish({ phase: 'loading', session });
     try {
+      const companySession = async () => {
+        const result = await provideClient().rpc('get_current_company_access');
+        if (result.error) throw result.error;
+        if (!Array.isArray(result.data) || !result.data.length) return false;
+        if (version !== resolutionVersion || recoveryActive) return true;
+        publish({ phase: 'authenticated', session, companyOnly: true });
+        return true;
+      };
+      if (companyPortalRequested()) {
+        if (!await companySession()) await rejectUnusableSession('unlinked', 'COMPANY_PLAN_ACCESS_REQUIRED');
+        return;
+      }
       let archivedIdentity = false;
       const affiliatePromise = (async () => {
         let affiliate = null;
@@ -167,6 +181,7 @@
       if (version !== resolutionVersion || recoveryActive) return;
       if (window.AdminRepository && window.AdminRepository.primeAccessContext) window.AdminRepository.primeAccessContext(adminContext, { session, affiliate });
       if (!affiliate && !isAdmin) {
+        if (!archivedIdentity && await companySession()) return;
         await rejectUnusableSession(archivedIdentity ? 'archived' : 'unlinked', archivedIdentity ? 'AFFILIATE_ARCHIVED' : 'AUTH_IDENTITY_WITHOUT_AFFILIATE');
         return;
       }
@@ -463,6 +478,7 @@
     if (stateValue.errorCode === 'INVALID_CREDENTIALS') return 'Correo o contraseña incorrectos.';
     if (stateValue.errorCode === 'ACTIVATION_ALREADY_ACTIVE') return 'Esta cuenta ya está activada. Inicia sesión o recupera tu contraseña.';
     if (stateValue.errorCode === 'ACTIVATION_NOT_REGISTERED') return 'Este correo no está registrado en el padrón de afiliados.';
+    if (stateValue.errorCode === 'COMPANY_PLAN_ACCESS_REQUIRED') return 'Esta cuenta no tiene acceso empresarial con un plan vigente. Contacta a SutiApp.';
     if (stateValue.errorCode === 'ACTIVATION_NOT_ELIGIBLE') return 'Este correo no está habilitado para activar una cuenta.';
     if (stateValue.errorCode === 'ACTIVATION_AMBIGUOUS') return 'El correo coincide con más de un registro. Solicita revisión administrativa.';
     if (stateValue.errorCode === 'ACTIVATION_RATE_LIMIT' || stateValue.errorCode === 'RECOVERY_RATE_LIMIT') return 'Se alcanzó el límite temporal de correos. Espera un momento e intenta nuevamente.';
@@ -545,7 +561,7 @@
         React.createElement('div', { style: { textAlign: 'center', marginBottom: 24 } },
           window.SutiSeal && React.createElement(window.SutiSeal, { size: 82 }),
           React.createElement('h1', { style: { margin: '15px 0 4px', fontSize: 27, color: 'var(--ink)', letterSpacing: '-.02em' } }, 'Bienvenido a SutiApp'),
-          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'activate_password' ? 'Define la contraseña de tu cuenta' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : 'Ingresa con tu cuenta de afiliado')),
+          React.createElement('p', { style: { margin: 0, color: 'var(--ink-2)', fontSize: 14, fontWeight: 650 } }, mode === 'activate' ? 'Activa tu cuenta de afiliado' : mode === 'activate_password' ? 'Define la contraseña de tu cuenta' : mode === 'recover' ? 'Recupera el acceso a tu cuenta' : mode === 'reset' ? 'Define una contraseña nueva' : companyPortalRequested()?'Ingresa con tu cuenta empresarial':'Ingresa con tu cuenta de afiliado')),
         React.createElement('form', { onSubmit: submit, style: { padding: 20, borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-md)' } },
           React.createElement('div', { style: { display: 'grid', gap: 12 } },
             mode !== 'reset' && mode !== 'activate_password' && field('message', 'email', email, setEmail, 'Email', 'email', busy),
@@ -561,6 +577,7 @@
             style: { marginTop: 16 },
           }, busy ? 'Procesando…' : mode === 'activate' ? 'Enviar correo de activación' : mode === 'activate_password' ? 'Activar cuenta' : mode === 'recover' ? 'Enviar instrucciones' : mode === 'reset' ? 'Guardar contraseña' : 'Entrar'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('recover'), style: { width: '100%', marginTop: 12, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Olvidé mi contraseña'),
+          mode==='login'&&React.createElement('a',{href:companyPortalRequested()?'?':'?company_portal=1',style:{display:'block',textAlign:'center',marginTop:12,color:'var(--guinda)',fontWeight:800}},companyPortalRequested()?'Acceso de afiliados':'Acceso empresarial'),
           mode === 'login' && React.createElement('button', { type: 'button', onClick: () => setMode('activate'), style: { width: '100%', marginTop: 8, border: 'none', background: 'none', color: 'var(--guinda)', fontSize: 13, fontWeight: 800, cursor: 'pointer' } }, 'Activar mi cuenta'),
           mode !== 'login' && mode !== 'reset' && mode !== 'activate_password' && React.createElement('button', { type: 'button', onClick: () => setMode('login'), style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),
           (mode === 'reset' || mode === 'activate_password') && React.createElement('button', { type: 'button', onClick: auth.signOut, disabled: busy, style: { width: '100%', marginTop: 10, border: 'none', background: 'none', color: 'var(--ink-3)', fontSize: 13, fontWeight: 750, cursor: 'pointer' } }, 'Volver al inicio de sesión'),

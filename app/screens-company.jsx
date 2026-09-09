@@ -14,30 +14,38 @@
   // ── Gate de acceso empresa ──
   function CompanyGate({ app }) {
     const store = useStore();
-    const [id, setId] = useState((store.companies()[0] || {}).id || '');
-    const [pass, setPass] = useState('');
-    const [err, setErr] = useState(false);
-    React.useEffect(()=>{if(!id&&store.companies()[0])setId(store.companies()[0].id);},[store.state().phase,id]);
+    const [id, setId] = useState((store.portalCompanies()[0] || {}).id || '');
+        const [err, setErr] = useState(false);
+    React.useEffect(()=>{if(!id&&store.portalCompanies()[0])setId(store.portalCompanies()[0].id);},[store.state().phase,id]);
     const enter = async () => { if (!(await store.login(id))) setErr(true); };
     return React.createElement('div', { style: { minHeight: '100%', background: 'linear-gradient(160deg,#14213d,#0b1226)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '30px 24px', position: 'relative', overflow: 'hidden' } },
       React.createElement('div', { style: { position: 'relative', textAlign: 'center', color: '#fff', marginBottom: 24 } },
         React.createElement('div', { style: { width: 74, height: 74, borderRadius: 22, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' } }, React.createElement(I, { name: 'handshake', size: 38, stroke: 1.8 })),
         React.createElement('h1', { style: { fontSize: 23, fontWeight: 900, margin: 0, letterSpacing: '-.02em' } }, 'Panel Empresarial'),
-        React.createElement('p', { style: { fontSize: 13, fontWeight: 600, opacity: .8, margin: '8px 0 0', lineHeight: 1.5 } }, 'Acceso para empresas con convenio vigente.')),
+        React.createElement('p', { style: { fontSize: 13, fontWeight: 600, opacity: .8, margin: '8px 0 0', lineHeight: 1.5 } }, 'Acceso para empresas con plan acreditado por SutiApp.')),
       React.createElement('div', { style: { position: 'relative', background: 'var(--surface)', borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-lg)' } },
         React.createElement('label', { style: lbl }, 'Empresa'),
         React.createElement('div', { style: { position: 'relative', marginBottom: 14 } },
           React.createElement('select', { value: id, onChange: (e) => { setId(e.target.value); setErr(false); }, style: { ...inputBase, appearance: 'none', WebkitAppearance: 'none', paddingRight: 40, cursor: 'pointer' } },
-            store.companies().map((c) => React.createElement('option', { key: c.id, value: c.id }, c.name))),
+            store.portalCompanies().map((c) => React.createElement('option', { key: c.id, value: c.id }, c.name))),
           React.createElement(I, { name: 'chevD', size: 18, stroke: 2.2, style: { position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' } })),
-        React.createElement('label', { style: lbl }, 'Contraseña'),
+        React.createElement('label', { style: lbl }, 'Cuenta verificada'),
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '11px 14px', border: err ? '1.5px solid #C0341D' : '1.5px solid transparent' } },
           React.createElement(I, { name: 'lock', size: 18, stroke: 2, style: { color: 'var(--ink-3)' } }),
-          React.createElement('input', { type: 'password', value: pass, disabled:true, placeholder: 'Sesión Supabase activa', onChange: (e) => { setPass(e.target.value); setErr(false); }, style: { flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: 15, fontFamily: 'inherit', color: 'var(--ink)' } })),
+          React.createElement('span',{style:{fontSize:14,fontWeight:600}},'Sesión empresarial iniciada')),
         err && React.createElement('div', { style: { fontSize: 12, fontWeight: 700, color: '#C0341D', marginTop: 8 } }, 'Tu sesión no tiene acceso a esa empresa.'),
         React.createElement(window.Btn, { full: true, size: 'lg', icon: 'handshake', variant: 'dark', disabled:!id,style: { marginTop: 18 }, onClick: enter }, 'Ingresar'),
-        React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textAlign: 'center', marginTop: 14 } }, store.state().phase==='loading'?'Validando membresía…':'Acceso protegido por Supabase Auth y RLS')));
+        React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textAlign: 'center', marginTop: 14 } }, store.state().phase==='loading'?'Validando membresía…':'Selecciona tu empresa para continuar')));
   }
+  window.CompanyPortalRoot=function({auth}){
+    const store=window.useCompanyStore();const[notice,setNotice]=useState('');
+    React.useEffect(()=>{const refresh=()=>{store.retry();auth.refreshContext();};window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
+    const app={toast:setNotice,logout:auth.signOut};
+    return React.createElement('div',{'data-company-portal-root':'',style:{position:'absolute',inset:0,overflowY:'auto',background:'var(--bg)'}},
+      React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',padding:8}},React.createElement(window.Btn,{variant:'outline',onClick:auth.signOut},'Cerrar sesión')),
+      store.state().phase==='error'?React.createElement(window.EmptyState,{icon:'alert',title:'No pudimos cargar tu empresa',action:React.createElement(window.Btn,{onClick:store.retry},'Reintentar')}):React.createElement(CompanyScreen,{app}),
+      notice&&React.createElement('div',{role:'status',onClick:()=>setNotice(''),style:{position:'fixed',bottom:18,left:18,right:18,padding:14,borderRadius:14,background:'var(--ink)',color:'#fff',zIndex:90}},notice));
+  };
   window.CompanyGate = CompanyGate;
 
   // ── Header ──
@@ -45,7 +53,7 @@
     return React.createElement('div', { style: { background: 'linear-gradient(150deg,#1b2c52,#14213d)', color: '#fff', padding: '10px 14px 16px', position: 'relative' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
         onBack && React.createElement('button', { onClick: onBack, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'rgba(255,255,255,.14)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0 } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        !onBack && React.createElement('div', { style: { width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,.14)', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden', position: 'relative' } }, React.createElement('image-slot', { id: co && co.slotLogo, shape: 'rect', fit: 'cover', placeholder: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }), React.createElement(I, { name: 'handshake', size: 22, stroke: 2 })),
+        !onBack && React.createElement('div', { style: { width: 42, height: 42, borderRadius: 13, background: 'rgba(255,255,255,.14)', display: 'grid', placeItems: 'center', flexShrink: 0, overflow: 'hidden', position: 'relative' } }, co&&co.logo_url&&React.createElement('img', { src:co.logo_url, alt:co.name, style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }), React.createElement(I, { name: 'handshake', size: 22, stroke: 2 })),
         React.createElement('div', { style: { flex: 1, minWidth: 0 } },
           React.createElement('div', { style: { fontSize: 18, fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, title),
           sub && React.createElement('div', { style: { fontSize: 12, fontWeight: 600, opacity: .8, marginTop: 2 } }, sub)),
@@ -54,6 +62,7 @@
 
   // ── Root ──
   function CompanyScreen({ app }) {
+    window.useCatalogStore();
     const store = useStore();
     const [view, setView] = useState('home');
     if (!store.isAuth()) return React.createElement(CompanyGate, { app });
@@ -93,7 +102,7 @@
     const perf = [
       { icon: 'cart', val: prods, label: 'Productos publicados', sub: 'Catálogo real en Marketplace' },
       { icon: 'flame', val: promosOn, label: 'Promociones activas', sub: 'Aprobadas y visibles hoy' },
-      { icon: 'receipt', val: st.solicitudes || 0, label: 'Solicitudes recibidas', sub: 'Operaciones registradas en Supabase' },
+      { icon: 'receipt', val: st.solicitudes || 0, label: 'Solicitudes recibidas', sub: 'Operaciones registradas' },
       { icon: 'doc', val: st.cotizaciones || 0, label: 'Cotizaciones', sub: 'Solicitudes de presupuesto reales' },
     ];
 

@@ -9,7 +9,7 @@
     popups:{title:'Pop-ups',singular:'pop-up',icon:'message',permission:'popups.write',imageField:'image_asset_id',bucket:'app-assets',assetType:'POPUP',defaults:{title:'',body:'',action_label:'',action_url:'',image_asset_id:null,enabled:false},required:['title']},
     companies:{title:'Empresas',singular:'empresa',icon:'tag',permission:'companies.write',imageField:'logo_asset_id',bucket:'company-assets',assetType:'COMPANY',defaults:{display_name:'',description:'',logo_asset_id:null,cover_asset_id:null,enabled:true},required:['display_name']},
     documents:{title:'Documentos y PDF',singular:'documento',icon:'doc',permission:'documents.write',imageField:'document_asset_id',bucket:'documents',assetType:'DOCUMENT',defaults:{kind:'download',title:'',description:'',document_asset_id:null,enabled:true},required:['title','document_asset_id']},
-    education:{title:'Educación y tutoriales',singular:'recurso',icon:'book',permission:'content.write',imageField:'image_asset_id',bucket:'app-assets',assetType:'EDUCATIONAL_IMAGE',defaults:{resource_kind:'education',title:'',description:'',external_url:'',image_asset_id:null,document_asset_id:null,published:false},required:['title']},
+    education:{title:'Educación',singular:'recurso',icon:'book',permission:'content.write',imageField:'image_asset_id',bucket:'app-assets',assetType:'EDUCATIONAL_IMAGE',defaults:{resource_kind:'education',title:'',description:'',external_url:'',image_asset_id:null,document_asset_id:null,published:false},required:['title']},
     minutes:{title:'Minutas',singular:'minuta',icon:'doc',imageField:'document_asset_id',bucket:'documents',assetType:'MINUTES_DOCUMENT',defaults:{title:'',description:'',source_date_raw:'',published_on:null,document_asset_id:null,image_asset_id:null,enabled:false},required:['title']},
     programs:{title:'Programas institucionales',singular:'programa',icon:'fist',imageField:'primary_image_asset_id',bucket:'app-assets',assetType:'PROGRAM_IMAGE',defaults:{category:'',description:'',phone_raw:'',location_raw:'',primary_image_asset_id:null,enabled:false},required:['category']},
     directory:{title:'Comité Ejecutivo',singular:'integrante',icon:'fist',permission:'documents.write',imageField:'image_asset_id',bucket:'app-assets',assetType:'DIRECTORY_MEMBER_IMAGE',defaults:{name:'',role:'',image_asset_id:null,enabled:false},required:['name','role']},
@@ -31,6 +31,7 @@
   }
   function Editor({kind,item,app,onDone,onCancel,sectionKey,filterKinds}){
     const cfg=configs[kind];const [form,setForm]=React.useState(()=>Object.assign({},cfg.defaults,filterKinds&&filterKinds.length?{kind:filterKinds[0]}:{},item||{}));const[busy,setBusy]=React.useState(false);const[pending,setPending]=React.useState({});const pendingRef=React.useRef({});
+    const [educationText,setEducationText]=React.useState(()=>Object.fromEntries(['benefits','services'].map(key=>[key,((item?.public_details||{})[key]||[]).map(v=>v.label+(v.description?' | '+v.description:'')).join('\n')])));
     const remember=async(key,asset)=>{if(pendingRef.current[key])await window.AdminRepository.discardAsset(pendingRef.current[key]);pendingRef.current=Object.assign({},pendingRef.current,{[key]:asset});setPending(pendingRef.current);};
     const committed=(keys)=>{const next=Object.assign({},pendingRef.current);keys.forEach((key)=>delete next[key]);pendingRef.current=next;setPending(next);};
     const upload=async(key,file,bucket,type)=>{setBusy(true);try{const asset=await window.AdminRepository.uploadManagedAsset(file,bucket,type,`${kind}.${key}`);await remember(key,asset);setForm((old)=>Object.assign({},old,{[key]:asset.id,[key.replace('_asset_id','_url')]:asset.url}));}catch(_){app.toast('No fue posible subir el archivo');}finally{setBusy(false);}};
@@ -39,10 +40,12 @@
       if(cfg.required.some((key)=>!form[key]))return app.toast('Completa los campos y archivos requeridos');
       if(kind==='popups'&&form.enabled&&!String(form.body||'').trim())return app.toast('Un pop-up activo requiere contenido');
       setBusy(true);try{
-        const saved=await window.AdminRepository.saveManaged(kind,form);const id=form.id||saved.id;if(!form.id)setForm((old)=>Object.assign({},old,{id}));
+        const values=kind==='education'&&form.resource_kind==='education'?{...form,public_details:{...form.public_details,...Object.fromEntries(['benefits','services'].map(key=>[key,educationText[key].split('\n').map(line=>{const [label,...parts]=line.split('|');return {label:label.trim(),description:parts.join('|').trim()};}).filter(v=>v.label)]))}}:form;
+        const saved=await window.AdminRepository.saveManaged(kind,values);const id=form.id||saved.id;if(!form.id)setForm((old)=>Object.assign({},old,{id}));
         committed(Object.keys(pendingRef.current).filter((key)=>key!=='cover_asset_id'));
+        if(kind==='education')committed(['cover_asset_id']);
         if(kind==='companies'&&form.cover_asset_id){await window.AdminRepository.replaceCompanyAsset(id,form.cover_asset_id,'cover');committed(['cover_asset_id']);}
-        app.toast('Cambios guardados');await onDone();
+        window.ConveniosRepository.invalidate();app.toast('Cambios guardados');await onDone();
       }catch(_){app.toast('No fue posible guardar los cambios');}finally{setBusy(false);}
     };
     const imageUrl=form.image_url||form.logo_url||null;
@@ -64,6 +67,11 @@
         kind==='documents'&&field('Tipo','kind',form,setForm,[['download','Descarga'],['form','Formato'],['regulation','Norma o reglamento']].filter((option)=>!filterKinds||filterKinds.includes(option[0]))),
         kind==='education'&&field('Tipo','resource_kind',form,setForm,[['education','Información educativa'],['tutorial','Tutorial']]),
         kind==='education'&&field('Enlace HTTPS','external_url',form,setForm),
+        kind==='education'&&form.resource_kind==='education'&&React.createElement('div',null,
+          [['Ubicación','address'],['Oferta o beneficio','offer'],['Condiciones y requisitos','conditions'],['Teléfono','phone'],['WhatsApp','whatsapp'],['Descuento (%)','discount_percent']].map(([label,key])=>React.createElement('label',{key,style:labelStyle},label,React.createElement('input',{value:(form.public_details||{})[key]||'',type:key==='discount_percent'?'number':'text',min:key==='discount_percent'?0:undefined,max:key==='discount_percent'?100:undefined,onChange:e=>{const value=key==='discount_percent'?Number(e.target.value):e.target.value;setForm(old=>({...old,public_details:{...old.public_details,[key]:value}}));},style:inputStyle}))),
+          [['Beneficios (uno por línea: nombre | descripción)','benefits'],['Servicios educativos (uno por línea: nombre | descripción)','services']].map(([label,key])=>React.createElement('label',{key,style:labelStyle},label,React.createElement('textarea',{rows:4,value:educationText[key],onChange:e=>{const value=e.target.value;setEducationText(old=>({...old,[key]:value}));},style:inputStyle})))),
+        kind==='education'&&form.resource_kind==='education'&&window.AdminRepository.has('education.assets')&&React.createElement(AssetPicker,{label:'Portada',url:form.cover_url||null,accept:'image/png,image/jpeg,image/webp,image/gif',busy,onFile:file=>upload('cover_asset_id',file,'app-assets','EDUCATIONAL_IMAGE')}),
+        kind==='companies'&&[['Categoría comercial','category_raw'],['Ubicación','address_raw'],['Teléfono','phone_raw'],['WhatsApp','whatsapp_raw'],['Correo','email_raw'],['Sitio web','website_url']].map(([label,key])=>field(label,key,form,setForm)),
         kind!=='documents'&&kind!=='minutes'&&window.AdminRepository.has(sectionKey+'.assets')&&React.createElement(AssetPicker,{label:kind==='companies'?'Logo':'Imagen',url:imageUrl,accept:'image/png,image/jpeg,image/gif,image/webp,image/svg+xml',busy,onFile:(file)=>upload(cfg.imageField,file,cfg.bucket,cfg.assetType)}),
         kind==='companies'&&React.createElement(AssetPicker,{label:'Portada',url:form.cover_url||null,accept:'image/png,image/jpeg,image/gif,image/webp,image/svg+xml',busy,onFile:(file)=>upload('cover_asset_id',file,'company-assets','COMPANY')}),
         (kind==='documents'||kind==='minutes')&&window.AdminRepository.has(sectionKey+'.assets')&&React.createElement(AssetPicker,{label:'Archivo PDF',url:form.document_url||null,accept:'application/pdf',busy,onFile:(file)=>upload('document_asset_id',file,'documents','DOCUMENT')}),

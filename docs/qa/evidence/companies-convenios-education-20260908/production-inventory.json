@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "companies": 33,
+  "institutions": 28,
+  "tutorials": 4,
+  "published_institutions": 9,
+  "subscriptions": 0,
+  "memberships": 0,
+  "plans": [
+    {
+      "name": "Esencial",
+      "annual_price": 3588,
+      "max_products": 5,
+      "allows_popups": false,
+      "monthly_price": 299,
+      "allows_stats_history": false
+    },
+    {
+      "name": "Impulso",
+      "annual_price": 7188,
+      "max_products": 15,
+      "allows_popups": true,
+      "monthly_price": 599,
+      "allows_stats_history": false
+    },
+    {
+      "name": "Destacado",
+      "annual_price": 11988,
+      "max_products": 50,
+      "allows_popups": true,
+      "monthly_price": 999,
+      "allows_stats_history": true
+    }
+  ]
+}

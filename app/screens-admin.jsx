@@ -47,7 +47,7 @@
     { id: 'planes', label: 'Planes de empresas', icon: 'handshake', desc: 'Beneficios, precios y ciclos de pago', ready: true },
     { id: 'membresias', label: 'Membresías', icon: 'card', desc: 'Empresas, conceptos, montos y pagos', ready: true },
     { id: 'noticias', label: 'Noticias del sindicato', icon: 'news', desc: 'Publicaciones y responsable', ready: true },
-    { id: 'education', label: 'Educación y tutoriales', icon: 'book', desc: 'Recursos, enlaces e imágenes', ready: true },
+    { id: 'education', label: 'Educación', icon: 'book', desc: 'Recursos, enlaces e imágenes', ready: true },
     { id: 'convenios', label: 'Convenios y beneficios', icon: 'tag', desc: 'Segmentación y catálogos', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'catalogos', label: 'Catálogos de segmentación', icon: 'filter', desc: 'Sindicatos y categorías de empleado', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'roles', label: 'Roles y permisos', icon: 'users', desc: 'Ver, crear, editar, eliminar', classification: 'PRODUCTIVE_SUPABASE' },

@@ -17,7 +17,7 @@
     const [editing, setEditing] = useState(null);
     const [adEditing, setAdEditing] = useState(null);
     const viewer = store.viewer();
-    const P = { crear: app.admin.has('agreements.create'), editar: app.admin.has('agreements.update'), eliminar: app.admin.has('agreements.delete'), publicar:app.admin.has('agreements.publish'),reordenar: app.admin.has('agreements.order'),baseCreate:app.admin.has('companies.create'),baseDelete:app.admin.has('companies.delete'),basePublish:app.admin.has('companies.publish'),baseOrder:app.admin.has('companies.order') };
+    const P = { crear: app.admin.has('agreements.create'), editar: app.admin.has('agreements.update'), eliminar: app.admin.has('agreements.delete'), publicar:app.admin.has('agreements.publish'),reordenar: app.admin.has('agreements.order'),baseCreate:app.admin.has('companies.create')||app.admin.has('agreements.create'),baseDelete:app.admin.has('companies.delete'),basePublish:app.admin.has('companies.publish')||app.admin.has('agreements.publish'),baseOrder:app.admin.has('companies.order')||app.admin.has('agreements.order') };
     const items = store.conveniosAll();
     const ads = store.anunciosAll();
 
@@ -29,9 +29,10 @@
       React.createElement('div', { className: 'su-app-scroll', style: { padding: '16px 16px 26px' } },
         React.createElement(window.SectionResponsibilityPanel,{sectionKey:'agreements',allowedActions:['read','create','update','delete','publish','order'],app}),
         React.createElement('div', { style: { display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 13, padding: 4, marginBottom: 16 } },
-          seg('list', 'Convenios'), seg('anuncios', 'Anuncios'), seg('catalogos', 'Catálogos')),
+          seg('list', 'Convenios'), seg('anuncios', 'Anuncios'), seg('catalogos', 'Catálogos'),
+          app.admin.has('marketplace.update')&&app.admin.has('marketplace.publish')&&seg('promotions','Promociones')),
 
-        tab === 'catalogos'
+        tab === 'promotions' ? React.createElement(CompanyPromotionReview,{app}) : tab === 'catalogos'
           ? React.createElement(CatalogsManager, { store, P })
           : tab === 'anuncios'
           ? React.createElement('div', null,
@@ -69,6 +70,15 @@
   }
 
   // ── Catálogos dinámicos ──
+  function CompanyPromotionReview({app}){
+    const[items,setItems]=useState([]),[phase,setPhase]=useState('loading');
+    const load=async()=>{setPhase('loading');try{setItems(await window.MarketplaceRepository.listPromotions());setPhase('loaded');}catch(_){setPhase('error');}};
+    useEffect(()=>{load();},[]);
+    const review=async(row,status)=>{try{const r=await window.SutiSupabase.getClient().from('marketplace_promotions').update({approval_status:status}).eq('id',row.id).eq('approval_status','pending').select('id').single();if(r.error)throw r.error;window.ConveniosRepository.invalidate();await load();app.toast(status==='approved'?'Promoción aprobada':'Promoción rechazada');}catch(_){app.toast('No fue posible revisar la promoción');}};
+    if(phase==='error')return React.createElement(window.EmptyState,{icon:'alert',title:'No pudimos cargar las promociones',action:React.createElement(window.Btn,{onClick:load},'Reintentar')});
+    if(phase==='loading')return React.createElement(window.Skeleton,{h:120,r:14});
+    return React.createElement('div',{'data-company-promotion-review':''},items.length?items.map(row=>React.createElement('article',{key:row.id,style:{padding:14,marginBottom:12,borderRadius:14,background:'var(--surface)',boxShadow:'var(--neo-sm)'}},React.createElement('strong',null,row.title),React.createElement('p',null,row.description),React.createElement(window.Badge,{tone:row.approval_status==='approved'?'green':'amber'},row.approval_status==='approved'?'Aprobada':row.approval_status==='rejected'?'Rechazada':'En revisión'),row.approval_status==='pending'&&React.createElement('div',{style:{display:'flex',gap:8,marginTop:12}},React.createElement(window.Btn,{onClick:()=>review(row,'approved')},'Aprobar'),React.createElement(window.Btn,{variant:'outline',onClick:()=>review(row,'rejected')},'Rechazar')))):React.createElement(window.EmptyState,{icon:'gift',title:'Sin promociones'}));
+  }
   function CatalogsManager({ store, P }) {
     const cats = store.catalogs();
     return React.createElement('div', null,
@@ -120,7 +130,7 @@
         ? React.createElement('div', { onPointerDown: onGrab, onTouchStart: onGrab, style: { display: 'grid', placeItems: 'center', width: 30, background: 'var(--surface-2)', color: 'var(--ink-3)', cursor: 'grab', touchAction: 'none', flexShrink: 0 } }, React.createElement(I, { name: 'grip', size: 17, stroke: 2 }))
         : React.createElement('div', { style: { width: 8, flexShrink: 0 } }),
       React.createElement('div', { style: { width: 44, alignSelf: 'stretch', background: `linear-gradient(150deg, hsl(${c.hue || 210},55%,46%), hsl(${c.hue || 210},60%,30%))`, position: 'relative', flexShrink: 0, overflow: 'hidden' } },
-        React.createElement('image-slot', { id: c.slotId, shape: 'rect', fit: 'cover', placeholder: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })),
+        (c.cover_url||c.logo_url)&&React.createElement('img', { src:c.cover_url||c.logo_url,alt:c.name, style: { position: 'absolute', inset: 0, width: '100%', height: '100%',objectFit:'cover' } })),
       React.createElement('button', { onClick: () => (P.editar ? onEdit(c) : null), style: { flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: '10px 11px', cursor: P.editar ? 'pointer' : 'default', fontFamily: 'inherit' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } },
           React.createElement('span', { style: { fontSize: 14, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 } }, c.name || 'Sin nombre'),
@@ -178,7 +188,8 @@
     const isNew = !store.getConvenio(item.id);
     const set = (patch) => setD((p) => ({ ...p, ...patch }));
     const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
-    const save = () => { store.saveConvenio(d); onClose(); };
+    const [busy,setBusy]=useState(false);const [error,setError]=useState('');const save=async()=>{setBusy(true);setError('');try{await store.saveConvenio(d);onClose();}catch(_){setError('No fue posible guardar. Revisa los datos y tus permisos.');}finally{setBusy(false);}};
+    const upload=async(file,role)=>{setBusy(true);setError('');try{let id=d.id;if(!id){id=await store.saveConvenio({...d,visible:false});set({id});}const asset=await window.ConveniosRepository.uploadImage(file,id);await window.ConveniosRepository.attachImage(id,asset.id,role);set({id,[role+'_url']:asset.url});}catch(_){setError('No fue posible guardar la imagen.');}finally{setBusy(false);}};
     const del = () => { store.removeConvenio(d.id); onClose(); };
     const lbl = { fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 7 };
     const cats = (window.catalogStore && window.catalogStore.categories ? window.catalogStore.categories() : []);
@@ -190,6 +201,9 @@
 
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: 16 } },
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Empresa / convenio'), React.createElement('input', { value: d.name, placeholder: 'Ej. Farmacias del Ahorro', onChange: (e) => set({ name: e.target.value }), style: inputBase })),
+        error&&React.createElement('p',{role:'alert',style:{color:'#C0341D'}},error),
+        [['Sobre la empresa','description'],['Descripción del convenio','agreement_description'],['Condiciones y requisitos','conditions'],['Teléfono','phone_raw'],['WhatsApp','whatsapp_raw'],['Correo','email_raw'],['Sitio web','website_url']].map(([label,key])=>React.createElement('label',{key,style:{...lbl,marginBottom:14}},label,React.createElement(['description','agreement_description','conditions'].includes(key)?'textarea':'input',{value:d[key]||'',onChange:e=>set({[key]:e.target.value}),style:inputBase}))),
+        [['Logo','logo'],['Portada','cover']].map(([label,role])=>React.createElement('label',{key:role,style:{...lbl,marginBottom:14}},label,d[role+'_url']&&React.createElement('img',{src:d[role+'_url'],alt:label,style:{width:'100%',height:110,objectFit:'contain'}}),React.createElement('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled:busy||!d.name.trim(),onChange:e=>{if(e.target.files[0])upload(e.target.files[0],role);e.target.value='';}}))),
         React.createElement('div', { style: { display: 'flex', gap: 12, marginBottom: 16 } },
           React.createElement('div', { style: { flex: 1 } }, React.createElement('label', { style: lbl }, 'Categoría'),
             React.createElement('div', { style: { position: 'relative' } },
@@ -201,7 +215,7 @@
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Etiquetas (separadas por coma)'), React.createElement('input', { value: (d.tags || []).join(', '), placeholder: 'Medicamento, Consulta', onChange: (e) => set({ tags: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }), style: inputBase })),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Imagen'),
           React.createElement('div', { style: { borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--neo-sm)', height: 110, position: 'relative', background: `linear-gradient(150deg, hsl(${d.hue},60%,46%), hsl(${d.hue},62%,30%))` } },
-            React.createElement('image-slot', { id: d.slotId, shape: 'rect', fit: 'cover', placeholder: 'Arrastra una imagen', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }))),
+            (d.cover_url||d.logo_url)?React.createElement('img', { src:d.cover_url||d.logo_url,alt:d.name, style: { position: 'absolute', inset: 0, width: '100%', height: '100%',objectFit:'cover' } }):React.createElement('span',{style:{display:'grid',placeItems:'center',height:'100%',color:'#fff'}},'Agrega una portada con el selector de imagen'))),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Color de acento'),
           React.createElement('div', { style: { display: 'flex', gap: 9, flexWrap: 'wrap' } },
             HUES.map((h) => React.createElement('button', { key: h, onClick: () => set({ hue: h }), style: { width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', background: `hsl(${h},68%,45%)`, border: d.hue === h ? '3px solid var(--ink)' : '3px solid transparent', boxShadow: 'var(--neo-sm)' } })))),
@@ -234,13 +248,14 @@
         React.createElement(SectionTitle, { icon: 'gift', label: 'Beneficios / planes' }),
         React.createElement(BeneficiosBlock, { list: d.beneficios || [], convId: d.id, store, onChange: (v) => set({ beneficios: v }) }),
 
+        d.id&&React.createElement(window.CatalogEditorList,{scope:'convenio',scopeId:d.id,empresaId:d.id,editable:P.editar,permissions:{create:P.crear,update:P.editar,delete:P.eliminar,publish:P.publicar,order:P.reordenar,assets:P.editar},actor:'Admin Convenios'}),
         !isNew && P.baseDelete && React.createElement('button', { onClick: del, style: { display: 'inline-flex', alignItems: 'center', gap: 8, height: 46, padding: '0 18px', borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 800, cursor: 'pointer', marginTop: 4 } },
           React.createElement(I, { name: 'trash', size: 18, stroke: 2 }), 'Eliminar convenio'),
         React.createElement('div', { style: { height: 18 } })),
 
       React.createElement('div', { style: { display: 'flex', gap: 12, padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', borderTop: '1px solid var(--hairline)', flexShrink: 0 } },
         React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, onClick: onClose }, 'Cancelar'),
-        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: !d.name.trim(), onClick: save }, 'Guardar convenio')));
+        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: busy||!d.name.trim(), onClick: save }, 'Guardar convenio')));
   }
   function toggleDot(on) {
     return React.createElement(window.Toggle, { on: on, size: 'xl', });

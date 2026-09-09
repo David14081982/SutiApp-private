@@ -351,3 +351,21 @@ Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 202609080006
 ## Banners: eliminación conservando historia — H-ADMIN-BANNERS-DELETE-001
 
 public.banners conserva toda la fila original, enabled, procedencia e imagen. public.banner_deletions contiene exclusivamente metadata privada de archivo 1:1 (banner_id, actor_auth_user_id, deleted_at); no copia contenido ni opera como fallback. archive_admin_banner(uuid) es el escritor de esta acción desde Admin Banners. Los lectores existentes siguen consultando banners; RLS restrictiva excluye archivados de Admin y público sin ampliar permisos. Borrado lógico autorizado para todos los orígenes; no DELETE físico ni modificación de assets.
+
+
+## Estado vigente de Convenios, Educación y planes — ADR-111
+
+Esta sección actualiza los conteos y límites históricos Phase 2/3/6 de la tabla anterior. No cambia sus autoridades Supabase.
+
+| Dominio | Autoridad / lector | Escritor y frontera |
+|---|---|---|
+| Convenios públicos unificados | list_public_convenios sobre companies + company_benefit_profiles/benefits/audience_rules/assets/promotions y educational_resources; ConveniosRepository | Proyección sin escritura propia ni caché persistente. 33 empresas/convenios y 9 instituciones publicadas al verificar; UUID original y source_kind. |
+| Fichas comerciales gratuitas | companies + perfiles/beneficios existentes | save_agreement_ficha, responsable agreements por acción; imágenes mediante RPC focal y app_assets. Productos opcionales marketplace_products. |
+| Ficha de empresa con plan | companies.public_details y campos originales; company_assets | Mi Empresa → save_company_ficha, sólo tenant con plan vigente; Admin conserva sus permisos. |
+| Educación y Tutoriales | educational_resources + public_details + cover_asset_id | Admin por resource_kind/acción. Educación se publica en Convenios; Tutoriales se preserva internamente. 28 instituciones/4 tutoriales históricos intactos. |
+| Planes y pago presencial | company_portal_plans + company_portal_subscriptions | Tres planes autorizados por owner; Admin acredita por accredit_company_plan, confirmación y referencia. Cero suscripciones/membresías/pagos inventados. |
+| Login empresarial | Supabase Auth + marketplace_company_memberships + suscripción/plan | get_current_company_access; companyOnly no exige ser afiliado ni concede Admin. La identidad histórica del afiliado no cambia. |
+| Operación empresarial | program_requests; list_company_commercial_requests y get_company_activity | Lector mínimo de tenant activo/Admin; writers canónicos existentes, sin cambiar lógica financiera ni Google. |
+| Favoritos educativos | educational_resource_favorites con FK al recurso original | Auth sólo sus vínculos; no autoridad de contenido. |
+
+La memoria de Convenios/companyStore es derivada, se invalida al guardar, cambiar contexto o recargar; error visible sin DATA/mock/localStorage. Publicidad aprobada conserva popups/banners y sus reglas actuales. Recovery técnico nunca elimina actividad comercial posterior.

@@ -629,7 +629,7 @@
       React.createElement('p', null, 'La sesión de tomar control terminó. Verificando tu contexto…'),
       React.createElement('button', { onClick: () => window.AffiliateAuth.refreshContext().catch(() => {}), style: { padding: 12 } }, 'Reintentar'));
     return auth.phase === 'authenticated'
-      ? React.createElement(App, { key: contextKey, auth, initialTab: identity.initialTab })
+      ? auth.companyOnly ? React.createElement(window.CompanyPortalRoot, { key: contextKey, auth }) : React.createElement(App, { key: contextKey, auth, initialTab: identity.initialTab })
       : React.createElement(window.AffiliateLoginScreen, { auth });
   }
 

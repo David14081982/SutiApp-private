@@ -2819,3 +2819,10 @@ El runtime 3eec5a4 ya satisface la navegaci?n bidireccional solicitada. Verifica
 ## H-ADMIN-BANNERS-DELETE-001 - 2026-09-08
 
 Banner delete action with accessible confirmation, backend archive preserving historical rows/assets, exact existing delete authorization, actor/time audit and idempotency. Focal SQL/Chrome/error/double-click/denial tests PASS. Migration 20260908000800 plus service ACL hardening 20260908000801 applied without business row changes. Only visual CRUD banner branch and generated bundle235/worker183 version tokens changed. Isolated release from 91069eb; original dirty workspace preserved. Report: docs/qa/H-ADMIN-BANNERS-DELETE-001.md; publication evidence in docs/qa/evidence/admin-banners-delete-20260908/. Publish authorized; stop after delivery verification.
+
+
+## 2026-09-09 — H-COMPANIES-CONVENIOS-EDUCATION-UNIFICATION-001
+
+Implementación focal de la proyección pública de empresas, convenios y Educación con las autoridades existentes. Se amplían ficha/Admin y acceso empresarial, límites backend, imágenes, aprobación de promociones, lectura comercial mínima y acreditación presencial. Owner autorizó crear planes/precios/límites: Esencial 299/5, Impulso 599/15+pop-ups, Destacado 999/50+pop-ups+historial; mensual MXN, anual ×12.
+
+Las migraciones 20260908000900 y 20260909000100 se probaron con ROLLBACK y recuperación antes de aplicar; hashes de filas originales preservados, sólo tres planes de configuración añadidos. Ningún pago/suscripción/Auth inventado. Candidato aislado sobre origin/main 315f9b2 excluye cambios previos de Ahorro. Evidencia/resultado y SHA de publicación se mantienen en docs/qa/H-COMPANIES-CONVENIOS-EDUCATION-UNIFICATION-001.md y su directorio de evidencia.

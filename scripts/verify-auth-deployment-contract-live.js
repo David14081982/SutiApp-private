@@ -5,6 +5,7 @@ const REQUIRED_AUTH_RPCS = Object.freeze([
   'get_effective_affiliate_id',
   'get_impersonation_context',
   'get_admin_access_context',
+  'get_current_company_access',
 ]);
 const REQUIRED_PUBLIC_AUTH_RPCS = Object.freeze(['get_affiliate_activation_status']);
 

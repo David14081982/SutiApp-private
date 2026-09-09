@@ -301,3 +301,12 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 - **INV-162:** Todo writer vigente que cambie `program_requests.status` sincroniza tracking en la misma transacción. Admin y autoservicio releen el mismo resolver; no existe una segunda etapa sólo visual.
 - **INV-163:** La transición genérica nunca aprueba una solicitud con `financial_processing_status` no nulo; préstamo y producto conservan sus writers financieros certificados y sus invariantes legacy.
 - **INV-164:** Admin puede preparar automáticamente previews sólo mediante autorización individual `document-access`; la URL firmada queda efímera y en memoria, el objeto sigue privado y un fallo se presenta sin fallback.
+
+
+## Convenios unificados — ADR-111
+
+- **INV-223:** una ficha pública conserva UUID y autoridad originales. Educación proviene exclusivamente de educational_resources con resource_kind=education y published=true; no aparece por duplicación empresarial ni incluye Tutoriales.
+- **INV-224:** ningún convenio gratuito adquiere acceso empresarial por existir en companies. El login empresarial exige Auth, membresía habilitada y plan/suscripción vigentes; los permisos backend limitan escrituras al tenant y aplican max_products.
+- **INV-225:** acreditar un plan exige Admin, pago presencial confirmado y referencia; el backend registra precio, vigencia, actor y fecha. Configurar planes no registra pagos ni suscripciones ficticias.
+- **INV-226:** publicar promociones requiere aprobación administrativa real; pop-ups requieren el beneficio del plan y conservan revisión/publicación existentes. Los cambios empresariales permitidos se proyectan públicamente sin fuentes alternas.
+- **INV-227:** el lector comercial empresarial no expone firmas, documentos, snapshots financieros ni registros eliminados; no concede SELECT de program_requests. Historial estadístico se habilita por plan y se deriva de operaciones canónicas.

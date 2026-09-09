@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "migrationSha256": "b884b23f5ab4b41b7eeeef7170cb28d95a512d507db7bcd83cedd6bf739fc559",
+  "recoverySha256": "af919ad0c6684c476854be149b97724c376c92f09c2f5f7658c70db2e527a036",
+  "persistentBusinessWrites": 0
+}

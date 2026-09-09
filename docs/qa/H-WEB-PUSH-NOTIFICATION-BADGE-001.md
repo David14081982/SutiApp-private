@@ -51,6 +51,33 @@ icon a color, navegación, dedup y permiso conservados. Sólo se reemplaza el ba
 autorizado. Pantallas internas sin cambios. Missing sections: 0. Unauthorized redesign: NO.
 Verdict: PASS.
 
-Regresión global y publicación en curso. No afirmar todavía la apariencia de una nueva
-notificación en un Android físico: la prueba automatizada verifica el asset y handler,
-no sustituye una captura del dispositivo tras actualizar SW.
+Regresiones globales local y GitHub Pages PASS: login/sello, perfil, Admin Afiliados,
+documentos imagen/PDF legítimos, Membership, Préstamo, catálogo/galería, Marketplace,
+fullscreen, refresh y comparación con/sin service worker. Cero errores browser y cero
+mutaciones de datos de producción. Ver global-local.json y global-production.json.
+
+Publicado e3fdf3630af5060ae1f3f4f38809470b7215d8cd mediante
+[Pages 34307875429 SUCCESS](https://github.com/David14081982/SutiApp-private/actions/runs/34307875429).
+HTML, SW, badge, logo a color y bundle de ambos dominios coinciden con el commit.
+El test del badge publicado pasa descarga/alpha, handler real, deduplicación y enlace.
+
+La apariencia nativa de una nueva notificación Android tras este ajuste no se observó
+físicamente: los tests comprueban el asset transparente y la configuración entregada.
+La recepción Android de la infraestructura está documentada en la H previa. Esta H no
+envió avisos adicionales ni cambió suscripciones. Los avisos ya mostrados conservan su icono;
+el cambio se aplica a nuevos avisos cuando la PWA actualice al SW 181.
+
+H-WEB-PUSH-NOTIFICATION-BADGE-001 RESULT
+Status: PASS.
+Files changed: icon-notification-badge.png, sw.js, SutiApp.html, scripts/build-pages-site.js,
+  scripts/test-request-push-badge.js, QA/evidencia y docs/AGENT_CHANGELOG.md.
+Source-of-truth verdict: PASS — asset aprobado versionado; autoridad de negocio intacta.
+Invariant verdict: PASS — icon a color, bundle, Auth, dedup y navegación preservados.
+Build: PASS — artefacto público 23 archivos, SW 181 y bundle 233 intacto.
+Tests: PASS — badge local/producción, regresión global local/Pages y hashes en ambos dominios.
+Security: PASS — 0 secretos frontend; sin cambios RLS, Edge, Auth o destinatarios.
+Legacy impact: NONE — sin cambios de datos, cálculos, Google ni writers financieros.
+Unexpected files changed: 0 en release; trabajo local previo preservado.
+Known limitations: apariencia nativa del nuevo badge no observada en dispositivo físico;
+  imagen y handler verificados automáticamente. Avisos anteriores no se redibujan.
+Evidence: docs/qa/evidence/request-push-badge-20260908/*.json y ARCHITECT-REVIEW.md.

@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-08 — H-WEB-PUSH-NOTIFICATION-BADGE-001 — PASS
+
+Corrige el cuadro blanco Android con el puño transparente proporcionado por el propietario,
+copiado sin alteración como icon-notification-badge.png. Badge separado del icon a color,
+allowlist/precache actualizados, SW 181; bundle 233, negocio y backend intactos.
+Build, máscara alpha/handler real local y producción, dedup/click, regresiones globales
+local/Pages y hashes en ambos dominios PASS. Publicado e3fdf36, Pages 34307875429 SUCCESS.
+No se afirma observación física de un aviso nuevo; ver QA y evidencia focal de esta H.
+
 ## 2026-09-08 — H-WEB-PUSH-REQUEST-EVENTS-001 — PASS
 
 Infraestructura separada de la H UX publicada. Suscripciones self privadas, outbox post-commit,

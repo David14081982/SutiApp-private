@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "commit": "e3fdf3630af5060ae1f3f4f38809470b7215d8cd",
+  "serviceWorker": 181,
+  "bundle": 233,
+  "sites": [
+    {
+      "origin": "https://sutiapp.com/",
+      "status": "PASS",
+      "files": [
+        {
+          "file": "SutiApp.html",
+          "sha256": "016ab292e90a7c8200d24febbce398c629c9330c52e2ce2745c03b48977eaa77"
+        },
+        {
+          "file": "sw.js",
+          "sha256": "9d4a9456bae13c48040ba97a984667bff4fcc7f88b903a2cbcfaccbbf1227c33"
+        },
+        {
+          "file": "icon-notification-badge.png",
+          "sha256": "cbd41b39c7cef9ea64b8fa0a3b6c80d9a556aab003e8e7e41abb3a771754e70d"
+        },
+        {
+          "file": "icon-192.png",
+          "sha256": "87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc"
+        },
+        {
+          "file": "app/bundle.js",
+          "sha256": "5b39d98579a810a0fd63f5649c2abf2d92b88e951d0cf4f941ec2a9bd1151e6a"
+        }
+      ]
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/",
+      "status": "PASS",
+      "files": [
+        {
+          "file": "SutiApp.html",
+          "sha256": "016ab292e90a7c8200d24febbce398c629c9330c52e2ce2745c03b48977eaa77"
+        },
+        {
+          "file": "sw.js",
+          "sha256": "9d4a9456bae13c48040ba97a984667bff4fcc7f88b903a2cbcfaccbbf1227c33"
+        },
+        {
+          "file": "icon-notification-badge.png",
+          "sha256": "cbd41b39c7cef9ea64b8fa0a3b6c80d9a556aab003e8e7e41abb3a771754e70d"
+        },
+        {
+          "file": "icon-192.png",
+          "sha256": "87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc"
+        },
+        {
+          "file": "app/bundle.js",
+          "sha256": "5b39d98579a810a0fd63f5649c2abf2d92b88e951d0cf4f941ec2a9bd1151e6a"
+        }
+      ]
+    }
+  ]
+}

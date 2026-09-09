@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "checks": {
+    "adminToApp": "PASS",
+    "appToAdmin": "PASS",
+    "normalTabs": "PASS",
+    "ownContext": "PASS",
+    "impersonatedContext": "PASS",
+    "returnAdminKeepsImpersonation": "PASS",
+    "exitRestoresActor": "PASS",
+    "sessionPreserved": "PASS"
+  },
+  "viewports": [
+    {
+      "width": 1440,
+      "cycles": 3,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "cycles": 3,
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": [],
+  "businessWrites": 0,
+  "newPasswordLogins": 1
+}

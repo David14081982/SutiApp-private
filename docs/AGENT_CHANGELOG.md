@@ -2810,3 +2810,8 @@ Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 202609080006
 ## H-IMPERSONATION-FULL-USER-EXPERIENCE-001 ? 2026-09-08
 
 Correcci?n focal del shell: Tomar control abre Inicio con identidad efectiva certificada y navegaci?n normal; banner persistente con nombre/control, Volver al Admin sin terminar y salida con restauraci?n de actor. Ver app disponible en ambos headers Admin. El estado de componentes se descarta al cambiar identidad; vencimiento retira contenido y exige refresh autoritativo. Auth/repositorios/RPC/RLS/permisos y negocio intactos. Build y 16 checks focales en 12 superficies PASS local y producci?n; 110 de 112 m?dulos del bundle id?nticos. Sin suites globales por mandato espec?fico. Publicado runtime 3eec5a4, workflow34315864822 SUCCESS; bytes p?blicos exactos. Evidencia: [informe de la H](qa/H-IMPERSONATION-FULL-USER-EXPERIENCE-001.md).
+
+
+## H-ADMIN-APP-SHELL-NAVIGATION-001 ? 2026-09-08 ? PASS
+
+El runtime 3eec5a4 ya satisface la navegaci?n bidireccional solicitada. Verificaci?n focal productiva: 8/8 criterios PASS, seis ciclos propios en1440/390px y caso impersonado en ambos; mismo actor/session_id/permisos, un ?nico login, cero errores/writes de negocio. HTML/bundle234/worker182 exactos. Sin cambios runtime, Supabase, permisos, l?gica, pantallas o Registry; s?lo prueba y evidencia. [Informe](qa/H-ADMIN-APP-SHELL-NAVIGATION-001.md). Reviewer APPROVED; publicar evidencia y detener.

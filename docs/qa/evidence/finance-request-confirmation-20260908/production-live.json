@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "target": "PRODUCTION",
+  "businessWrites": 0,
+  "errors": [],
+  "internalEvents": 0,
+  "duplicates": 0,
+  "rpc": "PASS",
+  "notificationScreen": "PASS",
+  "deepLink": "COVERED_ISOLATED_NO_EVENTS_IN_CONTROLLED_ACCOUNT"
+}

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "commit": "776d9a05be798ad1640eb9c6c23f9b0f328f0a15",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/34300984710",
+  "localTextMatchesGitBlob": true,
+  "sites": [
+    {
+      "base": "https://sutiapp.com",
+      "status": "PASS",
+      "bundle": 232,
+      "worker": 179,
+      "hash": "471c597ea6be4157b187173679a6b481bd30498b7a0e3e8443ddaf91c1f29645"
+    },
+    {
+      "base": "https://david14081982.github.io/SutiApp-private",
+      "status": "PASS",
+      "bundle": 232,
+      "worker": 179,
+      "hash": "471c597ea6be4157b187173679a6b481bd30498b7a0e3e8443ddaf91c1f29645"
+    }
+  ]
+}

@@ -33,7 +33,7 @@ Autoridad: los eventos inmutables existentes son la notificación; tabla auxilia
 Migración aditiva sin backfill: RLS forzada, cero grants browser sobre acuses, RPC security definer search_path vacío. Recovery revoca RPCs conservando acuses e historia. Pruebas transaccionales con rollback y denegación cross-user antes de aplicación. No se aplica con pruebas fallidas. Push permanece decisión independiente.
 La dependencia de notificaciones entre superficies requiere ejecutar la regresión compartida exigida por AGENTS.md antes de un PASS/publicación.
 
-## VERIFY / EVIDENCE
+## VERIFY / EVIDENCE — candidato anterior al release
 
 | Validación | Resultado | Alcance de la evidencia |
 | --- | --- | --- |
@@ -83,18 +83,20 @@ Verdict: PASS para candidato.
 
 ## H-FINANCE-REQUESTS-CONFIRMATION-NOTIFICATIONS-UX-001 RESULT
 
-Status: DECISION REQUIRED.
-Files changed: screens-admin-finanzas.jsx, screens-historial.jsx, request-notifications.js, app.jsx (notificaciones/badge), bundle.js generado, build-bundle.js, migración y recovery 20260908000600, cuatro scripts focales, cinco índices de arquitectura, documentación y evidencia enumeradas en la auditoría.
-Source-of-truth verdict: SAFE; eventos Supabase y acuse único; migración no aplicada.
-Invariant verdict: PASS; calls de negocio/estados/motivos/cálculos intactos.
-Build: PASS.
-Tests: focales PASS; regresión global de imágenes PASS local/base publicada; test textual histórico FAIL preexistente; Push BLOCKED.
-Security: PASS SQL transaccional; RLS/grants/self/cross-user/acuse; sin secretos frontend.
-Legacy impact: READ ONLY; writers existentes preservados, cero Google/cálculos modificados.
-Unexpected files changed: ningún cambio intencional fuera del alcance; workspace previo preservado mediante baseline privado y comparación de bloques/módulos.
-Known limitations: falta infraestructura Push; frontend y migración nuevos no desplegados; cachebusters no se incrementaron al no publicar. No se prueban aprobaciones financieras reales sobre solicitudes de personas.
-Evidence: carpeta focal, backup privado y revisión arquitectónica adjunta.
+Status: PASS.
+Files changed: screens-admin-finanzas.jsx, screens-historial.jsx, request-notifications.js, app.jsx (notificaciones/badge), bundle.js generado, build-bundle.js, cachebusters SutiApp.html/sw.js, migración/recovery 20260908000600, scripts focales/release, índices derivados, documentación y evidencia.
+Source-of-truth verdict: SAFE; program_request_admin_events y acuse único Supabase, migración APPLIED / VERIFIED.
+Invariant verdict: PASS; callbacks de negocio, estados, motivos, cálculos y Google conservados.
+Build: PASS; bundle 232 / worker 179; SHA256 público 471c597ea6be4157b187173679a6b481bd30498b7a0e3e8443ddaf91c1f29645.
+Tests: nueve casos de acción, notificaciones/acuse concurrente/historial/timeline, SQL/seguridad, artefacto local y producción PASS. Regresión global de imágenes/PDF/SW PASS local y producción.
+Security: PASS; RLS forzada, sin acceso directo a acuses, RPC self-only y rechazo cross-user, cero secretos frontend.
+Legacy impact: cero cambios de cálculos, workflow o Google; cero mutaciones productivas de negocio durante verificación.
+Unexpected files changed: cero archivos ajenos publicados; release aislado en origin/main. Bytes vendor idénticos al blob Git para preservar SRI.
+Known limitations: Web Push NOT APPLICABLE por decisión owner; continúa automáticamente en H-WEB-PUSH-REQUEST-EVENTS-001. La cuenta controlada productiva no tiene avisos de solicitudes: casos positivos/deep-link/acuse certificados en SQL y navegador aislado. Test textual antiguo falla igual antes de esta H y está supersedido por pruebas funcionales focales.
+Evidence: publication.json, migration-applied.json, production-live.json, release-global-local.json, release-global-production.json, isolated-browser.json, notifications-browser.json y sql.json.
+Publication: commit 776d9a05be798ad1640eb9c6c23f9b0f328f0a15; Actions 34300984710 SUCCESS; sutiapp.com y GitHub Pages con mismo hash y versiones.
 
-## Decisión pendiente exacta
+
+## Decisión inicial de Push — resuelta por OWNER DECISION
 
 Habilitar infraestructura Web Push requiere suscripciones PWA por dispositivo, claves VAPID guardadas en backend, contacto del emisor y un emisor backend que consuma únicamente eventos confirmados, con deduplicación/reintentos y renovación de suscripciones. Nada de esto existe en la base auditada. El usuario pidió detener únicamente esta decisión cuando faltase infraestructura: se prepararon y validaron las mejoras independientes. No se instaló un transporte paralelo ni se simuló un Push exitoso.

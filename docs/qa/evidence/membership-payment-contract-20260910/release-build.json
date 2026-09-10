@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "directory": "C:\\tmp\\sutiapp-membership-payment-20260910\\release-site2",
+  "changedBundleModules": [
+    "program-request-repository.js",
+    "membership-repository.js",
+    "screens-membership-application.jsx"
+  ],
+  "otherBundleModulesIdentical": 112
+}

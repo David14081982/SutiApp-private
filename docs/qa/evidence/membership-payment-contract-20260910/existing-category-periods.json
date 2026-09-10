@@ -1,0 +1,32 @@
+[
+  {
+    "category": "BASE",
+    "payment_period": "quincenal",
+    "rules": 106
+  },
+  {
+    "category": "CONFIANZA",
+    "payment_period": "quincenal",
+    "rules": 7
+  },
+  {
+    "category": "EVENTUALES",
+    "payment_period": "quincenal",
+    "rules": 9
+  },
+  {
+    "category": "JUBILADOS_PENSIONADOS",
+    "payment_period": "quincenal",
+    "rules": 8
+  },
+  {
+    "category": "SUPLENTES_FIJOS",
+    "payment_period": "quincenal",
+    "rules": 8
+  },
+  {
+    "category": "SUPLENTES_VARIABLES",
+    "payment_period": "quincenal",
+    "rules": 8
+  }
+]

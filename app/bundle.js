@@ -7772,7 +7772,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     });
     if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -62883,12 +62883,13 @@ Object.assign(window, {
   const url=(a)=>a&&a.status==='READY'?db().storage.from(a.storage_bucket).getPublicUrl(a.storage_path).data.publicUrl:null;
   const project=(r)=>Object.freeze(Object.assign({},r,{empresa:r.company_raw,concepto:r.concept,monto:Number(r.amount),pagos:r.installments,activo:r.enabled,logo:url(r.logo_asset)}));
   async function list(){const r=await db().from('membership_offerings').select(fields).order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));}
+  async function paymentQuote(id){const r=await db().rpc('get_current_membership_payment_quote',{p_membership_offering_id:id});if(r.error)throw r.error;const q=r.data,f=q&&q.financialResult;if(!q||q.contract_version!=='MEMBERSHIP_PAYMENT_V1'||q.membership_offering_id!==id||!/^[a-f0-9]{64}$/.test(q.quote_hash||'')||!f||!['amount','total','paymentCount','paymentPerPeriod','lastPayment','capital','administrativeFeeTotal'].every(k=>typeof f[k]==='number'&&Number.isFinite(f[k]))||!['quincenal','mensual'].includes(f.paymentPeriod)||f.rate!==0||f.interest!==0||f.administrativeFeeIncluded!==true)throw new Error('MEMBERSHIP_PAYMENT_QUOTE_INVALID');return Object.freeze(q);}
   const enabledFrom=(row)=>row.activo===undefined?row.enabled!==false:row.activo!==false;
   async function save(row){const values={company_raw:String(row.empresa||row.company_raw||'').trim(),concept:String(row.concepto||row.concept||'').trim(),amount:Number(row.monto??row.amount),installments:Number(row.pagos??row.installments),logo_asset_id:row.logo_asset_id||null,enabled:enabledFrom(row),sort_order:Number(row.sort_order||1)};let q;if(row.id)q=db().from('membership_offerings').update(values).eq('id',row.id);else{values.record_origin='ADMIN_PHASE4';q=db().from('membership_offerings').insert(values);}const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
   async function setEnabled(id,enabled){if(!id)throw new Error('MEMBERSHIP_ID_REQUIRED');const next=enabled===true;const r=await db().from('membership_offerings').update({enabled:next}).eq('id',id).select('id,enabled').single();if(r.error)throw r.error;if(!r.data||r.data.enabled!==next)throw new Error('MEMBERSHIP_ENABLED_MISMATCH');return r.data;}
   async function remove(id){const r=await db().from('membership_offerings').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('MEMBERSHIP_DELETE_COUNT_MISMATCH');}
   async function uploadLogo(file){return window.AdminRepository.uploadManagedAsset(file,'app-assets','MEMBERSHIP_LOGO','membership.logo');}
-  window.MembershipRepository=Object.freeze({list,save,setEnabled,remove,uploadLogo});
+  window.MembershipRepository=Object.freeze({list,paymentQuote,save,setEnabled,remove,uploadLogo});
 })();
 })();
 /* @@file membership-store.jsx */
@@ -63375,6 +63376,7 @@ Object.assign(window, {
       [requirements, setRequirements] = useState([]),
       [documents, setDocuments] = useState([]),
       [terms, setTerms] = useState(null);
+    const [paymentQuote, setPaymentQuote] = useState(null);
     const [busy, setBusy] = useState(false),
       [error, setError] = useState(''),
       [sent, setSent] = useState(null),
@@ -63402,9 +63404,12 @@ Object.assign(window, {
       }
       setPhase('loading');
       setError('');
+      setPaymentQuote(null);
       try {
         const rows = await window.DocumentWorkflowRepository.requirements('membership', offering.id);
-        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'), window.ProgramTermsRepository.current('membership', offering.id)]);
+        const [dResult, tResult, qResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'), window.ProgramTermsRepository.current('membership', offering.id), window.MembershipRepository.paymentQuote(offering.id)]);
+        if (qResult.status !== 'fulfilled') throw qResult.reason;
+        setPaymentQuote(qResult.value);
         setRequirements(rows.slice());
         setDocuments(dResult.status === 'fulfilled' ? dResult.value.slice() : []);
         setTerms(tResult.status === 'fulfilled' ? tResult.value : null);
@@ -63413,12 +63418,13 @@ Object.assign(window, {
         if (tResult.status === 'rejected') warnings.push('No fue posible verificar los términos publicados.');
         setError(warnings.join(' '));
         setPhase('ready');
-      } catch (_) {
+      } catch (failure) {
         setRequirements([]);
         setDocuments([]);
         setTerms(null);
         setPhase('error');
-        setError('No fue posible consultar los requisitos autorizados.');
+        const code = String(failure && failure.message || '');
+        setError(code.includes('MEMBERSHIP_PAYROLL_CATEGORY_UNRESOLVED') ? 'Tu categoría laboral aún no tiene una periodicidad de descuento definida. Solicita su revisión en Administración.' : code.includes('MEMBERSHIP_INCLUDED_FEES_EXCEED_TOTAL') ? 'El monto configurado no cubre los gastos administrativos incluidos. Solicita su revisión en Administración.' : 'No fue posible consultar los requisitos y las condiciones de pago. Reintenta para continuar.');
       }
     }, [offering && offering.id]);
     useEffect(() => {
@@ -63450,8 +63456,9 @@ Object.assign(window, {
     const total = requiredRequirements.length + FIELDS.length,
       completed = total - missingItems.length,
       missing = missingItems.length;
-    const ready = phase === 'ready' && missing === 0 && !!terms;
-    const pay = offering ? Number(offering.monto) / Math.max(1, Number(offering.pagos)) : 0;
+    const ready = phase === 'ready' && missing === 0 && !!terms && !!paymentQuote;
+    const payment = paymentQuote && paymentQuote.financialResult;
+    const pay = payment ? payment.paymentPerPeriod : null;
     const submit = async () => {
       if (!ready || busy) return;
       setBusy(true);
@@ -63464,11 +63471,15 @@ Object.assign(window, {
           rfc: data.rfc,
           curp: data.curp,
           termsVersionId: terms.id,
-          idempotencyKey: idem.current
+          idempotencyKey: idem.current,
+          paymentQuoteHash: paymentQuote.quote_hash
         });
         setSent(request);
-      } catch (_) {
-        setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
+      } catch (failure) {
+        if (String(failure && failure.message || '').includes('MEMBERSHIP_CONDITIONS_CHANGED')) {
+          await load();
+          setError('Las condiciones de la membresía cambiaron. Revisa los importes actualizados y vuelve a confirmar.');
+        } else setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
       } finally {
         setBusy(false);
       }
@@ -63584,22 +63595,26 @@ Object.assign(window, {
       className: 'mr-figure-label'
     }, 'Costo total'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-total': Number(offering.monto)
-    }, money(offering.monto))), h('div', {
+      'data-membership-total': payment && payment.total
+    }, payment ? money(payment.total) : '—')), h('div', {
       className: 'mr-figure'
     }, h('div', {
       className: 'mr-figure-label'
     }, 'Parcialidades'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-installments': Number(offering.pagos)
-    }, Number(offering.pagos) === 1 ? '1 pago' : offering.pagos + ' pagos')), h('div', {
+      'data-membership-installments': payment && payment.paymentCount
+    }, payment ? payment.paymentCount === 1 ? '1 pago' : payment.paymentCount + ' pagos' : '—')), h('div', {
       className: 'mr-figure'
     }, h('div', {
       className: 'mr-figure-label'
-    }, 'Cada quincena'), h('div', {
+    }, payment ? payment.paymentPeriod === 'mensual' ? 'Cada mes' : 'Cada quincena' : 'Por descuento'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-fortnight': pay
-    }, money(pay)))), h('p', {
+      'data-membership-fortnight': pay,
+      'data-membership-payment-period': payment && payment.paymentPeriod
+    }, payment ? money(pay) : '—'))), payment && h('p', {
+      className: 'mr-payroll-note',
+      'data-membership-included-fees': payment.administrativeFeeTotal
+    }, 'Sin intereses. Incluye ' + money(payment.administrativeFeeTotal) + ' de gastos administrativos (' + money(payment.administrativeFeePerPayment) + ' por pago).' + (payment.lastPayment !== payment.paymentPerPeriod ? ' Último pago: ' + money(payment.lastPayment) + '.' : '')), h('p', {
       className: 'mr-payroll-note'
     }, 'Se descuenta vía nómina a partir del mes siguiente a la aprobación.'))), h('main', {
       className: 'mr-body'

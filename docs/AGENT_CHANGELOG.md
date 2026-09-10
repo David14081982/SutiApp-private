@@ -2920,3 +2920,7 @@ Las migraciones 20260908000900 y 20260909000100 se probaron con ROLLBACK y recup
 ## H-CONVENIOS-CATEGORIES-001 — 2026-09-09
 
 Nueva categoría junto a los selectores y administración en Convenios → Catálogos; clasificación opcional de Educación conservando su grupo general. Se reutilizan catálogo, writers y RLS existentes. Corrección focal del constraint de procedencia que bloqueaba la segunda categoría administrativa, con dry-run/recovery y hashes intactos. Formularios, duplicados, errores y filtros probados en browser aislado 390/1440; pruebas de producción y cierre en docs/qa/H-CONVENIOS-CATEGORIES-001.md. Sin cambios a Google, finanzas, Auth ni infraestructura compartida de imágenes.
+
+## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
+
+Contrato backend aditivo de membresías y preview en pantalla existente; recuperación validada, sin backfill. SQL transaccional cubre 120 combinaciones, documentos, cotización obsoleta, idempotencia, inmutabilidad, workflow/aprobación, cola Google y permisos. Backend aplicado y verificado sin mutaciones de datos de negocio. Release aislado sobre origin/main preserva CSS publicado y los otros 112 módulos del bundle. Resultado y evidencia de publicación: docs/qa/H-MEMBERSHIP-PAYMENT-CONTRACT-001.md.

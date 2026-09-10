@@ -48,9 +48,10 @@ assert.match(membership, /\^\[A-Z\]\{4\}\[0-9\]\{6\}\[HM\]\[A-Z\]\{5\}\[A-Z0-9\]
 
 assert.match(membership, /offering\.empresa/);
 assert.match(membership, /offering\.concepto/);
-assert.match(membership, /money\(offering\.monto\)/);
-assert.match(membership, /offering\.pagos\+' pagos'/);
-assert.match(membership, /Number\(offering\.monto\)\/Math\.max\(1,Number\(offering\.pagos\)\)/);
+assert.match(membership, /money\(payment\.total\)/);
+assert.match(membership, /payment\.paymentCount\+' pagos'/);
+assert.match(membership, /MembershipRepository\.paymentQuote\(offering\.id\)/);
+assert.doesNotMatch(membership, /Number\(offering\.monto\)\/Math\.max/);
 assert.match(membership, /window\.SutiSeal/);
 assert.match(membership, /mr-hero/);
 assert.match(membership, /mr-tracker/);

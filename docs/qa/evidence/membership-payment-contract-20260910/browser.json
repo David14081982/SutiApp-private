@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_BROWSER_HARNESS",
+  "cases": [
+    {
+      "width": 390,
+      "total": 200,
+      "payments": 2,
+      "period": "quincenal",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "total": 350,
+      "payments": 2,
+      "period": "mensual",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "total": 1100,
+      "payments": 2,
+      "period": "quincenal",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "total": 123.45,
+      "payments": 4,
+      "period": "mensual",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "total": 200,
+      "payments": 2,
+      "period": "quincenal",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "total": 350,
+      "payments": 2,
+      "period": "mensual",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "total": 1100,
+      "payments": 2,
+      "period": "quincenal",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "total": 123.45,
+      "payments": 4,
+      "period": "mensual",
+      "status": "PASS"
+    }
+  ],
+  "sectionsPreserved": true,
+  "staleQuoteRecovery": true,
+  "failClosed": true,
+  "productionWrites": 0,
+  "pageErrors": 0
+}

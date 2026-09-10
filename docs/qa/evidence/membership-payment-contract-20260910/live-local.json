@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "catalogCount": 6,
+  "quotes": [
+    {
+      "company": "Bud Tv Ultra",
+      "amount": 200,
+      "total": 200,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 170
+    },
+    {
+      "company": "RiveraGas",
+      "amount": 350,
+      "total": 350,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 320
+    },
+    {
+      "company": "Sams Club",
+      "amount": 350,
+      "total": 350,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 320
+    },
+    {
+      "company": "Costco",
+      "amount": 350,
+      "total": 350,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 320
+    },
+    {
+      "company": "Casa Ley",
+      "amount": 1100,
+      "total": 1100,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 1070
+    },
+    {
+      "company": "Arco gasolinera",
+      "amount": 550,
+      "total": 550,
+      "payments": 2,
+      "period": "quincenal",
+      "feesIncluded": 30,
+      "capital": 520
+    }
+  ],
+  "anonymousDenied": true,
+  "requestWrites": 0,
+  "googleWrites": 0,
+  "environment": "LOCAL_CANDIDATE_LIVE_BACKEND"
+}

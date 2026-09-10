@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "base": "ab1749d0b6cf6afb301487f237c111ec20ff500a",
+  "files": [
+    {
+      "file": "app/membership-repository.js",
+      "publishedBefore": "93cebbd925619cb3f4a64a0de469a45fcf5e2869931fe8940693e2133fd29d3e",
+      "after": "aea0ac4a6601fa8d5cc404d3cc81727b6ad685bcd06783ae720da632fdcc75ba"
+    },
+    {
+      "file": "app/program-request-repository.js",
+      "publishedBefore": "23947db7e47a437181b549bccab31e31ca6de112201a039835be9b506497e7de",
+      "after": "8de93deff88dea1c476af4722fc73b602da47813e8fecf94e81bdef4ceae1b00"
+    },
+    {
+      "file": "app/screens-membership-application.jsx",
+      "publishedBefore": "c03fb1f7f6e3db86e0267932bae991f0c14fba7639954bd4a7035a42a6458658",
+      "after": "7de63f6ead25f5ae860ded8be5fc9d05659b5c014398ca086c0ce3b59b026d4f"
+    }
+  ],
+  "publishedCssPreserved": true,
+  "workerUnchanged": true
+}

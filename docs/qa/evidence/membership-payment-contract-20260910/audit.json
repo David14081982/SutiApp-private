@@ -1,0 +1,187 @@
+{
+  "status": "PASS",
+  "mode": "audit",
+  "inventory": [
+    {
+      "domain": "affiliates",
+      "count": 954,
+      "hash": "d8c9067132cdc59500ae5c6e89d46351"
+    },
+    {
+      "domain": "membership_offerings",
+      "count": 6,
+      "hash": "e04d51445447aa23cede7bba5812e42f"
+    },
+    {
+      "domain": "program_requests",
+      "count": 24,
+      "hash": "11a2d3a3403015603dcd598e9df8564c"
+    },
+    {
+      "domain": "request_documents",
+      "count": 166,
+      "hash": "7dafbd1a3cc913c6dad2a0527258208f"
+    },
+    {
+      "domain": "program_request_admin_events",
+      "count": 70,
+      "hash": "94cd9af818002193dbc3a9b3831ad6d3"
+    },
+    {
+      "domain": "operational_workflows",
+      "count": 4,
+      "hash": "d8c0fa124d1070859d19c34c291d893e"
+    },
+    {
+      "domain": "operational_workflow_stages",
+      "count": 20,
+      "hash": "1b44e3145e39d5d3cf0dd242f2e75a87"
+    },
+    {
+      "domain": "financial_rules",
+      "count": 146,
+      "hash": "9d06b528b13524f02bfd9422a67252be"
+    },
+    {
+      "domain": "financial_funds",
+      "count": 35,
+      "hash": "f54bf25058c70eeef314a3807c611c7b"
+    },
+    {
+      "domain": "financial_programs",
+      "count": 3,
+      "hash": "6d53656c5637fc7aacc4ddfe842a8768"
+    },
+    {
+      "domain": "program_catalog_items",
+      "count": 135,
+      "hash": "6212174b57c62fcc19e2e22ba8442052"
+    },
+    {
+      "domain": "marketplace_products",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "program_document_requirements",
+      "count": 32,
+      "hash": "65af8e461a9efcc157ab89081c9254ad"
+    }
+  ],
+  "categories": [
+    {
+      "category": "BASE",
+      "count": 326
+    },
+    {
+      "category": "CONFIANZA",
+      "count": 11
+    },
+    {
+      "category": "EVENTUALES",
+      "count": 196
+    },
+    {
+      "category": "JUBILADOS_PENSIONADOS",
+      "count": 25
+    },
+    {
+      "category": "SUPLENTES_FIJOS",
+      "count": 153
+    },
+    {
+      "category": "SUPLENTES_VARIABLES",
+      "count": 220
+    },
+    {
+      "category": null,
+      "count": 23
+    }
+  ],
+  "functions": [
+    {
+      "name": "create_membership_request",
+      "oid": 21761,
+      "sha256": "70409b332e48bc30d56accdf6ad891af1b45353bae5781e2f25ced9bd603f32e"
+    },
+    {
+      "name": "enforce_personalized_financial_submission",
+      "oid": 21930,
+      "sha256": "e4c0e5034ef1f9bad6da1e085e05ddac95dfa0e16460e78941b540340665e1d9"
+    },
+    {
+      "name": "get_admin_finance_request_flow_detail",
+      "oid": 33986,
+      "sha256": "c97f94a1f12f9e3b53ec35df7647a073e0e06529992f2502e6a0359c6a7770f1"
+    },
+    {
+      "name": "get_effective_affiliate_id",
+      "oid": 18030,
+      "sha256": "e848b3a02ff068cd6883661b10be11632232a515552697a748471c1dbd34f4a0"
+    },
+    {
+      "name": "transition_program_request_workflow",
+      "oid": 33987,
+      "sha256": "e8389ab2b72ee739bb46eef4d98c7e2b1eacfb16a365a90a461c0d18942bfc8e"
+    }
+  ],
+  "triggers": [
+    {
+      "tgname": "program_requests_00_deletion_guard",
+      "definition": "CREATE TRIGGER program_requests_00_deletion_guard BEFORE INSERT OR DELETE OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION guard_request_deletion()"
+    },
+    {
+      "tgname": "program_requests_00_financial_snapshot",
+      "definition": "CREATE TRIGGER program_requests_00_financial_snapshot BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_financial_request_snapshots()"
+    },
+    {
+      "tgname": "program_requests_01_protect_approved_financial_state",
+      "definition": "CREATE TRIGGER program_requests_01_protect_approved_financial_state BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_approved_financial_request_state()"
+    },
+    {
+      "tgname": "program_requests_02_personalized_financial_submission",
+      "definition": "CREATE TRIGGER program_requests_02_personalized_financial_submission BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_personalized_financial_submission()"
+    },
+    {
+      "tgname": "program_requests_admin_audit",
+      "definition": "CREATE TRIGGER program_requests_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION audit_admin_write()"
+    },
+    {
+      "tgname": "program_requests_capture_document_requirements",
+      "definition": "CREATE TRIGGER program_requests_capture_document_requirements BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_document_requirements_snapshot()"
+    },
+    {
+      "tgname": "program_requests_capture_impersonation",
+      "definition": "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()"
+    },
+    {
+      "tgname": "program_requests_capture_workflow_snapshot",
+      "definition": "CREATE TRIGGER program_requests_capture_workflow_snapshot BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_workflow_snapshot()"
+    },
+    {
+      "tgname": "program_requests_catalog_requestability",
+      "definition": "CREATE TRIGGER program_requests_catalog_requestability BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_program_catalog_requestability()"
+    },
+    {
+      "tgname": "program_requests_google_sync",
+      "definition": "CREATE TRIGGER program_requests_google_sync AFTER INSERT OR UPDATE OF status ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enqueue_program_request_google_sync()"
+    },
+    {
+      "tgname": "program_requests_guard_archived_affiliate",
+      "definition": "CREATE TRIGGER program_requests_guard_archived_affiliate BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION guard_archived_affiliate_new_operation()"
+    },
+    {
+      "tgname": "program_requests_protect_workflow_snapshot",
+      "definition": "CREATE TRIGGER program_requests_protect_workflow_snapshot BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_program_request_workflow_snapshot()"
+    },
+    {
+      "tgname": "program_requests_sync_workflow_tracking",
+      "definition": "CREATE TRIGGER program_requests_sync_workflow_tracking AFTER INSERT OR UPDATE OF status ON public.program_requests FOR EACH ROW EXECUTE FUNCTION sync_program_request_tracking_from_status()"
+    },
+    {
+      "tgname": "program_requests_updated_at",
+      "definition": "CREATE TRIGGER program_requests_updated_at BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()"
+    }
+  ],
+  "businessWrites": 0
+}

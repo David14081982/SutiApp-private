@@ -310,3 +310,7 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 - **INV-225:** acreditar un plan exige Admin, pago presencial confirmado y referencia; el backend registra precio, vigencia, actor y fecha. Configurar planes no registra pagos ni suscripciones ficticias.
 - **INV-226:** publicar promociones requiere aprobación administrativa real; pop-ups requieren el beneficio del plan y conservan revisión/publicación existentes. Los cambios empresariales permitidos se proyectan públicamente sin fuentes alternas.
 - **INV-227:** el lector comercial empresarial no expone firmas, documentos, snapshots financieros ni registros eliminados; no concede SELECT de program_requests. Historial estadístico se habilita por plan y se deriva de operaciones canónicas.
+
+## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
+
+Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; monto a solicitar = total a pagar = importe comercial del catálogo; número de pagos = installments. Gastos administrativos = 15 × pagos INCLUIDOS; capital = total − gastos. Redondeo por descuento con ajuste final para conservar total. Cambios de catálogo o perfil antes de confirmar invalidan la cotización; después no recalculan la solicitud. financial_processing_status permanece NULL para conservar el workflow de membresías. Prohibido completar históricos o alterar reglas de otros programas en esta H.

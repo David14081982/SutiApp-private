@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "build": {
+    "status": "PASS",
+    "output": "C:\\tmp\\sutiapp-text-size-private\\site-popup-dots-c1",
+    "files": 24
+  },
+  "bundleUnchanged": true,
+  "serviceWorkerLogicUnchanged": true,
+  "cssVersion": 240,
+  "workerVersion": 187,
+  "hashes": {
+    "app/bundle.js": "37dd65824c0bd13085897c503129fe5523189a0c00a03b29e44b86b1ffaaa218",
+    "app/text-size.css": "c59ec22e81c89650f60de591ecbb8ef3f386393b3df641a12ab89b0b599feccb",
+    "sw.js": "3ccf7a9032df3d6df07cdf129a98fee4ca8e1d78b31f3feb9fc2ff3587f036de"
+  },
+  "backendChanges": 0
+}

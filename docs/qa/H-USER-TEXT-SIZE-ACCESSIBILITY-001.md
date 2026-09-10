@@ -105,3 +105,11 @@ Response generated for Codex: YES
 ## RESPONSE TO CODEX
 
 Aprueba H-USER-TEXT-SIZE-ACCESSIBILITY-001 con la evidencia indicada. Registra este cierre y los resultados de producción en el repositorio, confirma que el deploy de documentación conserva los mismos hashes de la app y detente. No avances a otra H, no cambies datos ni backend y no ejecutes tareas de la cola.
+
+## Corrección focal C1 — indicadores del popup (2026-09-09)
+
+PRE-CHANGE AUDIT — PASS. El propietario identifica en sus capturas de texto Normal los indicadores de AdminPopup agrandados. Causa confirmada: el fondo del button de 8px se pinta sobre el mínimo táctil global de 48px. Contrato: imagen, copy, flechas, selección directa, avance automático, CTA, cierre y estilos restantes intactos. Alcance: únicamente CSS de los botones `aria-label="Pop-up N"` y su grupo; separación de indicador visible y área táctil; wrap de indicadores para evitar colisiones con flechas en anchos estrechos. HTML/CSS cachebuster y manifiesto/versiones SW son GENERATED_ARTIFACT; bundle y código JS permanecen idénticos. Documentación de esta H, changelog y evidencia focal asociados autorizados. No cambia arquitectura; Registry consultado y mapping confirmado directamente por su stale ya documentado.
+
+Datos/tablas/APIs/autoridades/legacy: NOT APPLICABLE; sin cambios ni escrituras. Riesgo: targets superpuestos, cantidad de indicadores o selección incorrectas. Verificación: popup real aislado, 320/390/430 × tres tamaños, varios conteos; puntos de 8px, selección, flechas, targets de 48px separados y ausencia de overflow. Build allowlist y entrega por hash. Regresión global NOT APPLICABLE: ningún helper, viewer, routing, Auth, Storage o lógica SW cambia. Recovery: revert de CSS/cachebusters de C1. La publicación sigue autorizada por la H original y la corrección solicitada.
+
+Ampliación de verificación: `scripts/test-text-size-scope.js` debe comprobar que los cachebusters HTML/SW coinciden, en vez de exigir eternamente v239. Se ajusta sólo esa aserción y se actualiza su evidencia; no cambia código productivo ni la comprobación de equivalencia de negocio.

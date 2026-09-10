@@ -1,0 +1,235 @@
+{
+  "status": "PASS",
+  "baselineBugReproduced": true,
+  "visualMarker": {
+    "inactive": 8,
+    "activeWidth": 22,
+    "height": 8
+  },
+  "minimumSeparateTouchTarget": 48,
+  "scenarios": [
+    {
+      "width": 320,
+      "size": "normal",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "normal",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "normal",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "normal",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "count": 10,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "count": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "count": 2,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "count": 5,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "count": 10,
+      "status": "PASS"
+    }
+  ],
+  "autoplay": "PASS",
+  "directSelection": "PASS",
+  "arrowsAndWrapAround": "PASS",
+  "ctaClose": "PASS",
+  "businessWrites": 0,
+  "networkRequests": 0,
+  "browserErrors": []
+}

@@ -144,3 +144,9 @@
 [data-text-size] .su-odometer-digit { flex-shrink: 0; }
 [data-text-size] [data-loan-flow-step] > div:last-child { display: grid !important; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
 [data-text-size] [data-loan-flow-step] > div:last-child > span { text-align: center; }
+
+/* Popup pagination: a small marker inside each separate 48px touch target. */
+[data-text-size] div:has(> button[aria-label^="Pop-up "]) { flex: 1; flex-wrap: wrap; justify-content: center; gap: 0 !important; }
+[data-text-size] button[aria-label^="Pop-up "] { width: 48px !important; flex: 0 0 48px; background: transparent !important; display: grid; place-items: center; }
+[data-text-size] button[aria-label^="Pop-up "]::after { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--hairline-strong); transition: width .25s ease; }
+[data-text-size] button[aria-label^="Pop-up "][style*="width: 22px"]::after { width: 22px; background: var(--grad-guinda-soft); }

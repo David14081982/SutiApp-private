@@ -10,6 +10,7 @@ const presentationOnly=sources.filter(f=>!['app/app.jsx','app/ui.jsx','app/scree
 for(const f of presentationOnly){assert.equal(normalize(read(f)),normalize(cp.execFileSync('git',['show',base+':'+f],{cwd:root,encoding:'utf8'})),'Non-typography change: '+f);}
 assert(!changed.some(f=>f.startsWith('supabase/')||f.startsWith('google-apps-script/')),'Backend/legacy changes forbidden');assert(!changed.some(f=>f.startsWith('app/')&&f.endsWith('-repository.js')),'Business repositories unchanged');
 assert(!/maximum-scale|user-scalable\s*=\s*no/.test(read('SutiApp.html')));assert(!/(?:localStorage|sessionStorage|indexedDB|service_role)/.test(read('app/text-size-preferences.js')));assert(!/\bzoom\s*:/.test(css));
-assert(read('SutiApp.html').includes('text-size.css?v=239'));assert(read('sw.js').includes('text-size.css?v=239'));assert(read('sw.js').includes('bundle.js?v=239'));
+const html=read('SutiApp.html'),cssUrl=html.match(/href="(app\/text-size\.css\?v=\d+)"/),bundleUrl=html.match(/src="(app\/bundle\.js\?v=\d+)"/);
+assert(cssUrl&&bundleUrl,'Versioned typography and bundle required');assert(read('sw.js').includes('./'+cssUrl[1]));assert(read('sw.js').includes('./'+bundleUrl[1]));
 const result={status:'PASS',base,files:changed,tokenReferences:tokenized,mechanicalTypographyOnly: presentationOnly,businessRepositoriesChanged:0,backendChanges:0,legacyChanges:0,localPreferenceAuthorities:0,browserZoomAllowed:true};
 const out=path.join(root,'docs/qa/evidence/text-size-20260909');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'scope-result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({status:'PASS',tokenReferences:tokenized,mechanicalTypographyFiles:presentationOnly.length,backendChanges:0}));

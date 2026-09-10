@@ -1,6 +1,10 @@
 # Bitácora de agentes
 
-## 2026-09-09 — H-ADMIN-FINANCE-QUEUE-IDENTITY-001 — PASS LOCAL
+## 2026-09-09 — H-ADMIN-FINANCE-QUEUE-IDENTITY-001 — PUBLICADO / PASS
+
+Commit 095cc1c en main; Pages 34442962106 SUCCESS. Bundle v243 publicado en sutiapp.com,
+SHA-256 idéntico al release. Verificación productiva con 19 solicitudes, fotos, detalle,
+móvil y refresh/reapertura PASS; cero writes. La evidencia local siguiente es histórica.
 
 Admin Finanzas / Solicitudes muestra affiliates.full_name, fondo de la captura original
 para préstamos y columna Foto entre Folio y Afiliado / programa. Lector focal compone

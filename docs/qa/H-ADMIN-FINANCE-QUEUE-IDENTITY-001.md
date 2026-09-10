@@ -1,5 +1,15 @@
 # H-ADMIN-FINANCE-QUEUE-IDENTITY-001
 
+## PUBLICADO / PASS
+
+Commit funcional `095cc1c18f70fc0c4fe63464c62b87764069bf69` enviado a main y publicado
+en https://sutiapp.com/, bundle v243. Workflow Pages `34442962106`: SUCCESS.
+Verificación productiva: SHA-256 publicado idéntico al release aislado; 19 solicitudes
+con full_name correcto, fondos correspondientes, fotos vinculadas al afiliado,
+foto real decodificada, diálogo, móvil, refresh/reapertura y anónimo denegado PASS.
+Cero errores JS y cero business writes. Ver production-result.json y deployment.json.
+Este estado sustituye las menciones históricas de entrega local/no publicación de abajo.
+
 ## Release sobre main vigente
 
 Candidato de publicación: base 2aa05b90dab2d9f9309033743665bf0238e187b7, bundle v243

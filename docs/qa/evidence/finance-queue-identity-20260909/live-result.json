@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_BUILD_LIVE_BACKEND",
+  "businessWrites": 0,
+  "consoleErrors": 0,
+  "readProbe": {
+    "status": "PASS",
+    "rows": 19
+  },
+  "identity": {
+    "count": 19,
+    "fullNamesMatch": true,
+    "fundsMatch": true,
+    "photosMatchAffiliate": true,
+    "namedLoanFunds": 18,
+    "headerOrder": true
+  },
+  "photos": {
+    "loaded": 1,
+    "errors": 0
+  },
+  "existingDialog": "PASS",
+  "mobile": "PASS",
+  "refresh": "PASS",
+  "anonymousDenied": true
+}

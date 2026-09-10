@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "bundleSources": 117,
+  "changedBundleSources": [
+    "admin-finance-queue-repository.js",
+    "screens-admin-finanzas.jsx"
+  ],
+  "bundleSha256": "c3ba7845a3b47b3b2f5784417cf1396aba5323131f53eb3d39f893fdbd50272c",
+  "protectedBlocks": [
+    "  function useFinancialDocumentPreviews(",
+    "    const renderConditions =",
+    "  function FinanzasModule("
+  ],
+  "sharedRepositoriesUnchanged": true,
+  "serviceWorkerLogicUnchanged": true
+}

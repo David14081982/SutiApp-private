@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "review": "APPROVED_RELEASE_CANDIDATE",
+  "sourceOfTruth": "SAFE",
+  "invariants": "PASS",
+  "security": "EXISTING_BACKEND_PERMISSIONS_ANON_DENIED",
+  "legacy": "NO_WRITES_OR_CALCULATION_CHANGES",
+  "unexpectedFiles": [],
+  "base": "2aa05b90dab2d9f9309033743665bf0238e187b7",
+  "files": [
+    "SutiApp.html",
+    "app/admin-finance-queue-repository.js",
+    "app/bundle.js",
+    "app/screens-admin-finanzas.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/qa/H-ADMIN-FINANCE-QUEUE-IDENTITY-001.md",
+    "docs/qa/evidence/finance-queue-identity-20260909/browser-result.json",
+    "docs/qa/evidence/finance-queue-identity-20260909/build-result.json",
+    "docs/qa/evidence/finance-queue-identity-20260909/live-result.json",
+    "docs/qa/evidence/finance-queue-identity-20260909/preexisting-test.json",
+    "docs/qa/evidence/finance-queue-identity-20260909/queue-1440.png",
+    "docs/qa/evidence/finance-queue-identity-20260909/queue-320.png",
+    "docs/qa/evidence/finance-queue-identity-20260909/queue-390.png",
+    "docs/qa/evidence/finance-queue-identity-20260909/queue-768.png",
+    "docs/qa/evidence/finance-queue-identity-20260909/release-preflight.json",
+    "docs/qa/evidence/finance-queue-identity-20260909/scope-result.json",
+    "scripts/build-bundle.js",
+    "scripts/test-admin-finance-queue-identity-browser.js",
+    "scripts/test-admin-finance-queue-identity-live.js",
+    "scripts/test-admin-finance-queue-identity.js"
+  ]
+}

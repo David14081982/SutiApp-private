@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-ADMIN-FINANCE-QUEUE-IDENTITY-001 — PASS LOCAL
+
+Admin Finanzas / Solicitudes muestra affiliates.full_name, fondo de la captura original
+para préstamos y columna Foto entre Folio y Afiliado / programa. Lector focal compone
+las RPC existentes y relaciona por ID; fotos usan el lector privado/coordinador existente
+con demanda visible. Sin cambios de backend, permisos, Google ni writers. Build v239:
+sólo pantalla Finanzas y nuevo lector cambian en el bundle. Prueba de 100 préstamos,
+navegador en cuatro anchos y build local con 18 solicitudes reales PASS; cero writes,
+anónimo denegado, foto real, modal y refresh/reapertura verificados. Prueba estática
+histórica de workbench conserva un fallo de copy ya presente en baseline, documentado.
+Evidencia: docs/qa/H-ADMIN-FINANCE-QUEUE-IDENTITY-001.md. No publicado.
+
 ## 2026-09-09 — H-BOTTOM-NAV-LABELS-001
 
 Surgical BottomNav label presentation: largest uses Inic/Fina/Conv/Hist/Cred/Admi;

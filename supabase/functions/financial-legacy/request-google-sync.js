@@ -18,6 +18,12 @@ export function capturedDocumentReferences(documents) {
 }
 export function buildRequestRegisterRow(request, documents, signatureHash) {
   const financial = request.financial_submission_snapshot?.financialResult || {}, profile = request.financial_profile_snapshot || {}, affiliate = request.affiliate || {};
+  let observations = request.notes || '';
+  if (request.program_id === 'membership' && request.financial_submission_snapshot?.contract_version === 'MEMBERSHIP_PAYMENT_V1') {
+    const company = request.financial_submission_snapshot.offering?.company;
+    if (typeof company !== 'string' || !company.trim()) throw Error('MEMBERSHIP_COMPANY_SNAPSHOT_REQUIRED');
+    observations = company.trim();
+  }
   const category = profile.financial_employee_category || request.category_label || '', union = profile.financial_union || request.union_label || '';
   const process = { 'SUPLENTES VARIABLES':'3','SUPLENTES FIJOS':'1','EVENTUALES':'1','BASE':'1','JUBILADOS Y PENS.':'JUB','JUBILADOS Y PENS':'JUB','CONFIANZA':'Confianza' }[normalize(category)] || '';
   const affiliation = {SUTISSSTESON:'AFILIADO',SUEISSSTESON:'NO AFILIADO',SITISSSTESON:'NO AFILIADO','EMPLEADOS DE CONFIANZA':'NO AFILIADO'}[normalize(union)] || '';
@@ -25,7 +31,7 @@ export function buildRequestRegisterRow(request, documents, signatureHash) {
   const row = Array(REQUEST_REGISTER_WIDTH).fill('');
   Object.assign(row, {0:request.id,1:request.numero_control || '',2:request.applicant_profile_snapshot?.full_name || affiliate.full_name || affiliate.display_name || '',3:process,
     4:financial.fund || '',5:financial.rate != null ? Number(financial.rate)/100 : '',6:payments || number(request.requested_term),7:amount,8:number(financial.total),9:request.created_at,
-    10:category,11:union,12:affiliation,13:number(financial.maxAmount),23:request.terms_accepted == null ? '' : request.terms_accepted,24:'PENDIENTE',25:request.notes || '',
+    10:category,11:union,12:affiliation,13:number(financial.maxAmount),23:request.terms_accepted == null ? '' : request.terms_accepted,24:'PENDIENTE',25:observations,
     31:signatureHash ? `supabase-request-signature:${request.id}:${signatureHash}` : '',32:request.deposit_notification_phone || request.applicant_profile_snapshot?.phone || affiliate.phone_raw || ''});
   ['profile_photo','ine_front','ine_back','payroll_previous','payroll_latest','guarantor_photo','guarantor_ine_front','guarantor_ine_back','guarantor_payroll_latest'].forEach((code,index)=>{row[14+index]=refs[code]||'';});
   return row;

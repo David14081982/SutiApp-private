@@ -2924,3 +2924,13 @@ Nueva categoría junto a los selectores y administración en Convenios → Catá
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 Contrato backend aditivo de membresías y preview en pantalla existente; recuperación validada, sin backfill. SQL transaccional cubre 120 combinaciones, documentos, cotización obsoleta, idempotencia, inmutabilidad, workflow/aprobación, cola Google y permisos. Backend aplicado y verificado sin mutaciones de datos de negocio. Release aislado sobre origin/main preserva CSS publicado y los otros 112 módulos del bundle. Resultado y evidencia de publicación: docs/qa/H-MEMBERSHIP-PAYMENT-CONTRACT-001.md.
+
+
+## H-MEMBERSHIP-GOOGLE-COMPANY-Z-001 — 2026-09-10
+
+Proyección quirúrgica de la empresa capturada en el contrato de membresía hacia
+Z de Historial de solicitudes. Pruebas aisladas de seis empresas, las otras
+32 columnas, otros programas, aprobación/reintentos y filas iniciales existentes.
+Sin cambios a SQL, Apps Script, UI, reglas financieras ni históricos. Respaldo
+del Edge, cotejo exacto de fuentes activas, compilación y readback del despliegue;
+evidencia y resultado en docs/qa/H-MEMBERSHIP-GOOGLE-COMPANY-Z-001.md.

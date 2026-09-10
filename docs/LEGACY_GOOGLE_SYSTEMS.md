@@ -73,3 +73,18 @@ positions, AH+ and adjacent records remain intact. The technical handoff registr
 tombstone, rejecting delayed sync_request and handoff. Supabase stores the private backup before clear.
 No financial calculations, triggers, payments, balances or reconciliation are invoked. Unsupported or
 ambiguous legacy identity fails visibly. See H-ADMIN-REQUEST-DELETE-001 and its focused GAS evidence.
+
+
+## 2026-09-10 — Empresa de membresía en Historial de solicitudes / Z
+
+H-MEMBERSHIP-GOOGLE-COMPANY-Z-001: por instrucción explícita del propietario,
+la proyección inicial de nuevas solicitudes `membership` con contrato
+`MEMBERSHIP_PAYMENT_V1` coloca `financial_submission_snapshot.offering.company`
+en Z (Observaciones). La empresa procede de Membresías y queda capturada al
+solicitar; no se relee el catálogo para reconstruir solicitudes. Falta de empresa
+en este contrato produce error explícito, sin valor inventado.
+
+Se conserva `initial_row` de envíos existentes y su hash; posteriores estados
+actualizan únicamente Y mediante el receptor vigente. No hay backfill ni cambios
+a Apps Script, E–I, AH+, fórmulas, montos, intereses, reglas o programas distintos.
+Evidencia: `docs/qa/evidence/membership-google-company-z-20260910/`.

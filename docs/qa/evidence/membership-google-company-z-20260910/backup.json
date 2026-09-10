@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": 43,
+  "verifyJwt": true,
+  "bundleSha256": "cdc02f94eff2a79a341df4492ddcf063b0d719a7a1b9e8e3d8a64c644f324ff0",
+  "downloadSha256": "77d90b444a0db11477c0755d4f91d7e64a9a655e9a45e08433fd19b966bdfb81",
+  "format": "45535a4950322e33",
+  "localSources": {
+    "index.ts": "480ef8132ef4c2fdd1f366c92538491e7f03b13e7c8ea421f28ca7f6f332a531",
+    "visibility-policy.js": "55f6a3176f1960615a104d1f389c289cf6346f5335ff4ab9a0efd7851324d3cc",
+    "request-google-sync.js": "e36cae5ec96ff868315898f560b0b91baa71f9b349357e88475bcf60152a58c0"
+  }
+}

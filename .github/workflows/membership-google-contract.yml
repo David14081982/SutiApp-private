@@ -1,0 +1,27 @@
+name: Membership Google contract
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  membership-google-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch audited baseline
+        run: git fetch --no-tags --depth=1 origin 9f880bf0fcea96ecfc57cd1f80ef43cbd254cc8a
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify company, columns and retries
+        run: node scripts/test-membership-google-company-z.js
+      - name: Verify membership financial contract
+        env:
+          SUTIAPP_TEST_EVIDENCE_DIR: docs/qa/evidence/membership-google-company-z-20260910
+        run: node scripts/test-membership-payment-contract.js

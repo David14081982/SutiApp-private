@@ -113,3 +113,26 @@ PRE-CHANGE AUDIT — PASS. El propietario identifica en sus capturas de texto No
 Datos/tablas/APIs/autoridades/legacy: NOT APPLICABLE; sin cambios ni escrituras. Riesgo: targets superpuestos, cantidad de indicadores o selección incorrectas. Verificación: popup real aislado, 320/390/430 × tres tamaños, varios conteos; puntos de 8px, selección, flechas, targets de 48px separados y ausencia de overflow. Build allowlist y entrega por hash. Regresión global NOT APPLICABLE: ningún helper, viewer, routing, Auth, Storage o lógica SW cambia. Recovery: revert de CSS/cachebusters de C1. La publicación sigue autorizada por la H original y la corrección solicitada.
 
 Ampliación de verificación: `scripts/test-text-size-scope.js` debe comprobar que los cachebusters HTML/SW coinciden, en vez de exigir eternamente v239. Se ajusta sólo esa aserción y se actualiza su evidencia; no cambia código productivo ni la comprobación de equivalencia de negocio.
+
+C1 publicada por `202a5f2f33bca909e55746742f524c3ca63b9dbd`; workflow [34426819378](https://github.com/David14081982/SutiApp-private/actions/runs/34426819378) SUCCESS. CSS240/SW187/bundle239 comprobados por SHA-256. Popup real con siete imágenes: puntos de 8px, indicador activo de 22×8px, selección directa correcta y targets independientes de 48px. Conteos altos se distribuyen en filas para que los botones no se superpongan a las flechas. La imagen, copy, botones y lógica del popup son idénticos; bundle sin cambios.
+
+```text
+H-USER-TEXT-SIZE-ACCESSIBILITY-001 / C1 RESULT
+Status: PASS
+Files changed: CSS focal, HTML/SW cachebusters, aserción de consistencia de versiones, documentación y evidencia.
+Source-of-truth verdict: PASS — ninguna modificación.
+Invariant verdict: PASS — JS productivo, datos y reglas idénticos.
+Build: PASS — 24 archivos; bundle sin diferencias; sólo manifiesto/versiones SW.
+Tests: PASS — bug previo reproducido; 36 escenarios (3 anchos ×3 tamaños ×4 conteos); selección directa, flechas, wraparound, autoplay, CTA/cierre y targets; popup real en producción Normal con 7 indicadores PASS.
+Security: NOT APPLICABLE — sin cambios.
+Legacy impact: NOT APPLICABLE — sin cambios.
+Unexpected files changed: 0
+Known limitations: los indicadores se distribuyen en filas cuando no caben sus áreas táctiles.
+Evidence: popup-dots-c1.json, popup-dots-c1-build.json, popup-dots-c1-production.json y captura sintética en la carpeta de esta H.
+```
+
+CLAUDE UI PRESERVATION REVIEW — Screen: AdminPopup. Original/current sections: imagen, copy, indicadores, flechas, CTA y cierre. Missing/added sections: 0. Interactions/navigation preserved: YES. Visual structure preserved: YES, sólo indicadores y wrap autorizado por accesibilidad. Unauthorized redesign: NO. Verdict: PASS.
+
+SUTIAPP ARCHITECT REVIEW — Task: C1. Verdict: APPROVED. Critical findings: ninguno; diff y hashes confirman que no cambian AdminPopup, bundle ni lógica SW. Source of truth/Architecture/Data: PASS, sin cambios. Security/Legacy: NOT APPLICABLE. Owner decision: NO. Next action: registrar cierre y detenerse. Response generated for Codex: YES.
+
+RESPONSE TO CODEX — Aprueba C1; guarda la evidencia y detente. No amplíes la corrección a otros controles, pantallas, fuentes o reglas.

@@ -1,5 +1,15 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-USER-TEXT-SIZE-ACCESSIBILITY-001 / C1
+
+PASS. Corrección quirúrgica de los indicadores del popup señalados por el propietario:
+puntos de 8px y activo guinda de 22×8px dentro de targets separados de 48px.
+CSS exclusivamente focal; imágenes/copy/acciones y bundle idénticos. 36 escenarios
+aislados y popup real de 7 imágenes en producción PASS. CSS240/SW187 publicados
+por `202a5f2`, workflow `34426819378` SUCCESS y hashes confirmados. Reviewer APPROVED;
+sin cambios backend, datos, autoridades o legacy. Evidencia en la H original y
+archivos `popup-dots-c1*` de su carpeta. Detenerse.
+
 ## 2026-09-09 — H-USER-TEXT-SIZE-ACCESSIBILITY-001
 
 PASS. Mi Perfil → Configuración incorpora Tamaño de texto Normal/Grande/Muy grande

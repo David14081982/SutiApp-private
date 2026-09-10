@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "sourceModules": 114,
+  "build": {
+    "status": "PASS",
+    "output": "C:\\tmp\\sutiapp-text-size-private\\site-final",
+    "files": 24
+  },
+  "hashes": {
+    "app/bundle.js": "37dd65824c0bd13085897c503129fe5523189a0c00a03b29e44b86b1ffaaa218",
+    "app/text-size.css": "f10ed1ddcdd96faf6303a5c406f5fba79d1d55368c84c1650ea6f68aeefa8dd9",
+    "sw.js": "764d346f4c49fd4cf550c23e45fe03196fca570b16d6c772fe4e97a42ce9d7c5"
+  },
+  "htmlZoomUnrestricted": true
+}

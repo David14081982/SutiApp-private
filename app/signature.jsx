@@ -65,22 +65,22 @@
         React.createElement('button', { onClick: onClose, 'aria-label': 'Cerrar', style: { width: 40, height: 40, flexShrink: 0, borderRadius: 12, border: 'none', background: 'var(--surface-2)', color: 'var(--ink)', display: 'grid', placeItems: 'center', cursor: 'pointer' } },
           React.createElement(I, { name: 'arrowL', size: 20, stroke: 2.2 })),
         React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-          React.createElement('div', { style: { fontSize: 15.5, fontWeight: 900, letterSpacing: '-.01em', lineHeight: 1.25 } }, 'Términos y Condiciones'),
-          React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, subtitulo || t.title.split('· ')[1] || 'Programa sindical'))),
+          React.createElement('div', { style: { fontSize: 'var(--text-15-5, 15.5px)', fontWeight: 900, letterSpacing: '-.01em', lineHeight: 1.25 } }, 'Términos y Condiciones'),
+          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 700, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, subtitulo || t.title.split('· ')[1] || 'Programa sindical'))),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: '16px 18px calc(20px + env(safe-area-inset-bottom))' } },
         React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 'var(--r-card)', padding: '18px 18px 6px', boxShadow: 'var(--neo-sm)' } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 } },
             React.createElement('div', { style: { width: 38, height: 38, borderRadius: 12, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } },
               React.createElement(I, { name: 'shield', size: 20, stroke: 2 })),
-            React.createElement('div', { style: { fontSize: 15, fontWeight: 900, lineHeight: 1.3 } }, t.title)),
-          React.createElement('p', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.55, margin: '0 0 16px' } }, t.intro),
+            React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 900, lineHeight: 1.3 } }, t.title)),
+          React.createElement('p', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.55, margin: '0 0 16px' } }, t.intro),
           t.secs.map((s, i) => React.createElement('div', { key: i, style: { padding: '13px 0', borderTop: '1px solid var(--hairline)' } },
             React.createElement('div', { style: { display: 'flex', gap: 9, alignItems: 'baseline' } },
-              React.createElement('span', { style: { fontSize: 11.5, fontWeight: 800, color: 'var(--guinda)', fontFamily: 'var(--mono)', flexShrink: 0 } }, String(i + 1).padStart(2, '0')),
+              React.createElement('span', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, color: 'var(--guinda)', fontFamily: 'var(--mono)', flexShrink: 0 } }, String(i + 1).padStart(2, '0')),
               React.createElement('div', null,
-                React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' } }, s[0]),
-                React.createElement('p', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6, margin: '4px 0 0', textWrap: 'pretty' } }, s[1])))))),
-        React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 700, margin: '14px 0 4px' } },
+                React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)' } }, s[0]),
+                React.createElement('p', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6, margin: '4px 0 0', textWrap: 'pretty' } }, s[1])))))),
+        React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, margin: '14px 0 4px' } },
           React.createElement(I, { name: 'lock', size: 14, stroke: 2 }), 'SUTISSSTESON · Documento informativo'),
         React.createElement(window.Btn, { full: true, size: 'lg', style: { marginTop: 12 }, onClick: onClose }, 'Entendido')));
   }
@@ -148,21 +148,21 @@
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 7 } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7 } },
           React.createElement(I, { name: 'sign', size: 16, stroke: 2.2, style: { color: 'var(--guinda)' } }),
-          React.createElement('span', { style: { fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)' } }, label || 'Firma electrónica')),
-        value ? React.createElement('button', { onClick: clear, style: { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 800, color: 'var(--guinda)' } }, 'Borrar') : null),
+          React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: 'var(--ink-2)' } }, label || 'Firma electrónica')),
+        value ? React.createElement('button', { onClick: clear, style: { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 'var(--text-12, 12px)', fontWeight: 800, color: 'var(--guinda)' } }, 'Borrar') : null),
       React.createElement('div', { ref: wrapRef, style: { position: 'relative', borderRadius: 16, background: 'var(--surface)', border: '1.5px dashed ' + (value ? 'var(--guinda-100)' : 'var(--hairline-strong)'), overflow: 'hidden' } },
         React.createElement('canvas', {
           ref: canvasRef, onPointerDown: start, onPointerMove: move, onPointerUp: end, onPointerCancel: end, onPointerLeave: end,
           style: { display: 'block', width: '100%', height: 150, touchAction: 'none', cursor: 'crosshair', position: 'relative', zIndex: 2 },
         }),
         !value && React.createElement('div', { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, pointerEvents: 'none', zIndex: 1 } },
-          React.createElement('div', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink-3)' } }, 'Firma aquí con tu dedo'),
-          React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', opacity: .8 } }, 'Traza tu firma dentro del recuadro')),
+          React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, 'Firma aquí con tu dedo'),
+          React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', opacity: .8 } }, 'Traza tu firma dentro del recuadro')),
         React.createElement('div', { style: { position: 'absolute', left: 22, right: 22, bottom: 26, height: 1, background: 'var(--hairline)', zIndex: 0 } })),
       value
-        ? React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11.5, fontWeight: 700, color: '#13794A' } },
+        ? React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: '#13794A' } },
           React.createElement(I, { name: 'checkCircle', size: 14, stroke: 2.2 }), 'Firma capturada')
-        : React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 6 } }, 'Obligatoria para enviar la solicitud'));
+        : React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 6 } }, 'Obligatoria para enviar la solicitud'));
   }
 
   // ── Bloque completo: firma + términos ─────────────────────────────────
@@ -177,7 +177,7 @@
       },
         React.createElement('div', { style: { width: 24, height: 24, borderRadius: 7, flexShrink: 0, marginTop: 1, border: accept ? 'none' : '2px solid var(--hairline-strong)', background: accept ? 'var(--guinda)' : 'transparent', display: 'grid', placeItems: 'center', color: '#fff' } },
           accept && React.createElement(I, { name: 'check', size: 15, stroke: 3 })),
-        React.createElement('span', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } },
+        React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } },
           texto || 'He leído y acepto los ',
           React.createElement('span', {
             onClick: (e) => { e.stopPropagation(); setTerms(true); },

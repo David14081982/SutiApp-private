@@ -30,6 +30,7 @@ const publicFiles = [
   'icon-maskable-512.png',
   'assets/branding/home-header-collapsed.webp',
   'app/bundle.js',
+  'app/text-size.css',
   'app/vendor/react-18.3.1/react.production.min.js',
   'app/vendor/react-18.3.1/LICENSE',
   'app/vendor/react-dom-18.3.1/react-dom.production.min.js',

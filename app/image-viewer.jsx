@@ -107,7 +107,7 @@
       ref: buttonRef, type: 'button', onClick: (event) => { event.stopPropagation(); action(); }, disabled, 'aria-label': label,
       style: { width: 48, height: 48, border: 'none', borderRadius: 14, background: 'rgba(255,255,255,.14)', color: '#fff', display: 'grid', placeItems: 'center', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? .35 : 1, flexShrink: 0 }
     }, name === 'minus'
-      ? React.createElement('span', { 'aria-hidden': 'true', style: { fontSize: 24, fontWeight: 700, lineHeight: 1 } }, '−')
+      ? React.createElement('span', { 'aria-hidden': 'true', style: { fontSize: 'var(--text-24, 24px)', fontWeight: 700, lineHeight: 1 } }, '−')
       : React.createElement(I, { name, size: 21, stroke: 2.2 }));
 
     return React.createElement('div', {
@@ -116,7 +116,7 @@
     },
       React.createElement('style', null, VIEWER_CSS),
       React.createElement('div', { style: viewerHeaderStyle },
-        React.createElement('div', { style: { fontSize: 12, fontWeight: 800, opacity: .8 } }, items.length > 1 ? `${index + 1} / ${items.length}` : 'Imagen'),
+        React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 800, opacity: .8 } }, items.length > 1 ? `${index + 1} / ${items.length}` : 'Imagen'),
         React.createElement('div', { style: { display: 'flex', gap: 7 } },
           iconButton('minus', 'Alejar', () => zoomTo(view.scale - .5), view.scale <= 1),
           iconButton('search', 'Restablecer zoom', reset, view.scale === 1 && view.x === 0 && view.y === 0),
@@ -153,14 +153,14 @@
     },
       React.createElement('style', null, VIEWER_CSS),
       React.createElement('div', { style: viewerHeaderStyle },
-        React.createElement('div', { style: { minWidth: 0, fontSize: 13, fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
+        React.createElement('div', { style: { minWidth: 0, fontSize: 'var(--text-13, 13px)', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, title),
         React.createElement('button', {
           ref: dialog.closeButtonRef, type: 'button', onClick: dialog.close, 'aria-label': 'Cerrar visor',
           style: { width: 48, height: 48, border: 'none', borderRadius: 14, background: 'rgba(255,255,255,.14)', color: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0 }
         }, React.createElement(I, { name: 'close', size: 21, stroke: 2.2 }))),
       isPdf
         ? React.createElement('div', { onClick: dialog.backdropClick, style: { position: 'relative', flex: 1, minHeight: 0, padding: '0 max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left))' } },
-          !loaded && React.createElement('div', { role: 'status', style: { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 12, fontWeight: 800 } }, 'Cargando documento…'),
+          !loaded && React.createElement('div', { role: 'status', style: { position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 'var(--text-12, 12px)', fontWeight: 800 } }, 'Cargando documento…'),
           React.createElement('iframe', {
             src: source, title, onLoad: () => setLoaded(true),
             style: { position: 'relative', width: '100%', height: '100%', border: 0, borderRadius: 14, background: '#fff', opacity: loaded ? 1 : 0 }
@@ -168,8 +168,8 @@
         : React.createElement('div', { onClick: dialog.backdropClick, style: { flex: 1, display: 'grid', placeItems: 'center', padding: '24px max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left))', color: '#fff', textAlign: 'center' } },
           React.createElement('div', null,
             React.createElement('div', { style: { width: 68, height: 68, margin: '0 auto 14px', borderRadius: 20, background: 'rgba(255,255,255,.12)', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'doc', size: 32, stroke: 1.8 })),
-            React.createElement('div', { style: { fontSize: 15, fontWeight: 850 } }, title),
-            React.createElement('div', { style: { maxWidth: 300, marginTop: 7, fontSize: 12, lineHeight: 1.5, opacity: .75 } }, 'Este formato no tiene una vista previa integrada. El documento permanece disponible en tu expediente.'))));
+            React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 850 } }, title),
+            React.createElement('div', { style: { maxWidth: 300, marginTop: 7, fontSize: 'var(--text-12, 12px)', lineHeight: 1.5, opacity: .75 } }, 'Este formato no tiene una vista previa integrada. El documento permanece disponible en tu expediente.'))));
   }
 
   Object.assign(window, { ImageViewer, DocumentViewer, openSafeContentUrl, useMediaViewerDialog, MEDIA_VIEWER_LAYER });

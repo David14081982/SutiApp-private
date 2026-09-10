@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_BUILD",
+  "combinations": 9,
+  "surfaces": 99,
+  "errors": [],
+  "failures": []
+}

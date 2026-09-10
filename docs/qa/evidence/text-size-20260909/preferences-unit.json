@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Remote authority only",
+    "Normal when absent",
+    "Three allowlisted values",
+    "Metadata merge preserves unrelated keys",
+    "No target user selector",
+    "Cross-principal read/write rejected",
+    "Read/write failures propagate",
+    "Invalid metadata visible and repairable",
+    "Immediate preview during pending save",
+    "Failed save rolls back and announces error",
+    "Retry succeeds",
+    "Native radio selection"
+  ],
+  "businessWrites": 0
+}

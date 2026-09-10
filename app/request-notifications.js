@@ -56,7 +56,7 @@
     const request = requests.find(row => row.sourceId === notice.request_id);
     return h('section', { ref, role: 'status', 'data-user-authorization': notice.id, style: { position: 'relative', overflow: 'hidden', background: '#E7F6ED', color: '#13794A', padding: 18, borderRadius: 18, margin: 16 } },
       h('div', { 'aria-hidden': 'true', style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, Array.from({ length: 24 }, (_, i) => h('i', { key: i, style: { position: 'absolute', top: 0, opacity: 0, left: ((i * 37) % 100) + '%', width: 6, height: 10, background: ['#901040', '#D9A441', '#13794A'][i % 3] } }))),
-      h('strong', { style: { fontSize: 19 } }, '¡Tu solicitud fue autorizada!'),
+      h('strong', { style: { fontSize: 'var(--text-19, 19px)' } }, '¡Tu solicitud fue autorizada!'),
       h('p', null, notice.folio + ' · ' + (request ? request.tipo : notice.program_id)),
       request && request.steps.find(step => step.active) && h('p', null, 'Ahora continúa: ' + request.steps.find(step => step.active).label),
       h('button', { onClick: () => { setNotice(null); app.push('tracking', { s: { sourceId: notice.request_id } }); } }, 'Ver seguimiento'),

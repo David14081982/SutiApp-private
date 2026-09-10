@@ -219,7 +219,7 @@
     '  cursor:pointer;user-select:none}' +
     '.empty svg{opacity:.45}' +
     '.empty .cap{max-width:90%;font-weight:500;letter-spacing:.01em}' +
-    '.empty .sub{font-size:11px}' +
+    '.empty .sub{font-size:var(--text-11, 11px)}' +
     '.empty .sub u{text-underline-offset:2px;text-decoration-color:rgba(0,0,0,.25)}' +
     '.empty:hover .sub u{color:rgba(0,0,0,.75);text-decoration-color:currentColor}' +
     ':host([data-over]) .frame{outline:2px solid #c96442;outline-offset:-2px;' +
@@ -240,7 +240,7 @@
     '  background:rgba(0,0,0,.65);color:#fff;font:11px/1 system-ui,-apple-system,sans-serif;' +
     '  backdrop-filter:blur(6px)}' +
     '.ctl button:hover{background:rgba(0,0,0,.8)}' +
-    '.err{position:absolute;left:8px;bottom:8px;right:8px;color:#b3261e;font-size:11px;' +
+    '.err{position:absolute;left:8px;bottom:8px;right:8px;color:#b3261e;font-size:var(--text-11, 11px);' +
     '  background:rgba(255,255,255,.85);padding:4px 6px;border-radius:5px;pointer-events:none}';
 
   const icon =

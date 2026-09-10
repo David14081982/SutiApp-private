@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "route": "settings",
+  "screen": "SettingsScreen",
+  "service": "TextSizePreferences",
+  "authority": "Supabase Auth user_metadata.sutiapp_text_size",
+  "runtimeAuthority": false,
+  "secretsAndPII": 0,
+  "fullGeneratorSuite": "NOT_APPLICABLE_TO_FOCUSED_PRODUCT_CHANGE"
+}

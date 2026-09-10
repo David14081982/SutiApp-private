@@ -17,7 +17,7 @@
   function RichText({value}){
     const lines=String(value||'').split(/\r?\n/),out=[];let list=[];
     const flush=()=>{if(!list.length)return;const start=out.length;out.push(React.createElement('ul',{key:'ul-'+start,style:{margin:'0 0 14px',paddingLeft:22}},list.map((line,index)=>React.createElement('li',{key:index,style:{marginBottom:5}},inline(line,'li-'+start+'-'+index)))));list=[];};
-    lines.forEach((raw,index)=>{const line=raw.trim();if(/^[-*] /.test(line)){list.push(line.slice(2));return;}flush();if(!line)return;if(/^##? /.test(line)){const level=line.startsWith('## ')?3:2;out.push(React.createElement('h'+level,{key:index,style:{fontSize:level===2?20:17,fontWeight:850,lineHeight:1.3,margin:'18px 0 9px',color:'var(--ink)'}},inline(line.replace(/^##? /,''),'h-'+index)));}else out.push(React.createElement('p',{key:index,style:{margin:'0 0 14px'}},inline(line,'p-'+index)));});flush();
+    lines.forEach((raw,index)=>{const line=raw.trim();if(/^[-*] /.test(line)){list.push(line.slice(2));return;}flush();if(!line)return;if(/^##? /.test(line)){const level=line.startsWith('## ')?3:2;out.push(React.createElement('h'+level,{key:index,style:{fontSize:level===2?'var(--text-20, 20px)':'var(--text-17, 17px)',fontWeight:850,lineHeight:1.3,margin:'18px 0 9px',color:'var(--ink)'}},inline(line.replace(/^##? /,''),'h-'+index)));}else out.push(React.createElement('p',{key:index,style:{margin:'0 0 14px'}},inline(line,'p-'+index)));});flush();
     return React.createElement('div',{'data-rich-text':'rendered','data-structured-content':'rich-text'},out);
   }
   function RichTextEditor({value,onChange,style}){
@@ -34,7 +34,7 @@
         button('news','Título',()=>prefix('## ')),
         button('menu','Lista',()=>prefix('- ')),
         button('link','Enlace',()=>wrap('[','](https://)'))),
-      React.createElement('textarea',{ref,value,onChange:e=>commit(e.target.value),rows:8,placeholder:'Escribe el artículo. Usa la barra para dar formato.',style:Object.assign({width:'100%',border:'none',outline:'none',background:'transparent',padding:'13px 14px',fontSize:14.5,fontFamily:'inherit',color:'var(--ink)',boxSizing:'border-box',resize:'vertical',minHeight:160,lineHeight:1.55},style||{})}));
+      React.createElement('textarea',{ref,value,onChange:e=>commit(e.target.value),rows:8,placeholder:'Escribe el artículo. Usa la barra para dar formato.',style:Object.assign({width:'100%',border:'none',outline:'none',background:'transparent',padding:'13px 14px',fontSize: 'var(--text-14-5, 14.5px)',fontFamily:'inherit',color:'var(--ink)',boxSizing:'border-box',resize:'vertical',minHeight:160,lineHeight:1.55},style||{})}));
   }
   Object.assign(window,{RichText,RichTextEditor});
 })();

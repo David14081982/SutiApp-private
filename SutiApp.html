@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <title>SutiApp — SUTISSSTESON</title>
     <!-- PWA -->
@@ -521,14 +521,8 @@
         background: transparent;
         height: 30px;
       }
-      /* accessible mode */
-      [data-a11y="on"] {
-        --r-card: 18px;
-      }
-      [data-a11y="on"] .su-scale-text {
-        font-size: 1.12em;
-      }
     </style>
+    <link rel="stylesheet" href="app/text-size.css?v=239" />
   </head>
   <body style="font-family: var(--font); background-color: rgb(240, 243, 244)">
     <template id="__bundler_thumbnail">
@@ -633,7 +627,7 @@
         var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
         // Keep this version aligned with sw.js CACHE. CDN caches can outlive
         // the browser cache even when updateViaCache is disabled.
-        var serviceWorkerUrl = "./sw.js?v=185";
+        var serviceWorkerUrl = "./sw.js?v=186";
         navigator.serviceWorker.addEventListener("controllerchange", function () {
           if (!hadControllerAtBoot || reloadingForWorker) return;
           reloadingForWorker = true;
@@ -692,7 +686,7 @@
     <script src="app/supabase-client.js" onerror="window.__sutiStartupFail('SUPABASE_CLIENT_LOAD_FAILED')"></script>
     <script src="app/affiliate-repository.js?v=5" onerror="window.__sutiStartupFail('AFFILIATE_REPOSITORY_LOAD_FAILED')"></script>
     <script src="app/financial-legacy-repository.js?v=11" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
-  <script src="app/bundle.js?v=238" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
+  <script src="app/bundle.js?v=239" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
   </body>
 </html>

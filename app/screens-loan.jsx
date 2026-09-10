@@ -114,7 +114,7 @@
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
         React.createElement('button', { onClick: onBack || app.back, 'aria-label': 'Volver', 'data-press': 'subtle', style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 16.5, fontWeight: 800, color: 'var(--ink)' } }, title || 'Suti Préstamo')),
+        React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800, color: 'var(--ink)' } }, title || 'Suti Préstamo')),
       children);
   }
 
@@ -138,8 +138,8 @@
     return React.createElement('div', { role: state === 'ERROR' ? 'alert' : 'status', 'data-simulator-state': state, style: { display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
       React.createElement(window.IconTile, { icon: item[0], size: 38 }),
       React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-        React.createElement('div', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink)' } }, item[1]),
-        React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 } }, item[2])),
+        React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)' } }, item[1]),
+        React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 } }, item[2])),
       (state === 'ERROR' || state === 'UNAVAILABLE') && React.createElement('button', { onClick: onRetry, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', font: '700 12px var(--font)', cursor: 'pointer', padding: '3px 0' } }, 'Reintentar'));
   }
 
@@ -147,8 +147,8 @@
     if (!programs.length) return null;
     return React.createElement('div', { 'data-loan-funds': '' },
       React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 9 } },
-        React.createElement('span', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink-3)' } }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'),
-        programs.length > 1 && React.createElement('span', { style: { fontSize: 12, fontWeight: 700, color: 'var(--ink-3)' } }, programs.length + ' opciones')),
+        React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'),
+        programs.length > 1 && React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length + ' opciones')),
       React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', padding: '2px 20px 6px', margin: '0 -20px', scrollbarWidth: 'none' } },
         programs.map((item) => {
           const rate = Number(item.rate);
@@ -159,9 +159,9 @@
           return React.createElement('button', { key: item.id, disabled, onClick: () => setSelected(item.id), 'data-on': selected === item.id ? '1' : '0', 'data-press': 'subtle', style: { minWidth: 145, flexShrink: 0, borderRadius: 16, border: selected === item.id ? '1.5px solid var(--guinda)' : '1.5px solid transparent', background: selected === item.id ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: selected === item.id ? 'none' : 'var(--neo-sm)', color: selected === item.id ? 'var(--guinda)' : 'var(--ink)', padding: '11px 12px', textAlign: 'left', fontFamily: 'inherit', cursor: disabled ? 'default' : 'pointer', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
             React.createElement(I, { name: 'wallet', size: 15, stroke: 2.2, style: { color: selected === item.id ? 'var(--guinda)' : 'var(--ink-3)' } }),
-            React.createElement('span', { style: { fontSize: 13.5, fontWeight: 800 } }, item.label || item.fund)),
-          React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 5 } }, 'Hasta ' + moneyOrDash(Number(item.max_amount))),
-          React.createElement('div', { 'data-fund-rate': '', style: { fontSize: 11, fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 2 } }, rateLabel));
+            React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800 } }, item.label || item.fund)),
+          React.createElement('div', { style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 5 } }, 'Hasta ' + moneyOrDash(Number(item.max_amount))),
+          React.createElement('div', { 'data-fund-rate': '', style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 2 } }, rateLabel));
         })));
   }
 
@@ -181,11 +181,11 @@
         React.createElement('div', { style: { opacity: updating ? .66 : 1 } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 } },
           React.createElement('div', null,
-            React.createElement('div', { style: { fontSize: 12, opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
-            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 40, fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
+            React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
+            React.createElement('div', { style: { minWidth: 150, minHeight: 45, borderRadius: 9, fontSize: 'var(--text-40, 40px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
               React.createElement(SmoothMoney, { value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
-          React.createElement('div', { style: { textAlign: 'right', fontSize: 11.5, fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
-            updating && React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 10.5 } },
+          React.createElement('div', { style: { textAlign: 'right', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
+            updating && React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 'var(--text-10-5, 10.5px)' } },
               React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…'),
             React.createElement('div', { style: { minHeight: '1.45em' } }, !result
               ? React.createElement(LoadingReels, { columns: 2, cycleKey: placeholderCycle })
@@ -194,8 +194,8 @@
               ? React.createElement(LoadingReels, { columns: 3, cycleKey: placeholderCycle })
               : result.rate + '% ' + result.ratePeriod))),
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
-          React.createElement('div', { style: { opacity: .72, fontWeight: 600, fontSize: 10.5, whiteSpace: 'nowrap' } }, cell[0]),
-          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 13, letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+          React.createElement('div', { style: { opacity: .72, fontWeight: 600, fontSize: 'var(--text-10-5, 10.5px)', whiteSpace: 'nowrap' } }, cell[0]),
+          React.createElement('div', { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 'var(--text-13, 13px)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
             React.createElement(SmoothMoney, { value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
   }
 
@@ -221,18 +221,18 @@
     ].filter((value) => value != null).map((value) => Math.min(max, Math.max(min, value))))) : [];
     const percent = bounded && max > min ? ((Math.min(max, Math.max(min, amount || min)) - min) / (max - min)) * 100 : 0;
     return React.createElement('div', { className: 'su-card', 'data-loan-amount-card': '', style: { background: 'var(--surface)', boxShadow: 'var(--neo-sm)', borderRadius: 20, padding: '16px 16px 14px', opacity: disabled ? .62 : 1 } },
-      React.createElement('div', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.01em' } }, '¿Cuánto necesitas?'),
-      React.createElement('input', { type: 'number', inputMode: 'numeric', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => commit(event.target.value), 'aria-label': 'Monto solicitado', style: { width: '100%', border: 'none', borderBottom: '2px solid var(--guinda)', background: 'transparent', outline: 'none', fontSize: 34, fontWeight: 800, letterSpacing: '-.03em', color: 'var(--guinda)', fontFamily: 'inherit', padding: '4px 0 2px', margin: '2px 0 6px' } }),
+      React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.01em' } }, '¿Cuánto necesitas?'),
+      React.createElement('input', { type: 'number', inputMode: 'numeric', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => commit(event.target.value), 'aria-label': 'Monto solicitado', style: { width: '100%', border: 'none', borderBottom: '2px solid var(--guinda)', background: 'transparent', outline: 'none', fontSize: 'var(--text-34, 34px)', fontWeight: 800, letterSpacing: '-.03em', color: 'var(--guinda)', fontFamily: 'inherit', padding: '4px 0 2px', margin: '2px 0 6px' } }),
       bounded && React.createElement('div', { style: { position: 'relative', height: 30, display: 'flex', alignItems: 'center' } },
         React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, height: 8, borderRadius: 999, background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)' } }),
         React.createElement('div', { style: { position: 'absolute', left: 0, width: percent + '%', height: 8, borderRadius: 999, background: 'var(--grad-guinda-soft)' } }),
         React.createElement('input', { className: 'su-range', type: 'range', min, max, step: 1, value: Math.min(max, Math.max(min, amount || min)), disabled, onChange: (event) => change(event.target.value), onPointerUp: (event) => commit(event.target.value), onKeyUp: (event) => commit(event.target.value), style: { position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', margin: 0, height: 30, cursor: disabled ? 'default' : 'pointer' } })),
-      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
+      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
         React.createElement('span', { 'data-loan-min-label': '' }, bounded ? (showNumericMinimum ? moneyOrDash(min) : 'Mínimo') : dash),
         React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)),
       bounded && React.createElement('div', { 'data-loan-quick-amounts': '', style: { display: 'flex', gap: 7, marginTop: 11, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' } }, quickValues.map((value, index) => {
         const active = amount === value;
-        return React.createElement('button', { key: value, type: 'button', disabled, onClick: () => settle(value), 'data-loan-quick-amount': value, 'data-press': 'subtle', style: { flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 10, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'), background: active ? 'var(--guinda-50)' : 'var(--surface)', color: active ? 'var(--guinda)' : 'var(--ink-2)', fontSize: 12, fontWeight: 700 } }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
+        return React.createElement('button', { key: value, type: 'button', disabled, onClick: () => settle(value), 'data-loan-quick-amount': value, 'data-press': 'subtle', style: { flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 10, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'), background: active ? 'var(--guinda-50)' : 'var(--surface)', color: active ? 'var(--guinda)' : 'var(--ink-2)', fontSize: 'var(--text-12, 12px)', fontWeight: 700 } }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
       })));
   }
 
@@ -264,29 +264,29 @@
     const monthLabel = selected ? ((selected % 2 ? (selected / 2).toFixed(1) : selected / 2) + ' meses') : dash;
     return React.createElement('div', { 'data-loan-terms': '', style: { opacity: disabled ? .62 : 1 } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '0 0 9px' } },
-        React.createElement('span', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink-3)' } }, 'Plazo'),
-        React.createElement('span', { style: { fontSize: 12, fontWeight: 700, color: 'var(--ink-3)' } }, monthLabel)),
+        React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, 'Plazo'),
+        React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, monthLabel)),
       React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 20px 6px', margin: '0 -20px' } },
         terms.length || hasCustomRange ? terms.map((value) => {
           const active = value === selected && !free, payment = paymentFor(value);
           return React.createElement('button', { key: value, disabled, onClick: () => choosePreset(value), 'data-term-card': value, 'data-on': active ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px solid ' + (active ? 'var(--guinda)' : 'transparent'), background: active ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: active ? 'none' : 'var(--neo-sm)', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
-            React.createElement('div', { style: { fontSize: 15, fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink)' } }, value + ' pagos'),
-            React.createElement('div', { style: { fontSize: 12.5, fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : 'Cotizando…'),
-            React.createElement('div', { style: { fontSize: 10.5, fontWeight: 600, color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, 'por quincena'));
+            React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink)' } }, value + ' pagos'),
+            React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : 'Cotizando…'),
+            React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, 'por quincena'));
         }).concat(React.createElement('button', { key: 'other', type: 'button', disabled, onClick: chooseFree, 'data-term-card': 'other', 'data-on': free ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'), background: free ? 'var(--guinda-50)' : 'transparent', boxShadow: 'none' } },
-          React.createElement('div', { style: { fontSize: 15, fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
-          React.createElement('div', { style: { fontSize: 12.5, fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? 'Cotizando…' : 'a tu medida')),
-          React.createElement('div', { style: { fontSize: 10.5, fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 12.5, fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
+          React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
+          React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? 'Cotizando…' : 'a tu medida')),
+          React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
       free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-          React.createElement('button', { type: 'button', disabled: disabled || selected <= min, onClick: () => commit(selected - stepSize), 'aria-label': 'Reducir plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 20, fontWeight: 800 } }, '−'),
+          React.createElement('button', { type: 'button', disabled: disabled || selected <= min, onClick: () => commit(selected - stepSize), 'aria-label': 'Reducir plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '−'),
           React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6 } },
-            React.createElement('input', { value: draft, inputMode: 'numeric', disabled, 'aria-label': 'Plazo en quincenas', onChange: (event) => setDraft(event.target.value.replace(/[^0-9]/g, '').slice(0, 3)), onBlur: (event) => commit(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') { commit(event.target.value); event.target.blur(); } }, style: { width: 62, border: 'none', background: 'transparent', textAlign: 'right', outline: 'none', fontFamily: 'inherit', fontSize: 26, fontWeight: 800, color: 'var(--ink)' } }),
-            React.createElement('span', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink-3)' } }, selected === 1 ? 'quincena' : 'quincenas')),
-          React.createElement('button', { type: 'button', disabled: disabled || selected >= max, onClick: () => commit(selected + stepSize), 'aria-label': 'Aumentar plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 20, fontWeight: 800 } }, '+')),
-        React.createElement('div', { style: { marginTop: 8, display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)' } },
+            React.createElement('input', { value: draft, inputMode: 'numeric', disabled, 'aria-label': 'Plazo en quincenas', onChange: (event) => setDraft(event.target.value.replace(/[^0-9]/g, '').slice(0, 3)), onBlur: (event) => commit(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') { commit(event.target.value); event.target.blur(); } }, style: { width: 62, border: 'none', background: 'transparent', textAlign: 'right', outline: 'none', fontFamily: 'inherit', fontSize: 'var(--text-26, 26px)', fontWeight: 800, color: 'var(--ink)' } }),
+            React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, selected === 1 ? 'quincena' : 'quincenas')),
+          React.createElement('button', { type: 'button', disabled: disabled || selected >= max, onClick: () => commit(selected + stepSize), 'aria-label': 'Aumentar plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '+')),
+        React.createElement('div', { style: { marginTop: 8, display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)' } },
           React.createElement('span', null, 'Entre ' + min + ' y ' + max + ' quincenas'),
-          terms.length > 0 && React.createElement('button', { type: 'button', onClick: () => { setFree(false); if (!selectedIsPreset) setSelected(terms.reduce((a, b) => Math.abs(b - selected) < Math.abs(a - selected) ? b : a)); }, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700 } }, 'Usar plazos sugeridos'))));
+          terms.length > 0 && React.createElement('button', { type: 'button', onClick: () => { setFree(false); if (!selectedIsPreset) setSelected(terms.reduce((a, b) => Math.abs(b - selected) < Math.abs(a - selected) ? b : a)); }, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700 } }, 'Usar plazos sugeridos'))));
   }
 
   function Breakdown({ result }) {
@@ -302,17 +302,17 @@
     ];
     return React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, boxShadow: 'var(--neo-sm)', overflow: 'hidden' } },
       React.createElement('button', { onClick: () => setOpen(!open), 'aria-expanded': open, 'data-press': 'subtle', style: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, border: 'none', background: 'transparent', padding: '15px 16px', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--ink)', textAlign: 'left' } },
-        React.createElement('span', { style: { fontSize: 13.5, fontWeight: 800 } }, open ? 'Desglose del préstamo' : 'Ver desglose completo'),
+        React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800 } }, open ? 'Desglose del préstamo' : 'Ver desglose completo'),
         React.createElement('span', { style: { width: 26, height: 26, borderRadius: 9, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .22s cubic-bezier(.32,.72,0,1)' } }, React.createElement(I, { name: 'chevR', size: 15, stroke: 2.4 }))),
       open && React.createElement('div', { style: { padding: '0 16px 14px' } },
         rows.map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14, padding: '11px 0', borderTop: '1px solid var(--hairline)' } },
-          React.createElement('span', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 600 } }, row[0]),
+          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 600 } }, row[0]),
           React.createElement('span', { style: { textAlign: 'right' } },
-            React.createElement('span', { style: { display: 'block', fontSize: 14, fontWeight: 800, color: 'var(--ink)' } }, row[1]),
-            row[2] && React.createElement('span', { style: { display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1 } }, row[2])))),
+            React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-14, 14px)', fontWeight: 800, color: 'var(--ink)' } }, row[1]),
+            row[2] && React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 1 } }, row[2])))),
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12, padding: '13px 15px', borderRadius: 15, background: 'var(--guinda-50)' } },
-          React.createElement('span', { style: { fontSize: 13, fontWeight: 800 } }, 'Total a pagar'),
-          React.createElement('span', { style: { fontSize: 20, fontWeight: 800, color: 'var(--guinda)', fontVariantNumeric: 'tabular-nums' } }, moneyOrDash(result.total)))));
+          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800 } }, 'Total a pagar'),
+          React.createElement('span', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 800, color: 'var(--guinda)', fontVariantNumeric: 'tabular-nums' } }, moneyOrDash(result.total)))));
   }
 
   function quoteMatchesSelection(result, program, amount, term) {
@@ -630,7 +630,7 @@
       React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),
       React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading, result, customTerm: program && program.custom_term }),
       React.createElement(Breakdown, { result }),
-      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
+      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
         React.createElement('span', null, result ? ('Programa: ' + result.program + ' · Fondo: ' + result.fund) : 'El programa y fondo aplicables aparecerán con el resultado.')));
   }
@@ -654,12 +654,12 @@
   };
 
   function DepositField({ label, value, onChange, inputMode, maxLength, hint, valid, autoComplete = 'off', field }) {
-    return React.createElement('label', { 'data-deposit-field': field, style: { display: 'block', fontSize: 12, fontWeight: 800, color: 'var(--ink)' } }, label,
+    return React.createElement('label', { 'data-deposit-field': field, style: { display: 'block', fontSize: 'var(--text-12, 12px)', fontWeight: 800, color: 'var(--ink)' } }, label,
       React.createElement('input', {
         value, onChange, inputMode, maxLength, autoComplete, spellCheck: false,
         'aria-invalid': value && !valid ? 'true' : undefined,
         style: { width: '100%', border: '1.5px solid ' + (value && !valid ? '#C0341D' : 'var(--hairline)'), background: 'var(--surface-2)', borderRadius: 13, padding: '12px 13px', font: '700 14px var(--font)', color: 'var(--ink)', marginTop: 6 },
-      }), hint && React.createElement('span', { style: { display: 'block', fontSize: 10.5, fontWeight: 650, color: value && !valid ? '#C0341D' : 'var(--ink-3)', marginTop: 5 } }, hint));
+      }), hint && React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 650, color: value && !valid ? '#C0341D' : 'var(--ink-3)', marginTop: 5 } }, hint));
   }
 
   function StepDeposit({ value, setValue, reload }) {
@@ -712,56 +712,56 @@
         style: { width: '100%', border: '1.5px solid ' + (selected ? 'var(--guinda)' : 'var(--hairline)'), borderRadius: 16, background: selected ? 'var(--guinda-50)' : 'var(--surface)', padding: 14, textAlign: 'left', color: 'var(--ink)', boxShadow: selected ? '0 0 0 2px var(--guinda-100)' : 'var(--neo-sm)' },
       },
       React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' } },
-        React.createElement('strong', { style: { fontSize: 14 } }, account.bank_name || 'Banco pendiente'),
-        account.is_primary && React.createElement('span', { style: { fontSize: 9.5, fontWeight: 900, letterSpacing: '.04em', color: 'var(--guinda)' } }, 'PRINCIPAL')),
+        React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, account.bank_name || 'Banco pendiente'),
+        account.is_primary && React.createElement('span', { style: { fontSize: 'var(--text-9-5, 9.5px)', fontWeight: 900, letterSpacing: '.04em', color: 'var(--guinda)' } }, 'PRINCIPAL')),
       ready ? React.createElement(React.Fragment, null,
-        validCardNumber(account.card_number) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 700, marginTop: 7 } }, account.maskedCard),
-        validClabe(account.clabe) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
-        : React.createElement('div', { style: { color: 'var(--guinda)', fontSize: 11.5, fontWeight: 800, marginTop: 7 } }, 'Completar para depósito'));
+        validCardNumber(account.card_number) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 'var(--text-12, 12px)', fontWeight: 700, marginTop: 7 } }, account.maskedCard),
+        validClabe(account.clabe) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 'var(--text-11, 11px)', color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
+        : React.createElement('div', { style: { color: 'var(--guinda)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, marginTop: 7 } }, 'Completar para depósito'));
     };
     return React.createElement('div', { className: 'su-route', 'data-loan-deposit-step': value.phase, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
       React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '17px 16px', boxShadow: 'var(--neo-sm)' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
           React.createElement(window.IconTile, { icon: 'card', size: 40 }),
           React.createElement('div', null,
-            React.createElement('div', { style: { fontSize: 14, fontWeight: 850 } }, '¿Dónde quieres recibir tu préstamo?'),
-            React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 2 } }, 'Elige una cuenta registrada o agrega una nueva.')))),
-      value.phase === 'loading' && React.createElement('div', { role: 'status', style: { padding: 18, borderRadius: 18, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 12, fontWeight: 700 } }, 'Consultando tus cuentas bancarias…'),
-      value.phase === 'error' && React.createElement('div', { role: 'alert', className: 'su-err', style: { padding: 14, borderRadius: 15, background: '#FCE9EE', color: '#9B1C31', fontSize: 12, fontWeight: 750 } }, value.error,
+            React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 850 } }, '¿Dónde quieres recibir tu préstamo?'),
+            React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 2 } }, 'Elige una cuenta registrada o agrega una nueva.')))),
+      value.phase === 'loading' && React.createElement('div', { role: 'status', style: { padding: 18, borderRadius: 18, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12, 12px)', fontWeight: 700 } }, 'Consultando tus cuentas bancarias…'),
+      value.phase === 'error' && React.createElement('div', { role: 'alert', className: 'su-err', style: { padding: 14, borderRadius: 15, background: '#FCE9EE', color: '#9B1C31', fontSize: 'var(--text-12, 12px)', fontWeight: 750 } }, value.error,
         React.createElement('button', { type: 'button', onClick: () => reload(), style: { display: 'block', border: 0, padding: '8px 0 0', background: 'transparent', color: 'var(--guinda)', fontWeight: 850 } }, 'Reintentar')),
       value.phase === 'ready' && React.createElement(React.Fragment, null,
         value.accounts.length > 0 && React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, value.accounts.map(accountCard)),
         !value.adding && React.createElement(window.Btn, { full: true, variant: 'secondary', icon: 'plus', onClick: startAdd }, value.accounts.length ? 'Agregar nueva cuenta' : 'Agregar cuenta bancaria'),
         value.adding && React.createElement('div', { 'data-deposit-account-form': '', style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)', display: 'flex', flexDirection: 'column', gap: 13 } },
           React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
-            React.createElement('strong', { style: { fontSize: 14 } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
+            React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
             value.accounts.length > 0 && React.createElement('button', { type: 'button', onClick: () => update({ adding: false, draft: null, error: '' }), style: { border: 0, background: 'transparent', color: 'var(--ink-3)', fontWeight: 800 } }, 'Cancelar')),
-          React.createElement('div', { 'data-deposit-account-rule': '', style: { color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 650, lineHeight: 1.4 } }, 'Para guardar, indica el banco y al menos una opción válida: tarjeta o CLABE.'),
+          React.createElement('div', { 'data-deposit-account-rule': '', style: { color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 650, lineHeight: 1.4 } }, 'Para guardar, indica el banco y al menos una opción válida: tarjeta o CLABE.'),
           React.createElement(DepositField, { field: 'bank', label: 'Banco', value: draft.bank_name || '', valid: validDepositBank(draft.bank_name), hint: 'Obligatorio', onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
           React.createElement(DepositField, { field: 'card', label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: cardValid, inputMode: 'numeric', maxLength: 19, hint: 'Opcional si proporcionas CLABE · 16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
           React.createElement(DepositField, { field: 'clabe', label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: clabeValid, inputMode: 'numeric', maxLength: 22, hint: 'Opcional si proporcionas tarjeta · 18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
           React.createElement(window.Btn, { full: true, 'data-deposit-save': '', disabled: !draftValid || value.saving, loading: value.saving, onClick: saveAccount }, value.saving ? 'Guardando…' : 'Guardar cuenta')),
         React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)' } },
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } }, React.createElement(I, { name: 'phone', size: 18, stroke: 2 }), React.createElement('strong', { style: { fontSize: 14 } }, 'Celular para notificaciones')),
+          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } }, React.createElement(I, { name: 'phone', size: 18, stroke: 2 }), React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, 'Celular para notificaciones')),
           React.createElement(DepositField, { field: 'phone', label: 'Número celular', value: spaced(value.phone, [3, 3, 4]), valid: validNotificationPhone(value.phone), inputMode: 'tel', maxLength: 12, autoComplete: 'tel-national', hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.', onChange: (event) => update({ phone: onlyDigits(event.target.value).slice(0, 10), error: '' }) })),
-        (!depositEligible(value.accounts.find((account) => account.id === value.selectedId)) || !validNotificationPhone(value.phone)) && React.createElement('div', { 'data-deposit-continue-help': '', role: 'status', style: { padding: '11px 13px', borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-2)', fontSize: 11.5, fontWeight: 700, lineHeight: 1.45 } },
+        (!depositEligible(value.accounts.find((account) => account.id === value.selectedId)) || !validNotificationPhone(value.phone)) && React.createElement('div', { 'data-deposit-continue-help': '', role: 'status', style: { padding: '11px 13px', borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-2)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, lineHeight: 1.45 } },
           !depositEligible(value.accounts.find((account) => account.id === value.selectedId)) ? 'Selecciona una cuenta válida para recibir tu préstamo.' : 'Captura un celular válido de 10 dígitos.'),
-        value.error && React.createElement('div', { role: 'alert', className: 'su-err', style: { color: '#C0341D', fontSize: 12, fontWeight: 750 } }, value.error)));
+        value.error && React.createElement('div', { role: 'alert', className: 'su-err', style: { color: '#C0341D', fontSize: 'var(--text-12, 12px)', fontWeight: 750 } }, value.error)));
   }
 
   function MissingDocumentsNotice({ missing, onCorrect }) {
     if (!missing || !missing.length) return null;
-    return React.createElement('div', { role: 'alert', 'data-loan-missing-documents': '', style: { padding: 13, borderRadius: 14, background: '#FCE9EE', color: '#9B1C31', fontSize: 12, fontWeight: 700, lineHeight: 1.45 } },
+    return React.createElement('div', { role: 'alert', 'data-loan-missing-documents': '', style: { padding: 13, borderRadius: 14, background: '#FCE9EE', color: '#9B1C31', fontSize: 'var(--text-12, 12px)', fontWeight: 700, lineHeight: 1.45 } },
       React.createElement('div', { style: { fontWeight: 850 } }, 'Necesitamos actualizar algunos documentos antes de continuar.'),
       React.createElement('div', { style: { marginTop: 7 } }, 'Faltan:'),
       React.createElement('ul', { style: { margin: '4px 0 0', paddingLeft: 19 } }, missing.map((entry) => React.createElement('li', { key: entry.requirement.document_type_id }, entry.requirement.document_type && entry.requirement.document_type.label || 'Documento requerido'))),
-      onCorrect && React.createElement('button', { type: 'button', onClick: onCorrect, style: { marginTop: 10, minHeight: 38, border: 0, borderRadius: 10, padding: '0 13px', background: 'var(--guinda)', color: '#fff', fontSize: 12, fontWeight: 850 } }, 'Corregir documentos'));
+      onCorrect && React.createElement('button', { type: 'button', onClick: onCorrect, style: { marginTop: 10, minHeight: 38, border: 0, borderRadius: 10, padding: '0 13px', background: 'var(--guinda)', color: '#fff', fontSize: 'var(--text-12, 12px)', fontWeight: 850 } }, 'Corregir documentos'));
   }
 
   function StepDocuments({ requirements, documents, onChanged, phase, missing }) {
     return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 10 } },
       React.createElement(window.UnifiedDocumentPhase,{requirements,documents,onChanged,phase,error:'No fue posible consultar los requisitos autorizados.',onRetry:onChanged,accessPurpose:'SELF_SERVICE_LOAN',title:'Verifica tus documentos'}),
-      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 11.5, fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
+      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
         React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
   }
@@ -780,18 +780,18 @@
     return React.createElement('div', { className: 'su-route' },
       React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '5px 16px 15px', boxShadow: 'var(--neo-sm)' } },
         rows.map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, padding: '12px 0', borderBottom: '1px solid var(--hairline)' } },
-          React.createElement('span', { style: { fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)' } }, row[0]),
-          React.createElement('span', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink)', textAlign: 'right' } }, row[1]))),
+          React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600, color: 'var(--ink-3)' } }, row[0]),
+          React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)', textAlign: 'right' } }, row[1]))),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 14, padding: '14px 15px', marginTop: 12, borderRadius: 15, background: 'var(--guinda-50)' } },
-          React.createElement('span', { style: { fontSize: 13, fontWeight: 800 } }, 'Total a pagar'),
-          React.createElement('span', { style: { fontSize: 20, fontWeight: 900, color: 'var(--guinda)' } }, moneyOrDash(result.total))),
+          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800 } }, 'Total a pagar'),
+          React.createElement('span', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 900, color: 'var(--guinda)' } }, moneyOrDash(result.total))),
         React.createElement('div', { 'data-loan-deposit-summary': '', style: { marginTop: 13, padding: '12px 13px', borderRadius: 14, background: 'var(--surface-2)' } },
           React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } },
-            React.createElement('div', { style: { fontSize: 12, fontWeight: 850 } }, 'Depósito'),
-            React.createElement('button', { type: 'button', onClick: onCorrectDeposit, style: { border: 0, background: 'transparent', color: 'var(--guinda)', fontSize: 11.5, fontWeight: 850 } }, 'Cambiar')),
-          (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 11.5 } },
+            React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 850 } }, 'Depósito'),
+            React.createElement('button', { type: 'button', onClick: onCorrectDeposit, style: { border: 0, background: 'transparent', color: 'var(--guinda)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 850 } }, 'Cambiar')),
+          (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 'var(--text-11-5, 11.5px)' } },
             React.createElement('span', { style: { color: 'var(--ink-3)', fontWeight: 700 } }, row[0]), React.createElement('span', { style: { color: 'var(--ink)', fontWeight: 800, fontFamily: row[0] === 'Banco' ? undefined : 'var(--mono)', textAlign: 'right' } }, row[1]))))),
-      !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize:12,fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
+      !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize: 'var(--text-12, 12px)',fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
       React.createElement(MissingDocumentsNotice,{missing:missingDocuments,onCorrect:onCorrectDocuments}),
       React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
   }
@@ -915,15 +915,15 @@
     if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount, workflowState:submission.workflowState }));
     return React.createElement(Shell, { app, onBack: goBack },
       React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
-        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 10.5, fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
+        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
       React.createElement('div', { ref: scroller, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '8px 20px 18px' } },
-        step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 21, fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
+        step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
         step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation }),
         step === 1 && React.createElement(StepDeposit, { value: deposit, setValue: setDeposit, reload: loadDeposit }),
         step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),
         step === 3 && React.createElement(StepSummary, { simulation, deposit:{account:selectedDepositAccount,phone:deposit.phone}, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');},onCorrectDeposit:()=>{setStep(1);setSubmitError('');} })),
       React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
-        submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 12, fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
+        submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
         React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting||deposit.saving, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : continueFlow() }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));
   }
 

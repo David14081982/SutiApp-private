@@ -307,15 +307,15 @@
               <FresLogo size={34} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.01em' }}>El Fresnillo</div>
-              <div style={{ fontSize: 11.5, fontWeight: 600, opacity: .85, marginTop: 2 }}>Reserva Campestre · Hermosillo, Sonora</div>
+              <div style={{ fontSize: 'var(--text-24, 24px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.01em' }}>El Fresnillo</div>
+              <div style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .85, marginTop: 2 }}>Reserva Campestre · Hermosillo, Sonora</div>
             </div>
           </div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.22)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', borderRadius: 999, padding: '6px 12px' }}>
             <I name="land" size={14} stroke={2} />
-            <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.04em' }}>SUTI TERRENO</span>
+            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, letterSpacing: '.04em' }}>SUTI TERRENO</span>
             <span style={{ width: 3, height: 3, borderRadius: 999, background: 'rgba(255,255,255,.5)' }} />
-            <span style={{ fontSize: 11.5, fontWeight: 600, opacity: .9 }}>Lotes a plazos · descuento vía nómina</span>
+            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .9 }}>Lotes a plazos · descuento vía nómina</span>
           </div>
           {/* labio blanco redondeado (firma de la app) */}
           <div style={{ position: 'relative', height: 24, background: F.bg, borderRadius: '26px 26px 0 0', marginTop: 16 }}>
@@ -327,8 +327,8 @@
         <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '12px 14px 4px' }}>
           {[['Disponibles', disp, 'var(--pos)'], ['Vendidos', vend, 'var(--ink-3)'], ['Total lotes', shown.length, '#2E6EF0']].map(([lab, val, col]) =>
           <div key={lab} style={{ flex: 1, background: 'var(--surface)', borderRadius: 16, padding: '11px 12px', textAlign: 'center', boxShadow: 'var(--neo-sm)' }}>
-              <div style={{ fontSize: 25, fontWeight: 900, color: col, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginTop: 5 }}>{lab}</div>
+              <div style={{ fontSize: 'var(--text-25, 25px)', fontWeight: 900, color: col, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{val}</div>
+              <div style={{ fontSize: 'var(--text-11, 11px)', fontWeight: 700, color: 'var(--ink-3)', marginTop: 5 }}>{lab}</div>
             </div>
           )}
         </div>
@@ -339,7 +339,7 @@
             const active = filter === f.id;
             return (
               <button key={f.id} onClick={() => setFilter(f.id)} className="su-btn" style={{
-                flexShrink: 0, height: 36, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s', border: 'none',
+                flexShrink: 0, height: 36, padding: '0 16px', borderRadius: 999, cursor: 'pointer', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s', border: 'none',
                 background: active ? 'var(--grad-guinda-soft)' : 'var(--surface)',
                 color: active ? '#fff' : 'var(--ink-2)',
                 boxShadow: active ? 'var(--glow-guinda)' : 'var(--neo-sm)'
@@ -452,7 +452,7 @@
           <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 22, pointerEvents: 'none', background: `linear-gradient(${F.arena}, transparent)` }} />
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 22, pointerEvents: 'none', background: `linear-gradient(transparent, ${F.arena})` }} />
           {/* hint arrastrar (se oculta tras la primera interacción) */}
-          <div style={{ position: 'absolute', right: 10, bottom: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(42,31,20,.82)', color: '#f6f1e6', borderRadius: 999, padding: '5px 11px', fontSize: 11, fontWeight: 700, pointerEvents: 'none', opacity: explored ? 0 : 1, transform: explored ? 'translateY(6px)' : 'none', transition: 'opacity .4s, transform .4s' }}>
+          <div style={{ position: 'absolute', right: 10, bottom: 10, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(42,31,20,.82)', color: '#f6f1e6', borderRadius: 999, padding: '5px 11px', fontSize: 'var(--text-11, 11px)', fontWeight: 700, pointerEvents: 'none', opacity: explored ? 0 : 1, transform: explored ? 'translateY(6px)' : 'none', transition: 'opacity .4s, transform .4s' }}>
             <I name="grid" size={13} stroke={2} /> Arrastra para explorar
           </div>
         </div>
@@ -463,7 +463,7 @@
           <div style={{ display: 'flex', gap: 3, background: 'var(--surface)', borderRadius: 999, padding: 3, boxShadow: 'var(--neo-sm)' }}>
             {[['3D', true], ['Plano', false]].map(([lab, v]) =>
             <button key={lab} onClick={() => setView3d(v)} style={{
-              height: 30, padding: '0 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, fontFamily: 'inherit', transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s',
+              height: 30, padding: '0 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, fontFamily: 'inherit', transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s',
               background: view3d === v ? 'var(--grad-guinda-soft)' : 'transparent',
               color: view3d === v ? '#fff' : F.ink2,
               boxShadow: view3d === v ? 'var(--glow-guinda)' : 'none',
@@ -473,7 +473,7 @@
           {/* zoom + ver todo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button onClick={verTodo} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 800, fontFamily: 'inherit', color: F.ink, background: 'var(--surface)', boxShadow: 'var(--neo-sm)',
+              display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 14px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, fontFamily: 'inherit', color: F.ink, background: 'var(--surface)', boxShadow: 'var(--neo-sm)',
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={F.ink} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" /></svg>
               Ver todo
@@ -481,7 +481,7 @@
             <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 999, padding: 3, boxShadow: 'var(--neo-sm)' }}>
               {[['−', () => zoomTo(z * 0.77)], ['+', () => zoomTo(z * 1.3)]].map(([lab, fn]) =>
               <button key={lab} onClick={fn} style={{
-                width: 36, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, fontWeight: 700, lineHeight: 1, color: F.ink, fontFamily: 'inherit', borderRadius: 999,
+                width: 36, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 'var(--text-20, 20px)', fontWeight: 700, lineHeight: 1, color: F.ink, fontFamily: 'inherit', borderRadius: 999,
               }}>{lab}</button>
               )}
             </div>
@@ -493,7 +493,7 @@
           {[['Norte', F.verde], ['Sur', F.verdeMid], ['Lateral', F.ambar], ['Vendido', F.gris], ['Seleccionado', F.oro], ['Áreas comunes', F.azulSoft]].map(([lab, c]) =>
           <div key={lab} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 11, height: 11, borderRadius: 4, background: c, border: c === F.azulSoft ? '1px solid #7FB2E0' : 'none' }} />
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: F.ink2 }}>{lab}</span>
+              <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: F.ink2 }}>{lab}</span>
             </div>
           )}
         </div>
@@ -505,7 +505,7 @@
               <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', color: 'var(--guinda)', flexShrink: 0 }}>
                 <I name="pin" size={22} stroke={1.9} />
               </div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--ink-2)', lineHeight: 1.35 }}>Toca un lote en el mapa para ver superficie, medidas y precio.</div>
+              <div style={{ fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 700, color: 'var(--ink-2)', lineHeight: 1.35 }}>Toca un lote en el mapa para ver superficie, medidas y precio.</div>
             </div>
           }
         </div>
@@ -519,8 +519,8 @@
     const [financeOpen, setFinanceOpen] = React.useState(false);
     const metric = (val, unit, lab) =>
     <div style={{ flex: 1, background: 'var(--surface-2)', borderRadius: 14, padding: '11px 6px', textAlign: 'center' }}>
-        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{val}<span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)' }}>{' ' + unit}</span></div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginTop: 6 }}>{lab}</div>
+        <div style={{ fontSize: 'var(--text-17, 17px)', fontWeight: 900, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{val}<span style={{ fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' }}>{' ' + unit}</span></div>
+        <div style={{ fontSize: 'var(--text-11, 11px)', fontWeight: 700, color: 'var(--ink-3)', marginTop: 6 }}>{lab}</div>
       </div>;
 
     return (<React.Fragment>
@@ -530,10 +530,10 @@
             <I name="land" size={27} stroke={1.9} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif", fontSize: 25, fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>Lote #{l.id}</span>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink-3)', marginTop: 3 }}>{ZONA_LABEL[l.zona]}</div>
+            <span style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif", fontSize: 'var(--text-25, 25px)', fontWeight: 700, color: 'var(--ink)', lineHeight: 1 }}>Lote #{l.id}</span>
+            <div style={{ fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)', marginTop: 3 }}>{ZONA_LABEL[l.zona]}</div>
           </div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 800, letterSpacing: '.01em',
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 999, fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, letterSpacing: '.01em',
             background: dispo ? '#E7F6ED' : 'var(--surface-2)', color: dispo ? '#13794A' : 'var(--ink-3)' }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: dispo ? '#1c9d6b' : 'var(--ink-3)' }} />
             {dispo ? 'Disponible' : 'Vendido'}
@@ -548,20 +548,20 @@
 
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
           <div>
-            <div style={{ fontSize: 27, fontWeight: 900, color: 'var(--ink)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{window.money(l.precio)}</div>
-            <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', marginTop: 5 }}>MXN · consulta tus opciones de financiamiento</div>
+            <div style={{ fontSize: 'var(--text-27, 27px)', fontWeight: 900, color: 'var(--ink)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{window.money(l.precio)}</div>
+            <div style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: 'var(--ink-3)', marginTop: 5 }}>MXN · consulta tus opciones de financiamiento</div>
           </div>
-          <span style={{ flexShrink: 0, background: 'var(--guinda-50)', color: 'var(--guinda)', borderRadius: 999, padding: '5px 11px', fontSize: 11.5, fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{window.money(Math.round(l.precio / l.m2))}/m²</span>
+          <span style={{ flexShrink: 0, background: 'var(--guinda-50)', color: 'var(--guinda)', borderRadius: 999, padding: '5px 11px', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{window.money(Math.round(l.precio / l.m2))}/m²</span>
         </div>
 
         {dispo ?
         <button onClick={() => setFinanceOpen(true)} className="su-btn" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 52, marginTop: 16, borderRadius: 15, border: 'none',
-          background: 'var(--grad-guinda-soft)', color: '#fff', fontSize: 15.5, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer',
+          background: 'var(--grad-guinda-soft)', color: '#fff', fontSize: 'var(--text-15-5, 15.5px)', fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer',
           boxShadow: 'var(--glow-guinda)'
-        }}>Simular financiamiento <span style={{ fontSize: 17 }}>↗</span></button> :
+        }}>Simular financiamiento <span style={{ fontSize: 'var(--text-17, 17px)' }}>↗</span></button> :
 
-        <button disabled style={{ width: '100%', height: 52, marginTop: 16, borderRadius: 15, border: 'none', background: 'var(--surface-2)', color: 'var(--ink-3)', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', cursor: 'not-allowed' }}>No disponible</button>
+        <button disabled style={{ width: '100%', height: 52, marginTop: 16, borderRadius: 15, border: 'none', background: 'var(--surface-2)', color: 'var(--ink-3)', fontSize: 'var(--text-15, 15px)', fontWeight: 800, fontFamily: 'inherit', cursor: 'not-allowed' }}>No disponible</button>
         }
       </div>
       {window.FinanceSimSheet && <window.FinanceSimSheet open={financeOpen} onClose={() => setFinanceOpen(false)} it={{ id: 'terrenos', label: `Lote #${l.id}` }} app={app} initialAmount={l.precio} />}

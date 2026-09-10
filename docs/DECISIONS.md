@@ -1,5 +1,11 @@
 # Registro de decisiones arquitectónicas
 
+## H-USER-TEXT-SIZE-ACCESSIBILITY-001 — preferencia visual personal
+
+Instrucción expresa del propietario: agregar Mi Perfil → Configuración → Tamaño de texto, tres tamaños, aplicación inmediata a todo el afiliado, persistencia segura, pruebas 320/390/430 y publicación. Ante ausencia de autoridad personal, autoriza crear la solución mínima sin convertir localStorage en autoridad productiva.
+
+Se reutiliza Supabase Auth para `user_metadata.sutiapp_text_size`, estrictamente presentación propia, valores allowlist y confirmación remota. No se crea tabla, RPC, migración, backend funcional, duplicado de afiliado ni autoridad financiera. Se retira el interruptor `a11y` de Tweaks para evitar controles contradictorios. Escala CSS 1/1.15/1.35; originales fuera del scope afiliado, mínimo secundario 14px, contenido/control 16px, títulos 18px, crecimiento vertical/wrap y zoom nativo permitidos. Actor real mantiene su propia preferencia en impersonación. Volver al frontend anterior es reversible sin tocar datos de negocio.
+
 ## ADR-110 — Web Push independiente para eventos confirmados, 2026-09-08
 
 OWNER DECISION — CONTINUAR separa Web Push de la H de confirmaciones, que se publicó PASS.

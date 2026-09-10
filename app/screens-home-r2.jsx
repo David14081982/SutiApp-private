@@ -17,12 +17,12 @@
         React.createElement(window.SutiSeal, { size: 180 })),
       React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg,transparent 40%,rgba(60,0,15,.28))' } }),
       React.createElement('div', { style: { position: 'relative' } },
-        React.createElement('div', { style: { fontSize: 14.5, opacity: .82, fontWeight: 500 } }, saludo() + ','),
-        React.createElement('div', { style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short),
+        React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', opacity: .82, fontWeight: 500 } }, saludo() + ','),
+        React.createElement('div', { style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short),
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, marginTop: 6 } },
-          React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,.16)', padding: '5px 11px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, backdropFilter: 'blur(4px)' } },
+          React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,.16)', padding: '5px 11px', borderRadius: 999, fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 700, backdropFilter: 'blur(4px)' } },
             React.createElement(I, { name: 'shield', size: 13, stroke: 2.2 }), u.status),
-          React.createElement('span', { style: { fontSize: 12.5, opacity: .8, fontWeight: 600 } }, u.numeroControl)),
+          React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', opacity: .8, fontWeight: 600 } }, u.numeroControl)),
         // balance peek
         React.createElement('div', { style: { display: 'flex', gap: 10, marginTop: 16 } },
           balanceChip('Afiliación', u.affiliation, 'shield'),
@@ -32,9 +32,9 @@
   }
   function balanceChip(label, val, icon) {
     return React.createElement('div', { key: label, style: { flex: 1, background: 'rgba(255,255,255,.13)', border: '1px solid rgba(255,255,255,.16)', borderRadius: 16, padding: '12px 13px', backdropFilter: 'blur(6px)' } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, opacity: .85, fontWeight: 600 } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-11-5, 11.5px)', opacity: .85, fontWeight: 600 } },
         React.createElement(I, { name: icon, size: 14, stroke: 2 }), label),
-      React.createElement('div', { style: { fontSize: 20, fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums' } }, val),
+      React.createElement('div', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums' } }, val),
     );
   }
 
@@ -52,19 +52,19 @@
       },
         React.createElement('div', { style: { position: 'absolute', right: -30, bottom: -40, opacity: .1 } }, React.createElement(window.SutiSeal, { size: 200 })),
         React.createElement('div', { style: { position: 'absolute', right: 16, top: 16, opacity: .9 } }, React.createElement(window.FistMark, { size: 30, color: '#fff' })),
-        React.createElement('div', { style: { fontSize: 11.5, letterSpacing: '.14em', fontWeight: 700, opacity: .82 } }, 'CREDENCIAL DIGITAL'),
-        React.createElement('div', { style: { fontSize: 21, fontWeight: 800, marginTop: 22, letterSpacing: '-.01em' } }, u.name),
+        React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', letterSpacing: '.14em', fontWeight: 700, opacity: .82 } }, 'CREDENCIAL DIGITAL'),
+        React.createElement('div', { style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, marginTop: 22, letterSpacing: '-.01em' } }, u.name),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14 } },
           React.createElement('div', null,
-            React.createElement('div', { style: { fontSize: 10.5, opacity: .7, fontWeight: 600, letterSpacing: '.08em' } }, 'No. AFILIADO'),
-            React.createElement('div', { style: { fontSize: 16, fontWeight: 700, fontFamily: 'var(--mono)', marginTop: 2 } }, u.numeroControl)),
+            React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', opacity: .7, fontWeight: 600, letterSpacing: '.08em' } }, 'No. AFILIADO'),
+            React.createElement('div', { style: { fontSize: 'var(--text-16, 16px)', fontWeight: 700, fontFamily: 'var(--mono)', marginTop: 2 } }, u.numeroControl)),
           React.createElement('div', { style: { textAlign: 'right' } },
-            React.createElement('div', { style: { fontSize: 10.5, opacity: .7, fontWeight: 600, letterSpacing: '.08em' } }, 'ESTATUS'),
-            React.createElement('div', { style: { fontSize: 16, fontWeight: 700, fontFamily: 'var(--mono)', marginTop: 2 } }, u.status)),
+            React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', opacity: .7, fontWeight: 600, letterSpacing: '.08em' } }, 'ESTATUS'),
+            React.createElement('div', { style: { fontSize: 'var(--text-16, 16px)', fontWeight: 700, fontFamily: 'var(--mono)', marginTop: 2 } }, u.status)),
           React.createElement('div', { style: { width: 46, height: 46, background: '#fff', borderRadius: 10, display: 'grid', placeItems: 'center', color: 'var(--guinda)' } },
             React.createElement(I, { name: 'qr', size: 32, stroke: 1.6 }))),
       ),
-      React.createElement('div', { style: { textAlign: 'center', fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600, padding: '10px 0 4px' } }, 'Toca tu credencial para ver el QR de acceso'),
+      React.createElement('div', { style: { textAlign: 'center', fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 600, padding: '10px 0 4px' } }, 'Toca tu credencial para ver el QR de acceso'),
     );
   }
 
@@ -73,8 +73,8 @@
     const source = app.editorial || { phase: 'loading', news: [] };
     const n = source.phase === 'loaded' ? source.news[0] : null;
     return React.createElement('div', { style: { padding: '8px 20px 6px' } },
-      React.createElement('div', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 600 } }, saludo() + ', ' + u.short),
-      React.createElement('h1', { style: { fontSize: 28, lineHeight: 1.12, fontWeight: 800, letterSpacing: '-.025em', margin: '4px 0 0', color: 'var(--ink)' } },
+      React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', color: 'var(--ink-3)', fontWeight: 600 } }, saludo() + ', ' + u.short),
+      React.createElement('h1', { style: { fontSize: 'var(--text-28, 28px)', lineHeight: 1.12, fontWeight: 800, letterSpacing: '-.025em', margin: '4px 0 0', color: 'var(--ink)' } },
         'Tu sindicato, ', React.createElement('span', { style: { color: 'var(--guinda)' } }, 'en una sola app.')),
       React.createElement('div', {
         onClick: n ? () => app.push('articulo', { n }) : source.phase === 'error' ? source.retry : undefined,
@@ -86,7 +86,7 @@
         React.createElement('div', { style: { position: 'absolute', right: -10, top: -10, opacity: .16 } }, React.createElement(window.SutiSeal, { size: 130, mono: false })),
         React.createElement('div', { style: { position: 'absolute', left: 16, bottom: 14, right: 16, color: '#fff' } },
           n && n.tag && React.createElement(window.Badge, { tone: 'gold', solid: true, style: { marginBottom: 8 } }, n.tag.toUpperCase()),
-          React.createElement('div', { style: { fontSize: 17, fontWeight: 800, lineHeight: 1.2, textWrap: 'pretty' } }, n ? n.title : source.phase === 'error' ? 'No pudimos cargar las noticias. Toca para reintentar.' : source.phase === 'loading' ? 'Cargando noticias…' : 'Noticias próximamente')),
+          React.createElement('div', { style: { fontSize: 'var(--text-17, 17px)', fontWeight: 800, lineHeight: 1.2, textWrap: 'pretty' } }, n ? n.title : source.phase === 'error' ? 'No pudimos cargar las noticias. Toca para reintentar.' : source.phase === 'loading' ? 'Cargando noticias…' : 'Noticias próximamente')),
       ),
     );
   }
@@ -141,7 +141,7 @@
         React.createElement('button', { onClick: activate, 'aria-label': banner.action_url ? 'Abrir ' + (banner.title || 'anuncio') : 'Ampliar ' + (banner.title || 'anuncio'), style: { position: 'absolute', inset: 0, width: '100%', height: '100%', padding: 0, border: 'none', background: 'none', cursor: 'pointer' } },
           React.createElement('img', { src: banner.image_url, alt: banner.title || 'Anuncio SutiApp', draggable: false, style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } })),
         React.createElement('button', { onClick: (event) => { event.stopPropagation(); setViewer(true); }, 'aria-label': 'Ampliar imagen', style: { position: 'absolute', top: 9, right: 9, width: 34, height: 34, border: 'none', borderRadius: 11, background: 'rgba(0,0,0,.38)', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'zoom-in' } }, React.createElement(I, { name: 'search', size: 17, stroke: 2.3 })),
-        banner.action_label && React.createElement('span', { style: { position: 'absolute', left: 11, bottom: 9, padding: '5px 9px', borderRadius: 999, background: 'rgba(0,0,0,.45)', color: '#fff', fontSize: 10.5, fontWeight: 800, pointerEvents: 'none' } }, banner.action_label),
+        banner.action_label && React.createElement('span', { style: { position: 'absolute', left: 11, bottom: 9, padding: '5px 9px', borderRadius: 999, background: 'rgba(0,0,0,.45)', color: '#fff', fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 800, pointerEvents: 'none' } }, banner.action_label),
       ),
       banners.length > 1 && React.createElement('div', { 'data-home-banner-dots': '', style: { display: 'flex', justifyContent: 'center', gap: 6, marginTop: 9 } }, banners.map((item, itemIndex) => React.createElement('button', { key: item.id, onClick: () => setIndex(itemIndex), 'aria-label': 'Banner ' + (itemIndex + 1), style: { width: itemIndex === index ? 22 : 7, height: 7, border: 'none', borderRadius: 999, padding: 0, background: itemIndex === index ? 'var(--guinda)' : 'var(--hairline-strong)', transition: 'width .25s ease' } }))),
       viewer && window.ReactDOM.createPortal(
@@ -174,7 +174,7 @@
       React.createElement('div', { style: { padding: '0 20px' } }, React.createElement(window.SectionHead, { title: 'Noticias del sindicato', action: 'Ver todas', onAction: () => {}, icon: 'news' })),
       source.phase === 'loading' && React.createElement('div', { 'data-phase2-news-state': 'loading', className: 'su-skeleton', style: { height: 184, margin: '4px 20px 8px', borderRadius: 22 } }),
       source.phase === 'error' && React.createElement('button', { onClick: source.retry, 'data-phase2-news-state': 'error', style: { display: 'block', width: 'calc(100% - 40px)', minHeight: 92, margin: '4px 20px 8px', border: 'none', borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', color: 'var(--ink-2)', fontWeight: 700 } }, 'No pudimos cargar las noticias. Reintentar'),
-      source.phase === 'loaded' && list.length === 0 && React.createElement('div', { 'data-phase2-news-state': 'empty', style: { minHeight: 92, margin: '4px 20px 8px', borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', display: 'grid', placeItems: 'center', color: 'var(--ink-3)', fontSize: 13, fontWeight: 700 } }, 'Aún no hay noticias publicadas.'),
+      source.phase === 'loaded' && list.length === 0 && React.createElement('div', { 'data-phase2-news-state': 'empty', style: { minHeight: 92, margin: '4px 20px 8px', borderRadius: 22, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', display: 'grid', placeItems: 'center', color: 'var(--ink-3)', fontSize: 'var(--text-13, 13px)', fontWeight: 700 } }, 'Aún no hay noticias publicadas.'),
       source.phase === 'loaded' && list.length > 0 && React.createElement('div', { ref: railRef, 'data-phase2-news-state': 'loaded', style: { display: 'flex', gap: 14, overflowX: 'auto', padding: '4px 20px 8px', scrollbarWidth: 'none', scrollSnapType: 'x mandatory' } },
         list.map((n) => React.createElement('div', {
           key: n.id,
@@ -186,8 +186,8 @@
             n.image_url && React.createElement('img', { src: n.image_url, alt: '', loading: 'lazy', decoding: 'async', 'data-shared-inner': '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } }),
             React.createElement('div', { style: { position: 'absolute', right: -8, bottom: -16, opacity: .14 } }, React.createElement(window.FistMark, { size: 78, color: '#fff' })),
             n.tag && React.createElement('div', { style: { position: 'absolute', top: 10, left: 10, zIndex: 2 } }, React.createElement(window.Badge, { tone: 'gold', solid: true }, n.tag.toUpperCase()))),
-          React.createElement('div', { 'data-shared-title': '', style: { fontSize: 14.5, fontWeight: 700, lineHeight: 1.3, margin: '11px 6px 0', color: 'var(--ink)', textWrap: 'pretty' } }, n.title),
-          React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, margin: '5px 6px 8px', display: 'flex', gap: 8 } }, n.date, React.createElement('span', null, '· ' + n.read + ' lectura')))),
+          React.createElement('div', { 'data-shared-title': '', style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 700, lineHeight: 1.3, margin: '11px 6px 0', color: 'var(--ink)', textWrap: 'pretty' } }, n.title),
+          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 600, margin: '5px 6px 8px', display: 'flex', gap: 8 } }, n.date, React.createElement('span', null, '· ' + n.read + ' lectura')))),
       ),
     );
   }
@@ -208,7 +208,7 @@
           style: { background: 'var(--surface)', border: 'none', outline: 'none', borderRadius: 20, padding: '16px 10px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 11, cursor: 'pointer', boxShadow: 'var(--neo-md)', textAlign: 'center', minHeight: 116, justifyContent: 'center' },
         },
           React.createElement(window.IconTile, { icon: m.icon, size: 48, glow: true }),
-          React.createElement('span', { style: { fontSize: 11.5, fontWeight: 700, lineHeight: 1.2, color: 'var(--ink)' } }, m.label))),
+          React.createElement('span', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, lineHeight: 1.2, color: 'var(--ink)' } }, m.label))),
       ),
     );
   }
@@ -225,8 +225,8 @@
       React.createElement('div', { style: { display: 'flex', gap: 12, overflowX: 'auto', padding: '0 20px 4px', scrollbarWidth: 'none' } },
         source.directory.map((c) => React.createElement('div', { key: c.id, 'data-h007-directory-member': '', style: { width: 132, flexShrink: 0, background: 'var(--surface)', borderRadius: 18, padding: 14, textAlign: 'center', boxShadow: 'var(--neo-sm)' } },
           React.createElement('div', { style: { display: 'flex', justifyContent: 'center', margin: '0 0 9px' } }, React.createElement(window.Avatar, { name: c.name || '', src: c.image_url || undefined, size: 50, loading: 'lazy' })),
-          React.createElement('div', { style: { fontSize: 13, fontWeight: 800, lineHeight: 1.2, color: 'var(--ink)' } }, c.name),
-          React.createElement('div', { style: { fontSize: 11.5, color: 'var(--guinda)', fontWeight: 600, marginTop: 3, lineHeight: 1.2 } }, c.role))),
+          React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800, lineHeight: 1.2, color: 'var(--ink)' } }, c.name),
+          React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--guinda)', fontWeight: 600, marginTop: 3, lineHeight: 1.2 } }, c.role))),
       ),
     );
   }
@@ -248,7 +248,7 @@
 
     if (installed) {
       return React.createElement('div', {
-        style: { margin: '16px auto 0', width: 'fit-content', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 999, background: '#E7F6ED', color: '#13794A', fontSize: 13, fontWeight: 800 },
+        style: { margin: '16px auto 0', width: 'fit-content', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 999, background: '#E7F6ED', color: '#13794A', fontSize: 'var(--text-13, 13px)', fontWeight: 800 },
       },
         React.createElement(I, { name: 'checkCircle', size: 17, stroke: 2.2 }), 'App instalada');
     }
@@ -274,7 +274,7 @@
 
     if (!brand) return React.createElement('div', {
       'data-install-branding-state': visual.phase,
-      style: { margin: '18px 24px 0', padding: 12, borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-3)', fontSize: 12, fontWeight: 700, textAlign: 'center' },
+      style: { margin: '18px 24px 0', padding: 12, borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-3)', fontSize: 'var(--text-12, 12px)', fontWeight: 700, textAlign: 'center' },
     }, visual.phase === 'error' ? 'No se pudo cargar la información de instalación.' : 'Cargando información de instalación…');
 
     return React.createElement('div', { 'data-install-branding-state': 'loaded', style: { marginTop: 18, padding: '0 24px' } },
@@ -282,14 +282,14 @@
         React.createElement('div', { style: { width: 48, height: 48, borderRadius: 13, overflow: 'hidden', position: 'relative', background: 'var(--grad-guinda)', flexShrink: 0, boxShadow: 'var(--neo-sm)', pointerEvents: 'none' } },
           React.createElement('img', { src: brand.app_icon_url, alt: '', loading: 'lazy', decoding: 'async', style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } })),
         React.createElement('div', { style: { flex: 1, minWidth: 0, textAlign: 'left' } },
-          React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, brand.app_name),
-          React.createElement('div', { style: { fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, brand.description))),
+          React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, brand.app_name),
+          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, brand.description))),
       React.createElement('button', {
         onClick, className: 'su-press',
-        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, width: '100%', height: 52, borderRadius: 15, border: 'none', cursor: 'pointer', background: 'var(--grad-guinda-soft)', color: '#fff', fontSize: 15.5, fontWeight: 800, fontFamily: 'inherit', boxShadow: 'var(--glow-guinda)' },
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, width: '100%', height: 52, borderRadius: 15, border: 'none', cursor: 'pointer', background: 'var(--grad-guinda-soft)', color: '#fff', fontSize: 'var(--text-15-5, 15.5px)', fontWeight: 800, fontFamily: 'inherit', boxShadow: 'var(--glow-guinda)' },
       },
         React.createElement(I, { name: 'download', size: 20, stroke: 2.2 }), 'Instalar app'),
-      React.createElement('div', { style: { textAlign: 'center', fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 500, marginTop: 8, lineHeight: 1.4 } },
+      React.createElement('div', { style: { textAlign: 'center', fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 500, marginTop: 8, lineHeight: 1.4 } },
         'Tenla en tu pantalla de inicio y úsala sin conexión'));
   }
 
@@ -297,9 +297,9 @@
   function FooterInst({ app }) {
     return React.createElement('div', { style: { textAlign: 'center', padding: '12px 24px 8px' } },
       React.createElement('div', { style: { margin: '0 auto 10px', width: 'fit-content' } }, React.createElement(window.SutiSeal, { size: 58, mono: true })),
-      React.createElement('div', { style: { fontSize: 13, fontWeight: 800, color: 'var(--ink-2)', letterSpacing: '.02em' } }, 'SUTISSSTESON'),
-      React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 500, marginTop: 3, lineHeight: 1.5 } }, 'Sindicato Único de Trabajadores del ISSSTESON'),
-      React.createElement('div', { style: { fontSize: 11, color: 'var(--ink-3)', marginTop: 8 } }, 'Hermosillo, Sonora · v3.0'),
+      React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800, color: 'var(--ink-2)', letterSpacing: '.02em' } }, 'SUTISSSTESON'),
+      React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 500, marginTop: 3, lineHeight: 1.5 } }, 'Sindicato Único de Trabajadores del ISSSTESON'),
+      React.createElement('div', { style: { fontSize: 'var(--text-11, 11px)', color: 'var(--ink-3)', marginTop: 8 } }, 'Hermosillo, Sonora · v3.0'),
       React.createElement(InstallButton, { app }),
     );
   }

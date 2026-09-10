@@ -48,7 +48,7 @@
       style: {
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: sizes.gap,
         height: sizes.h, padding: `0 ${sizes.px}px`, borderRadius: sizes.r,
-        fontSize: sizes.fs, fontWeight: 700, fontFamily: 'inherit', letterSpacing: '.01em',
+        fontSize: 'var(--text-control, ' + sizes.fs + 'px)', fontWeight: 700, fontFamily: 'inherit', letterSpacing: '.01em',
         width: full ? '100%' : 'auto', cursor: inert ? 'not-allowed' : busy ? 'progress' : 'pointer',
         opacity: inert ? 0.45 : 1, filter: inert ? 'saturate(.55)' : 'none',
         transition: 'transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .2s, filter .2s, opacity .2s',
@@ -84,7 +84,7 @@
       onClick, style: {
         display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px',
         borderRadius: 999, background: a.bg, color: a.fg, border: 'none', boxShadow: a.sh,
-        fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default',
+        fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 600, fontFamily: 'inherit', cursor: onClick ? 'pointer' : 'default',
         whiteSpace: 'nowrap', transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s', ...style,
       },
     }, icon && React.createElement(Icon, { name: icon, size: 15, stroke: 2 }), children);
@@ -122,6 +122,7 @@
     const chipRefs = React.useRef({});
     const prev = React.useRef(null);
     React.useLayoutEffect(() => {
+      const update = () => {
       const ind = indRef.current, row = rowRef.current, el = chipRefs.current[value];
       if (!ind || !row || !el) return;
       const M = window.MOTION;
@@ -129,14 +130,21 @@
       Object.keys(chipRefs.current).forEach((k) => { const c = chipRefs.current[k]; if (c) base = Math.max(base, c.offsetWidth); });
       if (!base) return;
       ind.style.width = base + 'px';
+      ind.style.height = el.offsetHeight + 'px';
       const s = el.offsetWidth / base;
-      const to = { transform: `translateX(${el.offsetLeft}px) scaleX(${s})`, borderRadius: `${19 / s}px / 19px` };
+      const to = { transform: `translate(${el.offsetLeft}px, ${el.offsetTop}px) scaleX(${s})`, borderRadius: `${19 / s}px / 19px` };
       const from = prev.current;
       prev.current = to;
       ind.style.opacity = '1';
       if (!from || !M || M.reduced() || M.frozen()) { ind.style.transform = to.transform; ind.style.borderRadius = to.borderRadius; return; }
       ind.style.transform = to.transform; ind.style.borderRadius = to.borderRadius;
       M.animate(ind, [from, to], { duration: M.dur.emphasized, easing: M.ease.emphasized, fill: 'none' });
+      };
+      update();
+      const observer = new ResizeObserver(update);
+      if (rowRef.current) observer.observe(rowRef.current);
+      Object.values(chipRefs.current).forEach(el => { if(el) observer.observe(el); });
+      return () => observer.disconnect();
     }, [value, list.map((i) => i.id).join(',')]);
     React.useEffect(() => {
       const sc = scRef.current, el = chipRefs.current[value];
@@ -145,7 +153,7 @@
       sc.scrollTo({ left: Math.max(0, el.offsetLeft - (sc.clientWidth - el.offsetWidth) / 2), behavior: (M && (M.reduced() || M.frozen())) ? 'auto' : 'smooth' });
     }, [value]);
     return React.createElement('div', { ref: scRef, style: { overflowX: 'auto', scrollbarWidth: 'none', ...style } },
-      React.createElement('div', { ref: rowRef, style: { position: 'relative', display: 'inline-flex', gap: 9 } },
+      React.createElement('div', { ref: rowRef, className: 'su-chip-row', style: { position: 'relative', display: 'inline-flex', gap: 9 } },
         React.createElement('div', { ref: indRef, 'aria-hidden': 'true', style: { position: 'absolute', left: 0, top: 0, height: 38, width: 1, opacity: 0, transformOrigin: 'left center', borderRadius: 999, background: 'var(--grad-guinda-soft)', boxShadow: 'var(--glow-guinda)', pointerEvents: 'none' } }),
         list.map((it) => {
           const on = it.id === value;
@@ -155,7 +163,7 @@
             style: {
               position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px',
               borderRadius: 999, border: 'none', background: on ? 'transparent' : 'var(--surface)', boxShadow: on ? 'none' : 'var(--neo-sm)',
-              color: on ? '#fff' : 'var(--ink-2)', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+              color: on ? '#fff' : 'var(--ink-2)', fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
               transition: 'color .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s',
             },
           }, it.icon && React.createElement(Icon, { name: it.icon, size: 15, stroke: 2 }), it.label);
@@ -175,7 +183,7 @@
     return React.createElement('span', {
       style: {
         display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 999,
-        fontSize: 11.5, fontWeight: 800, letterSpacing: '.02em', lineHeight: 1,
+        fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, letterSpacing: '.02em', lineHeight: 1,
         background: solid ? map[0] : map[1], color: solid ? '#fff' : map[2], ...style,
       },
     }, icon && React.createElement(Icon, { name: icon, size: 12, stroke: 2.4 }), children);
@@ -224,9 +232,9 @@
     return React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 12px', ...style } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
         icon && React.createElement(Icon, { name: icon, size: 18, stroke: 2, style: { color: 'var(--guinda)' } }),
-        React.createElement('h3', { style: { fontSize: 17, fontWeight: 800, letterSpacing: '-.01em', color: 'var(--ink)', margin: 0 } }, title),
+        React.createElement('h3', { style: { fontSize: 'var(--text-17, 17px)', fontWeight: 800, letterSpacing: '-.01em', color: 'var(--ink)', margin: 0 } }, title),
       ),
-      action && React.createElement('button', { onClick: onAction, style: { display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: 'var(--guinda)', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' } },
+      action && React.createElement('button', { onClick: onAction, style: { display: 'flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', color: 'var(--guinda)', fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' } },
         action, React.createElement(Icon, { name: 'chevR', size: 15, stroke: 2.4 })),
     );
   }
@@ -265,11 +273,11 @@
           st.done ? React.createElement(Icon, { name: 'check', size: 17, stroke: 3 }) : st.active ? React.createElement('div', { style: { width: 9, height: 9, borderRadius: '50%', background: 'var(--guinda)' } }) : React.createElement('div', { style: { width: 7, height: 7, borderRadius: '50%', background: 'var(--ink-3)' } })),
         React.createElement('div', { style: { flex: 1, paddingTop: 4 } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-            React.createElement('span', { style: { fontSize: 14.5, fontWeight: st.done || st.active ? 800 : 600, color: st.done || st.active ? 'var(--ink)' : 'var(--ink-3)' } }, st.label),
-            st.active && React.createElement('span', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '.04em', color: 'var(--guinda)', background: 'var(--guinda-50)', padding: '3px 8px', borderRadius: 999 } }, 'EN CURSO')),
-          st.desc && React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.45, marginTop: 3, textWrap: 'pretty' } }, st.desc),
-          (st.date || st.responsable || st.sla != null) && React.createElement('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginTop: 4 } }, [st.date, st.responsable && ('Responsable: ' + st.responsable), st.sla != null && ('Tiempo estimado: ' + st.sla + ' día(s) hábil(es)')].filter(Boolean).join(' · ')),
-          st.active && activeNote && React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, marginTop: 9, background: 'var(--surface-2)', borderRadius: 13, padding: '11px 13px', lineHeight: 1.5, boxShadow: 'var(--neo-inset)' } }, activeNote)));
+            React.createElement('span', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: st.done || st.active ? 800 : 600, color: st.done || st.active ? 'var(--ink)' : 'var(--ink-3)' } }, st.label),
+            st.active && React.createElement('span', { style: { fontSize: 'var(--text-10, 10px)', fontWeight: 800, letterSpacing: '.04em', color: 'var(--guinda)', background: 'var(--guinda-50)', padding: '3px 8px', borderRadius: 999 } }, 'EN CURSO')),
+          st.desc && React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.45, marginTop: 3, textWrap: 'pretty' } }, st.desc),
+          (st.date || st.responsable || st.sla != null) && React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 4 } }, [st.date, st.responsable && ('Responsable: ' + st.responsable), st.sla != null && ('Tiempo estimado: ' + st.sla + ' día(s) hábil(es)')].filter(Boolean).join(' · ')),
+          st.active && activeNote && React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-2)', fontWeight: 600, marginTop: 9, background: 'var(--surface-2)', borderRadius: 13, padding: '11px 13px', lineHeight: 1.5, boxShadow: 'var(--neo-inset)' } }, activeNote)));
     }));
     return inner;
   }
@@ -286,7 +294,7 @@
         React.createElement(Icon, { name: 'search', size: 20, stroke: 2.1, className: 'su-search-ico', style: { color: 'var(--guinda)' } }),
         React.createElement('input', {
           value, onChange: onChange ? (e) => onChange(e.target.value) : undefined, placeholder,
-          style: { flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: 15, fontFamily: 'inherit', color: 'var(--ink)' },
+          style: { flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: 'var(--text-15, 15px)', fontFamily: 'inherit', color: 'var(--ink)' },
         }),
       ),
       onFilter && React.createElement('button', { onClick: onFilter, style: { width: 52, height: 52, borderRadius: 16, background: 'var(--grad-guinda-soft)', border: 'none', display: 'grid', placeItems: 'center', color: '#fff', cursor: 'pointer', boxShadow: 'var(--glow-guinda)' } },
@@ -331,7 +339,7 @@
       if (d.dy > p.offsetHeight * 0.28 || v > 0.55) onClose && onClose();
     };
     if (!mounted && !open) return null;
-    return React.createElement('div', {
+    const overlay = React.createElement('div', {
       onClick: onClose,
       style: {
         position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-end',
@@ -342,6 +350,7 @@
     },
       React.createElement('div', {
         ref: panelRef,
+        role: 'dialog', 'aria-modal': 'true', 'aria-label': title || 'Opciones', 'aria-hidden': open ? undefined : 'true',
         onClick: (e) => e.stopPropagation(),
         onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
         style: {
@@ -352,10 +361,13 @@
         },
       },
         React.createElement('div', { style: { width: 40, height: 4.5, borderRadius: 999, background: 'var(--hairline-strong)', margin: '6px auto 14px' } }),
-        title && React.createElement('h3', { style: { fontSize: 19, fontWeight: 800, margin: '0 0 14px', letterSpacing: '-.01em' } }, title),
+        title && React.createElement('h3', { style: { fontSize: 'var(--text-19, 19px)', fontWeight: 800, margin: '0 0 14px', letterSpacing: '-.01em' } }, title),
         children,
       ),
     );
+    // Keep affiliate sheets above a scrolled screen and inside its typography scope.
+    const affiliateRoot = document.querySelector('[data-text-size]');
+    return affiliateRoot ? ReactDOM.createPortal(overlay, affiliateRoot) : overlay;
   }
 
   // ---------- EmptyState ----------
@@ -363,8 +375,8 @@
     return React.createElement('div', { style: { textAlign: 'center', padding: '40px 24px' } },
       React.createElement('div', { style: { width: 72, height: 72, borderRadius: 22, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', margin: '0 auto 16px', color: 'var(--guinda)' } },
         React.createElement(Icon, { name: icon, size: 32, stroke: 1.7 })),
-      React.createElement('div', { style: { fontWeight: 800, fontSize: 17, color: 'var(--ink)' } }, title),
-      sub && React.createElement('div', { style: { fontSize: 14, color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.5 } }, sub),
+      React.createElement('div', { style: { fontWeight: 800, fontSize: 'var(--text-17, 17px)', color: 'var(--ink)' } }, title),
+      sub && React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.5 } }, sub),
       action && React.createElement('div', { style: { marginTop: 18 } }, action),
     );
   }

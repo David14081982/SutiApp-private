@@ -4166,7 +4166,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         height: sizes.h,
         padding: `0 ${sizes.px}px`,
         borderRadius: sizes.r,
-        fontSize: sizes.fs,
+        fontSize: 'var(--text-control, ' + sizes.fs + 'px)',
         fontWeight: 700,
         fontFamily: 'inherit',
         letterSpacing: '.01em',
@@ -4288,7 +4288,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         color: a.fg,
         border: 'none',
         boxShadow: a.sh,
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 600,
         fontFamily: 'inherit',
         cursor: onClick ? 'pointer' : 'default',
@@ -4349,38 +4349,48 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const chipRefs = React.useRef({});
     const prev = React.useRef(null);
     React.useLayoutEffect(() => {
-      const ind = indRef.current,
-        row = rowRef.current,
-        el = chipRefs.current[value];
-      if (!ind || !row || !el) return;
-      const M = window.MOTION;
-      let base = 0;
-      Object.keys(chipRefs.current).forEach(k => {
-        const c = chipRefs.current[k];
-        if (c) base = Math.max(base, c.offsetWidth);
-      });
-      if (!base) return;
-      ind.style.width = base + 'px';
-      const s = el.offsetWidth / base;
-      const to = {
-        transform: `translateX(${el.offsetLeft}px) scaleX(${s})`,
-        borderRadius: `${19 / s}px / 19px`
-      };
-      const from = prev.current;
-      prev.current = to;
-      ind.style.opacity = '1';
-      if (!from || !M || M.reduced() || M.frozen()) {
+      const update = () => {
+        const ind = indRef.current,
+          row = rowRef.current,
+          el = chipRefs.current[value];
+        if (!ind || !row || !el) return;
+        const M = window.MOTION;
+        let base = 0;
+        Object.keys(chipRefs.current).forEach(k => {
+          const c = chipRefs.current[k];
+          if (c) base = Math.max(base, c.offsetWidth);
+        });
+        if (!base) return;
+        ind.style.width = base + 'px';
+        ind.style.height = el.offsetHeight + 'px';
+        const s = el.offsetWidth / base;
+        const to = {
+          transform: `translate(${el.offsetLeft}px, ${el.offsetTop}px) scaleX(${s})`,
+          borderRadius: `${19 / s}px / 19px`
+        };
+        const from = prev.current;
+        prev.current = to;
+        ind.style.opacity = '1';
+        if (!from || !M || M.reduced() || M.frozen()) {
+          ind.style.transform = to.transform;
+          ind.style.borderRadius = to.borderRadius;
+          return;
+        }
         ind.style.transform = to.transform;
         ind.style.borderRadius = to.borderRadius;
-        return;
-      }
-      ind.style.transform = to.transform;
-      ind.style.borderRadius = to.borderRadius;
-      M.animate(ind, [from, to], {
-        duration: M.dur.emphasized,
-        easing: M.ease.emphasized,
-        fill: 'none'
+        M.animate(ind, [from, to], {
+          duration: M.dur.emphasized,
+          easing: M.ease.emphasized,
+          fill: 'none'
+        });
+      };
+      update();
+      const observer = new ResizeObserver(update);
+      if (rowRef.current) observer.observe(rowRef.current);
+      Object.values(chipRefs.current).forEach(el => {
+        if (el) observer.observe(el);
       });
+      return () => observer.disconnect();
     }, [value, list.map(i => i.id).join(',')]);
     React.useEffect(() => {
       const sc = scRef.current,
@@ -4401,6 +4411,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       }
     }, React.createElement('div', {
       ref: rowRef,
+      className: 'su-chip-row',
       style: {
         position: 'relative',
         display: 'inline-flex',
@@ -4442,7 +4453,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
           background: on ? 'transparent' : 'var(--surface)',
           boxShadow: on ? 'none' : 'var(--neo-sm)',
           color: on ? '#fff' : 'var(--ink-2)',
-          fontSize: 13.5,
+          fontSize: 'var(--text-13-5, 13.5px)',
           fontWeight: 600,
           fontFamily: 'inherit',
           cursor: 'pointer',
@@ -4480,7 +4491,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         gap: 5,
         padding: '4px 10px',
         borderRadius: 999,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         letterSpacing: '.02em',
         lineHeight: 1,
@@ -4598,7 +4609,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       }
     }), React.createElement('h3', {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 800,
         letterSpacing: '-.01em',
         color: 'var(--ink)',
@@ -4613,7 +4624,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         background: 'none',
         border: 'none',
         color: 'var(--guinda)',
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 700,
         fontFamily: 'inherit',
         cursor: 'pointer'
@@ -4760,13 +4771,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         }
       }, React.createElement('span', {
         style: {
-          fontSize: 14.5,
+          fontSize: 'var(--text-14-5, 14.5px)',
           fontWeight: st.done || st.active ? 800 : 600,
           color: st.done || st.active ? 'var(--ink)' : 'var(--ink-3)'
         }
       }, st.label), st.active && React.createElement('span', {
         style: {
-          fontSize: 10,
+          fontSize: 'var(--text-10, 10px)',
           fontWeight: 800,
           letterSpacing: '.04em',
           color: 'var(--guinda)',
@@ -4776,7 +4787,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         }
       }, 'EN CURSO')), st.desc && React.createElement('div', {
         style: {
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           color: 'var(--ink-2)',
           fontWeight: 600,
           lineHeight: 1.45,
@@ -4785,14 +4796,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         }
       }, st.desc), (st.date || st.responsable || st.sla != null) && React.createElement('div', {
         style: {
-          fontSize: 12,
+          fontSize: 'var(--text-12, 12px)',
           color: 'var(--ink-3)',
           fontWeight: 600,
           marginTop: 4
         }
       }, [st.date, st.responsable && 'Responsable: ' + st.responsable, st.sla != null && 'Tiempo estimado: ' + st.sla + ' día(s) hábil(es)'].filter(Boolean).join(' · ')), st.active && activeNote && React.createElement('div', {
         style: {
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           color: 'var(--ink-2)',
           fontWeight: 600,
           marginTop: 9,
@@ -4854,7 +4865,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         border: 'none',
         background: 'none',
         outline: 'none',
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontFamily: 'inherit',
         color: 'var(--ink)'
       }
@@ -4934,7 +4945,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       if (d.dy > p.offsetHeight * 0.28 || v > 0.55) onClose && onClose();
     };
     if (!mounted && !open) return null;
-    return React.createElement('div', {
+    const overlay = React.createElement('div', {
       onClick: onClose,
       style: {
         position: 'absolute',
@@ -4951,6 +4962,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       }
     }, React.createElement('div', {
       ref: panelRef,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title || 'Opciones',
+      'aria-hidden': open ? undefined : 'true',
       onClick: e => e.stopPropagation(),
       onPointerDown: onDown,
       onPointerMove: onMove,
@@ -4979,12 +4994,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       }
     }), title && React.createElement('h3', {
       style: {
-        fontSize: 19,
+        fontSize: 'var(--text-19, 19px)',
         fontWeight: 800,
         margin: '0 0 14px',
         letterSpacing: '-.01em'
       }
     }, title), children));
+    // Keep affiliate sheets above a scrolled screen and inside its typography scope.
+    const affiliateRoot = document.querySelector('[data-text-size]');
+    return affiliateRoot ? ReactDOM.createPortal(overlay, affiliateRoot) : overlay;
   }
 
   // ---------- EmptyState ----------
@@ -5017,12 +5035,12 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     })), React.createElement('div', {
       style: {
         fontWeight: 800,
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         color: 'var(--ink)'
       }
     }, title), sub && React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         color: 'var(--ink-3)',
         marginTop: 6,
         lineHeight: 1.5
@@ -5305,19 +5323,19 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   const CSS = `
     .request-success{position:relative;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg)}
     .request-success.is-fullscreen{position:fixed;inset:0;z-index:2600}
-    .request-success-head{position:relative;z-index:4;display:flex;align-items:center;gap:6px;min-height:56px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--hairline);font-size:16.5px;font-weight:800}
+    .request-success-head{position:relative;z-index:4;display:flex;align-items:center;gap:6px;min-height:56px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--hairline);font-size:var(--text-16-5, 16.5px);font-weight:800}
     .request-success-back{width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:var(--ink);display:grid;place-items:center;cursor:pointer}
     .request-success-scroll{position:relative;z-index:1;flex:1;min-height:0;overflow-y:auto;padding:28px 22px 18px;scrollbar-width:none}
     .request-success-scroll::-webkit-scrollbar{display:none}
     .request-success-hero{text-align:center;display:flex;flex-direction:column;align-items:center}
     .request-success-icon{width:92px;height:92px;border-radius:50%;background:#E3F7EE;color:#087A50;display:grid;place-items:center}
-    .request-success h2{font-size:24px;font-weight:900;letter-spacing:-.025em;margin:22px 0 0;color:var(--ink)}
-    .request-success-lead{max-width:350px;font-size:14px;font-weight:650;line-height:1.55;color:var(--ink-2);margin:9px 0 0}
+    .request-success h2{font-size:var(--text-24, 24px);font-weight:900;letter-spacing:-.025em;margin:22px 0 0;color:var(--ink)}
+    .request-success-lead{max-width:350px;font-size:var(--text-14, 14px);font-weight:650;line-height:1.55;color:var(--ink-2);margin:9px 0 0}
     .request-success-lead strong{color:var(--guinda);font-weight:900}
     .request-success-folio{margin-top:20px;padding:10px 16px;border-radius:14px;background:var(--guinda-50);color:var(--guinda);font:850 13px var(--mono)}
-    .request-success-destination{max-width:340px;font-size:12px;font-weight:600;line-height:1.5;color:var(--ink-3);margin:12px 0 0}
+    .request-success-destination{max-width:340px;font-size:var(--text-12, 12px);font-weight:600;line-height:1.5;color:var(--ink-3);margin:12px 0 0}
     .request-success-next{max-width:580px;margin:26px auto 0}
-    .request-success-next-title{display:flex;align-items:center;gap:9px;margin:0 0 12px;font-size:17px;font-weight:900;color:var(--ink)}
+    .request-success-next-title{display:flex;align-items:center;gap:9px;margin:0 0 12px;font-size:var(--text-17, 17px);font-weight:900;color:var(--ink)}
     .request-success-next-title svg{color:var(--guinda)}
     .request-success-timeline{list-style:none;margin:0;padding:16px 18px;background:var(--surface);border-radius:22px;box-shadow:var(--neo-sm)}
     .request-success-stage{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;min-height:67px;text-align:left}
@@ -5331,13 +5349,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     .request-success-upcoming-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
     .request-success-stage-body{min-width:0;padding-top:4px}
     .request-success-stage-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .request-success-stage-title{font-size:14px;font-weight:850;color:var(--ink)}
+    .request-success-stage-title{font-size:var(--text-14, 14px);font-weight:850;color:var(--ink)}
     .request-success-stage[data-state='upcoming'] .request-success-stage-title{color:#9CA7BB}
-    .request-success-stage-meta{display:block;margin-top:4px;font-size:11px;font-weight:650;color:var(--ink-3)}
-    .request-success-badge{display:inline-flex;align-items:center;min-height:20px;padding:3px 9px;border-radius:999px;background:#FCE8EE;color:var(--guinda);font-size:9px;font-weight:900;letter-spacing:.03em}
-    .request-success-detail{margin-top:9px;padding:11px 12px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);font-size:11.5px;font-weight:600;line-height:1.45}
-    .request-success-stage-context{display:block;margin-top:4px;font-size:10.5px;font-weight:650;color:var(--ink-3);line-height:1.4}
-    .request-success-unavailable{padding:18px 14px;text-align:center;color:var(--ink-3);font-size:12.5px;font-weight:700;line-height:1.5}
+    .request-success-stage-meta{display:block;margin-top:4px;font-size:var(--text-11, 11px);font-weight:650;color:var(--ink-3)}
+    .request-success-badge{display:inline-flex;align-items:center;min-height:20px;padding:3px 9px;border-radius:999px;background:#FCE8EE;color:var(--guinda);font-size:var(--text-9, 9px);font-weight:900;letter-spacing:.03em}
+    .request-success-detail{margin-top:9px;padding:11px 12px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);font-size:var(--text-11-5, 11.5px);font-weight:600;line-height:1.45}
+    .request-success-stage-context{display:block;margin-top:4px;font-size:var(--text-10-5, 10.5px);font-weight:650;color:var(--ink-3);line-height:1.4}
+    .request-success-unavailable{padding:18px 14px;text-align:center;color:var(--ink-3);font-size:var(--text-12-5, 12.5px);font-weight:700;line-height:1.5}
     .request-success-footer{position:relative;z-index:2;padding:8px 22px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,var(--bg) 18%)}
     .request-success-home{display:block;width:100%;height:38px;margin-top:7px;border:0;background:transparent;color:var(--guinda);font:800 13px var(--font);cursor:pointer}
     .request-success button:focus-visible{outline:2px solid var(--guinda);outline-offset:2px}
@@ -5731,7 +5749,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }, name === 'minus' ? React.createElement('span', {
       'aria-hidden': 'true',
       style: {
-        fontSize: 24,
+        fontSize: 'var(--text-24, 24px)',
         fontWeight: 700,
         lineHeight: 1
       }
@@ -5763,7 +5781,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       style: viewerHeaderStyle
     }, React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         opacity: .8
       }
@@ -5855,7 +5873,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     }, React.createElement('div', {
       style: {
         minWidth: 0,
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 850,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -5897,7 +5915,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         display: 'grid',
         placeItems: 'center',
         color: '#fff',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800
       }
     }, 'Cargando documento…'), React.createElement('iframe', {
@@ -5939,14 +5957,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       stroke: 1.8
     })), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 850
       }
     }, title), React.createElement('div', {
       style: {
         maxWidth: 300,
         marginTop: 7,
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         lineHeight: 1.5,
         opacity: .75
       }
@@ -6047,7 +6065,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         out.push(React.createElement('h' + level, {
           key: index,
           style: {
-            fontSize: level === 2 ? 20 : 17,
+            fontSize: level === 2 ? 'var(--text-20, 20px)' : 'var(--text-17, 17px)',
             fontWeight: 850,
             lineHeight: 1.3,
             margin: '18px 0 9px',
@@ -6156,7 +6174,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         outline: 'none',
         background: 'transparent',
         padding: '13px 14px',
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontFamily: 'inherit',
         color: 'var(--ink)',
         boxSizing: 'border-box',
@@ -9466,14 +9484,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 15.5,
+        fontSize: 'var(--text-15-5, 15.5px)',
         fontWeight: 900,
         letterSpacing: '-.01em',
         lineHeight: 1.25
       }
     }, 'Términos y Condiciones'), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 700,
         marginTop: 2,
@@ -9519,13 +9537,13 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 900,
         lineHeight: 1.3
       }
     }, t.title)), React.createElement('p', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 600,
         lineHeight: 1.55,
@@ -9545,7 +9563,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         fontFamily: 'var(--mono)',
@@ -9553,13 +9571,13 @@ Object.assign(window, {
       }
     }, String(i + 1).padStart(2, '0')), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, s[0]), React.createElement('p', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.6,
@@ -9573,7 +9591,7 @@ Object.assign(window, {
         alignItems: 'center',
         justifyContent: 'center',
         color: 'var(--ink-3)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         margin: '14px 0 4px'
       }
@@ -9702,7 +9720,7 @@ Object.assign(window, {
       }
     }), React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         color: 'var(--ink-2)'
       }
@@ -9713,7 +9731,7 @@ Object.assign(window, {
         background: 'none',
         padding: 0,
         cursor: 'pointer',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
@@ -9756,13 +9774,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, 'Firma aquí con tu dedo'), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         opacity: .8
@@ -9783,7 +9801,7 @@ Object.assign(window, {
         alignItems: 'center',
         gap: 6,
         marginTop: 6,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: '#13794A'
       }
@@ -9793,7 +9811,7 @@ Object.assign(window, {
       stroke: 2.2
     }), 'Firma capturada') : React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         marginTop: 6
@@ -9860,7 +9878,7 @@ Object.assign(window, {
       stroke: 3
     })), React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 600,
         lineHeight: 1.5
@@ -9940,13 +9958,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         opacity: .82,
         fontWeight: 500
       }
     }, saludo() + ','), React.createElement('div', {
       style: {
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         marginTop: 1
@@ -9966,7 +9984,7 @@ Object.assign(window, {
         background: 'rgba(255,255,255,.16)',
         padding: '5px 11px',
         borderRadius: 999,
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700,
         backdropFilter: 'blur(4px)'
       }
@@ -9976,7 +9994,7 @@ Object.assign(window, {
       stroke: 2.2
     }), u.status), React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         opacity: .8,
         fontWeight: 600
       }
@@ -10006,7 +10024,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         opacity: .85,
         fontWeight: 600
       }
@@ -10016,7 +10034,7 @@ Object.assign(window, {
       stroke: 2
     }), label), React.createElement('div', {
       style: {
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800,
         marginTop: 4,
         fontVariantNumeric: 'tabular-nums'
@@ -10066,14 +10084,14 @@ Object.assign(window, {
       color: '#fff'
     })), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         letterSpacing: '.14em',
         fontWeight: 700,
         opacity: .82
       }
     }, 'CREDENCIAL DIGITAL'), React.createElement('div', {
       style: {
-        fontSize: 21,
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         marginTop: 22,
         letterSpacing: '-.01em'
@@ -10087,14 +10105,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         opacity: .7,
         fontWeight: 600,
         letterSpacing: '.08em'
       }
     }, 'No. AFILIADO'), React.createElement('div', {
       style: {
-        fontSize: 16,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 700,
         fontFamily: 'var(--mono)',
         marginTop: 2
@@ -10105,14 +10123,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         opacity: .7,
         fontWeight: 600,
         letterSpacing: '.08em'
       }
     }, 'ESTATUS'), React.createElement('div', {
       style: {
-        fontSize: 16,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 700,
         fontFamily: 'var(--mono)',
         marginTop: 2
@@ -10134,7 +10152,7 @@ Object.assign(window, {
     })))), React.createElement('div', {
       style: {
         textAlign: 'center',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         padding: '10px 0 4px'
@@ -10157,13 +10175,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         color: 'var(--ink-3)',
         fontWeight: 600
       }
     }, saludo() + ', ' + u.short), React.createElement('h1', {
       style: {
-        fontSize: 28,
+        fontSize: 'var(--text-28, 28px)',
         lineHeight: 1.12,
         fontWeight: 800,
         letterSpacing: '-.025em',
@@ -10233,7 +10251,7 @@ Object.assign(window, {
       }
     }, n.tag.toUpperCase()), React.createElement('div', {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 800,
         lineHeight: 1.2,
         textWrap: 'pretty'
@@ -10405,7 +10423,7 @@ Object.assign(window, {
         borderRadius: 999,
         background: 'rgba(0,0,0,.45)',
         color: '#fff',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         pointerEvents: 'none'
       }
@@ -10514,7 +10532,7 @@ Object.assign(window, {
         display: 'grid',
         placeItems: 'center',
         color: 'var(--ink-3)',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700
       }
     }, 'Aún no hay noticias publicadas.'), source.phase === 'loaded' && list.length > 0 && React.createElement('div', {
@@ -10593,7 +10611,7 @@ Object.assign(window, {
     }, n.tag.toUpperCase()))), React.createElement('div', {
       'data-shared-title': '',
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 700,
         lineHeight: 1.3,
         margin: '11px 6px 0',
@@ -10602,7 +10620,7 @@ Object.assign(window, {
       }
     }, n.title), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         margin: '5px 6px 8px',
@@ -10668,7 +10686,7 @@ Object.assign(window, {
       glow: true
     }), React.createElement('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         lineHeight: 1.2,
         color: 'var(--ink)'
@@ -10745,14 +10763,14 @@ Object.assign(window, {
       loading: 'lazy'
     })), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         lineHeight: 1.2,
         color: 'var(--ink)'
       }
     }, c.name), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--guinda)',
         fontWeight: 600,
         marginTop: 3,
@@ -10798,7 +10816,7 @@ Object.assign(window, {
           borderRadius: 999,
           background: '#E7F6ED',
           color: '#13794A',
-          fontSize: 13,
+          fontSize: 'var(--text-13, 13px)',
           fontWeight: 800
         }
       }, React.createElement(I, {
@@ -10836,7 +10854,7 @@ Object.assign(window, {
         borderRadius: 13,
         background: 'var(--surface-2)',
         color: 'var(--ink-3)',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         textAlign: 'center'
       }
@@ -10885,7 +10903,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--ink)',
         whiteSpace: 'nowrap',
@@ -10894,7 +10912,7 @@ Object.assign(window, {
       }
     }, brand.app_name), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         marginTop: 1,
@@ -10917,7 +10935,7 @@ Object.assign(window, {
         cursor: 'pointer',
         background: 'var(--grad-guinda-soft)',
         color: '#fff',
-        fontSize: 15.5,
+        fontSize: 'var(--text-15-5, 15.5px)',
         fontWeight: 800,
         fontFamily: 'inherit',
         boxShadow: 'var(--glow-guinda)'
@@ -10929,7 +10947,7 @@ Object.assign(window, {
     }), 'Instalar app'), React.createElement('div', {
       style: {
         textAlign: 'center',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500,
         marginTop: 8,
@@ -10957,14 +10975,14 @@ Object.assign(window, {
       mono: true
     })), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         color: 'var(--ink-2)',
         letterSpacing: '.02em'
       }
     }, 'SUTISSSTESON'), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500,
         marginTop: 3,
@@ -10972,7 +10990,7 @@ Object.assign(window, {
       }
     }, 'Sindicato Único de Trabajadores del ISSSTESON'), React.createElement('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         color: 'var(--ink-3)',
         marginTop: 8
       }
@@ -11066,6 +11084,7 @@ Object.assign(window, {
         padding: '4px 16px 0'
       }
     }, React.createElement('div', {
+      className: 'su-finance-summary',
       style: {
         background: 'var(--surface)',
         color: 'var(--ink)',
@@ -11093,14 +11112,14 @@ Object.assign(window, {
       glow: true
     }), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 700
       }
     }, 'Crédito disponible'), React.createElement('div', {
       'data-finance-available-credit': availableCredit === null ? 'loading' : String(availableCredit),
       style: {
-        fontSize: 32,
+        fontSize: 'var(--text-32, 32px)',
         fontWeight: 800,
         letterSpacing: '-.025em',
         marginTop: 1,
@@ -11117,6 +11136,7 @@ Object.assign(window, {
         margin: '16px 0'
       }
     }), React.createElement('div', {
+      className: 'su-finance-mini-stats',
       style: {
         display: 'flex',
         gap: 18
@@ -11183,7 +11203,7 @@ Object.assign(window, {
         boxShadow: primary ? '0 8px 14px rgba(153,30,35,.18), 0 16px 26px rgba(224,192,198,.60), 0 24px 38px rgba(248,240,242,.38)' : 'none',
         cursor: 'pointer',
         fontFamily: 'inherit',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         textTransform: primary ? 'capitalize' : 'none',
         display: 'flex',
@@ -11234,7 +11254,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 5,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 700
       }
@@ -11265,7 +11285,7 @@ Object.assign(window, {
       }
     }), label), React.createElement('div', Object.assign({
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 800,
         marginTop: 3,
         fontVariantNumeric: 'tabular-nums',
@@ -11322,7 +11342,7 @@ Object.assign(window, {
       glow: true
     }), r.reason && React.createElement('span', {
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         color: 'var(--gold)',
         background: '#fbf2dd',
@@ -11331,7 +11351,7 @@ Object.assign(window, {
       }
     }, r.reason)), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         marginTop: 12,
         color: 'var(--ink)'
@@ -11344,7 +11364,7 @@ Object.assign(window, {
         marginTop: 8,
         color: 'var(--guinda)',
         fontWeight: 700,
-        fontSize: 13.5
+        fontSize: 'var(--text-13-5, 13.5px)'
       }
     }, r.cta || 'Ver', React.createElement(I, {
       name: 'arrowR',
@@ -11392,6 +11412,7 @@ Object.assign(window, {
         minWidth: 0
       }
     }, React.createElement('div', {
+      className: 'su-finance-item-title',
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -11399,7 +11420,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
@@ -11412,14 +11433,14 @@ Object.assign(window, {
       tone: 'blue'
     }, 'SE COTIZA')), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink)',
         fontWeight: 600,
         marginTop: 1
       }
     }, it.tagline), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500,
         marginTop: 1
@@ -11466,7 +11487,7 @@ Object.assign(window, {
     }), React.createElement('div', null, React.createElement('h3', {
       'data-finance-section-title': g.id,
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800,
         margin: 0,
         letterSpacing: '-.01em',
@@ -11475,7 +11496,7 @@ Object.assign(window, {
     }, g.title), React.createElement('div', {
       'data-finance-section-subtitle': g.id,
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500
       }
@@ -11507,7 +11528,7 @@ Object.assign(window, {
       title: 'Filtrar por categoría'
     }, React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         margin: '0 0 14px',
@@ -11534,7 +11555,7 @@ Object.assign(window, {
           border: 'none',
           cursor: 'pointer',
           fontFamily: 'inherit',
-          fontSize: 13,
+          fontSize: 'var(--text-13, 13px)',
           fontWeight: 700,
           background: on ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
           color: on ? '#fff' : 'var(--ink-2)',
@@ -11662,7 +11683,7 @@ Object.assign(window, {
         borderRadius: 999,
         background: 'var(--gold)',
         color: '#fff',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         display: 'grid',
         placeItems: 'center',
@@ -11679,7 +11700,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 700,
         flex: 1
@@ -11699,7 +11720,7 @@ Object.assign(window, {
         border: 'none',
         cursor: 'pointer',
         fontFamily: 'inherit',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         background: 'var(--surface-2)',
         color: 'var(--guinda)',
@@ -11775,16 +11796,16 @@ Object.assign(window, {
   }];
   const CSS = `
     .su-savings{--wine:#98143f;--wine-dark:#76102f;--pink:#f8edf1;--ink:#151519;--muted:#8b8b94;--line:#e8e8ec;--bg:#f3f3f5;position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}.su-savings *{box-sizing:border-box}
-    .sav-scroll{flex:1;min-height:0;overflow:auto;scrollbar-width:none}.sav-scroll::-webkit-scrollbar{display:none}.sav-hero{position:sticky;top:0;z-index:5;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;background:#fff;border-bottom:1px solid var(--line)}.sav-head{display:flex;align-items:center;gap:8px;min-height:48px}.sav-back,.sav-info{height:40px;border:0;background:transparent;color:var(--wine);display:flex;align-items:center;justify-content:center;cursor:pointer}.sav-back{width:40px}.sav-info{width:38px}.sav-head-copy{flex:1;text-align:center}.sav-head-copy b{font-size:17px;font-weight:780}.sav-head-actions{display:flex}
-    .sav-body{padding:16px 16px 34px}.sav-balance{background:linear-gradient(145deg,var(--wine),var(--wine-dark));color:#fff;border-radius:20px;padding:19px 18px;box-shadow:0 16px 28px -18px rgba(152,20,63,.9)}.sav-balance-summary{min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 18px}.sav-kicker{font-size:10.5px;font-weight:780;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.sav-balance .sav-kicker{color:#f0ccd8}.sav-balance-summary .sav-kicker{font-size:12px}.sav-total{font-size:clamp(36px,10vw,42px);line-height:1.08;font-weight:820;letter-spacing:-.025em;margin-top:10px;font-variant-numeric:tabular-nums}
-    .sav-section{margin-top:18px}.sav-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 2px 10px}.sav-section-title b{font-size:11px;font-weight:780;color:#9999a1;letter-spacing:.075em;text-transform:uppercase}.sav-card,.sav-year{background:#fff;border:1px solid #e4e4e8;border-radius:18px;padding:15px 16px;box-shadow:0 5px 16px -13px rgba(0,0,0,.35)}.sav-year-list{display:flex;flex-direction:column;gap:12px}.sav-year-head{display:flex;justify-content:space-between;align-items:center}.sav-year-head b{font-size:18px;font-weight:800}.sav-year-head span{padding:5px 10px;border-radius:999px;background:#edf8f1;color:#157f4a;font-size:9px;font-weight:780}.sav-year-head span[data-current=true]{background:#fff1d5;color:#9a6813}.sav-year-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:14px}.sav-year-grid>div{padding-right:12px}.sav-year-grid>div+div{padding-left:14px;padding-right:0;border-left:1px solid var(--line)}.sav-year-grid span{display:block;font-size:10px;font-weight:620;color:#9898a0}.sav-year-grid b{display:block;font-size:18px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}.sav-year-grid>div:last-child b{color:#008b50}.sav-year-subtotal{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.sav-year-subtotal span{font-size:11px;color:var(--muted);font-weight:650}.sav-year-subtotal b{font-size:15px;font-weight:820;font-variant-numeric:tabular-nums}
-    .sav-actions{display:grid;grid-template-columns:1.15fr .85fr;gap:9px;margin-top:16px}.sav-action{min-height:48px;border:1px solid #dedee3;border-radius:14px;padding:11px 10px;background:#fff;color:#56565d;font:730 12px inherit;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}.sav-action:disabled{opacity:.58;cursor:not-allowed}.sav-action[data-primary=true]{background:var(--wine);border-color:var(--wine);color:#fff}.sav-action>span{display:grid;place-items:center}.sav-note{margin:9px 3px 0;color:#85858d;font-size:10px;font-weight:650;text-align:center}
-    .sav-enroll-head{display:flex;gap:11px;align-items:center}.sav-icon{width:39px;height:39px;border-radius:12px;display:grid;place-items:center;background:var(--pink);color:var(--wine);flex-shrink:0}.sav-enroll-head>div{flex:1}.sav-enroll-head b{display:block;font-size:14px;font-weight:850}.sav-enroll-head span{font-size:11px;font-weight:680;color:var(--muted)}.sav-human-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}.sav-human-grid span{display:block;font-size:9.5px;color:var(--muted);font-weight:650}.sav-human-grid b{display:block;margin-top:3px;font-size:12px;font-weight:790}
-    .sav-detail-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sav-detail-link{border:1px solid #e2e2e7;border-radius:15px;background:#fff;min-height:76px;padding:11px 6px;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:730 10.5px inherit;cursor:pointer}.sav-detail-link>span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--pink);color:var(--wine)}.sav-detail-link small{font-size:9px;color:var(--muted);font-weight:650}
-    .sav-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line);font-size:11.5px}.sav-row:first-child{border-top:0}.sav-row span{color:var(--muted);font-weight:680}.sav-row b{text-align:right;font-weight:800;overflow-wrap:anywhere}.sav-tx{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}.sav-tx:first-child{border-top:0}.sav-tx-icon{width:35px;height:35px;border-radius:11px;background:#edf8f3;color:#087a50;display:grid;place-items:center}.sav-tx-icon[data-debit=true]{background:var(--pink);color:var(--wine)}.sav-tx b{display:block;font-size:12px}.sav-tx span{font-size:10px;color:var(--muted);font-weight:680}.sav-tx strong{font-size:12.5px;color:#087a50}.sav-tx strong[data-debit=true]{color:var(--wine)}
-    .sav-error{margin:20px 16px;padding:16px;border-radius:17px;background:#fff;color:#9a1834;font-size:12px;font-weight:730}.sav-retry,.sav-primary{border:0;border-radius:14px;padding:12px 15px;background:var(--wine);color:#fff;font:750 13px inherit;cursor:pointer}.sav-primary{width:100%;min-height:48px}.sav-primary:disabled{opacity:.5;cursor:default}.sav-empty{padding:28px 18px;text-align:center;background:#fff;color:var(--ink);border:1px solid #e4e4e8;box-shadow:none}.sav-empty .sav-icon{margin:0 auto}.sav-empty h2{font-size:19px;margin:13px 0 5px}.sav-empty p,.sav-empty-copy{font-size:12px;line-height:1.5;color:var(--muted)}
-    .sav-overlay{position:fixed;inset:0;z-index:92;background:rgba(14,18,28,.52);display:flex;align-items:flex-end;justify-content:center}.sav-sheet{width:min(100%,520px);max-height:86vh;overflow:auto;background:#fff;border-radius:25px 25px 0 0;padding:9px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -20px 50px rgba(0,0,0,.18)}.sav-handle{width:42px;height:4px;background:#d7dce5;border-radius:999px;margin:2px auto 15px}.sav-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-9px;background:#fff;padding:9px 0;z-index:1}.sav-sheet h2{font-size:20px;margin:0}.sav-sheet p{font-size:12px;color:var(--muted);font-weight:650;line-height:1.5}.sav-sheet-list{margin-top:10px}.sav-close{width:38px;height:38px;border:0;border-radius:12px;background:#f0f2f6;display:grid;place-items:center;color:var(--ink);cursor:pointer}
-    @media(min-width:700px){.sav-body,.sav-head{width:min(430px,100%);margin-left:auto;margin-right:auto}.sav-hero{padding-left:max(16px,calc((100% - 430px)/2));padding-right:max(16px,calc((100% - 430px)/2))}}@media(max-width:390px){.sav-body{padding-left:13px;padding-right:13px}.sav-action{font-size:11.5px}}
+    .sav-scroll{flex:1;min-height:0;overflow:auto;scrollbar-width:none}.sav-scroll::-webkit-scrollbar{display:none}.sav-hero{position:sticky;top:0;z-index:5;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;background:#fff;border-bottom:1px solid var(--line)}.sav-head{display:flex;align-items:center;gap:8px;min-height:48px}.sav-back,.sav-info{height:40px;border:0;background:transparent;color:var(--wine);display:flex;align-items:center;justify-content:center;cursor:pointer}.sav-back{width:40px}.sav-info{width:38px}.sav-head-copy{flex:1;text-align:center}.sav-head-copy b{font-size:var(--text-17, 17px);font-weight:780}.sav-head-actions{display:flex}
+    .sav-body{padding:16px 16px 34px}.sav-balance{background:linear-gradient(145deg,var(--wine),var(--wine-dark));color:#fff;border-radius:20px;padding:19px 18px;box-shadow:0 16px 28px -18px rgba(152,20,63,.9)}.sav-balance-summary{min-height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 18px}.sav-kicker{font-size:var(--text-10-5, 10.5px);font-weight:780;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.sav-balance .sav-kicker{color:#f0ccd8}.sav-balance-summary .sav-kicker{font-size:var(--text-12, 12px)}.sav-total{font-size:clamp(36px,10vw,42px);line-height:1.08;font-weight:820;letter-spacing:-.025em;margin-top:10px;font-variant-numeric:tabular-nums}
+    .sav-section{margin-top:18px}.sav-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 2px 10px}.sav-section-title b{font-size:var(--text-11, 11px);font-weight:780;color:#9999a1;letter-spacing:.075em;text-transform:uppercase}.sav-card,.sav-year{background:#fff;border:1px solid #e4e4e8;border-radius:18px;padding:15px 16px;box-shadow:0 5px 16px -13px rgba(0,0,0,.35)}.sav-year-list{display:flex;flex-direction:column;gap:12px}.sav-year-head{display:flex;justify-content:space-between;align-items:center}.sav-year-head b{font-size:var(--text-18, 18px);font-weight:800}.sav-year-head span{padding:5px 10px;border-radius:999px;background:#edf8f1;color:#157f4a;font-size:var(--text-9, 9px);font-weight:780}.sav-year-head span[data-current=true]{background:#fff1d5;color:#9a6813}.sav-year-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:14px}.sav-year-grid>div{padding-right:12px}.sav-year-grid>div+div{padding-left:14px;padding-right:0;border-left:1px solid var(--line)}.sav-year-grid span{display:block;font-size:var(--text-10, 10px);font-weight:620;color:#9898a0}.sav-year-grid b{display:block;font-size:var(--text-18, 18px);font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}.sav-year-grid>div:last-child b{color:#008b50}.sav-year-subtotal{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.sav-year-subtotal span{font-size:var(--text-11, 11px);color:var(--muted);font-weight:650}.sav-year-subtotal b{font-size:var(--text-15, 15px);font-weight:820;font-variant-numeric:tabular-nums}
+    .sav-actions{display:grid;grid-template-columns:1.15fr .85fr;gap:9px;margin-top:16px}.sav-action{min-height:48px;border:1px solid #dedee3;border-radius:14px;padding:11px 10px;background:#fff;color:#56565d;font:730 12px inherit;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}.sav-action:disabled{opacity:.58;cursor:not-allowed}.sav-action[data-primary=true]{background:var(--wine);border-color:var(--wine);color:#fff}.sav-action>span{display:grid;place-items:center}.sav-note{margin:9px 3px 0;color:#85858d;font-size:var(--text-10, 10px);font-weight:650;text-align:center}
+    .sav-enroll-head{display:flex;gap:11px;align-items:center}.sav-icon{width:39px;height:39px;border-radius:12px;display:grid;place-items:center;background:var(--pink);color:var(--wine);flex-shrink:0}.sav-enroll-head>div{flex:1}.sav-enroll-head b{display:block;font-size:var(--text-14, 14px);font-weight:850}.sav-enroll-head span{font-size:var(--text-11, 11px);font-weight:680;color:var(--muted)}.sav-human-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}.sav-human-grid span{display:block;font-size:var(--text-9-5, 9.5px);color:var(--muted);font-weight:650}.sav-human-grid b{display:block;margin-top:3px;font-size:var(--text-12, 12px);font-weight:790}
+    .sav-detail-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sav-detail-link{border:1px solid #e2e2e7;border-radius:15px;background:#fff;min-height:76px;padding:11px 6px;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:730 10.5px inherit;cursor:pointer}.sav-detail-link>span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--pink);color:var(--wine)}.sav-detail-link small{font-size:var(--text-9, 9px);color:var(--muted);font-weight:650}
+    .sav-row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line);font-size:var(--text-11-5, 11.5px)}.sav-row:first-child{border-top:0}.sav-row span{color:var(--muted);font-weight:680}.sav-row b{text-align:right;font-weight:800;overflow-wrap:anywhere}.sav-tx{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}.sav-tx:first-child{border-top:0}.sav-tx-icon{width:35px;height:35px;border-radius:11px;background:#edf8f3;color:#087a50;display:grid;place-items:center}.sav-tx-icon[data-debit=true]{background:var(--pink);color:var(--wine)}.sav-tx b{display:block;font-size:var(--text-12, 12px)}.sav-tx span{font-size:var(--text-10, 10px);color:var(--muted);font-weight:680}.sav-tx strong{font-size:var(--text-12-5, 12.5px);color:#087a50}.sav-tx strong[data-debit=true]{color:var(--wine)}
+    .sav-error{margin:20px 16px;padding:16px;border-radius:17px;background:#fff;color:#9a1834;font-size:var(--text-12, 12px);font-weight:730}.sav-retry,.sav-primary{border:0;border-radius:14px;padding:12px 15px;background:var(--wine);color:#fff;font:750 13px inherit;cursor:pointer}.sav-primary{width:100%;min-height:48px}.sav-primary:disabled{opacity:.5;cursor:default}.sav-empty{padding:28px 18px;text-align:center;background:#fff;color:var(--ink);border:1px solid #e4e4e8;box-shadow:none}.sav-empty .sav-icon{margin:0 auto}.sav-empty h2{font-size:var(--text-19, 19px);margin:13px 0 5px}.sav-empty p,.sav-empty-copy{font-size:var(--text-12, 12px);line-height:1.5;color:var(--muted)}
+    .sav-overlay{position:fixed;inset:0;z-index:92;background:rgba(14,18,28,.52);display:flex;align-items:flex-end;justify-content:center}.sav-sheet{width:min(100%,520px);max-height:86vh;overflow:auto;background:#fff;border-radius:25px 25px 0 0;padding:9px 18px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -20px 50px rgba(0,0,0,.18)}.sav-handle{width:42px;height:4px;background:#d7dce5;border-radius:999px;margin:2px auto 15px}.sav-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-9px;background:#fff;padding:9px 0;z-index:1}.sav-sheet h2{font-size:var(--text-20, 20px);margin:0}.sav-sheet p{font-size:var(--text-12, 12px);color:var(--muted);font-weight:650;line-height:1.5}.sav-sheet-list{margin-top:10px}.sav-close{width:38px;height:38px;border:0;border-radius:12px;background:#f0f2f6;display:grid;place-items:center;color:var(--ink);cursor:pointer}
+    @media(min-width:700px){.sav-body,.sav-head{width:min(430px,100%);margin-left:auto;margin-right:auto}.sav-hero{padding-left:max(16px,calc((100% - 430px)/2));padding-right:max(16px,calc((100% - 430px)/2))}}@media(max-width:390px){.sav-body{padding-left:13px;padding-right:13px}.sav-action{font-size:var(--text-11-5, 11.5px)}}
   `;
   function icon(name, size) {
     return h(I, {
@@ -12082,27 +12103,27 @@ Object.assign(window, {
     .su-inv-hero{position:relative;overflow:hidden;background:linear-gradient(158deg,var(--inv-guinda) 0%,#6a001b 58%,#3d000d 100%);color:#fff;padding:calc(8px + env(safe-area-inset-top)) 20px 40px}
     .su-inv-seal{position:absolute;right:-60px;bottom:-74px;opacity:.1;pointer-events:none;filter:brightness(0) invert(1)}
     .su-inv-eyebrow{display:flex;align-items:center;gap:4px;position:relative}
-    .su-inv-eyebrow>span{font-size:11.5px;font-weight:800;letter-spacing:.11em;opacity:.82}
+    .su-inv-eyebrow>span{font-size:var(--text-11-5, 11.5px);font-weight:800;letter-spacing:.11em;opacity:.82}
     .su-inv-back{width:44px;height:44px;margin-left:-10px;border:0;background:transparent;color:#fff;display:grid;place-items:center;border-radius:13px;cursor:pointer}
-    .su-inv-hero h1{position:relative;font-size:30px;font-weight:900;letter-spacing:-.032em;line-height:1.08;margin:16px 0 0;text-wrap:pretty}
-    .su-inv-lede{position:relative;font-size:13.5px;font-weight:600;opacity:.88;line-height:1.5;margin:9px 0 0;max-width:300px}
-    .su-inv-lede strong{font-size:15px}
+    .su-inv-hero h1{position:relative;font-size:var(--text-30, 30px);font-weight:900;letter-spacing:-.032em;line-height:1.08;margin:16px 0 0;text-wrap:pretty}
+    .su-inv-lede{position:relative;font-size:var(--text-13-5, 13.5px);font-weight:600;opacity:.88;line-height:1.5;margin:9px 0 0;max-width:300px}
+    .su-inv-lede strong{font-size:var(--text-15, 15px)}
     .su-inv-rate{position:relative;display:flex;align-items:center;gap:16px;margin-top:22px;padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.13)}
     .su-inv-rate-big{display:flex;align-items:baseline;gap:2px}
-    .su-inv-rate-big b{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
-    .su-inv-rate-big i{font-style:normal;font-size:22px;font-weight:900;letter-spacing:-.03em}
-    .su-inv-rate-label{font-size:10.5px;font-weight:800;letter-spacing:.1em;opacity:.82;margin-top:4px;white-space:nowrap}
+    .su-inv-rate-big b{font-size:var(--text-44, 44px);font-weight:900;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
+    .su-inv-rate-big i{font-style:normal;font-size:var(--text-22, 22px);font-weight:900;letter-spacing:-.03em}
+    .su-inv-rate-label{font-size:var(--text-10-5, 10.5px);font-weight:800;letter-spacing:.1em;opacity:.82;margin-top:4px;white-space:nowrap}
     .su-inv-rate-divider{width:1px;align-self:stretch;background:rgba(255,255,255,.24)}
-    .su-inv-annual{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:900;letter-spacing:-.01em}
-    .su-inv-rate-note{font-size:11.5px;font-weight:600;opacity:.84;line-height:1.4;margin-top:3px}
+    .su-inv-annual{display:flex;align-items:center;gap:6px;font-size:var(--text-15, 15px);font-weight:900;letter-spacing:-.01em}
+    .su-inv-rate-note{font-size:var(--text-11-5, 11.5px);font-weight:600;opacity:.84;line-height:1.4;margin-top:3px}
     .su-inv-facts{position:relative;display:flex;gap:14px;margin-top:16px;flex-wrap:wrap}
-    .su-inv-facts span{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;opacity:.9}
+    .su-inv-facts span{display:inline-flex;align-items:center;gap:6px;font-size:var(--text-12, 12px);font-weight:700;opacity:.9}
     .su-inv-body{padding:0 20px 26px;margin-top:-22px;position:relative}
     .su-inv-card{background:var(--inv-surface);border-radius:22px;padding:16px 16px 18px;box-shadow:var(--inv-shadow-lg)}
     .su-inv-card-head,.su-inv-subhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-    .su-inv-card-head b{font-size:15px;font-weight:900;letter-spacing:-.01em}
-    .su-inv-card-head span,.su-inv-subhead span{font-size:11.5px;font-weight:800;color:var(--inv-ink-3);letter-spacing:.05em}
-    .su-inv-amount,.su-inv-amount-input{display:block;border:0;background:transparent;padding:0;margin:4px 0 8px;font-size:34px;font-weight:900;letter-spacing:-.03em;color:var(--inv-guinda);font-variant-numeric:tabular-nums;width:100%;min-width:0;text-align:left}
+    .su-inv-card-head b{font-size:var(--text-15, 15px);font-weight:900;letter-spacing:-.01em}
+    .su-inv-card-head span,.su-inv-subhead span{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--inv-ink-3);letter-spacing:.05em}
+    .su-inv-amount,.su-inv-amount-input{display:block;border:0;background:transparent;padding:0;margin:4px 0 8px;font-size:var(--text-34, 34px);font-weight:900;letter-spacing:-.03em;color:var(--inv-guinda);font-variant-numeric:tabular-nums;width:100%;min-width:0;text-align:left}
     .su-inv-amount{cursor:text}
     .su-inv-amount-input{outline:0;border-bottom:2px solid var(--inv-guinda)}
     .su-inv-slider{position:relative;height:34px;display:flex;align-items:center}
@@ -12115,21 +12136,21 @@ Object.assign(window, {
     .su-inv-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
     .su-inv-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25)}
     .su-inv-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:5px}
-    .su-inv-presets button{min-width:0;border:0;border-radius:11px;padding:7px 2px;background:var(--inv-surface-2);color:var(--inv-ink-2);font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:var(--inv-inset);font-variant-numeric:tabular-nums}
+    .su-inv-presets button{min-width:0;border:0;border-radius:11px;padding:7px 2px;background:var(--inv-surface-2);color:var(--inv-ink-2);font-size:var(--text-11-5, 11.5px);font-weight:800;cursor:pointer;box-shadow:var(--inv-inset);font-variant-numeric:tabular-nums}
     .su-inv-presets button[aria-pressed=true]{background:var(--inv-guinda-50);color:var(--inv-guinda);box-shadow:inset 0 0 0 1px #f3d6de}
     .su-inv-subhead{margin:20px 0 9px}
-    .su-inv-subhead b{font-size:11.5px;font-weight:800;color:var(--inv-ink-2);letter-spacing:.05em;text-transform:uppercase}
+    .su-inv-subhead b{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--inv-ink-2);letter-spacing:.05em;text-transform:uppercase}
     .su-inv-terms{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     .su-inv-terms button{padding:9px 0 10px;border-radius:14px;border:0;cursor:pointer;background:var(--inv-surface-2);color:var(--inv-ink-2);box-shadow:var(--inv-inset)}
     .su-inv-terms button[aria-pressed=true]{background:var(--inv-navy);color:#fff;box-shadow:var(--inv-neo-md)}
-    .su-inv-terms b{display:block;font-size:16px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-    .su-inv-terms i{display:block;font-style:normal;font-size:10.5px;font-weight:700;opacity:.78;margin-top:1px}
+    .su-inv-terms b{display:block;font-size:var(--text-16, 16px);font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+    .su-inv-terms i{display:block;font-style:normal;font-size:var(--text-10-5, 10.5px);font-weight:700;opacity:.78;margin-top:1px}
     .su-inv-result{margin-top:18px;border-radius:18px;background:var(--inv-navy);color:#fff;padding:16px 17px 18px;overflow:hidden}
     .su-inv-result-top{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
-    .su-inv-k{font-size:10.5px;font-weight:800;letter-spacing:.09em;opacity:.74}
-    .su-inv-monthly{font-size:30px;font-weight:900;letter-spacing:-.032em;margin-top:2px;font-variant-numeric:tabular-nums}
+    .su-inv-k{font-size:var(--text-10-5, 10.5px);font-weight:800;letter-spacing:.09em;opacity:.74}
+    .su-inv-monthly{font-size:var(--text-30, 30px);font-weight:900;letter-spacing:-.032em;margin-top:2px;font-variant-numeric:tabular-nums}
     .su-inv-chip{flex-shrink:1;display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:5px 9px;border-radius:999px;background:rgba(28,157,107,.22);color:#5fe0a8;font-size:clamp(10px,2.8vw,12.5px);font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
-    .su-inv-acum{font-size:10.5px;font-weight:800;letter-spacing:.07em;opacity:.6;margin-top:14px}
+    .su-inv-acum{font-size:var(--text-10-5, 10.5px);font-weight:800;letter-spacing:.07em;opacity:.6;margin-top:14px}
     .su-inv-chart{position:relative;overflow:hidden;border-radius:8px;margin-top:14px}
     .su-inv-bars{display:flex;align-items:flex-end;height:82px}
     .su-inv-bar{position:relative;flex:1;height:100%;display:flex;align-items:flex-end;min-width:0}
@@ -12137,33 +12158,33 @@ Object.assign(window, {
     .su-inv-bar-last>i{background:linear-gradient(180deg,#ff4d68,#c41230)}
     .su-inv-halo{position:absolute;left:-3px;right:-3px;bottom:0;border-radius:8px;background:radial-gradient(60% 50% at 50% 90%,rgba(232,54,79,.75),rgba(232,54,79,0) 70%);pointer-events:none;transform-origin:bottom}
     .su-inv-sheen{position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.22),rgba(255,255,255,0));pointer-events:none}
-    .su-inv-axis{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;opacity:.6;margin-top:6px}
+    .su-inv-axis{display:flex;justify-content:space-between;font-size:var(--text-10-5, 10.5px);font-weight:700;opacity:.6;margin-top:6px}
     .su-inv-split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.16)}
     .su-inv-split>div{min-width:0;padding-right:8px}
     .su-inv-split>div+div{padding-left:10px;border-left:1px solid rgba(255,255,255,.16)}
-    .su-inv-split .su-inv-k{font-size:9.5px;letter-spacing:.04em;text-transform:uppercase}
+    .su-inv-split .su-inv-k{font-size:var(--text-9-5, 9.5px);letter-spacing:.04em;text-transform:uppercase}
     .su-inv-v2{font-size:clamp(11px,3.25vw,14.5px);font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
-    .su-inv-fine{font-size:11px;font-weight:600;color:var(--inv-ink-3);line-height:1.5;margin:11px 0 0}
+    .su-inv-fine{font-size:var(--text-11, 11px);font-weight:600;color:var(--inv-ink-3);line-height:1.5;margin:11px 0 0}
     .su-inv-section{margin-top:26px}
     .su-inv-section-head{display:flex;align-items:center;gap:9px;margin:0 0 11px;color:var(--inv-guinda)}
-    .su-inv-section-head b{font-size:16px;font-weight:900;letter-spacing:-.015em;color:var(--inv-ink)}
+    .su-inv-section-head b{font-size:var(--text-16, 16px);font-weight:900;letter-spacing:-.015em;color:var(--inv-ink)}
     .su-inv-panel{background:var(--inv-surface);border-radius:20px;box-shadow:var(--inv-neo-sm);overflow:hidden}
     .su-inv-steps{padding:17px 17px 18px;display:flex;flex-direction:column;gap:15px}
     .su-inv-step{display:flex;gap:13px;align-items:flex-start}
-    .su-inv-step>span{width:30px;height:30px;border-radius:10px;flex-shrink:0;background:var(--inv-guinda-50);color:var(--inv-guinda);display:grid;place-items:center;font-size:14px;font-weight:900;font-family:var(--mono)}
-    .su-inv-step b,.su-inv-guarantee b{display:block;font-size:14.5px;font-weight:800}
-    .su-inv-step p,.su-inv-guarantee p{font-size:12.5px;font-weight:600;color:var(--inv-ink-2);line-height:1.5;margin:2px 0 0}
+    .su-inv-step>span{width:30px;height:30px;border-radius:10px;flex-shrink:0;background:var(--inv-guinda-50);color:var(--inv-guinda);display:grid;place-items:center;font-size:var(--text-14, 14px);font-weight:900;font-family:var(--mono)}
+    .su-inv-step b,.su-inv-guarantee b{display:block;font-size:var(--text-14-5, 14.5px);font-weight:800}
+    .su-inv-step p,.su-inv-guarantee p{font-size:var(--text-12-5, 12.5px);font-weight:600;color:var(--inv-ink-2);line-height:1.5;margin:2px 0 0}
     .su-inv-guarantee{display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border-bottom:1px solid var(--inv-hairline)}
     .su-inv-guarantee:last-child{border-bottom:0}
     .su-inv-guarantee>span{width:34px;height:34px;border-radius:11px;flex-shrink:0;background:var(--inv-surface-2);color:var(--inv-guinda);display:grid;place-items:center;box-shadow:var(--inv-inset)}
     .su-inv-legal{display:flex;gap:9px;align-items:flex-start;margin-top:20px;color:var(--inv-ink-2)}
     .su-inv-legal svg{flex-shrink:0;margin-top:1px}
-    .su-inv-legal p{font-size:12px;font-weight:600;line-height:1.55;margin:0}
+    .su-inv-legal p{font-size:var(--text-12, 12px);font-weight:600;line-height:1.55;margin:0}
     .su-inv-footer{flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--inv-surface);border-top:1px solid var(--inv-hairline);box-shadow:0 -8px 24px rgba(20,33,61,.06)}
     .su-inv-footer-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px}
-    .su-inv-footer-row span{font-size:12.5px;font-weight:700;color:var(--inv-ink-2)}
-    .su-inv-footer-row b{font-size:13.5px;font-weight:900;color:var(--inv-ok);font-variant-numeric:tabular-nums}
-    .su-inv-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:56px;border:0;border-radius:18px;cursor:pointer;background:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);color:#fff;font-size:16.5px;font-weight:900;letter-spacing:-.01em;box-shadow:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4)}
+    .su-inv-footer-row span{font-size:var(--text-12-5, 12.5px);font-weight:700;color:var(--inv-ink-2)}
+    .su-inv-footer-row b{font-size:var(--text-13-5, 13.5px);font-weight:900;color:var(--inv-ok);font-variant-numeric:tabular-nums}
+    .su-inv-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:56px;border:0;border-radius:18px;cursor:pointer;background:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);color:#fff;font-size:var(--text-16-5, 16.5px);font-weight:900;letter-spacing:-.01em;box-shadow:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4)}
     .su-investment button:focus-visible,.su-investment input:focus-visible{outline:2px solid var(--inv-guinda);outline-offset:2px}
     @media(max-width:400px){.su-inv-hero{padding-left:16px;padding-right:16px}.su-inv-body,.su-inv-footer{padding-left:16px;padding-right:16px}.su-inv-rate{gap:12px;padding-left:14px;padding-right:14px}.su-inv-chip svg{display:none}.su-inv-split>div+div{padding-left:7px}.su-inv-split>div{padding-right:5px}}
   `;
@@ -12768,7 +12789,7 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
@@ -12815,13 +12836,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, item[1]), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         lineHeight: 1.45,
@@ -12858,13 +12879,13 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'), programs.length > 1 && React.createElement('span', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -12918,12 +12939,12 @@ Object.assign(window, {
         }
       }), React.createElement('span', {
         style: {
-          fontSize: 13.5,
+          fontSize: 'var(--text-13-5, 13.5px)',
           fontWeight: 800
         }
       }, item.label || item.fund)), React.createElement('div', {
         style: {
-          fontSize: 11,
+          fontSize: 'var(--text-11, 11px)',
           fontWeight: 600,
           color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)',
           marginTop: 5
@@ -12931,7 +12952,7 @@ Object.assign(window, {
       }, 'Hasta ' + moneyOrDash(Number(item.max_amount))), React.createElement('div', {
         'data-fund-rate': '',
         style: {
-          fontSize: 11,
+          fontSize: 'var(--text-11, 11px)',
           fontWeight: 600,
           color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)',
           marginTop: 2
@@ -13000,7 +13021,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         opacity: .8,
         fontWeight: 700,
         letterSpacing: '.02em'
@@ -13010,7 +13031,7 @@ Object.assign(window, {
         minWidth: 150,
         minHeight: 45,
         borderRadius: 9,
-        fontSize: 40,
+        fontSize: 'var(--text-40, 40px)',
         fontWeight: 800,
         letterSpacing: '-.035em',
         lineHeight: 1.05,
@@ -13024,7 +13045,7 @@ Object.assign(window, {
     }))), React.createElement('div', {
       style: {
         textAlign: 'right',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         opacity: .85,
         lineHeight: 1.45,
@@ -13041,7 +13062,7 @@ Object.assign(window, {
         padding: '3px 7px',
         borderRadius: 999,
         background: 'rgba(255,255,255,.14)',
-        fontSize: 10.5
+        fontSize: 'var(--text-10-5, 10.5px)'
       }
     }, React.createElement('span', {
       className: 'su-spinner',
@@ -13082,7 +13103,7 @@ Object.assign(window, {
       style: {
         opacity: .72,
         fontWeight: 600,
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         whiteSpace: 'nowrap'
       }
     }, cell[0]), React.createElement('div', {
@@ -13090,7 +13111,7 @@ Object.assign(window, {
         minHeight: '1.2em',
         fontWeight: 800,
         marginTop: 2,
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         letterSpacing: '-.02em',
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap',
@@ -13140,7 +13161,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         letterSpacing: '.01em'
@@ -13161,7 +13182,7 @@ Object.assign(window, {
         borderBottom: '2px solid var(--guinda)',
         background: 'transparent',
         outline: 'none',
-        fontSize: 34,
+        fontSize: 'var(--text-34, 34px)',
         fontWeight: 800,
         letterSpacing: '-.03em',
         color: 'var(--guinda)',
@@ -13219,7 +13240,7 @@ Object.assign(window, {
       style: {
         display: 'flex',
         justifyContent: 'space-between',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 6
@@ -13255,7 +13276,7 @@ Object.assign(window, {
           border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'),
           background: active ? 'var(--guinda-50)' : 'var(--surface)',
           color: active ? 'var(--guinda)' : 'var(--ink-2)',
-          fontSize: 12,
+          fontSize: 'var(--text-12, 12px)',
           fontWeight: 700
         }
       }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
@@ -13320,13 +13341,13 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, 'Plazo'), React.createElement('span', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -13364,13 +13385,13 @@ Object.assign(window, {
         }
       }, React.createElement('div', {
         style: {
-          fontSize: 15,
+          fontSize: 'var(--text-15, 15px)',
           fontWeight: 800,
           color: active ? 'var(--guinda)' : 'var(--ink)'
         }
       }, value + ' pagos'), React.createElement('div', {
         style: {
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           fontWeight: 800,
           color: active ? 'var(--guinda)' : 'var(--ink-3)',
           marginTop: 3,
@@ -13378,7 +13399,7 @@ Object.assign(window, {
         }
       }, payment ? exactMoneyOrDash(payment) : 'Cotizando…'), React.createElement('div', {
         style: {
-          fontSize: 10.5,
+          fontSize: 'var(--text-10-5, 10.5px)',
           fontWeight: 600,
           color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)',
           marginTop: 1
@@ -13406,20 +13427,20 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         color: free ? 'var(--guinda)' : 'var(--ink)'
       }
     }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         color: free ? 'var(--guinda)' : 'var(--ink-3)',
         marginTop: 3
       }
     }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : free ? 'Cotizando…' : 'a tu medida'), React.createElement('div', {
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 600,
         color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)',
         marginTop: 1
@@ -13431,7 +13452,7 @@ Object.assign(window, {
         borderRadius: 16,
         background: 'var(--surface)',
         color: 'var(--ink-3)',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 600
       }
     }, 'Los plazos aparecerán al consultar tus condiciones.')), free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', {
@@ -13461,7 +13482,7 @@ Object.assign(window, {
         borderRadius: 13,
         background: 'var(--guinda-50)',
         color: 'var(--guinda)',
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800
       }
     }, '−'), React.createElement('div', {
@@ -13492,13 +13513,13 @@ Object.assign(window, {
         textAlign: 'right',
         outline: 'none',
         fontFamily: 'inherit',
-        fontSize: 26,
+        fontSize: 'var(--text-26, 26px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }), React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -13514,7 +13535,7 @@ Object.assign(window, {
         borderRadius: 13,
         background: 'var(--guinda-50)',
         color: 'var(--guinda)',
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800
       }
     }, '+')), React.createElement('div', {
@@ -13523,7 +13544,7 @@ Object.assign(window, {
         display: 'flex',
         justifyContent: 'space-between',
         gap: 10,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)'
       }
@@ -13538,7 +13559,7 @@ Object.assign(window, {
         background: 'transparent',
         color: 'var(--guinda)',
         fontFamily: 'inherit',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700
       }
     }, 'Usar plazos sugeridos'))));
@@ -13577,7 +13598,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800
       }
     }, open ? 'Desglose del préstamo' : 'Ver desglose completo'), React.createElement('span', {
@@ -13611,7 +13632,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 600
       }
@@ -13622,14 +13643,14 @@ Object.assign(window, {
     }, React.createElement('span', {
       style: {
         display: 'block',
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, row[1]), row[2] && React.createElement('span', {
       style: {
         display: 'block',
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         marginTop: 1
@@ -13647,12 +13668,12 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800
       }
     }, 'Total a pagar'), React.createElement('span', {
       style: {
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         fontVariantNumeric: 'tabular-nums'
@@ -14033,7 +14054,7 @@ Object.assign(window, {
         gap: 8,
         alignItems: 'flex-start',
         color: 'var(--ink-3)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         lineHeight: 1.5,
         padding: '0 2px'
@@ -14086,7 +14107,7 @@ Object.assign(window, {
       'data-deposit-field': field,
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
@@ -14111,7 +14132,7 @@ Object.assign(window, {
     }), hint && React.createElement('span', {
       style: {
         display: 'block',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 650,
         color: value && !valid ? '#C0341D' : 'var(--ink-3)',
         marginTop: 5
@@ -14225,11 +14246,11 @@ Object.assign(window, {
         }
       }, React.createElement('strong', {
         style: {
-          fontSize: 14
+          fontSize: 'var(--text-14, 14px)'
         }
       }, account.bank_name || 'Banco pendiente'), account.is_primary && React.createElement('span', {
         style: {
-          fontSize: 9.5,
+          fontSize: 'var(--text-9-5, 9.5px)',
           fontWeight: 900,
           letterSpacing: '.04em',
           color: 'var(--guinda)'
@@ -14238,7 +14259,7 @@ Object.assign(window, {
         'data-bank-masked': 'true',
         style: {
           fontFamily: 'var(--mono)',
-          fontSize: 12,
+          fontSize: 'var(--text-12, 12px)',
           fontWeight: 700,
           marginTop: 7
         }
@@ -14246,14 +14267,14 @@ Object.assign(window, {
         'data-bank-masked': 'true',
         style: {
           fontFamily: 'var(--mono)',
-          fontSize: 11,
+          fontSize: 'var(--text-11, 11px)',
           color: 'var(--ink-2)',
           marginTop: 4
         }
       }, 'CLABE · ' + account.maskedClabe)) : React.createElement('div', {
         style: {
           color: 'var(--guinda)',
-          fontSize: 11.5,
+          fontSize: 'var(--text-11-5, 11.5px)',
           fontWeight: 800,
           marginTop: 7
         }
@@ -14285,12 +14306,12 @@ Object.assign(window, {
       size: 40
     }), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 850
       }
     }, '¿Dónde quieres recibir tu préstamo?'), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)',
         marginTop: 2
@@ -14302,7 +14323,7 @@ Object.assign(window, {
         borderRadius: 18,
         background: 'var(--surface)',
         color: 'var(--ink-3)',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700
       }
     }, 'Consultando tus cuentas bancarias…'), value.phase === 'error' && React.createElement('div', {
@@ -14313,7 +14334,7 @@ Object.assign(window, {
         borderRadius: 15,
         background: '#FCE9EE',
         color: '#9B1C31',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 750
       }
     }, value.error, React.createElement('button', {
@@ -14358,7 +14379,7 @@ Object.assign(window, {
       }
     }, React.createElement('strong', {
       style: {
-        fontSize: 14
+        fontSize: 'var(--text-14, 14px)'
       }
     }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'), value.accounts.length > 0 && React.createElement('button', {
       type: 'button',
@@ -14377,7 +14398,7 @@ Object.assign(window, {
       'data-deposit-account-rule': '',
       style: {
         color: 'var(--ink-3)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 650,
         lineHeight: 1.4
       }
@@ -14433,7 +14454,7 @@ Object.assign(window, {
       stroke: 2
     }), React.createElement('strong', {
       style: {
-        fontSize: 14
+        fontSize: 'var(--text-14, 14px)'
       }
     }, 'Celular para notificaciones')), React.createElement(DepositField, {
       field: 'phone',
@@ -14456,7 +14477,7 @@ Object.assign(window, {
         borderRadius: 13,
         background: 'var(--surface-2)',
         color: 'var(--ink-2)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         lineHeight: 1.45
       }
@@ -14465,7 +14486,7 @@ Object.assign(window, {
       className: 'su-err',
       style: {
         color: '#C0341D',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 750
       }
     }, value.error)));
@@ -14483,7 +14504,7 @@ Object.assign(window, {
         borderRadius: 14,
         background: '#FCE9EE',
         color: '#9B1C31',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         lineHeight: 1.45
       }
@@ -14513,7 +14534,7 @@ Object.assign(window, {
         padding: '0 13px',
         background: 'var(--guinda)',
         color: '#fff',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 850
       }
     }, 'Corregir documentos'));
@@ -14547,7 +14568,7 @@ Object.assign(window, {
         gap: 8,
         alignItems: 'flex-start',
         color: 'var(--ink-3)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         lineHeight: 1.5,
         padding: '5px 2px 0'
@@ -14600,13 +14621,13 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 600,
         color: 'var(--ink-3)'
       }
     }, row[0]), React.createElement('span', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink)',
         textAlign: 'right'
@@ -14623,12 +14644,12 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800
       }
     }, 'Total a pagar'), React.createElement('span', {
       style: {
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 900,
         color: 'var(--guinda)'
       }
@@ -14649,7 +14670,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 850
       }
     }, 'Depósito'), React.createElement('button', {
@@ -14659,7 +14680,7 @@ Object.assign(window, {
         border: 0,
         background: 'transparent',
         color: 'var(--guinda)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 850
       }
     }, 'Cambiar')), (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map(row => React.createElement('div', {
@@ -14669,7 +14690,7 @@ Object.assign(window, {
         justifyContent: 'space-between',
         gap: 12,
         marginTop: 7,
-        fontSize: 11.5
+        fontSize: 'var(--text-11-5, 11.5px)'
       }
     }, React.createElement('span', {
       style: {
@@ -14691,7 +14712,7 @@ Object.assign(window, {
         borderRadius: 13,
         background: '#FFF4D9',
         color: '#805100',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700
       }
     }, 'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'), React.createElement(MissingDocumentsNotice, {
@@ -15007,7 +15028,7 @@ Object.assign(window, {
     }, steps.map((label, index) => React.createElement('span', {
       key: label,
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 700,
         color: index <= step ? 'var(--guinda)' : 'var(--ink-3)'
       }
@@ -15022,7 +15043,7 @@ Object.assign(window, {
     }, step !== 2 && React.createElement('h2', {
       className: 'su-route',
       style: {
-        fontSize: 21,
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         margin: '0 0 14px'
@@ -15073,7 +15094,7 @@ Object.assign(window, {
       className: 'su-err',
       'data-loan-submission-error': '',
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: '#C0341D',
         lineHeight: 1.4,
@@ -15323,14 +15344,14 @@ Object.assign(window, {
       }
     }, React.createElement('h1', {
       style: {
-        fontSize: 23,
+        fontSize: 'var(--text-23, 23px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         margin: 0
       }
     }, it.label), React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 2
@@ -15341,7 +15362,7 @@ Object.assign(window, {
       }
     }, 'SutiApp'), ' / ' + it.label))), React.createElement('p', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.55,
@@ -15401,12 +15422,12 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 700
       }
     }, b.t), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500
       }
@@ -15478,7 +15499,7 @@ Object.assign(window, {
         flex: 1,
         minWidth: 0,
         padding: '0 12px',
-        fontSize: 13
+        fontSize: 'var(--text-13, 13px)'
       },
       onClick: () => setQSheet(true)
     }, 'Nueva cotización'), React.createElement(window.Btn, {
@@ -15488,7 +15509,7 @@ Object.assign(window, {
         flex: 1,
         minWidth: 0,
         padding: '0 12px',
-        fontSize: 13
+        fontSize: 'var(--text-13, 13px)'
       },
       onClick: () => setSheet(true)
     }, 'Simular monto'))),
@@ -15538,7 +15559,7 @@ Object.assign(window, {
         }
       }), React.createElement('div', {
         style: {
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           color: 'var(--ink-2)',
           fontWeight: 600,
           lineHeight: 1.5
@@ -15571,20 +15592,20 @@ Object.assign(window, {
       }), React.createElement('div', {
         style: {
           flex: 1,
-          fontSize: 13.5,
+          fontSize: 'var(--text-13-5, 13.5px)',
           fontWeight: 800,
           color: '#7a5410'
         }
       }, 'Cotización en proceso'), React.createElement('span', {
         style: {
-          fontSize: 11.5,
+          fontSize: 'var(--text-11-5, 11.5px)',
           fontWeight: 700,
           color: '#9A6B16',
           fontFamily: 'var(--mono)'
         }
       }, quote.folio)), React.createElement('div', {
         style: {
-          fontSize: 12,
+          fontSize: 'var(--text-12, 12px)',
           color: '#7a5410',
           fontWeight: 600,
           marginTop: 5,
@@ -15618,20 +15639,20 @@ Object.assign(window, {
     }), React.createElement('div', {
       style: {
         flex: 1,
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: '#0b5c37'
       }
     }, 'Tu cotización está lista'), React.createElement('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: '#13794A',
         fontFamily: 'var(--mono)'
       }
     }, quote.folio)), React.createElement('div', {
       style: {
-        fontSize: 24,
+        fontSize: 'var(--text-24, 24px)',
         fontWeight: 900,
         color: '#0b5c37',
         letterSpacing: '-.02em',
@@ -15639,7 +15660,7 @@ Object.assign(window, {
       }
     }, money(c.monto)), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: '#13794A',
         fontWeight: 600,
         marginTop: 3,
@@ -15753,20 +15774,20 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, it.label), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 2
       }
     }, 'Atiende: ' + (provider ? provider.name : 'Área de Finanzas del sindicato')))), React.createElement('p', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.55,
@@ -15778,7 +15799,7 @@ Object.assign(window, {
       }
     }, React.createElement('label', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         color: 'var(--ink-2)',
         display: 'block',
@@ -15797,7 +15818,7 @@ Object.assign(window, {
         boxShadow: 'var(--neo-inset)',
         borderRadius: 13,
         padding: '12px 14px',
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontFamily: 'inherit',
         color: 'var(--ink)',
         boxSizing: 'border-box',
@@ -15823,7 +15844,7 @@ Object.assign(window, {
     }), error && React.createElement('div', {
       style: {
         color: '#C0341D',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700,
         marginTop: 10
       }
@@ -15867,7 +15888,7 @@ Object.assign(window, {
       stroke: 2
     }), React.createElement('span', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700
       }
     }, label));
@@ -16011,7 +16032,7 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800
       }
     }, titulo)), React.createElement('div', {
@@ -16075,13 +16096,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         textShadow: '0 1px 8px rgba(0,0,0,.3)'
       }
     }, titulo), desc && React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         opacity: .88,
         fontWeight: 500,
         textShadow: '0 1px 8px rgba(0,0,0,.3)'
@@ -16127,7 +16148,7 @@ Object.assign(window, {
       style: {
         textAlign: 'center',
         color: 'var(--ink-3)',
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 600,
         padding: '30px 10px',
         lineHeight: 1.5
@@ -16174,14 +16195,14 @@ Object.assign(window, {
           }
         }, b.titulo && React.createElement('div', {
           style: {
-            fontSize: 14.5,
+            fontSize: 'var(--text-14-5, 14.5px)',
             fontWeight: 800,
             color: 'var(--ink)',
             lineHeight: 1.25
           }
         }, b.titulo), paras.length ? React.createElement('div', {
           style: {
-            fontSize: 12.5,
+            fontSize: 'var(--text-12-5, 12.5px)',
             color: 'var(--guinda)',
             fontWeight: 700,
             marginTop: 3,
@@ -16198,7 +16219,7 @@ Object.assign(window, {
         }
       }, b.titulo && React.createElement('div', {
         style: {
-          fontSize: 15.5,
+          fontSize: 'var(--text-15-5, 15.5px)',
           fontWeight: 800,
           color: 'var(--ink)',
           marginBottom: paras.length ? 7 : 0
@@ -16206,7 +16227,7 @@ Object.assign(window, {
       }, b.titulo), paras.map((p, i) => React.createElement('p', {
         key: i,
         style: {
-          fontSize: 14,
+          fontSize: 'var(--text-14, 14px)',
           color: 'var(--ink-2)',
           fontWeight: 500,
           lineHeight: 1.6,
@@ -16223,7 +16244,7 @@ Object.assign(window, {
           border: 'none',
           color: 'var(--guinda)',
           fontFamily: 'inherit',
-          fontSize: 13.5,
+          fontSize: 'var(--text-13-5, 13.5px)',
           fontWeight: 800,
           cursor: 'pointer',
           padding: 0
@@ -16268,13 +16289,13 @@ Object.assign(window, {
         }
       }, b.titulo && React.createElement('div', {
         style: {
-          fontSize: 14.5,
+          fontSize: 'var(--text-14-5, 14.5px)',
           fontWeight: 800,
           color: 'var(--ink)'
         }
       }, b.titulo), b.texto && React.createElement('div', {
         style: {
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           color: 'var(--ink-3)',
           fontWeight: 500,
           marginTop: 3,
@@ -16322,7 +16343,7 @@ Object.assign(window, {
         }
       }, React.createElement('div', {
         style: {
-          fontSize: 14,
+          fontSize: 'var(--text-14, 14px)',
           fontWeight: 800,
           color: 'var(--ink)',
           whiteSpace: 'nowrap',
@@ -16331,7 +16352,7 @@ Object.assign(window, {
         }
       }, b.titulo || 'Documento'), b.texto && React.createElement('div', {
         style: {
-          fontSize: 12,
+          fontSize: 'var(--text-12, 12px)',
           color: 'var(--ink-3)',
           fontWeight: 500,
           marginTop: 2
@@ -16387,13 +16408,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, b.titulo || 'Abrir enlace'), b.texto && React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 500,
         marginTop: 2
@@ -16501,7 +16522,7 @@ Object.assign(window, {
         background: 'rgba(0,0,0,.32)',
         backdropFilter: 'blur(6px)',
         color: '#fff',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         padding: '7px 11px',
         borderRadius: 999,
@@ -16529,7 +16550,7 @@ Object.assign(window, {
     }, React.createElement('h1', {
       'data-shared-title': '',
       style: {
-        fontSize: 24,
+        fontSize: 'var(--text-24, 24px)',
         fontWeight: 800,
         lineHeight: 1.2,
         letterSpacing: '-.02em',
@@ -16538,7 +16559,7 @@ Object.assign(window, {
       }
     }, n.title), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 8,
@@ -16548,7 +16569,7 @@ Object.assign(window, {
     }, n.date, '· ' + n.read + ' de lectura'), React.createElement('div', {
       style: {
         marginTop: 16,
-        fontSize: 15.5,
+        fontSize: 'var(--text-15-5, 15.5px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.65
@@ -16603,7 +16624,7 @@ Object.assign(window, {
       borderRadius: 13,
       padding: '12px 14px',
       fontFamily: 'inherit',
-      fontSize: 14,
+      fontSize: 'var(--text-14, 14px)',
       fontWeight: 700,
       color: 'var(--ink)'
     };
@@ -16626,7 +16647,7 @@ Object.assign(window, {
     }, React.createElement('label', {
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginBottom: 6
       }
@@ -16646,7 +16667,7 @@ Object.assign(window, {
     }, React.createElement('div', null, React.createElement('label', {
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginBottom: 6
       }
@@ -16663,7 +16684,7 @@ Object.assign(window, {
     })), React.createElement('div', null, React.createElement('label', {
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginBottom: 6
       }
@@ -16679,7 +16700,7 @@ Object.assign(window, {
       value
     }, program.term_label || value + ' quincenas'))))), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 8
@@ -16693,20 +16714,20 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, 'Pago por quincena'), React.createElement('div', {
       style: {
-        fontSize: 28,
+        fontSize: 'var(--text-28, 28px)',
         fontWeight: 900,
         color: 'var(--guinda)',
         marginTop: 2
       }
     }, window.money(result.paymentPerPeriod)), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 650,
         color: 'var(--ink-2)',
         marginTop: 5
@@ -17425,14 +17446,14 @@ Object.assign(window, {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 24,
+        fontSize: 'var(--text-24, 24px)',
         fontWeight: 800,
         lineHeight: 1.05,
         letterSpacing: '-.01em'
       }
     }, "El Fresnillo"), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         opacity: .85,
         marginTop: 2
@@ -17456,7 +17477,7 @@ Object.assign(window, {
       stroke: 2
     }), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         letterSpacing: '.04em'
       }
@@ -17469,7 +17490,7 @@ Object.assign(window, {
       }
     }), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 600,
         opacity: .9
       }
@@ -17511,7 +17532,7 @@ Object.assign(window, {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 900,
         color: col,
         lineHeight: 1,
@@ -17519,7 +17540,7 @@ Object.assign(window, {
       }
     }, val), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 5
@@ -17545,7 +17566,7 @@ Object.assign(window, {
           padding: '0 16px',
           borderRadius: 999,
           cursor: 'pointer',
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           fontWeight: 700,
           fontFamily: 'inherit',
           whiteSpace: 'nowrap',
@@ -17931,7 +17952,7 @@ Object.assign(window, {
         color: '#f6f1e6',
         borderRadius: 999,
         padding: '5px 11px',
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 700,
         pointerEvents: 'none',
         opacity: explored ? 0 : 1,
@@ -17969,7 +17990,7 @@ Object.assign(window, {
         borderRadius: 999,
         border: 'none',
         cursor: 'pointer',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         fontFamily: 'inherit',
         transition: 'background .22s cubic-bezier(.2,.7,.3,1), color .22s, box-shadow .22s',
@@ -17994,7 +18015,7 @@ Object.assign(window, {
         borderRadius: 999,
         border: 'none',
         cursor: 'pointer',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         fontFamily: 'inherit',
         color: F.ink,
@@ -18029,7 +18050,7 @@ Object.assign(window, {
         border: 'none',
         background: 'transparent',
         cursor: 'pointer',
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 700,
         lineHeight: 1,
         color: F.ink,
@@ -18061,7 +18082,7 @@ Object.assign(window, {
       }
     }), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: F.ink2
       }
@@ -18102,7 +18123,7 @@ Object.assign(window, {
       stroke: 1.9
     })), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 700,
         color: 'var(--ink-2)',
         lineHeight: 1.35
@@ -18127,7 +18148,7 @@ Object.assign(window, {
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 900,
         color: 'var(--ink)',
         fontVariantNumeric: 'tabular-nums',
@@ -18135,13 +18156,13 @@ Object.assign(window, {
       }
     }, val, /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, ' ' + unit)), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 6
@@ -18185,14 +18206,14 @@ Object.assign(window, {
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif",
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 700,
         color: 'var(--ink)',
         lineHeight: 1
       }
     }, "Lote #", l.id), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 3
@@ -18204,7 +18225,7 @@ Object.assign(window, {
         gap: 5,
         padding: '5px 11px',
         borderRadius: 999,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         letterSpacing: '.01em',
         background: dispo ? '#E7F6ED' : 'var(--surface-2)',
@@ -18233,7 +18254,7 @@ Object.assign(window, {
       }
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 27,
+        fontSize: 'var(--text-27, 27px)',
         fontWeight: 900,
         color: 'var(--ink)',
         letterSpacing: '-.02em',
@@ -18242,7 +18263,7 @@ Object.assign(window, {
       }
     }, window.money(l.precio)), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 5
@@ -18254,7 +18275,7 @@ Object.assign(window, {
         color: 'var(--guinda)',
         borderRadius: 999,
         padding: '5px 11px',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap'
@@ -18274,7 +18295,7 @@ Object.assign(window, {
         border: 'none',
         background: 'var(--grad-guinda-soft)',
         color: '#fff',
-        fontSize: 15.5,
+        fontSize: 'var(--text-15-5, 15.5px)',
         fontWeight: 800,
         fontFamily: 'inherit',
         cursor: 'pointer',
@@ -18282,7 +18303,7 @@ Object.assign(window, {
       }
     }, "Simular financiamiento ", /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 17
+        fontSize: 'var(--text-17, 17px)'
       }
     }, "\u2197")) : /*#__PURE__*/React.createElement("button", {
       disabled: true,
@@ -18294,7 +18315,7 @@ Object.assign(window, {
         border: 'none',
         background: 'var(--surface-2)',
         color: 'var(--ink-3)',
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         fontFamily: 'inherit',
         cursor: 'not-allowed'
@@ -18387,7 +18408,7 @@ Object.assign(window, {
     const image = ad && ad.image_url;
     return React.createElement('div', {
       onClick,
-      className: 'su-press',
+      className: 'su-press su-ad-slide',
       'data-convenios-ad': empty ? 'empty' : ad.id,
       style: {
         flex: '0 0 100%',
@@ -18429,7 +18450,7 @@ Object.assign(window, {
         gap: 6,
         background: 'rgba(255,255,255,.92)',
         color: 'var(--ink)',
-        fontSize: 10,
+        fontSize: 'var(--text-10, 10px)',
         fontWeight: 800,
         letterSpacing: '.08em',
         padding: '6px 11px',
@@ -18468,6 +18489,7 @@ Object.assign(window, {
       size: 18,
       stroke: 2.3
     })), React.createElement('div', {
+      className: 'su-ad-copy',
       style: {
         position: 'absolute',
         left: 18,
@@ -18485,14 +18507,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 21,
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         letterSpacing: '-.01em',
         textShadow: '0 2px 12px rgba(0,0,0,.4)'
       }
     }, empty ? 'Sin campañas publicadas' : ad.title), React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 600,
         opacity: .94,
         marginTop: 2,
@@ -18598,7 +18620,7 @@ Object.assign(window, {
       }
     }), React.createElement('span', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 800,
         letterSpacing: '.1em',
         color: 'var(--ink-3)'
@@ -18606,7 +18628,7 @@ Object.assign(window, {
     }, 'ESPACIO PUBLICITARIO')), React.createElement('span', {
       'data-convenios-ad-position': '',
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -18755,7 +18777,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800,
         letterSpacing: '-.01em'
       }
@@ -18764,7 +18786,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 5,
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 3
@@ -18788,7 +18810,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--guinda)',
         background: 'var(--guinda-50)',
@@ -19097,7 +19119,7 @@ Object.assign(window, {
         borderRadius: 999,
         background: 'rgba(0,0,0,.42)',
         color: '#fff',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         pointerEvents: 'none'
       }
@@ -19107,7 +19129,7 @@ Object.assign(window, {
       }
     }, React.createElement('h1', {
       style: {
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         margin: 0
@@ -19117,7 +19139,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 6
@@ -19143,7 +19165,7 @@ Object.assign(window, {
       title: 'Sobre el beneficio'
     }), React.createElement('p', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.6,
@@ -19311,13 +19333,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
     }, 'Muestra tu credencial digital'), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-2)',
         fontWeight: 600
       }
@@ -19329,6 +19351,7 @@ Object.assign(window, {
         color: 'var(--guinda)'
       }
     })))), React.createElement('div', {
+      className: 'su-convenio-actions',
       style: {
         position: 'absolute',
         left: 0,
@@ -19474,7 +19497,7 @@ Object.assign(window, {
     const request = requests.find(row => row.sourceId === notice.request_id);
     return h('section', { ref, role: 'status', 'data-user-authorization': notice.id, style: { position: 'relative', overflow: 'hidden', background: '#E7F6ED', color: '#13794A', padding: 18, borderRadius: 18, margin: 16 } },
       h('div', { 'aria-hidden': 'true', style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, Array.from({ length: 24 }, (_, i) => h('i', { key: i, style: { position: 'absolute', top: 0, opacity: 0, left: ((i * 37) % 100) + '%', width: 6, height: 10, background: ['#901040', '#D9A441', '#13794A'][i % 3] } }))),
-      h('strong', { style: { fontSize: 19 } }, '¡Tu solicitud fue autorizada!'),
+      h('strong', { style: { fontSize: 'var(--text-19, 19px)' } }, '¡Tu solicitud fue autorizada!'),
       h('p', null, notice.folio + ' · ' + (request ? request.tipo : notice.program_id)),
       request && request.steps.find(step => step.active) && h('p', null, 'Ahora continúa: ' + request.steps.find(step => step.active).label),
       h('button', { onClick: () => { setNotice(null); app.push('tracking', { s: { sourceId: notice.request_id } }); } }, 'Ver seguimiento'),
@@ -19588,7 +19611,7 @@ Object.assign(window, {
       onClick: () => app.push('tracking', {
         s: activa
       }),
-      className: 'su-press',
+      className: 'su-press su-history-hero',
       style: {
         cursor: 'pointer',
         background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))',
@@ -19621,27 +19644,27 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700,
         opacity: .85,
         letterSpacing: '.04em'
       }
     }, 'SOLICITUD EN CURSO'), React.createElement('span', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         fontFamily: 'var(--mono)',
         opacity: .85
       }
     }, activa.id)), React.createElement('div', {
       style: {
-        fontSize: 20,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800,
         marginTop: 8
       }
     }, activa.tipo), React.createElement('div', {
       style: {
-        fontSize: 26,
+        fontSize: 'var(--text-26, 26px)',
         fontWeight: 800,
         marginTop: 2,
         letterSpacing: '-.02em'
@@ -19673,7 +19696,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700
       }
     }, (activa.steps.find(step => step.active) || {}).label || REQUEST_LABELS[activa.requestStatus] || 'En revisión'), React.createElement('span', {
@@ -19681,7 +19704,7 @@ Object.assign(window, {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 4,
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700
       }
     }, 'Ver seguimiento', React.createElement(I, {
@@ -19704,7 +19727,7 @@ Object.assign(window, {
         border: '1px solid #D6E2FB',
         borderRadius: 14,
         padding: '11px 13px',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 650,
         color: 'var(--ink-2)',
         lineHeight: 1.45
@@ -19741,7 +19764,7 @@ Object.assign(window, {
       onClick: () => app.push('tracking', {
         s
       }),
-      className: 'su-press',
+      className: 'su-press su-history-entry',
       style: {
         display: 'flex',
         gap: 13,
@@ -19769,13 +19792,13 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, s.tipo), React.createElement('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 700,
         fontFamily: 'var(--mono)'
@@ -19789,7 +19812,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 16,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
@@ -19798,7 +19821,7 @@ Object.assign(window, {
       requestStatus: s.requestStatus
     })), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 5
@@ -19866,7 +19889,7 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800
       }
     }, 'Seguimiento')), React.createElement('div', {
@@ -19901,12 +19924,12 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 800
       }
     }, s.tipo), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 700,
         fontFamily: 'var(--mono)'
@@ -19924,38 +19947,38 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600
       }
     }, 'Monto'), React.createElement('div', {
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         marginTop: 2
       }
     }, s.monto == null ? 'Por cotizar' : window.money(s.monto))), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600
       }
     }, 'Plazo'), React.createElement('div', {
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         marginTop: 2
       }
     }, s.plazo)), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600
       }
     }, 'Fecha'), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         marginTop: 4
       }
@@ -19982,13 +20005,13 @@ Object.assign(window, {
       }
     }), React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: '#C0341D'
       }
     }, 'Motivo'), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 600,
         lineHeight: 1.5,
@@ -20015,7 +20038,7 @@ Object.assign(window, {
           borderRadius: 18,
           padding: 18,
           textAlign: 'center',
-          fontSize: 13,
+          fontSize: 'var(--text-13, 13px)',
           fontWeight: 700,
           color: 'var(--ink-3)',
           boxShadow: 'var(--neo-sm)'
@@ -20071,7 +20094,7 @@ Object.assign(window, {
         display: 'grid',
         placeItems: 'center',
         color: 'var(--ink-3)',
-        fontSize: 12
+        fontSize: 'var(--text-12, 12px)'
       }
     }, 'Generando código…');
     const qr = window.qrcode(0, 'M');
@@ -20188,7 +20211,7 @@ Object.assign(window, {
       }
     }, React.createElement('p', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         margin: 0
@@ -20201,27 +20224,40 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       onClick: () => setFlipped(!flipped),
+      role: 'button',
+      tabIndex: 0,
+      'aria-label': flipped ? 'Ver frente de credencial' : 'Ver reverso de credencial',
+      onKeyDown: e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setFlipped(!flipped);
+        }
+      },
+      className: 'su-credential-flip',
       style: {
         position: 'relative',
-        height: 420,
+        display: 'grid',
+        minHeight: 420,
         cursor: 'pointer',
         transformStyle: 'preserve-3d',
         transition: 'transform .7s cubic-bezier(.4,0,.2,1)',
         transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
       }
     }, React.createElement('div', {
+      'aria-hidden': flipped,
       style: {
-        position: 'absolute',
-        inset: 0,
+        position: 'relative',
+        gridArea: '1 / 1',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden'
       }
     }, React.createElement(CardFront, {
       u
     })), React.createElement('div', {
+      'aria-hidden': !flipped,
       style: {
-        position: 'absolute',
-        inset: 0,
+        position: 'relative',
+        gridArea: '1 / 1',
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
         transform: 'rotateY(180deg)'
@@ -20255,7 +20291,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 900,
         color: 'var(--guinda)',
         letterSpacing: '.04em',
@@ -20271,6 +20307,7 @@ Object.assign(window, {
       }
     }, sec.rows.map((r, i, arr) => React.createElement('div', {
       key: r[0],
+      className: 'su-credential-fact',
       style: {
         display: 'flex',
         justifyContent: 'space-between',
@@ -20280,14 +20317,14 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         flexShrink: 0
       }
     }, r[0]), React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         textAlign: 'right',
         overflowWrap: 'anywhere'
@@ -20320,12 +20357,12 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 800
       }
     }, 'Expediente digital'), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 2
@@ -20357,7 +20394,7 @@ Object.assign(window, {
       }
     }), React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 600
       }
     }, 'Identidad cargada desde Supabase')));
@@ -20366,6 +20403,7 @@ Object.assign(window, {
     u
   }) {
     return React.createElement('div', {
+      className: 'su-credential-face',
       style: {
         width: '100%',
         height: '100%',
@@ -20396,14 +20434,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         letterSpacing: '.18em',
         fontWeight: 700,
         opacity: .8
       }
     }, 'CREDENCIAL DIGITAL'), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         marginTop: 2
       }
@@ -20438,13 +20476,13 @@ Object.assign(window, {
     }, React.createElement('div', {
       'data-affiliate-field': 'credential-name',
       style: {
-        fontSize: 22,
+        fontSize: 'var(--text-22, 22px)',
         fontWeight: 800,
         letterSpacing: '-.01em'
       }
     }, u.name), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         opacity: .82,
         fontWeight: 600,
         marginTop: 2
@@ -20458,7 +20496,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('div', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-10, 10px)',
         opacity: .7,
         fontWeight: 600,
         letterSpacing: '.08em'
@@ -20466,7 +20504,7 @@ Object.assign(window, {
     }, 'No. AFILIADO'), React.createElement('div', {
       'data-affiliate-field': 'credential-control',
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 700,
         fontFamily: 'var(--mono)'
       }
@@ -20476,7 +20514,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-10, 10px)',
         opacity: .7,
         fontWeight: 600,
         letterSpacing: '.08em'
@@ -20484,7 +20522,7 @@ Object.assign(window, {
     }, 'ESTATUS'), React.createElement('div', {
       'data-affiliate-field': 'credential-status',
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 700,
         fontFamily: 'var(--mono)'
       }
@@ -20498,6 +20536,7 @@ Object.assign(window, {
     retry
   }) {
     return React.createElement('div', {
+      className: 'su-credential-face',
       style: {
         width: '100%',
         height: '100%',
@@ -20520,7 +20559,7 @@ Object.assign(window, {
       }
     }), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         marginTop: 22,
@@ -20528,7 +20567,7 @@ Object.assign(window, {
       }
     }, 'ACCESO Y BENEFICIOS'), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 4,
@@ -20573,12 +20612,12 @@ Object.assign(window, {
       stroke: 2.2
     }), React.createElement('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700
       }
     }, 'Código visual · se renueva en ' + secs + 's')), React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontFamily: 'var(--mono)',
         color: 'var(--ink-2)',
         marginTop: 10,
@@ -20621,7 +20660,7 @@ Object.assign(window, {
       role: 'alert',
       style: {
         color: '#A32921',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700
       }
     }, error, ' ', React.createElement('button', {
@@ -20661,7 +20700,7 @@ Object.assign(window, {
       }
     }, React.createElement('b', null, r.bank_name || 'Banco pendiente'), r.is_primary && React.createElement('span', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-10, 10px)',
         color: 'var(--guinda)',
         fontWeight: 900
       }
@@ -20669,21 +20708,21 @@ Object.assign(window, {
       'data-bank-masked': 'true',
       style: {
         fontFamily: 'var(--mono)',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-2)',
         marginTop: 5
       }
     }, r.maskedClabe || r.maskedAccount || 'Datos pendientes'), React.createElement('div', r.data_status === 'INCOMPLETE_HISTORICAL_DATA' ? {
       'data-bank-incomplete': 'true',
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--guinda)',
         fontWeight: 800,
         marginTop: 3
       }
     } : {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 3
@@ -20768,7 +20807,7 @@ Object.assign(window, {
       key: k,
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginTop: 12
       }
@@ -20784,7 +20823,7 @@ Object.assign(window, {
       style: input
     }))), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         marginTop: 12
       }
@@ -21035,7 +21074,7 @@ Object.assign(window, {
     '  cursor:pointer;user-select:none}' +
     '.empty svg{opacity:.45}' +
     '.empty .cap{max-width:90%;font-weight:500;letter-spacing:.01em}' +
-    '.empty .sub{font-size:11px}' +
+    '.empty .sub{font-size:var(--text-11, 11px)}' +
     '.empty .sub u{text-underline-offset:2px;text-decoration-color:rgba(0,0,0,.25)}' +
     '.empty:hover .sub u{color:rgba(0,0,0,.75);text-decoration-color:currentColor}' +
     ':host([data-over]) .frame{outline:2px solid #c96442;outline-offset:-2px;' +
@@ -21056,7 +21095,7 @@ Object.assign(window, {
     '  background:rgba(0,0,0,.65);color:#fff;font:11px/1 system-ui,-apple-system,sans-serif;' +
     '  backdrop-filter:blur(6px)}' +
     '.ctl button:hover{background:rgba(0,0,0,.8)}' +
-    '.err{position:absolute;left:8px;bottom:8px;right:8px;color:#b3261e;font-size:11px;' +
+    '.err{position:absolute;left:8px;bottom:8px;right:8px;color:#b3261e;font-size:var(--text-11, 11px);' +
     '  background:rgba(255,255,255,.85);padding:4px 6px;border-radius:5px;pointer-events:none}';
 
   const icon =
@@ -21816,7 +21855,7 @@ Object.assign(window, {
     const alert = error && h('div', {
       role: 'alert',
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: '#A32921',
         marginBottom: 9
@@ -21830,7 +21869,7 @@ Object.assign(window, {
       title: originType ? (origin.replacing ? 'Reemplazar ' : 'Agregar ') + originType.label : 'Agregar documento'
     }, originType && h(React.Fragment, null, h('p', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-3)',
         lineHeight: 1.5,
         margin: '0 0 12px'
@@ -21911,7 +21950,7 @@ Object.assign(window, {
         borderRadius: 12,
         background: '#FCE9EE',
         color: '#A00027',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 750
       }
     }, cameraError), h('div', {
@@ -21960,7 +21999,7 @@ Object.assign(window, {
         borderRadius: 10,
         background: '#fff',
         color: 'var(--guinda)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         padding: '0 10px',
         display: 'inline-flex',
@@ -22162,7 +22201,7 @@ Object.assign(window, {
         }
       }, h('div', {
         style: {
-          fontSize: 14,
+          fontSize: 'var(--text-14, 14px)',
           fontWeight: 800
         }
       }, type.label), h('div', {
@@ -22170,7 +22209,7 @@ Object.assign(window, {
           display: 'flex',
           alignItems: 'center',
           gap: 5,
-          fontSize: 11.8,
+          fontSize: 'var(--text-11-8, 11.8px)',
           fontWeight: 700,
           color: state.fg,
           marginTop: 2
@@ -22181,7 +22220,7 @@ Object.assign(window, {
         stroke: 2.1
       }), isBusy ? phaseLabel(type) : state.label), doc && doc.review_observation && h('div', {
         style: {
-          fontSize: 11,
+          fontSize: 'var(--text-11, 11px)',
           color: '#9B2743',
           marginTop: 3
         }
@@ -22223,7 +22262,7 @@ Object.assign(window, {
     }));
   }
   const UNIFIED_CSS = `
-    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:21px;line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:11.5px;color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:10.5px;font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:14px;font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:11.5px;line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:12.5px;font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{position:relative;overflow:hidden;width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mr-doc-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,8,.68),rgba(10,6,8,.02));pointer-events:none}.mr-doc-badge,.mr-doc-meta{position:relative;z-index:1}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:12px;line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:10px;color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50;z-index:2}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center;z-index:3}.mr-doc-replace{position:absolute;right:8px;bottom:8px;z-index:3;min-height:28px;border:1px solid var(--hairline-strong);border-radius:9px;background:#fff;color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-size:9px;font-weight:850}.mr-doc-status{position:absolute;bottom:8px;left:8px;text-align:center;font-size:9.5px;font-weight:850;color:#087A50;z-index:3}.mr-doc-observation{font-size:9px;color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
+    .ud-phase{color:var(--ink);font-family:var(--font);}.ud-title{margin:0 0 4px;font-size:var(--text-21, 21px);line-height:1.18;font-weight:900}.ud-sub{margin:0 0 14px;color:var(--ink-3);font-size:var(--text-12-5, 12.5px);line-height:1.45}.ud-tracker{background:#fff;border-radius:18px;padding:14px 15px;box-shadow:var(--neo-sm);margin-bottom:18px}.ud-head{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:var(--text-13, 13px);font-weight:850}.ud-count{color:var(--guinda)}.ud-segments{display:grid;grid-template-columns:repeat(var(--ud-total),1fr);gap:5px;margin:10px 0}.ud-segments i{height:5px;border-radius:99px;background:#E8E8ED}.ud-segments i.on{background:var(--guinda)}.ud-help{font-size:var(--text-11-5, 11.5px);color:var(--ink-3);font-weight:650}.ud-chips{display:flex;gap:6px;overflow:auto;padding-top:9px}.ud-chip{white-space:nowrap;border:0;border-radius:99px;background:#FCE9EE;color:#A00027;padding:6px 9px;font-size:var(--text-10-5, 10.5px);font-weight:800}.ud-section-title{display:flex;gap:7px;align-items:center;margin:0 0 11px;font-size:var(--text-14, 14px);font-weight:900}.ud-privacy{display:flex;align-items:flex-start;gap:8px;color:var(--ink-3);font-size:var(--text-11-5, 11.5px);line-height:1.45;padding:15px 4px 2px}.ud-state{background:#fff;border-radius:16px;padding:18px;font-size:var(--text-12-5, 12.5px);font-weight:700}.ud-state.err{color:#A32921}.mr-doc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mr-doc-tile{position:relative;min-height:150px;border-radius:17px;background:#fff;box-shadow:var(--neo-sm);overflow:hidden}.mr-doc-pick{position:relative;overflow:hidden;width:100%;min-height:150px;border:0;background:transparent;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--ink)}.mr-doc-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.mr-doc-veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,6,8,.68),rgba(10,6,8,.02));pointer-events:none}.mr-doc-badge,.mr-doc-meta{position:relative;z-index:1}.mr-doc-badge{width:44px;height:44px;border-radius:13px;background:#E5F7EF;color:#087A50;display:grid;place-items:center}.mr-doc-meta{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}.mr-doc-meta strong{font-size:var(--text-12, 12px);line-height:1.2;text-align:center}.mr-doc-meta>span{font-size:var(--text-10, 10px);color:var(--guinda);font-weight:800;text-align:center}.mr-doc-ok{position:absolute;top:9px;left:9px;color:#087A50;z-index:2}.mr-doc-view{position:absolute;top:8px;right:8px;width:32px;height:32px;border:1px solid var(--hairline-strong);border-radius:10px;background:#fff;color:var(--ink-3);display:grid;place-items:center;z-index:3}.mr-doc-replace{position:absolute;right:8px;bottom:8px;z-index:3;min-height:28px;border:1px solid var(--hairline-strong);border-radius:9px;background:#fff;color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-size:var(--text-9, 9px);font-weight:850}.mr-doc-status{position:absolute;bottom:8px;left:8px;text-align:center;font-size:var(--text-9-5, 9.5px);font-weight:850;color:#087A50;z-index:3}.mr-doc-observation{font-size:var(--text-9, 9px);color:#A00027;padding:0 8px 8px;margin:0;text-align:center}.mr-doc-tile.is-error{outline:1px solid #E8A2B2}.mr-doc-tile.is-highlighted{outline:2px solid var(--guinda)}@media(min-width:700px){.ud-phase{max-width:760px;margin:0 auto}}
   `;
   function UnifiedDocumentPhase({
     requirements,
@@ -22452,7 +22491,7 @@ Object.assign(window, {
       stroke: 2
     })), h('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800
       }
     }, 'Mis Documentos')), h('div', {
@@ -22487,12 +22526,12 @@ Object.assign(window, {
       stroke: 2
     })), h('div', null, h('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800
       }
     }, 'Tus documentos están protegidos'), h('div', {
       style: {
-        fontSize: 12.2,
+        fontSize: 'var(--text-12-2, 12.2px)',
         opacity: .82,
         fontWeight: 600,
         marginTop: 2,
@@ -22514,13 +22553,13 @@ Object.assign(window, {
       }
     }, h('span', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800
       }
     }, 'Expediente completo'), h('span', {
       'data-document-count': verified + '/' + requirements.length,
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
@@ -22529,7 +22568,7 @@ Object.assign(window, {
       height: 10
     }), h('div', {
       style: {
-        fontSize: 12.3,
+        fontSize: 'var(--text-12-3, 12.3px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 9
@@ -24012,9 +24051,11 @@ Object.assign(window, {
       style: {
         width: '100%',
         maxWidth: 340,
+        maxHeight: '100%',
+        overflowY: 'auto',
         background: 'var(--surface)',
         borderRadius: 26,
-        overflow: 'hidden',
+        overflowX: 'hidden',
         boxShadow: '0 30px 70px -20px rgba(16,12,14,.6)',
         position: 'relative',
         transform: show ? 'translateY(0) scale(1)' : 'translateY(24px) scale(.94)',
@@ -24087,7 +24128,7 @@ Object.assign(window, {
         gap: 6,
         background: 'rgba(255,255,255,.92)',
         color: 'var(--guinda)',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         letterSpacing: '.06em',
         padding: '6px 11px',
@@ -24104,14 +24145,14 @@ Object.assign(window, {
       }
     }, promo.subtitulo && React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         letterSpacing: '.02em'
       }
     }, promo.subtitulo), React.createElement('h3', {
       style: {
-        fontSize: 21,
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         color: 'var(--ink)',
         margin: '4px 0 0',
@@ -24120,7 +24161,7 @@ Object.assign(window, {
       }
     }, promo.titulo || 'Título del pop-up'), promo.contenido && React.createElement('p', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.5,
@@ -24174,7 +24215,7 @@ Object.assign(window, {
         background: 'none',
         border: 'none',
         color: 'var(--ink-3)',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         cursor: 'pointer',
         fontFamily: 'inherit'
@@ -24941,7 +24982,7 @@ Object.assign(window, {
         gap: 6,
         background: 'rgba(255,255,255,.92)',
         color: 'var(--guinda)',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         letterSpacing: '.06em',
         padding: '6px 11px',
@@ -24958,7 +24999,7 @@ Object.assign(window, {
       }
     }, React.createElement('h2', {
       style: {
-        fontSize: 24,
+        fontSize: 'var(--text-24, 24px)',
         fontWeight: 900,
         color: 'var(--ink)',
         margin: 0,
@@ -24967,7 +25008,7 @@ Object.assign(window, {
       }
     }, cs.titulo || 'Título de la pantalla'), cs.texto && React.createElement('p', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.65,
@@ -24996,7 +25037,7 @@ Object.assign(window, {
         border: 'none',
         cursor: 'pointer',
         fontFamily: 'inherit',
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 800,
         background: 'var(--grad-guinda-soft)',
         color: '#fff',
@@ -25012,7 +25053,7 @@ Object.assign(window, {
         border: 'none',
         cursor: 'pointer',
         fontFamily: 'inherit',
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         background: 'var(--surface)',
         color: 'var(--guinda)',
@@ -25028,7 +25069,7 @@ Object.assign(window, {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 22
@@ -27958,7 +27999,7 @@ Object.assign(window, {
     style: 'currency',
     currency: 'MXN'
   }).format(value) : String(value) + ' · Revisar importe';
-  const css = '.svh{background:white;border:1px solid #dfe2e8;border-radius:14px;padding:16px;margin:12px 0;color:#202432;font:13px Arial;line-height:1.5}.svh h3{margin:0 0 8px;font-size:18px}.svh p{color:#626b7b;margin:8px 0}.svh-facts{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.svh-facts>div{flex:1;min-width:150px;padding:12px;background:#f7f3f5;border-radius:10px}.svh-facts b,.svh small{display:block}.svh-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}.svh button,.svh select{font:inherit;padding:9px 12px;border:1px solid #d1d5df;border-radius:9px;background:white;color:inherit;cursor:pointer;max-width:100%}.svh button[aria-pressed=true]{background:#a00038;color:white;border-color:#a00038}.svh button:disabled{opacity:.45;cursor:default}.svh table{width:100%;border-collapse:collapse;font-size:12px}.svh th,.svh td{text-align:left;padding:10px 5px;border-bottom:1px solid #e7e8ed;vertical-align:top}.svh th{background:#f5f6f8}.svh small{color:#626b7b}.svh .svh-warning{background:#fff4d9;padding:10px;border-radius:9px;color:#69531f}.svh .svh-money{white-space:nowrap;font-weight:bold}@media(max-width:600px){.svh{padding:12px}.svh th,.svh td{padding:9px 3px}.svh-facts>div{min-width:120px}.svh-controls button{flex:1}}';
+  const css = '.svh{background:white;border:1px solid #dfe2e8;border-radius:14px;padding:16px;margin:12px 0;color:#202432;font:13px Arial;line-height:1.5}.svh h3{margin:0 0 8px;font-size:var(--text-18, 18px)}.svh p{color:#626b7b;margin:8px 0}.svh-facts{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.svh-facts>div{flex:1;min-width:150px;padding:12px;background:#f7f3f5;border-radius:10px}.svh-facts b,.svh small{display:block}.svh-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}.svh button,.svh select{font:inherit;padding:9px 12px;border:1px solid #d1d5df;border-radius:9px;background:white;color:inherit;cursor:pointer;max-width:100%}.svh button[aria-pressed=true]{background:#a00038;color:white;border-color:#a00038}.svh button:disabled{opacity:.45;cursor:default}.svh table{width:100%;border-collapse:collapse;font-size:var(--text-12, 12px)}.svh th,.svh td{text-align:left;padding:10px 5px;border-bottom:1px solid #e7e8ed;vertical-align:top}.svh th{background:#f5f6f8}.svh small{color:#626b7b}.svh .svh-warning{background:#fff4d9;padding:10px;border-radius:9px;color:#69531f}.svh .svh-money{white-space:nowrap;font-weight:bold}@media(max-width:600px){.svh{padding:12px}.svh th,.svh td{padding:9px 3px}.svh-facts>div{min-width:120px}.svh-controls button{flex:1}}';
   function SavingsRecordedHistory({
     record,
     changes = {},
@@ -28112,7 +28153,7 @@ Object.assign(window, {
     currency: 'MXN'
   }).format(value) : String(value) + ' · Importe por revisar';
   const show = value => value == null || value === '' ? 'Sin dato' : String(value);
-  const css = '.svw{font:13px var(--font,Arial);line-height:1.5}.svw-heading{display:flex;gap:12px;justify-content:space-between;align-items:center}.svw h2{margin:0}.svw p{color:#626b7b}.svw-table{background:white;border:1px solid #dde0e7;border-radius:12px;overflow:auto}.svw table{width:100%;border-collapse:collapse;font-size:12px}.svw td,.svw th{padding:12px 9px;text-align:left;vertical-align:top;border-bottom:1px solid #e5e7ed}.svw th{background:#f1f3f7}.svw small{display:block;color:#626b7b;margin-top:4px}.svw-money{font-weight:bold;white-space:nowrap}.svw-warning{background:#fff2d4;padding:12px;border-radius:10px}.svw-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0}@media(max-width:650px){.svw thead{display:none}.svw tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #dde0e7;padding:8px}.svw td{border:0;padding:7px;min-width:0;overflow-wrap:anywhere}.svw td::before{content:attr(data-label);display:block;font-size:10px;color:#626b7b;margin-bottom:4px}.svw td:last-child{grid-column:1/-1}.svw td:last-child button{width:100%}.svw-heading{align-items:flex-start}.svw-pager{font-size:11px}}';
+  const css = '.svw{font:13px var(--font,Arial);line-height:1.5}.svw-heading{display:flex;gap:12px;justify-content:space-between;align-items:center}.svw h2{margin:0}.svw p{color:#626b7b}.svw-table{background:white;border:1px solid #dde0e7;border-radius:12px;overflow:auto}.svw table{width:100%;border-collapse:collapse;font-size:var(--text-12, 12px)}.svw td,.svw th{padding:12px 9px;text-align:left;vertical-align:top;border-bottom:1px solid #e5e7ed}.svw th{background:#f1f3f7}.svw small{display:block;color:#626b7b;margin-top:4px}.svw-money{font-weight:bold;white-space:nowrap}.svw-warning{background:#fff2d4;padding:12px;border-radius:10px}.svw-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0}@media(max-width:650px){.svw thead{display:none}.svw tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #dde0e7;padding:8px}.svw td{border:0;padding:7px;min-width:0;overflow-wrap:anywhere}.svw td::before{content:attr(data-label);display:block;font-size:var(--text-10, 10px);color:#626b7b;margin-bottom:4px}.svw td:last-child{grid-column:1/-1}.svw td:last-child button{width:100%}.svw-heading{align-items:flex-start}.svw-pager{font-size:var(--text-11, 11px)}}';
   function SavingsWithdrawalList({
     recordId,
     onOpen,
@@ -57420,13 +57461,13 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
     }, label), h('div', {
       style: {
-        fontSize: 15.5,
+        fontSize: 'var(--text-15-5, 15.5px)',
         fontWeight: 900,
         letterSpacing: '-.02em',
         marginTop: 3,
@@ -57482,12 +57523,12 @@ Object.assign(window, {
       }
     }, h('span', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 900
       }
     }, 'Calendario de descuentos'), h('span', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
@@ -57507,7 +57548,7 @@ Object.assign(window, {
         gap: 8,
         padding: '8px 10px',
         background: 'var(--surface-2)',
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         color: 'var(--ink-3)',
         position: 'sticky',
@@ -57525,7 +57566,7 @@ Object.assign(window, {
         gap: 8,
         padding: '9px 10px',
         borderTop: '1px solid var(--hairline)',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700
       }
     }, h('span', {
@@ -57667,12 +57708,12 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 900
       }
     }, step === 'documents' ? 'Documentos' : 'Revisa y firma'), h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -57689,7 +57730,7 @@ Object.assign(window, {
       }
     }, step === 'documents' ? h(React.Fragment, null, h('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         fontWeight: 600,
         lineHeight: 1.5,
@@ -57713,13 +57754,13 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         color: 'var(--ink-3)'
       }
     }, item.scopeId || item.program_key || 'Programa'), h('div', {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-17, 17px)',
         fontWeight: 900,
         marginTop: 3
       }
@@ -57774,7 +57815,7 @@ Object.assign(window, {
       style: {
         marginTop: 12,
         color: '#A32921',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         lineHeight: 1.45
       }
@@ -57905,7 +57946,7 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         color: '#A32921'
       }
@@ -57955,12 +57996,12 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 900
       }
     }, 'Primero necesitas una cotización'), h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 2
@@ -57982,7 +58023,7 @@ Object.assign(window, {
         borderRadius: 18,
         padding: 15,
         boxShadow: 'var(--neo-sm)',
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700,
         color: 'var(--ink-2)'
       }
@@ -58033,12 +58074,12 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 900
       }
     }, 'Simula tu plan de pago'), h('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 2
@@ -58081,12 +58122,12 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 900
       }
     }, 'Simula tu plan de pago'), h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -58114,14 +58155,14 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         opacity: .82,
         fontWeight: 700,
         textTransform: 'uppercase'
       }
     }, 'Descuento ' + period), h('div', {
       style: {
-        fontSize: 34,
+        fontSize: 'var(--text-34, 34px)',
         fontWeight: 800,
         letterSpacing: '-.03em',
         lineHeight: 1.14,
@@ -58133,7 +58174,7 @@ Object.assign(window, {
         justifyContent: 'center',
         gap: 14,
         marginTop: 11,
-        fontSize: 11.5
+        fontSize: 'var(--text-11-5, 11.5px)'
       }
     }, h('span', null, term + ' pagos'), h('span', null, '·'), h('span', null, quote ? dateLabel(quote.paymentSchedule.first_payment_date) : 'Calculando…'), h('span', null, '·'), h('span', null, quote ? money0(quote.financialResult.total) : '—'))), h('div', {
       style: {
@@ -58143,13 +58184,13 @@ Object.assign(window, {
       style: {
         display: 'flex',
         justifyContent: 'space-between',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         color: 'var(--ink-2)'
       }
     }, h('span', null, 'Tu enganche'), h('span', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         color: 'var(--ink-3)'
       }
     }, minDown > 0 ? 'Mínimo ' + money0(minDown) : 'Desde $0')), h('div', {
@@ -58165,7 +58206,7 @@ Object.assign(window, {
       }
     }, h('span', {
       style: {
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         color: 'var(--guinda)'
       }
@@ -58182,14 +58223,14 @@ Object.assign(window, {
         border: 'none',
         background: 'transparent',
         padding: '11px 0',
-        fontSize: 18,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         minWidth: 0
       }
     })), down < minDown && h('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: '#B3261E',
         marginTop: 7
@@ -58202,13 +58243,13 @@ Object.assign(window, {
       style: {
         display: 'flex',
         justifyContent: 'space-between',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         color: 'var(--ink-2)'
       }
     }, h('span', null, 'Número de descuentos ' + (session.program.payment_period === 'mensual' ? 'mensuales' : 'permitidos')), h('span', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         color: 'var(--ink-3)'
       }
     }, 'Máximo ' + maxTerm)), h('input', {
@@ -58227,7 +58268,7 @@ Object.assign(window, {
     }), h('div', {
       style: {
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 900,
         color: 'var(--guinda)'
       }
@@ -58275,7 +58316,7 @@ Object.assign(window, {
     }, 'Continuar con esta simulación')), quoteState.phase === 'error' && h('div', {
       role: 'alert',
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 800,
         color: '#A32921',
         marginTop: 10
@@ -58285,7 +58326,7 @@ Object.assign(window, {
         display: 'flex',
         gap: 8,
         marginTop: 12,
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 600,
         lineHeight: 1.45,
         color: 'var(--ink-3)'
@@ -58415,7 +58456,7 @@ Object.assign(window, {
         right: 8,
         background: 'rgba(126,18,43,.94)',
         color: '#fff',
-        fontSize: 10,
+        fontSize: 'var(--text-10, 10px)',
         fontWeight: 900,
         letterSpacing: '.08em',
         padding: '5px 8px',
@@ -58427,20 +58468,20 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         lineHeight: 1.2
       }
     }, l.nombre), l.ficha && React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 2
       }
     }, l.ficha), React.createElement('div', {
       style: {
-        fontSize: l.precio != null && !l.cotiza ? 15 : 12.5,
+        fontSize: l.precio != null && !l.cotiza ? 'var(--text-15, 15px)' : 'var(--text-12-5, 12.5px)',
         fontWeight: 800,
         color: l.precio != null && !l.cotiza ? 'var(--guinda)' : 'var(--ink-3)',
         marginTop: 7,
@@ -58455,6 +58496,7 @@ Object.assign(window, {
     onOpen
   }) {
     return React.createElement('div', {
+      className: 'su-catalog-grid',
       style: {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -58577,7 +58619,7 @@ Object.assign(window, {
         background: 'rgba(0,0,0,.34)',
         backdropFilter: 'blur(6px)',
         color: '#fff',
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         padding: '7px 11px',
         borderRadius: 999,
@@ -58680,19 +58722,19 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 900
       }
     }, 'Contacto directo'), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 2
       }
     }, 'Precio informativo · sin financiamiento SutiApp'))), state.phase === 'loading' && React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         marginTop: 12
@@ -58700,7 +58742,7 @@ Object.assign(window, {
     }, 'Consultando contacto autorizado…'), state.phase === 'error' && React.createElement('div', {
       role: 'alert',
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 750,
         color: '#A32921',
         marginTop: 12
@@ -58728,7 +58770,7 @@ Object.assign(window, {
       onClick: () => open(contact.primaryUrl)
     }, contact.primaryLabel || 'Contactar')), state.phase === 'ready' && (!contact || contact.status !== 'READY') && React.createElement('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 750,
         color: 'var(--ink-3)',
         marginTop: 12
@@ -58797,7 +58839,7 @@ Object.assign(window, {
         boxShadow: 'var(--neo-inset)',
         color: 'var(--ink-3)',
         fontFamily: 'inherit',
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 800
       }
     }, 'NO DISPONIBLE PARA SOLICITAR');else if (!cotiza) cta = React.createElement(window.Btn, {
@@ -58818,7 +58860,7 @@ Object.assign(window, {
         flex: 1,
         minWidth: 0,
         padding: '0 12px',
-        fontSize: 13
+        fontSize: 'var(--text-13, 13px)'
       },
       onClick: () => setQSheet(true)
     }, 'Nueva cotización'), React.createElement(window.Btn, {
@@ -58828,7 +58870,7 @@ Object.assign(window, {
         flex: 1,
         minWidth: 0,
         padding: '0 12px',
-        fontSize: 13
+        fontSize: 'var(--text-13, 13px)'
       },
       onClick: () => setSheet(true)
     }, 'Simular monto'));
@@ -58893,7 +58935,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
@@ -58906,7 +58948,7 @@ Object.assign(window, {
       }
     }), ctx.label || ''), React.createElement('h1', {
       style: {
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         lineHeight: 1.15,
@@ -58933,13 +58975,13 @@ Object.assign(window, {
       }
     }), React.createElement('span', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink-2)'
       }
     }, 'Precio a cotizar')) : item.precio != null ? React.createElement('div', {
       style: {
-        fontSize: 30,
+        fontSize: 'var(--text-30, 30px)',
         fontWeight: 900,
         color: 'var(--guinda)',
         letterSpacing: '-.03em',
@@ -58947,7 +58989,7 @@ Object.assign(window, {
       }
     }, window.money(item.precio)) : React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink-3)',
         marginTop: 12
@@ -58961,7 +59003,7 @@ Object.assign(window, {
         marginTop: 12,
         background: '#FCE8E6',
         color: '#B3261E',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 950,
         letterSpacing: '.08em',
         padding: '7px 11px',
@@ -58988,7 +59030,7 @@ Object.assign(window, {
       title: 'Descripción'
     }), React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.6
@@ -59022,13 +59064,13 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-3)',
         fontWeight: 600
       }
     }, k), React.createElement('span', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink)',
         textAlign: 'right'
@@ -59054,7 +59096,7 @@ Object.assign(window, {
       }
     }), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-2)',
         fontWeight: 600,
         lineHeight: 1.5
@@ -59168,13 +59210,13 @@ Object.assign(window, {
       title: quoteRequest ? 'Solicitar cotización' : 'Solicitar beneficio'
     }, React.createElement('div', {
       style: {
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 900
       }
     }, item.nombre), React.createElement('label', {
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginTop: 14
       }
@@ -59195,7 +59237,7 @@ Object.assign(window, {
     }), React.createElement('label', {
       style: {
         display: 'block',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         marginTop: 14
       }
@@ -59269,7 +59311,7 @@ Object.assign(window, {
       }), React.createElement('div', {
         style: {
           flex: 1,
-          fontSize: 12.5,
+          fontSize: 'var(--text-12-5, 12.5px)',
           fontWeight: 700,
           color: '#7a5410',
           lineHeight: 1.45
@@ -59303,13 +59345,13 @@ Object.assign(window, {
       }), React.createElement('div', {
         style: {
           flex: 1,
-          fontSize: 13,
+          fontSize: 'var(--text-13, 13px)',
           fontWeight: 800,
           color: '#0b5c37'
         }
       }, 'Cotización lista · ' + window.money(c.monto || 0)), React.createElement('span', {
         style: {
-          fontSize: 11.5,
+          fontSize: 'var(--text-11-5, 11.5px)',
           fontWeight: 700,
           color: '#13794A',
           fontFamily: 'var(--mono)'
@@ -62864,7 +62906,7 @@ Object.assign(window, {
       }
     }), React.createElement('h3', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800,
         margin: 0,
         color: 'var(--ink)'
@@ -62877,7 +62919,7 @@ Object.assign(window, {
         padding: 18,
         textAlign: 'center',
         boxShadow: 'var(--neo-sm)',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: state.phase === 'error' ? '#A32921' : 'var(--ink-3)'
       }
@@ -62905,7 +62947,7 @@ Object.assign(window, {
       }
     }), React.createElement('div', null, React.createElement('h3', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800,
         margin: 0,
         letterSpacing: '-.01em',
@@ -62913,7 +62955,7 @@ Object.assign(window, {
       }
     }, 'Membresías'), React.createElement('div', {
       style: {
-        fontSize: 12.5,
+        fontSize: 'var(--text-12-5, 12.5px)',
         color: 'var(--ink-3)',
         fontWeight: 500
       }
@@ -62953,7 +62995,7 @@ Object.assign(window, {
       empresa: m.empresa
     }), React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--ink)',
         marginTop: 11,
@@ -62961,7 +63003,7 @@ Object.assign(window, {
       }
     }, m.empresa), React.createElement('div', {
       style: {
-        fontSize: 11.5,
+        fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 3,
@@ -62977,14 +63019,14 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       style: {
-        fontSize: 16,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 800,
         color: 'var(--guinda)',
         fontVariantNumeric: 'tabular-nums'
       }
     }, money(m.monto)), React.createElement('span', {
       style: {
-        fontSize: 10.5,
+        fontSize: 'var(--text-10-5, 10.5px)',
         fontWeight: 800,
         color: 'var(--ink-2)',
         background: 'var(--surface-2)',
@@ -63046,39 +63088,39 @@ Object.assign(window, {
     .mr-seal{position:absolute;right:-58px;bottom:-70px;opacity:.1;pointer-events:none;filter:brightness(0) invert(1)}
     .mr-crumb{display:flex;align-items:center;gap:4px}
     .mr-back{width:44px;height:44px;margin-left:-10px;border:0;background:transparent;color:#fff;display:grid;place-items:center;border-radius:13px;cursor:pointer}
-    .mr-crumb span{font-size:11.5px;font-weight:800;letter-spacing:.11em;opacity:.82}
+    .mr-crumb span{font-size:var(--text-11-5, 11.5px);font-weight:800;letter-spacing:.11em;opacity:.82}
     .mr-member{display:flex;align-items:center;gap:15px;margin-top:16px}
     .mr-logo{width:76px;height:76px;border-radius:22px;background:#fff;display:grid;place-items:center;overflow:hidden;flex-shrink:0;box-shadow:0 14px 30px -10px rgba(0,0,0,.5);color:var(--guinda)}
     .mr-logo img{width:82%;height:82%;object-fit:contain}
     .mr-member-copy{min-width:0}
-    .mr-member h1{font-size:24px;font-weight:900;letter-spacing:-.028em;line-height:1.12;margin:0;overflow-wrap:anywhere}
-    .mr-member p{font-size:13.5px;font-weight:600;opacity:.88;margin:3px 0 0;line-height:1.35}
+    .mr-member h1{font-size:var(--text-24, 24px);font-weight:900;letter-spacing:-.028em;line-height:1.12;margin:0;overflow-wrap:anywhere}
+    .mr-member p{font-size:var(--text-13-5, 13.5px);font-weight:600;opacity:.88;margin:3px 0 0;line-height:1.35}
     .mr-figures{display:flex;align-items:stretch;gap:0;margin-top:20px;padding:13px 0;border-radius:16px;background:rgba(255,255,255,.13)}
     .mr-figure{flex:1;min-width:0;padding:0 13px}
     .mr-figure+.mr-figure{border-left:1px solid rgba(255,255,255,.24)}
-    .mr-figure-label{font-size:10.5px;font-weight:800;letter-spacing:.07em;opacity:.82;text-transform:uppercase}
-    .mr-figure-value{font-size:16.5px;font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
-    .mr-payroll-note{font-size:11.5px;font-weight:600;opacity:.82;margin:10px 0 0;line-height:1.5}
+    .mr-figure-label{font-size:var(--text-10-5, 10.5px);font-weight:800;letter-spacing:.07em;opacity:.82;text-transform:uppercase}
+    .mr-figure-value{font-size:var(--text-16-5, 16.5px);font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .mr-payroll-note{font-size:var(--text-11-5, 11.5px);font-weight:600;opacity:.82;margin:10px 0 0;line-height:1.5}
     .mr-body{position:relative;z-index:2;padding:0 20px 24px;margin-top:-34px}
     .mr-tracker{background:var(--surface);border-radius:20px;padding:15px 16px 16px;box-shadow:var(--shadow-lg)}
     .mr-tracker-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-    .mr-tracker-head strong{font-size:14.5px;font-weight:900;letter-spacing:-.01em}
-    .mr-count{font-size:13.5px;font-weight:900;color:var(--guinda);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .mr-tracker-head strong{font-size:var(--text-14-5, 14.5px);font-weight:900;letter-spacing:-.01em}
+    .mr-count{font-size:var(--text-13-5, 13.5px);font-weight:900;color:var(--guinda);font-variant-numeric:tabular-nums;white-space:nowrap}
     .mr-tracker.is-done .mr-count{color:#13794A}
     .mr-segments{display:flex;gap:4px;margin-top:11px}
     .mr-segments span{flex:1;height:7px;border-radius:999px;background:var(--surface-2);box-shadow:var(--neo-inset)}
     .mr-segments span.is-on{background:var(--guinda);box-shadow:none}
     .mr-tracker.is-done .mr-segments span.is-on{background:#13794A}
     .mr-missing{margin-top:13px}
-    .mr-missing-label{font-size:11.5px;font-weight:800;color:var(--ink-2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+    .mr-missing-label{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--ink-2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
     .mr-chips{display:flex;flex-wrap:wrap;gap:7px}
-    .mr-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--guinda);background:var(--guinda-50);color:var(--guinda);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+    .mr-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--guinda);background:var(--guinda-50);color:var(--guinda);font-size:var(--text-13, 13px);font-weight:800;cursor:pointer;font-family:inherit}
     .mr-chip-dot{width:5px;height:5px;border-radius:50%;background:var(--guinda)}
-    .mr-ready{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#13794A;margin-top:12px}
+    .mr-ready{display:flex;align-items:center;gap:7px;font-size:var(--text-12-5, 12.5px);font-weight:700;color:#13794A;margin-top:12px}
     .mr-section{margin-top:24px}
     .mr-section-head{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:var(--guinda)}
-    .mr-section-head h2{font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ink);margin:0}
-    .mr-state{background:var(--surface);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--neo-sm);font-size:12.5px;font-weight:700;color:var(--ink-2);line-height:1.5}
+    .mr-section-head h2{font-size:var(--text-17, 17px);font-weight:800;letter-spacing:-.01em;color:var(--ink);margin:0}
+    .mr-state{background:var(--surface);border-radius:16px;padding:18px;text-align:center;box-shadow:var(--neo-sm);font-size:var(--text-12-5, 12.5px);font-weight:700;color:var(--ink-2);line-height:1.5}
     .mr-state.is-error{color:#A32921}
     .mr-retry{display:inline-flex;margin-top:10px;min-height:40px;align-items:center;padding:0 15px;border:0;border-radius:12px;background:var(--guinda-50);color:var(--guinda);font-weight:800;font-family:inherit;cursor:pointer}
     .mr-doc-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
@@ -63094,55 +63136,55 @@ Object.assign(window, {
     .mr-doc-tile.has-thumbnail .mr-doc-badge{background:rgba(255,255,255,.14);color:#fff}
     .mr-doc-thumb+.mr-doc-veil+.mr-doc-badge{display:none}
     .mr-doc-meta{position:relative;min-width:0;z-index:1}
-    .mr-doc-meta strong{display:block;font-size:13.5px;font-weight:800;line-height:1.2;color:var(--ink);overflow-wrap:anywhere}
+    .mr-doc-meta strong{display:block;font-size:var(--text-13-5, 13.5px);font-weight:800;line-height:1.2;color:var(--ink);overflow-wrap:anywhere}
     .mr-doc-tile.has-thumbnail .mr-doc-meta{margin-top:auto;padding-bottom:25px;text-shadow:0 1px 3px rgba(0,0,0,.58)}
     .mr-doc-tile.has-thumbnail .mr-doc-meta strong{color:#fff}
-    .mr-doc-add,.mr-doc-file{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--guinda);margin-top:3px;line-height:1.25}
+    .mr-doc-add,.mr-doc-file{display:flex;align-items:center;gap:5px;font-size:var(--text-11-5, 11.5px);font-weight:700;color:var(--guinda);margin-top:3px;line-height:1.25}
     .mr-doc-file{color:var(--ink-3)}
     .mr-doc-tile.has-thumbnail .mr-doc-file{color:rgba(255,255,255,.86)}
     .mr-doc-ok{position:absolute;top:10px;left:10px;width:26px;height:26px;border-radius:50%;background:#13794A;color:#fff;display:grid;place-items:center;box-shadow:0 3px 10px -2px rgba(0,0,0,.5);z-index:2}
     .mr-doc-view{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:transparent;color:#fff;display:grid;place-items:center;cursor:pointer;z-index:3}
     .mr-doc-view:before{content:'';position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(10,6,8,.6)}
     .mr-doc-view svg{position:relative}
-    .mr-doc-status{position:absolute;left:9px;bottom:8px;z-index:3;border-radius:99px;background:rgba(255,255,255,.92);color:#087A50;padding:4px 7px;font-size:8.5px;font-weight:850;line-height:1}
-    .mr-doc-replace{position:absolute;right:8px;bottom:6px;z-index:4;min-height:27px;border:1px solid rgba(255,255,255,.72);border-radius:9px;background:rgba(255,255,255,.94);color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-family:inherit;font-size:8.5px;font-weight:850;cursor:pointer}
-    .mr-doc-observation{font-size:11px;font-weight:700;line-height:1.35;color:#9B2743;margin:6px 4px 0}
+    .mr-doc-status{position:absolute;left:9px;bottom:8px;z-index:3;border-radius:99px;background:rgba(255,255,255,.92);color:#087A50;padding:4px 7px;font-size:var(--text-8-5, 8.5px);font-weight:850;line-height:1}
+    .mr-doc-replace{position:absolute;right:8px;bottom:6px;z-index:4;min-height:27px;border:1px solid rgba(255,255,255,.72);border-radius:9px;background:rgba(255,255,255,.94);color:var(--guinda);display:flex;align-items:center;gap:4px;padding:0 7px;font-family:inherit;font-size:var(--text-8-5, 8.5px);font-weight:850;cursor:pointer}
+    .mr-doc-observation{font-size:var(--text-11, 11px);font-weight:700;line-height:1.35;color:#9B2743;margin:6px 4px 0}
     .mr-data{background:var(--surface);border-radius:18px;box-shadow:var(--neo-sm);overflow:hidden}
     .mr-row{padding:13px 15px;border-top:1px solid var(--hairline);transition:background .18s}
     .mr-row:first-child{border-top:0}
     .mr-row.is-highlighted{background:var(--guinda-50)}
     .mr-row-head{display:flex;align-items:center;gap:7px;margin-bottom:6px}
-    .mr-row-head label{font-size:12px;font-weight:800;color:var(--ink-2);letter-spacing:.06em;text-transform:uppercase}
+    .mr-row-head label{font-size:var(--text-12, 12px);font-weight:800;color:var(--ink-2);letter-spacing:.06em;text-transform:uppercase}
     .mr-field-mark{width:16px;height:16px;color:#13794A;display:grid;place-items:center}
     .mr-field-dot{width:6px;height:6px;border-radius:50%;background:var(--guinda)}
-    .mr-input{width:100%;border:0;border-bottom:2px solid transparent;outline:0;background:transparent;padding:2px 0 4px;font-size:17px;font-family:var(--mono);font-weight:700;color:var(--ink);letter-spacing:.06em}
+    .mr-input{width:100%;border:0;border-bottom:2px solid transparent;outline:0;background:transparent;padding:2px 0 4px;font-size:var(--text-17, 17px);font-family:var(--mono);font-weight:700;color:var(--ink);letter-spacing:.06em}
     .mr-row.is-bad .mr-input{border-bottom-color:#B3261E}
-    .mr-field-error{font-size:11.5px;font-weight:700;color:#B3261E;margin-top:5px}
+    .mr-field-error{font-size:var(--text-11-5, 11.5px);font-weight:700;color:#B3261E;margin-top:5px}
     .mr-privacy{display:flex;gap:9px;align-items:flex-start;margin-top:20px;color:var(--ink-2)}
     .mr-privacy svg{flex-shrink:0;margin-top:1px}
-    .mr-privacy p{font-size:12px;font-weight:600;line-height:1.55;margin:0}
-    .mr-alert{margin-top:18px;padding:13px;border-radius:13px;background:#FFF4D9;color:#805100;font-size:12px;font-weight:700;line-height:1.5}
+    .mr-privacy p{font-size:var(--text-12, 12px);font-weight:600;line-height:1.55;margin:0}
+    .mr-alert{margin-top:18px;padding:13px;border-radius:13px;background:#FFF4D9;color:#805100;font-size:var(--text-12, 12px);font-weight:700;line-height:1.5}
     .mr-alert.is-error{background:#FCE9EE;color:#A32921}
     .mr-footer{flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--hairline)}
-    .mr-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:56px;border:0;border-radius:18px;cursor:pointer;background:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);color:#fff;font-size:16.5px;font-weight:900;letter-spacing:-.01em;box-shadow:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:inherit;transition:transform .18s cubic-bezier(.2,.7,.3,1)}
+    .mr-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:56px;border:0;border-radius:18px;cursor:pointer;background:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);color:#fff;font-size:var(--text-16-5, 16.5px);font-weight:900;letter-spacing:-.01em;box-shadow:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:inherit;transition:transform .18s cubic-bezier(.2,.7,.3,1)}
     .mr-cta:active{transform:scale(.975)}
     .mr-cta:disabled{background:var(--surface-2);color:var(--ink-3);box-shadow:var(--neo-inset);cursor:not-allowed;transform:none}
-    .mr-footer-hint{font-size:12px;font-weight:700;color:var(--ink-2);text-align:center;margin-top:8px}
+    .mr-footer-hint{font-size:var(--text-12, 12px);font-weight:700;color:var(--ink-2);text-align:center;margin-top:8px}
     .mr-screen button:focus-visible,.mr-screen input:focus-visible{outline:2px solid var(--guinda);outline-offset:2px}
     .mr-success{background:var(--bg)}
-    .mr-success-head{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--hairline);font-size:16px;font-weight:800}
+    .mr-success-head{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--hairline);font-size:var(--text-16, 16px);font-weight:800}
     .mr-success-back{width:40px;height:40px;border:0;background:transparent;border-radius:12px;display:grid;place-items:center;color:var(--ink)}
     .mr-success-body{flex:1;display:grid;place-items:center;padding:32px;text-align:center}
     .mr-success-icon{width:86px;height:86px;border-radius:50%;background:#E5F7EF;color:#087A50;display:grid;place-items:center;margin:0 auto}
-    .mr-success-body h2{font-size:24px;margin:22px 0 8px}
+    .mr-success-body h2{font-size:var(--text-24, 24px);margin:22px 0 8px}
     .mr-success-body p{color:var(--ink-2);line-height:1.5;margin:0}
     .mr-folio{display:inline-block;padding:9px 14px;background:var(--guinda-50);color:var(--guinda);border-radius:12px;font:800 13px var(--mono);margin-top:18px}
     .mr-success-action{margin-top:28px}
     @media(max-width:340px){
       .mr-doc-grid{grid-template-columns:1fr}
       .mr-figure{padding:0 8px}
-      .mr-figure-value{font-size:14.5px}
-      .mr-member h1{font-size:22px}
+      .mr-figure-value{font-size:var(--text-14-5, 14.5px)}
+      .mr-member h1{font-size:var(--text-22, 22px)}
     }
     @media(prefers-reduced-motion:reduce){
       .mr-cta,.mr-row{transition:none}
@@ -67366,6 +67408,95 @@ Object.assign(window, {
   window.CoHeaderEl = CoHeader; // reutilizado por los módulos
 })();
 })();
+/* @@file text-size-preferences.js */
+(function(){
+/* Personal presentation preference. Supabase Auth is the only durable authority.
+   Never use this editable metadata for identity, permissions or business rules. */
+(function () {
+  'use strict';
+  const KEY = 'sutiapp_text_size';
+  const OPTIONS = Object.freeze([
+    { value: 'normal', label: 'Normal', scale: 1 },
+    { value: 'large', label: 'Grande', scale: 1.15 },
+    { value: 'largest', label: 'Muy grande', scale: 1.35 },
+  ]);
+  const valid = value => OPTIONS.some(option => option.value === value);
+  function fromUser(user) {
+    const value = user && user.user_metadata && user.user_metadata[KEY];
+    if (value == null) return 'normal';
+    if (!valid(value)) throw new Error('INVALID_TEXT_SIZE');
+    return value;
+  }
+  async function read(principal) {
+    const result = await window.SutiSupabase.getClient().auth.getUser();
+    if (result.error) throw result.error;
+    if (!result.data.user || result.data.user.id !== principal) throw new Error('TEXT_SIZE_SESSION_CHANGED');
+    return fromUser(result.data.user);
+  }
+  async function write(principal, value) {
+    if (!valid(value)) throw new Error('INVALID_TEXT_SIZE');
+    // No user selector is sent: the Auth server always updates the JWT owner.
+    const auth = window.SutiSupabase.getClient().auth;
+    const current = await auth.getUser();
+    if (current.error) throw current.error;
+    if (!current.data.user || current.data.user.id !== principal) throw new Error('TEXT_SIZE_SESSION_CHANGED');
+    const result = await auth.updateUser({ data: { [KEY]: value } });
+    if (result.error) throw result.error;
+    if (!result.data.user || result.data.user.id !== principal || fromUser(result.data.user) !== value) throw new Error('TEXT_SIZE_NOT_CONFIRMED');
+    return value;
+  }
+  function useTextSizePreference(principal) {
+    const [state, setState] = React.useState({ value: 'normal', status: 'loading', error: '' });
+    const live = React.useRef(0), busy = React.useRef(false);
+    const reload = React.useCallback(async () => {
+      const ticket = ++live.current;
+      setState(previous => ({ ...previous, status: 'loading', error: '' }));
+      try {
+        const value = await read(principal);
+        if (live.current === ticket) setState({ value, status: 'ready', error: '' });
+      } catch (_) {
+        if (live.current === ticket) setState(previous => ({ ...previous, status: 'error', error: 'No pudimos cargar tu tamaño de texto. Revisa tu conexión e inténtalo de nuevo.' }));
+      }
+    }, [principal]);
+    React.useEffect(() => {
+      reload();
+      const refresh = () => { if (document.visibilityState === 'visible' && !busy.current) reload(); };
+      document.addEventListener('visibilitychange', refresh);
+      return () => { ++live.current; document.removeEventListener('visibilitychange', refresh); };
+    }, [reload]);
+    const choose = async value => {
+      if (!valid(value) || busy.current || state.status === 'loading') return;
+      busy.current = true;
+      const ticket = ++live.current, previous = state.value;
+      setState({ value, status: 'saving', error: '' }); // immediate typography; persistence remains explicit
+      try {
+        await write(principal, value);
+        if (live.current === ticket) setState({ value, status: 'saved', error: '' });
+      } catch (_) {
+        if (live.current === ticket) setState({ value: previous, status: 'error', error: 'No se guardó el cambio. Conservamos el tamaño anterior. Revisa tu conexión y vuelve a elegir.' });
+      } finally { busy.current = false; }
+    };
+    return { ...state, choose, reload };
+  }
+  function TextSizeSettings({ preference }) {
+    return React.createElement('section', { className: 'su-text-settings', 'aria-labelledby': 'text-size-title' },
+      React.createElement('h2', { id: 'text-size-title' }, 'Tamaño de texto'),
+      React.createElement('p', null, 'Elige el tamaño que te resulte más cómodo. Se aplica a toda tu app y se guarda en tu cuenta.'),
+      React.createElement('fieldset', { disabled: preference.status === 'saving' || preference.status === 'loading', 'aria-describedby': 'text-size-status' },
+        React.createElement('legend', { className: 'su-visually-hidden' }, 'Tamaño de texto'),
+        OPTIONS.map(option => React.createElement('label', { key: option.value, className: 'su-text-option', 'data-selected': preference.value === option.value },
+          React.createElement('input', { type: 'radio', name: 'text-size', value: option.value, checked: preference.value === option.value, onChange: () => preference.choose(option.value) }),
+          React.createElement('span', null, option.label)))),
+      React.createElement('p', { className: 'su-text-preview' }, 'Así leerás tus avisos, solicitudes y beneficios.'),
+      React.createElement('p', { id: 'text-size-status', role: preference.error ? 'alert' : 'status', 'aria-live': 'polite' },
+        preference.error || (preference.status === 'saving' ? 'Guardando tu preferencia…' : preference.status === 'loading' ? 'Cargando tu preferencia…' : preference.status === 'saved' ? 'Tamaño de texto guardado.' : 'Puedes cambiarlo cuando lo necesites.')),
+      preference.error && React.createElement(window.Btn, { variant: 'outline', onClick: preference.reload }, 'Volver a cargar'));
+  }
+  window.TextSizePreferences = Object.freeze({ read, write, fromUser, options: OPTIONS });
+  window.useTextSizePreference = useTextSizePreference;
+  window.TextSizeSettings = TextSizeSettings;
+})();
+})();
 /* @@file affiliate-view-model.js */
 (function(){
 /* In-memory UI projection of the authoritative authenticated affiliate. */
@@ -68106,7 +68237,7 @@ Object.assign(window, {
     const style={minHeight:44,border:0,borderRadius:12,padding:'10px 15px',background:'var(--guinda)',color:'#fff',fontWeight:800,cursor:'pointer'};
     return h('section',{'data-request-push':current.phase,style:{background:'var(--surface)',borderRadius:16,padding:16,marginBottom:14,boxShadow:'var(--neo-sm)'}},
       h('strong',null,current.phase==='active'?'Notificaciones activas en este dispositivo':'Avisos de tus solicitudes'),
-      h('p',{style:{fontSize:13,color:'var(--ink-2)',lineHeight:1.5}},current.phase==='active'?'Recibirás avisos cuando tus solicitudes avancen.':current.phase==='unsupported'?'En iPhone, agrega SutiApp a la pantalla de inicio y ábrela desde ahí para activar los avisos. En otros dispositivos, usa un navegador compatible.':current.phase==='denied'?'Puedes permitir las notificaciones desde los ajustes de tu navegador. Tus solicitudes siguen disponibles en SutiApp.':'Recibe un aviso cuando tu solicitud sea autorizada, rechazada, cancelada o cambie de etapa.'),
+      h('p',{style:{fontSize: 'var(--text-13, 13px)',color:'var(--ink-2)',lineHeight:1.5}},current.phase==='active'?'Recibirás avisos cuando tus solicitudes avancen.':current.phase==='unsupported'?'En iPhone, agrega SutiApp a la pantalla de inicio y ábrela desde ahí para activar los avisos. En otros dispositivos, usa un navegador compatible.':current.phase==='denied'?'Puedes permitir las notificaciones desde los ajustes de tu navegador. Tus solicitudes siguen disponibles en SutiApp.':'Recibe un aviso cuando tu solicitud sea autorizada, rechazada, cancelada o cambie de etapa.'),
       current.phase==='ready'&&h('button',{type:'button',disabled:busy,style,onClick:()=>run(enable(current.config))},busy?'Activando…':'Activar notificaciones'),
       current.phase==='active'&&h('button',{type:'button',disabled:busy,style,onClick:()=>run(clearDevice().then(state))},busy?'Desactivando…':'Desactivar en este dispositivo'),
       current.phase==='error'&&h('p',{role:'status'},'No pudimos consultar la configuración de avisos.'),current.phase==='error'&&h('button',{type:'button',style,onClick:refresh},'Reintentar'),error&&h('p',{role:'alert'},error));
@@ -68135,7 +68266,6 @@ Object.assign(window, {
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
     "primary": "#910022",
-    "a11y": false,
     "showBalance": true,
     "showPromo": true,
     "qaMotion": "system",
@@ -68178,7 +68308,7 @@ Object.assign(window, {
         borderRadius: 999,
         background: '#fff',
         color: 'var(--guinda)',
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 800,
         display: 'grid',
         placeItems: 'center',
@@ -68299,6 +68429,7 @@ Object.assign(window, {
     if (variant === 'home') {
       return React.createElement('div', {
         ref: barRef,
+        className: 'su-topbar',
         style: Object.assign({
           background: 'var(--header-bg, var(--grad-guinda))',
           color: '#fff',
@@ -68363,6 +68494,7 @@ Object.assign(window, {
       // controls row
       React.createElement('div', {
         ref: riseRef,
+        className: variant === 'home' ? 'su-home-heading' : 'su-tab-heading',
         style: {
           display: 'flex',
           alignItems: 'center',
@@ -68391,14 +68523,14 @@ Object.assign(window, {
         size: 40
       })), React.createElement('div', null, React.createElement('div', {
         style: {
-          fontSize: 16,
+          fontSize: 'var(--text-16, 16px)',
           fontWeight: 800,
           letterSpacing: '-.01em',
           lineHeight: 1.05
         }
       }, 'SUTISSSTESON'), React.createElement('div', {
         style: {
-          fontSize: 11.5,
+          fontSize: 'var(--text-11-5, 11.5px)',
           opacity: .82,
           fontWeight: 600,
           marginTop: 2
@@ -68411,6 +68543,7 @@ Object.assign(window, {
         }
       }, frostBtn('bell', () => app.push('notifs'), unread), React.createElement('button', {
         onClick: () => app.push('perfil'),
+        'aria-label': 'Mi Perfil',
         style: {
           border: '2px solid rgba(255,255,255,.45)',
           borderRadius: '50%',
@@ -68441,14 +68574,14 @@ Object.assign(window, {
         }
       }, React.createElement('div', {
         style: {
-          fontSize: 14.5,
+          fontSize: 'var(--text-14-5, 14.5px)',
           opacity: .85,
           fontWeight: 600
         }
       }, saludoHome() + ','), React.createElement('div', {
         'data-affiliate-field': 'topbar-name',
         style: {
-          fontSize: 25,
+          fontSize: 'var(--text-25, 25px)',
           fontWeight: 800,
           letterSpacing: '-.02em',
           marginTop: 1
@@ -68474,6 +68607,7 @@ Object.assign(window, {
     // other tabs: gradient header with title + bell + sheet lip
     return React.createElement('div', {
       ref: barRef,
+      className: 'su-topbar',
       style: Object.assign({
         background: 'var(--header-bg, var(--grad-guinda))',
         color: '#fff',
@@ -68494,6 +68628,7 @@ Object.assign(window, {
       size: 180
     })), React.createElement('div', {
       ref: riseRef,
+      className: variant === 'home' ? 'su-home-heading' : 'su-tab-heading',
       style: {
         display: 'flex',
         alignItems: 'flex-start',
@@ -68503,7 +68638,7 @@ Object.assign(window, {
       }
     }, React.createElement('div', null, React.createElement('h1', {
       style: {
-        fontSize: 25,
+        fontSize: 'var(--text-25, 25px)',
         fontWeight: 800,
         letterSpacing: '-.02em',
         margin: 0
@@ -68511,7 +68646,7 @@ Object.assign(window, {
     }, titles[variant]), React.createElement('div', {
       ref: fadeRef,
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         opacity: .82,
         fontWeight: 600,
         marginTop: 3,
@@ -68538,7 +68673,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        fontSize: 'clamp(10.5px, 3vw, 11.5px)',
+        fontSize: 'var(--text-12, 11.5px)',
         opacity: .9,
         fontWeight: 600,
         whiteSpace: 'nowrap',
@@ -68554,7 +68689,7 @@ Object.assign(window, {
       }
     }), label), React.createElement('div', Object.assign({
       style: {
-        fontSize: 'clamp(17px, 5.4vw, 21px)',
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         marginTop: 4,
         fontVariantNumeric: 'tabular-nums',
@@ -68611,49 +68746,55 @@ Object.assign(window, {
     const indRef = React.useRef(null);
     const firstRef = React.useRef(true);
     React.useLayoutEffect(() => {
-      const wrap = wrapRef.current,
-        ind = indRef.current,
-        box = boxes.current[tab];
-      if (!wrap || !ind) return;
-      if (!box) {
-        ind.style.opacity = '0';
-        return;
-      }
-      const w = wrap.getBoundingClientRect(),
-        b = box.getBoundingClientRect();
-      if (!b.width) return;
-      const to = 'translate(' + Math.round(b.left - w.left) + 'px,' + Math.round(b.top - w.top) + 'px)';
-      const from = ind.style.transform;
-      ind.style.opacity = '1';
-      ind.style.width = Math.round(b.width) + 'px';
-      ind.style.height = Math.round(b.height) + 'px';
-      ind.style.transform = to;
-      const M = window.MOTION;
-      if (firstRef.current || !from || !M || M.reduced() || M.frozen()) {
-        firstRef.current = false;
-        return;
-      }
-      M.animate(ind, [{
-        transform: from
-      }, {
-        transform: to
-      }], {
-        duration: M.dur.emphasized,
-        easing: M.ease.emphasized,
-        fill: 'none'
-      });
-      const icon = box.firstChild;
-      if (icon) M.animate(icon, [{
-        transform: 'scale(1)'
-      }, {
-        transform: 'scale(1.12)'
-      }, {
-        transform: 'scale(1)'
-      }], {
-        duration: M.dur.emphasized,
-        easing: M.ease.standard,
-        fill: 'none'
-      });
+      const update = () => {
+        const wrap = wrapRef.current,
+          ind = indRef.current,
+          box = boxes.current[tab];
+        if (!wrap || !ind) return;
+        if (!box) {
+          ind.style.opacity = '0';
+          return;
+        }
+        const w = wrap.getBoundingClientRect(),
+          b = box.getBoundingClientRect();
+        if (!b.width) return;
+        const to = 'translate(' + Math.round(b.left - w.left) + 'px,' + Math.round(b.top - w.top) + 'px)';
+        const from = ind.style.transform;
+        ind.style.opacity = '1';
+        ind.style.width = Math.round(b.width) + 'px';
+        ind.style.height = Math.round(b.height) + 'px';
+        ind.style.transform = to;
+        const M = window.MOTION;
+        if (firstRef.current || !from || !M || M.reduced() || M.frozen()) {
+          firstRef.current = false;
+          return;
+        }
+        M.animate(ind, [{
+          transform: from
+        }, {
+          transform: to
+        }], {
+          duration: M.dur.emphasized,
+          easing: M.ease.emphasized,
+          fill: 'none'
+        });
+        const icon = box.firstChild;
+        if (icon) M.animate(icon, [{
+          transform: 'scale(1)'
+        }, {
+          transform: 'scale(1.12)'
+        }, {
+          transform: 'scale(1)'
+        }], {
+          duration: M.dur.emphasized,
+          easing: M.ease.standard,
+          fill: 'none'
+        });
+      };
+      update();
+      const observer = new ResizeObserver(update);
+      if (wrapRef.current) observer.observe(wrapRef.current);
+      return () => observer.disconnect();
     }, [tab, tabs.length]);
     return React.createElement('div', {
       ref: wrapRef,
@@ -68728,7 +68869,7 @@ Object.assign(window, {
       })), React.createElement('span', {
         style: {
           maxWidth: '100%',
-          fontSize: 'clamp(8.5px, 2.8vw, 10.5px)',
+          fontSize: 'var(--text-12, 10.5px)',
           fontWeight: active ? 700 : 500,
           color: active ? 'var(--guinda)' : 'var(--ink-3)',
           transition: 'color .2s',
@@ -68810,13 +68951,13 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 14.5,
+        fontSize: 'var(--text-14-5, 14.5px)',
         fontWeight: 800,
         color: 'var(--ink)'
       }
     }, 'No pudimos cargar tus notificaciones'), React.createElement('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)',
         marginTop: 5
       }
@@ -68843,7 +68984,7 @@ Object.assign(window, {
         padding: 18,
         boxShadow: 'var(--neo-sm)',
         textAlign: 'center',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)'
       }
     }, 'Cargando notificaciones…') : items.length === 0 ? React.createElement('div', {
@@ -68854,7 +68995,7 @@ Object.assign(window, {
         padding: 18,
         boxShadow: 'var(--neo-sm)',
         textAlign: 'center',
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink-2)'
       }
     }, 'No tienes notificaciones.') : null;
@@ -68894,7 +69035,7 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800
       }
     }, 'Notificaciones')), React.createElement('div', {
@@ -68963,14 +69104,14 @@ Object.assign(window, {
         }
       }, React.createElement('div', {
         style: {
-          fontSize: 14.5,
+          fontSize: 'var(--text-14-5, 14.5px)',
           fontWeight: 800,
           lineHeight: 1.25,
           color: 'var(--ink)'
         }
       }, n.title), React.createElement('div', {
         style: {
-          fontSize: 13,
+          fontSize: 'var(--text-13, 13px)',
           color: 'var(--ink-2)',
           fontWeight: 500,
           marginTop: 3,
@@ -68978,7 +69119,7 @@ Object.assign(window, {
         }
       }, n.body), React.createElement('div', {
         style: {
-          fontSize: 11.5,
+          fontSize: 'var(--text-11-5, 11.5px)',
           color: 'var(--ink-3)',
           fontWeight: 600,
           marginTop: 6
@@ -69030,7 +69171,7 @@ Object.assign(window, {
     }, {
       icon: 'settings',
       label: 'Configuración',
-      go: () => app.toast('Próximamente')
+      go: () => app.push('settings')
     }];
     const facts = [['Correo histórico', u.email], ['Teléfono', u.phone], ['Ciudad', u.city], ['Unidad', u.unit], ['Puesto', u.position], ['Categoría', u.category], ['Afiliación', u.affiliation], ['Estatus', u.status]];
     return React.createElement('div', {
@@ -69071,7 +69212,7 @@ Object.assign(window, {
       stroke: 2
     })), React.createElement('span', {
       style: {
-        fontSize: 16.5,
+        fontSize: 'var(--text-16-5, 16.5px)',
         fontWeight: 800
       }
     }, 'Mi Perfil')), React.createElement('div', {
@@ -69101,13 +69242,13 @@ Object.assign(window, {
     })), React.createElement('div', {
       'data-affiliate-field': 'profile-name',
       style: {
-        fontSize: 21,
+        fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         marginTop: 12
       }
     }, u.name), React.createElement('div', {
       style: {
-        fontSize: 13.5,
+        fontSize: 'var(--text-13-5, 13.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 2
@@ -69138,14 +69279,14 @@ Object.assign(window, {
       }
     }, React.createElement('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         color: 'var(--ink-3)',
         fontWeight: 700
       }
     }, f[0]), React.createElement('div', {
       'data-affiliate-field': f[0] === 'Correo histórico' ? 'profile-email' : undefined,
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-13, 13px)',
         color: 'var(--ink)',
         fontWeight: 700,
         marginTop: 4,
@@ -69191,7 +69332,7 @@ Object.assign(window, {
     })), React.createElement('span', {
       style: {
         flex: 1,
-        fontSize: 15,
+        fontSize: 'var(--text-15, 15px)',
         fontWeight: 700
       }
     }, r.label), React.createElement(I, {
@@ -69210,6 +69351,57 @@ Object.assign(window, {
       },
       onClick: app.logout
     }, 'Cerrar sesión')));
+  }
+  function SettingsScreen({
+    app
+  }) {
+    return React.createElement('div', {
+      'data-text-size-settings': true,
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '8px 12px',
+        background: 'var(--surface)',
+        flexShrink: 0
+      }
+    }, React.createElement('button', {
+      onClick: app.back,
+      'aria-label': 'Volver a Mi Perfil',
+      style: {
+        border: 0,
+        background: 'transparent',
+        color: 'var(--ink)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 22
+    })), React.createElement('h1', {
+      style: {
+        fontSize: 'var(--text-20, 20px)',
+        margin: 0
+      }
+    }, 'Configuración')), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: 20
+      }
+    }, React.createElement(window.TextSizeSettings, {
+      preference: app.textPreference
+    })));
   }
 
   // ---------- TOAST ----------
@@ -69252,7 +69444,7 @@ Object.assign(window, {
         color: '#fff',
         padding: '13px 18px 15px',
         borderRadius: 14,
-        fontSize: 14,
+        fontSize: 'var(--text-14, 14px)',
         fontWeight: 700,
         boxShadow: 'var(--shadow-lg)',
         display: 'flex',
@@ -69324,7 +69516,7 @@ Object.assign(window, {
         background: '#FFF4D8',
         color: '#6B4700',
         borderBottom: '1px solid #E7C96B',
-        fontSize: 12,
+        fontSize: 'var(--text-12, 12px)',
         fontWeight: 800,
         zIndex: 60
       }
@@ -69347,7 +69539,7 @@ Object.assign(window, {
         background: 'var(--guinda)',
         color: '#fff',
         fontFamily: 'inherit',
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 850,
         cursor: 'pointer'
       }
@@ -69363,7 +69555,7 @@ Object.assign(window, {
         background: '#6B4700',
         color: '#fff',
         fontFamily: 'inherit',
-        fontSize: 11,
+        fontSize: 'var(--text-11, 11px)',
         fontWeight: 850,
         cursor: 'pointer'
       }
@@ -69379,6 +69571,7 @@ Object.assign(window, {
     initialTab
   }) {
     const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+    const textPreference = window.useTextSizePreference(auth.session.user.id);
     const institutional = window.useInstitutionalContent();
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
@@ -69507,6 +69700,7 @@ Object.assign(window, {
       return auth.signOut();
     };
     const app = {
+      textPreference,
       push,
       back,
       setTab,
@@ -69641,6 +69835,7 @@ Object.assign(window, {
       membership: window.MembershipApplicationScreen,
       notifs: NotifsScreen,
       perfil: PerfilScreen,
+      settings: SettingsScreen,
       terreno: window.TerrenoScreen,
       investment: window.InvestmentScreen,
       savings: window.SavingsScreen
@@ -69712,7 +69907,7 @@ Object.assign(window, {
       return () => clearTimeout(tm);
     }, [outgoing && outgoing.id]);
     return React.createElement(React.Fragment, null, React.createElement('div', {
-      'data-a11y': t.a11y ? 'on' : 'off',
+      'data-text-size': tab === 'admin' ? undefined : textPreference.value,
       style: {
         position: 'absolute',
         inset: 0,
@@ -69720,10 +69915,15 @@ Object.assign(window, {
         flexDirection: 'column',
         background: 'var(--header-bg, var(--grad-guinda))',
         overflow: 'hidden',
-        fontSize: t.a11y ? 17 : 16,
+        fontSize: 'var(--text-control, 16px)',
         paddingTop: 'env(safe-area-inset-top)'
       }
-    }, React.createElement(ImpersonationBanner, {
+    }, textPreference.error && tab !== 'admin' && React.createElement('div', {
+      role: 'alert',
+      className: 'su-text-preference-error'
+    }, textPreference.error, React.createElement('button', {
+      onClick: () => push('settings')
+    }, 'Tamaño de texto')), React.createElement(ImpersonationBanner, {
       auth,
       onAdmin: () => {
         setPopupItems(null);
@@ -69778,6 +69978,8 @@ Object.assign(window, {
       }
     }, layers.map(l => React.createElement('div', {
       key: l.key,
+      'data-app-route': l.name,
+      'aria-hidden': l.out ? 'true' : undefined,
       ref: el => {
         if (l.out) outNode.current = el;else inNode.current = el;
       },
@@ -69847,12 +70049,6 @@ Object.assign(window, {
     }), adminAuthorized && React.createElement(window.TweakButton, {
       label: 'Ir al Panel Administrativo',
       onClick: () => setTab('admin')
-    }), React.createElement(window.TweakSection, {
-      label: 'Accesibilidad'
-    }), React.createElement(window.TweakToggle, {
-      label: 'Modo accesible (texto grande)',
-      value: t.a11y,
-      onChange: v => setTweak('a11y', v)
     }), React.createElement(window.TweakSection, {
       label: 'QA de movimiento (dev)'
     }), React.createElement(window.TweakRadio, {

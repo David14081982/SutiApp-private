@@ -9,7 +9,6 @@
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
     "primary": "#910022",
-    "a11y": false,
     "showBalance": true,
     "showPromo": true,
     "qaMotion": "system",
@@ -20,7 +19,7 @@
   function frostBtn(icon, onClick, badge) {
     return React.createElement('button', { onClick, 'aria-label': icon === 'bell' ? 'Notificaciones' : icon, 'data-notifications-trigger': icon === 'bell' ? 'real-authority' : undefined, style: { position: 'relative', width: 44, height: 44, borderRadius: 15, background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,.22)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } },
       React.createElement(I, { name: icon, size: 22, stroke: 2 }),
-      badge > 0 && React.createElement('span', { 'data-notifications-unread': String(badge), style: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#fff', color: 'var(--guinda)', fontSize: 11, fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,.2)' } }, badge));
+      badge > 0 && React.createElement('span', { 'data-notifications-unread': String(badge), style: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, padding: '0 4px', borderRadius: 999, background: '#fff', color: 'var(--guinda)', fontSize: 'var(--text-11, 11px)', fontWeight: 800, display: 'grid', placeItems: 'center', boxShadow: '0 2px 6px rgba(0,0,0,.2)' } }, badge));
   }
 
   // the white sheet lip with a subtle centered notch (fluid form)
@@ -90,26 +89,26 @@
     const stick = { position: 'sticky', top: 0, zIndex: 6, willChange: 'transform' };
 
     if (variant === 'home') {
-      return React.createElement('div', { ref: barRef, style: Object.assign({ background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '4px 18px 0', position: 'relative', overflow: 'hidden' }, stick) },
+      return React.createElement('div', { ref: barRef, className: 'su-topbar', style: Object.assign({ background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '4px 18px 0', position: 'relative', overflow: 'hidden' }, stick) },
         collapsedHeader&&collapsedHeader.kind==='image'
           ? React.createElement('img', { ref:imageRef,src:collapsedHeader.url,alt:'','aria-hidden':'true','data-home-header-resource':'home.header.collapsed',style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 32%',display:'block',pointerEvents:'none',opacity:0,transform:'translate3d(0,0,0) scale(1.08)',transformOrigin:'50% 32%',willChange:'transform, opacity',zIndex:0} })
           : React.createElement('div', { ref:imageRef,'aria-hidden':'true','data-home-header-resource':'home.header.collapsed','data-home-header-fallback':'icon',style:{position:'absolute',inset:0,display:'grid',placeItems:'center',pointerEvents:'none',opacity:0,transform:'translate3d(0,0,0) scale(1.08)',transformOrigin:'50% 32%',willChange:'transform, opacity',zIndex:0} },React.createElement(I,{name:(collapsedHeader&&collapsedHeader.icon)||'image',size:58})),
         React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: 0, top: '50%', marginTop: -100, opacity: .14, zIndex:1 } }, React.createElement(window.SutiSeal, { size: 200 })),
         // controls row
-        React.createElement('div', { ref: riseRef, style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', willChange: 'transform', zIndex:2 } },
+        React.createElement('div', { ref: riseRef, className: variant === 'home' ? 'su-home-heading' : 'su-tab-heading', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', willChange: 'transform', zIndex:2 } },
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 11 } },
             React.createElement('div', { style: { width: 44, height: 44, borderRadius: '50%', background: '#fff', display: 'grid', placeItems: 'center', boxShadow: '0 6px 16px -6px rgba(0,0,0,.4)' } }, React.createElement(window.SutiSeal, { size: 40 })),
             React.createElement('div', null,
-              React.createElement('div', { style: { fontSize: 16, fontWeight: 800, letterSpacing: '-.01em', lineHeight: 1.05 } }, 'SUTISSSTESON'),
-              React.createElement('div', { style: { fontSize: 11.5, opacity: .82, fontWeight: 600, marginTop: 2 } }, 'SutiApp · Súper app sindical'))),
+              React.createElement('div', { style: { fontSize: 'var(--text-16, 16px)', fontWeight: 800, letterSpacing: '-.01em', lineHeight: 1.05 } }, 'SUTISSSTESON'),
+              React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', opacity: .82, fontWeight: 600, marginTop: 2 } }, 'SutiApp · Súper app sindical'))),
           React.createElement('div', { style: { display: 'flex', gap: 10, alignItems: 'center' } },
             frostBtn('bell', () => app.push('notifs'), unread),
-            React.createElement('button', { onClick: () => app.push('perfil'), style: { border: '2px solid rgba(255,255,255,.45)', borderRadius: '50%', background: 'none', padding: 0, cursor: 'pointer', lineHeight: 0 } }, React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 44, tone: 'var(--guinda)', 'data-profile-photo-consumer': 'header' })))),
+            React.createElement('button', { onClick: () => app.push('perfil'), 'aria-label': 'Mi Perfil', style: { border: '2px solid rgba(255,255,255,.45)', borderRadius: '50%', background: 'none', padding: 0, cursor: 'pointer', lineHeight: 0 } }, React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 44, tone: 'var(--guinda)', 'data-profile-photo-consumer': 'header' })))),
         // greeting + balance
         React.createElement('div', { style: { position: 'relative', marginTop: 18, zIndex:2 } },
           React.createElement('div', { ref: fadeRef, style: { willChange: 'transform, opacity', transformOrigin: '0 50%' } },
-            React.createElement('div', { style: { fontSize: 14.5, opacity: .85, fontWeight: 600 } }, saludoHome() + ','),
-            React.createElement('div', { 'data-affiliate-field': 'topbar-name', style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short)),
+            React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', opacity: .85, fontWeight: 600 } }, saludoHome() + ','),
+            React.createElement('div', { 'data-affiliate-field': 'topbar-name', style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short)),
           React.createElement('div', { ref: chipsRef, 'data-home-financial-chips': 'complete', 'data-home-credit-state': availableCreditReady ? 'ready' : financial.status === 'error' ? 'error' : 'loading', 'data-home-savings-state': savingsBalance.status, style: { display: 'flex', gap: 11, marginTop: 16, willChange: 'transform, opacity', transformOrigin: '50% 0' } },
             balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'),
             balChip('Mi ahorro', savingsBalance.label, 'piggy', { 'data-home-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value), 'data-savings-balance-state': savingsBalance.status }))),
@@ -117,20 +116,20 @@
     }
 
     // other tabs: gradient header with title + bell + sheet lip
-    return React.createElement('div', { ref: barRef, style: Object.assign({ background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '6px 18px 0', position: 'relative', overflow: 'hidden' }, stick) },
+    return React.createElement('div', { ref: barRef, className: 'su-topbar', style: Object.assign({ background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '6px 18px 0', position: 'relative', overflow: 'hidden' }, stick) },
       React.createElement('div', { ref: sealRef, style: { position: 'absolute', right: 0, top: '50%', marginTop: -90, opacity: .12 } }, React.createElement(window.SutiSeal, { size: 180 })),
-      React.createElement('div', { ref: riseRef, style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', willChange: 'transform' } },
+      React.createElement('div', { ref: riseRef, className: variant === 'home' ? 'su-home-heading' : 'su-tab-heading', style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', willChange: 'transform' } },
         React.createElement('div', null,
-          React.createElement('h1', { style: { fontSize: 25, fontWeight: 800, letterSpacing: '-.02em', margin: 0 } }, titles[variant]),
-          React.createElement('div', { ref: fadeRef, style: { fontSize: 13, opacity: .82, fontWeight: 600, marginTop: 3, willChange: 'transform, opacity', transformOrigin: '0 50%' } }, subtitles[variant])),
+          React.createElement('h1', { style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', margin: 0 } }, titles[variant]),
+          React.createElement('div', { ref: fadeRef, style: { fontSize: 'var(--text-13, 13px)', opacity: .82, fontWeight: 600, marginTop: 3, willChange: 'transform, opacity', transformOrigin: '0 50%' } }, subtitles[variant])),
         frostBtn('bell', () => app.push('notifs'), unread)),
       sheetLip());
   }
   function balChip(label, val, icon, valueProps) {
     return React.createElement('div', { key: label, style: { flex: 1, minWidth: 0, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 18, padding: '12px 14px', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 'clamp(10.5px, 3vw, 11.5px)', opacity: .9, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-12, 11.5px)', opacity: .9, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
         React.createElement(I, { name: icon, size: 14, stroke: 2, style: { flexShrink: 0 } }), label),
-      React.createElement('div', Object.assign({ style: { fontSize: 'clamp(17px, 5.4vw, 21px)', fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', whiteSpace: 'nowrap' } }, valueProps || {}), val));
+      React.createElement('div', Object.assign({ style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, marginTop: 4, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.01em', whiteSpace: 'nowrap' } }, valueProps || {}), val));
   }
   function saludoHome() {
     const h = new Date().getHours();
@@ -160,6 +159,7 @@
     const indRef = React.useRef(null);
     const firstRef = React.useRef(true);
     React.useLayoutEffect(() => {
+      const update = () => {
       const wrap = wrapRef.current, ind = indRef.current, box = boxes.current[tab];
       if (!wrap || !ind) return;
       if (!box) { ind.style.opacity = '0'; return; }
@@ -176,6 +176,11 @@
       M.animate(ind, [{ transform: from }, { transform: to }], { duration: M.dur.emphasized, easing: M.ease.emphasized, fill: 'none' });
       const icon = box.firstChild;
       if (icon) M.animate(icon, [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: M.dur.emphasized, easing: M.ease.standard, fill: 'none' });
+      };
+      update();
+      const observer = new ResizeObserver(update);
+      if(wrapRef.current) observer.observe(wrapRef.current);
+      return () => observer.disconnect();
     }, [tab, tabs.length]);
     return React.createElement('div', { ref: wrapRef, 'data-app-bottom-nav':'true', style: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', background: 'var(--surface)', padding: '10px 8px calc(10px + env(safe-area-inset-bottom))', borderRadius: '26px 26px 0 0', boxShadow: '0 -10px 30px -12px rgba(20,33,61,.18)' } },
       React.createElement('div', { ref: indRef, 'aria-hidden': 'true', style: { position: 'absolute', left: 0, top: 0, width: 46, height: 46, borderRadius: 16, background: 'var(--grad-guinda-soft)', boxShadow: 'var(--glow-guinda)', border: '3px solid var(--surface)', opacity: 0, pointerEvents: 'none', zIndex: 0, willChange: 'transform' } }),
@@ -190,7 +195,7 @@
             transition: 'color .18s linear',
           } },
             React.createElement(window.Res, { resKey: 'nav.' + t.id, size: active ? 24 : 23, stroke: active ? 2.2 : 1.9 })),
-          React.createElement('span', { style: { maxWidth: '100%', fontSize: 'clamp(8.5px, 2.8vw, 10.5px)', fontWeight: active ? 700 : 500, color: active ? 'var(--guinda)' : 'var(--ink-3)', transition: 'color .2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.label));
+          React.createElement('span', { style: { maxWidth: '100%', fontSize: 'var(--text-12, 10.5px)', fontWeight: active ? 700 : 500, color: active ? 'var(--guinda)' : 'var(--ink-3)', transition: 'color .2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.label));
       }));
   }
 
@@ -214,18 +219,18 @@
     const items = eventNotifs.concat(quoteNotifs);
     const statusCard = quoteState.phase === 'error' || events.phase === 'error'
       ? React.createElement('div', { 'data-notifications-state': 'error', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center' } },
-        React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' } }, 'No pudimos cargar tus notificaciones'),
-        React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-2)', marginTop: 5 } }, 'Revisa tu conexión e inténtalo de nuevo.'),
+        React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)' } }, 'No pudimos cargar tus notificaciones'),
+        React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', marginTop: 5 } }, 'Revisa tu conexión e inténtalo de nuevo.'),
         React.createElement('button', { onClick: () => { qs && qs.retry(); events.retry(); }, style: { marginTop: 12, border: 'none', borderRadius: 12, padding: '9px 14px', background: 'var(--guinda)', color: '#fff', fontWeight: 800, cursor: 'pointer' } }, 'Reintentar'))
       : quoteState.phase !== 'loaded' || events.phase !== 'loaded'
-        ? React.createElement('div', { 'data-notifications-state': 'loading', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'Cargando notificaciones…')
+        ? React.createElement('div', { 'data-notifications-state': 'loading', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)' } }, 'Cargando notificaciones…')
         : items.length === 0
-          ? React.createElement('div', { 'data-notifications-state': 'empty', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 13, color: 'var(--ink-2)' } }, 'No tienes notificaciones.')
+          ? React.createElement('div', { 'data-notifications-state': 'empty', style: { background: 'var(--surface)', borderRadius: 16, padding: 18, boxShadow: 'var(--neo-sm)', textAlign: 'center', fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)' } }, 'No tienes notificaciones.')
           : null;
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
         React.createElement('button', { onClick: app.back, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 16.5, fontWeight: 800 } }, 'Notificaciones')),
+        React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800 } }, 'Notificaciones')),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 16 } },
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11 } },
           React.createElement(window.RequestPushInvitation),
@@ -234,9 +239,9 @@
             return React.createElement('div', { key: n.id, onClick: n.go, role: n.go ? 'button' : undefined, tabIndex: n.go ? 0 : undefined, onKeyDown: event => { if (n.go && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); n.go(); } }, 'data-notification-id': n.id, 'data-notification-unread': n.unread ? 'true' : 'false', className: n.go ? 'su-press' : '', style: { display: 'flex', gap: 13, background: 'var(--surface)', borderRadius: 16, padding: 14, boxShadow: 'var(--neo-sm)', position: 'relative', cursor: n.go ? 'pointer' : 'default' } },
               React.createElement('div', { style: { width: 44, height: 44, borderRadius: 13, background: tones[0], color: tones[1], display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: n.icon, size: 23, stroke: 2 })),
               React.createElement('div', { style: { flex: 1 } },
-                React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, lineHeight: 1.25, color: 'var(--ink)' } }, n.title),
-                React.createElement('div', { style: { fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, marginTop: 3, lineHeight: 1.4 } }, n.body),
-                React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } }, n.time)),
+                React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, lineHeight: 1.25, color: 'var(--ink)' } }, n.title),
+                React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 500, marginTop: 3, lineHeight: 1.4 } }, n.body),
+                React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } }, n.time)),
               n.unread && React.createElement('div', { style: { position: 'absolute', top: 14, right: 14, width: 9, height: 9, borderRadius: '50%', background: 'var(--guinda)' } }));
           }))),
     );
@@ -250,7 +255,7 @@
       { icon: 'upload', label: 'Mis documentos', go: () => { app.back(); app.push('documentos'); } },
       { icon: 'receipt', label: 'Mis solicitudes', go: () => { app.back(); app.setTab('historial'); } },
       { icon: 'headset', label: 'Ayuda y soporte', go: () => app.toast('Conectando con soporte…') },
-      { icon: 'settings', label: 'Configuración', go: () => app.toast('Próximamente') },
+      { icon: 'settings', label: 'Configuración', go: () => app.push('settings') },
     ];
     const facts = [
       ['Correo histórico', u.email], ['Teléfono', u.phone], ['Ciudad', u.city],
@@ -260,25 +265,33 @@
     return React.createElement('div', { 'data-affiliate-id': u.id, style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
         React.createElement('button', { 'data-h006': 'profile-back', onClick: app.back, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 16.5, fontWeight: 800 } }, 'Mi Perfil')),
+        React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800 } }, 'Mi Perfil')),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 20 } },
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' } },
           React.createElement('div', { style: { position: 'relative', borderRadius: '50%' } },
             React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 84, 'data-profile-photo-consumer': 'profile' })),
-          React.createElement('div', { 'data-affiliate-field': 'profile-name', style: { fontSize: 21, fontWeight: 800, marginTop: 12 } }, u.name),
-          React.createElement('div', { style: { fontSize: 13.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } }, u.seccion),
+          React.createElement('div', { 'data-affiliate-field': 'profile-name', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, marginTop: 12 } }, u.name),
+          React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } }, u.seccion),
           React.createElement('div', { 'data-affiliate-field': 'profile-control', style: { marginTop: 10 } }, React.createElement(window.Badge, { tone: 'green', icon: 'checkCircle' }, u.status + ' · ' + u.numeroControl))),
         React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 } },
           facts.map((f) => React.createElement('div', { key: f[0], style: { background: 'var(--surface)', borderRadius: 14, padding: 12, boxShadow: 'var(--neo-sm)', minWidth: 0 } },
-            React.createElement('div', { style: { fontSize: 11, color: 'var(--ink-3)', fontWeight: 700 } }, f[0]),
-            React.createElement('div', { 'data-affiliate-field': f[0] === 'Correo histórico' ? 'profile-email' : undefined, style: { fontSize: 13, color: 'var(--ink)', fontWeight: 700, marginTop: 4, overflowWrap: 'anywhere' } }, f[1])))),
+            React.createElement('div', { style: { fontSize: 'var(--text-11, 11px)', color: 'var(--ink-3)', fontWeight: 700 } }, f[0]),
+            React.createElement('div', { 'data-affiliate-field': f[0] === 'Correo histórico' ? 'profile-email' : undefined, style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink)', fontWeight: 700, marginTop: 4, overflowWrap: 'anywhere' } }, f[1])))),
         React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 18, marginTop: 22, overflow: 'hidden', boxShadow: 'var(--neo-sm)' } },
           rows.map((r, i) => React.createElement('button', { key: r.label, onClick: r.go, style: { display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 16px', background: 'none', border: 'none', borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none', cursor: 'pointer', textAlign: 'left' } },
             React.createElement('div', { style: { width: 38, height: 38, borderRadius: 11, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', color: 'var(--guinda)' } }, React.createElement(I, { name: r.icon, size: 20, stroke: 2 })),
-            React.createElement('span', { style: { flex: 1, fontSize: 15, fontWeight: 700 } }, r.label),
+            React.createElement('span', { style: { flex: 1, fontSize: 'var(--text-15, 15px)', fontWeight: 700 } }, r.label),
             React.createElement(I, { name: 'chevR', size: 19, stroke: 2, style: { color: 'var(--ink-3)' } })))),
         React.createElement(window.Btn, { full: true, variant: 'outline', icon: 'logout', style: { marginTop: 18 }, onClick: app.logout }, 'Cerrar sesión')),
     );
+  }
+
+  function SettingsScreen({ app }) {
+    return React.createElement('div', { 'data-text-size-settings': true, style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--surface)', flexShrink: 0 } },
+        React.createElement('button', { onClick: app.back, 'aria-label': 'Volver a Mi Perfil', style: { border: 0, background: 'transparent', color: 'var(--ink)', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'arrowL', size: 22 })),
+        React.createElement('h1', { style: { fontSize: 'var(--text-20, 20px)', margin: 0 } }, 'Configuración')),
+      React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, minHeight: 0, overflowY: 'auto', padding: 20 } }, React.createElement(window.TextSizeSettings, { preference: app.textPreference })));
   }
 
   // ---------- TOAST ----------
@@ -302,7 +315,7 @@
     const red = !!(M && M.reduced());
     return React.createElement('div', { style: { position: 'absolute', left: 20, right: 20, bottom: 92, zIndex: 80, display: 'flex', justifyContent: 'center', pointerEvents: 'none' } },
       React.createElement('div', { style: {
-        position: 'relative', overflow: 'hidden', background: 'var(--ink)', color: '#fff', padding: '13px 18px 15px', borderRadius: 14, fontSize: 14, fontWeight: 700,
+        position: 'relative', overflow: 'hidden', background: 'var(--ink)', color: '#fff', padding: '13px 18px 15px', borderRadius: 14, fontSize: 'var(--text-14, 14px)', fontWeight: 700,
         boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 9, maxWidth: '100%',
         opacity: open ? 1 : 0,
         transform: red ? 'none' : (open ? 'translateY(0) scale(1)' : 'translateY(16px) scale(.96)'),
@@ -323,16 +336,17 @@
     const [error,setError]=useState('');
     if(!context)return null;
     const stop=async()=>{setBusy(true);setError('');try{await window.AdminRepository.stopImpersonation();}catch(_){setError('No se pudo cerrar la sesión. Reintenta salir de tomar control.');}finally{setBusy(false);}};
-    return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',flexShrink:0,flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize:12,fontWeight:800,zIndex:60}},
+    return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',flexShrink:0,flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize: 'var(--text-12, 12px)',fontWeight:800,zIndex:60}},
       React.createElement('span',null,'Estás viendo SutiApp como ',affiliateName,' · Control ',affiliate.numeroControl),
       React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:6,alignItems:'center'}},
-        React.createElement('button',{type:'button',onClick:onAdmin,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},'Volver al Admin'),
-        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize:11,fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')),
+        React.createElement('button',{type:'button',onClick:onAdmin,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},'Volver al Admin'),
+        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')),
       error&&React.createElement('span',{role:'alert',style:{width:'100%'}},error));
   }
 
   function App({ auth, initialTab }) {
     const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+    const textPreference = window.useTextSizePreference(auth.session.user.id);
     const institutional = window.useInstitutionalContent();
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
@@ -418,7 +432,7 @@
       return () => window.removeEventListener('hashchange', openRequest);
     }, [auth.affiliateView && auth.affiliateView.id]);
     const logout = async () => { try { await window.RequestPush.clearDevice(); } catch (_) { /* Privacy gate closes before network; Auth logout remains available. */ } return auth.signOut(); };
-    const app = { push, back, setTab, viewApp, toast: showToast, openFinanceItem, logout, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
+    const app = { textPreference, push, back, setTab, viewApp, toast: showToast, openFinanceItem, logout, affiliate: auth.affiliate, user: auth.affiliateView, institutional, visual, editorial, admin };
 
     useEffect(()=>{
       if(adminAuthorized)return;
@@ -501,7 +515,7 @@
       loan: window.LoanScreen, product: window.ProductScreen, modulo: window.ModuloScreen,
       articulo: window.ArticuloScreen, convenio: window.ConvenioDetail, tracking: window.TrackingScreen,
       catitem: window.CatalogItemScreen,
-      documentos: window.DocumentosScreen, membership: window.MembershipApplicationScreen, notifs: NotifsScreen, perfil: PerfilScreen, terreno: window.TerrenoScreen,
+      documentos: window.DocumentosScreen, membership: window.MembershipApplicationScreen, notifs: NotifsScreen, perfil: PerfilScreen, settings: SettingsScreen, terreno: window.TerrenoScreen,
       investment: window.InvestmentScreen, savings: window.SavingsScreen,
     };
     const PushedScreen = top ? ROUTES[top.name] : null;
@@ -545,7 +559,8 @@
     }, [outgoing && outgoing.id]);
 
     return React.createElement(React.Fragment, null,
-      React.createElement('div', { 'data-a11y': t.a11y ? 'on' : 'off', style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--header-bg, var(--grad-guinda))', overflow: 'hidden', fontSize: t.a11y ? 17 : 16, paddingTop: 'env(safe-area-inset-top)' } },
+      React.createElement('div', { 'data-text-size': tab === 'admin' ? undefined : textPreference.value, style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--header-bg, var(--grad-guinda))', overflow: 'hidden', fontSize: 'var(--text-control, 16px)', paddingTop: 'env(safe-area-inset-top)' } },
+      textPreference.error && tab !== 'admin' && React.createElement('div', { role: 'alert', className: 'su-text-preference-error' }, textPreference.error, React.createElement('button', { onClick: () => push('settings') }, 'Tamaño de texto')),
       React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);setTab('admin');}}),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
@@ -563,6 +578,7 @@
         React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 40, display: layers.length ? 'block' : 'none', pointerEvents: layers.some((l) => !l.out) ? 'auto' : 'none' } },
           layers.map((l) => React.createElement('div', {
             key: l.key,
+            'data-app-route': l.name, 'aria-hidden': l.out ? 'true' : undefined,
             ref: (el) => { if (l.out) outNode.current = el; else inNode.current = el; },
             className: l.out || sharedPending ? undefined : 'su-route',
             style: { position: 'absolute', inset: 0, zIndex: l.depth, pointerEvents: l.out ? 'none' : 'auto', willChange: l.out ? 'opacity' : undefined },
@@ -585,8 +601,6 @@
         React.createElement(window.TweakToggle, { label: 'Mostrar pop-ups administrables', value: t.showPromo, onChange: (v) => setTweak('showPromo', v) }),
         React.createElement(window.TweakButton, { label: 'Ver pop-up productivo', onClick: () => { const l = visual.popups || []; if (l.length) setPopupItems(l); else showToast('No hay pop-up productivo activo'); } }),
         adminAuthorized && React.createElement(window.TweakButton, { label: 'Ir al Panel Administrativo', onClick: () => setTab('admin') }),
-        React.createElement(window.TweakSection, { label: 'Accesibilidad' }),
-        React.createElement(window.TweakToggle, { label: 'Modo accesible (texto grande)', value: t.a11y, onChange: (v) => setTweak('a11y', v) }),
         React.createElement(window.TweakSection, { label: 'QA de movimiento (dev)' }),
         React.createElement(window.TweakRadio, { label: 'Movimiento', value: t.qaMotion, options: [{ value: 'system', label: 'Sistema' }, { value: 'on', label: 'Reducido' }, { value: 'off', label: 'Completo' }], onChange: (v) => setTweak('qaMotion', v) }),
         React.createElement(window.TweakRadio, { label: 'Transición espacial', value: t.qaSpatial, options: [{ value: '420', label: '420 ms' }, { value: '480', label: '480 ms' }], onChange: (v) => setTweak('qaSpatial', v) }),

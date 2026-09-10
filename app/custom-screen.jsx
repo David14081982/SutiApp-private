@@ -22,17 +22,17 @@
         cs.slotId && React.createElement(window.ResSlot, { resKey: 'screen.' + cs.slotId, shape: 'rect', fit: 'cover', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' } }),
         React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,.25), transparent 40%)' } }),
         React.createElement('button', { onClick: close, 'aria-label': 'Volver', style: { position: 'absolute', top: 14, left: 14, zIndex: 3, width: 40, height: 40, borderRadius: 13, border: 'none', background: 'rgba(255,255,255,.92)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)', boxShadow: '0 4px 14px -4px rgba(0,0,0,.35)' } }, React.createElement(I, { name: 'arrowL', size: 21, stroke: 2.2 })),
-        cs.etiqueta && React.createElement('div', { style: { position: 'absolute', left: 16, bottom: 14, zIndex: 2, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.92)', color: 'var(--guinda)', fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em', padding: '6px 11px', borderRadius: 999 } }, cs.etiqueta)),
+        cs.etiqueta && React.createElement('div', { style: { position: 'absolute', left: 16, bottom: 14, zIndex: 2, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,.92)', color: 'var(--guinda)', fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 800, letterSpacing: '.06em', padding: '6px 11px', borderRadius: 999 } }, cs.etiqueta)),
       // contenido
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '22px 22px 26px' } },
-        React.createElement('h2', { style: { fontSize: 24, fontWeight: 900, color: 'var(--ink)', margin: 0, lineHeight: 1.15, letterSpacing: '-.02em' } }, cs.titulo || 'Título de la pantalla'),
-        cs.texto && React.createElement('p', { style: { fontSize: 14.5, color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.65, margin: '12px 0 0', whiteSpace: 'pre-line' } }, cs.texto),
+        React.createElement('h2', { style: { fontSize: 'var(--text-24, 24px)', fontWeight: 900, color: 'var(--ink)', margin: 0, lineHeight: 1.15, letterSpacing: '-.02em' } }, cs.titulo || 'Título de la pantalla'),
+        cs.texto && React.createElement('p', { style: { fontSize: 'var(--text-14-5, 14.5px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.65, margin: '12px 0 0', whiteSpace: 'pre-line' } }, cs.texto),
         botones.length > 0 && React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 11, marginTop: 24 } },
           botones.map((b, i) => React.createElement('button', { key: b.id || i, onClick: () => runBtn(b), className: 'su-press', style: i === 0
-            ? { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 52, borderRadius: 15, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 15, fontWeight: 800, background: 'var(--grad-guinda-soft)', color: '#fff', boxShadow: 'var(--glow-guinda)' }
-            : { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 50, borderRadius: 15, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 800, background: 'var(--surface)', color: 'var(--guinda)', boxShadow: 'var(--neo-sm)' } },
+            ? { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 52, borderRadius: 15, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--text-15, 15px)', fontWeight: 800, background: 'var(--grad-guinda-soft)', color: '#fff', boxShadow: 'var(--glow-guinda)' }
+            : { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 50, borderRadius: 15, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, background: 'var(--surface)', color: 'var(--guinda)', boxShadow: 'var(--neo-sm)' } },
             React.createElement(I, { name: b.type === 'url' ? 'link' : 'arrowR', size: 17, stroke: 2.2 }), b.label))),
-        preview && React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', marginTop: 22 } },
+        preview && React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: 'var(--ink-3)', marginTop: 22 } },
           React.createElement(I, { name: 'eye', size: 14, stroke: 2 }), 'Vista previa · los botones no navegan')));
   }
 

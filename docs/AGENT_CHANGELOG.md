@@ -8,7 +8,9 @@ row of small markers. Direct touch/mouse selection, drag, keyboard, arrows and
 autoplay verified in 90 Chromium/WebKit cases; real seven-image popup passes nine
 local scenarios. Build PASS; 113/114 bundle modules identical, no authority,
 backend, financial or navigation changes. Cancelled BottomNav branch excluded.
-Local reviewer APPROVED; publication evidence and final status are recorded in
+Published runtime `5812b13`, workflow `34434073700` SUCCESS. Nine production
+scenarios and exact public hashes PASS. Final reviewer APPROVED; stop.
+Publication evidence and final status are recorded in
 [H-POPUP-DOTS-SINGLE-ROW-001](qa/H-POPUP-DOTS-SINGLE-ROW-001.md).
 
 ## 2026-09-09 — H-USER-TEXT-SIZE-ACCESSIBILITY-001 / C1

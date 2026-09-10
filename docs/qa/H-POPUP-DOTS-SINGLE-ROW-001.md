@@ -75,3 +75,28 @@ Governance: current explicit popup correction and original publication instructi
 Owner decision: NO.
 
 Next action / RESPONSE TO CODEX: Publish this isolated correction under the existing user authorization, verify deployed file hashes and the real popup, record evidence, then stop. Do not publish the cancelled BottomNav work or start another H.
+
+## Production and final closure
+
+- Runtime commit: `5812b13c8f17d31fcc6751a54533a91f7a0d9ede`.
+- [Deployment 34434073700](https://github.com/David14081982/SutiApp-private/actions/runs/34434073700): SUCCESS. Existing CI auth/request contracts, allowlisted build and production submission contract completed successfully.
+- `node scripts/test-popup-dots-live.js --production`: PASS at `https://sutiapp.com/`. Nine scenarios, seven real images, 320/390/430px, Normal/Grande/Muy grande. Small markers in one row; touch every marker, keyboard and arrow wraparound select the correct image. Image loads and dismissal pass. Targets at least 48px, no horizontal overflow, no target overlap, no browser errors or attempted persistent REST/preference mutations.
+- Public bundle241, CSS242 and worker189 SHA-256 values exactly match the tested local candidate (`production.json`, `scope.json`). Real screenshots remain private.
+- Cancelled BottomNav commits independently checked with `git merge-base --is-ancestor`: both excluded from this release.
+- Final post-change verdict: PASS. Source of truth/invariants PASS; backend, migrations, permissions, protected legacy and business rules unchanged; global image regression NOT APPLICABLE for this focal presentation-only change. Unexpected files: NONE. Physical-device/assistive-technology testing remains unclaimed.
+- Final architect verdict: APPROVED after reviewing production results and deployed bytes. Owner decision: NO. Next action: preserve this evidence and STOP; no next H and no BottomNav publication.
+
+```text
+H-POPUP-DOTS-SINGLE-ROW-001 RESULT
+Status: PASS - PUBLISHED AND VERIFIED
+Files changed: same audited focal scope, tests and evidence.
+Source-of-truth verdict: PASS - unchanged.
+Invariant verdict: PASS - requested one-row pagination and accessible selection.
+Build: PASS - 114 modules, 24 public files.
+Tests: PASS - 90 isolated + 9 local real-popup + 9 production real-popup scenarios.
+Security: frontend scope PASS; backend/RLS changes NOT APPLICABLE.
+Legacy impact: NONE.
+Unexpected files changed: NONE.
+Known limitations: engine tests, not physical devices or VoiceOver/TalkBack; cancelled BottomNav remains unpublished.
+Evidence: deployment.json, production.json, focal.json, local.json, scope.json and synthetic screenshots.
+```

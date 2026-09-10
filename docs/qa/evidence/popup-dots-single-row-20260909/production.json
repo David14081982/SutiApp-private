@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/",
+  "build": "DEPLOYED",
+  "bundleVersion": 241,
+  "cssVersion": 242,
+  "workerVersion": 189,
+  "hashes": {
+    "app/bundle.js": "673164ede4d7657042b98558b0193e839d6113f95ce1a138026eec18ca965a02",
+    "app/text-size.css": "62f92e3dcd9a99283ba4c49113f82f9e3e39e129cdd697582de26ab5fdcb78ba",
+    "sw.js": "06ac75ca9deb15d58a9358c342c259e859f7e45c06f0689b3d868192677e235c"
+  },
+  "realPopup": true,
+  "scenarios": [
+    {
+      "width": 320,
+      "size": "normal",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "count": 7,
+      "rows": 1,
+      "status": "PASS"
+    }
+  ],
+  "selection": "TOUCH_KEYBOARD_ARROWS_PASS",
+  "imageLoaded": true,
+  "minimumSelectorAndArrowTarget": 48,
+  "dismissal": "PASS",
+  "attemptedPersistentWrites": [],
+  "errors": [],
+  "physicalDeviceValidation": false
+}

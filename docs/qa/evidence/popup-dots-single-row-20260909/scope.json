@@ -28,7 +28,6 @@
     "app/bundle.js",
     "app/text-size.css",
     "docs/AGENT_CHANGELOG.md",
-    "sw.js",
     "docs/qa/H-POPUP-DOTS-SINGLE-ROW-001.md",
     "docs/qa/evidence/popup-dots-single-row-20260909/chromium-7-dots.png",
     "docs/qa/evidence/popup-dots-single-row-20260909/focal.json",
@@ -36,7 +35,10 @@
     "docs/qa/evidence/popup-dots-single-row-20260909/scope.json",
     "docs/qa/evidence/popup-dots-single-row-20260909/webkit-7-dots.png",
     "scripts/test-popup-dots-live.js",
-    "scripts/test-popup-dots-single-row.js"
+    "scripts/test-popup-dots-single-row.js",
+    "sw.js",
+    "docs/qa/evidence/popup-dots-single-row-20260909/deployment.json",
+    "docs/qa/evidence/popup-dots-single-row-20260909/production.json"
   ],
   "canonicalHashes": {
     "app/bundle.js": "673164ede4d7657042b98558b0193e839d6113f95ce1a138026eec18ca965a02",

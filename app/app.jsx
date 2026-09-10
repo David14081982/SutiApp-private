@@ -139,17 +139,17 @@
 
   // ---------- BOTTOM NAV ----------
   const TABS = [
-    { id: 'home', label: 'Inicio', icon: 'home' },
-    { id: 'financiera', label: 'Finanzas', icon: 'wallet' },
-    { id: 'convenios', label: 'Convenios', icon: 'tag' },
-    { id: 'historial', label: 'Historial', icon: 'receipt' },
-    { id: 'credencial', label: 'Credencial', icon: 'idcard' },
-    { id: 'admin', label: 'Admin', icon: 'shield' },
+    { id: 'home', label: 'Inicio', shortLabel: 'Inic', icon: 'home' },
+    { id: 'financiera', label: 'Finanzas', shortLabel: 'Fina', icon: 'wallet' },
+    { id: 'convenios', label: 'Convenios', shortLabel: 'Conv', icon: 'tag' },
+    { id: 'historial', label: 'Historial', shortLabel: 'Hist', icon: 'receipt' },
+    { id: 'credencial', label: 'Credencial', shortLabel: 'Cred', icon: 'idcard' },
+    { id: 'admin', label: 'Admin', shortLabel: 'Admi', icon: 'shield' },
   ];
   // Indicador único que VIAJA entre pestañas (M3 · shell). El fondo guinda ya no
   // vive en cada botón: es un solo objeto medido tras el commit y desplazado con
   // transform. Los botones solo interpolan color.
-  function BottomNav({ tab, setTab, adminOnly, showAdmin }) {
+  function BottomNav({ tab, setTab, adminOnly, showAdmin, textSize = 'normal' }) {
     const as = window.adminStore;
     const tabs = adminOnly
       ? TABS.filter((t) => t.id === 'admin' && showAdmin)
@@ -158,6 +158,40 @@
     const boxes = React.useRef({});
     const indRef = React.useRef(null);
     const firstRef = React.useRef(true);
+    const [compactLabels, setCompactLabels] = React.useState({});
+    React.useLayoutEffect(() => {
+      const nav = wrapRef.current;
+      if (!nav || textSize === 'largest') return;
+      const context = document.createElement('canvas').getContext('2d');
+      let mounted = true;
+      const measure = () => {
+        if (!mounted || !context) return;
+        const compact = {};
+        tabs.forEach((t) => {
+          const label = nav.querySelector('[data-app-tab="' + t.id + '"] > span');
+          if (!label) return;
+          const style = getComputedStyle(label);
+          // Reserve active weight so selecting a tab cannot overflow its full name.
+          context.font = '700 ' + style.fontSize + ' ' + style.fontFamily;
+          const spacing = parseFloat(style.letterSpacing) || 0;
+          const fullWidth = context.measureText(t.label).width + spacing * (t.label.length - 1);
+          compact[t.id] = fullWidth > label.getBoundingClientRect().width - 1;
+        });
+        setCompactLabels((previous) => tabs.every((t) => previous[t.id] === compact[t.id]) ? previous : compact);
+      };
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(nav);
+      if (document.fonts) {
+        document.fonts.ready.then(measure);
+        document.fonts.addEventListener('loadingdone', measure);
+      }
+      return () => {
+        mounted = false;
+        observer.disconnect();
+        if (document.fonts) document.fonts.removeEventListener('loadingdone', measure);
+      };
+    }, [textSize, tabs.map((t) => t.id).join(',')]);
     React.useLayoutEffect(() => {
       const update = () => {
       const wrap = wrapRef.current, ind = indRef.current, box = boxes.current[tab];
@@ -182,11 +216,11 @@
       if(wrapRef.current) observer.observe(wrapRef.current);
       return () => observer.disconnect();
     }, [tab, tabs.length]);
-    return React.createElement('div', { ref: wrapRef, 'data-app-bottom-nav':'true', style: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', background: 'var(--surface)', padding: '10px 8px calc(10px + env(safe-area-inset-bottom))', borderRadius: '26px 26px 0 0', boxShadow: '0 -10px 30px -12px rgba(20,33,61,.18)' } },
+    return React.createElement('div', { ref: wrapRef, 'data-app-bottom-nav':'true', 'data-nav-text-size':textSize, style: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', background: 'var(--surface)', padding: '10px 8px calc(10px + env(safe-area-inset-bottom))', borderRadius: '26px 26px 0 0', boxShadow: '0 -10px 30px -12px rgba(20,33,61,.18)' } },
       React.createElement('div', { ref: indRef, 'aria-hidden': 'true', style: { position: 'absolute', left: 0, top: 0, width: 46, height: 46, borderRadius: 16, background: 'var(--grad-guinda-soft)', boxShadow: 'var(--glow-guinda)', border: '3px solid var(--surface)', opacity: 0, pointerEvents: 'none', zIndex: 0, willChange: 'transform' } }),
       tabs.map((t) => {
         const active = tab === t.id;
-        return React.createElement('button', { key: t.id, 'data-app-tab':t.id, onClick: () => setTab(t.id), style: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 } },
+        return React.createElement('button', { key: t.id, 'data-app-tab':t.id, 'aria-label':t.label, title:t.label, 'aria-current':active ? 'page' : undefined, onClick: () => setTab(t.id), style: { position: 'relative', zIndex: 1, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 } },
           React.createElement('div', { ref: (el) => { boxes.current[t.id] = el; }, style: {
             display: 'grid', placeItems: 'center', width: active ? 46 : 40, height: active ? 46 : 40,
             borderRadius: active ? 16 : 14,
@@ -195,7 +229,7 @@
             transition: 'color .18s linear',
           } },
             React.createElement(window.Res, { resKey: 'nav.' + t.id, size: active ? 24 : 23, stroke: active ? 2.2 : 1.9 })),
-          React.createElement('span', { style: { maxWidth: '100%', fontSize: 'var(--text-12, 10.5px)', fontWeight: active ? 700 : 500, color: active ? 'var(--guinda)' : 'var(--ink-3)', transition: 'color .2s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.label));
+          React.createElement('span', { style: { maxWidth: '100%', fontSize: 'var(--text-12, 10.5px)', fontWeight: active ? 700 : 500, color: active ? 'var(--guinda)' : 'var(--ink-3)', transition: 'color .2s', whiteSpace: 'nowrap' } }, textSize === 'largest' || compactLabels[t.id] ? t.shortLabel : t.label));
       }));
   }
 
@@ -569,7 +603,7 @@
             ? React.createElement(tabScreen, { app, t })
             : React.createElement(window.ScreenLocked, { screen: tab })),
         // bottom nav
-        React.createElement(BottomNav, { tab, setTab, adminOnly: !auth.affiliateView || (!!auth.impersonation && tab === 'admin'), showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin') }),
+        React.createElement(BottomNav, { tab, setTab, textSize: textPreference.value, adminOnly: !auth.affiliateView || (!!auth.impersonation && tab === 'admin'), showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin') }),
         // pushed full-screen routes (capa de presencia · entrada + salida)
         // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.
         // Mientras únicamente queda la capa saliente (pointer-events:none), el

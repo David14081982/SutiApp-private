@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "base": "b9f8bc923cdc489810e4118a34799cdd751ff859",
+  "files": [
+    "SutiApp.html",
+    "app/app.jsx",
+    "app/bundle.js",
+    "app/text-size.css",
+    "docs/AGENT_CHANGELOG.md",
+    "sw.js",
+    "docs/qa/H-BOTTOM-NAV-LABELS-001.md",
+    "docs/qa/evidence/bottom-nav-labels-20260909/baseline.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/chromium-320-large.png",
+    "docs/qa/evidence/bottom-nav-labels-20260909/chromium-320-largest.png",
+    "docs/qa/evidence/bottom-nav-labels-20260909/chromium-320-normal.png",
+    "docs/qa/evidence/bottom-nav-labels-20260909/focal.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/global-first-attempt.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/global-local.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/local.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/network-http1-probe.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/network-probe.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/scope.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/webkit-320-large.png",
+    "docs/qa/evidence/bottom-nav-labels-20260909/webkit-320-largest.png",
+    "docs/qa/evidence/bottom-nav-labels-20260909/webkit-320-normal.png",
+    "scripts/test-bottom-nav-labels-global.js",
+    "scripts/test-bottom-nav-labels-live.js",
+    "scripts/test-bottom-nav-labels.js"
+  ],
+  "unexpectedFiles": [],
+  "bundleModules": 114,
+  "changedBundleModules": [
+    "app.jsx"
+  ],
+  "unchangedModules": 113,
+  "appOutsideBottomNav": "IDENTICAL_EXCEPT_TEXT_SIZE_PROP",
+  "tabIdsFullNamesIconsFilters": "IDENTICAL",
+  "navigationCallbacks": "UNCHANGED",
+  "activeIndicator": "IDENTICAL",
+  "safeAreaViewportAndShellGeometry": "IDENTICAL_EXCEPT_SINGLE_LABEL_ROW",
+  "tokenValues": "IDENTICAL_SINGLE_CENTRAL_SCALE",
+  "htmlAndWorkerLogic": "IDENTICAL_EXCEPT_CACHE_REFERENCES",
+  "preferencesRepositoriesAndPopup": "IDENTICAL",
+  "backendChanges": 0,
+  "legacyChanges": 0,
+  "newDataAuthorities": 0,
+  "diffCheck": "PASS",
+  "hashes": {
+    "app/bundle.js": "5cac10c65981fa9cbb71addbdb09ebfc5a2b7a573b1570e016d2becda654e7b5",
+    "app/text-size.css": "5b7b81043763358bd216fcd5c85603d747e75140c5daaab41468d7249df1d87f",
+    "sw.js": "15726251c750f6ec3031482c199b95aa3b65e7fc80ba55c3e7e4d6827e4e302f"
+  }
+}

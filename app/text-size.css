@@ -1,7 +1,8 @@
 /* H-USER-TEXT-SIZE-ACCESSIBILITY-001. Typography only, never page zoom.
    Legacy numeric steps map to a single corrected scale; outside affiliate scope
-   source declarations retain their original fallback (Admin/company unaffected). */
-[data-text-size] {
+   source declarations retain their original fallback (Admin/company content unaffected).
+   BottomNav independently carries the same preference, including its Admin tab. */
+[data-text-size], [data-nav-text-size] {
   --text-scale: 1;
   --text-secondary: 14px;
   --text-caption: 15px;
@@ -49,8 +50,8 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-[data-text-size="large"] { --text-scale: 1.15; }
-[data-text-size="largest"] { --text-scale: 1.35; }
+[data-text-size="large"], [data-nav-text-size="large"] { --text-scale: 1.15; }
+[data-text-size="largest"], [data-nav-text-size="largest"] { --text-scale: 1.35; }
 [data-text-size] :where(div,span,p,h1,h2,h3,h4,label,section,article,form,fieldset,a,button) { min-width: 0; overflow-wrap: anywhere; }
 [data-text-size] :where(p,h1,h2,h3,h4,label,button,input,select,textarea),
 [data-text-size] [style*="font-size:"] { line-height: 1.45 !important; }
@@ -67,10 +68,10 @@
 [data-text-size] [style*="-webkit-line-clamp"] { -webkit-line-clamp: unset !important; max-height: none !important; }
 [data-text-size] .su-btn { padding-top: 10px !important; padding-bottom: 10px !important; }
 [data-text-size] .su-btn :where(svg,.su-btn-ico,.su-btn-ico-r) { flex-shrink: 0; }
-[data-text-size] [data-app-bottom-nav] { align-items: stretch !important; gap: 2px; padding-left: 4px !important; padding-right: 4px !important; }
-[data-text-size] [data-app-tab] { justify-content: flex-start; min-width: 48px; padding: 2px 0 !important; }
-[data-text-size] [data-app-tab] > span { font-size: calc(14px * var(--text-scale)) !important; line-height: 1.4 !important; width: 100%; }
-[data-text-size] [data-app-tab] > span { margin-top: auto; min-height: 2.8em; }
+[data-app-bottom-nav][data-nav-text-size] { align-items: stretch !important; gap: 2px; padding-left: 4px !important; padding-right: 4px !important; }
+[data-app-bottom-nav] [data-app-tab] { justify-content: flex-start; min-width: 48px; min-height: 48px !important; padding: 2px 0 !important; }
+[data-app-bottom-nav] [data-app-tab] > span { font-size: calc(14px * var(--text-scale)) !important; line-height: 1.4 !important; width: 100%; white-space: nowrap !important; overflow-wrap: normal; word-break: normal; text-align: center; }
+[data-app-bottom-nav] [data-app-tab] > span { margin-top: auto; min-height: 1.4em; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) { flex-wrap: wrap; gap: 0 !important; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) button { background: none !important; display: grid; place-items: center; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) button::after { content: ''; display: block; width: 8px; height: 8px; border-radius: 999px; background: var(--hairline-strong); }

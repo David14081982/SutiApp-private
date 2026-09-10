@@ -68728,26 +68728,32 @@ Object.assign(window, {
   const TABS = [{
     id: 'home',
     label: 'Inicio',
+    shortLabel: 'Inic',
     icon: 'home'
   }, {
     id: 'financiera',
     label: 'Finanzas',
+    shortLabel: 'Fina',
     icon: 'wallet'
   }, {
     id: 'convenios',
     label: 'Convenios',
+    shortLabel: 'Conv',
     icon: 'tag'
   }, {
     id: 'historial',
     label: 'Historial',
+    shortLabel: 'Hist',
     icon: 'receipt'
   }, {
     id: 'credencial',
     label: 'Credencial',
+    shortLabel: 'Cred',
     icon: 'idcard'
   }, {
     id: 'admin',
     label: 'Admin',
+    shortLabel: 'Admi',
     icon: 'shield'
   }];
   // Indicador único que VIAJA entre pestañas (M3 · shell). El fondo guinda ya no
@@ -68757,7 +68763,8 @@ Object.assign(window, {
     tab,
     setTab,
     adminOnly,
-    showAdmin
+    showAdmin,
+    textSize = 'normal'
   }) {
     const as = window.adminStore;
     const tabs = adminOnly ? TABS.filter(t => t.id === 'admin' && showAdmin) : TABS.filter(t => t.id === 'admin' ? showAdmin : !as || !as.tabHidden(t.id));
@@ -68765,6 +68772,40 @@ Object.assign(window, {
     const boxes = React.useRef({});
     const indRef = React.useRef(null);
     const firstRef = React.useRef(true);
+    const [compactLabels, setCompactLabels] = React.useState({});
+    React.useLayoutEffect(() => {
+      const nav = wrapRef.current;
+      if (!nav || textSize === 'largest') return;
+      const context = document.createElement('canvas').getContext('2d');
+      let mounted = true;
+      const measure = () => {
+        if (!mounted || !context) return;
+        const compact = {};
+        tabs.forEach(t => {
+          const label = nav.querySelector('[data-app-tab="' + t.id + '"] > span');
+          if (!label) return;
+          const style = getComputedStyle(label);
+          // Reserve active weight so selecting a tab cannot overflow its full name.
+          context.font = '700 ' + style.fontSize + ' ' + style.fontFamily;
+          const spacing = parseFloat(style.letterSpacing) || 0;
+          const fullWidth = context.measureText(t.label).width + spacing * (t.label.length - 1);
+          compact[t.id] = fullWidth > label.getBoundingClientRect().width - 1;
+        });
+        setCompactLabels(previous => tabs.every(t => previous[t.id] === compact[t.id]) ? previous : compact);
+      };
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(nav);
+      if (document.fonts) {
+        document.fonts.ready.then(measure);
+        document.fonts.addEventListener('loadingdone', measure);
+      }
+      return () => {
+        mounted = false;
+        observer.disconnect();
+        if (document.fonts) document.fonts.removeEventListener('loadingdone', measure);
+      };
+    }, [textSize, tabs.map(t => t.id).join(',')]);
     React.useLayoutEffect(() => {
       const update = () => {
         const wrap = wrapRef.current,
@@ -68819,6 +68860,7 @@ Object.assign(window, {
     return React.createElement('div', {
       ref: wrapRef,
       'data-app-bottom-nav': 'true',
+      'data-nav-text-size': textSize,
       style: {
         flexShrink: 0,
         position: 'relative',
@@ -68853,6 +68895,9 @@ Object.assign(window, {
       return React.createElement('button', {
         key: t.id,
         'data-app-tab': t.id,
+        'aria-label': t.label,
+        title: t.label,
+        'aria-current': active ? 'page' : undefined,
         onClick: () => setTab(t.id),
         style: {
           position: 'relative',
@@ -68893,11 +68938,9 @@ Object.assign(window, {
           fontWeight: active ? 700 : 500,
           color: active ? 'var(--guinda)' : 'var(--ink-3)',
           transition: 'color .2s',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
+          whiteSpace: 'nowrap'
         }
-      }, t.label));
+      }, textSize === 'largest' || compactLabels[t.id] ? t.shortLabel : t.label));
     }));
   }
 
@@ -69980,6 +70023,7 @@ Object.assign(window, {
     React.createElement(BottomNav, {
       tab,
       setTab,
+      textSize: textPreference.value,
       adminOnly: !auth.affiliateView || !!auth.impersonation && tab === 'admin',
       showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin')
     }),

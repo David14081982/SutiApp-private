@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-BOTTOM-NAV-LABELS-001
+
+Surgical BottomNav label presentation: largest uses Inic/Fina/Conv/Hist/Cred/Admi;
+normal/large keep complete names while they fit. Owner explicitly approved the
+narrow-width exception in Normal after measuring 50px tabs against 69px Credencial.
+Full aria-label/title, centered uniform >=48px targets, original routes/icons and
+font scale preserved. Focal Chromium/WebKit 60 combinations / 396 checks plus 15
+full-app local cases, all six destinations and refresh PASS. Original popup,
+preference authority, permissions, repositories and safe-area/viewport work remain
+unchanged. Required local/production global regression and publication closure are
+recorded in [H-BOTTOM-NAV-LABELS-001](qa/H-BOTTOM-NAV-LABELS-001.md).
+
 ## 2026-09-09 — H-POPUP-DOTS-SINGLE-ROW-001 / C2
 
 Owner-reported two-row pagination reproduced with seven images. Replaced separate

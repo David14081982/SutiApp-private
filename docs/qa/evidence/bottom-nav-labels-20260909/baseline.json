@@ -1,0 +1,54 @@
+{
+  "width": 320,
+  "size": "normal",
+  "result": [
+    {
+      "label": "Inicio",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 33.949951171875,
+      "lines": 1
+    },
+    {
+      "label": "Finanzas",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 57.09190368652344,
+      "lines": 2
+    },
+    {
+      "label": "Convenios",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 66.69589233398438,
+      "lines": 2
+    },
+    {
+      "label": "Historial",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 55.705902099609375,
+      "lines": 2
+    },
+    {
+      "label": "Credencial",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 68.96389770507812,
+      "lines": 2
+    },
+    {
+      "label": "Admin",
+      "font": "Nunito, system-ui, -apple-system, sans-serif",
+      "fontSize": "14px",
+      "available": 50,
+      "fullWidthAtActiveWeight": 42.783966064453125,
+      "lines": 1
+    }
+  ]
+}

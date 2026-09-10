@@ -1,0 +1,18 @@
+{
+  "status": "FAIL",
+  "completion": "INTERRUPTED_AFTER_CONFIRMED_FAILURES",
+  "harness": "scripts/test-global-image-regression-production-live.js",
+  "concurrency": 12,
+  "imageTimeoutMs": 20000,
+  "observedFamilies": {
+    "appAssets": { "checked": 156, "passed": 61, "status": "FAIL" },
+    "legacyAffiliateFiles": { "checked": 29, "passed": 17, "status": "FAIL" },
+    "profilePhotos": { "checked": 1, "status": "PASS" },
+    "affiliateDocuments": { "status": "PASS" },
+    "privateAssetsAdmin": { "status": "PASS" }
+  },
+  "observedFailureReason": "IMAGE_TIMEOUT",
+  "independentSampleProbe": "network-probe.json",
+  "businessDataChanges": 0,
+  "runtimeCodeChangesToAddressIncident": 0
+}

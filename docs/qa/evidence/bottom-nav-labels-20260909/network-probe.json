@@ -1,0 +1,42 @@
+{
+  "priorGlobalRun": "FAILED_IMAGE_TIMEOUTS_INTERRUPTED",
+  "sample": "THREE_PUBLIC_ASSETS_THAT_TIMED_OUT",
+  "results": [
+    {
+      "sample": 1,
+      "http": 200,
+      "bytes": 390344,
+      "mime": "image/jpeg",
+      "ms": 487,
+      "unchangedProductionBrowser": {
+        "status": "PASS",
+        "width": 1279,
+        "ms": 4141
+      }
+    },
+    {
+      "sample": 2,
+      "http": 200,
+      "bytes": 349277,
+      "mime": "image/jpeg",
+      "ms": 431,
+      "unchangedProductionBrowser": {
+        "status": "PASS",
+        "width": 1279,
+        "ms": 4143
+      }
+    },
+    {
+      "sample": 3,
+      "http": 200,
+      "bytes": 354966,
+      "mime": "image/jpeg",
+      "ms": 259,
+      "unchangedProductionBrowser": {
+        "status": "PASS",
+        "width": 1600,
+        "ms": 5920
+      }
+    }
+  ]
+}

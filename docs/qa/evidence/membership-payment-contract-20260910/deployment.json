@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "workflow": {
+    "conclusion": "success",
+    "headSha": "54290acfc109fa0fc2edeb52f24050845665f5a3",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34502726723"
+  },
+  "bundle": "bundle.js?v=245",
+  "productionBundleSha256": "65f1c61ea967349151b53bea4230f9bdca6bd7a60afa124803b519050f336ba5",
+  "exactTestedBundle": true,
+  "otherBundleModulesIdentical": 112,
+  "businessWrites": 0
+}

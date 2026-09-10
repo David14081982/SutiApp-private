@@ -1,11 +1,14 @@
 # Bitácora de agentes
 
-## 2026-09-09 — H-FINANCE-DETAIL-UI-001 — UI focal / verificación local
+## 2026-09-09 — H-FINANCE-DETAIL-UI-001 — PUBLICADO / PASS
 
 Detalle de Finanzas con foto privada y full_name, fondo solicitado, columnas independientes,
 condiciones preservadas, documentos completos y estados legibles, footer adaptable.
 Cinco bloques de lógica y 66 callbacks idénticos a 1795be0; un solo módulo cambia en bundle 244.
-Pruebas aisladas, cola y lecturas de tres solicitudes reales en siete tamaños PASS; cero writes.
+45 comprobaciones aisladas, cola y lecturas de tres solicitudes reales en siete tamaños PASS; cero writes.
+Commit 779e331, Pages 34447427131 SUCCESS; SHA del bundle servido idéntico al build.
+30 mediciones productivas con/sin service worker PASS, 42 apariciones de imágenes decodificadas
+por ejecución, cero errores JavaScript y cero writes de negocio. Ver production-summary.json.
 Cachebusters HTML/SW alineados sin cambiar lógica de SW. Fallos históricos de copy/versiones
 identificados por comparación con la base; ver `docs/qa/H-FINANCE-DETAIL-UI-001.md`.
 

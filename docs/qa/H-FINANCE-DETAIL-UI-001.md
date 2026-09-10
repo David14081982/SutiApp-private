@@ -32,7 +32,9 @@ Mantener guinda, superficies, tarjetas, sombras y tipografía de la aplicación.
 
 Ampliación de alcance verificada: sw.js sólo para actualizar CACHE y la URL versionada del bundle en CORE. La base publicada tiene bundle 243 frente a precarga 242; esta publicación usa 244. Son cachebusters asociados al artefacto generado, sin cambios de lógica de service worker, listeners, estrategias, Auth ni Storage. Se comprobará igualdad del resto de sw.js y acceso focal con/sin service worker. Se incorpora antes de editar esas dos constantes.
 
-Implementación y verificación local completas. Publicación y comprobación del artefacto remoto pendientes de registrar.
+PUBLICADO / PASS. Commit funcional `779e331eea8b5a7466b54c1248adae89ca9de547` en main; workflow Pages `34447427131` SUCCESS. Bundle v244 servido por https://sutiapp.com/ con SHA-256 `3efffebd437ca9b7446f7b755484907476e9ade38eaaa666d8a2690e6cd3c67a`, idéntico al build revisado.
+
+Verificación de producción: 9 mediciones de escritorio, 12 de tablet/móvil y 9 de escritorio controlado por service worker PASS. Cero errores JavaScript y cero writers de negocio vigilados. La última ejecución decodificó las 42 apariciones de imágenes documentales de las tres solicitudes; son apariciones, no archivos únicos. Visor y Escape preservan el detalle. Nombre, fondo, foto, controles y dimensiones de cabecera/footer coinciden con y sin service worker. Ver `production-summary.json`, `production-*.json` y `deployment.json`.
 
 ## EVIDENCE / VERIFICACIÓN LOCAL
 
@@ -83,7 +85,7 @@ Verdict: PASS.
 
 ## H-FINANCE-DETAIL-UI-001 RESULT
 
-Status: PASS para implementación y validación focal local; los fallos históricos anteriores no se presentan como pruebas aprobadas.
+Status: PASS para implementación, publicación y validación focal local/productiva; los fallos históricos anteriores no se presentan como pruebas aprobadas.
 Files changed: pantalla focal; bundle/HTML/cachebusters; tres pruebas, este documento, changelog y evidencia focal.
 Source-of-truth verdict: SAFE; no nueva fuente, snapshot reinterpretado ni writer.
 Invariant verdict: PASS; lógica protegida idéntica.
@@ -98,11 +100,11 @@ Evidence: docs/qa/evidence/finance-detail-ui-20260909/.
 ## SUTIAPP ARCHITECT REVIEW
 
 Task: H-FINANCE-DETAIL-UI-001.
-Verdict: APPROVED para entrega focal verificada, sujeto a terminar la comprobación de publicación autorizada.
+Verdict: APPROVED para entrega focal verificada y publicada.
 Critical findings: 66 callbacks y cinco bloques idénticos; un solo módulo del bundle cambia; los tests históricos obsoletos están identificados por comparación con base.
 Source of truth / Architecture / Security / Data / Legacy: contratos preservados; no ampliación de autoridad.
 Owner decision: NO; ejecución y commit/push autorizados por el propietario en esta conversación.
-Next action: publicar el commit focal y verificar hash, UI y funcionamiento con/sin service worker en el artefacto servido.
+Next action: entregar al propietario el resultado publicado; hash, UI y funcionamiento con/sin service worker verificados en el artefacto servido.
 Response generated for Codex: YES.
 
-RESPONSE TO CODEX: entregar sólo el diff focal autorizado, registrar publicación y ejecutar lecturas productivas sin acciones de negocio. No iniciar tareas de WORK_QUEUE ajenas. Esta instrucción no autoriza otra implementación.
+RESPONSE TO CODEX: entregar el resultado y la evidencia de publicación; no iniciar tareas de WORK_QUEUE ajenas. Esta instrucción no autoriza otra implementación.

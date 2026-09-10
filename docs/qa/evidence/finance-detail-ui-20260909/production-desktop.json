@@ -1,0 +1,1629 @@
+{
+  "status": "PASS",
+  "businessWrites": 0,
+  "errors": [],
+  "measurements": [
+    {
+      "detail": {
+        "folio": "SR-2026-000212",
+        "status": "approved",
+        "program": "membership",
+        "type": "benefit",
+        "requestDocuments": 4,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "modal": {
+        "width": 1227.59,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 1991,
+        "grid": "714.812px 446.781px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 104.39,
+          "width": 714.81
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 714.81
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 409.56,
+          "width": 714.81
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 862.91,
+          "width": 714.81
+        },
+        {
+          "title": "Solicitante",
+          "height": 225.47,
+          "width": 444.78
+        },
+        {
+          "title": "Resumen",
+          "height": 106.23,
+          "width": 444.78
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 444.78
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 125.08,
+          "width": 444.78
+        },
+        {
+          "title": "Timeline",
+          "height": 629.36,
+          "width": 446.78
+        }
+      ],
+      "columnHeights": [
+        1958.89,
+        1224.53
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000212",
+        "status": "approved",
+        "program": "membership",
+        "type": "benefit",
+        "requestDocuments": 4,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "modal": {
+        "width": 1126.39,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 1991,
+        "grid": "652.547px 407.844px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 104.39,
+          "width": 652.55
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 652.55
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 409.56,
+          "width": 652.55
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 862.91,
+          "width": 652.55
+        },
+        {
+          "title": "Solicitante",
+          "height": 225.47,
+          "width": 405.84
+        },
+        {
+          "title": "Resumen",
+          "height": 106.23,
+          "width": 405.84
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 405.84
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 125.08,
+          "width": 405.84
+        },
+        {
+          "title": "Timeline",
+          "height": 662.95,
+          "width": 407.84
+        }
+      ],
+      "columnHeights": [
+        1958.89,
+        1258.13
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000212",
+        "status": "approved",
+        "program": "membership",
+        "type": "benefit",
+        "requestDocuments": 4,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "modal": {
+        "width": 901.11,
+        "height": 728
+      },
+      "header": {
+        "height": 95.3
+      },
+      "scroll": {
+        "height": 488.31,
+        "scrollHeight": 2026,
+        "grid": "488.922px 362.188px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 121.78,
+          "width": 488.92
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 488.92
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 409.56,
+          "width": 488.92
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 880.3,
+          "width": 488.92
+        },
+        {
+          "title": "Solicitante",
+          "height": 225.47,
+          "width": 360.19
+        },
+        {
+          "title": "Resumen",
+          "height": 106.23,
+          "width": 360.19
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 360.19
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 125.08,
+          "width": 360.19
+        },
+        {
+          "title": "Timeline",
+          "height": 662.95,
+          "width": 362.19
+        }
+      ],
+      "columnHeights": [
+        1993.67,
+        1258.13
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000210",
+        "status": "approved",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 5,
+        "currentDocuments": 7
+      },
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "modal": {
+        "width": 1227.59,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 2345,
+        "grid": "714.812px 446.781px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 714.81
+        },
+        {
+          "title": "Condiciones aprobadas",
+          "height": 263.94,
+          "width": 714.81
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 714.81
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 494.95,
+          "width": 714.81
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 692.13,
+          "width": 714.81
+        },
+        {
+          "title": "Solicitante",
+          "height": 297.94,
+          "width": 444.78
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 444.78
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 444.78
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 444.78
+        },
+        {
+          "title": "Timeline",
+          "height": 738.95,
+          "width": 446.78
+        }
+      ],
+      "columnHeights": [
+        2312.98,
+        1439.98
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000210",
+        "status": "approved",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 5,
+        "currentDocuments": 7
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "modal": {
+        "width": 1126.39,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 2345,
+        "grid": "652.547px 407.844px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 652.55
+        },
+        {
+          "title": "Condiciones aprobadas",
+          "height": 263.94,
+          "width": 652.55
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 652.55
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 494.95,
+          "width": 652.55
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 692.13,
+          "width": 652.55
+        },
+        {
+          "title": "Solicitante",
+          "height": 297.94,
+          "width": 405.84
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 405.84
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 405.84
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 405.84
+        },
+        {
+          "title": "Timeline",
+          "height": 755.75,
+          "width": 407.84
+        }
+      ],
+      "columnHeights": [
+        2312.98,
+        1456.78
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000210",
+        "status": "approved",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 5,
+        "currentDocuments": 7
+      },
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "modal": {
+        "width": 901.11,
+        "height": 728
+      },
+      "header": {
+        "height": 95.3
+      },
+      "scroll": {
+        "height": 488.31,
+        "scrollHeight": 2362,
+        "grid": "488.922px 362.188px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 488.92
+        },
+        {
+          "title": "Condiciones aprobadas",
+          "height": 263.94,
+          "width": 488.92
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 488.92
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 494.95,
+          "width": 488.92
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 709.52,
+          "width": 488.92
+        },
+        {
+          "title": "Solicitante",
+          "height": 335.63,
+          "width": 360.19
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 360.19
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 360.19
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 360.19
+        },
+        {
+          "title": "Timeline",
+          "height": 789.34,
+          "width": 362.19
+        }
+      ],
+      "columnHeights": [
+        2330.38,
+        1528.06
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000205",
+        "status": "cancelled",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 8,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "modal": {
+        "width": 1227.59,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 2492,
+        "grid": "714.812px 446.781px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 714.81
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 714.81
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 751.13,
+          "width": 714.81
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 862.91,
+          "width": 714.81
+        },
+        {
+          "title": "Solicitante",
+          "height": 335.63,
+          "width": 444.78
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 444.78
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 444.78
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 444.78
+        },
+        {
+          "title": "Timeline",
+          "height": 827.34,
+          "width": 446.78
+        }
+      ],
+      "columnHeights": [
+        2460,
+        1566.06
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000205",
+        "status": "cancelled",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 8,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "modal": {
+        "width": 1126.39,
+        "height": 737
+      },
+      "header": {
+        "height": 99.3
+      },
+      "scroll": {
+        "height": 493.31,
+        "scrollHeight": 2492,
+        "grid": "652.547px 407.844px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 652.55
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 652.55
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 751.13,
+          "width": 652.55
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 862.91,
+          "width": 652.55
+        },
+        {
+          "title": "Solicitante",
+          "height": 335.63,
+          "width": 405.84
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 405.84
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 405.84
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 405.84
+        },
+        {
+          "title": "Timeline",
+          "height": 860.94,
+          "width": 407.84
+        }
+      ],
+      "columnHeights": [
+        2460,
+        1599.66
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    },
+    {
+      "detail": {
+        "folio": "SR-2026-000205",
+        "status": "cancelled",
+        "program": "prestamo",
+        "type": "quote",
+        "requestDocuments": 8,
+        "currentDocuments": 9
+      },
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "modal": {
+        "width": 901.11,
+        "height": 728
+      },
+      "header": {
+        "height": 95.3
+      },
+      "scroll": {
+        "height": 488.31,
+        "scrollHeight": 2509,
+        "grid": "488.922px 362.188px"
+      },
+      "footer": {
+        "height": 142.39
+      },
+      "cards": [
+        {
+          "title": "Condiciones de la solicitud",
+          "height": 263.94,
+          "width": 488.92
+        },
+        {
+          "title": "Flujo completo de la solicitud",
+          "height": 534.03,
+          "width": 488.92
+        },
+        {
+          "title": "Documentos enviados con esta solicitud",
+          "height": 751.13,
+          "width": 488.92
+        },
+        {
+          "title": "Expediente actual del afiliado",
+          "height": 880.3,
+          "width": 488.92
+        },
+        {
+          "title": "Solicitante",
+          "height": 335.63,
+          "width": 360.19
+        },
+        {
+          "title": "Resumen",
+          "height": 158.47,
+          "width": 360.19
+        },
+        {
+          "title": "Registro en Google",
+          "height": 102.39,
+          "width": 360.19
+        },
+        {
+          "title": "Términos aceptados",
+          "height": 106.23,
+          "width": 360.19
+        },
+        {
+          "title": "Timeline",
+          "height": 877.73,
+          "width": 362.19
+        }
+      ],
+      "columnHeights": [
+        2477.39,
+        1616.45
+      ],
+      "nameMatches": true,
+      "fundMatches": true,
+      "photoMatches": true,
+      "headerPhotoCount": 1,
+      "photoDecoded": true,
+      "controlsVisible": true,
+      "documentFit": true,
+      "pageOverflow": false
+    }
+  ],
+  "documents": [
+    {
+      "folio": "SR-2026-000212",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 736,
+        "height": 697
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE reverso del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 300,
+        "height": 300
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE frente del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 2296,
+        "height": 4080
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "Foto del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 720,
+        "height": 540
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "TALON PENULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 644,
+        "height": 641
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 736,
+        "height": 697
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "Credencial Afiliado",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 753,
+        "height": 1280
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000212",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 474,
+        "height": 842
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "TALON PENULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1080,
+        "height": 2340
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1080,
+        "height": 2340
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 481,
+        "height": 298
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1273,
+        "height": 1600
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 450,
+        "height": 298
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "TALON PENULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1080,
+        "height": 2340
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1080,
+        "height": 2340
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 481,
+        "height": 298
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "Credencial Afiliado",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 691,
+        "height": 1037
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "Hoja de Afiliación",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 2480,
+        "height": 3508
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1273,
+        "height": 1600
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000210",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 450,
+        "height": 298
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "TALON PENULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1179,
+        "height": 1562
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1179,
+        "height": 1464
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1920,
+        "height": 2560
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "Foto del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE reverso del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE frente del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1920,
+        "height": 2560
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "Foto perfil",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE reverso del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE frente del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "Foto del aval",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 3024,
+        "height": 4032
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "TALON PENULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1179,
+        "height": 1562
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "TALON ULTIMA QUINCENA",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1179,
+        "height": 1464
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE FRENTE",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1920,
+        "height": 2560
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "INE REVERSO",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 1920,
+        "height": 2560
+      },
+      "fit": "contain",
+      "status": null
+    },
+    {
+      "folio": "SR-2026-000205",
+      "label": "Credencial Afiliado",
+      "preview": {
+        "width": 64,
+        "height": 48
+      },
+      "media": {
+        "width": 64,
+        "height": 48
+      },
+      "natural": {
+        "width": 753,
+        "height": 1280
+      },
+      "fit": "contain",
+      "status": null
+    }
+  ],
+  "documentAccessResponses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "bundle": "app/bundle.js?v=244",
+  "targets": {
+    "requested": [
+      {
+        "folio": "SR-2026-000212",
+        "id": "7a4dcb1f-8a04-47ed-abb4-ec4d6247c3e9"
+      },
+      {
+        "folio": "SR-2026-000210",
+        "id": "9e300096-a3ed-40b6-b87c-be36ad840cdd"
+      }
+    ],
+    "rejected": null,
+    "cancelled": {
+      "folio": "SR-2026-000205",
+      "id": "98a0e424-2877-445d-b0a3-54ec79ad947e"
+    },
+    "counts": {
+      "approved": 14,
+      "cancelled": 2,
+      "in_review": 3
+    },
+    "textSize": null
+  },
+  "serviceWorkers": "block",
+  "target": "PRODUCTION",
+  "serviceWorkerControlled": false
+}

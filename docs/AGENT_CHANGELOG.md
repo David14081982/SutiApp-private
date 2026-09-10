@@ -9,8 +9,11 @@ Full aria-label/title, centered uniform >=48px targets, original routes/icons an
 font scale preserved. Focal Chromium/WebKit 60 combinations / 396 checks plus 15
 full-app local cases, all six destinations and refresh PASS. Original popup,
 preference authority, permissions, repositories and safe-area/viewport work remain
-unchanged. Required local/production global regression and publication closure are
-recorded in [H-BOTTOM-NAV-LABELS-001](qa/H-BOTTOM-NAV-LABELS-001.md).
+unchanged. Runtime `3ccd7cd` published; workflow `34437635730` SUCCESS. Production
+15-case matrix, six tabs/refresh, exact hashes and full local/production global
+regression PASS (test-only HTTP/1.1 flags; original assertions/timeouts preserved).
+Final reviewer APPROVED; stop. Evidence:
+[H-BOTTOM-NAV-LABELS-001](qa/H-BOTTOM-NAV-LABELS-001.md).
 
 ## 2026-09-09 — H-POPUP-DOTS-SINGLE-ROW-001 / C2
 

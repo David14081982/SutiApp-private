@@ -7,7 +7,6 @@
     "app/bundle.js",
     "app/text-size.css",
     "docs/AGENT_CHANGELOG.md",
-    "sw.js",
     "docs/qa/H-BOTTOM-NAV-LABELS-001.md",
     "docs/qa/evidence/bottom-nav-labels-20260909/baseline.json",
     "docs/qa/evidence/bottom-nav-labels-20260909/chromium-320-large.png",
@@ -25,7 +24,11 @@
     "docs/qa/evidence/bottom-nav-labels-20260909/webkit-320-normal.png",
     "scripts/test-bottom-nav-labels-global.js",
     "scripts/test-bottom-nav-labels-live.js",
-    "scripts/test-bottom-nav-labels.js"
+    "scripts/test-bottom-nav-labels.js",
+    "sw.js",
+    "docs/qa/evidence/bottom-nav-labels-20260909/deployment.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/global-production.json",
+    "docs/qa/evidence/bottom-nav-labels-20260909/production.json"
   ],
   "unexpectedFiles": [],
   "bundleModules": 114,

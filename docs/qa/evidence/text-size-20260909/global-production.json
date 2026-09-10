@@ -51,7 +51,7 @@
       },
       "staticBundle": {
         "status": "PASS",
-        "checked": 10
+        "checked": 11
       }
     },
     "surfaces": {
@@ -85,7 +85,7 @@
       "serviceWorkerControlled": true,
       "serviceWorkerScript": "sw.js",
       "cacheNames": [
-        "sutiapp-v185"
+        "sutiapp-v186"
       ]
     },
     "status": "PASS"

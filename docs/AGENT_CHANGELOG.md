@@ -1,5 +1,18 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-USER-TEXT-SIZE-ACCESSIBILITY-001
+
+PASS. Mi Perfil → Configuración incorpora Tamaño de texto Normal/Grande/Muy grande
+(100/115/135%) con autoridad personal Supabase Auth, efecto inmediato, persistencia
+entre sesiones y reversión visible ante error. Tokens centrales y reflow preservan
+las pantallas Claude, sus campos/acciones y los importes; Sheet bancario permanece
+visible después del scroll. Sin backend funcional, schema, reglas, cálculos ni datos
+de negocio modificados. 99 escenarios reales +126 aislados en 320/390/430 px y los
+tres tamaños; persistencia real y regresión global local/Pages con PDF legítimo PASS.
+Publicado por `36e36ea`, workflow `34421713993` SUCCESS; bundle239/CSS239/SW186
+verificados por hash. Architect reviewer APPROVED; siguiente acción: detenerse.
+Evidencia: `docs/qa/H-USER-TEXT-SIZE-ACCESSIBILITY-001.md` y carpeta asociada.
+
 ## 2026-09-09 — H-AFFILIATES-EDIT-DOCUMENTS-001
 
 Publicación autorizada expresamente. Afiliados conserva sus 27 campos, mantiene

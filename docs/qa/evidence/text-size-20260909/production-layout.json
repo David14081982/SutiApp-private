@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "target": "PRODUCTION",
+  "route": "Mi Perfil > Configuracion",
+  "combinations": [
+    {
+      "width": 320,
+      "size": "normal",
+      "contentFont": 16,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "contentFont": 18.4,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "contentFont": 21.6,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "contentFont": 16,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "contentFont": 18.4,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "contentFont": 21.6,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "contentFont": 16,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "contentFont": 18.4,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "contentFont": 21.6,
+      "status": "PASS"
+    }
+  ],
+  "businessWrites": 0
+}

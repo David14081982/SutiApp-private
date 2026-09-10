@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/",
+  "implementationCommit": "36e36eaa2de15097db683b017b5884e5675e956b",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/34421713993",
+  "htmlStatus": 200,
+  "bundleVersion": 239,
+  "cssVersion": 239,
+  "serviceWorkerVersion": 186,
+  "hashes": {
+    "app/bundle.js": "37dd65824c0bd13085897c503129fe5523189a0c00a03b29e44b86b1ffaaa218",
+    "app/text-size.css": "e567f0f284f4ead0dee3dc0046b833a7ef5491e01f1e69918f416946e66a89bf",
+    "sw.js": "df0a63f2cf730c2a57f60e8634ec199b1221cc29a62d991880b102a81128e3a5"
+  }
+}

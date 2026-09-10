@@ -49,4 +49,59 @@ El Registry incorpora la ruta `settings`, `SettingsScreen`, su relación con `Te
 
 Comandos reproducibles: `node scripts/test-text-size-preferences.js`; `node scripts/test-text-size-fixtures.js`; `node scripts/test-text-size-browser.js http://localhost:8080/`; `node scripts/test-text-size-live.js http://localhost:8080/`; `node scripts/test-text-size-global.js http://localhost:8080/`; `node scripts/test-text-size-scope.js`; `node scripts/build-bundle.js <babel-standalone>`; `node scripts/build-pages-site.js <salida>`; probes de contratos de despliegue. Los tests live usan únicamente credenciales ignoradas existentes. No se publican secretos ni sesiones.
 
-Publicación y revisión de cierre: se registrarán después de verificar el despliegue autorizado.
+## Publicación
+
+Publicado en https://sutiapp.com/ mediante commit `36e36eaa2de15097db683b017b5884e5675e956b`.
+Workflow [34421713993](https://github.com/David14081982/SutiApp-private/actions/runs/34421713993): SUCCESS, incluidos los contratos backend, build de 24 archivos y verificación de solicitudes después del deploy.
+`publication.json` compara por SHA-256 los tres artefactos servidos con sus blobs Git. El checkout Linux normaliza CRLF de Windows a LF, sin diferencias de contenido.
+`preferences-production.json` confirma persistencia, nueva sesión, error controlado y restauración de la cuenta de prueba.
+`global-production.json` corresponde al nuevo deploy de Pages: PASS con PDF legítimo, cero errores browser, cero mutaciones de datos y comparación con/sin SW.
+`production-layout.json` verifica también las nueve combinaciones en Configuración publicada: contenido 16/18.4/21.6px, sin desbordamiento ni incidencias de layout.
+
+```text
+H-USER-TEXT-SIZE-ACCESSIBILITY-001 RESULT
+Status: PASS
+Files changed: 76 archivos en el commit de implementación; fuentes tipográficas, preferencias, reflow, artefactos generados, build allowlist, pruebas y gobierno; manifiesto en review.json.
+Source-of-truth verdict: PASS — preferencia propia en Supabase Auth; ninguna autoridad local ni autoridad de negocio nueva.
+Invariant verdict: PASS — identidad, permisos, datos, cálculos, reglas y autoridades vigentes preservados.
+Build: PASS — 114 fuentes, 24 archivos públicos; bundle239/CSS239/SW186 verificados por hash en producción.
+Tests: PASS — 99 escenarios reales +126 aislados; persistencia local/producción, errores, escala, autoridad y regresión global local/Pages.
+Security: PASS — writer Auth del titular JWT; metadata visual sin privilegios; probes anónimos denegados; cero secretos en artefactos/evidencia.
+Legacy impact: READ ONLY de presentación; cero cambios Google, Apps Script, fórmulas, triggers, históricos o lógica financiera.
+Unexpected files changed: 0; vendor idéntico a HEAD; trabajo previo del workspace original conservado.
+Known limitations: validación en Chromium con los anchos solicitados; carruseles originales contenidos preservados. Registry derivado puede señalar cambios posteriores de tipografía/evidencia; mapping de la feature verificado directamente. Suite integral del generador no se declara aprobada.
+Evidence: docs/qa/evidence/text-size-20260909/; capturas versionadas exclusivamente sintéticas; logs y capturas reales privados.
+```
+
+## ARCHITECT REVIEW
+
+Task reviewed: H-USER-TEXT-SIZE-ACCESSIBILITY-001.
+Verdict: APPROVED.
+What Codex did correctly: contrastó solicitud, diff, normalización de fuentes, tokens, autoridad remota, 225 escenarios, errores de guardado y artefactos publicados. Conservó los componentes Claude y ajustó únicamente su tamaño/distribución y el anclaje del sheet.
+Important findings: no SQL, backend funcional, repositorios de negocio, fórmulas ni datos históricos modificados. PDF real y las superficies globales requeridas pasan. `docs/WORK_QUEUE_HISTORY.md` no existe; la autorización de esta H y su publicación proceden de la orden expresa del propietario.
+Problems detected: ninguno pendiente en el alcance comprobado. La suite integral del Registry no es evidencia PASS y su freshness no reemplaza el código.
+Architecture implications: ruta Settings y servicio visual mínimo; portal de Sheet permanece dentro del scope afiliado. Sin autoridad paralela.
+Source-of-truth implications: único campo de preferencia en Auth, allowlist y lectura remota. La metadata no determina identidad ni autorización.
+Security implications: sin elevación, secretos frontend ni selector de otra cuenta; sin cambios a RLS/Storage.
+Data implications: únicamente preferencia propia de prueba, restaurada; ninguna solicitud enviada ni dato de negocio modificado.
+Owner decision required: NO.
+Recommended next action: detenerse tras guardar la evidencia de publicación. No iniciar otra H.
+
+```text
+SUTIAPP ARCHITECT REVIEW
+Task: H-USER-TEXT-SIZE-ACCESSIBILITY-001
+Verdict: APPROVED
+Critical findings: ninguno pendiente.
+Source of truth: PASS — Auth propio, visual exclusivamente.
+Architecture: PASS — mapping verificado; Registry derivado.
+Security: PASS — JWT propio, cero privilegios nuevos.
+Data: PASS — negocio e históricos intactos.
+Legacy: READ ONLY de presentación.
+Owner decision: NO
+Next action: registrar evidencia final y detenerse; ninguna autorización para otra H.
+Response generated for Codex: YES
+```
+
+## RESPONSE TO CODEX
+
+Aprueba H-USER-TEXT-SIZE-ACCESSIBILITY-001 con la evidencia indicada. Registra este cierre y los resultados de producción en el repositorio, confirma que el deploy de documentación conserva los mismos hashes de la app y detente. No avances a otra H, no cambies datos ni backend y no ejecutes tareas de la cola.

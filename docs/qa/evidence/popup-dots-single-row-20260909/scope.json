@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "base": "908846db7a31e2de660e71003bbcf0be8ccb1145",
+  "bundleModules": 114,
+  "changedBundleModules": [
+    "admin-store.jsx"
+  ],
+  "identicalOtherBundleModules": 113,
+  "adminStoreOutsidePopup": "IDENTICAL",
+  "cssOutsidePopup": "IDENTICAL",
+  "htmlAndWorkerLogic": "IDENTICAL_EXCEPT_VERSION_REFERENCES",
+  "unchanged": [
+    "app/ui.jsx",
+    "app/app.jsx",
+    "app/image-viewer.jsx",
+    "app/text-size-preferences.js"
+  ],
+  "architectureChange": false,
+  "bottomNavChangesIncluded": false,
+  "newAuthorities": false,
+  "newBackendOrBusinessWriters": false,
+  "globalImageRegression": "NOT_APPLICABLE_FOCAL_PRESENTATION_ONLY",
+  "diffCheck": "PASS",
+  "unexpectedFiles": [],
+  "files": [
+    "SutiApp.html",
+    "app/admin-store.jsx",
+    "app/bundle.js",
+    "app/text-size.css",
+    "docs/AGENT_CHANGELOG.md",
+    "sw.js",
+    "docs/qa/H-POPUP-DOTS-SINGLE-ROW-001.md",
+    "docs/qa/evidence/popup-dots-single-row-20260909/chromium-7-dots.png",
+    "docs/qa/evidence/popup-dots-single-row-20260909/focal.json",
+    "docs/qa/evidence/popup-dots-single-row-20260909/local.json",
+    "docs/qa/evidence/popup-dots-single-row-20260909/scope.json",
+    "docs/qa/evidence/popup-dots-single-row-20260909/webkit-7-dots.png",
+    "scripts/test-popup-dots-live.js",
+    "scripts/test-popup-dots-single-row.js"
+  ],
+  "canonicalHashes": {
+    "app/bundle.js": "673164ede4d7657042b98558b0193e839d6113f95ce1a138026eec18ca965a02",
+    "app/text-size.css": "62f92e3dcd9a99283ba4c49113f82f9e3e39e129cdd697582de26ab5fdcb78ba",
+    "sw.js": "06ac75ca9deb15d58a9358c342c259e859f7e45c06f0689b3d868192677e235c"
+  }
+}

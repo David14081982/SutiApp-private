@@ -145,8 +145,11 @@
 [data-text-size] [data-loan-flow-step] > div:last-child { display: grid !important; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
 [data-text-size] [data-loan-flow-step] > div:last-child > span { text-align: center; }
 
-/* Popup pagination: a small marker inside each separate 48px touch target. */
-[data-text-size] div:has(> button[aria-label^="Pop-up "]) { flex: 1; flex-wrap: wrap; justify-content: center; gap: 0 !important; }
-[data-text-size] button[aria-label^="Pop-up "] { width: 48px !important; flex: 0 0 48px; background: transparent !important; display: grid; place-items: center; }
-[data-text-size] button[aria-label^="Pop-up "]::after { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--hairline-strong); transition: width .25s ease; }
-[data-text-size] button[aria-label^="Pop-up "][style*="width: 22px"]::after { width: 22px; background: var(--grad-guinda-soft); }
+/* A single accessible selector keeps every carousel marker on one row. */
+.su-popup-pagination { position: relative; flex: 1; min-width: 48px; height: 48px; margin: 0 6px; }
+.su-popup-markers { position: absolute; inset: 0; display: flex; align-items: center; pointer-events: none; }
+.su-popup-markers > span { flex: 1; min-width: 0; display: grid; place-items: center; }
+.su-popup-markers > span::after { content: ''; width: min(8px, 80%); height: 8px; border-radius: 999px; background: var(--hairline-strong); transition: width .25s ease; }
+.su-popup-markers > span[data-active="true"]::after { width: min(22px, 80%); background: var(--grad-guinda-soft); }
+.su-popup-pagination > input[type="range"] { position: absolute; inset: 0; width: 100%; height: 48px; min-height: 48px; min-width: 48px; margin: 0; padding: 0; opacity: 0; cursor: pointer; touch-action: pan-y; }
+.su-popup-pagination:has(> input:focus-visible) { outline: 2px solid var(--guinda); outline-offset: 2px; border-radius: 8px; }

@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-POPUP-DOTS-SINGLE-ROW-001 / C2
+
+Owner-reported two-row pagination reproduced with seven images. Replaced separate
+48px marker buttons with one accessible 48px-high discrete selector and a single
+row of small markers. Direct touch/mouse selection, drag, keyboard, arrows and
+autoplay verified in 90 Chromium/WebKit cases; real seven-image popup passes nine
+local scenarios. Build PASS; 113/114 bundle modules identical, no authority,
+backend, financial or navigation changes. Cancelled BottomNav branch excluded.
+Local reviewer APPROVED; publication evidence and final status are recorded in
+[H-POPUP-DOTS-SINGLE-ROW-001](qa/H-POPUP-DOTS-SINGLE-ROW-001.md).
+
 ## 2026-09-09 — H-USER-TEXT-SIZE-ACCESSIBILITY-001 / C1
 
 PASS. Corrección quirúrgica de los indicadores del popup señalados por el propietario:

@@ -23996,6 +23996,7 @@ Object.assign(window, {
     const [idx, setIdx] = useState(0);
     const [dir, setDir] = useState(1);
     const [paused, setPaused] = useState(false);
+    const [selectorFocused, setSelectorFocused] = useState(false);
     const [customOf, setCustomOf] = useState(null); // promo cuya pantalla personalizada está abierta
     const safeIdx = Math.min(idx, Math.max(0, list.length - 1));
     const promo = list[safeIdx];
@@ -24004,14 +24005,23 @@ Object.assign(window, {
       return () => clearTimeout(t);
     }, []);
     useEffect(() => {
-      if (paused || list.length < 2) return;
+      if (paused || selectorFocused || list.length < 2) return;
       const t = setTimeout(() => go(1), 5200);
       return () => clearTimeout(t);
-    }, [idx, paused, list.length]);
+    }, [idx, paused, selectorFocused, list.length]);
     if (!promo) return null;
     const go = d => {
       setDir(d);
       setIdx(i => (i + d + list.length) % list.length);
+    };
+    const select = i => {
+      setDir(i > safeIdx ? 1 : -1);
+      setIdx(i);
+    };
+    // Match pointer selection to the equal marker slots, independent of native thumb geometry.
+    const selectAtPointer = event => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      select(Math.max(0, Math.min(list.length - 1, Math.floor((event.clientX - rect.left) / rect.width * list.length))));
     };
     const close = () => {
       setShow(false);
@@ -24180,28 +24190,38 @@ Object.assign(window, {
         margin: '4px 0 16px'
       }
     }, navBtn('arrowL', () => go(-1)), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 7
-      }
-    }, list.map((_, i) => React.createElement('button', {
+      className: 'su-popup-pagination'
+    }, React.createElement('div', {
+      className: 'su-popup-markers',
+      'aria-hidden': true
+    }, list.map((_, i) => React.createElement('span', {
       key: i,
-      onClick: () => {
-        setDir(i > safeIdx ? 1 : -1);
-        setIdx(i);
+      'data-popup-dot': i + 1,
+      'data-active': i === safeIdx ? 'true' : 'false'
+    }))), React.createElement('input', {
+      type: 'range',
+      min: 1,
+      max: list.length,
+      step: 1,
+      value: safeIdx + 1,
+      'aria-label': 'Elegir imagen del carrusel',
+      'aria-valuetext': safeIdx + 1 + ' de ' + list.length + ': ' + (promo.titulo || 'Promoción'),
+      onChange: event => select(Number(event.target.value) - 1),
+      onPointerDown: event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.currentTarget.focus({
+          preventScroll: true
+        });
+        event.currentTarget.setPointerCapture(event.pointerId);
+        selectAtPointer(event);
       },
-      'aria-label': 'Pop-up ' + (i + 1),
-      style: {
-        width: i === safeIdx ? 22 : 8,
-        height: 8,
-        borderRadius: 999,
-        border: 'none',
-        cursor: 'pointer',
-        padding: 0,
-        background: i === safeIdx ? 'var(--grad-guinda-soft)' : 'var(--hairline-strong)',
-        transition: 'width .25s ease'
-      }
-    }))), navBtn('arrowR', () => go(1))), React.createElement(window.Btn, {
+      onPointerMove: event => {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) selectAtPointer(event);
+      },
+      onFocus: () => setSelectorFocused(true),
+      onBlur: () => setSelectorFocused(false)
+    })), navBtn('arrowR', () => go(1))), React.createElement(window.Btn, {
       full: true,
       size: 'md',
       iconRight: promo.actionType === 'none' ? undefined : 'arrowR',

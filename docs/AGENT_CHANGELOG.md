@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-09 — H-FINANCE-DETAIL-UI-001 — UI focal / verificación local
+
+Detalle de Finanzas con foto privada y full_name, fondo solicitado, columnas independientes,
+condiciones preservadas, documentos completos y estados legibles, footer adaptable.
+Cinco bloques de lógica y 66 callbacks idénticos a 1795be0; un solo módulo cambia en bundle 244.
+Pruebas aisladas, cola y lecturas de tres solicitudes reales en siete tamaños PASS; cero writes.
+Cachebusters HTML/SW alineados sin cambiar lógica de SW. Fallos históricos de copy/versiones
+identificados por comparación con la base; ver `docs/qa/H-FINANCE-DETAIL-UI-001.md`.
+
 ## 2026-09-09 — H-ADMIN-FINANCE-QUEUE-IDENTITY-001 — PUBLICADO / PASS
 
 Commit 095cc1c en main; Pages 34442962106 SUCCESS. Bundle v243 publicado en sutiapp.com,

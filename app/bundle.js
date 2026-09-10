@@ -36341,6 +36341,30 @@ Object.assign(window, {
     const snapshot = approved ? detail && detail.financial_approval_snapshot : detail && detail.financial_submission_snapshot;
     return snapshot && snapshot.financialResult || null;
   };
+  const detailFullName = row => String(row && row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado';
+  const detailProgramLabel = row => row && row.program_id === 'prestamo' ? (snapshotResult(row, false) || {}).fund || row.requested_fund || 'Fondo no registrado' : programLabel(row);
+  const DOCUMENT_STATUS = Object.freeze({
+    PENDING_REVIEW: {
+      label: 'Pendiente de revisión',
+      tone: 'amber'
+    },
+    UNDER_REVIEW: {
+      label: 'En revisión',
+      tone: 'blue'
+    },
+    VERIFIED: {
+      label: 'Verificado',
+      tone: 'green'
+    },
+    REJECTED: {
+      label: 'Rechazado',
+      tone: 'red'
+    },
+    REUPLOAD_REQUIRED: {
+      label: 'Requiere nuevo archivo',
+      tone: 'amber'
+    }
+  });
   const badge = (meta, attr, value) => {
     const tone = TONES[meta.tone] || TONES.gray;
     return h('span', {
@@ -36394,6 +36418,47 @@ Object.assign(window, {
       @media(max-width:600px){.finwb-modal{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}.finwb-modal .finwb-detail-head{padding:12px;gap:8px;flex-wrap:wrap}.finwb-modal-heading h2{font-size:17px}.finwb-modal .finwb-detail-head .finwb-badge{max-width:100%;font-size:11px;min-height:24px}.finwb-modal .finwb-detail-head .finwb-sub{font-size:11px}.finwb-modal .finwb-detail-scroll{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-grid{gap:8px}.finwb-modal .finwb-action-select{font-size:12px;min-width:0;padding:8px}.finwb-modal .finwb-buttons{grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.finwb-modal .finwb-primary{grid-column:1/-1}.finwb-modal .finwb-buttons button{padding:8px;font-size:12px}.finwb-modal .finwb-next-action{font-size:10px;line-height:1.3}.finwb-modal .finwb-note{margin-top:6px}.finwb-modal .finwb-feedback{font-size:10px;margin-top:4px}}
       @media(max-width:600px){.finwb-modal .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr}.finwb-modal .finwb-buttons:has(.finwb-delete) .finwb-primary{grid-column:auto}}
       @media(max-height:600px){.finwb-modal .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:16px;margin:2px 0}.finwb-modal .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-note{height:36px;min-height:36px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-primary{grid-column:auto}}
+
+      /* Detail-only presentation. Queue, sister tabs and action dialogs retain their styles. */
+      .finwb-modal > .finwb-detail-head{padding:14px 24px;gap:12px;flex-wrap:nowrap}
+      .finwb-modal-heading h2{font-size:22px;font-weight:750;margin:4px 0;line-height:1.25}
+      .finwb-modal .finwb-profile-photo.finwb-detail-photo{display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:50%;font-size:20px;background:#F4E8ED;color:var(--guinda);overflow:hidden}
+      .finwb-modal .finwb-detail-photo img{display:block;width:100%;height:100%;object-fit:cover}
+      .finwb-modal > .finwb-detail-head > .finwb-badge{flex:none;max-width:160px;text-align:center}
+      .finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;padding:16px 24px}
+      .finwb-modal .finwb-detail-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+      .finwb-modal .finwb-card{padding:16px}
+      .finwb-modal .finwb-card-group{padding:0;overflow:hidden}
+      .finwb-modal .finwb-card-group > .finwb-card{border:0;border-radius:0}
+      .finwb-modal .finwb-card-group > .finwb-card + .finwb-card{border-top:1px solid var(--hairline)}
+      .finwb-modal .finwb-sub,.finwb-modal .finwb-kv span,.finwb-modal .finwb-flow-current p,.finwb-modal .finwb-step p,.finwb-modal .finwb-event p,.finwb-modal .finwb-empty{color:#657086}
+      .finwb-modal .finwb-sub,.finwb-modal .finwb-kv span,.finwb-modal .finwb-snapshot-note{font-size:12px;line-height:1.45}
+      .finwb-modal .finwb-kv span{font-weight:650}
+      .finwb-modal .finwb-flow-summary{border:0;border-radius:0;background:none;padding:0 0 12px;margin-bottom:4px;border-bottom:1px solid var(--hairline)}
+      .finwb-modal .finwb-event{grid-template-columns:24px minmax(0,1fr);gap:9px;padding:7px 0}
+      .finwb-modal .finwb-event-dot{margin:5px auto 0}
+      .finwb-modal .finwb-timeline{gap:0}
+      .finwb-modal .finwb-doc{grid-template-columns:64px minmax(0,1fr) auto;gap:12px}
+      .finwb-modal .finwb-doc button,.finwb-modal .finwb-doc a{font-family:inherit;font-size:12px;font-weight:750;line-height:1.35;min-height:44px}
+      .finwb-modal .finwb-doc .finwb-doc-preview{width:64px;height:48px;min-height:48px;padding:0;border-radius:10px;color:#657086}
+      .finwb-modal .finwb-doc-preview img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;object-position:center}
+      .finwb-modal .finwb-doc-preview iframe{display:block;width:100%;height:100%;min-height:0}
+      .finwb-modal .finwb-doc-status{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:4px 0}
+      .finwb-modal .finwb-doc-status .finwb-badge{font-size:12px;min-height:24px;white-space:normal;padding:3px 8px}
+      .finwb-modal > .finwb-actionbar{padding:12px 24px}
+      .finwb-modal .finwb-action-fields{display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:4px 12px;align-items:stretch}
+      .finwb-modal .finwb-action-fields > select{grid-column:1;grid-row:1;min-height:44px}
+      .finwb-modal .finwb-action-context{grid-column:1;grid-row:2;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 6px;min-width:0;line-height:1.35}
+      .finwb-modal .finwb-action-context .finwb-sub{margin:0}
+      .finwb-modal .finwb-action-fields > .finwb-note{grid-column:2;grid-row:1/3;margin:0;height:100%;min-height:64px}
+      .finwb-modal > .finwb-actionbar .finwb-buttons,.finwb-modal > .finwb-actionbar .finwb-buttons:has(.finwb-delete){grid-template-columns:auto auto minmax(0,1fr) auto;align-items:stretch;gap:8px}
+      .finwb-modal > .finwb-actionbar .finwb-primary{grid-column:3;justify-self:end;min-width:200px;max-width:100%;white-space:normal}
+      .finwb-modal > .finwb-actionbar .finwb-delete{background:none;box-shadow:none;color:#A00027;margin-left:8px;border-left:1px solid var(--hairline);border-radius:0;padding-left:16px}
+      @media(max-width:1100px){.finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1.35fr) minmax(270px,1fr);padding:16px}.finwb-modal > .finwb-detail-head{padding:12px 18px}.finwb-modal > .finwb-actionbar{padding:12px 18px}}
+      @media(max-width:850px){.finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-detail-column{gap:12px}.finwb-modal .finwb-action-fields{grid-template-columns:minmax(220px,280px) minmax(0,1fr)}}
+      @media(max-width:600px){.finwb-modal > .finwb-detail-head{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;padding:12px;align-items:start}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal-heading{grid-column:2;grid-row:1}.finwb-modal-heading h2{font-size:18px}.finwb-modal > .finwb-detail-head > .finwb-badge{grid-column:2;grid-row:2;justify-self:start;max-width:100%}.finwb-modal-close{grid-column:3;grid-row:1}.finwb-modal > .finwb-detail-scroll{padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-card-group{padding:0}.finwb-modal > .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-fields{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-action-fields > .finwb-note{grid-column:1;grid-row:3;min-height:44px;height:44px;margin-top:4px}.finwb-modal > .finwb-actionbar .finwb-buttons,.finwb-modal > .finwb-actionbar .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr;gap:6px}.finwb-modal > .finwb-actionbar .finwb-primary{grid-column:1;justify-self:stretch;min-width:0}.finwb-modal > .finwb-actionbar .finwb-delete{margin-left:0;padding-left:8px}.finwb-modal .finwb-doc{gap:8px}.finwb-modal .finwb-doc button,.finwb-modal .finwb-doc a{padding:8px}}
+      @media(max-height:600px) and (min-width:601px){.finwb-modal > .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:18px;margin:2px 0}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal > .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-action-fields{grid-template-columns:240px minmax(0,1fr)}.finwb-modal .finwb-action-fields > select{min-height:36px}.finwb-modal .finwb-action-fields > .finwb-note{min-height:52px}.finwb-modal > .finwb-actionbar .finwb-buttons button{min-height:36px}.finwb-modal > .finwb-actionbar .finwb-primary{min-width:0}}
+      @media(max-height:450px) and (min-width:601px){.finwb-modal-heading h2{font-size:16px}.finwb-modal > .finwb-actionbar .finwb-buttons button{padding:6px 8px}.finwb-modal > .finwb-actionbar .finwb-buttons{margin-top:6px}.finwb-modal > .finwb-actionbar .finwb-action-grid .finwb-action-select{padding:6px 8px;min-height:32px}.finwb-modal > .finwb-actionbar .finwb-next-action{margin-top:4px;padding:4px 8px}}
     `;
     document.head.appendChild(style);
   }
@@ -37047,7 +37112,8 @@ Object.assign(window, {
     }, 'Entendido'));
   }
   function FinanceQueuePhoto({
-    row
+    row,
+    detailPhoto = false
   }) {
     const ref = React.useRef(null),
       demand = window.PrivateResourceDemand;
@@ -37065,8 +37131,8 @@ Object.assign(window, {
     const label = source.error ? 'Foto no disponible' : source.url ? 'Foto de ' + row.nombre : 'Sin foto de perfil';
     return h('span', {
       ref,
-      className: 'finwb-profile-photo',
-      'data-financial-queue-photo': row.affiliate_id,
+      className: 'finwb-profile-photo' + (detailPhoto ? ' finwb-detail-photo' : ''),
+      [detailPhoto ? 'data-financial-detail-photo' : 'data-financial-queue-photo']: row.affiliate_id,
       'data-photo-state': source.error ? 'error' : source.url ? 'photo' : 'initials',
       title: label,
       'aria-label': label
@@ -37578,8 +37644,11 @@ Object.assign(window, {
       }, h('div', {
         className: 'finwb-person'
       }, title), h('div', {
-        className: 'finwb-sub'
-      }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status), h('div', {
+        className: 'finwb-sub finwb-doc-status'
+      }, h('span', null, scope === 'request' ? 'Estado al enviar:' : 'Estado vigente:'), badge(DOCUMENT_STATUS[status] || {
+        label: status === 'No disponible' ? status : 'Estado no reconocido: ' + status,
+        tone: 'gray'
+      }, 'data-financial-document-status', status)), h('div', {
         className: 'finwb-sub'
       }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
@@ -37618,36 +37687,9 @@ Object.assign(window, {
         events = timelineEvents(detail);
       return h(React.Fragment, null, h('div', {
         className: 'finwb-detail-scroll'
-      }, h('section', {
-        className: 'finwb-card',
-        'data-financial-detail-person': 'true'
-      }, h('h3', null, h(I, {
-        name: 'user',
-        size: 17,
-        stroke: 2
-      }), 'Solicitante'), h('div', {
-        className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detail.nombre)), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
-        reference: detail.deposit_reference
-      })), h('section', {
-        className: 'finwb-card'
-      }, h('h3', null, h(I, {
-        name: 'receipt',
-        size: 17,
-        stroke: 2
-      }), 'Resumen'), h('div', {
-        className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
-        className: 'finwb-snapshot-note',
-        style: {
-          marginTop: 10
-        }
-      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderWorkflow(), h('section', {
-        className: 'finwb-card',
-        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
-      }, h('h3', null, 'Registro en Google'), h('div', {
-        className: 'finwb-snapshot-note'
-      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('div', {
+        className: 'finwb-detail-column finwb-detail-main'
+      }, renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow(), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {
@@ -37676,7 +37718,42 @@ Object.assign(window, {
         className: 'finwb-snapshot-note'
       }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
         className: 'finwb-sub'
-      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate')), h('section', {
+      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate'))), h('div', {
+        className: 'finwb-detail-column finwb-detail-context'
+      }, h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h('section', {
+        className: 'finwb-card',
+        'data-financial-detail-person': 'true'
+      }, h('h3', null, h(I, {
+        name: 'user',
+        size: 17,
+        stroke: 2
+      }), 'Solicitante'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
+        reference: detail.deposit_reference
+      })), h('section', {
+        className: 'finwb-card'
+      }, h('h3', null, h(I, {
+        name: 'receipt',
+        size: 17,
+        stroke: 2
+      }), 'Resumen'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
+        className: 'finwb-snapshot-note',
+        style: {
+          marginTop: 10
+        }
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes)))), h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h('section', {
+        className: 'finwb-card',
+        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
+      }, h('h3', null, 'Registro en Google'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), h('section', {
         className: 'finwb-card',
         'data-financial-terms': 'true'
       }, h('h3', null, h(I, {
@@ -37685,7 +37762,7 @@ Object.assign(window, {
         stroke: 2
       }), 'Términos aceptados'), h('div', {
         className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible')))), h('section', {
+      }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible'))))), h('section', {
         className: 'finwb-card',
         'data-financial-timeline': 'true'
       }, h('h3', null, h(I, {
@@ -37704,11 +37781,11 @@ Object.assign(window, {
         key: event.title + eventIndex
       }, h('span', {
         className: 'finwb-event-dot'
-      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text))))))), h('div', {
+      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text)))))))), h('div', {
         className: 'finwb-actionbar',
         'data-financial-safe-action-bar': 'true'
       }, actionOptions.length ? h(React.Fragment, null, h('div', {
-        className: 'finwb-action-grid'
+        className: 'finwb-action-fields'
       }, h('select', {
         className: 'finwb-action-select',
         value: action,
@@ -37721,13 +37798,22 @@ Object.assign(window, {
       }, actionOptions.map(item => h('option', {
         key: item.id,
         value: item.id
-      }, item.label))), h('div', null, h('span', {
+      }, item.label))), h('div', {
+        className: 'finwb-action-context'
+      }, h('span', {
         className: 'finwb-sub'
       }, 'Etapa actual'), h('strong', {
         style: {
           fontSize: 11.5
         }
-      }, stageLabel(detail)))), action === 'quoteAdvance' && h('div', {
+      }, stageLabel(detail))), h('textarea', {
+        className: 'finwb-note',
+        value: actionNote,
+        disabled: busy || action === 'handoff',
+        onChange: event => setActionNote(event.target.value),
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
+        'aria-label': 'Observación de la acción'
+      })), action === 'quoteAdvance' && h('div', {
         className: 'finwb-action-grid',
         style: {
           marginTop: 8
@@ -37747,14 +37833,7 @@ Object.assign(window, {
         value: quoteValidUntil,
         onChange: event => setQuoteValidUntil(event.target.value),
         'aria-label': 'Vigencia de la cotización'
-      })), h('textarea', {
-        className: 'finwb-note',
-        value: actionNote,
-        disabled: busy || action === 'handoff',
-        onChange: event => setActionNote(event.target.value),
-        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
-        'aria-label': 'Observación de la acción'
-      }), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
+      })), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
         className: 'finwb-next-action',
         'data-financial-next-action': 'true'
       }, 'Confirmar moverá la solicitud de “' + stageLabel(detail) + '” a “' + nextStage(detail).label + '”. Responsable siguiente: ' + (nextStage(detail).responsible || 'Área responsable') + '.'), h('div', {
@@ -37936,13 +38015,20 @@ Object.assign(window, {
       titleId: modalTitleId,
       onClose: closeDetail,
       onEscape: () => viewer ? setViewer(null) : closeDetail(),
-      header: h(React.Fragment, null, h('div', {
+      header: h(React.Fragment, null, selected && h(FinanceQueuePhoto, {
+        key: selected.affiliate_id,
+        detailPhoto: true,
+        row: {
+          ...selected,
+          nombre: detailFullName(selected)
+        }
+      }), h('div', {
         className: 'finwb-modal-heading'
       }, h('strong', null, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).folio), h('h2', {
         id: modalTitleId
-      }, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).nombre), h('div', {
+      }, detailFullName(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected)), h('div', {
         className: 'finwb-sub'
-      }, requestTypeLabel(selected) + ' \u00b7 ' + programLabel(selected) + ' \u00b7 ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
+      }, detailProgramLabel(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected) + ' · ' + requestTypeLabel(selected) + ' · ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
     }, actionResult && h(FinancialAuthorizationResult, {
       result: actionResult,
       onClose: () => setActionResult(null)

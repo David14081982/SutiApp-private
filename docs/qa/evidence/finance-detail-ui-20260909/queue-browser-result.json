@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "case": "full name, distinct funds, program product, missing fund, real photo element, empty/error states, visible demand and deduplication",
+      "funds": 1,
+      "photos": 6,
+      "uniquePhotos": 6,
+      "status": "PASS"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "order": true,
+      "nameVisible": true,
+      "photoVisible": true,
+      "status": "PASS"
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "order": true,
+      "nameVisible": true,
+      "photoVisible": true,
+      "status": "PASS"
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "order": true,
+      "nameVisible": true,
+      "photoVisible": true,
+      "status": "PASS"
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "order": true,
+      "nameVisible": true,
+      "photoVisible": true,
+      "status": "PASS"
+    },
+    {
+      "case": "surname/fund search, photo opens existing dialog, Escape, failed authoritative read and retry",
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "backendConnections": 0
+}

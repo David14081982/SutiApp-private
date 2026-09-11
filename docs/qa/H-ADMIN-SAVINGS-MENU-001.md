@@ -65,3 +65,11 @@ Response generated for Codex: YES
 
 RESPONSE TO CODEX
 Aprobar H-ADMIN-SAVINGS-MENU-001 en su alcance focal verificado. Publicar el commit autorizado en main y verificar despliegue y navegación productiva. No incluir cambios previos ni continuar otra H.
+
+FINAL PUBLICATION — PASS
+Commit runtime: a245e29fa266cab3b3f0077b2497e4239bd3aa6e, push origin HEAD:main confirmado.
+GitHub Pages workflow 34629879308: completed / success.
+Chrome en https://sutiapp.com/: orden y grupos exactos, navegación de cuatro entradas, selección, acordeón y menú móvil PASS; pageErrors=0; businessWrites=0.
+Bundle publicado v252 idéntico byte a byte al compilado verificado.
+Evidencia adicional: production.json, production-sidebar.png y publication.json en el directorio focal.
+H-ADMIN-SAVINGS-MENU-001 RESULT final: PASS. Reviewer: APPROVED. No quedan acciones de esta H pendientes.

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "changedModules": [
+    "screens-marketplace.jsx",
+    "fincat-store.jsx",
+    "program-general-info.jsx"
+  ],
+  "unchangedPublishedModules": 113,
+  "publishedTypographyPreserved": true,
+  "testedSourceLogicEquivalent": true,
+  "workerLogicUnchanged": true,
+  "bundleSha256": "193bbc03c019d1a33bef0a7b895dcb3a1f0fb2a6f71258de285ea9a9f1f1699b",
+  "bundleVersion": 248,
+  "workerVersion": 194
+}

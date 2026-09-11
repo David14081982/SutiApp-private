@@ -7,7 +7,7 @@
   const fields='item_key,group_key,label_override,description_override,enabled,sort_order,updated_at,program_info,program_cover_asset_id,cover:app_assets!finance_catalog_presentation_program_cover_asset_id_fkey(id,storage_bucket,storage_path,status,mime_type)';
   const coverUrl=asset=>asset&&asset.status==='READY'?db().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path).data.publicUrl:null;
   async function get(key){const r=await db().from('finance_catalog_presentation').select(fields).eq('item_key',key).single();if(r.error)throw r.error;if(!r.data.program_info)throw new Error('PROGRAM_INFO_NOT_FOUND');return {...r.data,cover_url:coverUrl(r.data.cover)};}
-  async function save(row){const payload={label_override:row.label_override,description_override:row.description_override,enabled:row.enabled,program_info:row.program_info,program_cover_asset_id:row.program_cover_asset_id};const r=await db().rpc('save_program_general_info',{p_program_key:row.item_key,p_expected_updated_at:row.updated_at,p_payload:payload});if(r.error)throw r.error;listeners.forEach(fn=>fn(row.item_key));if(window.finCatStore)await window.finCatStore.refresh();return get(row.item_key);}
+  async function save(row){const payload={label_override:row.label_override,description_override:row.description_override,enabled:row.enabled,program_info:row.program_info,program_cover_asset_id:row.program_cover_asset_id};const r=await db().rpc('save_program_general_info',{p_program_key:row.item_key,p_expected_updated_at:row.updated_at,p_payload:payload});if(r.error)throw r.error;listeners.forEach(fn=>fn(row.item_key));if(window.finCatStore)await window.finCatStore.refresh(true);return get(row.item_key);}
   async function upload(file){
     const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif'}[file?.type];
     if(!ext||file.size<1||file.size>10485760)throw new Error('PROGRAM_INFO_IMAGE_INVALID');
@@ -28,13 +28,47 @@
     useEffect(()=>{if(!refreshOnFocus)return;const fn=()=>refresh(v=>v+1);window.addEventListener('focus',fn);return()=>window.removeEventListener('focus',fn);},[refreshOnFocus]);
     return {...(state.key===key?state:{phase:'loading',row:null}),retry:()=>refresh(v=>v+1)};
   }
-  function Cover({url,icon,hue=210,children}){
+  // Public text is the same authority projection already loaded by Finanzas.
+  // Covers are independent, deduplicated only within that presentation revision.
+  let coverCache=new WeakMap();
+  window.PrivateResourceDemand.subscribe(()=>{coverCache=new WeakMap();});
+  function coverRequests(rows){let requests=coverCache.get(rows);if(!requests){requests=new Map();coverCache.set(rows,requests);}return requests;}
+  function readCover(row,rows){
+    const requests=coverRequests(rows),id=row.program_cover_asset_id;
+    if(requests.has(id))return requests.get(id);
+    const epoch=window.PrivateResourceDemand.context();
+    const promise=Promise.resolve().then(async()=>{
+      if(epoch===null||window.PrivateResourceDemand.context()!==epoch)throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const r=await db().from('app_assets').select('id,storage_bucket,storage_path,status,mime_type').eq('id',id).single();
+      if(r.error)throw r.error;
+      if(window.PrivateResourceDemand.context()!==epoch)throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const url=coverUrl(r.data);if(!url)throw new Error('PROGRAM_COVER_UNAVAILABLE');return url;
+    });requests.set(id,promise);return promise;
+  }
+  function usePublicInfo(key){
+    const store=window.finCatStore,presentation=React.useSyncExternalStore(store.subscribe,store.presentationState);
+    const [cover,setCover]=useState(null),[attempt,retry]=useState(0);
+    useEffect(()=>{store.ensureLoaded();},[store]);
+    const applicable=keys.includes(key),ready=presentation.phase==='loaded'||presentation.phase==='refreshing';
+    const row=ready&&applicable?presentation.rows.find(row=>row.item_key===key&&row.program_info):null;
+    const id=row&&row.program_cover_asset_id;
+    useEffect(()=>{
+      if(!id)return;
+      let active=true;
+      readCover(row,presentation.rows).then(url=>{if(active)setCover({rows:presentation.rows,id,attempt,url});},()=>{if(active)setCover({rows:presentation.rows,id,attempt,error:true});});
+      return()=>{active=false;};
+    },[id,presentation.rows,attempt]);
+    const current=cover&&cover.rows===presentation.rows&&cover.id===id&&cover.attempt===attempt;
+    const coverState={phase:!id?'empty':!current?'loading':cover.error?'error':'loaded',retry:()=>{if(id)coverRequests(presentation.rows).delete(id);retry(n=>n+1);}};
+    return {key,phase:!applicable?'not-applicable':row?'loaded':presentation.phase==='error'||ready?'error':'loading',row:row?{...row,cover_url:current&&!cover.error?cover.url:null}:null,cover:coverState,retry:()=>store.refresh()};
+  }
+  function Cover({url,icon,hue=210,children,phase,onRetry}){
     const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[url]);
     return h('div',{'data-program-cover':url?'configured':'empty',style:{position:'relative',height:188,background:`linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`,overflow:'hidden'}},
       url&&!failed&&h('img',{src:url,alt:'Portada del programa',onError:()=>setFailed(true),style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}),
       h('div',{style:{position:'absolute',inset:0,background:'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))',pointerEvents:'none'}}),
       h('div',{style:{position:'absolute',right:-20,bottom:-30,opacity:.16}},h(I,{name:icon,size:220,stroke:1,style:{color:'#fff'}})),
-      failed&&h('span',{role:'status',style:{position:'absolute',bottom:12,left:20,color:'#fff',fontSize:'var(--text-12, 12px)'}},'No se pudo cargar la portada'),children);
+      (failed||phase==='error'||phase==='loading')&&h('span',{role:failed||phase==='error'?'alert':'status',style:{position:'absolute',bottom:12,left:20,color:'#fff',fontSize:'var(--text-12, 12px)'}},phase==='loading'&&!failed?'Cargando portada…':'No se pudo cargar la portada',(failed||phase==='error')&&onRetry&&h('button',{onClick:()=>{setFailed(false);onRetry();},style:{marginLeft:8}},'Reintentar portada')),children);
   }
   function PublicHeader({row,onFavorite,favorite,notify,children}){
     const p=row.program_info;
@@ -86,5 +120,5 @@
         h('div',{style:{display:'flex',gap:10}},h(window.Btn,{variant:'outline',disabled:busy,onClick:()=>{setDraft(null);setMessage('');state.retry();}},'Recargar'),canWrite&&h(window.Btn,{'data-program-info-save':true,disabled:busy,onClick:submit},busy?'Guardando…':'Guardar información general'))),
       h('section',{'data-program-info-preview':programKey,style:{marginBottom:24}},h('h2',{style:{fontSize:'var(--text-17, 17px)'}},'Vista previa de cómo se verá'),h('div',{style:{maxWidth:430,margin:'0 auto',background:'var(--bg)',borderRadius:24,overflow:'hidden',boxShadow:'var(--neo-md)'}},h(Cover,{url:preview.cover_url,icon:p.icon,hue:draft.group_key==='bienestar'?36:210}),h('div',{style:{position:'relative',zIndex:1,padding:'18px 20px 30px'}},h(PublicHeader,{row:preview,favorite:fav,onFavorite:()=>setFav(!fav),notify:setMessage}),h('div',{style:{marginTop:24}},h(window.SectionHead,{title:p.catalog_title}))))));
   }
-  window.ProgramGeneralInfo=Object.freeze({keys,get,save,upload,useInfo,Cover,PublicHeader,InfoState,Editor});
+  window.ProgramGeneralInfo=Object.freeze({keys,get,save,upload,useInfo,usePublicInfo,Cover,PublicHeader,InfoState,Editor});
 })();

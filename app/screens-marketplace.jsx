@@ -15,11 +15,11 @@
   }
 
   // generic full-screen shell with image hero
-  function HeroShell({ app, item, hue, children, fav, onFav, metadata }) {
+  function HeroShell({ app, item, hue, children, fav, onFav, metadata, coverState }) {
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto' } },
         // hero
-        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
+        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue,phase:coverState?.phase,onRetry:coverState?.retry}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
           React.createElement(window.ResSlot, { resKey: 'fin.hero.' + item.id, shape: 'rect', fit: 'cover', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' } }),
           React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))', pointerEvents: 'none' } }),
           React.createElement('div', { style: { position: 'absolute', right: -20, bottom: -30, opacity: .16 } }, React.createElement(I, { name: item.icon, size: 220, stroke: 1, style: { color: '#fff' } })),
@@ -39,7 +39,7 @@
   const LISTING_CATS = ['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'market', 'tours', 'farma', 'cirugias', 'rifas', 'donativos'];
 
   function ProductScreen({ app, params }) {
-    const metadata = window.ProgramGeneralInfo.useInfo(params.id);
+    const metadata = window.ProgramGeneralInfo.usePublicInfo(params.id);
     const managed = window.ProgramGeneralInfo.keys.includes(params.id);
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
@@ -60,10 +60,10 @@
     const quoteReady = quote && quote.estado === 'cotizada';
     React.useEffect(() => { if (quoteReady && !quote.visto) qs.markVisto(quote.id); }, [quoteReady, quote && quote.id]);
 
-    if(managed && metadata.phase!=='loaded') return React.createElement('div',null,React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
+    if(managed && metadata.phase!=='loaded') return React.createElement('div',{'data-program-info-state':metadata.phase,style:{position:'absolute',inset:0,background:'var(--bg)',overflowY:'auto'}},React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
     if(!found && !metadata.row) return null;
     return React.createElement(React.Fragment, null,
-      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
+      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, coverState:metadata.cover, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
         React.createElement('div', { style: { position: 'relative', zIndex: 1, overflow: 'visible', padding: isListing ? '18px 20px 30px' : '18px 20px 120px' } },
           metadata.row ? React.createElement(window.ProgramGeneralInfo.PublicHeader,{row:metadata.row,favorite:fav,onFavorite:()=>setFav(!fav),notify:app.toast},needsQuote&&React.createElement(QuoteStatusCard,{quote,it})) : React.createElement(React.Fragment,null,
           // title block

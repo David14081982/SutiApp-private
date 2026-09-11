@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "baselineFiles": 2884,
+  "changed": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/fincat-store.jsx",
+    "app/program-general-info.jsx",
+    "app/screens-marketplace.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json"
+  ],
+  "added": [
+    "docs/qa/H-PROGRAM-OPENING-LATENCY-001.md",
+    "docs/qa/evidence/program-opening-latency-20260911/browser-initial.json",
+    "docs/qa/evidence/program-opening-latency-20260911/browser.json",
+    "docs/qa/evidence/program-opening-latency-20260911/build.json",
+    "docs/qa/evidence/program-opening-latency-20260911/functional-final.png",
+    "docs/qa/evidence/program-opening-latency-20260911/normal-after.png",
+    "docs/qa/evidence/program-opening-latency-20260911/normal-before.png",
+    "docs/qa/evidence/program-opening-latency-20260911/repeat-after.png",
+    "docs/qa/evidence/program-opening-latency-20260911/repeat-before.png",
+    "docs/qa/evidence/program-opening-latency-20260911/slow-after.png",
+    "docs/qa/evidence/program-opening-latency-20260911/slow-before.png",
+    "docs/qa/evidence/program-opening-latency-20260911/source-delta.patch",
+    "docs/qa/evidence/program-opening-latency-20260911/workspace-preservation.json",
+    "scripts/test-program-opening-latency.js"
+  ],
+  "removed": [],
+  "unexpected": [],
+  "basis": "Pre-task content hashes; preexisting dirty changes preserved."
+}

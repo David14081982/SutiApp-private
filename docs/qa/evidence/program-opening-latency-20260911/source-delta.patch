@@ -1,0 +1,107 @@
+--- a/app/fincat-store.jsx
++++ b/app/fincat-store.jsx
+@@ -5,0 +6,2 @@
++  let epoch=window.PrivateResourceDemand.context(),initialLoad=null;
++  let presentation={phase,error,rows,epoch};
+@@ -12 +14 @@
+-  const emit=()=>listeners.forEach(fn=>fn()),row=k=>rows.find(x=>x.item_key===k);
++  const emit=()=>{presentation={phase,error,rows,epoch};listeners.forEach(fn=>fn());},row=k=>rows.find(x=>x.item_key===k);
+@@ -14 +16,17 @@
+-  function load(){if(loadPromise)return loadPromise;const version=++loadVersion;phase=phase==='loaded'||phase==='refreshing'?'refreshing':'loading';error=null;emit();loadPromise=(async()=>{try{const next=await repo.listFinancePresentation();if(version!==loadVersion)return rows;rows=next;phase='loaded';emit();return rows;}catch(e){if(version===loadVersion)fail(e);return [];}finally{if(version===loadVersion)loadPromise=null;}})();return loadPromise;}
++  function load(force=false){
++    if(epoch===null)return Promise.resolve([]);
++    if(loadPromise&&force!==true)return loadPromise;
++    const version=++loadVersion,context=epoch;phase=phase==='loaded'||phase==='refreshing'?'refreshing':'loading';error=null;emit();
++    loadPromise=(async()=>{try{const next=await repo.listFinancePresentation();if(version!==loadVersion||window.PrivateResourceDemand.context()!==context)return [];rows=next;phase='loaded';emit();return rows;}catch(e){if(version===loadVersion&&window.PrivateResourceDemand.context()===context)fail(e);return [];}finally{if(version===loadVersion)loadPromise=null;}})();return loadPromise;
++  }
++  const ensureLoaded=()=>initialLoad||(initialLoad=load());
++  const onFocus=()=>load(),onVisible=()=>{if(document.visibilityState==='visible')load();};
++  function subscribe(fn){
++    listeners.add(fn);
++    if(listeners.size===1){window.addEventListener('focus',onFocus);document.addEventListener('visibilitychange',onVisible);}
++    return()=>{listeners.delete(fn);if(!listeners.size){window.removeEventListener('focus',onFocus);document.removeEventListener('visibilitychange',onVisible);}};
++  }
++  window.PrivateResourceDemand.subscribe(()=>{
++    epoch=window.PrivateResourceDemand.context();loadVersion++;loadPromise=null;initialLoad=null;rows=[];phase='idle';error=null;emit();
++    if(listeners.size&&epoch!==null)ensureLoaded();
++  });
+@@ -20 +38 @@
+-  const store={state:()=>({phase,error}),refresh:load,retry:load,groups,groupsLive:()=>groups(),allItems:()=>groups().flatMap(g=>g.items),findItem:id=>groups().flatMap(g=>g.items).find(x=>x.id===id)||null,recs:()=>[],recsLive:()=>[],getRec:()=>null,
++  const store={state:()=>({phase,error}),presentationState:()=>presentation,ensureLoaded,refresh:load,retry:load,groups,groupsLive:()=>groups(),allItems:()=>groups().flatMap(g=>g.items),findItem:id=>groups().flatMap(g=>g.items).find(x=>x.id===id)||null,recs:()=>[],recsLive:()=>[],getRec:()=>null,
+@@ -25,3 +43,3 @@
+-    blankRec:()=>null,saveRec:()=>{},removeRec:()=>{},toggleRec:()=>{},moveRec:()=>{},subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);}};
+-  let initialLoad=null;const ensureLoaded=()=>initialLoad||(initialLoad=load());
+-  window.finCatStore=store;window.useFinCatStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);React.useEffect(()=>{ensureLoaded();},[]);React.useEffect(()=>{const onFocus=()=>load();const onVisible=()=>{if(document.visibilityState==='visible')load();};window.addEventListener('focus',onFocus);document.addEventListener('visibilitychange',onVisible);return()=>{window.removeEventListener('focus',onFocus);document.removeEventListener('visibilitychange',onVisible);};},[]);return store;};
++    blankRec:()=>null,saveRec:()=>{},removeRec:()=>{},toggleRec:()=>{},moveRec:()=>{},subscribe};
++
++  window.finCatStore=store;window.useFinCatStore=function(){React.useSyncExternalStore(store.subscribe,store.presentationState);React.useEffect(()=>{ensureLoaded();},[]);return store;};
+--- a/app/program-general-info.jsx
++++ b/app/program-general-info.jsx
+@@ -10 +10 @@
+-  async function save(row){const payload={label_override:row.label_override,description_override:row.description_override,enabled:row.enabled,program_info:row.program_info,program_cover_asset_id:row.program_cover_asset_id};const r=await db().rpc('save_program_general_info',{p_program_key:row.item_key,p_expected_updated_at:row.updated_at,p_payload:payload});if(r.error)throw r.error;listeners.forEach(fn=>fn(row.item_key));if(window.finCatStore)await window.finCatStore.refresh();return get(row.item_key);}
++  async function save(row){const payload={label_override:row.label_override,description_override:row.description_override,enabled:row.enabled,program_info:row.program_info,program_cover_asset_id:row.program_cover_asset_id};const r=await db().rpc('save_program_general_info',{p_program_key:row.item_key,p_expected_updated_at:row.updated_at,p_payload:payload});if(r.error)throw r.error;listeners.forEach(fn=>fn(row.item_key));if(window.finCatStore)await window.finCatStore.refresh(true);return get(row.item_key);}
+@@ -31 +31,35 @@
+-  function Cover({url,icon,hue=210,children}){
++  // Public text is the same authority projection already loaded by Finanzas.
++  // Covers are independent, deduplicated only within that presentation revision.
++  let coverCache=new WeakMap();
++  window.PrivateResourceDemand.subscribe(()=>{coverCache=new WeakMap();});
++  function coverRequests(rows){let requests=coverCache.get(rows);if(!requests){requests=new Map();coverCache.set(rows,requests);}return requests;}
++  function readCover(row,rows){
++    const requests=coverRequests(rows),id=row.program_cover_asset_id;
++    if(requests.has(id))return requests.get(id);
++    const epoch=window.PrivateResourceDemand.context();
++    const promise=Promise.resolve().then(async()=>{
++      if(epoch===null||window.PrivateResourceDemand.context()!==epoch)throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
++      const r=await db().from('app_assets').select('id,storage_bucket,storage_path,status,mime_type').eq('id',id).single();
++      if(r.error)throw r.error;
++      if(window.PrivateResourceDemand.context()!==epoch)throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
++      const url=coverUrl(r.data);if(!url)throw new Error('PROGRAM_COVER_UNAVAILABLE');return url;
++    });requests.set(id,promise);return promise;
++  }
++  function usePublicInfo(key){
++    const store=window.finCatStore,presentation=React.useSyncExternalStore(store.subscribe,store.presentationState);
++    const [cover,setCover]=useState(null),[attempt,retry]=useState(0);
++    useEffect(()=>{store.ensureLoaded();},[store]);
++    const applicable=keys.includes(key),ready=presentation.phase==='loaded'||presentation.phase==='refreshing';
++    const row=ready&&applicable?presentation.rows.find(row=>row.item_key===key&&row.program_info):null;
++    const id=row&&row.program_cover_asset_id;
++    useEffect(()=>{
++      if(!id)return;
++      let active=true;
++      readCover(row,presentation.rows).then(url=>{if(active)setCover({rows:presentation.rows,id,attempt,url});},()=>{if(active)setCover({rows:presentation.rows,id,attempt,error:true});});
++      return()=>{active=false;};
++    },[id,presentation.rows,attempt]);
++    const current=cover&&cover.rows===presentation.rows&&cover.id===id&&cover.attempt===attempt;
++    const coverState={phase:!id?'empty':!current?'loading':cover.error?'error':'loaded',retry:()=>{if(id)coverRequests(presentation.rows).delete(id);retry(n=>n+1);}};
++    return {key,phase:!applicable?'not-applicable':row?'loaded':presentation.phase==='error'||ready?'error':'loading',row:row?{...row,cover_url:current&&!cover.error?cover.url:null}:null,cover:coverState,retry:()=>store.refresh()};
++  }
++  function Cover({url,icon,hue=210,children,phase,onRetry}){
+@@ -37 +71 @@
+-      failed&&h('span',{role:'status',style:{position:'absolute',bottom:12,left:20,color:'#fff',fontSize:'var(--text-12, 12px)'}},'No se pudo cargar la portada'),children);
++      (failed||phase==='error'||phase==='loading')&&h('span',{role:failed||phase==='error'?'alert':'status',style:{position:'absolute',bottom:12,left:20,color:'#fff',fontSize:'var(--text-12, 12px)'}},phase==='loading'&&!failed?'Cargando portada…':'No se pudo cargar la portada',(failed||phase==='error')&&onRetry&&h('button',{onClick:()=>{setFailed(false);onRetry();},style:{marginLeft:8}},'Reintentar portada')),children);
+@@ -89 +123 @@
+-  window.ProgramGeneralInfo=Object.freeze({keys,get,save,upload,useInfo,Cover,PublicHeader,InfoState,Editor});
++  window.ProgramGeneralInfo=Object.freeze({keys,get,save,upload,useInfo,usePublicInfo,Cover,PublicHeader,InfoState,Editor});
+--- a/app/screens-marketplace.jsx
++++ b/app/screens-marketplace.jsx
+@@ -18 +18 @@
+-  function HeroShell({ app, item, hue, children, fav, onFav, metadata }) {
++  function HeroShell({ app, item, hue, children, fav, onFav, metadata, coverState }) {
+@@ -22 +22 @@
+-        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
++        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue,phase:coverState?.phase,onRetry:coverState?.retry}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
+@@ -42 +42 @@
+-    const metadata = window.ProgramGeneralInfo.useInfo(params.id);
++    const metadata = window.ProgramGeneralInfo.usePublicInfo(params.id);
+@@ -63 +63 @@
+-    if(managed && metadata.phase!=='loaded') return React.createElement('div',null,React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
++    if(managed && metadata.phase!=='loaded') return React.createElement('div',{'data-program-info-state':metadata.phase,style:{position:'absolute',inset:0,background:'var(--bg)',overflowY:'auto'}},React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
+@@ -66 +66 @@
+-      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
++      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, coverState:metadata.cover, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
+--- a/SutiApp.html
++++ b/SutiApp.html
+@@ -695 +695 @@
+-  <script src="app/bundle.js?v=241" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
++  <script src="app/bundle.js?v=242" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>

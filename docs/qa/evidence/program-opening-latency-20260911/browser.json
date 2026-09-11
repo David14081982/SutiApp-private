@@ -1,0 +1,134 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_HTTP_CHROME_390x844",
+  "performance": [
+    {
+      "scenario": "normal",
+      "before": {
+        "key": "auto",
+        "infoMs": 463.7,
+        "imageMs": 726.7,
+        "productsMs": 463.7,
+        "requests": {
+          "presentation-single": 1,
+          "program_catalog_items": 1,
+          "program_catalog_favorites": 1,
+          "program_catalog_item_assets": 1,
+          "image": 1
+        }
+      },
+      "after": {
+        "key": "auto",
+        "infoMs": 28.3,
+        "imageMs": 427.2,
+        "productsMs": 374.9,
+        "requests": {
+          "cover": 1,
+          "program_catalog_items": 1,
+          "program_catalog_favorites": 1,
+          "image": 1,
+          "program_catalog_item_assets": 1
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "scenario": "slow",
+      "before": {
+        "key": "aires",
+        "infoMs": 966.8,
+        "imageMs": 1774.1,
+        "productsMs": 1229.3,
+        "requests": {
+          "presentation-single": 1,
+          "program_catalog_items": 1,
+          "program_catalog_favorites": 1,
+          "image": 1,
+          "program_catalog_item_assets": 1
+        }
+      },
+      "after": {
+        "key": "aires",
+        "infoMs": 49,
+        "imageMs": 1441.6,
+        "productsMs": 1231,
+        "requests": {
+          "cover": 1,
+          "program_catalog_items": 1,
+          "program_catalog_favorites": 1,
+          "image": 1,
+          "program_catalog_item_assets": 1
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "scenario": "repeat",
+      "before": {
+        "key": "puertas",
+        "infoMs": 396.9,
+        "imageMs": 397,
+        "productsMs": 397,
+        "requests": {
+          "presentation-single": 1
+        }
+      },
+      "after": {
+        "key": "puertas",
+        "infoMs": 14.5,
+        "imageMs": 14.6,
+        "productsMs": 14.6,
+        "requests": {}
+      },
+      "status": "PASS"
+    }
+  ],
+  "functional": [
+    {
+      "name": "back_preserves_scroll",
+      "status": "PASS",
+      "before": 1371,
+      "after": 1371
+    },
+    {
+      "name": "favorites_preserved",
+      "status": "PASS",
+      "headerHeart": true,
+      "headerSave": true,
+      "persistence": "unchanged component-local behavior"
+    },
+    {
+      "name": "focus_no_duplicate_pending_reads",
+      "status": "PASS",
+      "requests": {
+        "presentation-list": 1,
+        "cover": 1
+      }
+    },
+    {
+      "name": "admin_update_reflected",
+      "status": "PASS",
+      "realEditor": true,
+      "draftPreservedOnFocus": true,
+      "bothReadersUpdated": true,
+      "removedRowNotResurrected": true
+    },
+    {
+      "name": "errors_visible_and_retry",
+      "status": "PASS",
+      "opaqueTextState": true,
+      "textRetry": true,
+      "coverRetryIndependent": true,
+      "catalogErrorDoesNotBlockHeader": true
+    },
+    {
+      "name": "session_clears_previous_data",
+      "status": "PASS",
+      "logoutClears": true,
+      "newActorRows": true,
+      "oldResponsesIgnored": true
+    }
+  ],
+  "pageErrors": [],
+  "externalRequests": 0
+}

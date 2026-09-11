@@ -15142,57 +15142,219 @@ Object.assign(window, {
 (function(){
 /* screens-marketplace.jsx — ProductScreen (finance category), ModuloScreen, ArticuloScreen */
 (function () {
-  const { useState } = React;
+  const {
+    useState
+  } = React;
   const I = window.Icon;
 
   // F1.2 — Autoridad única: finCatStore. DATA.finanzasGroups solo actúa como
   // arranque controlado si el store aún no está disponible.
   function finGroups() {
     const fs = window.finCatStore;
-    return (fs && fs.groups ? fs.groups() : []);
+    return fs && fs.groups ? fs.groups() : [];
   }
   function findItem(id) {
-    for (const g of finGroups()) { const it = g.items.find((x) => x.id === id); if (it) return { it, g }; }
+    for (const g of finGroups()) {
+      const it = g.items.find(x => x.id === id);
+      if (it) return {
+        it,
+        g
+      };
+    }
     return null;
   }
 
   // generic full-screen shell with image hero
-  function HeroShell({ app, item, hue, children, fav, onFav, metadata }) {
-    return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
-      React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto' } },
-        // hero
-        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
-          React.createElement(window.ResSlot, { resKey: 'fin.hero.' + item.id, shape: 'rect', fit: 'cover', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' } }),
-          React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))', pointerEvents: 'none' } }),
-          React.createElement('div', { style: { position: 'absolute', right: -20, bottom: -30, opacity: .16 } }, React.createElement(I, { name: item.icon, size: 220, stroke: 1, style: { color: '#fff' } })),
-          React.createElement('div', { style: { position: 'absolute', top: 10, left: 8, right: 8, display: 'flex', justifyContent: 'space-between' } },
-            circBtn('arrowL', app.back),
-            onFav && React.createElement('button', { onClick: onFav, style: { width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.25)', backdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } },
-              React.createElement(I, { name: 'heart', size: 21, stroke: 2, style: { fill: fav ? '#fff' : 'none' } })))),
-        children,
-      ),
-    );
+  function HeroShell({
+    app,
+    item,
+    hue,
+    children,
+    fav,
+    onFav,
+    metadata,
+    coverState
+  }) {
+    return React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto'
+      }
+    },
+    // hero
+    metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {
+      url: metadata.cover_url,
+      icon: metadata.program_info.icon,
+      hue,
+      phase: coverState?.phase,
+      onRetry: coverState?.retry
+    }, React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: 10,
+        left: 8,
+        right: 8,
+        display: 'flex',
+        justifyContent: 'space-between'
+      }
+    }, circBtn('arrowL', app.back), onFav && React.createElement('button', {
+      onClick: onFav,
+      'aria-label': 'Guardar programa',
+      'aria-pressed': fav,
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'rgba(0,0,0,.25)',
+        backdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff'
+      }
+    }, React.createElement(I, {
+      name: 'heart',
+      size: 21,
+      stroke: 2,
+      style: {
+        fill: fav ? '#fff' : 'none'
+      }
+    })))) : React.createElement('div', {
+      style: {
+        position: 'relative',
+        height: 188,
+        background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`,
+        overflow: 'hidden'
+      }
+    }, React.createElement(window.ResSlot, {
+      resKey: 'fin.hero.' + item.id,
+      shape: 'rect',
+      fit: 'cover',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))',
+        pointerEvents: 'none'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        right: -20,
+        bottom: -30,
+        opacity: .16
+      }
+    }, React.createElement(I, {
+      name: item.icon,
+      size: 220,
+      stroke: 1,
+      style: {
+        color: '#fff'
+      }
+    })), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: 10,
+        left: 8,
+        right: 8,
+        display: 'flex',
+        justifyContent: 'space-between'
+      }
+    }, circBtn('arrowL', app.back), onFav && React.createElement('button', {
+      onClick: onFav,
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'rgba(0,0,0,.25)',
+        backdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff'
+      }
+    }, React.createElement(I, {
+      name: 'heart',
+      size: 21,
+      stroke: 2,
+      style: {
+        fill: fav ? '#fff' : 'none'
+      }
+    })))), children));
   }
   function circBtn(icon, onClick) {
-    return React.createElement('button', { onClick, style: { width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.25)', backdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } },
-      React.createElement(I, { name: icon, size: 22, stroke: 2 }));
+    return React.createElement('button', {
+      onClick,
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'rgba(0,0,0,.25)',
+        backdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff'
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 22,
+      stroke: 2
+    }));
   }
-
   const LISTING_CATS = ['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'market', 'tours', 'farma', 'cirugias', 'rifas', 'donativos'];
-
-  function ProductScreen({ app, params }) {
-    const metadata = window.ProgramGeneralInfo.useInfo(params.id);
+  function ProductScreen({
+    app,
+    params
+  }) {
+    const metadata = window.ProgramGeneralInfo.usePublicInfo(params.id);
     const managed = window.ProgramGeneralInfo.keys.includes(params.id);
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const cs = window.useCatalogStore ? window.useCatalogStore({programKey:params.id}) : null;
-    const it = metadata.row ? { ...found?.it, id:params.id, label:metadata.row.label_override, icon:metadata.row.program_info.icon } : (found?.it || {id:params.id});
-    const hue = { guinda: 345, green: 150, blue: 210, amber: 36 }[found?.g.tone] || 210;
+    const cs = window.useCatalogStore ? window.useCatalogStore({
+      programKey: params.id
+    }) : null;
+    const it = metadata.row ? {
+      ...found?.it,
+      id: params.id,
+      label: metadata.row.label_override,
+      icon: metadata.row.program_info.icon
+    } : found?.it || {
+      id: params.id
+    };
+    const hue = {
+      guinda: 345,
+      green: 150,
+      blue: 210,
+      amber: 36
+    }[found?.g.tone] || 210;
     const [fav, setFav] = useState(false);
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
     const prods = cs ? cs.live('fin', it.id) : [];
-    const catalogState = cs ? cs.state() : { phase: 'loading', error: null };
+    const catalogState = cs ? cs.state() : {
+      phase: 'loading',
+      error: null
+    };
     const isListing = prods.length > 0 || LISTING_CATS.includes(it.id);
     const benefits = benefitsFor(it.id);
 
@@ -15200,300 +15362,1320 @@ Object.assign(window, {
     const needsQuote = qs && qs.requiresQuote(it.id);
     const quote = needsQuote ? qs.latestFor(it.id) : null;
     const quoteReady = quote && quote.estado === 'cotizada';
-    React.useEffect(() => { if (quoteReady && !quote.visto) qs.markVisto(quote.id); }, [quoteReady, quote && quote.id]);
-
-    if(managed && metadata.phase!=='loaded') return React.createElement('div',null,React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
-    if(!found && !metadata.row) return null;
-    return React.createElement(React.Fragment, null,
-      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
-        React.createElement('div', { style: { position: 'relative', zIndex: 1, overflow: 'visible', padding: isListing ? '18px 20px 30px' : '18px 20px 120px' } },
-          metadata.row ? React.createElement(window.ProgramGeneralInfo.PublicHeader,{row:metadata.row,favorite:fav,onFavorite:()=>setFav(!fav),notify:app.toast},needsQuote&&React.createElement(QuoteStatusCard,{quote,it})) : React.createElement(React.Fragment,null,
-          // title block
-          React.createElement('div', { style: { display: 'flex', gap: 13, alignItems: 'flex-start', minWidth: 0 } },
-            React.createElement('div', { 'data-category-header-icon': 'true', style: { position: 'relative', zIndex: 2, marginTop: -46, flexShrink: 0, width: 64, height: 64, borderRadius: 18, background: 'var(--surface)', boxShadow: 'var(--neo-md)', display: 'grid', placeItems: 'center', color: 'var(--guinda)' } },
-              React.createElement(I, { name: it.icon, size: 32, stroke: 1.8 })),
-            React.createElement('div', { style: { flex: 1, minWidth: 0, paddingTop: 2 } },
-              React.createElement('h1', { style: { fontSize: 'var(--text-23, 23px)', fontWeight: 800, letterSpacing: '-.02em', margin: 0 } }, it.label),
-              React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } },
-                React.createElement('span', { style: { color: 'var(--guinda)' } }, 'SutiApp'), ' / ' + it.label))),
-          React.createElement('p', { style: { fontSize: 'var(--text-15, 15px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.55, margin: '16px 0 0' } }, descFor(it)),
-          needsQuote && React.createElement(QuoteStatusCard, { quote, it }),
-          // quick actions
-          React.createElement('div', { style: { display: 'flex', gap: 10, marginTop: 18 } },
-            actionPill('phone', 'Llamar'), actionPill('message', 'WhatsApp'), actionPill('star', 'Guardar', () => setFav(!fav))),
-          // benefits
-          React.createElement('div', { style: { marginTop: 22 } },
-            React.createElement(window.SectionHead, { title: 'Por qué te conviene', icon: 'sparkle' }),
-            React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-              benefits.map((b) => React.createElement('div', { key: b.t, style: { display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface)', borderRadius: 14, padding: '13px 14px', boxShadow: 'var(--neo-sm)' } },
-                React.createElement('div', { style: { width: 38, height: 38, borderRadius: 11, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', color: 'var(--guinda)', flexShrink: 0 } }, React.createElement(I, { name: b.icon, size: 20, stroke: 2 })),
-                React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 700 } }, b.t), React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 500 } }, b.s))))))),
-          // listings (administrables desde el módulo Marketplace)
-          isListing && React.createElement('div', { style: { marginTop: 24 } },
-            React.createElement(window.SectionHead, { title: metadata.row ? metadata.row.program_info.catalog_title : 'Disponibles ahora' }),
-            catalogState.phase === 'loading'
-              ? React.createElement(window.EmptyState, { icon: 'clock', title: 'Cargando disponibles', sub: 'Consultando el catálogo productivo…' })
-              : catalogState.phase === 'error'
-                ? React.createElement('div', null, React.createElement(window.EmptyState, { icon: 'warning', title: 'No pudimos cargar el catálogo', sub: 'Revisa tu conexión e inténtalo de nuevo.' }), React.createElement(window.Btn, { full: true, variant: 'outline', onClick: () => cs.retry() }, 'Reintentar'))
-                : prods.length
-                  ? React.createElement(window.CatalogGrid, { items: prods, hue, icon: it.icon, onOpen: (p) => app.push('catitem', { item: p, ctx: { id: it.id, label: it.label, icon: it.icon, hue } }) })
-                  : React.createElement(window.EmptyState, { icon: it.icon, title: 'Catálogo pendiente', sub: 'Esta sección conserva su lugar mientras se reconcilian los datos productivos.' })),
-        ),
-      ),
-      // sticky CTA (si requiere cotización, el simulador solo se habilita con cotización lista)
-      !isListing && React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: '12px 20px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(transparent, var(--surface) 22%)', display: 'flex', gap: 10 } },
-        !needsQuote
-          ? React.createElement(window.Btn, { full: true, size: 'lg', icon: isListing ? 'plus' : 'cash', onClick: () => isListing ? app.toast('Selecciona un producto en “Disponibles ahora”') : setSheet(true) }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora')
-          : !quoteReady
-            ? React.createElement(window.Btn, { full: true, size: 'lg', icon: 'doc', onClick: () => setQSheet(true) }, quote && quote.estado === 'solicitada' ? 'Solicitar otra cotización' : 'Solicitar cotización')
-            : React.createElement(React.Fragment, null,
-              React.createElement(window.Btn, { size: 'lg', variant: 'outline', icon: 'plus', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 'var(--text-13, 13px)' }, onClick: () => setQSheet(true) }, 'Nueva cotización'),
-              React.createElement(window.Btn, { size: 'lg', icon: 'cash', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 'var(--text-13, 13px)' }, onClick: () => setSheet(true) }, 'Simular monto'))),
-      // confirm sheet → simulador de financiamiento (descuento vía nómina)
-      React.createElement(FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing, quote: quoteReady ? quote : null }),
-      needsQuote && React.createElement(QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app }),
-    );
+    React.useEffect(() => {
+      if (quoteReady && !quote.visto) qs.markVisto(quote.id);
+    }, [quoteReady, quote && quote.id]);
+    if (managed && metadata.phase !== 'loaded') return React.createElement('div', {
+      'data-program-info-state': metadata.phase,
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        overflowY: 'auto'
+      }
+    }, React.createElement(window.Btn, {
+      onClick: app.back,
+      variant: 'outline'
+    }, 'Volver'), React.createElement(window.ProgramGeneralInfo.InfoState, {
+      state: metadata
+    }));
+    if (!found && !metadata.row) return null;
+    return React.createElement(React.Fragment, null, React.createElement(HeroShell, {
+      app,
+      item: it,
+      hue,
+      fav,
+      metadata: metadata.row,
+      coverState: metadata.cover,
+      onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null
+    }, React.createElement('div', {
+      style: {
+        position: 'relative',
+        zIndex: 1,
+        overflow: 'visible',
+        padding: isListing ? '18px 20px 30px' : '18px 20px 120px'
+      }
+    }, metadata.row ? React.createElement(window.ProgramGeneralInfo.PublicHeader, {
+      row: metadata.row,
+      favorite: fav,
+      onFavorite: () => setFav(!fav),
+      notify: app.toast
+    }, needsQuote && React.createElement(QuoteStatusCard, {
+      quote,
+      it
+    })) : React.createElement(React.Fragment, null,
+    // title block
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 13,
+        alignItems: 'flex-start',
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      'data-category-header-icon': 'true',
+      style: {
+        position: 'relative',
+        zIndex: 2,
+        marginTop: -46,
+        flexShrink: 0,
+        width: 64,
+        height: 64,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-md)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)'
+      }
+    }, React.createElement(I, {
+      name: it.icon,
+      size: 32,
+      stroke: 1.8
+    })), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        paddingTop: 2
+      }
+    }, React.createElement('h1', {
+      style: {
+        fontSize: 'var(--text-23, 23px)',
+        fontWeight: 800,
+        letterSpacing: '-.02em',
+        margin: 0
+      }
+    }, it.label), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 2
+      }
+    }, React.createElement('span', {
+      style: {
+        color: 'var(--guinda)'
+      }
+    }, 'SutiApp'), ' / ' + it.label))), React.createElement('p', {
+      style: {
+        fontSize: 'var(--text-15, 15px)',
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        lineHeight: 1.55,
+        margin: '16px 0 0'
+      }
+    }, descFor(it)), needsQuote && React.createElement(QuoteStatusCard, {
+      quote,
+      it
+    }),
+    // quick actions
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        marginTop: 18
+      }
+    }, actionPill('phone', 'Llamar'), actionPill('message', 'WhatsApp'), actionPill('star', 'Guardar', () => setFav(!fav))),
+    // benefits
+    React.createElement('div', {
+      style: {
+        marginTop: 22
+      }
+    }, React.createElement(window.SectionHead, {
+      title: 'Por qué te conviene',
+      icon: 'sparkle'
+    }), React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, benefits.map(b => React.createElement('div', {
+      key: b.t,
+      style: {
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '13px 14px',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        background: 'var(--guinda-50)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: b.icon,
+      size: 20,
+      stroke: 2
+    })), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-14, 14px)',
+        fontWeight: 700
+      }
+    }, b.t), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 500
+      }
+    }, b.s))))))),
+    // listings (administrables desde el módulo Marketplace)
+    isListing && React.createElement('div', {
+      style: {
+        marginTop: 24
+      }
+    }, React.createElement(window.SectionHead, {
+      title: metadata.row ? metadata.row.program_info.catalog_title : 'Disponibles ahora'
+    }), catalogState.phase === 'loading' ? React.createElement(window.EmptyState, {
+      icon: 'clock',
+      title: 'Cargando disponibles',
+      sub: 'Consultando el catálogo productivo…'
+    }) : catalogState.phase === 'error' ? React.createElement('div', null, React.createElement(window.EmptyState, {
+      icon: 'warning',
+      title: 'No pudimos cargar el catálogo',
+      sub: 'Revisa tu conexión e inténtalo de nuevo.'
+    }), React.createElement(window.Btn, {
+      full: true,
+      variant: 'outline',
+      onClick: () => cs.retry()
+    }, 'Reintentar')) : prods.length ? React.createElement(window.CatalogGrid, {
+      items: prods,
+      hue,
+      icon: it.icon,
+      onOpen: p => app.push('catitem', {
+        item: p,
+        ctx: {
+          id: it.id,
+          label: it.label,
+          icon: it.icon,
+          hue
+        }
+      })
+    }) : React.createElement(window.EmptyState, {
+      icon: it.icon,
+      title: 'Catálogo pendiente',
+      sub: 'Esta sección conserva su lugar mientras se reconcilian los datos productivos.'
+    })))),
+    // sticky CTA (si requiere cotización, el simulador solo se habilita con cotización lista)
+    !isListing && React.createElement('div', {
+      style: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        padding: '12px 20px calc(14px + env(safe-area-inset-bottom))',
+        background: 'linear-gradient(transparent, var(--surface) 22%)',
+        display: 'flex',
+        gap: 10
+      }
+    }, !needsQuote ? React.createElement(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: isListing ? 'plus' : 'cash',
+      onClick: () => isListing ? app.toast('Selecciona un producto en “Disponibles ahora”') : setSheet(true)
+    }, isListing ? 'Solicitar este beneficio' : 'Solicitar ahora') : !quoteReady ? React.createElement(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: 'doc',
+      onClick: () => setQSheet(true)
+    }, quote && quote.estado === 'solicitada' ? 'Solicitar otra cotización' : 'Solicitar cotización') : React.createElement(React.Fragment, null, React.createElement(window.Btn, {
+      size: 'lg',
+      variant: 'outline',
+      icon: 'plus',
+      style: {
+        flex: 1,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 'var(--text-13, 13px)'
+      },
+      onClick: () => setQSheet(true)
+    }, 'Nueva cotización'), React.createElement(window.Btn, {
+      size: 'lg',
+      icon: 'cash',
+      style: {
+        flex: 1,
+        minWidth: 0,
+        padding: '0 12px',
+        fontSize: 'var(--text-13, 13px)'
+      },
+      onClick: () => setSheet(true)
+    }, 'Simular monto'))),
+    // confirm sheet → simulador de financiamiento (descuento vía nómina)
+    React.createElement(FinanceSimSheet, {
+      open: sheet,
+      onClose: () => setSheet(false),
+      it,
+      hue,
+      app,
+      isListing,
+      quote: quoteReady ? quote : null
+    }), needsQuote && React.createElement(QuoteRequestSheet, {
+      open: qSheet,
+      onClose: () => setQSheet(false),
+      it,
+      app
+    }));
   }
 
   // ── Tarjeta de estado del flujo de cotización previa ──
-  function QuoteStatusCard({ quote, it }) {
+  function QuoteStatusCard({
+    quote,
+    it
+  }) {
     const money = window.money;
     if (!quote || quote.estado === 'vencida') {
-      return React.createElement('div', { style: { display: 'flex', gap: 11, alignItems: 'flex-start', background: '#EEF3FF', border: '1px solid #D6E2FB', borderRadius: 15, padding: '13px 14px', marginTop: 16 } },
-        React.createElement(I, { name: 'info', size: 18, stroke: 2, style: { color: '#2456C7', flexShrink: 0, marginTop: 1 } }),
-        React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } },
-          React.createElement('b', null, 'Este servicio se cotiza primero. '),
-          'El precio depende de disponibilidad, temporada u otras variables. Envía tu solicitud de interés; cuando el proveedor cargue la cotización, se habilitará el simulador de financiamiento.'));
+      return React.createElement('div', {
+        style: {
+          display: 'flex',
+          gap: 11,
+          alignItems: 'flex-start',
+          background: '#EEF3FF',
+          border: '1px solid #D6E2FB',
+          borderRadius: 15,
+          padding: '13px 14px',
+          marginTop: 16
+        }
+      }, React.createElement(I, {
+        name: 'info',
+        size: 18,
+        stroke: 2,
+        style: {
+          color: '#2456C7',
+          flexShrink: 0,
+          marginTop: 1
+        }
+      }), React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-12-5, 12.5px)',
+          color: 'var(--ink-2)',
+          fontWeight: 600,
+          lineHeight: 1.5
+        }
+      }, React.createElement('b', null, 'Este servicio se cotiza primero. '), 'El precio depende de disponibilidad, temporada u otras variables. Envía tu solicitud de interés; cuando el proveedor cargue la cotización, se habilitará el simulador de financiamiento.'));
     }
     if (quote.estado === 'solicitada') {
-      return React.createElement('div', { style: { background: '#FFF3DC', border: '1px solid #F0DFB6', borderRadius: 15, padding: '13px 14px', marginTop: 16 } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9 } },
-          React.createElement(I, { name: 'clock', size: 18, stroke: 2.2, style: { color: '#9A6B16', flexShrink: 0 } }),
-          React.createElement('div', { style: { flex: 1, fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: '#7a5410' } }, 'Cotización en proceso'),
-          React.createElement('span', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: '#9A6B16', fontFamily: 'var(--mono)' } }, quote.folio)),
-        React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: '#7a5410', fontWeight: 600, marginTop: 5, lineHeight: 1.45 } },
-          (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Esta revisión continúa y no impide enviar otra solicitud.'));
+      return React.createElement('div', {
+        style: {
+          background: '#FFF3DC',
+          border: '1px solid #F0DFB6',
+          borderRadius: 15,
+          padding: '13px 14px',
+          marginTop: 16
+        }
+      }, React.createElement('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9
+        }
+      }, React.createElement(I, {
+        name: 'clock',
+        size: 18,
+        stroke: 2.2,
+        style: {
+          color: '#9A6B16',
+          flexShrink: 0
+        }
+      }), React.createElement('div', {
+        style: {
+          flex: 1,
+          fontSize: 'var(--text-13-5, 13.5px)',
+          fontWeight: 800,
+          color: '#7a5410'
+        }
+      }, 'Cotización en proceso'), React.createElement('span', {
+        style: {
+          fontSize: 'var(--text-11-5, 11.5px)',
+          fontWeight: 700,
+          color: '#9A6B16',
+          fontFamily: 'var(--mono)'
+        }
+      }, quote.folio)), React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-12, 12px)',
+          color: '#7a5410',
+          fontWeight: 600,
+          marginTop: 5,
+          lineHeight: 1.45
+        }
+      }, (quote.empresaNombre ? quote.empresaNombre : 'El Área de Finanzas') + ' recibió tu solicitud el ' + quote.fechaHora + '. Esta revisión continúa y no impide enviar otra solicitud.'));
     }
     const c = quote.cotizacion || {};
-    return React.createElement('div', { style: { background: '#E7F6ED', border: '1px solid #C4E8D2', borderRadius: 15, padding: '13px 14px', marginTop: 16 } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9 } },
-        React.createElement(I, { name: 'checkCircle', size: 18, stroke: 2.2, style: { color: '#13794A', flexShrink: 0 } }),
-        React.createElement('div', { style: { flex: 1, fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: '#0b5c37' } }, 'Tu cotización está lista'),
-        React.createElement('span', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, color: '#13794A', fontFamily: 'var(--mono)' } }, quote.folio)),
-      React.createElement('div', { style: { fontSize: 'var(--text-24, 24px)', fontWeight: 900, color: '#0b5c37', letterSpacing: '-.02em', marginTop: 6 } }, money(c.monto)),
-      React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: '#13794A', fontWeight: 600, marginTop: 3, lineHeight: 1.45 } },
-        'Cotizado por ' + (c.actor || quote.empresaNombre || 'el proveedor') + ' · Vigencia ' + (c.vigencia || '15 días') + (c.nota ? ' · ' + c.nota : '') + '. Ya puedes simular tu financiamiento con este monto.'));
+    return React.createElement('div', {
+      style: {
+        background: '#E7F6ED',
+        border: '1px solid #C4E8D2',
+        borderRadius: 15,
+        padding: '13px 14px',
+        marginTop: 16
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9
+      }
+    }, React.createElement(I, {
+      name: 'checkCircle',
+      size: 18,
+      stroke: 2.2,
+      style: {
+        color: '#13794A',
+        flexShrink: 0
+      }
+    }), React.createElement('div', {
+      style: {
+        flex: 1,
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 800,
+        color: '#0b5c37'
+      }
+    }, 'Tu cotización está lista'), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 700,
+        color: '#13794A',
+        fontFamily: 'var(--mono)'
+      }
+    }, quote.folio)), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-24, 24px)',
+        fontWeight: 900,
+        color: '#0b5c37',
+        letterSpacing: '-.02em',
+        marginTop: 6
+      }
+    }, money(c.monto)), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        color: '#13794A',
+        fontWeight: 600,
+        marginTop: 3,
+        lineHeight: 1.45
+      }
+    }, 'Cotizado por ' + (c.actor || quote.empresaNombre || 'el proveedor') + ' · Vigencia ' + (c.vigencia || '15 días') + (c.nota ? ' · ' + c.nota : '') + '. Ya puedes simular tu financiamiento con este monto.'));
   }
 
   // ── Sheet: solicitud de interés / cotización ──
-  function QuoteRequestSheet({ open, onClose, it, app, producto }) {
+  function QuoteRequestSheet({
+    open,
+    onClose,
+    it,
+    app,
+    producto
+  }) {
     const [msg, setMsg] = React.useState('');
     const [sent, setSent] = React.useState(null);
     const [firma, setFirma] = React.useState('');
     const [accept, setAccept] = React.useState(false);
-    const [error,setError]=React.useState('');
-    const [documentGate,setDocumentGate]=React.useState({phase:producto?'loading':'ready',ready:!producto,documentIds:[],missing:0});
-    const sending=React.useRef(false);const idem=React.useRef(null);
-    React.useEffect(() => { if (open) { setSent(null); setMsg(''); setFirma(''); setAccept(false); setError(''); setDocumentGate({phase:producto?'loading':'ready',ready:!producto,documentIds:[],missing:0});sending.current=false;idem.current=window.ProgramRequestRepository.newIdempotencyKey(); } }, [open,producto&&producto.id]);
+    const [error, setError] = React.useState('');
+    const [documentGate, setDocumentGate] = React.useState({
+      phase: producto ? 'loading' : 'ready',
+      ready: !producto,
+      documentIds: [],
+      missing: 0
+    });
+    const sending = React.useRef(false);
+    const idem = React.useRef(null);
+    React.useEffect(() => {
+      if (open) {
+        setSent(null);
+        setMsg('');
+        setFirma('');
+        setAccept(false);
+        setError('');
+        setDocumentGate({
+          phase: producto ? 'loading' : 'ready',
+          ready: !producto,
+          documentIds: [],
+          missing: 0
+        });
+        sending.current = false;
+        idem.current = window.ProgramRequestRepository.newIdempotencyKey();
+      }
+    }, [open, producto && producto.id]);
     const provider = window.quoteStore ? window.quoteStore.providerFor(it.id) : null;
     const [okCot, runCot] = window.useBtnConfirm();
     const enviar = async () => {
-      if(sending.current||!documentGate.ready)return;sending.current=true;
-      try{let rec;if(producto&&producto.catalogSource==='program')rec=await window.ProgramCatalogRepository.createRequest(producto.id,1,msg.trim(),firma,true,idem.current,documentGate.documentIds);else if(producto)rec=await window.MarketplaceRepository.createQuote(producto.id,msg.trim(),firma,true,idem.current,documentGate.documentIds);else rec=await window.quoteStore.solicitar({
-        productoId: it.id, productoNombre: it.label, icon: it.icon, mensaje: msg.trim(),documentIds:documentGate.documentIds,
-        firma, idempotencyKey:idem.current, terminos: { aceptado: true, programa: 'cotizacion', fecha: new Date().toISOString() },
-      });setSent(rec);}catch(_){setError('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');sending.current=false;}
+      if (sending.current || !documentGate.ready) return;
+      sending.current = true;
+      try {
+        let rec;
+        if (producto && producto.catalogSource === 'program') rec = await window.ProgramCatalogRepository.createRequest(producto.id, 1, msg.trim(), firma, true, idem.current, documentGate.documentIds);else if (producto) rec = await window.MarketplaceRepository.createQuote(producto.id, msg.trim(), firma, true, idem.current, documentGate.documentIds);else rec = await window.quoteStore.solicitar({
+          productoId: it.id,
+          productoNombre: it.label,
+          icon: it.icon,
+          mensaje: msg.trim(),
+          documentIds: documentGate.documentIds,
+          firma,
+          idempotencyKey: idem.current,
+          terminos: {
+            aceptado: true,
+            programa: 'cotizacion',
+            fecha: new Date().toISOString()
+          }
+        });
+        setSent(rec);
+      } catch (_) {
+        setError('No se pudo enviar la solicitud. Revisa los documentos e inténtalo de nuevo.');
+        sending.current = false;
+      }
     };
-    if (sent) return React.createElement(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'quote',subject:it.label,workflowState:sent.workflow_state,onBack:onClose,fullScreen:true,destination:(sent.empresaNombre||'El Área de Finanzas')+' recibió tu solicitud y preparará el presupuesto para su revisión.'});
-    return React.createElement(window.Sheet, { open, onClose, title: 'Solicitar cotización' },
-      React.createElement('div', { style: { display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface-2)', borderRadius: 15, padding: '13px 14px' } },
-        React.createElement('div', { style: { width: 44, height: 44, borderRadius: 12, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: it.icon, size: 23, stroke: 2 })),
-        React.createElement('div', null,
-          React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)' } }, it.label),
-          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } }, 'Atiende: ' + (provider ? provider.name : 'Área de Finanzas del sindicato')))),
-      React.createElement('p', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.55, margin: '14px 0 0' } }, 'Enviaremos tu interés en este servicio. El proveedor preparará una cotización con el monto real y recibirás una notificación para simular tu financiamiento.'),
-      React.createElement('div', { style: { marginTop: 14 } },
-        React.createElement('label', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 6 } }, '¿Qué te interesa? (opcional)'),
-        React.createElement('textarea', { value: msg, rows: 3, placeholder: 'Ej. Viaje a Cancún para 2 personas en agosto…', onChange: (e) => setMsg(e.target.value), style: { width: '100%', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '12px 14px', fontSize: 'var(--text-14, 14px)', fontFamily: 'inherit', color: 'var(--ink)', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5 } })),
-      producto&&React.createElement('div',{style:{marginTop:18}},React.createElement(window.DocumentRequestGate,{scopeType:producto.catalogSource==='program'?'PROGRAM':'PRODUCT',scopeKey:producto.id,onState:setDocumentGate})),
-      React.createElement(window.SignBlock, { programa: 'cotizacion', subtitulo: 'Solicitud de cotización · ' + it.label, firma, setFirma, accept, setAccept, compact: true }),
-      error&&React.createElement('div',{style:{color:'#C0341D',fontSize: 'var(--text-12-5, 12.5px)',fontWeight:700,marginTop:10}},error),
-      React.createElement('div', { style: { display: 'flex', gap: 10, marginTop: 16 } },
-        React.createElement(window.Btn, { full: true, variant: 'outline', onClick: onClose }, 'Cancelar'),
-        React.createElement(window.Btn, { full: true, icon: 'doc', success: okCot, disabled: !accept || !firma || !documentGate.ready, onClick: () => runCot(enviar) }, documentGate.phase==='loading'?'Consultando documentos…':documentGate.missing?'Faltan '+documentGate.missing+' documentos':'Enviar solicitud')));
+    if (sent) return React.createElement(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'quote',
+      subject: it.label,
+      workflowState: sent.workflow_state,
+      onBack: onClose,
+      fullScreen: true,
+      destination: (sent.empresaNombre || 'El Área de Finanzas') + ' recibió tu solicitud y preparará el presupuesto para su revisión.'
+    });
+    return React.createElement(window.Sheet, {
+      open,
+      onClose,
+      title: 'Solicitar cotización'
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        background: 'var(--surface-2)',
+        borderRadius: 15,
+        padding: '13px 14px'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: it.icon,
+      size: 23,
+      stroke: 2
+    })), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-14-5, 14.5px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, it.label), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 2
+      }
+    }, 'Atiende: ' + (provider ? provider.name : 'Área de Finanzas del sindicato')))), React.createElement('p', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        lineHeight: 1.55,
+        margin: '14px 0 0'
+      }
+    }, 'Enviaremos tu interés en este servicio. El proveedor preparará una cotización con el monto real y recibirás una notificación para simular tu financiamiento.'), React.createElement('div', {
+      style: {
+        marginTop: 14
+      }
+    }, React.createElement('label', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        color: 'var(--ink-2)',
+        display: 'block',
+        marginBottom: 6
+      }
+    }, '¿Qué te interesa? (opcional)'), React.createElement('textarea', {
+      value: msg,
+      rows: 3,
+      placeholder: 'Ej. Viaje a Cancún para 2 personas en agosto…',
+      onChange: e => setMsg(e.target.value),
+      style: {
+        width: '100%',
+        border: 'none',
+        outline: 'none',
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)',
+        borderRadius: 13,
+        padding: '12px 14px',
+        fontSize: 'var(--text-14, 14px)',
+        fontFamily: 'inherit',
+        color: 'var(--ink)',
+        boxSizing: 'border-box',
+        resize: 'vertical',
+        lineHeight: 1.5
+      }
+    })), producto && React.createElement('div', {
+      style: {
+        marginTop: 18
+      }
+    }, React.createElement(window.DocumentRequestGate, {
+      scopeType: producto.catalogSource === 'program' ? 'PROGRAM' : 'PRODUCT',
+      scopeKey: producto.id,
+      onState: setDocumentGate
+    })), React.createElement(window.SignBlock, {
+      programa: 'cotizacion',
+      subtitulo: 'Solicitud de cotización · ' + it.label,
+      firma,
+      setFirma,
+      accept,
+      setAccept,
+      compact: true
+    }), error && React.createElement('div', {
+      style: {
+        color: '#C0341D',
+        fontSize: 'var(--text-12-5, 12.5px)',
+        fontWeight: 700,
+        marginTop: 10
+      }
+    }, error), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        marginTop: 16
+      }
+    }, React.createElement(window.Btn, {
+      full: true,
+      variant: 'outline',
+      onClick: onClose
+    }, 'Cancelar'), React.createElement(window.Btn, {
+      full: true,
+      icon: 'doc',
+      success: okCot,
+      disabled: !accept || !firma || !documentGate.ready,
+      onClick: () => runCot(enviar)
+    }, documentGate.phase === 'loading' ? 'Consultando documentos…' : documentGate.missing ? 'Faltan ' + documentGate.missing + ' documentos' : 'Enviar solicitud')));
   }
-
   function actionPill(icon, label, onClick) {
-    return React.createElement('button', { onClick, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'var(--guinda-50)', border: '1px solid var(--guinda-100)', borderRadius: 14, padding: '11px 0', cursor: 'pointer', color: 'var(--guinda)' } },
-      React.createElement(I, { name: icon, size: 21, stroke: 2 }), React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700 } }, label));
+    return React.createElement('button', {
+      onClick,
+      style: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        background: 'var(--guinda-50)',
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 14,
+        padding: '11px 0',
+        cursor: 'pointer',
+        color: 'var(--guinda)'
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 21,
+      stroke: 2
+    }), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700
+      }
+    }, label));
   }
-
   function descFor(it) {
     const m = {
       ahorro: 'Aparta una parte de tu quincena de forma automática y recíbela con rendimiento preferente al cierre del semestre. Sin comisiones.',
-      inversion: 'Haz crecer tu dinero con el portafolio sindical, diseñado para afiliados. Empieza desde $1,000 y consulta tu rendimiento en tiempo real.',
+      inversion: 'Haz crecer tu dinero con el portafolio sindical, diseñado para afiliados. Empieza desde $1,000 y consulta tu rendimiento en tiempo real.'
     };
-    return m[it.id] || (it.tagline + '. ' + it.meta + '. Solicítalo con las mejores condiciones gracias a tu sindicato, con descuento cómodo vía nómina y sin letras chiquitas.');
+    return m[it.id] || it.tagline + '. ' + it.meta + '. Solicítalo con las mejores condiciones gracias a tu sindicato, con descuento cómodo vía nómina y sin letras chiquitas.';
   }
   function benefitsFor(id) {
-    const base = [
-      { icon: 'percent', t: 'Tasa preferente sindical', s: 'Mejores condiciones que el mercado' },
-      { icon: 'calendar', t: 'Descuento vía nómina', s: 'Pagos cómodos cada quincena' },
-      { icon: 'shield', t: 'Sin aval ni penalización', s: 'Trámite 100% para afiliados' },
-    ];
-    if (id === 'ahorro' || id === 'inversion') return [
-      { icon: 'trending', t: 'Rendimiento preferente', s: 'Por encima de la inflación' },
-      { icon: 'refresh', t: 'Aportación automática', s: 'Se aparta de tu quincena' },
-      { icon: 'lock', t: 'Tu dinero, protegido', s: 'Respaldo del sindicato' },
-    ];
+    const base = [{
+      icon: 'percent',
+      t: 'Tasa preferente sindical',
+      s: 'Mejores condiciones que el mercado'
+    }, {
+      icon: 'calendar',
+      t: 'Descuento vía nómina',
+      s: 'Pagos cómodos cada quincena'
+    }, {
+      icon: 'shield',
+      t: 'Sin aval ni penalización',
+      s: 'Trámite 100% para afiliados'
+    }];
+    if (id === 'ahorro' || id === 'inversion') return [{
+      icon: 'trending',
+      t: 'Rendimiento preferente',
+      s: 'Por encima de la inflación'
+    }, {
+      icon: 'refresh',
+      t: 'Aportación automática',
+      s: 'Se aparta de tu quincena'
+    }, {
+      icon: 'lock',
+      t: 'Tu dinero, protegido',
+      s: 'Respaldo del sindicato'
+    }];
     return base;
   }
   // ---------- MODULO (institutional) — contenido administrable ----------
-  function ModuloScreen({ app, params }) {
+  function ModuloScreen({
+    app,
+    params
+  }) {
     const m = params.m;
     if (m.frontend_route && m.frontend_route.type === 'tab') {
       app.setTab(m.frontend_route.target);
       return null;
     }
     const migrated = (window.H007_MIGRATED_MODULE_IDS || []).indexOf(m.id) !== -1;
-    return migrated
-      ? React.createElement(MigratedModuloScreen, { app, params })
-      : React.createElement(LegacyModuloScreen, { app, params });
+    return migrated ? React.createElement(MigratedModuloScreen, {
+      app,
+      params
+    }) : React.createElement(LegacyModuloScreen, {
+      app,
+      params
+    });
   }
-
-  function MigratedModuloScreen({ app, params }) {
+  function MigratedModuloScreen({
+    app,
+    params
+  }) {
     const m = params.m;
     const content = app.institutional.moduleFor(m.id);
     return renderModulo(app, m, content.title, content.description, content.blocks, content.phase, content.retry);
   }
-
-  function LegacyModuloScreen({ app, params }) {
+  function LegacyModuloScreen({
+    app,
+    params
+  }) {
     const m = params.m;
-    if (window.useSindicatoStore) window.useSindicatoStore();   // re-render al editar en el panel
+    if (window.useSindicatoStore) window.useSindicatoStore(); // re-render al editar en el panel
     const store = window.sindicatoStore;
     const hdr = store ? store.header(m.id) : null;
     const blocks = store ? store.blocksLive(m.id) : null;
-    const titulo = (hdr && hdr.titulo) || m.label;
-    const desc = (hdr && hdr.desc) || m.desc;
+    const titulo = hdr && hdr.titulo || m.label;
+    const desc = hdr && hdr.desc || m.desc;
     return renderModulo(app, m, titulo, desc, blocks, 'loaded', null);
   }
-
   function renderModulo(app, m, titulo, desc, blocks, phase, retry) {
     const migrated = (window.H007_MIGRATED_MODULE_IDS || []).indexOf(m.id) !== -1;
-    return React.createElement('div', { 'data-h007-module': m.id, style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
-        React.createElement('button', { onClick: app.back, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800 } }, titulo)),
-      React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 20 } },
-        React.createElement('div', { style: { position: 'relative', display: 'flex', gap: 14, alignItems: 'center', background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))', borderRadius: 20, padding: 18, color: '#fff', overflow: 'hidden', minHeight: 88, boxSizing: 'border-box' } },
-          !migrated && contentHeaderImage(m.id) && React.createElement('img', { src: contentHeaderImage(m.id), alt: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' } }),
-          React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(120deg, rgba(50,0,12,.5), rgba(50,0,12,.15))', pointerEvents: 'none' } }),
-          React.createElement('div', { style: { position: 'relative', width: 52, height: 52, borderRadius: 15, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', flexShrink: 0, backdropFilter: 'blur(4px)' } }, React.createElement(I, { name: m.icon, size: 28, stroke: 1.8 })),
-          React.createElement('div', { style: { position: 'relative' } }, React.createElement('div', { style: { fontSize: 'var(--text-18, 18px)', fontWeight: 800, textShadow: '0 1px 8px rgba(0,0,0,.3)' } }, titulo), desc && React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', opacity: .88, fontWeight: 500, textShadow: '0 1px 8px rgba(0,0,0,.3)' } }, desc))),
-        React.createElement('div', { style: { marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 } },
-          phase === 'loading'
-            ? React.createElement('div', { 'data-h007-module-state': 'loading', style: { textAlign: 'center', color: 'var(--ink-3)', fontWeight: 700, padding: 30 } }, 'Cargando contenido...')
-            : phase === 'error'
-              ? React.createElement('div', { 'data-h007-module-state': 'error', style: { textAlign: 'center', padding: 30 } },
-                React.createElement('div', { style: { color: 'var(--ink-2)', fontWeight: 700 } }, 'No pudimos cargar esta sección.'),
-                React.createElement('button', { onClick: retry, style: { marginTop: 10 } }, 'Reintentar'))
-              : (blocks && blocks.length)
-                ? blocks.map((b) => React.createElement('div', { key: b.id, 'data-h007-content-block': '' }, React.createElement(ModuloBlock, { b, app })))
-                : React.createElement('div', { style: { textAlign: 'center', color: 'var(--ink-3)', fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 600, padding: '30px 10px', lineHeight: 1.5 } }, 'No hay contenido disponible para tu perfil en esta sección.')),
-      ),
-    );
+    return React.createElement('div', {
+      'data-h007-module': m.id,
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '8px 12px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('button', {
+      onClick: app.back,
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        border: 'none',
+        background: 'transparent',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: 'var(--ink)'
+      }
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 22,
+      stroke: 2
+    })), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-16-5, 16.5px)',
+        fontWeight: 800
+      }
+    }, titulo)), React.createElement('div', {
+      className: 'su-app-scroll su-route',
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: 20
+      }
+    }, React.createElement('div', {
+      style: {
+        position: 'relative',
+        display: 'flex',
+        gap: 14,
+        alignItems: 'center',
+        background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))',
+        borderRadius: 20,
+        padding: 18,
+        color: '#fff',
+        overflow: 'hidden',
+        minHeight: 88,
+        boxSizing: 'border-box'
+      }
+    }, !migrated && contentHeaderImage(m.id) && React.createElement('img', {
+      src: contentHeaderImage(m.id),
+      alt: '',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        pointerEvents: 'none'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(120deg, rgba(50,0,12,.5), rgba(50,0,12,.15))',
+        pointerEvents: 'none'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'relative',
+        width: 52,
+        height: 52,
+        borderRadius: 15,
+        background: 'rgba(255,255,255,.16)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+        backdropFilter: 'blur(4px)'
+      }
+    }, React.createElement(I, {
+      name: m.icon,
+      size: 28,
+      stroke: 1.8
+    })), React.createElement('div', {
+      style: {
+        position: 'relative'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-18, 18px)',
+        fontWeight: 800,
+        textShadow: '0 1px 8px rgba(0,0,0,.3)'
+      }
+    }, titulo), desc && React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        opacity: .88,
+        fontWeight: 500,
+        textShadow: '0 1px 8px rgba(0,0,0,.3)'
+      }
+    }, desc))), React.createElement('div', {
+      style: {
+        marginTop: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12
+      }
+    }, phase === 'loading' ? React.createElement('div', {
+      'data-h007-module-state': 'loading',
+      style: {
+        textAlign: 'center',
+        color: 'var(--ink-3)',
+        fontWeight: 700,
+        padding: 30
+      }
+    }, 'Cargando contenido...') : phase === 'error' ? React.createElement('div', {
+      'data-h007-module-state': 'error',
+      style: {
+        textAlign: 'center',
+        padding: 30
+      }
+    }, React.createElement('div', {
+      style: {
+        color: 'var(--ink-2)',
+        fontWeight: 700
+      }
+    }, 'No pudimos cargar esta sección.'), React.createElement('button', {
+      onClick: retry,
+      style: {
+        marginTop: 10
+      }
+    }, 'Reintentar')) : blocks && blocks.length ? blocks.map(b => React.createElement('div', {
+      key: b.id,
+      'data-h007-content-block': ''
+    }, React.createElement(ModuloBlock, {
+      b,
+      app
+    }))) : React.createElement('div', {
+      style: {
+        textAlign: 'center',
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 600,
+        padding: '30px 10px',
+        lineHeight: 1.5
+      }
+    }, 'No hay contenido disponible para tu perfil en esta sección.'))));
   }
-
   function contentHeaderImage(id) {
     const store = window.sindicatoStore;
     const header = store && store.header(id);
     return header && header.imageUrl;
   }
-
-  function ModuloBlock({ b, app }) {
-    const openUrl = (url) => { if (url) window.open(url, '_blank', 'noopener'); else app.toast && app.toast('Enlace no configurado'); };
+  function ModuloBlock({
+    b,
+    app
+  }) {
+    const openUrl = url => {
+      if (url) window.open(url, '_blank', 'noopener');else app.toast && app.toast('Enlace no configurado');
+    };
     const downloadFile = () => {
-      if (b.url) openUrl(b.url);
-      else if (b.imageUrl) openUrl(b.imageUrl);
-      else app.toast && app.toast('Archivo no disponible');
+      if (b.url) openUrl(b.url);else if (b.imageUrl) openUrl(b.imageUrl);else app.toast && app.toast('Archivo no disponible');
     };
     if (b.kind === 'texto') {
-      const paras = String(b.texto || '').split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+      const paras = String(b.texto || '').split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
       if (b.foto) {
         // Ficha de persona (directorio): foto + nombre + cargo
-        return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 14, background: 'var(--surface)', borderRadius: 16, padding: '13px 15px', boxShadow: 'var(--neo-sm)' } },
-          React.createElement(window.Avatar, { name: b.titulo || '', src: b.foto, size: 54 }),
-          React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-            b.titulo && React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 } }, b.titulo),
-            paras.length ? React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--guinda)', fontWeight: 700, marginTop: 3, lineHeight: 1.35 } }, paras.join(' ')) : null));
+        return React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            background: 'var(--surface)',
+            borderRadius: 16,
+            padding: '13px 15px',
+            boxShadow: 'var(--neo-sm)'
+          }
+        }, React.createElement(window.Avatar, {
+          name: b.titulo || '',
+          src: b.foto,
+          size: 54
+        }), React.createElement('div', {
+          style: {
+            flex: 1,
+            minWidth: 0
+          }
+        }, b.titulo && React.createElement('div', {
+          style: {
+            fontSize: 'var(--text-14-5, 14.5px)',
+            fontWeight: 800,
+            color: 'var(--ink)',
+            lineHeight: 1.25
+          }
+        }, b.titulo), paras.length ? React.createElement('div', {
+          style: {
+            fontSize: 'var(--text-12-5, 12.5px)',
+            color: 'var(--guinda)',
+            fontWeight: 700,
+            marginTop: 3,
+            lineHeight: 1.35
+          }
+        }, paras.join(' ')) : null));
       }
-      return React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: '15px 16px', boxShadow: 'var(--neo-sm)' } },
-        b.titulo && React.createElement('div', { style: { fontSize: 'var(--text-15-5, 15.5px)', fontWeight: 800, color: 'var(--ink)', marginBottom: paras.length ? 7 : 0 } }, b.titulo),
-        paras.map((p, i) => React.createElement('p', { key: i, style: { fontSize: 'var(--text-14, 14px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6, margin: i ? '10px 0 0' : 0 } }, p)),
-        b.url && React.createElement('button', { onClick: () => openUrl(b.url), style: { display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, background: 'none', border: 'none', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, cursor: 'pointer', padding: 0 } }, React.createElement(I, { name: 'link', size: 16, stroke: 2.2 }), 'Abrir enlace'));
+      return React.createElement('div', {
+        style: {
+          background: 'var(--surface)',
+          borderRadius: 16,
+          padding: '15px 16px',
+          boxShadow: 'var(--neo-sm)'
+        }
+      }, b.titulo && React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-15-5, 15.5px)',
+          fontWeight: 800,
+          color: 'var(--ink)',
+          marginBottom: paras.length ? 7 : 0
+        }
+      }, b.titulo), paras.map((p, i) => React.createElement('p', {
+        key: i,
+        style: {
+          fontSize: 'var(--text-14, 14px)',
+          color: 'var(--ink-2)',
+          fontWeight: 500,
+          lineHeight: 1.6,
+          margin: i ? '10px 0 0' : 0
+        }
+      }, p)), b.url && React.createElement('button', {
+        onClick: () => openUrl(b.url),
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: 12,
+          background: 'none',
+          border: 'none',
+          color: 'var(--guinda)',
+          fontFamily: 'inherit',
+          fontSize: 'var(--text-13-5, 13.5px)',
+          fontWeight: 800,
+          cursor: 'pointer',
+          padding: 0
+        }
+      }, React.createElement(I, {
+        name: 'link',
+        size: 16,
+        stroke: 2.2
+      }), 'Abrir enlace'));
     }
     if (b.kind === 'imagen') {
       const clickable = !!b.url;
       return React.createElement('div', {
-        onClick: clickable ? () => openUrl(b.url) : undefined, className: clickable ? 'su-press' : '',
-        style: { background: 'var(--surface)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--neo-sm)', cursor: clickable ? 'pointer' : 'default' },
-      },
-        React.createElement('div', { style: { position: 'relative', height: 170, background: 'linear-gradient(150deg, hsl(345,55%,44%), hsl(345,55%,28%))' } },
-          b.imageUrl && React.createElement('img', { src: b.imageUrl, alt: b.titulo || '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })),
-        (b.titulo || b.texto) && React.createElement('div', { style: { padding: '12px 15px' } },
-          b.titulo && React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)' } }, b.titulo),
-          b.texto && React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 500, marginTop: 3, lineHeight: 1.45 } }, b.texto)));
+        onClick: clickable ? () => openUrl(b.url) : undefined,
+        className: clickable ? 'su-press' : '',
+        style: {
+          background: 'var(--surface)',
+          borderRadius: 16,
+          overflow: 'hidden',
+          boxShadow: 'var(--neo-sm)',
+          cursor: clickable ? 'pointer' : 'default'
+        }
+      }, React.createElement('div', {
+        style: {
+          position: 'relative',
+          height: 170,
+          background: 'linear-gradient(150deg, hsl(345,55%,44%), hsl(345,55%,28%))'
+        }
+      }, b.imageUrl && React.createElement('img', {
+        src: b.imageUrl,
+        alt: b.titulo || '',
+        style: {
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }
+      })), (b.titulo || b.texto) && React.createElement('div', {
+        style: {
+          padding: '12px 15px'
+        }
+      }, b.titulo && React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-14-5, 14.5px)',
+          fontWeight: 800,
+          color: 'var(--ink)'
+        }
+      }, b.titulo), b.texto && React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-12-5, 12.5px)',
+          color: 'var(--ink-3)',
+          fontWeight: 500,
+          marginTop: 3,
+          lineHeight: 1.45
+        }
+      }, b.texto)));
     }
     if (b.kind === 'documento') {
-      return React.createElement('button', { onClick: downloadFile, className: 'su-press', style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', borderRadius: 14, padding: '14px 15px', boxShadow: 'var(--neo-sm)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' } },
-        React.createElement('div', { style: { width: 40, height: 40, borderRadius: 11, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', color: 'var(--guinda)', flexShrink: 0 } }, React.createElement(I, { name: 'doc', size: 21, stroke: 1.9 })),
-        React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-          React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, b.titulo || 'Documento'),
-          b.texto && React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 500, marginTop: 2 } }, b.texto)),
-        React.createElement(I, { name: b.imageUrl ? 'download' : b.url ? 'link' : 'download', size: 19, stroke: 2, style: { color: 'var(--ink-3)', flexShrink: 0 } }));
+      return React.createElement('button', {
+        onClick: downloadFile,
+        className: 'su-press',
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          width: '100%',
+          textAlign: 'left',
+          background: 'var(--surface)',
+          borderRadius: 14,
+          padding: '14px 15px',
+          boxShadow: 'var(--neo-sm)',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit'
+        }
+      }, React.createElement('div', {
+        style: {
+          width: 40,
+          height: 40,
+          borderRadius: 11,
+          background: 'var(--guinda-50)',
+          display: 'grid',
+          placeItems: 'center',
+          color: 'var(--guinda)',
+          flexShrink: 0
+        }
+      }, React.createElement(I, {
+        name: 'doc',
+        size: 21,
+        stroke: 1.9
+      })), React.createElement('div', {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      }, React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-14, 14px)',
+          fontWeight: 800,
+          color: 'var(--ink)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }
+      }, b.titulo || 'Documento'), b.texto && React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-12, 12px)',
+          color: 'var(--ink-3)',
+          fontWeight: 500,
+          marginTop: 2
+        }
+      }, b.texto)), React.createElement(I, {
+        name: b.imageUrl ? 'download' : b.url ? 'link' : 'download',
+        size: 19,
+        stroke: 2,
+        style: {
+          color: 'var(--ink-3)',
+          flexShrink: 0
+        }
+      }));
     }
     // enlace
-    return React.createElement('button', { onClick: () => openUrl(b.url), className: 'su-press', style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', borderRadius: 14, padding: '14px 15px', boxShadow: 'var(--neo-sm)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' } },
-      React.createElement('div', { style: { width: 40, height: 40, borderRadius: 11, background: 'var(--grad-guinda-soft)', display: 'grid', placeItems: 'center', color: '#fff', flexShrink: 0, boxShadow: 'var(--glow-guinda)' } }, React.createElement(I, { name: 'link', size: 20, stroke: 2 })),
-      React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-        React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', fontWeight: 800, color: 'var(--ink)' } }, b.titulo || 'Abrir enlace'),
-        b.texto && React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 500, marginTop: 2 } }, b.texto)),
-      React.createElement(I, { name: 'chevR', size: 19, stroke: 2.2, style: { color: 'var(--ink-3)', flexShrink: 0 } }));
+    return React.createElement('button', {
+      onClick: () => openUrl(b.url),
+      className: 'su-press',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        textAlign: 'left',
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '14px 15px',
+        boxShadow: 'var(--neo-sm)',
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 11,
+        background: 'var(--grad-guinda-soft)',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#fff',
+        flexShrink: 0,
+        boxShadow: 'var(--glow-guinda)'
+      }
+    }, React.createElement(I, {
+      name: 'link',
+      size: 20,
+      stroke: 2
+    })), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-14-5, 14.5px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, b.titulo || 'Abrir enlace'), b.texto && React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        color: 'var(--ink-3)',
+        fontWeight: 500,
+        marginTop: 2
+      }
+    }, b.texto)), React.createElement(I, {
+      name: 'chevR',
+      size: 19,
+      stroke: 2.2,
+      style: {
+        color: 'var(--ink-3)',
+        flexShrink: 0
+      }
+    }));
   }
 
   // ---------- ARTICULO ----------
-  function ArticuloScreen({ app, params }) {
+  function ArticuloScreen({
+    app,
+    params
+  }) {
     const n = params.n;
     const [zoom, setZoom] = useState(false);
-    return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--surface)', display: 'flex', flexDirection: 'column' } },
-      React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto' } },
-        React.createElement('div', { onClick: () => n.image_url && setZoom(true), 'data-shared-key': 'news:' + n.id, style: { position: 'relative', height: 220, cursor: n.image_url ? 'zoom-in' : 'default', overflow: 'hidden', background: `linear-gradient(135deg, hsl(${n.hue} 52% 44%), hsl(${n.hue} 58% 28%))` } },
-          n.image_url && React.createElement('img', { src: n.image_url, alt: '', 'data-shared-inner': '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } }),
-          React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg,transparent 45%,rgba(0,0,0,.5))' } }),
-          React.createElement('div', { style: { position: 'absolute', right: -16, bottom: -20, opacity: .16 } }, React.createElement(window.SutiSeal, { size: 160 })),
-          React.createElement('button', { onClick: (e) => { e.stopPropagation(); app.back(); }, style: { position: 'absolute', top: 12, left: 10, width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.25)', backdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-          React.createElement('div', { style: { position: 'absolute', top: 14, right: 12, display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(0,0,0,.32)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, padding: '7px 11px', borderRadius: 999, pointerEvents: 'none' } }, React.createElement(I, { name: 'search', size: 14, stroke: 2.4 }), 'Ampliar'),
-          n.tag && React.createElement('div', { style: { position: 'absolute', left: 20, bottom: 16, right: 20 } }, React.createElement(window.Badge, { tone: 'gold', solid: true }, n.tag.toUpperCase()))),
-        React.createElement('div', { 'data-shared-follow': '', style: { padding: 20 } },
-          React.createElement('h1', { 'data-shared-title': '', style: { fontSize: 'var(--text-24, 24px)', fontWeight: 800, lineHeight: 1.2, letterSpacing: '-.02em', margin: 0, textWrap: 'pretty' } }, n.title),
-          React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 8, display: 'flex', gap: 10 } }, n.date, '· ' + n.read + ' de lectura'),
-          React.createElement('div', { style: { marginTop: 16, fontSize: 'var(--text-15-5, 15.5px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.65 } },
-            React.createElement(window.RichText,{value:n.body||''})),
-      )),
-      zoom && n.image_url && React.createElement(window.ImageViewer, { sources: [n.image_url], alt: n.title, onClose: () => setZoom(false) }),
-    );
+    return React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--surface)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto'
+      }
+    }, React.createElement('div', {
+      onClick: () => n.image_url && setZoom(true),
+      'data-shared-key': 'news:' + n.id,
+      style: {
+        position: 'relative',
+        height: 220,
+        cursor: n.image_url ? 'zoom-in' : 'default',
+        overflow: 'hidden',
+        background: `linear-gradient(135deg, hsl(${n.hue} 52% 44%), hsl(${n.hue} 58% 28%))`
+      }
+    }, n.image_url && React.createElement('img', {
+      src: n.image_url,
+      alt: '',
+      'data-shared-inner': '',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(180deg,transparent 45%,rgba(0,0,0,.5))'
+      }
+    }), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        right: -16,
+        bottom: -20,
+        opacity: .16
+      }
+    }, React.createElement(window.SutiSeal, {
+      size: 160
+    })), React.createElement('button', {
+      onClick: e => {
+        e.stopPropagation();
+        app.back();
+      },
+      style: {
+        position: 'absolute',
+        top: 12,
+        left: 10,
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'rgba(0,0,0,.25)',
+        backdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff'
+      }
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 22,
+      stroke: 2
+    })), React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: 14,
+        right: 12,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        background: 'rgba(0,0,0,.32)',
+        backdropFilter: 'blur(6px)',
+        color: '#fff',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 700,
+        padding: '7px 11px',
+        borderRadius: 999,
+        pointerEvents: 'none'
+      }
+    }, React.createElement(I, {
+      name: 'search',
+      size: 14,
+      stroke: 2.4
+    }), 'Ampliar'), n.tag && React.createElement('div', {
+      style: {
+        position: 'absolute',
+        left: 20,
+        bottom: 16,
+        right: 20
+      }
+    }, React.createElement(window.Badge, {
+      tone: 'gold',
+      solid: true
+    }, n.tag.toUpperCase()))), React.createElement('div', {
+      'data-shared-follow': '',
+      style: {
+        padding: 20
+      }
+    }, React.createElement('h1', {
+      'data-shared-title': '',
+      style: {
+        fontSize: 'var(--text-24, 24px)',
+        fontWeight: 800,
+        lineHeight: 1.2,
+        letterSpacing: '-.02em',
+        margin: 0,
+        textWrap: 'pretty'
+      }
+    }, n.title), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 8,
+        display: 'flex',
+        gap: 10
+      }
+    }, n.date, '· ' + n.read + ' de lectura'), React.createElement('div', {
+      style: {
+        marginTop: 16,
+        fontSize: 'var(--text-15-5, 15.5px)',
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        lineHeight: 1.65
+      }
+    }, React.createElement(window.RichText, {
+      value: n.body || ''
+    })))), zoom && n.image_url && React.createElement(window.ImageViewer, {
+      sources: [n.image_url],
+      alt: n.title,
+      onClose: () => setZoom(false)
+    }));
   }
-
-  function FinanceSimSheet({ open, onClose, it, quote, initialAmount }) {
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null, quote: null };
+  function FinanceSimSheet({
+    open,
+    onClose,
+    it,
+    quote,
+    initialAmount
+  }) {
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
+      status: 'error',
+      overview: null,
+      quote: null
+    };
     const overview = financial.overview || {};
     const programKey = ['prestamo', 'nomina', 'caja'].includes(it && it.id) ? it.id : 'prestamo';
-    const programs = (Array.isArray(overview.programs) ? overview.programs : []).filter((item) => item.status === 'AVAILABLE' && item.program_id === programKey);
+    const programs = (Array.isArray(overview.programs) ? overview.programs : []).filter(item => item.status === 'AVAILABLE' && item.program_id === programKey);
     const [programId, setProgramId] = React.useState('');
-    const program = programs.find((item) => item.id === programId) || programs[0] || null;
+    const program = programs.find(item => item.id === programId) || programs[0] || null;
     const [amount, setAmount] = React.useState(0);
     const [term, setTerm] = React.useState(0);
-    React.useEffect(() => { if (open && window.financialLegacyStore) window.financialLegacyStore.loadOverview(); }, [open]);
+    React.useEffect(() => {
+      if (open && window.financialLegacyStore) window.financialLegacyStore.loadOverview();
+    }, [open]);
     React.useEffect(() => {
       if (!program) return;
       setProgramId(program.id);
@@ -15504,24 +16686,150 @@ Object.assign(window, {
     }, [program && program.id, quote && quote.id, initialAmount]);
     const result = financial.quote;
     const canSimulate = !!(program && amount > 0 && amount <= Number(program.max_amount) && term > 0 && financial.status !== 'loading');
-    const fieldStyle = { width: '100%', boxSizing: 'border-box', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '12px 14px', fontFamily: 'inherit', fontSize: 'var(--text-14, 14px)', fontWeight: 700, color: 'var(--ink)' };
-    return React.createElement(window.Sheet, { open, onClose, title: 'Simula tu financiamiento' },
-      financial.status === 'error' && React.createElement(window.EmptyState, { icon: 'warning', title: 'No pudimos consultar tus condiciones', sub: 'Intenta nuevamente.' }),
-      financial.status !== 'error' && !program && React.createElement(window.EmptyState, { icon: 'info', title: overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Completa tu perfil financiero' : 'Sin financiamiento disponible', sub: overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Se necesita tu categoría laboral y sindicato.' : 'No hay un fondo aplicable a este beneficio para tu perfil.' }),
-      program && React.createElement(React.Fragment, null,
-        programs.length > 1 && React.createElement('div', { style: { marginBottom: 12 } }, React.createElement('label', { style: { display: 'block', fontSize: 'var(--text-12, 12px)', fontWeight: 800, marginBottom: 6 } }, 'Fondo'), React.createElement('select', { value: program.id, onChange: (event) => setProgramId(event.target.value), style: fieldStyle }, programs.map((item) => React.createElement('option', { key: item.id, value: item.id }, item.label)))),
-        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
-          React.createElement('div', null, React.createElement('label', { style: { display: 'block', fontSize: 'var(--text-12, 12px)', fontWeight: 800, marginBottom: 6 } }, 'Monto'), React.createElement('input', { type: 'number', min: 1, max: program.max_amount, value: amount, onChange: (event) => { setAmount(Number(event.target.value)); window.financialLegacyStore.clearQuote(); }, style: fieldStyle })),
-          React.createElement('div', null, React.createElement('label', { style: { display: 'block', fontSize: 'var(--text-12, 12px)', fontWeight: 800, marginBottom: 6 } }, 'Plazo'), React.createElement('select', { value: term, onChange: (event) => { setTerm(Number(event.target.value)); window.financialLegacyStore.clearQuote(); }, style: fieldStyle }, (program.allowed_terms || []).map((value) => React.createElement('option', { key: value, value }, program.term_label || (value + ' quincenas')))))),
-        React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 8 } }, 'Monto máximo: ' + window.money(Number(program.max_amount))),
-        result && React.createElement('div', { style: { marginTop: 14, borderRadius: 17, background: 'var(--guinda-50)', padding: 14 } },
-          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, 'Pago por quincena'),
-          React.createElement('div', { style: { fontSize: 'var(--text-28, 28px)', fontWeight: 900, color: 'var(--guinda)', marginTop: 2 } }, window.money(result.paymentPerPeriod)),
-          React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 650, color: 'var(--ink-2)', marginTop: 5 } }, result.paymentCount + ' pagos · Total ' + window.money(result.total) + ' · Incluye ' + window.money(result.administrativeFeeTotal) + ' de gasto administrativo')),
-        React.createElement('div', { style: { marginTop: 16 } }, React.createElement(window.Btn, { full: true, loading: financial.status === 'loading', disabled: !canSimulate, onClick: () => window.financialLegacyStore.requestQuote(program.id, amount, term) }, result ? 'Actualizar simulación' : 'Calcular'))),
-      React.createElement('div', { style: { marginTop: 10 } }, React.createElement(window.Btn, { full: true, variant: 'outline', onClick: onClose }, 'Cerrar')));
+    const fieldStyle = {
+      width: '100%',
+      boxSizing: 'border-box',
+      border: 'none',
+      outline: 'none',
+      background: 'var(--surface-2)',
+      boxShadow: 'var(--neo-inset)',
+      borderRadius: 13,
+      padding: '12px 14px',
+      fontFamily: 'inherit',
+      fontSize: 'var(--text-14, 14px)',
+      fontWeight: 700,
+      color: 'var(--ink)'
+    };
+    return React.createElement(window.Sheet, {
+      open,
+      onClose,
+      title: 'Simula tu financiamiento'
+    }, financial.status === 'error' && React.createElement(window.EmptyState, {
+      icon: 'warning',
+      title: 'No pudimos consultar tus condiciones',
+      sub: 'Intenta nuevamente.'
+    }), financial.status !== 'error' && !program && React.createElement(window.EmptyState, {
+      icon: 'info',
+      title: overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Completa tu perfil financiero' : 'Sin financiamiento disponible',
+      sub: overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'Se necesita tu categoría laboral y sindicato.' : 'No hay un fondo aplicable a este beneficio para tu perfil.'
+    }), program && React.createElement(React.Fragment, null, programs.length > 1 && React.createElement('div', {
+      style: {
+        marginBottom: 12
+      }
+    }, React.createElement('label', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        marginBottom: 6
+      }
+    }, 'Fondo'), React.createElement('select', {
+      value: program.id,
+      onChange: event => setProgramId(event.target.value),
+      style: fieldStyle
+    }, programs.map(item => React.createElement('option', {
+      key: item.id,
+      value: item.id
+    }, item.label)))), React.createElement('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 10
+      }
+    }, React.createElement('div', null, React.createElement('label', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        marginBottom: 6
+      }
+    }, 'Monto'), React.createElement('input', {
+      type: 'number',
+      min: 1,
+      max: program.max_amount,
+      value: amount,
+      onChange: event => {
+        setAmount(Number(event.target.value));
+        window.financialLegacyStore.clearQuote();
+      },
+      style: fieldStyle
+    })), React.createElement('div', null, React.createElement('label', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        marginBottom: 6
+      }
+    }, 'Plazo'), React.createElement('select', {
+      value: term,
+      onChange: event => {
+        setTerm(Number(event.target.value));
+        window.financialLegacyStore.clearQuote();
+      },
+      style: fieldStyle
+    }, (program.allowed_terms || []).map(value => React.createElement('option', {
+      key: value,
+      value
+    }, program.term_label || value + ' quincenas'))))), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 8
+      }
+    }, 'Monto máximo: ' + window.money(Number(program.max_amount))), result && React.createElement('div', {
+      style: {
+        marginTop: 14,
+        borderRadius: 17,
+        background: 'var(--guinda-50)',
+        padding: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, 'Pago por quincena'), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-28, 28px)',
+        fontWeight: 900,
+        color: 'var(--guinda)',
+        marginTop: 2
+      }
+    }, window.money(result.paymentPerPeriod)), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 650,
+        color: 'var(--ink-2)',
+        marginTop: 5
+      }
+    }, result.paymentCount + ' pagos · Total ' + window.money(result.total) + ' · Incluye ' + window.money(result.administrativeFeeTotal) + ' de gasto administrativo')), React.createElement('div', {
+      style: {
+        marginTop: 16
+      }
+    }, React.createElement(window.Btn, {
+      full: true,
+      loading: financial.status === 'loading',
+      disabled: !canSimulate,
+      onClick: () => window.financialLegacyStore.requestQuote(program.id, amount, term)
+    }, result ? 'Actualizar simulación' : 'Calcular'))), React.createElement('div', {
+      style: {
+        marginTop: 10
+      }
+    }, React.createElement(window.Btn, {
+      full: true,
+      variant: 'outline',
+      onClick: onClose
+    }, 'Cerrar')));
   }
-  Object.assign(window, { ProductScreen, ModuloScreen, ArticuloScreen, FinanceSimSheet, QuoteRequestSheet });
+  Object.assign(window, {
+    ProductScreen,
+    ModuloScreen,
+    ArticuloScreen,
+    FinanceSimSheet,
+    QuoteRequestSheet
+  });
 })();
 })();
 /* @@file screens-terreno.jsx */
@@ -42978,124 +44286,1150 @@ Object.assign(window, {
 (function(){
 /* Claude finance structure + managed non-financial presentation metadata.
    Financial conditions are supplied only by the protected server resolver. */
-(function(){
-  const FINANCIAL_LEGACY_READ_ONLY='FINANCIAL_LEGACY_READ_ONLY';
-  const repo=window.AdminCutoverRepository,listeners=new Set();let rows=[],phase='idle',error=null,loadVersion=0,loadPromise=null;
-  const base=[
-    {id:'liquidez',title:'Liquidez inmediata',sub:'Dinero cuando lo necesitas',tone:'guinda',items:[{id:'prestamo',label:'Suti Préstamo',icon:'cash',tagline:'Consulta tus opciones',meta:'Condiciones según tu perfil',hero:true},{id:'nomina',label:'Adelanto de nómina',icon:'calendar',tagline:'Tu quincena hoy',meta:'Consulta disponibilidad'},{id:'caja',label:'Caja chica',icon:'money',tagline:'Apoyo exprés',meta:'Consulta disponibilidad'}]},
-    {id:'patrimonio',title:'Crece tu patrimonio',sub:'Ahorro e inversión sindical',tone:'green',items:[{id:'ahorro',label:'Ahorro Voluntario',icon:'piggy',tagline:'Consulta tu ahorro',meta:'Tu información al día'},{id:'inversion',label:'Portafolio de Inversión',icon:'chart',tagline:'Haz crecer tu dinero',meta:'Conoce las opciones'}]},
-    {id:'bienes',title:'Bienes y financiamientos',sub:'Compra a plazos con tu sindicato',tone:'blue',items:[{id:'auto',label:'Suti Auto',icon:'car',tagline:'Autos disponibles',meta:'Explora opciones'},{id:'renta',label:'Renta Car',icon:'key',tagline:'Vehículos en renta',meta:'Explora opciones'},{id:'casa',label:'Suti Casa',icon:'house',tagline:'Propiedades',meta:'Explora opciones'},{id:'terrenos',label:'Suti Terrenos',icon:'land',tagline:'Lotes disponibles',meta:'Explora opciones'},{id:'solar',label:'Paneles Solares',icon:'solar',tagline:'Ahorra en luz',meta:'Explora opciones'},{id:'aires',label:'Aires Acondicionados',icon:'ac',tagline:'Equipos disponibles',meta:'Explora opciones'},{id:'puertas',label:'Puertas de Seguridad',icon:'door',tagline:'Protege tu hogar',meta:'Explora opciones'},{id:'computo',label:'Equipos de Cómputo',icon:'laptop',tagline:'Tecnología',meta:'Explora opciones'}]},
-    {id:'bienestar',title:'Bienestar y experiencias',sub:'Salud, viajes y más',tone:'amber',items:[{id:'farma',label:'Suti Farma',icon:'pharmacy',tagline:'Medicamentos disponibles',meta:'Explora opciones'},{id:'cirugias',label:'Suti Cirugías',icon:'surgery',tagline:'Estéticas y mayores',meta:'Conoce el beneficio'},{id:'tours',label:'Suti Tours',icon:'plane',tagline:'Viajes y paquetes',meta:'Explora opciones'},{id:'market',label:'Suti Market',icon:'cart',tagline:'Productos del hogar',meta:'Conoce el beneficio'},{id:'rifas',label:'Suti Rifas',icon:'ticket',tagline:'Boletos activos',meta:'Consulta disponibilidad'},{id:'donativos',label:'Donativos',icon:'heart',tagline:'Apoya una causa',meta:'Conoce el beneficio'}]}
-  ];
-  const emit=()=>listeners.forEach(fn=>fn()),row=k=>rows.find(x=>x.item_key===k);
-  function fail(e){rows=[];phase='error';error=e;emit();console.error('Finance presentation authority error',e);}
-  function load(){if(loadPromise)return loadPromise;const version=++loadVersion;phase=phase==='loaded'||phase==='refreshing'?'refreshing':'loading';error=null;emit();loadPromise=(async()=>{try{const next=await repo.listFinancePresentation();if(version!==loadVersion)return rows;rows=next;phase='loaded';emit();return rows;}catch(e){if(version===loadVersion)fail(e);return [];}finally{if(version===loadVersion)loadPromise=null;}})();return loadPromise;}
-  const configuredOrder=(value,fallback)=>Number.isInteger(value)?value:fallback;
-  function groups(){return base.map((g,gi)=>{const gr=row('group:'+g.id)||{};return Object.assign({},g,{title:gr.label_override||g.title,sub:gr.description_override||g.sub,items:g.items.map((it,ii)=>{const r=row(it.id)||{};return Object.assign({},it,{label:r.label_override||it.label,tagline:r.description_override||it.tagline,meta:r.program_info?r.program_info.detail:it.meta,hero:r.program_info?r.program_info.popular:it.hero,icon:r.program_info?r.program_info.icon:it.icon,visible:r.enabled!==false,order:configuredOrder(r.sort_order,ii)});}).sort((a,b)=>a.order-b.order||a.id.localeCompare(b.id)),order:configuredOrder(gr.sort_order,gi)});}).sort((a,b)=>a.order-b.order||a.id.localeCompare(b.id));}
-  const payload=(key,gid,p)=>({item_key:key,group_key:gid,label_override:p.label_override||null,description_override:p.description_override||null,enabled:p.enabled!==false,sort_order:Number.isInteger(p.sort_order)?p.sort_order:0});
-  const write=(key,gid,p)=>repo.saveFinancePresentation(payload(key,gid,p));
-  const save=(key,gid,p)=>write(key,gid,p).then(load).catch(fail);
-  const store={state:()=>({phase,error}),refresh:load,retry:load,groups,groupsLive:()=>groups(),allItems:()=>groups().flatMap(g=>g.items),findItem:id=>groups().flatMap(g=>g.items).find(x=>x.id===id)||null,recs:()=>[],recsLive:()=>[],getRec:()=>null,
-    saveGroup:(id,p)=>{const g=groups().find(x=>x.id===id);return save('group:'+id,id,{label_override:p.title==null?g.title:p.title,description_override:p.sub==null?g.sub:p.sub,enabled:true,sort_order:g.order});},
-    saveItem:(gid,id,p)=>{const it=store.findItem(id);return save(id,gid,{label_override:p.label==null?it.label:p.label,description_override:p.tagline==null?it.tagline:p.tagline,enabled:p.visible==null?it.visible:p.visible,sort_order:it.order});},
-    toggleItem:(gid,id)=>{const it=store.findItem(id);return store.saveItem(gid,id,{visible:it.visible===false});},moveItem:(gid,id,dir)=>{const g=groups().find(x=>x.id===gid),i=g.items.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=g.items.length)return Promise.resolve();const a=g.items[i],b=g.items[j];return Promise.all([write(a.id,gid,{label_override:a.label,description_override:a.tagline,enabled:a.visible,sort_order:j}),write(b.id,gid,{label_override:b.label,description_override:b.tagline,enabled:b.visible,sort_order:i})]).then(load).catch(fail);},
-    resetAll:()=>Promise.all(rows.map(r=>window.SutiSupabase.getClient().from('finance_catalog_presentation').delete().eq('item_key',r.item_key))).then(load).catch(fail),
-    blankRec:()=>null,saveRec:()=>{},removeRec:()=>{},toggleRec:()=>{},moveRec:()=>{},subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);}};
-  let initialLoad=null;const ensureLoaded=()=>initialLoad||(initialLoad=load());
-  window.finCatStore=store;window.useFinCatStore=function(){const[,f]=React.useState(0);React.useEffect(()=>store.subscribe(()=>f(n=>n+1)),[]);React.useEffect(()=>{ensureLoaded();},[]);React.useEffect(()=>{const onFocus=()=>load();const onVisible=()=>{if(document.visibilityState==='visible')load();};window.addEventListener('focus',onFocus);document.addEventListener('visibilitychange',onVisible);return()=>{window.removeEventListener('focus',onFocus);document.removeEventListener('visibilitychange',onVisible);};},[]);return store;};
+(function () {
+  const FINANCIAL_LEGACY_READ_ONLY = 'FINANCIAL_LEGACY_READ_ONLY';
+  const repo = window.AdminCutoverRepository,
+    listeners = new Set();
+  let rows = [],
+    phase = 'idle',
+    error = null,
+    loadVersion = 0,
+    loadPromise = null;
+  let epoch = window.PrivateResourceDemand.context(),
+    initialLoad = null;
+  let presentation = {
+    phase,
+    error,
+    rows,
+    epoch
+  };
+  const base = [{
+    id: 'liquidez',
+    title: 'Liquidez inmediata',
+    sub: 'Dinero cuando lo necesitas',
+    tone: 'guinda',
+    items: [{
+      id: 'prestamo',
+      label: 'Suti Préstamo',
+      icon: 'cash',
+      tagline: 'Consulta tus opciones',
+      meta: 'Condiciones según tu perfil',
+      hero: true
+    }, {
+      id: 'nomina',
+      label: 'Adelanto de nómina',
+      icon: 'calendar',
+      tagline: 'Tu quincena hoy',
+      meta: 'Consulta disponibilidad'
+    }, {
+      id: 'caja',
+      label: 'Caja chica',
+      icon: 'money',
+      tagline: 'Apoyo exprés',
+      meta: 'Consulta disponibilidad'
+    }]
+  }, {
+    id: 'patrimonio',
+    title: 'Crece tu patrimonio',
+    sub: 'Ahorro e inversión sindical',
+    tone: 'green',
+    items: [{
+      id: 'ahorro',
+      label: 'Ahorro Voluntario',
+      icon: 'piggy',
+      tagline: 'Consulta tu ahorro',
+      meta: 'Tu información al día'
+    }, {
+      id: 'inversion',
+      label: 'Portafolio de Inversión',
+      icon: 'chart',
+      tagline: 'Haz crecer tu dinero',
+      meta: 'Conoce las opciones'
+    }]
+  }, {
+    id: 'bienes',
+    title: 'Bienes y financiamientos',
+    sub: 'Compra a plazos con tu sindicato',
+    tone: 'blue',
+    items: [{
+      id: 'auto',
+      label: 'Suti Auto',
+      icon: 'car',
+      tagline: 'Autos disponibles',
+      meta: 'Explora opciones'
+    }, {
+      id: 'renta',
+      label: 'Renta Car',
+      icon: 'key',
+      tagline: 'Vehículos en renta',
+      meta: 'Explora opciones'
+    }, {
+      id: 'casa',
+      label: 'Suti Casa',
+      icon: 'house',
+      tagline: 'Propiedades',
+      meta: 'Explora opciones'
+    }, {
+      id: 'terrenos',
+      label: 'Suti Terrenos',
+      icon: 'land',
+      tagline: 'Lotes disponibles',
+      meta: 'Explora opciones'
+    }, {
+      id: 'solar',
+      label: 'Paneles Solares',
+      icon: 'solar',
+      tagline: 'Ahorra en luz',
+      meta: 'Explora opciones'
+    }, {
+      id: 'aires',
+      label: 'Aires Acondicionados',
+      icon: 'ac',
+      tagline: 'Equipos disponibles',
+      meta: 'Explora opciones'
+    }, {
+      id: 'puertas',
+      label: 'Puertas de Seguridad',
+      icon: 'door',
+      tagline: 'Protege tu hogar',
+      meta: 'Explora opciones'
+    }, {
+      id: 'computo',
+      label: 'Equipos de Cómputo',
+      icon: 'laptop',
+      tagline: 'Tecnología',
+      meta: 'Explora opciones'
+    }]
+  }, {
+    id: 'bienestar',
+    title: 'Bienestar y experiencias',
+    sub: 'Salud, viajes y más',
+    tone: 'amber',
+    items: [{
+      id: 'farma',
+      label: 'Suti Farma',
+      icon: 'pharmacy',
+      tagline: 'Medicamentos disponibles',
+      meta: 'Explora opciones'
+    }, {
+      id: 'cirugias',
+      label: 'Suti Cirugías',
+      icon: 'surgery',
+      tagline: 'Estéticas y mayores',
+      meta: 'Conoce el beneficio'
+    }, {
+      id: 'tours',
+      label: 'Suti Tours',
+      icon: 'plane',
+      tagline: 'Viajes y paquetes',
+      meta: 'Explora opciones'
+    }, {
+      id: 'market',
+      label: 'Suti Market',
+      icon: 'cart',
+      tagline: 'Productos del hogar',
+      meta: 'Conoce el beneficio'
+    }, {
+      id: 'rifas',
+      label: 'Suti Rifas',
+      icon: 'ticket',
+      tagline: 'Boletos activos',
+      meta: 'Consulta disponibilidad'
+    }, {
+      id: 'donativos',
+      label: 'Donativos',
+      icon: 'heart',
+      tagline: 'Apoya una causa',
+      meta: 'Conoce el beneficio'
+    }]
+  }];
+  const emit = () => {
+      presentation = {
+        phase,
+        error,
+        rows,
+        epoch
+      };
+      listeners.forEach(fn => fn());
+    },
+    row = k => rows.find(x => x.item_key === k);
+  function fail(e) {
+    rows = [];
+    phase = 'error';
+    error = e;
+    emit();
+    console.error('Finance presentation authority error', e);
+  }
+  function load(force = false) {
+    if (epoch === null) return Promise.resolve([]);
+    if (loadPromise && force !== true) return loadPromise;
+    const version = ++loadVersion,
+      context = epoch;
+    phase = phase === 'loaded' || phase === 'refreshing' ? 'refreshing' : 'loading';
+    error = null;
+    emit();
+    loadPromise = (async () => {
+      try {
+        const next = await repo.listFinancePresentation();
+        if (version !== loadVersion || window.PrivateResourceDemand.context() !== context) return [];
+        rows = next;
+        phase = 'loaded';
+        emit();
+        return rows;
+      } catch (e) {
+        if (version === loadVersion && window.PrivateResourceDemand.context() === context) fail(e);
+        return [];
+      } finally {
+        if (version === loadVersion) loadPromise = null;
+      }
+    })();
+    return loadPromise;
+  }
+  const ensureLoaded = () => initialLoad || (initialLoad = load());
+  const onFocus = () => load(),
+    onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+  function subscribe(fn) {
+    listeners.add(fn);
+    if (listeners.size === 1) {
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisible);
+    }
+    return () => {
+      listeners.delete(fn);
+      if (!listeners.size) {
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisible);
+      }
+    };
+  }
+  window.PrivateResourceDemand.subscribe(() => {
+    epoch = window.PrivateResourceDemand.context();
+    loadVersion++;
+    loadPromise = null;
+    initialLoad = null;
+    rows = [];
+    phase = 'idle';
+    error = null;
+    emit();
+    if (listeners.size && epoch !== null) ensureLoaded();
+  });
+  const configuredOrder = (value, fallback) => Number.isInteger(value) ? value : fallback;
+  function groups() {
+    return base.map((g, gi) => {
+      const gr = row('group:' + g.id) || {};
+      return Object.assign({}, g, {
+        title: gr.label_override || g.title,
+        sub: gr.description_override || g.sub,
+        items: g.items.map((it, ii) => {
+          const r = row(it.id) || {};
+          return Object.assign({}, it, {
+            label: r.label_override || it.label,
+            tagline: r.description_override || it.tagline,
+            meta: r.program_info ? r.program_info.detail : it.meta,
+            hero: r.program_info ? r.program_info.popular : it.hero,
+            icon: r.program_info ? r.program_info.icon : it.icon,
+            visible: r.enabled !== false,
+            order: configuredOrder(r.sort_order, ii)
+          });
+        }).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)),
+        order: configuredOrder(gr.sort_order, gi)
+      });
+    }).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+  }
+  const payload = (key, gid, p) => ({
+    item_key: key,
+    group_key: gid,
+    label_override: p.label_override || null,
+    description_override: p.description_override || null,
+    enabled: p.enabled !== false,
+    sort_order: Number.isInteger(p.sort_order) ? p.sort_order : 0
+  });
+  const write = (key, gid, p) => repo.saveFinancePresentation(payload(key, gid, p));
+  const save = (key, gid, p) => write(key, gid, p).then(load).catch(fail);
+  const store = {
+    state: () => ({
+      phase,
+      error
+    }),
+    presentationState: () => presentation,
+    ensureLoaded,
+    refresh: load,
+    retry: load,
+    groups,
+    groupsLive: () => groups(),
+    allItems: () => groups().flatMap(g => g.items),
+    findItem: id => groups().flatMap(g => g.items).find(x => x.id === id) || null,
+    recs: () => [],
+    recsLive: () => [],
+    getRec: () => null,
+    saveGroup: (id, p) => {
+      const g = groups().find(x => x.id === id);
+      return save('group:' + id, id, {
+        label_override: p.title == null ? g.title : p.title,
+        description_override: p.sub == null ? g.sub : p.sub,
+        enabled: true,
+        sort_order: g.order
+      });
+    },
+    saveItem: (gid, id, p) => {
+      const it = store.findItem(id);
+      return save(id, gid, {
+        label_override: p.label == null ? it.label : p.label,
+        description_override: p.tagline == null ? it.tagline : p.tagline,
+        enabled: p.visible == null ? it.visible : p.visible,
+        sort_order: it.order
+      });
+    },
+    toggleItem: (gid, id) => {
+      const it = store.findItem(id);
+      return store.saveItem(gid, id, {
+        visible: it.visible === false
+      });
+    },
+    moveItem: (gid, id, dir) => {
+      const g = groups().find(x => x.id === gid),
+        i = g.items.findIndex(x => x.id === id),
+        j = i + dir;
+      if (i < 0 || j < 0 || j >= g.items.length) return Promise.resolve();
+      const a = g.items[i],
+        b = g.items[j];
+      return Promise.all([write(a.id, gid, {
+        label_override: a.label,
+        description_override: a.tagline,
+        enabled: a.visible,
+        sort_order: j
+      }), write(b.id, gid, {
+        label_override: b.label,
+        description_override: b.tagline,
+        enabled: b.visible,
+        sort_order: i
+      })]).then(load).catch(fail);
+    },
+    resetAll: () => Promise.all(rows.map(r => window.SutiSupabase.getClient().from('finance_catalog_presentation').delete().eq('item_key', r.item_key))).then(load).catch(fail),
+    blankRec: () => null,
+    saveRec: () => {},
+    removeRec: () => {},
+    toggleRec: () => {},
+    moveRec: () => {},
+    subscribe
+  };
+  window.finCatStore = store;
+  window.useFinCatStore = function () {
+    React.useSyncExternalStore(store.subscribe, store.presentationState);
+    React.useEffect(() => {
+      ensureLoaded();
+    }, []);
+    return store;
+  };
 })();
 })();
 /* @@file program-general-info.jsx */
 (function(){
 /* Program catalog headers: one presentation authority shared by both Admin entrances. */
-(function(){
-  const h=React.createElement,{useState,useEffect}=React,I=window.Icon;
-  const keys=Object.freeze(['auto','renta','casa','terrenos','solar','aires','puertas','computo','farma','cirugias','tours','market','rifas','donativos']);
-  const listeners=new Set();
-  const db=()=>window.SutiSupabase.getClient();
-  const fields='item_key,group_key,label_override,description_override,enabled,sort_order,updated_at,program_info,program_cover_asset_id,cover:app_assets!finance_catalog_presentation_program_cover_asset_id_fkey(id,storage_bucket,storage_path,status,mime_type)';
-  const coverUrl=asset=>asset&&asset.status==='READY'?db().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path).data.publicUrl:null;
-  async function get(key){const r=await db().from('finance_catalog_presentation').select(fields).eq('item_key',key).single();if(r.error)throw r.error;if(!r.data.program_info)throw new Error('PROGRAM_INFO_NOT_FOUND');return {...r.data,cover_url:coverUrl(r.data.cover)};}
-  async function save(row){const payload={label_override:row.label_override,description_override:row.description_override,enabled:row.enabled,program_info:row.program_info,program_cover_asset_id:row.program_cover_asset_id};const r=await db().rpc('save_program_general_info',{p_program_key:row.item_key,p_expected_updated_at:row.updated_at,p_payload:payload});if(r.error)throw r.error;listeners.forEach(fn=>fn(row.item_key));if(window.finCatStore)await window.finCatStore.refresh();return get(row.item_key);}
-  async function upload(file){
-    const ext={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/gif':'gif'}[file?.type];
-    if(!ext||file.size<1||file.size>10485760)throw new Error('PROGRAM_INFO_IMAGE_INVALID');
+(function () {
+  const h = React.createElement,
+    {
+      useState,
+      useEffect
+    } = React,
+    I = window.Icon;
+  const keys = Object.freeze(['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'farma', 'cirugias', 'tours', 'market', 'rifas', 'donativos']);
+  const listeners = new Set();
+  const db = () => window.SutiSupabase.getClient();
+  const fields = 'item_key,group_key,label_override,description_override,enabled,sort_order,updated_at,program_info,program_cover_asset_id,cover:app_assets!finance_catalog_presentation_program_cover_asset_id_fkey(id,storage_bucket,storage_path,status,mime_type)';
+  const coverUrl = asset => asset && asset.status === 'READY' ? db().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path).data.publicUrl : null;
+  async function get(key) {
+    const r = await db().from('finance_catalog_presentation').select(fields).eq('item_key', key).single();
+    if (r.error) throw r.error;
+    if (!r.data.program_info) throw new Error('PROGRAM_INFO_NOT_FOUND');
+    return {
+      ...r.data,
+      cover_url: coverUrl(r.data.cover)
+    };
+  }
+  async function save(row) {
+    const payload = {
+      label_override: row.label_override,
+      description_override: row.description_override,
+      enabled: row.enabled,
+      program_info: row.program_info,
+      program_cover_asset_id: row.program_cover_asset_id
+    };
+    const r = await db().rpc('save_program_general_info', {
+      p_program_key: row.item_key,
+      p_expected_updated_at: row.updated_at,
+      p_payload: payload
+    });
+    if (r.error) throw r.error;
+    listeners.forEach(fn => fn(row.item_key));
+    if (window.finCatStore) await window.finCatStore.refresh(true);
+    return get(row.item_key);
+  }
+  async function upload(file) {
+    const ext = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif'
+    }[file?.type];
+    if (!ext || file.size < 1 || file.size > 10485760) throw new Error('PROGRAM_INFO_IMAGE_INVALID');
     // Unique path avoids sharing a replaceable product image. Existing Storage/RPC permissions apply.
-    const user=await db().auth.getUser();if(user.error||!user.data.user)throw new Error('AUTH_REQUIRED');
-    const path='program-general/'+user.data.user.id+'/'+crypto.randomUUID()+'.'+ext;
-    const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(x=>x.toString(16).padStart(2,'0')).join('');
-    const r=await db().storage.from('app-assets').upload(path,file,{upsert:false,contentType:file.type});if(r.error)throw r.error;
-    const a=await db().rpc('register_program_general_cover',{p_path:path,p_mime:file.type,p_size:file.size,p_sha:hash});if(a.error)throw a.error;
+    const user = await db().auth.getUser();
+    if (user.error || !user.data.user) throw new Error('AUTH_REQUIRED');
+    const path = 'program-general/' + user.data.user.id + '/' + crypto.randomUUID() + '.' + ext;
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))).map(x => x.toString(16).padStart(2, '0')).join('');
+    const r = await db().storage.from('app-assets').upload(path, file, {
+      upsert: false,
+      contentType: file.type
+    });
+    if (r.error) throw r.error;
+    const a = await db().rpc('register_program_general_cover', {
+      p_path: path,
+      p_mime: file.type,
+      p_size: file.size,
+      p_sha: hash
+    });
+    if (a.error) throw a.error;
     // Retain uploaded assets on ambiguous network failure; never delete a potentially committed cover.
-    return {id:a.data,url:db().storage.from('app-assets').getPublicUrl(path).data.publicUrl};
+    return {
+      id: a.data,
+      url: db().storage.from('app-assets').getPublicUrl(path).data.publicUrl
+    };
   }
-  function useInfo(key,refreshOnFocus=true){
-    const [state,setState]=useState({key,phase:'loading',row:null}),[version,refresh]=useState(0);
-    useEffect(()=>{const fn=k=>{if(k===key)refresh(v=>v+1);};listeners.add(fn);return()=>listeners.delete(fn);},[key]);
-    useEffect(()=>{let active=true;setState({key,phase:'loading',row:null});if(!keys.includes(key)){setState({key,phase:'not-applicable',row:null});return;}
-      get(key).then(row=>{if(active)setState({key,phase:'loaded',row});}).catch(()=>{if(active)setState({key,phase:'error',row:null});});return()=>{active=false;};},[key,version]);
-    useEffect(()=>{if(!refreshOnFocus)return;const fn=()=>refresh(v=>v+1);window.addEventListener('focus',fn);return()=>window.removeEventListener('focus',fn);},[refreshOnFocus]);
-    return {...(state.key===key?state:{phase:'loading',row:null}),retry:()=>refresh(v=>v+1)};
+  function useInfo(key, refreshOnFocus = true) {
+    const [state, setState] = useState({
+        key,
+        phase: 'loading',
+        row: null
+      }),
+      [version, refresh] = useState(0);
+    useEffect(() => {
+      const fn = k => {
+        if (k === key) refresh(v => v + 1);
+      };
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }, [key]);
+    useEffect(() => {
+      let active = true;
+      setState({
+        key,
+        phase: 'loading',
+        row: null
+      });
+      if (!keys.includes(key)) {
+        setState({
+          key,
+          phase: 'not-applicable',
+          row: null
+        });
+        return;
+      }
+      get(key).then(row => {
+        if (active) setState({
+          key,
+          phase: 'loaded',
+          row
+        });
+      }).catch(() => {
+        if (active) setState({
+          key,
+          phase: 'error',
+          row: null
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [key, version]);
+    useEffect(() => {
+      if (!refreshOnFocus) return;
+      const fn = () => refresh(v => v + 1);
+      window.addEventListener('focus', fn);
+      return () => window.removeEventListener('focus', fn);
+    }, [refreshOnFocus]);
+    return {
+      ...(state.key === key ? state : {
+        phase: 'loading',
+        row: null
+      }),
+      retry: () => refresh(v => v + 1)
+    };
   }
-  function Cover({url,icon,hue=210,children}){
-    const [failed,setFailed]=useState(false);useEffect(()=>setFailed(false),[url]);
-    return h('div',{'data-program-cover':url?'configured':'empty',style:{position:'relative',height:188,background:`linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`,overflow:'hidden'}},
-      url&&!failed&&h('img',{src:url,alt:'Portada del programa',onError:()=>setFailed(true),style:{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}),
-      h('div',{style:{position:'absolute',inset:0,background:'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))',pointerEvents:'none'}}),
-      h('div',{style:{position:'absolute',right:-20,bottom:-30,opacity:.16}},h(I,{name:icon,size:220,stroke:1,style:{color:'#fff'}})),
-      failed&&h('span',{role:'status',style:{position:'absolute',bottom:12,left:20,color:'#fff',fontSize:'var(--text-12, 12px)'}},'No se pudo cargar la portada'),children);
+  // Public text is the same authority projection already loaded by Finanzas.
+  // Covers are independent, deduplicated only within that presentation revision.
+  let coverCache = new WeakMap();
+  window.PrivateResourceDemand.subscribe(() => {
+    coverCache = new WeakMap();
+  });
+  function coverRequests(rows) {
+    let requests = coverCache.get(rows);
+    if (!requests) {
+      requests = new Map();
+      coverCache.set(rows, requests);
+    }
+    return requests;
   }
-  function PublicHeader({row,onFavorite,favorite,notify,children}){
-    const p=row.program_info;
-    const contact=(kind)=>{const number=p[kind].replace(/[^+0-9]/g,'');if(!number){if(notify)notify('El programa aún no tiene un número de contacto registrado.');return;}if(kind==='phone')window.location.href='tel:'+number;else window.open('https://wa.me/'+(/^\d{10}$/.test(number)?'52'+number:number.replace(/^\+/,'')),'_blank','noopener,noreferrer');};
-    const action=(icon,text,fn)=>h('button',{key:text,onClick:fn,'aria-pressed':text==='Guardar'?favorite:undefined,style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:6,background:'var(--guinda-50)',border:'1px solid var(--guinda-100)',borderRadius:14,padding:'11px 0',cursor:'pointer',color:'var(--guinda)'}},h(I,{name:icon,size:21,stroke:2}),h('span',{style:{fontSize:'var(--text-12, 12px)',fontWeight:700}},text));
-    return h(React.Fragment,null,
-      h('div',{style:{display:'flex',gap:13,alignItems:'flex-start',minWidth:0}},
-        h('div',{'data-category-header-icon':'true',style:{position:'relative',zIndex:2,marginTop:-46,flexShrink:0,width:64,height:64,borderRadius:18,background:'var(--surface)',boxShadow:'var(--neo-md)',display:'grid',placeItems:'center',color:'var(--guinda)'}},h(I,{name:p.icon,size:32,stroke:1.8})),
-        h('div',{style:{flex:1,minWidth:0,paddingTop:2}},h('h1',{style:{fontSize:'var(--text-23, 23px)',fontWeight:800,letterSpacing:'-.02em',margin:0}},row.label_override),h('div',{style:{fontSize:'var(--text-13-5, 13.5px)',color:'var(--ink-3)',fontWeight:600,marginTop:2}},h('span',{style:{color:'var(--guinda)'}},'SutiApp'),' / '+(p.breadcrumb||row.label_override)))),
-      h('p',{'data-program-description':true,style:{fontSize:'var(--text-15, 15px)',color:'var(--ink-2)',fontWeight:500,lineHeight:1.55,margin:'16px 0 0',whiteSpace:'pre-line'}},p.description),children,
-      h('div',{style:{display:'flex',gap:10,marginTop:18}},action('phone','Llamar',()=>contact('phone')),action('message','WhatsApp',()=>contact('whatsapp')),p.favorite_enabled&&action('star','Guardar',onFavorite)),
-      h('div',{'data-program-benefits':true,style:{marginTop:22}},h(window.SectionHead,{title:p.benefits_title,icon:'sparkle'}),h('div',{style:{display:'flex',flexDirection:'column',gap:10}},p.benefits.map((b,i)=>h('div',{key:i,style:{display:'flex',gap:12,alignItems:'center',background:'var(--surface)',borderRadius:14,padding:'13px 14px',boxShadow:'var(--neo-sm)'}},h('div',{style:{width:38,height:38,borderRadius:11,background:'var(--guinda-50)',display:'grid',placeItems:'center',color:'var(--guinda)',flexShrink:0}},h(I,{name:b.icon,size:20,stroke:2})),h('div',null,h('div',{style:{fontSize:'var(--text-14, 14px)',fontWeight:700}},b.t),h('div',{style:{fontSize:'var(--text-12-5, 12.5px)',color:'var(--ink-3)',fontWeight:500}},b.s)))))));
+  function readCover(row, rows) {
+    const requests = coverRequests(rows),
+      id = row.program_cover_asset_id;
+    if (requests.has(id)) return requests.get(id);
+    const epoch = window.PrivateResourceDemand.context();
+    const promise = Promise.resolve().then(async () => {
+      if (epoch === null || window.PrivateResourceDemand.context() !== epoch) throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const r = await db().from('app_assets').select('id,storage_bucket,storage_path,status,mime_type').eq('id', id).single();
+      if (r.error) throw r.error;
+      if (window.PrivateResourceDemand.context() !== epoch) throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const url = coverUrl(r.data);
+      if (!url) throw new Error('PROGRAM_COVER_UNAVAILABLE');
+      return url;
+    });
+    requests.set(id, promise);
+    return promise;
   }
-  function InfoState({state}){return h('div',{role:'status',style:{padding:20}},h(window.EmptyState,{icon:state.phase==='error'?'warning':'clock',title:state.phase==='error'?'No pudimos cargar la información del programa':'Cargando información del programa',sub:state.phase==='error'?'Revisa tu conexión e inténtalo de nuevo.':''}),state.phase==='error'&&h(window.Btn,{onClick:state.retry},'Reintentar'));}
-  const input={width:'100%',boxSizing:'border-box',border:'none',borderRadius:12,padding:'11px 13px',background:'var(--surface-2)',boxShadow:'var(--neo-inset)',color:'var(--ink)',font:'inherit',marginBottom:12};
-  function Editor({programKey,canWrite=true}){
-    const state=useInfo(programKey,false),[draft,setDraft]=useState(null),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[fav,setFav]=useState(false);
-    useEffect(()=>{if(state.row){setDraft(JSON.parse(JSON.stringify(state.row)));setFile(null);}},[state.row]);
-    const [previewUrl,setPreviewUrl]=useState(null);
-    useEffect(()=>{if(!file){setPreviewUrl(null);return;}const url=URL.createObjectURL(file);setPreviewUrl(url);return()=>URL.revokeObjectURL(url);},[file]);
-    if(!draft||draft.item_key!==programKey)return h(InfoState,{state});
-    const p=draft.program_info,disabled=!canWrite||busy;
-    const set=(k,v)=>setDraft(d=>({...d,[k]:v}));const info=(k,v)=>setDraft(d=>({...d,program_info:{...d.program_info,[k]:v}}));
-    const field=(title,key,value,onChange,multi=false)=>h('label',{key,style:{display:'block',fontSize:'var(--text-12, 12px)',fontWeight:800,color:'var(--ink-2)'}},h('span',{style:{display:'block',marginBottom:6}},title),h(multi?'textarea':'input',{'data-program-info-field':key,value,disabled,onChange:e=>onChange(e.target.value),rows:multi?4:undefined,maxLength:multi?6000:240,style:input}));
-    const iconField=(title,key,value,onChange)=>h('label',{key,style:{display:'block',fontSize:'var(--text-12, 12px)',fontWeight:800}},title,h('select',{'data-program-info-field':key,value,disabled,onChange:e=>onChange(e.target.value),style:input},window.ICON_CATALOG.names.map(name=>h('option',{key:name,value:name},name))));
-    const submit=async()=>{setBusy(true);setMessage('');try{let row=draft;if(file){const a=await upload(file);row={...draft,program_cover_asset_id:a.id,cover_url:a.url};setDraft(row);setFile(null);}const saved=await save(row);setDraft(saved);setMessage('Información guardada.');}catch(e){setMessage(String(e.message).includes('CONFLICT')?'La información cambió en otra sesión. Recarga antes de guardar.':String(e.message).includes('IMAGE_INVALID')?'Selecciona una imagen PNG, JPG, GIF o WebP de hasta 10 MB.':'No se pudo guardar la información. Revisa los campos y tus permisos e inténtalo de nuevo.');}finally{setBusy(false);}};
-    const preview={...draft,cover_url:previewUrl||draft.cover_url};
-    if(programKey==='terrenos')return h(React.Fragment,null,
-      h('section',{'data-program-info-editor':programKey,style:{padding:16,borderRadius:18,background:'var(--surface)',marginBottom:18}},h('h2',null,'Información general del programa'),
-        field('Nombre en Finanzas','name',draft.label_override,v=>set('label_override',v)),field('Tagline en Finanzas','tagline',draft.description_override,v=>set('description_override',v)),field('Detalle en Finanzas','detail',p.detail,v=>info('detail',v)),
-        field('Título de cabecera','map_title',p.map_title,v=>info('map_title',v)),field('Subtítulo','map_subtitle',p.map_subtitle,v=>info('map_subtitle',v)),field('Nombre del programa en cabecera','map_program_label',p.map_program_label,v=>info('map_program_label',v)),field('Descripción de cabecera','map_description',p.map_description,v=>info('map_description',v)),iconField('Icono del programa','icon',p.icon,v=>info('icon',v)),
-        h('p',null,'La vista pública de Terrenos conserva el mapa y su cabecera actual.'),h('div',{role:'status','data-program-info-message':true},message),h(window.Btn,{variant:'outline',disabled:busy,onClick:()=>{setDraft(null);state.retry();}},'Recargar'),canWrite&&h(window.Btn,{'data-program-info-save':true,disabled:busy,onClick:submit},busy?'Guardando…':'Guardar información general')),
-      h('section',{'data-program-info-preview':programKey,style:{marginBottom:24}},h('h2',null,'Vista previa de cómo se verá'),h('div',{style:{maxWidth:430,borderRadius:24,overflow:'hidden'}},h(window.TerrainProgramHeader,{headerInfo:p,app:{back:()=>{}}}))));
-
-    return h(React.Fragment,null,
-      h('section',{'data-program-info-editor':programKey,style:{padding:16,borderRadius:18,background:'var(--surface)',boxShadow:'var(--neo-sm)',marginBottom:18}},h('h2',{style:{fontSize:'var(--text-17, 17px)',margin:'0 0 16px'}},'Información general del programa'),
-        field('Nombre público del programa','name',draft.label_override,v=>set('label_override',v)),field('Tagline de la card en Finanzas','tagline',draft.description_override,v=>set('description_override',v)),field('Detalle de la card en Finanzas','detail',p.detail,v=>info('detail',v)),
-        field('Breadcrumb (vacío: nombre del programa)','breadcrumb',p.breadcrumb,v=>info('breadcrumb',v)),field('Descripción principal','description',p.description,v=>info('description',v),true),iconField('Icono','icon',p.icon,v=>info('icon',v)),
-        h('label',{style:{display:'block',fontSize:'var(--text-12, 12px)',fontWeight:800,marginBottom:12}},'Portada / imagen principal',h('input',{'data-program-info-cover':true,type:'file',accept:'image/png,image/jpeg,image/webp,image/gif',disabled,onChange:e=>{setFile(e.target.files[0]||null);e.target.value='';},style:{display:'block',marginTop:8,maxWidth:'100%'}})),
-        (preview.cover_url)&&h('div',{style:{marginBottom:12}},h('img',{src:preview.cover_url,alt:'Portada seleccionada',style:{width:'100%',height:110,objectFit:'cover',borderRadius:12}}),h('button',{disabled,onClick:()=>{setFile(null);setDraft(d=>({...d,program_cover_asset_id:null,cover_url:null}));}},'Quitar portada')),
-        field('Teléfono / Llamar','phone',p.phone,v=>info('phone',v)),field('WhatsApp (incluye código de país)','whatsapp',p.whatsapp,v=>info('whatsapp',v)),
-        [['favorite_enabled','Mostrar Guardar / Favorito'],['popular','Insignia POPULAR']].map(([k,title])=>h('label',{key:k,style:{display:'block',marginBottom:12}},h('input',{type:'checkbox',checked:p[k],disabled,onChange:e=>info(k,e.target.checked)}),' '+title)),
-        h('label',{style:{display:'block',marginBottom:12}},h('input',{type:'checkbox',checked:draft.enabled,disabled,onChange:e=>set('enabled',e.target.checked)}),' Visible en la app'),
-        field('Título de ventajas','benefits_title',p.benefits_title,v=>info('benefits_title',v)),
-        p.benefits.map((b,index)=>{const change=(k,v)=>info('benefits',p.benefits.map((entry,i)=>i===index?{...entry,[k]:v}:entry));return h('fieldset',{key:index,disabled,style:{border:'1px solid var(--hairline)',borderRadius:12,marginBottom:12,minWidth:0}},h('legend',null,'Ventaja '+(index+1)),iconField('Icono','benefit-'+index+'-icon',b.icon,v=>change('icon',v)),field('Título','benefit-'+index+'-title',b.t,v=>change('t',v)),field('Texto secundario','benefit-'+index+'-text',b.s,v=>change('s',v),true),h('button',{onClick:()=>info('benefits',p.benefits.filter((_,i)=>i!==index))},'Quitar ventaja'));}),
-        canWrite&&p.benefits.length<12&&h(window.Btn,{variant:'outline',onClick:()=>info('benefits',p.benefits.concat({icon:'checkCircle',t:'',s:''}))},'Agregar ventaja'),
-        field('Título del catálogo','catalog_title',p.catalog_title,v=>info('catalog_title',v)),
-        h('div',{role:'status','data-program-info-message':true,style:{fontSize:'var(--text-13, 13px)',marginBottom:12}},message),
-        h('div',{style:{display:'flex',gap:10}},h(window.Btn,{variant:'outline',disabled:busy,onClick:()=>{setDraft(null);setMessage('');state.retry();}},'Recargar'),canWrite&&h(window.Btn,{'data-program-info-save':true,disabled:busy,onClick:submit},busy?'Guardando…':'Guardar información general'))),
-      h('section',{'data-program-info-preview':programKey,style:{marginBottom:24}},h('h2',{style:{fontSize:'var(--text-17, 17px)'}},'Vista previa de cómo se verá'),h('div',{style:{maxWidth:430,margin:'0 auto',background:'var(--bg)',borderRadius:24,overflow:'hidden',boxShadow:'var(--neo-md)'}},h(Cover,{url:preview.cover_url,icon:p.icon,hue:draft.group_key==='bienestar'?36:210}),h('div',{style:{position:'relative',zIndex:1,padding:'18px 20px 30px'}},h(PublicHeader,{row:preview,favorite:fav,onFavorite:()=>setFav(!fav),notify:setMessage}),h('div',{style:{marginTop:24}},h(window.SectionHead,{title:p.catalog_title}))))));
+  function usePublicInfo(key) {
+    const store = window.finCatStore,
+      presentation = React.useSyncExternalStore(store.subscribe, store.presentationState);
+    const [cover, setCover] = useState(null),
+      [attempt, retry] = useState(0);
+    useEffect(() => {
+      store.ensureLoaded();
+    }, [store]);
+    const applicable = keys.includes(key),
+      ready = presentation.phase === 'loaded' || presentation.phase === 'refreshing';
+    const row = ready && applicable ? presentation.rows.find(row => row.item_key === key && row.program_info) : null;
+    const id = row && row.program_cover_asset_id;
+    useEffect(() => {
+      if (!id) return;
+      let active = true;
+      readCover(row, presentation.rows).then(url => {
+        if (active) setCover({
+          rows: presentation.rows,
+          id,
+          attempt,
+          url
+        });
+      }, () => {
+        if (active) setCover({
+          rows: presentation.rows,
+          id,
+          attempt,
+          error: true
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [id, presentation.rows, attempt]);
+    const current = cover && cover.rows === presentation.rows && cover.id === id && cover.attempt === attempt;
+    const coverState = {
+      phase: !id ? 'empty' : !current ? 'loading' : cover.error ? 'error' : 'loaded',
+      retry: () => {
+        if (id) coverRequests(presentation.rows).delete(id);
+        retry(n => n + 1);
+      }
+    };
+    return {
+      key,
+      phase: !applicable ? 'not-applicable' : row ? 'loaded' : presentation.phase === 'error' || ready ? 'error' : 'loading',
+      row: row ? {
+        ...row,
+        cover_url: current && !cover.error ? cover.url : null
+      } : null,
+      cover: coverState,
+      retry: () => store.refresh()
+    };
   }
-  window.ProgramGeneralInfo=Object.freeze({keys,get,save,upload,useInfo,Cover,PublicHeader,InfoState,Editor});
+  function Cover({
+    url,
+    icon,
+    hue = 210,
+    children,
+    phase,
+    onRetry
+  }) {
+    const [failed, setFailed] = useState(false);
+    useEffect(() => setFailed(false), [url]);
+    return h('div', {
+      'data-program-cover': url ? 'configured' : 'empty',
+      style: {
+        position: 'relative',
+        height: 188,
+        background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`,
+        overflow: 'hidden'
+      }
+    }, url && !failed && h('img', {
+      src: url,
+      alt: 'Portada del programa',
+      onError: () => setFailed(true),
+      style: {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+      }
+    }), h('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))',
+        pointerEvents: 'none'
+      }
+    }), h('div', {
+      style: {
+        position: 'absolute',
+        right: -20,
+        bottom: -30,
+        opacity: .16
+      }
+    }, h(I, {
+      name: icon,
+      size: 220,
+      stroke: 1,
+      style: {
+        color: '#fff'
+      }
+    })), (failed || phase === 'error' || phase === 'loading') && h('span', {
+      role: failed || phase === 'error' ? 'alert' : 'status',
+      style: {
+        position: 'absolute',
+        bottom: 12,
+        left: 20,
+        color: '#fff',
+        fontSize: 'var(--text-12, 12px)'
+      }
+    }, phase === 'loading' && !failed ? 'Cargando portada…' : 'No se pudo cargar la portada', (failed || phase === 'error') && onRetry && h('button', {
+      onClick: () => {
+        setFailed(false);
+        onRetry();
+      },
+      style: {
+        marginLeft: 8
+      }
+    }, 'Reintentar portada')), children);
+  }
+  function PublicHeader({
+    row,
+    onFavorite,
+    favorite,
+    notify,
+    children
+  }) {
+    const p = row.program_info;
+    const contact = kind => {
+      const number = p[kind].replace(/[^+0-9]/g, '');
+      if (!number) {
+        if (notify) notify('El programa aún no tiene un número de contacto registrado.');
+        return;
+      }
+      if (kind === 'phone') window.location.href = 'tel:' + number;else window.open('https://wa.me/' + (/^\d{10}$/.test(number) ? '52' + number : number.replace(/^\+/, '')), '_blank', 'noopener,noreferrer');
+    };
+    const action = (icon, text, fn) => h('button', {
+      key: text,
+      onClick: fn,
+      'aria-pressed': text === 'Guardar' ? favorite : undefined,
+      style: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        background: 'var(--guinda-50)',
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 14,
+        padding: '11px 0',
+        cursor: 'pointer',
+        color: 'var(--guinda)'
+      }
+    }, h(I, {
+      name: icon,
+      size: 21,
+      stroke: 2
+    }), h('span', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700
+      }
+    }, text));
+    return h(React.Fragment, null, h('div', {
+      style: {
+        display: 'flex',
+        gap: 13,
+        alignItems: 'flex-start',
+        minWidth: 0
+      }
+    }, h('div', {
+      'data-category-header-icon': 'true',
+      style: {
+        position: 'relative',
+        zIndex: 2,
+        marginTop: -46,
+        flexShrink: 0,
+        width: 64,
+        height: 64,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-md)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)'
+      }
+    }, h(I, {
+      name: p.icon,
+      size: 32,
+      stroke: 1.8
+    })), h('div', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        paddingTop: 2
+      }
+    }, h('h1', {
+      style: {
+        fontSize: 'var(--text-23, 23px)',
+        fontWeight: 800,
+        letterSpacing: '-.02em',
+        margin: 0
+      }
+    }, row.label_override), h('div', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 2
+      }
+    }, h('span', {
+      style: {
+        color: 'var(--guinda)'
+      }
+    }, 'SutiApp'), ' / ' + (p.breadcrumb || row.label_override)))), h('p', {
+      'data-program-description': true,
+      style: {
+        fontSize: 'var(--text-15, 15px)',
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        lineHeight: 1.55,
+        margin: '16px 0 0',
+        whiteSpace: 'pre-line'
+      }
+    }, p.description), children, h('div', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        marginTop: 18
+      }
+    }, action('phone', 'Llamar', () => contact('phone')), action('message', 'WhatsApp', () => contact('whatsapp')), p.favorite_enabled && action('star', 'Guardar', onFavorite)), h('div', {
+      'data-program-benefits': true,
+      style: {
+        marginTop: 22
+      }
+    }, h(window.SectionHead, {
+      title: p.benefits_title,
+      icon: 'sparkle'
+    }), h('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, p.benefits.map((b, i) => h('div', {
+      key: i,
+      style: {
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '13px 14px',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        background: 'var(--guinda-50)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)',
+        flexShrink: 0
+      }
+    }, h(I, {
+      name: b.icon,
+      size: 20,
+      stroke: 2
+    })), h('div', null, h('div', {
+      style: {
+        fontSize: 'var(--text-14, 14px)',
+        fontWeight: 700
+      }
+    }, b.t), h('div', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 500
+      }
+    }, b.s)))))));
+  }
+  function InfoState({
+    state
+  }) {
+    return h('div', {
+      role: 'status',
+      style: {
+        padding: 20
+      }
+    }, h(window.EmptyState, {
+      icon: state.phase === 'error' ? 'warning' : 'clock',
+      title: state.phase === 'error' ? 'No pudimos cargar la información del programa' : 'Cargando información del programa',
+      sub: state.phase === 'error' ? 'Revisa tu conexión e inténtalo de nuevo.' : ''
+    }), state.phase === 'error' && h(window.Btn, {
+      onClick: state.retry
+    }, 'Reintentar'));
+  }
+  const input = {
+    width: '100%',
+    boxSizing: 'border-box',
+    border: 'none',
+    borderRadius: 12,
+    padding: '11px 13px',
+    background: 'var(--surface-2)',
+    boxShadow: 'var(--neo-inset)',
+    color: 'var(--ink)',
+    font: 'inherit',
+    marginBottom: 12
+  };
+  function Editor({
+    programKey,
+    canWrite = true
+  }) {
+    const state = useInfo(programKey, false),
+      [draft, setDraft] = useState(null),
+      [file, setFile] = useState(null),
+      [busy, setBusy] = useState(false),
+      [message, setMessage] = useState(''),
+      [fav, setFav] = useState(false);
+    useEffect(() => {
+      if (state.row) {
+        setDraft(JSON.parse(JSON.stringify(state.row)));
+        setFile(null);
+      }
+    }, [state.row]);
+    const [previewUrl, setPreviewUrl] = useState(null);
+    useEffect(() => {
+      if (!file) {
+        setPreviewUrl(null);
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }, [file]);
+    if (!draft || draft.item_key !== programKey) return h(InfoState, {
+      state
+    });
+    const p = draft.program_info,
+      disabled = !canWrite || busy;
+    const set = (k, v) => setDraft(d => ({
+      ...d,
+      [k]: v
+    }));
+    const info = (k, v) => setDraft(d => ({
+      ...d,
+      program_info: {
+        ...d.program_info,
+        [k]: v
+      }
+    }));
+    const field = (title, key, value, onChange, multi = false) => h('label', {
+      key,
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        color: 'var(--ink-2)'
+      }
+    }, h('span', {
+      style: {
+        display: 'block',
+        marginBottom: 6
+      }
+    }, title), h(multi ? 'textarea' : 'input', {
+      'data-program-info-field': key,
+      value,
+      disabled,
+      onChange: e => onChange(e.target.value),
+      rows: multi ? 4 : undefined,
+      maxLength: multi ? 6000 : 240,
+      style: input
+    }));
+    const iconField = (title, key, value, onChange) => h('label', {
+      key,
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800
+      }
+    }, title, h('select', {
+      'data-program-info-field': key,
+      value,
+      disabled,
+      onChange: e => onChange(e.target.value),
+      style: input
+    }, window.ICON_CATALOG.names.map(name => h('option', {
+      key: name,
+      value: name
+    }, name))));
+    const submit = async () => {
+      setBusy(true);
+      setMessage('');
+      try {
+        let row = draft;
+        if (file) {
+          const a = await upload(file);
+          row = {
+            ...draft,
+            program_cover_asset_id: a.id,
+            cover_url: a.url
+          };
+          setDraft(row);
+          setFile(null);
+        }
+        const saved = await save(row);
+        setDraft(saved);
+        setMessage('Información guardada.');
+      } catch (e) {
+        setMessage(String(e.message).includes('CONFLICT') ? 'La información cambió en otra sesión. Recarga antes de guardar.' : String(e.message).includes('IMAGE_INVALID') ? 'Selecciona una imagen PNG, JPG, GIF o WebP de hasta 10 MB.' : 'No se pudo guardar la información. Revisa los campos y tus permisos e inténtalo de nuevo.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const preview = {
+      ...draft,
+      cover_url: previewUrl || draft.cover_url
+    };
+    if (programKey === 'terrenos') return h(React.Fragment, null, h('section', {
+      'data-program-info-editor': programKey,
+      style: {
+        padding: 16,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        marginBottom: 18
+      }
+    }, h('h2', null, 'Información general del programa'), field('Nombre en Finanzas', 'name', draft.label_override, v => set('label_override', v)), field('Tagline en Finanzas', 'tagline', draft.description_override, v => set('description_override', v)), field('Detalle en Finanzas', 'detail', p.detail, v => info('detail', v)), field('Título de cabecera', 'map_title', p.map_title, v => info('map_title', v)), field('Subtítulo', 'map_subtitle', p.map_subtitle, v => info('map_subtitle', v)), field('Nombre del programa en cabecera', 'map_program_label', p.map_program_label, v => info('map_program_label', v)), field('Descripción de cabecera', 'map_description', p.map_description, v => info('map_description', v)), iconField('Icono del programa', 'icon', p.icon, v => info('icon', v)), h('p', null, 'La vista pública de Terrenos conserva el mapa y su cabecera actual.'), h('div', {
+      role: 'status',
+      'data-program-info-message': true
+    }, message), h(window.Btn, {
+      variant: 'outline',
+      disabled: busy,
+      onClick: () => {
+        setDraft(null);
+        state.retry();
+      }
+    }, 'Recargar'), canWrite && h(window.Btn, {
+      'data-program-info-save': true,
+      disabled: busy,
+      onClick: submit
+    }, busy ? 'Guardando…' : 'Guardar información general')), h('section', {
+      'data-program-info-preview': programKey,
+      style: {
+        marginBottom: 24
+      }
+    }, h('h2', null, 'Vista previa de cómo se verá'), h('div', {
+      style: {
+        maxWidth: 430,
+        borderRadius: 24,
+        overflow: 'hidden'
+      }
+    }, h(window.TerrainProgramHeader, {
+      headerInfo: p,
+      app: {
+        back: () => {}
+      }
+    }))));
+    return h(React.Fragment, null, h('section', {
+      'data-program-info-editor': programKey,
+      style: {
+        padding: 16,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 18
+      }
+    }, h('h2', {
+      style: {
+        fontSize: 'var(--text-17, 17px)',
+        margin: '0 0 16px'
+      }
+    }, 'Información general del programa'), field('Nombre público del programa', 'name', draft.label_override, v => set('label_override', v)), field('Tagline de la card en Finanzas', 'tagline', draft.description_override, v => set('description_override', v)), field('Detalle de la card en Finanzas', 'detail', p.detail, v => info('detail', v)), field('Breadcrumb (vacío: nombre del programa)', 'breadcrumb', p.breadcrumb, v => info('breadcrumb', v)), field('Descripción principal', 'description', p.description, v => info('description', v), true), iconField('Icono', 'icon', p.icon, v => info('icon', v)), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        marginBottom: 12
+      }
+    }, 'Portada / imagen principal', h('input', {
+      'data-program-info-cover': true,
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled,
+      onChange: e => {
+        setFile(e.target.files[0] || null);
+        e.target.value = '';
+      },
+      style: {
+        display: 'block',
+        marginTop: 8,
+        maxWidth: '100%'
+      }
+    })), preview.cover_url && h('div', {
+      style: {
+        marginBottom: 12
+      }
+    }, h('img', {
+      src: preview.cover_url,
+      alt: 'Portada seleccionada',
+      style: {
+        width: '100%',
+        height: 110,
+        objectFit: 'cover',
+        borderRadius: 12
+      }
+    }), h('button', {
+      disabled,
+      onClick: () => {
+        setFile(null);
+        setDraft(d => ({
+          ...d,
+          program_cover_asset_id: null,
+          cover_url: null
+        }));
+      }
+    }, 'Quitar portada')), field('Teléfono / Llamar', 'phone', p.phone, v => info('phone', v)), field('WhatsApp (incluye código de país)', 'whatsapp', p.whatsapp, v => info('whatsapp', v)), [['favorite_enabled', 'Mostrar Guardar / Favorito'], ['popular', 'Insignia POPULAR']].map(([k, title]) => h('label', {
+      key: k,
+      style: {
+        display: 'block',
+        marginBottom: 12
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: p[k],
+      disabled,
+      onChange: e => info(k, e.target.checked)
+    }), ' ' + title)), h('label', {
+      style: {
+        display: 'block',
+        marginBottom: 12
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: draft.enabled,
+      disabled,
+      onChange: e => set('enabled', e.target.checked)
+    }), ' Visible en la app'), field('Título de ventajas', 'benefits_title', p.benefits_title, v => info('benefits_title', v)), p.benefits.map((b, index) => {
+      const change = (k, v) => info('benefits', p.benefits.map((entry, i) => i === index ? {
+        ...entry,
+        [k]: v
+      } : entry));
+      return h('fieldset', {
+        key: index,
+        disabled,
+        style: {
+          border: '1px solid var(--hairline)',
+          borderRadius: 12,
+          marginBottom: 12,
+          minWidth: 0
+        }
+      }, h('legend', null, 'Ventaja ' + (index + 1)), iconField('Icono', 'benefit-' + index + '-icon', b.icon, v => change('icon', v)), field('Título', 'benefit-' + index + '-title', b.t, v => change('t', v)), field('Texto secundario', 'benefit-' + index + '-text', b.s, v => change('s', v), true), h('button', {
+        onClick: () => info('benefits', p.benefits.filter((_, i) => i !== index))
+      }, 'Quitar ventaja'));
+    }), canWrite && p.benefits.length < 12 && h(window.Btn, {
+      variant: 'outline',
+      onClick: () => info('benefits', p.benefits.concat({
+        icon: 'checkCircle',
+        t: '',
+        s: ''
+      }))
+    }, 'Agregar ventaja'), field('Título del catálogo', 'catalog_title', p.catalog_title, v => info('catalog_title', v)), h('div', {
+      role: 'status',
+      'data-program-info-message': true,
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        marginBottom: 12
+      }
+    }, message), h('div', {
+      style: {
+        display: 'flex',
+        gap: 10
+      }
+    }, h(window.Btn, {
+      variant: 'outline',
+      disabled: busy,
+      onClick: () => {
+        setDraft(null);
+        setMessage('');
+        state.retry();
+      }
+    }, 'Recargar'), canWrite && h(window.Btn, {
+      'data-program-info-save': true,
+      disabled: busy,
+      onClick: submit
+    }, busy ? 'Guardando…' : 'Guardar información general'))), h('section', {
+      'data-program-info-preview': programKey,
+      style: {
+        marginBottom: 24
+      }
+    }, h('h2', {
+      style: {
+        fontSize: 'var(--text-17, 17px)'
+      }
+    }, 'Vista previa de cómo se verá'), h('div', {
+      style: {
+        maxWidth: 430,
+        margin: '0 auto',
+        background: 'var(--bg)',
+        borderRadius: 24,
+        overflow: 'hidden',
+        boxShadow: 'var(--neo-md)'
+      }
+    }, h(Cover, {
+      url: preview.cover_url,
+      icon: p.icon,
+      hue: draft.group_key === 'bienestar' ? 36 : 210
+    }), h('div', {
+      style: {
+        position: 'relative',
+        zIndex: 1,
+        padding: '18px 20px 30px'
+      }
+    }, h(PublicHeader, {
+      row: preview,
+      favorite: fav,
+      onFavorite: () => setFav(!fav),
+      notify: setMessage
+    }), h('div', {
+      style: {
+        marginTop: 24
+      }
+    }, h(window.SectionHead, {
+      title: p.catalog_title
+    }))))));
+  }
+  window.ProgramGeneralInfo = Object.freeze({
+    keys,
+    get,
+    save,
+    upload,
+    useInfo,
+    usePublicInfo,
+    Cover,
+    PublicHeader,
+    InfoState,
+    Editor
+  });
 })();
 })();
 /* @@file savings-panel-repository.js */

@@ -2943,3 +2943,8 @@ Shared general-information editor and preview precede products in Admin and are 
 ## H-CONVENIOS-DETAIL-LATENCY-001 - 2026-09-10
 
 Coordinacion focal de lectura entre listado/detalle de Convenios, favoritos independientes, un listener de foco, invalidacion al guardar/cambiar contexto/desmontar y estados de detalle opacos con volver/reintentar. Solo dos modulos del bundle cambiados; 116 identicos. Tres escenarios pareados: contenido 225.5 -> 64.7 ms (normal), 1337.7 -> 85.9 ms (lento), 287.7 -> 18.2 ms (repetido). Seis comprobaciones funcionales PASS: scroll, favoritos, foco, actualizacion, error/retry y sesion. Browser aislado, cero red/escrituras productivas; no publicacion. Informe y evidencia: docs/qa/H-CONVENIOS-DETAIL-LATENCY-001.md y docs/qa/evidence/convenios-detail-latency-20260910/.
+
+
+## H-PROGRAM-OPENING-LATENCY-001 - 2026-09-10
+
+Public program headers reuse the existing Finanzas presentation revision, with independent cover loading/retry, opaque loading/error state, deduplicated focus refresh and session invalidation. Three paired cases: information 463.7 -> 28.3 ms, 966.8 -> 49.0 ms and 396.9 -> 14.5 ms; images/products measured separately. Six functional checks PASS. Three source modules changed; 115 unrelated compiled modules preserved. Isolated local Chrome, no production writes/deployment. Report: docs/qa/H-PROGRAM-OPENING-LATENCY-001.md.

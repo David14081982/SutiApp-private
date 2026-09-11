@@ -73,8 +73,8 @@
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['program_products','finanzas','fondos','fincat','flujos','membresias'] },
-    { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos'] },
+    { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
     { id:'settings', label:'Acceso y configuración', icon:'settings', modules:['catalogos','roles','pantallas','secciones','menus','formularios','branding'] },

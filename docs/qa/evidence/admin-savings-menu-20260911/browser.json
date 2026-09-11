@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "target": "LOCAL",
+  "checks": [
+    "Exact finance/savings order and group membership",
+    "All four entries navigate and select inside Ahorro",
+    "Collapse/expand preserved",
+    "Mobile menu retains all four original modules"
+  ],
+  "pageErrors": [],
+  "businessWrites": 0
+}

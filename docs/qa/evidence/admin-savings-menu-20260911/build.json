@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "method": "Babel Standalone 7.29.0, react preset, focal IIFE regeneration",
+  "unrelatedBundleModulesByteIdentical": true,
+  "bundleSyntax": "PASS",
+  "bundleVersion": 252,
+  "bundleSha256": "b850e79b505a0c15f06835d70d9587ff37b41a607fc5e8777cdba557eacef1b1"
+}

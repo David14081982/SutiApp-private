@@ -54711,12 +54711,12 @@ Object.assign(window, {
     id: 'finance',
     label: 'Finanzas',
     icon: 'finance',
-    modules: ['program_products', 'finanzas', 'fondos', 'fincat', 'flujos', 'membresias']
+    modules: ['finanzas', 'fondos', 'flujos']
   }, {
     id: 'savings',
     label: 'Ahorro',
     icon: 'piggy',
-    modules: ['savings']
+    modules: ['savings', 'program_products', 'fincat', 'membresias']
   }, {
     id: 'commerce',
     label: 'Empresas y convenios',

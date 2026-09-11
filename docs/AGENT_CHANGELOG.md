@@ -3013,3 +3013,7 @@ preference module changes among 116 modules relative to main. Integrated build,
 focal tests, 72 captures, cache transition, global local legitimate assets/PDF and
 backend deployment contracts PASS. No runtime changes outside the focal scope,
 no migration, backend, Google or business writes. Deployment evidence will follow.
+
+## H-ADMIN-SAVINGS-MENU-001 — 2026-09-11
+
+PASS local: tres entradas del sidebar se mueven de Finanzas a Ahorro, después de Ahorro. Dos arrays modificados, mismas rutas/permisos/pantallas; bundle focal idéntico en los demás módulos y cachebuster v252. Chrome 1440/390 y build Pages PASS; cero escrituras de negocio. Publicación aislada autorizada desde origin/main, sin incluir modificaciones previas. Evidencia y revisión: [H-ADMIN-SAVINGS-MENU-001](qa/H-ADMIN-SAVINGS-MENU-001.md).

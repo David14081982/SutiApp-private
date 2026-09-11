@@ -50,6 +50,7 @@
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
+[data-text-size="small"], [data-nav-text-size="small"] { --text-scale: 0.875; }
 [data-text-size="large"], [data-nav-text-size="large"] { --text-scale: 1.15; }
 [data-text-size="largest"], [data-nav-text-size="largest"] { --text-scale: 1.35; }
 [data-text-size] :where(div,span,p,h1,h2,h3,h4,label,section,article,form,fieldset,a,button) { min-width: 0; overflow-wrap: anywhere; }
@@ -57,6 +58,8 @@
 [data-text-size] [style*="font-size:"] { line-height: 1.45 !important; }
 [data-text-size] :where(h1,h2,h3,h4) { font-size: calc(var(--text-title) * var(--text-scale)); }
 [data-text-size] :where(button,input,select,textarea) { font: inherit; font-size: var(--text-control) !important; min-height: 48px !important; max-width: 100%; }
+/* Keep iOS form text at 16px; button text still follows the chosen scale. */
+[data-text-size="small"] :where(input,select,textarea) { font-size: 16px !important; }
 [data-text-size] :where(button,a[role="button"],[role="button"]) { min-width: 48px; flex-shrink: 0; }
 [data-text-size] button { height: auto !important; white-space: normal !important; }
 [data-text-size] button > span { font-size: inherit !important; }
@@ -72,6 +75,7 @@
 [data-app-bottom-nav] [data-app-tab] { justify-content: flex-start; min-width: 48px; min-height: 48px !important; padding: 2px 0 !important; }
 [data-app-bottom-nav] [data-app-tab] > span { font-size: calc(14px * var(--text-scale)) !important; line-height: 1.4 !important; width: 100%; white-space: nowrap !important; overflow-wrap: normal; word-break: normal; text-align: center; }
 [data-app-bottom-nav] [data-app-tab] > span { margin-top: auto; min-height: 1.4em; }
+[data-app-bottom-nav][data-nav-text-size="small"] [data-app-tab] > span { line-height: 1.45 !important; min-height: 1.45em; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) { flex-wrap: wrap; gap: 0 !important; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) button { background: none !important; display: grid; place-items: center; }
 [data-text-size] :is([data-home-banner-dots],[data-convenios-ad-dots]) button::after { content: ''; display: block; width: 8px; height: 8px; border-radius: 999px; background: var(--hairline-strong); }
@@ -104,11 +108,11 @@
 [data-text-size] .su-finance-summary > div:first-child > div { flex: 1 1 100%; }
 [data-text-size] .su-finance-summary > div:first-child > div > div:last-child { flex: 1; }
 [data-text-size] .su-finance-item-title { flex-wrap: wrap; }
-[data-text-size]:not([data-text-size="normal"]) [data-finance-summary-actions] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr)) !important; }
+:is([data-text-size="large"],[data-text-size="largest"]) [data-finance-summary-actions] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr)) !important; }
 @media (max-width: 360px) {
-  [data-text-size]:not([data-text-size="normal"]) .su-tab-heading { flex-wrap: wrap; gap: 8px; }
-  [data-text-size]:not([data-text-size="normal"]) .su-tab-heading > div { flex-basis: 100%; }
-  [data-text-size]:not([data-text-size="normal"]) .su-tab-heading > button { margin-left: auto; }
+  :is([data-text-size="large"],[data-text-size="largest"]) .su-tab-heading { flex-wrap: wrap; gap: 8px; }
+  :is([data-text-size="large"],[data-text-size="largest"]) .su-tab-heading > div { flex-basis: 100%; }
+  :is([data-text-size="large"],[data-text-size="largest"]) .su-tab-heading > button { margin-left: auto; }
 }
 
 [data-text-size] .su-btn { flex-shrink: 1; }
@@ -122,8 +126,8 @@
 [data-text-size] .su-ad-slide > div[style*="top: 14px"] { position: relative !important; top: auto !important; left: auto !important; align-self: flex-start; margin-right: 42px; }
 [data-text-size] .su-ad-copy { position: relative !important; left: auto !important; right: auto !important; bottom: auto !important; padding-top: 36px; margin-top: auto; flex-wrap: wrap; }
 [data-text-size] [data-notifications-unread] { height: auto !important; min-height: 20px; padding: 1px 5px !important; }
-[data-text-size]:not([data-text-size="normal"]) .su-finance-mini-stats { flex-direction: column; }
-[data-text-size]:not([data-text-size="normal"]) .su-finance-mini-stats > div[style*="width: 1px"] { width: 100% !important; height: 1px; }
+:is([data-text-size="large"],[data-text-size="largest"]) .su-finance-mini-stats { flex-direction: column; }
+:is([data-text-size="large"],[data-text-size="largest"]) .su-finance-mini-stats > div[style*="width: 1px"] { width: 100% !important; height: 1px; }
 [data-text-size] :is(.sav-year-grid,.sav-human-grid) { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(125px * var(--text-scale))), 1fr)); }
 [data-text-size] :is(.sav-year-subtotal,.sav-year-head,.sav-row) { flex-wrap: wrap; }
 [data-text-size] .sav-tx { grid-template-columns: 36px minmax(0, 1fr); }
@@ -133,6 +137,8 @@
 [data-text-size] p { font-size: var(--text-control) !important; }
 [data-text-size] a[href] { min-height: 48px; min-width: 48px; display: inline-flex; align-items: center; }
 [data-text-size] label:has(input:is([type="radio"],[type="checkbox"])) { min-height: 48px; }
+/* Inline labels need a box for the existing minimum hit area to take effect. */
+[data-text-size="small"] :where(label:has(input:is([type="radio"],[type="checkbox"]))) { display: inline-flex; align-items: center; min-width: 48px; }
 
 [data-text-size] .su-catalog-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(130px * var(--text-scale))), 1fr)) !important; }
 

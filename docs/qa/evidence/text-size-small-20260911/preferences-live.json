@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_BUILD",
+  "checks": [
+    "Real UI settings route",
+    "Immediate scale change",
+    "Auth remote readback",
+    "Small survives browser refresh",
+    "Browser refresh",
+    "Local preference poison ignored",
+    "New browser and independent login",
+    "Network failure announced with rollback",
+    "Only allowlisted metadata in writer payload"
+  ],
+  "backendBusinessChanges": 0,
+  "schemaChanges": 0,
+  "errors": [],
+  "originalPreferenceRestored": true
+}

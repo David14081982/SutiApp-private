@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "rollbackPairs": 12,
+  "checks": [
+    "Remote authority only",
+    "Normal when absent/null",
+    "Four ordered allowlisted values and scales",
+    "Unknown strings/types rejected",
+    "Metadata merge preserves unrelated keys",
+    "No target user selector",
+    "Cross-principal read/write rejected",
+    "Read/write failures propagate",
+    "Unknown metadata update message; no automatic remote replacement",
+    "Immediate preview during pending save",
+    "All 12 failed transitions roll back and announce error",
+    "Pending choices serialized",
+    "Retry succeeds including small",
+    "Native radio selection"
+  ],
+  "businessWrites": 0
+}

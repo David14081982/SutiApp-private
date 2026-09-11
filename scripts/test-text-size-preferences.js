@@ -1,12 +1,16 @@
 'use strict';
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert').strict;
 const {root,chromium}=require('./test-text-size-helpers');
-const out=path.join(root,'docs/qa/evidence/text-size-20260909');
+const out=path.join(root,'docs/qa/evidence/text-size-small-20260911');
 (async()=>{
  let user={id:'a',user_metadata:{other_setting:'preserved'}},calls=[],readError=false,writeError=false;
  const client={auth:{getUser:async()=>readError?{error:Error('offline')}:{data:{user:structuredClone(user)}},updateUser:async payload=>{calls.push(payload);if(writeError)return {error:Error('offline')};user.user_metadata={...user.user_metadata,...payload.data};return {data:{user:structuredClone(user)}};}}};
  const window={SutiSupabase:{getClient:()=>client}},context={window};vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(root,'app/text-size-preferences.js'),'utf8'),context);
- const api=window.TextSizePreferences;assert.equal(await api.read('a'),'normal');for(const size of ['large','largest','normal']){assert.equal(await api.write('a',size),size);assert.equal(await api.read('a'),size);assert.equal(user.user_metadata.other_setting,'preserved');}
+ const api=window.TextSizePreferences;
+ assert.deepEqual(Array.from(api.options,o=>[o.value,o.label,o.scale]),[['small','Pequeño',.875],['normal','Normal',1],['large','Grande',1.15],['largest','Muy grande',1.35]]);
+ for(const candidate of [null,{}, {user_metadata:{}}, {user_metadata:{sutiapp_text_size:null}}])assert.equal(api.fromUser(candidate),'normal');
+ for(const unknown of ['', 'SMALL', 'huge', 0, false, {}, []])assert.throws(()=>api.fromUser({user_metadata:{sutiapp_text_size:unknown}}),/INVALID_TEXT_SIZE/);
+ assert.equal(await api.read('a'),'normal');for(const size of ['small','large','largest','normal']){assert.equal(await api.write('a',size),size);assert.equal(await api.read('a'),size);assert.equal(user.user_metadata.other_setting,'preserved');}
  await assert.rejects(()=>api.write('a','huge'));const before=calls.length;await assert.rejects(()=>api.write('b','large'));assert.equal(calls.length,before);await assert.rejects(()=>api.read('b'));
  readError=true;await assert.rejects(()=>api.read('a'));readError=false;writeError=true;await assert.rejects(()=>api.write('a','large'));assert.equal(user.user_metadata.sutiapp_text_size,'normal');writeError=false;
  user.user_metadata.sutiapp_text_size='invalid';await assert.rejects(()=>api.read('a'));assert.equal(await api.write('a','large'),'large');
@@ -20,6 +24,30 @@ const out=path.join(root,'docs/qa/evidence/text-size-20260909');
   await page.evaluate(()=>window.__fail=true);await page.getByRole('radio',{name:'Muy grande',exact:true}).check();await page.waitForFunction(()=>document.querySelector('main').dataset.textSize==='largest');await page.evaluate(()=>__resolveSave());await page.getByRole('alert').waitFor();assert.equal(await page.locator('main').getAttribute('data-text-size'),'large');assert.equal(await page.evaluate(()=>__saved),'large');
   await page.evaluate(()=>window.__fail=false);await page.getByRole('radio',{name:'Muy grande',exact:true}).check();await page.evaluate(()=>__resolveSave());await page.getByText('Tamaño de texto guardado.',{exact:true}).waitFor();assert.equal(await page.evaluate(()=>__saved),'largest');
   assert(await page.getByRole('radio',{name:'Muy grande',exact:true}).isChecked());
-  const result={status:'PASS',checks:['Remote authority only','Normal when absent','Three allowlisted values','Metadata merge preserves unrelated keys','No target user selector','Cross-principal read/write rejected','Read/write failures propagate','Invalid metadata visible and repairable','Immediate preview during pending save','Failed save rolls back and announces error','Retry succeeds','Native radio selection'],businessWrites:0};fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'preferences-unit.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+  const options=[['small','Pequeño'],['normal','Normal'],['large','Grande'],['largest','Muy grande']];
+  for(const [prior,label] of options){
+   if(!(await page.getByRole('radio',{name:label,exact:true}).isChecked())){
+    await page.getByRole('radio',{name:label,exact:true}).check();await page.evaluate(()=>__resolveSave());await page.getByText('Tamaño de texto guardado.',{exact:true}).waitFor();
+   }
+   for(const [next,nextLabel] of options.filter(([v])=>v!==prior)){
+    await page.evaluate(()=>window.__fail=true);
+    await page.getByRole('radio',{name:nextLabel,exact:true}).check();
+    assert.equal(await page.locator('main').getAttribute('data-text-size'),next,'immediate preview');
+    assert(await page.getByRole('radio',{name:label,exact:true}).isDisabled(),'serialize pending choices');
+    await page.evaluate(()=>__resolveSave());await page.getByRole('alert').waitFor();
+    assert.equal(await page.locator('main').getAttribute('data-text-size'),prior,'rollback for '+prior+' → '+next);
+    assert.equal(await page.evaluate(()=>__saved),prior);
+    assert(await page.getByRole('radio',{name:label,exact:true}).isChecked());
+    await page.evaluate(()=>window.__fail=false);
+   }
+  }
+  const writeCount=await page.evaluate(()=>__writes.length);
+  await page.evaluate(()=>{window.__saved='future-size';document.dispatchEvent(new Event('visibilitychange'));});
+  await page.getByText(/Esta versión no reconoce/).waitFor();
+  assert.equal(await page.evaluate(()=>__writes.length),writeCount,'unknown reads never replace remote preference');
+  assert.equal(await page.evaluate(()=>__saved),'future-size');
+  await page.getByRole('radio',{name:'Pequeño',exact:true}).check();await page.evaluate(()=>__resolveSave());await page.getByText('Tamaño de texto guardado.',{exact:true}).waitFor();
+  assert.equal(await page.evaluate(()=>__saved),'small','explicit user choice repairs unknown metadata');
+  const result={status:'PASS',rollbackPairs:12,checks:['Remote authority only','Normal when absent/null','Four ordered allowlisted values and scales','Unknown strings/types rejected','Metadata merge preserves unrelated keys','No target user selector','Cross-principal read/write rejected','Read/write failures propagate','Unknown metadata update message; no automatic remote replacement','Immediate preview during pending save','All 12 failed transitions roll back and announce error','Pending choices serialized','Retry succeeds including small','Native radio selection'],businessWrites:0};fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'preferences-unit.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e.message);process.exitCode=1;});

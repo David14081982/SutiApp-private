@@ -1,10 +1,10 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert').strict;
 const {chromium,webkit}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/bottom-nav-labels-20260909');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/text-size-small-20260911/navigation');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const names={home:['Inicio','Inic'],financiera:['Finanzas','Fina'],convenios:['Convenios','Conv'],historial:['Historial','Hist'],credencial:['Credencial','Cred'],admin:['Admin','Admi']};
-const sizes={normal:14,large:16.1,largest:18.9};
+const sizes={small:12.25,normal:14,large:16.1,largest:18.9};
 async function settled(page,size){
  await page.locator('[data-nav-text-size="'+size+'"]').waitFor();
  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
@@ -26,6 +26,7 @@ function validate(m,size){
   assert(b.labelHeight<=b.line+1);assert(b.textLeft>=b.left-.6&&b.textRight<=b.right+.6,'overflow/clipping '+JSON.stringify(b));
   assert(b.left>=b.navLeft-.6&&b.right<=b.navRight+.6);assert(b.width>=47.5&&b.height>=47.5,'small target');
   assert(Math.abs(b.font-sizes[size])<.05,'font size changed');assert(Math.abs(b.iconOffset)<.6&&Math.abs(b.labelOffset)<.6,'off-center');
+  assert(Math.abs(b.line/b.font-(size==='small'?1.45:1.4))<.01,'line-height proportion');
   assert.equal(b.iconWidth,b.active?46:40,'changed icon geometry');assert.equal(b.overflow,'visible','clipping workaround');
   const short=size==='largest'||b.fullWidth>b.width-1;assert.equal(b.label,names[b.id][short?1:0],'full name must survive while it fits');
  }

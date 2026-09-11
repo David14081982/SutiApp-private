@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "port": 8080,
+      "status": 204,
+      "allowOrigin": "http://localhost:8080",
+      "errorCode": null
+    },
+    {
+      "port": 8081,
+      "status": 403,
+      "allowOrigin": "http://localhost:8080",
+      "errorCode": "ORIGIN_DENIED"
+    }
+  ],
+  "backendChanges": 0
+}

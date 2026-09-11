@@ -1,5 +1,30 @@
 # Registro de decisiones arquitectónicas
 
+## H-USER-TEXT-SIZE-SMALL-001 — Pequeño, 2026-09-11
+
+El propietario autoriza cuatro opciones en orden Pequeño/Normal/Grande/Muy grande,
+persistidas como `small/normal/large/largest`. Pequeño aplica 0.875 a la tipografía y
+mínimos de retículas ya escalables: cuerpo 16→14px; secundario 14→12.25px. Esta es la
+excepción expresa al mínimo secundario anterior de 14px, exclusivamente en Pequeño.
+Se conservan iconos, padding, radios, sombras, flujos y las áreas táctiles existentes
+de 48px (superiores al mínimo solicitado de 44px). Los campos input/select/textarea
+conservan texto 16px en Pequeño; los botones sí escalan. Interlineado 1.45 en Pequeño,
+incluida su barra inferior; la barra de los tres tamaños previos conserva su 1.4
+para evitar una regresión visual ajena al cambio. Selector vertical con cuatro filas.
+
+No hay nueva autoridad, migración ni modificación financiera. Ausencia/null sigue
+siendo Normal. Un valor desconocido sigue lanzando `INVALID_TEXT_SIZE`; se muestra
+un aviso de versión incompatible y se conserva el remoto sin sobrescribirlo.
+El cliente antiguo no reconoce `small` y muestra su aviso genérico de carga/conexión;
+reintentar la lectura en ese cliente no lo corrige. Bundle/CSS v244 y SW/cache v191
+se entregan juntos, conservando el mecanismo existente de actualización y recarga.
+Una pestaña antigua u offline puede continuar con código anterior hasta actualizar:
+el versionado no garantiza actualizar todos los dispositivos simultáneamente.
+Recovery de despliegue: mantener un lector compatible con `small`, aunque se retire
+la opción del selector; no volver sin más al bundle anterior ni resetear metadata.
+La reversión de una elección fallida restaura la presentación anterior; una posterior
+lectura confirmada sigue siendo autoridad, incluso ante una respuesta de red perdida.
+
 ## H-USER-TEXT-SIZE-ACCESSIBILITY-001 — preferencia visual personal
 
 Instrucción expresa del propietario: agregar Mi Perfil → Configuración → Tamaño de texto, tres tamaños, aplicación inmediata a todo el afiliado, persistencia segura, pruebas 320/390/430 y publicación. Ante ausencia de autoridad personal, autoriza crear la solución mínima sin convertir localStorage en autoridad productiva.

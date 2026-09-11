@@ -1,5 +1,25 @@
 # Bitácora de agentes
 
+## 2026-09-11 — H-USER-TEXT-SIZE-SMALL-001
+
+PASS for local implementation on `codex/user-text-size-small-001`, baseline
+`2aa05b9`, checkout `C:/tmp/sutiapp-text-size-release`; not published or merged.
+Added Pequeño (0.875) to the existing personal preference, preserving the three
+previous sizes, 16px form text in Small and existing 48px touch targets. Large-only
+layout selectors now explicitly match large/largest. Only the preference module
+changed inside the regenerated bundle; shell/SW changes are version references.
+No business repositories, routes, backend, permissions, financial calculations or
+Google code changed. Unknown metadata remains visible, without automatic rewrite.
+
+Build, remote readback/refresh/restoration, 12 rollback pairs, 168 fixture surfaces,
+526 Chromium/WebKit navigation checks, 72 live-data captures, scale/baseline parity,
+cache lifecycle and local/production global legitimate image/PDF regression PASS.
+The initial local global failure was a test origin error (8081 denied by existing
+CORS); the final unmodified regression passed on allowed origin 8080. No backend
+adjustment or data rewrite. Physical iPhone testing is not claimed.
+Evidence and recovery: `docs/qa/H-USER-TEXT-SIZE-SMALL-001.md` and
+`docs/qa/evidence/text-size-small-20260911/`.
+
 ## 2026-09-09 — H-BOTTOM-NAV-LABELS-001
 
 Surgical BottomNav label presentation: largest uses Inic/Fina/Conv/Hist/Cred/Admi;

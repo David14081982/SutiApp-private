@@ -2,11 +2,17 @@
 
 ## Tamaño de texto personal — H-USER-TEXT-SIZE-ACCESSIBILITY-001
 
-Supabase Auth `user_metadata.sutiapp_text_size` es la única autoridad de esta preferencia visual: `normal`, `large` o `largest`; ausencia/null significa Normal. El usuario autorizó una solución mínima segura ante la ausencia de preferencias personales. `app_settings` conserva branding global y `useTweaks` su propósito de diseño; ninguno decide el tamaño personal.
+Supabase Auth `user_metadata.sutiapp_text_size` es la única autoridad de esta preferencia visual: `small`, `normal`, `large` o `largest`; ausencia/null significa Normal. `small` corresponde a Pequeño (0.875), autorizado en H-USER-TEXT-SIZE-SMALL-001. El usuario autorizó una solución mínima segura ante la ausencia de preferencias personales. `app_settings` conserva branding global y `useTweaks` su propósito de diseño; ninguno decide el tamaño personal.
 
 `app/text-size-preferences.js` lee mediante `auth.getUser()` y escribe sólo ese campo mediante `auth.updateUser({data: ...})`, sin selector de usuario. Pertenece al principal real autenticado, también durante asistencia; nunca escribe la cuenta del afiliado contexto. Metadata editable no concede permisos, no identifica afiliación y no participa en reglas de negocio. Se conservan todos los demás metadatos.
 
 El estado React es una proyección descartable. No hay preferencia persistida en localStorage, IndexedDB, JSON o caché; la sesión SDK no se usa para decidir el valor. Cada montaje y retorno visible consulta la autoridad. La elección se aplica inmediatamente como cambio pendiente y sólo se anuncia guardada tras confirmación; un fallo restaura el valor anterior con error visible. Lecturas fallidas tienen reintento visible. Eliminar/null en la autoridad no recupera una elección desde otra fuente.
+
+Valores desconocidos producen `INVALID_TEXT_SIZE`, sin convertirlos silenciosamente
+en Normal ni escribir un reemplazo. La UI informa incompatibilidad de versión y
+conserva la última presentación en memoria (Normal al primer montaje), sin afirmar
+que se leyó/guardó correctamente. Clientes anteriores a Pequeño requieren actualizar
+para leer `small`; una reversión de frontend debe conservar esa compatibilidad.
 
 ## Web Push de solicitudes — ADR-110, 2026-09-08
 

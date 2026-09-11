@@ -1,0 +1,12 @@
+{
+  "stage": "preview",
+  "found": true,
+  "status": null,
+  "errorName": "FunctionsFetchError",
+  "errorCode": null,
+  "hasSignedUrl": false,
+  "responseKeys": [],
+  "documentIdLogged": false,
+  "httpResponseReceived": false,
+  "note": "FunctionsFetchError: no HTTP response/status available; the initial diagnostic default of 200 was not an observed response."
+}

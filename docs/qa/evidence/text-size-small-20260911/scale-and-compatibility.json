@@ -1,0 +1,148 @@
+{
+  "status": "PASS",
+  "base": "2aa05b9",
+  "bundleModulesChanged": [
+    "text-size-preferences.js"
+  ],
+  "legacyClientSmall": "INVALID_TEXT_SIZE",
+  "swLogicUnchanged": true,
+  "appShellLogicUnchanged": true,
+  "parity": [
+    {
+      "width": 320,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "size": "largest",
+      "status": "PASS"
+    }
+  ],
+  "measurements": [
+    {
+      "width": 320,
+      "normal": [
+        14,
+        15,
+        16,
+        18,
+        25,
+        32,
+        44
+      ],
+      "small": [
+        12.25,
+        13.125,
+        14,
+        15.75,
+        21.875,
+        28,
+        38.5
+      ],
+      "formText": [
+        16,
+        16,
+        16
+      ],
+      "button": 14,
+      "minimumTarget": 48,
+      "lineHeight": 1.45
+    },
+    {
+      "width": 390,
+      "normal": [
+        14,
+        15,
+        16,
+        18,
+        25,
+        32,
+        44
+      ],
+      "small": [
+        12.25,
+        13.125,
+        14,
+        15.75,
+        21.875,
+        28,
+        38.5
+      ],
+      "formText": [
+        16,
+        16,
+        16
+      ],
+      "button": 14,
+      "minimumTarget": 48,
+      "lineHeight": 1.45
+    },
+    {
+      "width": 430,
+      "normal": [
+        14,
+        15,
+        16,
+        18,
+        25,
+        32,
+        44
+      ],
+      "small": [
+        12.25,
+        13.125,
+        14,
+        15.75,
+        21.875,
+        28,
+        38.5
+      ],
+      "formText": [
+        16,
+        16,
+        16
+      ],
+      "button": 14,
+      "minimumTarget": 48,
+      "lineHeight": 1.45
+    }
+  ],
+  "backendRequests": 0,
+  "businessWrites": 0
+}

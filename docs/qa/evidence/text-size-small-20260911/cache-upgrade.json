@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "isolation": "Production SW and bootstrap; isolated shell/readers; no Auth/backend",
+  "oldSmallRead": "INVALID_TEXT_SIZE",
+  "failedPrecachePreservesOldWorker": true,
+  "automaticReload": true,
+  "newSmallRead": "small",
+  "offlineReopen": "small",
+  "oldCacheRemoved": true,
+  "formOfRecovery": "Forward-compatible reader, no preference rewrite",
+  "backendRequests": 0,
+  "businessWrites": 0
+}

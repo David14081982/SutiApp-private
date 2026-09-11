@@ -67436,6 +67436,7 @@ Object.assign(window, {
   'use strict';
   const KEY = 'sutiapp_text_size';
   const OPTIONS = Object.freeze([
+    { value: 'small', label: 'Pequeño', scale: 0.875 },
     { value: 'normal', label: 'Normal', scale: 1 },
     { value: 'large', label: 'Grande', scale: 1.15 },
     { value: 'largest', label: 'Muy grande', scale: 1.35 },
@@ -67474,8 +67475,10 @@ Object.assign(window, {
       try {
         const value = await read(principal);
         if (live.current === ticket) setState({ value, status: 'ready', error: '' });
-      } catch (_) {
-        if (live.current === ticket) setState(previous => ({ ...previous, status: 'error', error: 'No pudimos cargar tu tamaño de texto. Revisa tu conexión e inténtalo de nuevo.' }));
+      } catch (error) {
+        if (live.current === ticket) setState(previous => ({ ...previous, status: 'error', error: error.message === 'INVALID_TEXT_SIZE'
+          ? 'Esta versión no reconoce tu tamaño de texto guardado. Actualiza la aplicación y vuelve a abrirla. Tu preferencia se conserva en tu cuenta.'
+          : 'No pudimos cargar tu tamaño de texto. Revisa tu conexión e inténtalo de nuevo.' }));
       }
     }, [principal]);
     React.useEffect(() => {

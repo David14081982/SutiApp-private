@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "builtAt": "2026-09-11T06:52:49.063Z",
+  "sourceSha256": "aa2e685491a1d86029b0a8d745e2a05af4e524bb0bb0c604c008a015190135d1",
+  "bundleSha256": "71c63372e1754320960b7878b11ee55a6148a13f54657936d8da5d3a7f3d6e9e",
+  "unrelatedModulesIdentical": true,
+  "swLogicIdentical": true,
+  "bundleVersion": 249,
+  "workerVersion": 195,
+  "site": "C:\\tmp\\sutiapp-push-persistence-fix-20260911\\publish-build\\site-249",
+  "productionDeployed": false
+}

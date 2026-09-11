@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "productFinding": "FAIL: transient Auth error destroys a previously active local Push subscription",
+  "checkedAt": "2026-09-11T06:17:36.162Z",
+  "environment": "Isolated Chrome; actual Auth/Push JS and IndexedDB; RPC, Notification permission and Push provider simulated; no production writes or real notifications",
+  "sourceHashes": {
+    "affiliate-auth.js": "cc6fd66a8e5f313eb42bd9d83fcd3022887560b878e392504a6fd3e78472fe78",
+    "request-push.js": "65aa67aea7bc36f833b4c9477441515ec25eb6e4307c257e7861e896bba49bc0"
+  },
+  "cases": [
+    {
+      "scenario": "healthy_reopen",
+      "beforeRecovery": {
+        "authPhase": "authenticated",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "backendRevokes": 0
+      },
+      "recoveredPushPhase": "active",
+      "errors": []
+    },
+    {
+      "scenario": "affiliate_error_on_reopen",
+      "beforeRecovery": {
+        "authPhase": "error",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "backendRevokes": 0
+      },
+      "recoveredPushPhase": "ready",
+      "errors": []
+    },
+    {
+      "scenario": "session_error_on_reopen",
+      "beforeRecovery": {
+        "authPhase": "error",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "backendRevokes": 0
+      },
+      "recoveredPushPhase": "ready",
+      "errors": []
+    },
+    {
+      "scenario": "context_refresh_error",
+      "beforeRecovery": {
+        "authPhase": "error",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "backendRevokes": 0
+      },
+      "recoveredPushPhase": "ready",
+      "errors": []
+    },
+    {
+      "scenario": "explicit_logout",
+      "beforeRecovery": {
+        "authPhase": "unauthenticated",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "backendRevokes": 1
+      },
+      "recoveredPushPhase": "unavailable",
+      "errors": []
+    }
+  ]
+}

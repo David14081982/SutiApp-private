@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "base": "d6bdd8253e0f18dc7b1b203437fd3db538c2f914",
+  "checkedAt": "2026-09-11T06:54:24.614Z",
+  "trackedChanges": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/request-push.js",
+    "docs/AGENT_CHANGELOG.md",
+    "sw.js"
+  ],
+  "unrelatedCompiledModulesIdentical": true,
+  "comparison": "canonical LF; Windows checkout uses CRLF",
+  "publishedTypographyPreserved": true,
+  "swAndHtmlOnlyCachebusters": true,
+  "authAndBackendUnchanged": true,
+  "canonicalBundleSha256": "cd60e905b216548fecdb92a20dca72bb575b1f72ee48b85bd49cc2809fac2713"
+}

@@ -2948,3 +2948,18 @@ Coordinacion focal de lectura entre listado/detalle de Convenios, favoritos inde
 ## H-PROGRAM-OPENING-LATENCY-001 - 2026-09-10
 
 Public program headers reuse the existing Finanzas presentation revision, with independent cover loading/retry, opaque loading/error state, deduplicated focus refresh and session invalidation. Three paired cases: information 463.7 -> 28.3 ms, 966.8 -> 49.0 ms and 396.9 -> 14.5 ms; images/products measured separately. Six functional checks PASS. Three source modules changed; 115 unrelated compiled modules preserved. Isolated local Chrome, no production writes/deployment. Report: docs/qa/H-PROGRAM-OPENING-LATENCY-001.md.
+
+
+## 2026-09-10 ? H-WEB-PUSH-PERSISTENCE-FIX-001 ? LOCAL, VALIDACI?N F?SICA PENDIENTE
+
+Correcci?n focal de request-push.js: error/loading de Auth no cancela la suscripci?n;
+lecturas antiguas no sobrescriben estado y online vuelve a consultar. Logout, cambio de
+cuenta e impersonaci?n mantienen privacidad. Di?logo descartado difiere de denegaci?n.
+Dos suites integrales automatizadas PASS sobre build 250/cache 196; SW/HTML s?lo
+cachebusters, resto del bundle id?ntico. Sin cambios Auth global, backend o legacy.
+No publicado; M1/M2 en celular pendientes. No marcar cierre integral PASS.
+Evidencia: docs/qa/H-WEB-PUSH-PERSISTENCE-FIX-001.md y evidence/request-push-persistence-fix-20260911/.
+
+Owner autoriz? commit/push. Candidato aislado desde d6bdd82: bundle 249/cache 195,
+dos suites PASS y tipograf?a productiva intacta. La secci?n LOCAL previa es hist?rica;
+la recepci?n f?sica M1/M2 queda pendiente despu?s de Pages. Ver release-scope.json.

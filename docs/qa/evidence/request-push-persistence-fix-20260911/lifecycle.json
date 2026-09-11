@@ -1,0 +1,131 @@
+{
+  "suite": "lifecycle",
+  "status": "PASS",
+  "checkedAt": "2026-09-11T06:53:45.044Z",
+  "bundleSha256": "71c63372e1754320960b7878b11ee55a6148a13f54657936d8da5d3a7f3d6e9e",
+  "environment": "Chrome desktop mobile viewport; built Auth/Push/SW source and real IndexedDB; Auth RPC, Push provider and native permission simulated; no production writes or messages",
+  "cases": [
+    {
+      "name": "permission_default_dismissed_denied_granted",
+      "result": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 3,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "reopen_healthy",
+      "during": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      },
+      "after": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "reopen_affiliate",
+      "during": {
+        "phase": "error",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      },
+      "after": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "reopen_session",
+      "during": {
+        "phase": "error",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      },
+      "after": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "context_refresh_recovery",
+      "result": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "rpc_offline_online",
+      "result": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "stale_response_ignored",
+      "result": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 0
+      }
+    }
+  ],
+  "errors": []
+}

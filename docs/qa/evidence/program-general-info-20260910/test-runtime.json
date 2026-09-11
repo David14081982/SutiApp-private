@@ -1,0 +1,9 @@
+{
+  "browser": "Playwright Chromium 1228",
+  "executable": "C:/Users/david/AppData/Local/ms-playwright/chromium-1228/chrome-win64/chrome.exe",
+  "globalTest": "scripts/test-global-image-regression-production-live.js",
+  "sourceSha256": "1aebb05822dc0d89c95285eb71d78f39eef7261440c3209dc484d21b4e00ac95",
+  "adaptation": "Private runner substitutes only the fixed Chrome executable path; assertions, targets and logic are unchanged.",
+  "localTarget": "http://localhost:8080/",
+  "productDataMutations": 0
+}

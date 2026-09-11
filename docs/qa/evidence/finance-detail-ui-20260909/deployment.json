@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "functionalCommit": "779e331eea8b5a7466b54c1248adae89ca9de547",
+  "workflow": {
+    "conclusion": "success",
+    "databaseId": 34447427131,
+    "headSha": "779e331eea8b5a7466b54c1248adae89ca9de547",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34447427131"
+  },
+  "site": "https://sutiapp.com/",
+  "bundle": "app/bundle.js?v=244",
+  "bundleSha256": "3efffebd437ca9b7446f7b755484907476e9ade38eaaa666d8a2690e6cd3c67a"
+}

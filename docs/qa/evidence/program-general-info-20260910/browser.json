@@ -1,0 +1,82 @@
+{
+  "status": "PASS",
+  "target": "http://127.0.0.1:8768/",
+  "readOnly": false,
+  "programs": [
+    {
+      "key": "auto",
+      "status": "PASS",
+      "adminLoaded": true,
+      "editDescription": true,
+      "editCover": true,
+      "editBenefits": true,
+      "refresh": true,
+      "publicReflects": true,
+      "productsPricesModesIntact": true
+    },
+    {
+      "key": "aires",
+      "status": "PASS",
+      "adminLoaded": true,
+      "editDescription": true,
+      "editCover": true,
+      "editBenefits": true,
+      "refresh": true,
+      "publicReflects": true,
+      "productsPricesModesIntact": true
+    },
+    {
+      "key": "casa",
+      "status": "PASS",
+      "adminLoaded": true,
+      "editDescription": true,
+      "editCover": true,
+      "editBenefits": true,
+      "refresh": true,
+      "publicReflects": true,
+      "productsPricesModesIntact": true
+    },
+    {
+      "key": "solar",
+      "status": "PASS",
+      "adminLoaded": true,
+      "editDescription": true,
+      "editCover": true,
+      "editBenefits": true,
+      "refresh": true,
+      "publicReflects": true,
+      "productsPricesModesIntact": true
+    },
+    {
+      "key": "computo",
+      "status": "PASS",
+      "adminLoaded": true,
+      "editDescription": true,
+      "editCover": true,
+      "editBenefits": true,
+      "refresh": true,
+      "publicReflects": true,
+      "productsPricesModesIntact": true
+    }
+  ],
+  "errors": [],
+  "financeCatalogUsesSameEditor": true,
+  "metadataPrograms": [
+    "aires",
+    "auto",
+    "casa",
+    "cirugias",
+    "computo",
+    "donativos",
+    "farma",
+    "market",
+    "puertas",
+    "renta",
+    "rifas",
+    "solar",
+    "terrenos",
+    "tours"
+  ],
+  "terrainHeaderAndMapPreserved": true,
+  "productHash": "7b9950d2a0a40f6b352b8a5ec2a31cfbda91d6d9f2c96b8d13f22618e8bb532f"
+}

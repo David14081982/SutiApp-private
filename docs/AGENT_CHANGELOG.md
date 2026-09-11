@@ -20,6 +20,35 @@ adjustment or data rewrite. Physical iPhone testing is not claimed.
 Evidence and recovery: `docs/qa/H-USER-TEXT-SIZE-SMALL-001.md` and
 `docs/qa/evidence/text-size-small-20260911/`.
 
+
+## 2026-09-09 — H-FINANCE-DETAIL-UI-001 — PUBLICADO / PASS
+
+Detalle de Finanzas con foto privada y full_name, fondo solicitado, columnas independientes,
+condiciones preservadas, documentos completos y estados legibles, footer adaptable.
+Cinco bloques de lógica y 66 callbacks idénticos a 1795be0; un solo módulo cambia en bundle 244.
+45 comprobaciones aisladas, cola y lecturas de tres solicitudes reales en siete tamaños PASS; cero writes.
+Commit 779e331, Pages 34447427131 SUCCESS; SHA del bundle servido idéntico al build.
+30 mediciones productivas con/sin service worker PASS, 42 apariciones de imágenes decodificadas
+por ejecución, cero errores JavaScript y cero writes de negocio. Ver production-summary.json.
+Cachebusters HTML/SW alineados sin cambiar lógica de SW. Fallos históricos de copy/versiones
+identificados por comparación con la base; ver `docs/qa/H-FINANCE-DETAIL-UI-001.md`.
+
+## 2026-09-09 — H-ADMIN-FINANCE-QUEUE-IDENTITY-001 — PUBLICADO / PASS
+
+Commit 095cc1c en main; Pages 34442962106 SUCCESS. Bundle v243 publicado en sutiapp.com,
+SHA-256 idéntico al release. Verificación productiva con 19 solicitudes, fotos, detalle,
+móvil y refresh/reapertura PASS; cero writes. La evidencia local siguiente es histórica.
+
+Admin Finanzas / Solicitudes muestra affiliates.full_name, fondo de la captura original
+para préstamos y columna Foto entre Folio y Afiliado / programa. Lector focal compone
+las RPC existentes y relaciona por ID; fotos usan el lector privado/coordinador existente
+con demanda visible. Sin cambios de backend, permisos, Google ni writers. Build v239:
+sólo pantalla Finanzas y nuevo lector cambian en el bundle. Prueba de 100 préstamos,
+navegador en cuatro anchos y build local con 18 solicitudes reales PASS; cero writes,
+anónimo denegado, foto real, modal y refresh/reapertura verificados. Prueba estática
+histórica de workbench conserva un fallo de copy ya presente en baseline, documentado.
+Evidencia: docs/qa/H-ADMIN-FINANCE-QUEUE-IDENTITY-001.md. No publicado.
+
 ## 2026-09-09 — H-BOTTOM-NAV-LABELS-001
 
 Surgical BottomNav label presentation: largest uses Inic/Fina/Conv/Hist/Cred/Admi;
@@ -2912,3 +2941,56 @@ Las migraciones 20260908000900 y 20260909000100 se probaron con ROLLBACK y recup
 ## H-CONVENIOS-CATEGORIES-001 — 2026-09-09
 
 Nueva categoría junto a los selectores y administración en Convenios → Catálogos; clasificación opcional de Educación conservando su grupo general. Se reutilizan catálogo, writers y RLS existentes. Corrección focal del constraint de procedencia que bloqueaba la segunda categoría administrativa, con dry-run/recovery y hashes intactos. Formularios, duplicados, errores y filtros probados en browser aislado 390/1440; pruebas de producción y cierre en docs/qa/H-CONVENIOS-CATEGORIES-001.md. Sin cambios a Google, finanzas, Auth ni infraestructura compartida de imágenes.
+
+## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
+
+Contrato backend aditivo de membresías y preview en pantalla existente; recuperación validada, sin backfill. SQL transaccional cubre 120 combinaciones, documentos, cotización obsoleta, idempotencia, inmutabilidad, workflow/aprobación, cola Google y permisos. Backend aplicado y verificado sin mutaciones de datos de negocio. Release aislado sobre origin/main preserva CSS publicado y los otros 112 módulos del bundle. Resultado y evidencia de publicación: docs/qa/H-MEMBERSHIP-PAYMENT-CONTRACT-001.md.
+
+
+## H-MEMBERSHIP-GOOGLE-COMPANY-Z-001 — 2026-09-10
+
+Proyección quirúrgica de la empresa capturada en el contrato de membresía hacia
+Z de Historial de solicitudes. Pruebas aisladas de seis empresas, las otras
+32 columnas, otros programas, aprobación/reintentos y filas iniciales existentes.
+Sin cambios a SQL, Apps Script, UI, reglas financieras ni históricos. Respaldo
+del Edge, cotejo exacto de fuentes activas, compilación y readback del despliegue;
+evidencia y resultado en docs/qa/H-MEMBERSHIP-GOOGLE-COMPANY-Z-001.md.
+
+## H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001 - 2026-09-10
+
+Shared general-information editor and preview precede products in Admin and are also available from the Finance catalog. Supabase supplies 14 program headers, legitimate covers, contacts, existing favorite behavior and card fields. SQL/recovery/RLS and actual edit description/cover/benefits, save, refresh and public rendering PASS for Auto, Aires, Casa, Solar and Computo. Product prices and modes remain unchanged. Isolated release preserves 110 published modules. Evidence and publication status: docs/qa/H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001.md.
+
+
+## H-CONVENIOS-DETAIL-LATENCY-001 - 2026-09-10
+
+Coordinacion focal de lectura entre listado/detalle de Convenios, favoritos independientes, un listener de foco, invalidacion al guardar/cambiar contexto/desmontar y estados de detalle opacos con volver/reintentar. Solo dos modulos del bundle cambiados; 116 identicos. Tres escenarios pareados: contenido 225.5 -> 64.7 ms (normal), 1337.7 -> 85.9 ms (lento), 287.7 -> 18.2 ms (repetido). Seis comprobaciones funcionales PASS: scroll, favoritos, foco, actualizacion, error/retry y sesion. Browser aislado, cero red/escrituras productivas; no publicacion. Informe y evidencia: docs/qa/H-CONVENIOS-DETAIL-LATENCY-001.md y docs/qa/evidence/convenios-detail-latency-20260910/.
+
+
+## H-PROGRAM-OPENING-LATENCY-001 - 2026-09-10
+
+Public program headers reuse the existing Finanzas presentation revision, with independent cover loading/retry, opaque loading/error state, deduplicated focus refresh and session invalidation. Three paired cases: information 463.7 -> 28.3 ms, 966.8 -> 49.0 ms and 396.9 -> 14.5 ms; images/products measured separately. Six functional checks PASS. Three source modules changed; 115 unrelated compiled modules preserved. Isolated local Chrome, no production writes/deployment. Report: docs/qa/H-PROGRAM-OPENING-LATENCY-001.md.
+
+
+## 2026-09-10 ? H-WEB-PUSH-PERSISTENCE-FIX-001 ? LOCAL, VALIDACI?N F?SICA PENDIENTE
+
+Correcci?n focal de request-push.js: error/loading de Auth no cancela la suscripci?n;
+lecturas antiguas no sobrescriben estado y online vuelve a consultar. Logout, cambio de
+cuenta e impersonaci?n mantienen privacidad. Di?logo descartado difiere de denegaci?n.
+Dos suites integrales automatizadas PASS sobre build 250/cache 196; SW/HTML s?lo
+cachebusters, resto del bundle id?ntico. Sin cambios Auth global, backend o legacy.
+No publicado; M1/M2 en celular pendientes. No marcar cierre integral PASS.
+Evidencia: docs/qa/H-WEB-PUSH-PERSISTENCE-FIX-001.md y evidence/request-push-persistence-fix-20260911/.
+
+Owner autoriz? commit/push. Candidato aislado desde d6bdd82: bundle 249/cache 195,
+dos suites PASS y tipograf?a productiva intacta. La secci?n LOCAL previa es hist?rica;
+la recepci?n f?sica M1/M2 queda pendiente despu?s de Pages. Ver release-scope.json.
+
+
+## 2026-09-11 - H-USER-TEXT-SIZE-SMALL-001 release preflight
+
+Owner authorized main integration and deployment after commit/push. Preserve the
+11 later main commits (base 18bb07c). Bundle v250 / CSS v244 / SW v196; only the
+preference module changes among 116 modules relative to main. Integrated build,
+focal tests, 72 captures, cache transition, global local legitimate assets/PDF and
+backend deployment contracts PASS. No runtime changes outside the focal scope,
+no migration, backend, Google or business writes. Deployment evidence will follow.

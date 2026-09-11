@@ -1,0 +1,144 @@
+{
+  "status": "PASS",
+  "mode": "apply",
+  "matrix": [],
+  "migrationSha256": "1a877e92cbe0b5f44e9b885bde9d6ce1565afc351287b580af991c16bfeb6546",
+  "recoverySha256": "65e4678089267e9b172997d921e0da0062d5b4a078d2c515f3dab5c8c2f85ab9",
+  "inventoryBefore": [
+    {
+      "domain": "affiliates",
+      "count": 954,
+      "hash": "15e38f23149405226433e1588197d43a"
+    },
+    {
+      "domain": "membership_offerings",
+      "count": 6,
+      "hash": "086f9fefcdf353356c0642f0703d92f4"
+    },
+    {
+      "domain": "program_requests",
+      "count": 24,
+      "hash": "11a2d3a3403015603dcd598e9df8564c"
+    },
+    {
+      "domain": "request_documents",
+      "count": 166,
+      "hash": "7dafbd1a3cc913c6dad2a0527258208f"
+    },
+    {
+      "domain": "program_request_admin_events",
+      "count": 70,
+      "hash": "94cd9af818002193dbc3a9b3831ad6d3"
+    },
+    {
+      "domain": "operational_workflows",
+      "count": 4,
+      "hash": "d8c0fa124d1070859d19c34c291d893e"
+    },
+    {
+      "domain": "operational_workflow_stages",
+      "count": 20,
+      "hash": "1b44e3145e39d5d3cf0dd242f2e75a87"
+    },
+    {
+      "domain": "financial_rules",
+      "count": 146,
+      "hash": "9d06b528b13524f02bfd9422a67252be"
+    },
+    {
+      "domain": "financial_funds",
+      "count": 35,
+      "hash": "f54bf25058c70eeef314a3807c611c7b"
+    },
+    {
+      "domain": "financial_programs",
+      "count": 3,
+      "hash": "6d53656c5637fc7aacc4ddfe842a8768"
+    },
+    {
+      "domain": "program_catalog_items",
+      "count": 135,
+      "hash": "6212174b57c62fcc19e2e22ba8442052"
+    },
+    {
+      "domain": "marketplace_products",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "program_document_requirements",
+      "count": 32,
+      "hash": "65af8e461a9efcc157ab89081c9254ad"
+    }
+  ],
+  "inventoryAfter": [
+    {
+      "domain": "affiliates",
+      "count": 954,
+      "hash": "15e38f23149405226433e1588197d43a"
+    },
+    {
+      "domain": "membership_offerings",
+      "count": 6,
+      "hash": "086f9fefcdf353356c0642f0703d92f4"
+    },
+    {
+      "domain": "program_requests",
+      "count": 24,
+      "hash": "11a2d3a3403015603dcd598e9df8564c"
+    },
+    {
+      "domain": "request_documents",
+      "count": 166,
+      "hash": "7dafbd1a3cc913c6dad2a0527258208f"
+    },
+    {
+      "domain": "program_request_admin_events",
+      "count": 70,
+      "hash": "94cd9af818002193dbc3a9b3831ad6d3"
+    },
+    {
+      "domain": "operational_workflows",
+      "count": 4,
+      "hash": "d8c0fa124d1070859d19c34c291d893e"
+    },
+    {
+      "domain": "operational_workflow_stages",
+      "count": 20,
+      "hash": "1b44e3145e39d5d3cf0dd242f2e75a87"
+    },
+    {
+      "domain": "financial_rules",
+      "count": 146,
+      "hash": "9d06b528b13524f02bfd9422a67252be"
+    },
+    {
+      "domain": "financial_funds",
+      "count": 35,
+      "hash": "f54bf25058c70eeef314a3807c611c7b"
+    },
+    {
+      "domain": "financial_programs",
+      "count": 3,
+      "hash": "6d53656c5637fc7aacc4ddfe842a8768"
+    },
+    {
+      "domain": "program_catalog_items",
+      "count": 135,
+      "hash": "6212174b57c62fcc19e2e22ba8442052"
+    },
+    {
+      "domain": "marketplace_products",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "domain": "program_document_requirements",
+      "count": 32,
+      "hash": "65af8e461a9efcc157ab89081c9254ad"
+    }
+  ],
+  "existingFunctionsPreserved": true,
+  "exactRecovery": false,
+  "persistentBusinessWrites": 0
+}

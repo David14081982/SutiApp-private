@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "verdict": "APPROVED_FOR_AUTHORIZED_DEPLOYMENT",
+  "base": "18bb07cb78d491c7c980544005d56cb4194b4b68",
+  "retainedMainCommits": 11,
+  "bundledModules": 116,
+  "unrelatedModulesIdentical": true,
+  "sourceAndServedBuildMatch": true,
+  "reports": [
+    "scale-and-compatibility.json",
+    "preferences-unit.json",
+    "cache-upgrade.json",
+    "screen-matrix.json",
+    "global-local.json"
+  ],
+  "backendContracts": "PASS: auth and request submission",
+  "runtimeChanges": [
+    "text-size preference",
+    "small CSS",
+    "bundle/CSS/SW version references"
+  ],
+  "migrationOrBusinessWrites": 0,
+  "browser": "Existing Playwright Chromium 1228",
+  "ownerAuthorizedMergeAndDeploy": true
+}

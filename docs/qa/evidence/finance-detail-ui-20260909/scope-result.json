@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "baseline": "1795be0",
+  "identicalBlocks": 5,
+  "identicalEventHandlers": 66,
+  "changedBundleModules": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "serviceWorkerLogic": "IDENTICAL",
+  "scope": "single screen presentation; shared repositories, sister tabs and callbacks unchanged"
+}

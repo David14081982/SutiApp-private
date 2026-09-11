@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "7f2d382",
+  "changedModules": [
+    "convenios-repository.js",
+    "screens-convenios.jsx"
+  ],
+  "unrelatedModulesIdentical": 114,
+  "bundleSha256": "f9c67893d95e96afba0ea8cdf5cc94cbc30284ce2a8716af7703ef77dfd21735",
+  "bundleVersion": 247,
+  "workerVersion": 193,
+  "workerLogicChanged": false,
+  "publishedTypographyPreserved": true,
+  "benchmarkSuitesRerun": false
+}

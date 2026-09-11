@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-09-11T06:50:48.968Z",
+  "baselineFiles": 2910,
+  "changed": [
+    "app/request-push.js",
+    "docs/qa/H-WEB-PUSH-PERSISTENCE-FIX-001.md",
+    "SutiApp.html",
+    "app/bundle.js",
+    "docs/AGENT_CHANGELOG.md",
+    "sw.js",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/ARCHITECT-REVIEW.md",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/active-preserved.png",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/build.json",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/connection-error.png",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/lifecycle.json",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/permission-ready.png",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/scope.json",
+    "docs/qa/evidence/request-push-persistence-fix-20260911/security.json",
+    "scripts/build-request-push-persistence.js",
+    "scripts/test-request-push-persistence.js"
+  ],
+  "unexpected": [],
+  "unrelatedBundleBytesIdentical": true,
+  "swAndHtmlOnlyCachebusters": true,
+  "uiMarkupAndStylesIdentical": true,
+  "authAndSharedShellUnchanged": true,
+  "changelogAppendOnly": true
+}

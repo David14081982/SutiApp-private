@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "runtimeScopeExpected": true,
+  "sensitiveAddedRuntimePatterns": 0,
+  "extraFunctionalSuites": 0
+}

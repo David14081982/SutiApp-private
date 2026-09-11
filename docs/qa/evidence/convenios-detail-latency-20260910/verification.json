@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "method": "SHA256 against all 2868 original tracked/untracked nonignored workspace files",
+  "changed": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/convenios-repository.js",
+    "app/screens-convenios.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/qa/H-CONVENIOS-DETAIL-LATENCY-001.md",
+    "docs/qa/evidence/convenios-detail-latency-20260910/browser.json",
+    "docs/qa/evidence/convenios-detail-latency-20260910/build.json",
+    "docs/qa/evidence/convenios-detail-latency-20260910/functional-final.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/normal-after.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/normal-before.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/repeat-after.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/repeat-before.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/slow-after.png",
+    "docs/qa/evidence/convenios-detail-latency-20260910/slow-before.png",
+    "scripts/test-convenios-detail-latency.js"
+  ],
+  "unexpected": [],
+  "existingChangelogPreserved": true,
+  "sourceHashes": {
+    "app/convenios-repository.js": "7f44b4328fc0ee492dbb0bbededb5ef693e959fe45f1eb33ae2f2d6736b8be9a",
+    "app/screens-convenios.jsx": "ff425a7fa1d9a0c0493ba60d0dd89ea21c5599ff53ef46a3d22eb2ff505f4567",
+    "app/bundle.js": "53e3d18039ad4ea77a8aae64ddd0ddae6c90b2f7925f45eeed2d963e24ed2d8b",
+    "scripts/test-convenios-detail-latency.js": "e0a7ad80072c9837ac769e2a168bb45f9698d2b34f460a381cd25d16d7a17fab"
+  },
+  "globalAssetsRoutingAuthLegacyUnmodified": true,
+  "registry": "STALE acknowledged; no runtime architecture mapping changed"
+}

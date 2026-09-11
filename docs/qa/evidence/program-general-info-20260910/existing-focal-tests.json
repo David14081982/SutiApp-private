@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "commands": [
+    "node scripts/test-program-products-admin-cutover.js",
+    "node scripts/test-program-catalog-cutover.js",
+    "git diff --check"
+  ],
+  "candidateBase": "f244fea14930028133e39c6a3bbe2c17abfed04a",
+  "historicalItems": 134,
+  "priced": 65,
+  "aires": 16,
+  "puertas": 3
+}

@@ -130,10 +130,11 @@
   }
 
   function ItemSheet({ gid, item, editable, onClose }) {
+    if(window.ProgramGeneralInfo.keys.includes(item.id))return React.createElement('div',{style:{position:'absolute',inset:0,zIndex:76,background:'var(--bg)',overflowY:'auto',padding:18}},React.createElement(window.Btn,{onClick:onClose,variant:'outline'},'Cerrar'),React.createElement(window.ProgramGeneralInfo.Editor,{programKey:item.id,canWrite:window.AdminRepository.has('program_catalog.write')||window.AdminRepository.has('workflow.write')}));
     const [d, setD] = useState(() => ({ audience: { mode: 'all', cargos: [], sindicatos: [], niveles: [] }, ...item }));
     const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
     const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
-    const save = () => { S().saveItem(gid, d); onClose(); };
+    const save = async () => { await S().saveItem(gid, d.id, d); onClose(); };
     const sw = (label, key) => React.createElement('button', { onClick: () => set(key, !d[key]), disabled: !editable, style: { display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'var(--surface-2)', border: 'none', borderRadius: 12, padding: '11px 13px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--neo-inset)', marginBottom: 12 } },
       React.createElement('span', { style: { flex: 1, textAlign: 'left', fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' } }, label),
       React.createElement(window.Toggle, { on: d[key], size: 'sm', glow: false, }));

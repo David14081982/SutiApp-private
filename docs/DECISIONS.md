@@ -1071,3 +1071,17 @@ El propietario solicita eliminar banners existentes, incluidos activos/inactivos
 - **Permisos:** empresa activa sólo su tenant; responsable Convenios administra ficha y productos opcionales gratuitos, sin otorgar membresías; Educación conserva su frontera con Tutoriales. Aprobación/publicación de promociones exige permiso backend. Propuestas de pop-up mantienen aprobación administrativa y posterior publicación de borrador conforme ADR-040.
 - **Datos:** public_details extiende la entidad original; assets siguen en app_assets/Storage. Favoritos educativos son vínculos propios por Auth, no copias. Solicitudes comerciales se leen por RPC tenant con proyección mínima; no se reabren grants de program_requests ni se alteran writers/legacy financieros.
 - **Evidencia:** docs/qa/H-COMPANIES-CONVENIOS-EDUCATION-UNIFICATION-001.md; migraciones 20260908000900 y 20260909000100, SQL transaccional/recovery, Auth, browser y regresión global.
+
+## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
+
+Autorización expresa del propietario: implementar quirúrgicamente la conexión de membresías a Finanzas · Solicitudes y columnas E–I de Historial de solicitudes. Precio y pagos variables desde Admin Membresías; fondo Vales y membresias, sin intereses, gasto de $15 incluido por pago, H=I=precio comercial. Reportes separados quedan fuera de alcance; históricos los corregirá manualmente el propietario. Solución aditiva exclusiva de membresías, sin modificar fórmulas de préstamos, reglas/fondos/programas, GAS ni el exportador Google existente. Cotización backend y captura atómica conservan identidad efectiva y actor real.
+
+## H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001 - 2026-09-10
+
+The owner authorizes editable program general information, reuse of existing configuration and publication after verification. Extend finance_catalog_presentation instead of creating another program/product table. Initialize once from audited public text and verified existing institutional cover/contact references; preserve historical rows. New RPCs require program_catalog.write or workflow.write, validate version/content and retain existing admin audit. Storage inserts use dedicated program-general/<actor>/ paths and a new object per upload. Terrenos preserves its map; only its four header texts/icon are connected. Recovery revokes the new writers while retaining metadata and assets.
+
+
+Release de H-USER-TEXT-SIZE-SMALL-001, 2026-09-11: al integrar los 11 commits
+posteriores de main, la entrega conjunta queda en bundle v250, CSS v244 y SW/cache
+v196. Estas versiones reemplazan las del candidato local inicial; la autoridad,
+comportamiento de lectores desconocidos y recovery compatible no cambian.

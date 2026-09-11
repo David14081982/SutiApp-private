@@ -20,15 +20,22 @@
     if(reg){const sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe();}
     if(failure)throw failure;
   }
-  function syncIdentity(){if(!supported())return;serial=serial.catch(()=>{}).then(async()=>{
-    const phase=window.AffiliateAuth.getState().phase;if(!['authenticated','unauthenticated','signing_out','error'].includes(phase))return;
-    const binding=await device(s=>s.get('binding'));if(binding&&binding.user_id!==identity())await clearDevice(false);
+  function syncIdentity(){if(!supported())return;
+    // Capture the delivered context: loading/network errors are not a logout.
+    // A queued logout must still close its binding even if Auth recovers quickly.
+    const context=window.AffiliateAuth.getState(),owner=identity();
+    if(!['authenticated','unauthenticated','signing_out','archived','unlinked','identity_error','ineligible'].includes(context.phase))return;
+    serial=serial.catch(()=>{}).then(async()=>{
+    const binding=await device(s=>s.get('binding'));if(binding&&binding.user_id!==owner)await clearDevice(false);
   });serial.catch(()=>{});}
+  function unavailableState(){const phase=window.AffiliateAuth.getState().phase;return {phase:phase==='error'?'error':phase==='loading'?'loading':'unavailable'};}
   async function state(){
-    if(!supported())return {phase:'unsupported'};if(!identity())return {phase:'unavailable'};
-    await serial;const config=await rpc('get_self_request_push_config');if(!config.enabled||!config.public_key)return {phase:'unavailable'};
+    if(!supported())return {phase:'unsupported'};
+    await serial;const owner=identity();if(!owner)return unavailableState();
+    const config=await rpc('get_self_request_push_config');if(!config.enabled||!config.public_key)return {phase:'unavailable'};
     const reg=await registration(),sub=await reg.pushManager.getSubscription(),binding=await device(s=>s.get('binding'));
-    const active=sub&&binding&&binding.user_id===identity()&&Notification.permission==='granted'&&await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id});
+    const active=sub&&binding&&binding.user_id===owner&&Notification.permission==='granted'&&await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id});
+    if(identity()!==owner)return unavailableState();
     return {phase:active?'active':Notification.permission==='denied'?'denied':'ready',config};
   }
   // Permission is requested synchronously within the user's click (including Safari).
@@ -36,7 +43,7 @@
     const owner=identity();if(!owner||!config||!config.public_key)return Promise.reject(Error('PUSH_UNAVAILABLE'));
     const permission=Notification.permission==='granted'?Promise.resolve('granted'):Notification.requestPermission();
     return permission.then(async granted=>{
-      if(granted!=='granted')return {phase:'denied',config};await serial;if(identity()!==owner)throw Error('PUSH_CONTEXT_CHANGED');
+      if(granted!=='granted')return {phase:granted==='denied'?'denied':'ready',config};await serial;if(identity()!==owner)throw Error('PUSH_CONTEXT_CHANGED');
       const reg=await registration();let sub=await reg.pushManager.getSubscription();const binding=await device(s=>s.get('binding'));
       if(sub&&(!binding||binding.user_id!==owner||!await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id}))){await sub.unsubscribe();sub=null;}
       const b64=config.public_key.replace(/-/g,'+').replace(/_/g,'/');
@@ -58,10 +65,11 @@
   }
   function RequestPushInvitation(){
     const [current,setCurrent]=React.useState({phase:'loading'}),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
-    const refresh=()=>state().then(setCurrent).catch(()=>setCurrent({phase:'error'}));
-    React.useEffect(()=>{let active=true;const load=()=>state().then(s=>{if(active)setCurrent(s);}).catch(()=>{if(active)setCurrent({phase:'error'});});load();const unbind=window.AffiliateAuth.subscribe(load);window.addEventListener('focus',load);if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('controllerchange',load);return()=>{active=false;unbind();window.removeEventListener('focus',load);if(navigator.serviceWorker)navigator.serviceWorker.removeEventListener('controllerchange',load);};},[]);
+    const revision=React.useRef(0),mounted=React.useRef(false);
+    const refresh=()=>{const request=++revision.current;return state().then(s=>{if(request===revision.current)setCurrent(s);}).catch(()=>{if(request===revision.current)setCurrent({phase:'error'});});};
+    React.useEffect(()=>{mounted.current=true;refresh();const unbind=window.AffiliateAuth.subscribe(refresh);window.addEventListener('focus',refresh);window.addEventListener('online',refresh);if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('controllerchange',refresh);return()=>{mounted.current=false;revision.current++;unbind();window.removeEventListener('focus',refresh);window.removeEventListener('online',refresh);if(navigator.serviceWorker)navigator.serviceWorker.removeEventListener('controllerchange',refresh);};},[]);
     if(['loading','unavailable'].includes(current.phase))return null;
-    const run=task=>{setBusy(true);setError('');task.then(setCurrent).catch(()=>setError('No pudimos actualizar las notificaciones. Intenta de nuevo.')).finally(()=>setBusy(false));};
+    const run=task=>{const request=++revision.current;setBusy(true);setError('');task.then(s=>{if(!mounted.current)return;if(request===revision.current)setCurrent(s);else refresh();}).catch(()=>{if(request===revision.current)setError('No pudimos actualizar las notificaciones. Intenta de nuevo.');}).finally(()=>{if(mounted.current)setBusy(false);});};
     const style={minHeight:44,border:0,borderRadius:12,padding:'10px 15px',background:'var(--guinda)',color:'#fff',fontWeight:800,cursor:'pointer'};
     return h('section',{'data-request-push':current.phase,style:{background:'var(--surface)',borderRadius:16,padding:16,marginBottom:14,boxShadow:'var(--neo-sm)'}},
       h('strong',null,current.phase==='active'?'Notificaciones activas en este dispositivo':'Avisos de tus solicitudes'),

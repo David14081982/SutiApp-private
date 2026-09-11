@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "changedModules": [
+    "fincat-store.jsx",
+    "program-general-info.jsx",
+    "screens-marketplace.jsx"
+  ],
+  "unrelatedModulesIdentical": 115,
+  "bundleSha256": "4952ed2387f498c75db57172223a2bc76405c0ced0501468a8140f3e6dc7e119",
+  "browserTestedBundleIdentical": true,
+  "cachebuster": 242
+}

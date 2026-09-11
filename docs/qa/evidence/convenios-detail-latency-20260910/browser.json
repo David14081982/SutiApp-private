@@ -1,0 +1,115 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_HTTP_BROWSER",
+  "productionRequests": 0,
+  "performance": [
+    {
+      "scenario": "normal",
+      "before": {
+        "contentMs": 225.5,
+        "imageMs": 225.5,
+        "requests": {
+          "image": 3,
+          "list_public_convenios": 1,
+          "educational_resource_favorites": 1,
+          "app_assets": 1
+        }
+      },
+      "after": {
+        "contentMs": 64.7,
+        "imageMs": 64.7,
+        "requests": {
+          "image": 1
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "scenario": "slow",
+      "before": {
+        "contentMs": 1337.7,
+        "imageMs": 1337.8,
+        "requests": {
+          "image": 1,
+          "list_public_convenios": 1,
+          "educational_resource_favorites": 1,
+          "app_assets": 1
+        }
+      },
+      "after": {
+        "contentMs": 85.9,
+        "imageMs": 85.9,
+        "requests": {
+          "image": 1
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "scenario": "repeat",
+      "before": {
+        "contentMs": 287.7,
+        "imageMs": 287.8,
+        "requests": {
+          "list_public_convenios": 1,
+          "educational_resource_favorites": 1,
+          "app_assets": 1
+        }
+      },
+      "after": {
+        "contentMs": 18.2,
+        "imageMs": 18.2,
+        "requests": {}
+      },
+      "status": "PASS"
+    }
+  ],
+  "functional": [
+    {
+      "name": "back_preserves_scroll",
+      "status": "PASS",
+      "before": 767,
+      "after": 767
+    },
+    {
+      "name": "favorites",
+      "status": "PASS",
+      "education": true,
+      "company": true,
+      "failedWriteRollback": true,
+      "directoryReloadsOnEducationFavorite": 0
+    },
+    {
+      "name": "focus_no_duplicate_queries",
+      "status": "PASS",
+      "requests": {
+        "list_public_convenios": 1,
+        "educational_resource_favorites": 1,
+        "app_assets": 1
+      }
+    },
+    {
+      "name": "updates_reflected",
+      "status": "PASS",
+      "bothReaders": true,
+      "oldResponseIgnored": true,
+      "removedRowNotResurrected": true
+    },
+    {
+      "name": "errors_and_retry",
+      "status": "PASS",
+      "opaqueBackground": "rgb(242, 243, 245)",
+      "contentRetry": true,
+      "favoritesRetryIndependent": true
+    },
+    {
+      "name": "session_clears_previous_data",
+      "status": "PASS",
+      "logoutClears": true,
+      "oldRequestsIgnored": true,
+      "newFavoritesIsolated": true,
+      "lastUnmountClears": true
+    }
+  ],
+  "errors": []
+}

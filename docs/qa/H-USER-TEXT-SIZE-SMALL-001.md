@@ -128,3 +128,38 @@ Known limitations: no physical iPhone test; no deployment/merge/push. A rollback
   must retain a reader compatible with small, as documented in DECISIONS.md.
 Evidence: docs/qa/evidence/text-size-small-20260911/; private captures and gallery:
   C:/tmp/sutiapp-text-size-private/small-001-captures/index.html.
+
+
+## Release authorization and pre-change audit ? 2026-09-11
+
+The owner's subsequent ?hazlo? authorizes integration into main and deployment,
+following the completed commit/push. Previous ?not published? statements describe
+the earlier local stage, not a current restriction. Remote main has 11 later commits;
+they are retained in full. The primary dirty workspace remains untouched.
+
+Release scope: merge origin/main into the feature branch; resolve only version
+references in SutiApp.html/sw.js and retain both changelog histories. Compare the
+merged bundle against remote main: only text-size-preferences.js may differ.
+Use bundle v250, CSS v244 and SW/cache v196, above remote main v249/v243/v195.
+Test-only adjustments in test-text-size-small.js and test-text-size-small-cache.js
+allow comparison against the actual release base and derive version assertions.
+Release evidence goes to docs/qa/evidence/text-size-small-20260911/release/ and this
+report/changelog. No new runtime architecture or authority. No schema/data migration.
+Recheck focal tests, final merged build, backend deployment contracts and global
+local assets. Push the integrated commit to main only after verification, then check
+workflow, served hashes, preference persistence and global production assets.
+Recovery must retain the small-compatible reader, never reset account preferences.
+
+Release test environment update: the previous installed Chrome path no longer
+exists. Use the existing Playwright Chromium executable via test-only
+SUTIAPP_CHROMIUM_EXECUTABLE in preference, scale, cache, matrix/live tests and the
+configured copy of the unchanged global regression. No app/browser-user settings,
+assertions, corpus, timeouts or backend permissions change.
+
+
+Release preflight: PASS. Base 18bb07c retained in full; 116 bundled modules, only
+text-size-preferences.js differs from main. Final local build matches served assets;
+72 captures, scale/baseline parity, 12 rollback pairs, cache update and global local
+legitimate image/PDF regression PASS. Auth and request deployment contracts PASS.
+Release reviewer: APPROVED_FOR_AUTHORIZED_DEPLOYMENT. Evidence under release/.
+Publication and post-deployment verification follow under the owner's authorization.

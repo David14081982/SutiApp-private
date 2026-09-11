@@ -1,0 +1,1 @@
+{"status":"PASS","contractVersion":"SUTI_REQUEST_SUBMISSION_V2","backendReady":true,"writer":"create_validated_financial_program_request","edgeAction":"loanSessionConfirm","depositContract":"BANK_AND_CARD_OR_CLABE","idempotency":"affiliate_id+idempotency_key","secretsUsed":false}

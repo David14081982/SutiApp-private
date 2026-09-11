@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "baseline": "1795be0",
+  "bundleVersion": 244,
+  "workerCache": 191,
+  "bundleSha256": "3efffebd437ca9b7446f7b755484907476e9ade38eaaa666d8a2690e6cd3c67a",
+  "sourceSha256": "d9165bdadc8bb5d0d89da34b21617ea2c28c9d1f90e2d3f9fb65d311e56fcb0c",
+  "isolatedCases": 45,
+  "liveMeasurements": 21,
+  "realImageAppearances": 42,
+  "eventHandlersPreserved": 66,
+  "bundleChangedModules": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "serviceWorkerLogic": "IDENTICAL",
+  "globalRegression": "NOT_APPLICABLE: scoped UI and generated cachebusters only",
+  "knownBaselineFailures": [
+    "workbench old copy assertion",
+    "workflow timeline expects financial repository v10; baseline already v11"
+  ],
+  "businessWrites": 0
+}

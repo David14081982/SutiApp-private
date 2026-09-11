@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "taskFiles": [
+    "supabase/migrations/20260910000100_membership_payment_contract.sql",
+    "supabase/recovery/20260910000100_membership_payment_contract.sql",
+    "scripts/membership-payment-contract.py",
+    "scripts/release-membership-payment.py",
+    "scripts/test-membership-payment-contract.sql",
+    "scripts/test-membership-payment-contract.js",
+    "scripts/test-membership-payment-contract-browser.js",
+    "scripts/test-membership-payment-contract-live.js",
+    "scripts/test-membership-request-ui-cutover.js",
+    "docs/qa/H-MEMBERSHIP-PAYMENT-CONTRACT-001.md"
+  ],
+  "policyFiles": [
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/INVARIANTS.md",
+    "docs/DECISIONS.md",
+    "docs/AGENT_CHANGELOG.md"
+  ],
+  "scope": "Task files only; published unrelated source preserved"
+}

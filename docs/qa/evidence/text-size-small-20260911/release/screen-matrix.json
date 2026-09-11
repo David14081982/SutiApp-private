@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_BUILD",
+  "screens": 6,
+  "widths": [
+    320,
+    390,
+    430
+  ],
+  "sizes": [
+    "small",
+    "normal",
+    "large",
+    "largest"
+  ],
+  "captures": 72,
+  "captureDirectory": "C:\\tmp\\sutiapp-text-size-private\\small-001-captures",
+  "preferenceReadFixture": true,
+  "businessData": "Legitimate existing data",
+  "businessWrites": 0,
+  "authWrites": 0,
+  "errors": [],
+  "failures": []
+}

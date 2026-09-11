@@ -1,0 +1,23 @@
+{
+  "base": "556598d9b91b5aa80b4c3477f7fcc026f598b93f",
+  "sourceMerges": [
+    {
+      "file": "app/fincat-store.jsx",
+      "mergedSha256": "5bfe77e50ff377790f1b564f4e952b33857f22c87179142c520e1f824d7d4e47",
+      "sameAsTestedSource": true
+    },
+    {
+      "file": "app/program-general-info.jsx",
+      "mergedSha256": "ad9bc575bc2c25ab8103121f6004a500a929d1f9896d024595ef33bccfbeceac",
+      "sameAsTestedSource": true
+    },
+    {
+      "file": "app/screens-marketplace.jsx",
+      "mergedSha256": "98560ee14343eb367c559e0251bd8f9031f82b433718a79baac268e64533913f",
+      "sameAsTestedSource": false
+    }
+  ],
+  "bundleVersion": 248,
+  "workerVersion": 194,
+  "status": "PASS"
+}

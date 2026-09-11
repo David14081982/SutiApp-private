@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "productionMeasurements": 30,
+  "withServiceWorker": true,
+  "withoutServiceWorker": true,
+  "parity": "PASS",
+  "realImageAppearances": [
+    42,
+    42,
+    42
+  ],
+  "businessWrites": 0,
+  "errors": []
+}

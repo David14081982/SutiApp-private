@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "unchangedModules": 110,
+  "changedModules": [
+    "screens-marketplace.jsx",
+    "screens-terreno.jsx",
+    "screens-admin-fincat.jsx",
+    "fincat-store.jsx",
+    "screens-admin-program-products.jsx"
+  ],
+  "newModule": "program-general-info.jsx",
+  "bundleSha256": "c8b954bf916511ebd6b9db11327f92f5eac1053e4d06622f7fc7e4a693301fc1"
+}

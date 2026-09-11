@@ -1,0 +1,10 @@
+{
+  "releaseBase": "18bb07cb78d491c7c980544005d56cb4194b4b68",
+  "featureCommit": "80c6835109834a40fe73344329671dbd25c9fa0c",
+  "retainedMainCommits": 11,
+  "bundleVersion": 250,
+  "cssVersion": 244,
+  "swVersion": 196,
+  "ownerAuthorizedDeployment": true,
+  "backendChanges": 0
+}

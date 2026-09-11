@@ -1,0 +1,774 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "bodyHeight": 489,
+      "headerHeight": 93,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "bodyHeight": 742,
+      "headerHeight": 121,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "bodyHeight": 425,
+      "headerHeight": 179,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "bodyHeight": 226,
+      "headerHeight": 202,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "overflow": false,
+      "bodyHeight": 180,
+      "headerHeight": 75,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "viewport": {
+        "width": 640,
+        "height": 389
+      },
+      "overflow": false,
+      "bodyHeight": 159,
+      "headerHeight": 95,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "normal",
+      "case": "original section content, actions, specialized fields and zero writes",
+      "actions": [
+        {
+          "value": "review",
+          "label": "Iniciar revisión"
+        },
+        {
+          "value": "advance",
+          "label": "Aprobar etapa"
+        },
+        {
+          "value": "reject",
+          "label": "Rechazar etapa"
+        },
+        {
+          "value": "cancel",
+          "label": "Cancelar solicitud"
+        },
+        {
+          "value": "note",
+          "label": "Guardar observación"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "bodyHeight": 489,
+      "headerHeight": 93,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "bodyHeight": 742,
+      "headerHeight": 121,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "bodyHeight": 441,
+      "headerHeight": 164,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "bodyHeight": 226,
+      "headerHeight": 202,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "overflow": false,
+      "bodyHeight": 180,
+      "headerHeight": 75,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "viewport": {
+        "width": 640,
+        "height": 389
+      },
+      "overflow": false,
+      "bodyHeight": 159,
+      "headerHeight": 95,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "loan",
+      "case": "original section content, actions, specialized fields and zero writes",
+      "actions": [
+        {
+          "value": "review",
+          "label": "Iniciar revisión"
+        },
+        {
+          "value": "approveLoan",
+          "label": "Aprobar etapa y autorizar préstamo"
+        },
+        {
+          "value": "reject",
+          "label": "Rechazar etapa"
+        },
+        {
+          "value": "cancel",
+          "label": "Cancelar solicitud"
+        },
+        {
+          "value": "note",
+          "label": "Guardar observación"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 416,
+      "headerHeight": 97,
+      "footerHeight": 220,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 416,
+      "headerHeight": 97,
+      "footerHeight": 220,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "bodyHeight": 411,
+      "headerHeight": 93,
+      "footerHeight": 220,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "bodyHeight": 663,
+      "headerHeight": 121,
+      "footerHeight": 220,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "bodyHeight": 333,
+      "headerHeight": 179,
+      "footerHeight": 329,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "bodyHeight": 121,
+      "headerHeight": 202,
+      "footerHeight": 342,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "overflow": false,
+      "bodyHeight": 112,
+      "headerHeight": 75,
+      "footerHeight": 183,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "viewport": {
+        "width": 640,
+        "height": 389
+      },
+      "overflow": false,
+      "bodyHeight": 63,
+      "headerHeight": 95,
+      "footerHeight": 211,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "quote",
+      "case": "original section content, actions, specialized fields and zero writes",
+      "actions": [
+        {
+          "value": "review",
+          "label": "Iniciar revisión"
+        },
+        {
+          "value": "quoteAdvance",
+          "label": "Guardar cotización y aprobar etapa"
+        },
+        {
+          "value": "reject",
+          "label": "Rechazar etapa"
+        },
+        {
+          "value": "cancel",
+          "label": "Cancelar solicitud"
+        },
+        {
+          "value": "note",
+          "label": "Guardar observación"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "bodyHeight": 489,
+      "headerHeight": 93,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "bodyHeight": 742,
+      "headerHeight": 121,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "bodyHeight": 425,
+      "headerHeight": 179,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "bodyHeight": 226,
+      "headerHeight": 202,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "overflow": false,
+      "bodyHeight": 180,
+      "headerHeight": 75,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "viewport": {
+        "width": 640,
+        "height": 389
+      },
+      "overflow": false,
+      "bodyHeight": 159,
+      "headerHeight": 95,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "product",
+      "case": "original section content, actions, specialized fields and zero writes",
+      "actions": [
+        {
+          "value": "review",
+          "label": "Iniciar revisión"
+        },
+        {
+          "value": "approveProduct",
+          "label": "Aprobar etapa en Supabase"
+        },
+        {
+          "value": "reject",
+          "label": "Rechazar etapa"
+        },
+        {
+          "value": "cancel",
+          "label": "Cancelar solicitud"
+        },
+        {
+          "value": "note",
+          "label": "Guardar observación"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 1395,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 1280,
+        "height": 777
+      },
+      "overflow": false,
+      "bodyHeight": 494,
+      "headerHeight": 97,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "bodyHeight": 489,
+      "headerHeight": 93,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "overflow": false,
+      "bodyHeight": 742,
+      "headerHeight": 121,
+      "footerHeight": 141,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 60,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "bodyHeight": 441,
+      "headerHeight": 164,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "bodyHeight": 226,
+      "headerHeight": 202,
+      "footerHeight": 237,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "overflow": false,
+      "bodyHeight": 180,
+      "headerHeight": 75,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "viewport": {
+        "width": 640,
+        "height": 389
+      },
+      "overflow": false,
+      "bodyHeight": 159,
+      "headerHeight": 95,
+      "footerHeight": 115,
+      "fixed": true,
+      "controlsVisible": true,
+      "thumbnailFit": true,
+      "photoWidth": 44,
+      "status": "PASS"
+    },
+    {
+      "variant": "handoff",
+      "case": "original section content, actions, specialized fields and zero writes",
+      "actions": [
+        {
+          "value": "approveLoan",
+          "label": "Aprobar etapa y autorizar préstamo"
+        },
+        {
+          "value": "handoff",
+          "label": "Enviar a gestión"
+        },
+        {
+          "value": "note",
+          "label": "Guardar observación"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "errors": [],
+  "backendConnections": 0
+}

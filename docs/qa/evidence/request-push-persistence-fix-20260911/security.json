@@ -1,0 +1,82 @@
+{
+  "suite": "security",
+  "status": "PASS",
+  "checkedAt": "2026-09-11T06:53:46.993Z",
+  "bundleSha256": "71c63372e1754320960b7878b11ee55a6148a13f54657936d8da5d3a7f3d6e9e",
+  "environment": "Chrome desktop mobile viewport; built Auth/Push/SW source and real IndexedDB; Auth RPC, Push provider and native permission simulated; no production writes or messages",
+  "cases": [
+    {
+      "name": "logout",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 1,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "switch",
+      "result": {
+        "phase": "ready",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "impersonation",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "backend_revoked_not_auto_registered",
+      "result": {
+        "phase": "ready",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "backend_expired_not_auto_registered",
+      "result": {
+        "phase": "ready",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "worker_dedup_click_cross_binding_revocation",
+      "displayed": 1,
+      "openedCorrectRequest": true,
+      "otherBindingIgnored": true,
+      "revokedIgnored": true
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "base": "18bb07cb78d491c7c980544005d56cb4194b4b68",
+  "bundledModules": 116,
+  "changedModules": [
+    "text-size-preferences.js"
+  ],
+  "changedRuntimeFiles": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/text-size-preferences.js",
+    "app/text-size.css",
+    "sw.js"
+  ],
+  "unrelatedModulesIdentical": true,
+  "backendChanges": 0,
+  "protectedLegacyChanges": 0,
+  "hashesLF": {
+    "app/text-size.css": "32e9817416f4e537aca9554c877e08f587b34938b722f73b0870efc366e741ae",
+    "app/text-size-preferences.js": "bae46a8926ad94112a940e228b6c21b2dfdb7d76fb1cbf5241761e85d7f60a48",
+    "app/bundle.js": "1a47a54efbd9459d1d17fababacbbaf5fb235d6815900069bda912dc7c81326c",
+    "SutiApp.html": "30d36f54b73885978d51239b1dc3ea987925d8b439edbdf8a79a1e65c4721b09",
+    "sw.js": "03d90951557a0293198e030cb08b845ccdcb9c59fa6d2c32504085c6566cee71"
+  }
+}

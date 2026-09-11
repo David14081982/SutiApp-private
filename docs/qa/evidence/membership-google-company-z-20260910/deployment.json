@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "beforeVersion": 43,
+  "afterVersion": 44,
+  "verifyJwt": true,
+  "bundleSha256": "81c7e317c430e5c9b41bd40da445bc1508f82dfab39ab073920a883e75b384d6",
+  "downloadSha256": "3881c69644e422a6fe8b84da4a637ebe4a89a906269cfcf3461e3423eb813e32",
+  "sourceHashes": {
+    "index.ts": "480ef8132ef4c2fdd1f366c92538491e7f03b13e7c8ea421f28ca7f6f332a531",
+    "visibility-policy.js": "55f6a3176f1960615a104d1f389c289cf6346f5335ff4ab9a0efd7851324d3cc",
+    "request-google-sync.js": "7bac30bc79fcee5d5fe880c0468dc609d386aa0a3e4fe9cc5c65569db9348079"
+  },
+  "onlyChangedCodeModule": "source/request-google-sync.js",
+  "runtimeMetadataOnlyVersionChanged": true,
+  "unchangedModules": [
+    "source/index.ts",
+    "https://esm.sh/@supabase/supabase-js@2.57.4",
+    "https://esm.sh/@supabase/auth-js@2.71.1/denonext/auth-js.mjs",
+    "https://esm.sh/@supabase/functions-js@2.4.6/denonext/functions-js.mjs",
+    "https://esm.sh/@supabase/node-fetch@2.6.15/denonext/node-fetch.mjs",
+    "https://esm.sh/whatwg-url@5.0.0?target=denonext",
+    "https://esm.sh/tr46@0.0.3?target=denonext",
+    "https://esm.sh/tr46@0.0.3/denonext/tr46.mjs",
+    "https://esm.sh/webidl-conversions@3.0.1?target=denonext",
+    "https://esm.sh/webidl-conversions@3.0.1/denonext/webidl-conversions.mjs",
+    "https://esm.sh/whatwg-url@5.0.0/denonext/whatwg-url.mjs",
+    "https://esm.sh/@supabase/postgrest-js@1.21.4/denonext/postgrest-js.mjs",
+    "https://esm.sh/@supabase/node-fetch@2.6.15?target=denonext",
+    "https://esm.sh/@supabase/realtime-js@2.15.5/denonext/realtime-js.mjs",
+    "https://esm.sh/@supabase/storage-js@2.12.1/denonext/storage-js.mjs",
+    "https://esm.sh/@supabase/supabase-js@2.57.4/denonext/supabase-js.mjs",
+    "source/visibility-policy.js",
+    "https://esm.sh/@supabase/node-fetch@^2.6.13?target=denonext",
+    "https://esm.sh/@supabase/node-fetch@^2.6.14?target=denonext",
+    "https://esm.sh/tr46@~0.0.3?target=denonext",
+    "https://esm.sh/webidl-conversions@^3.0.0?target=denonext",
+    "https://esm.sh/whatwg-url@^5.0.0?target=denonext",
+    "---SUPABASE-ESZIP-VERSION-ESZIP---"
+  ],
+  "unauthenticatedHttpStatus": 401,
+  "businessActionsInvoked": 0
+}

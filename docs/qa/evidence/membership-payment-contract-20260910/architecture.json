@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "tree": "workspace",
+      "status": "PASS",
+      "runtimeFilesCurrent": [
+        "app/membership-repository.js",
+        "app/program-request-repository.js",
+        "app/screens-membership-application.jsx",
+        "supabase/migrations/20260910000100_membership_payment_contract.sql"
+      ],
+      "rpcs": [
+        "membership_payment_contract",
+        "get_current_membership_payment_quote",
+        "capture_membership_payment_contract",
+        "create_membership_request"
+      ],
+      "graphReferencesValid": true,
+      "runtimeAuthority": false
+    },
+    {
+      "tree": "release",
+      "status": "PASS",
+      "runtimeFilesCurrent": [
+        "app/membership-repository.js",
+        "app/program-request-repository.js",
+        "app/screens-membership-application.jsx",
+        "supabase/migrations/20260910000100_membership_payment_contract.sql"
+      ],
+      "rpcs": [
+        "membership_payment_contract",
+        "get_current_membership_payment_quote",
+        "capture_membership_payment_contract",
+        "create_membership_request"
+      ],
+      "graphReferencesValid": true,
+      "runtimeAuthority": false
+    }
+  ],
+  "note": "Closing evidence can make document-only freshness stale; all four runtime/migration fingerprints are current."
+}

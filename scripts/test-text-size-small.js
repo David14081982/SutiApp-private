@@ -3,16 +3,17 @@
 const fs=require('fs'),path=require('path'),cp=require('child_process'),vm=require('vm'),assert=require('assert').strict;
 const {root,chromium}=require('./test-text-size-helpers');
 const out=path.join(root,'docs/qa/evidence/text-size-small-20260911');
-const read=f=>fs.readFileSync(path.join(root,f),'utf8'),base='2aa05b9';
+const read=f=>fs.readFileSync(path.join(root,f),'utf8'),base=process.env.SUTIAPP_TEXT_SIZE_BASE||'2aa05b9';
 const old=f=>cp.execFileSync('git',['show',base+':'+f],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024}).replace(/\r\n/g,'\n');
 const near=(a,b,label)=>assert(Math.abs(a-b)<.06,label+': '+a+' != '+b);
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
  const css=read('app/text-size.css'),html=read('SutiApp.html'),sw=read('sw.js');
  assert(!css.includes(':not([data-text-size="normal"])'));
- assert.equal(sw.replaceAll('v191','v190').replace('bundle.js?v=244','bundle.js?v=242').replace('text-size.css?v=244','text-size.css?v=243').replace(/\r\n/g,'\n'),old('sw.js'),'SW logic unchanged');
- assert.equal(html.replace('sw.js?v=191','sw.js?v=190').replace('bundle.js?v=244','bundle.js?v=242').replace('text-size.css?v=244','text-size.css?v=243').replace(/\r\n/g,'\n'),old('SutiApp.html'),'shell logic unchanged');
- for(const ref of ['bundle.js?v=244','text-size.css?v=244'])assert(html.includes(ref)&&sw.includes(ref));
+ const normalize=s=>s.replace(/app\/bundle\.js\?v=\d+/g,'app/bundle.js?v=VERSION').replace(/app\/text-size\.css\?v=\d+/g,'app/text-size.css?v=VERSION').replace(/sw\.js\?v=\d+/g,'sw.js?v=VERSION').replace(/sutiapp-v\d+/g,'sutiapp-vVERSION').replace(/\r\n/g,'\n');
+ assert.equal(normalize(sw),normalize(old('sw.js')),'SW logic unchanged');
+ assert.equal(normalize(html),normalize(old('SutiApp.html')),'shell logic unchanged');
+ for(const pattern of [/app\/bundle\.js\?v=\d+/,/app\/text-size\.css\?v=\d+/])assert(sw.includes(html.match(pattern)[0]));
  assert(!/(localStorage|sessionStorage|indexedDB|service_role)/.test(read('app/text-size-preferences.js')));
  const prior={window:{}};vm.createContext(prior);vm.runInContext(old('app/text-size-preferences.js'),prior);
  assert.throws(()=>prior.window.TextSizePreferences.fromUser({user_metadata:{sutiapp_text_size:'small'}}),/INVALID_TEXT_SIZE/,'old-client incompatibility reproduced');
@@ -20,7 +21,7 @@ const near=(a,b,label)=>assert(Math.abs(a-b)<.06,label+': '+a+' != '+b);
  const chunks=s=>new Map(s.split('/* @@file ').slice(1).map(c=>[c.slice(0,c.indexOf(' */')),c.replace(/\r\n/g,'\n')]));
  const before=chunks(priorBundle),after=chunks(bundle),changed=[...after].filter(([f,s])=>s!==before.get(f)).map(([f])=>f);
  assert.deepEqual(changed,['text-size-preferences.js'],'only focal module regenerated in bundle');
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({executablePath:process.env.SUTIAPP_CHROMIUM_EXECUTABLE||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  const measurements=[],parity=[];
  try{
   const page=await browser.newPage({viewport:{width:320,height:844}});await page.route('**/*',r=>r.abort());

@@ -7,19 +7,25 @@ const out=path.join(root,'docs/qa/evidence/text-size-small-20260911'),captures=p
 (async()=>{
  fs.mkdirSync(out,{recursive:true});fs.mkdirSync(captures,{recursive:true});
  // Use the established local origin allowed by document-access CORS.
- const local=await serve();fs.writeFileSync(path.join(out,process.argv.includes('--global')?'global-pages-build.json':'pages-build.json'),JSON.stringify(local.build,null,2));
+ const external=process.argv.find(value=>/^https?:\/\//.test(value));
+ const local=external?{url:external,server:{close(){}},build:null}:await serve();
+ if(local.build)fs.writeFileSync(path.join(out,process.argv.includes('--global')?'global-pages-build.json':'pages-build.json'),JSON.stringify(local.build,null,2));
  try{
   if(process.argv.includes('--global')){
-   const targets=[['local',local.url],...process.argv.includes('--local-only')?[]:[['production','https://david14081982.github.io/SutiApp-private/']]];
+   const targets=[['local',local.url],['production','https://david14081982.github.io/SutiApp-private/']]
+    .filter(([target])=>!process.argv.includes('--local-only')||target==='local')
+    .filter(([target])=>!process.argv.includes('--production-only')||target==='production');
    for(const [target,url] of targets){
     let script=path.join(root,'scripts/test-global-image-regression-production-live.js'),harness;
-    if(process.argv.includes('--http1')){
+    if(process.argv.includes('--http1')||process.env.SUTIAPP_CHROMIUM_EXECUTABLE){
      // Same established diagnostic transport configuration as test-bottom-nav-labels-global.js.
      const source=fs.readFileSync(script,'utf8'),oldRoot="const root = path.resolve(__dirname, '..');",newRoot='const root = '+JSON.stringify(root)+';',oldFlags="'--disable-gpu']",newFlags="'--disable-gpu', '--disable-http2', '--disable-quic']";
-     assert(source.includes(oldRoot)&&source.includes(oldFlags));const configured=source.replace(oldRoot,newRoot).replace(oldFlags,newFlags);
-     assert.equal(configured.replace(newRoot,oldRoot).replace(newFlags,oldFlags),source,'No changes to assertions, corpus or timeouts');
+     assert(source.includes(oldRoot)&&source.includes(oldFlags));const chromeLine=source.match(/^const chromePath = .+;$/m)[0],newChrome=process.env.SUTIAPP_CHROMIUM_EXECUTABLE?'const chromePath = '+JSON.stringify(process.env.SUTIAPP_CHROMIUM_EXECUTABLE)+';':chromeLine;
+     const selectedFlags=process.argv.includes('--http1')?newFlags:oldFlags;
+     const configured=source.replace(oldRoot,newRoot).replace(oldFlags,selectedFlags).replace(chromeLine,newChrome);
+     assert.equal(configured.replace(newRoot,oldRoot).replace(selectedFlags,oldFlags).replace(newChrome,chromeLine),source,'No changes to assertions, corpus or timeouts');
      script=path.join(privateDir,'small-global-http1.js');fs.writeFileSync(script,configured);
-     harness={file:'scripts/test-global-image-regression-production-live.js',sha256:crypto.createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex'),browserTransport:'HTTP_1_1',assertionOrCorpusChanges:0,timeoutChanges:0};
+     harness={file:'scripts/test-global-image-regression-production-live.js',sha256:crypto.createHash('sha256').update(source.replace(/\r\n/g,'\n')).digest('hex'),browserTransport:process.argv.includes('--http1')?'HTTP_1_1':'DEFAULT',configuredBrowser:!!process.env.SUTIAPP_CHROMIUM_EXECUTABLE,assertionOrCorpusChanges:0,timeoutChanges:0};
     }
     const child=cp.spawn(process.execPath,[script],{cwd:root,env:{...process.env,SUTIAPP_IMAGE_E2E_URL:url},windowsHide:true});let stdout='',stderr='';
     child.stdout.on('data',d=>stdout+=d);child.stderr.on('data',d=>stderr+=d);
@@ -29,7 +35,7 @@ const out=path.join(root,'docs/qa/evidence/text-size-small-20260911'),captures=p
    }
    return;
   }
-  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+  const browser=await chromium.launch({executablePath:process.env.SUTIAPP_CHROMIUM_EXECUTABLE||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
   try{
    const context=await browser.newContext({viewport:{width:320,height:844},reducedMotion:'reduce',serviceWorkers:'block'}),page=await context.newPage();page.setDefaultTimeout(30000);
    let fixtureSize='normal';const errors=[],writes=[],results=[];

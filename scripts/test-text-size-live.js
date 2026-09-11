@@ -4,7 +4,7 @@ const {root,privateDir,chromium,serve,login,inspect}=require('./test-text-size-h
 const out=path.join(root,'docs/qa/evidence/text-size-small-20260911');
 (async()=>{
  const local=process.argv[2]?null:await serve(),url=process.argv[2]||local.url;
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({executablePath:process.env.SUTIAPP_CHROMIUM_EXECUTABLE||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage();page.setDefaultTimeout(30000);
  const errors=[],writes=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()==='PUT'&&new URL(r.url()).pathname==='/auth/v1/user')writes.push(JSON.parse(r.postData()));});
  let original,restore=false;

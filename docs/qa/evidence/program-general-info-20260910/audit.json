@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "productInventory": [
+    {
+      "program_key": "aires",
+      "count": 16,
+      "hash": "a94e9ac58875e33f2e2d237b1c7647e5"
+    },
+    {
+      "program_key": "auto",
+      "count": 3,
+      "hash": "b71db3be553b327a29a7999ec365a5c5"
+    },
+    {
+      "program_key": "casa",
+      "count": 35,
+      "hash": "a7a5ad9dd41b9ed85888b22c2e4cb8e3"
+    },
+    {
+      "program_key": "computo",
+      "count": 1,
+      "hash": "680ebb2a889eb4099a27b3d5a243480d"
+    },
+    {
+      "program_key": "donativos",
+      "count": 1,
+      "hash": "980dea668023084c6944e266e5defc81"
+    },
+    {
+      "program_key": "farma",
+      "count": 50,
+      "hash": "b68da6e54da3392ce61a5d5d01f12a76"
+    },
+    {
+      "program_key": "prestamo",
+      "count": 1,
+      "hash": "d5e507e7d4d22ac84fb6cd8f35e2968b"
+    },
+    {
+      "program_key": "puertas",
+      "count": 3,
+      "hash": "4d2cc62ec3b3082f46dd5d717aa95dad"
+    },
+    {
+      "program_key": "renta",
+      "count": 1,
+      "hash": "36f48b70a04a77c5d57551b0fe71d3e0"
+    },
+    {
+      "program_key": "solar",
+      "count": 4,
+      "hash": "220ea651cafdb292e0c372ac3dbf05ca"
+    },
+    {
+      "program_key": "terrenos",
+      "count": 3,
+      "hash": "8522c55c95a60fe688f0e0e83eb0a65b"
+    },
+    {
+      "program_key": "tours",
+      "count": 17,
+      "hash": "151f5c4756023ad1b0a005c1bfd79658"
+    }
+  ],
+  "presentationRows": 9,
+  "businessWrites": 0
+}

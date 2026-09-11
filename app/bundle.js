@@ -7772,7 +7772,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     });
     if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -7842,6 +7842,31 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
   async function transitionWorkflow(id,action,comment,actionId,quote){const q=quote||{},r=await db().rpc('transition_program_request_workflow',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key(),p_quote_amount:q.amount==null?null:Number(q.amount),p_quote_valid_until:q.validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
   window.ProgramRequestRepository=Object.freeze({create,createMembership,getWorkflowState,list,listGeneralQueue,listHistory,listMobile,listFinancialMobile,listFinancialQueue,listAdminFlowQueue,detail,financialDetail,adminFlowDetail,update,recordAdminAction,respondQuote,approveProductPayment,transitionWorkflow,newIdempotencyKey:key,project});
+})();
+})();
+/* @@file admin-finance-queue-repository.js */
+(function(){
+/* Read-only identity projection for Admin Finance / Requests. */
+(function () {
+  'use strict';
+  async function enrich(rows) {
+    const loanIds = rows.filter(row => row.program_id === 'prestamo').map(row => row.id);
+    const funds = new Map();
+    if (loanIds.length) {
+      // Existing permission-gated financial projection; one read, no per-row detail hydration.
+      const financialRows = await window.ProgramRequestRepository.listFinancialMobile();
+      for (const row of financialRows) {
+        const snapshot = row.financial_submission_snapshot;
+        funds.set(row.id, snapshot && snapshot.financialResult && snapshot.financialResult.fund);
+      }
+      if (loanIds.some(id => !funds.has(id))) throw new Error('FINANCE_QUEUE_FUND_READ_INCOMPLETE');
+    }
+    return Object.freeze(rows.map(row => Object.freeze(Object.assign({}, row, {
+      nombre: String(row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado',
+      requested_fund: funds.get(row.id) || null,
+    }))));
+  }
+  window.AdminFinanceQueueRepository = Object.freeze({ enrich });
 })();
 })();
 /* @@file private-resource-demand.js */
@@ -15146,7 +15171,9 @@ Object.assign(window, {
     hue,
     children,
     fav,
-    onFav
+    onFav,
+    metadata,
+    coverState
   }) {
     return React.createElement('div', {
       style: {
@@ -15164,7 +15191,45 @@ Object.assign(window, {
       }
     },
     // hero
-    React.createElement('div', {
+    metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {
+      url: metadata.cover_url,
+      icon: metadata.program_info.icon,
+      hue,
+      phase: coverState?.phase,
+      onRetry: coverState?.retry
+    }, React.createElement('div', {
+      style: {
+        position: 'absolute',
+        top: 10,
+        left: 8,
+        right: 8,
+        display: 'flex',
+        justifyContent: 'space-between'
+      }
+    }, circBtn('arrowL', app.back), onFav && React.createElement('button', {
+      onClick: onFav,
+      'aria-label': 'Guardar programa',
+      'aria-pressed': fav,
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        border: 'none',
+        background: 'rgba(0,0,0,.25)',
+        backdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff'
+      }
+    }, React.createElement(I, {
+      name: 'heart',
+      size: 21,
+      stroke: 2,
+      style: {
+        fill: fav ? '#fff' : 'none'
+      }
+    })))) : React.createElement('div', {
       style: {
         position: 'relative',
         height: 188,
@@ -15261,21 +15326,27 @@ Object.assign(window, {
     app,
     params
   }) {
+    const metadata = window.ProgramGeneralInfo.usePublicInfo(params.id);
+    const managed = window.ProgramGeneralInfo.keys.includes(params.id);
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
     const cs = window.useCatalogStore ? window.useCatalogStore({
       programKey: params.id
     }) : null;
-    if (!found) return null;
-    const {
-      it
-    } = found;
+    const it = metadata.row ? {
+      ...found?.it,
+      id: params.id,
+      label: metadata.row.label_override,
+      icon: metadata.row.program_info.icon
+    } : found?.it || {
+      id: params.id
+    };
     const hue = {
       guinda: 345,
       green: 150,
       blue: 210,
       amber: 36
-    }[found.g.tone];
+    }[found?.g.tone] || 210;
     const [fav, setFav] = useState(false);
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
@@ -15294,12 +15365,29 @@ Object.assign(window, {
     React.useEffect(() => {
       if (quoteReady && !quote.visto) qs.markVisto(quote.id);
     }, [quoteReady, quote && quote.id]);
+    if (managed && metadata.phase !== 'loaded') return React.createElement('div', {
+      'data-program-info-state': metadata.phase,
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        overflowY: 'auto'
+      }
+    }, React.createElement(window.Btn, {
+      onClick: app.back,
+      variant: 'outline'
+    }, 'Volver'), React.createElement(window.ProgramGeneralInfo.InfoState, {
+      state: metadata
+    }));
+    if (!found && !metadata.row) return null;
     return React.createElement(React.Fragment, null, React.createElement(HeroShell, {
       app,
       item: it,
       hue,
       fav,
-      onFav: () => setFav(!fav)
+      metadata: metadata.row,
+      coverState: metadata.cover,
+      onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null
     }, React.createElement('div', {
       style: {
         position: 'relative',
@@ -15307,7 +15395,15 @@ Object.assign(window, {
         overflow: 'visible',
         padding: isListing ? '18px 20px 30px' : '18px 20px 120px'
       }
-    },
+    }, metadata.row ? React.createElement(window.ProgramGeneralInfo.PublicHeader, {
+      row: metadata.row,
+      favorite: fav,
+      onFavorite: () => setFav(!fav),
+      notify: app.toast
+    }, needsQuote && React.createElement(QuoteStatusCard, {
+      quote,
+      it
+    })) : React.createElement(React.Fragment, null,
     // title block
     React.createElement('div', {
       style: {
@@ -15431,14 +15527,14 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontWeight: 500
       }
-    }, b.s)))))),
+    }, b.s))))))),
     // listings (administrables desde el módulo Marketplace)
     isListing && React.createElement('div', {
       style: {
         marginTop: 24
       }
     }, React.createElement(window.SectionHead, {
-      title: 'Disponibles ahora'
+      title: metadata.row ? metadata.row.program_info.catalog_title : 'Disponibles ahora'
     }), catalogState.phase === 'loading' ? React.createElement(window.EmptyState, {
       icon: 'clock',
       title: 'Cargando disponibles',
@@ -15896,35 +15992,11 @@ Object.assign(window, {
   function descFor(it) {
     const m = {
       ahorro: 'Aparta una parte de tu quincena de forma automática y recíbela con rendimiento preferente al cierre del semestre. Sin comisiones.',
-      inversion: 'Haz crecer tu dinero con el portafolio sindical, diseñado para afiliados. Empieza desde $1,000 y consulta tu rendimiento en tiempo real.',
-      solar: 'Los paneles solares requieren poco mantenimiento, reducen tu recibo de luz y aumentan el valor de tu propiedad. Financiamiento verde a meses sin intereses.',
-      farma: 'Consulta medicamentos y presentaciones disponibles del catálogo histórico de Suti Farma.',
-      tours: 'Explora viajes, alojamientos y experiencias disponibles en el catálogo de Suti Tours.',
-      auto: 'Consulta los vehículos disponibles. Las condiciones de financiamiento se revisan después de registrar tu solicitud.',
-      renta: 'Consulta los vehículos disponibles para renta y registra tu solicitud desde aquí.',
-      casa: 'Explora propiedades publicadas en el catálogo histórico de Suti Casa.',
-      terrenos: 'Consulta los terrenos publicados. El cálculo de financiamiento se realiza durante la revisión.',
-      aires: 'Consulta equipos de aire acondicionado disponibles y su precio de contado histórico.',
-      puertas: 'Consulta modelos de puertas de seguridad disponibles.',
-      computo: 'Consulta equipos de cómputo disponibles.',
-      donativos: 'Consulta las organizaciones y causas publicadas para donativos.'
+      inversion: 'Haz crecer tu dinero con el portafolio sindical, diseñado para afiliados. Empieza desde $1,000 y consulta tu rendimiento en tiempo real.'
     };
     return m[it.id] || it.tagline + '. ' + it.meta + '. Solicítalo con las mejores condiciones gracias a tu sindicato, con descuento cómodo vía nómina y sin letras chiquitas.';
   }
   function benefitsFor(id) {
-    if (LISTING_CATS.includes(id) || id === 'donativos') return [{
-      icon: 'checkCircle',
-      t: 'Catálogo verificado',
-      s: 'Filas históricas reconciliadas sin productos simulados'
-    }, {
-      icon: 'image',
-      t: 'Información disponible',
-      s: 'Imágenes y datos vigentes de cada opción'
-    }, {
-      icon: 'shield',
-      t: 'Proceso protegido',
-      s: 'Tu solicitud se registra antes de cualquier revisión financiera'
-    }];
     const base = [{
       icon: 'percent',
       t: 'Tasa preferente sindical',
@@ -17213,9 +17285,150 @@ Object.assign(window, {
   }
 
   // ============================================================
+  function TerrainProgramHeader({
+    headerInfo,
+    app
+  }) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        flexShrink: 0,
+        background: 'var(--header-bg, var(--grad-guinda))',
+        color: '#fff',
+        padding: '8px 14px 0',
+        position: 'relative',
+        overflow: 'hidden'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        right: -40,
+        top: -34,
+        opacity: 0.12
+      }
+    }, /*#__PURE__*/React.createElement(window.SutiSeal, {
+      size: 170
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        position: 'relative'
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: app.back,
+      style: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        border: '1px solid rgba(255,255,255,.22)',
+        background: 'rgba(255,255,255,.18)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: '#fff',
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(I, {
+      name: "arrowL",
+      size: 22,
+      stroke: 2
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 46,
+        height: 46,
+        borderRadius: '50%',
+        background: '#fff',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+        boxShadow: '0 6px 16px -6px rgba(0,0,0,.4)'
+      }
+    }, /*#__PURE__*/React.createElement(FresLogo, {
+      size: 34
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 'var(--text-24, 24px)',
+        fontWeight: 800,
+        lineHeight: 1.05,
+        letterSpacing: '-.01em'
+      }
+    }, headerInfo.map_title), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        opacity: .85,
+        marginTop: 2
+      }
+    }, headerInfo.map_subtitle))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        marginTop: 12,
+        background: 'rgba(255,255,255,.16)',
+        border: '1px solid rgba(255,255,255,.22)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        borderRadius: 999,
+        padding: '6px 12px'
+      }
+    }, /*#__PURE__*/React.createElement(I, {
+      name: headerInfo.icon,
+      size: 14,
+      stroke: 2
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 800,
+        letterSpacing: '.04em'
+      }
+    }, headerInfo.map_program_label), /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 3,
+        height: 3,
+        borderRadius: 999,
+        background: 'rgba(255,255,255,.5)'
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        opacity: .9
+      }
+    }, headerInfo.map_description)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative',
+        height: 24,
+        background: F.bg,
+        borderRadius: '26px 26px 0 0',
+        marginTop: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        top: 8,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 40,
+        height: 5,
+        borderRadius: 999,
+        background: 'var(--hairline-strong)'
+      }
+    })));
+  }
+  window.TerrainProgramHeader = TerrainProgramHeader;
   function TerrenoScreen({
     app
   }) {
+    const metadata = window.ProgramGeneralInfo.useInfo("terrenos");
+    const headerInfo = metadata.row?.program_info;
     const [filter, setFilter] = useState('todos');
     const [sel, setSel] = useState(null); // lot id
     const selLot = LOTS.find(l => l.id === sel) || null;
@@ -17370,6 +17583,11 @@ Object.assign(window, {
       if (e.target.closest('button') || e.target.closest('[data-terreno-card]') || e.target.closest('[data-terreno-map]')) return;
       setSel(null);
     };
+    if (metadata.phase !== 'loaded') return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(window.Btn, {
+      onClick: app.back
+    }, "Volver"), /*#__PURE__*/React.createElement(window.ProgramGeneralInfo.InfoState, {
+      state: metadata
+    }));
     return /*#__PURE__*/React.createElement("div", {
       onClick: onBgClick,
       style: {
@@ -17381,139 +17599,10 @@ Object.assign(window, {
         overflow: 'hidden',
         fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif"
       }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        flexShrink: 0,
-        background: 'var(--header-bg, var(--grad-guinda))',
-        color: '#fff',
-        padding: '8px 14px 0',
-        position: 'relative',
-        overflow: 'hidden'
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        position: 'absolute',
-        right: -40,
-        top: -34,
-        opacity: 0.12
-      }
-    }, /*#__PURE__*/React.createElement(window.SutiSeal, {
-      size: 170
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 11,
-        position: 'relative'
-      }
-    }, /*#__PURE__*/React.createElement("button", {
-      onClick: app.back,
-      style: {
-        width: 42,
-        height: 42,
-        borderRadius: 14,
-        border: '1px solid rgba(255,255,255,.22)',
-        background: 'rgba(255,255,255,.18)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        color: '#fff',
-        flexShrink: 0
-      }
-    }, /*#__PURE__*/React.createElement(I, {
-      name: "arrowL",
-      size: 22,
-      stroke: 2
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: 46,
-        height: 46,
-        borderRadius: '50%',
-        background: '#fff',
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0,
-        boxShadow: '0 6px 16px -6px rgba(0,0,0,.4)'
-      }
-    }, /*#__PURE__*/React.createElement(FresLogo, {
-      size: 34
-    })), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        minWidth: 0
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 'var(--text-24, 24px)',
-        fontWeight: 800,
-        lineHeight: 1.05,
-        letterSpacing: '-.01em'
-      }
-    }, "El Fresnillo"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 'var(--text-11-5, 11.5px)',
-        fontWeight: 600,
-        opacity: .85,
-        marginTop: 2
-      }
-    }, "Reserva Campestre \xB7 Hermosillo, Sonora"))), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        marginTop: 12,
-        background: 'rgba(255,255,255,.16)',
-        border: '1px solid rgba(255,255,255,.22)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        borderRadius: 999,
-        padding: '6px 12px'
-      }
-    }, /*#__PURE__*/React.createElement(I, {
-      name: "land",
-      size: 14,
-      stroke: 2
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 'var(--text-11-5, 11.5px)',
-        fontWeight: 800,
-        letterSpacing: '.04em'
-      }
-    }, "SUTI TERRENO"), /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: 3,
-        height: 3,
-        borderRadius: 999,
-        background: 'rgba(255,255,255,.5)'
-      }
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 'var(--text-11-5, 11.5px)',
-        fontWeight: 600,
-        opacity: .9
-      }
-    }, "Lotes a plazos \xB7 descuento v\xEDa n\xF3mina")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        position: 'relative',
-        height: 24,
-        background: F.bg,
-        borderRadius: '26px 26px 0 0',
-        marginTop: 16
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        position: 'absolute',
-        top: 8,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 40,
-        height: 5,
-        borderRadius: 999,
-        background: 'var(--hairline-strong)'
-      }
-    }))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(TerrainProgramHeader, {
+      headerInfo: headerInfo,
+      app: app
+    }), /*#__PURE__*/React.createElement("div", {
       style: {
         flexShrink: 0,
         display: 'flex',
@@ -18341,7 +18430,7 @@ Object.assign(window, {
   'use strict';
   const db=()=>window.SutiSupabase.getClient(),listeners=new Set();
   const assetFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
-  const invalidate=()=>listeners.forEach(fn=>fn());
+  const invalidate=()=>{refreshView(true);listeners.forEach(fn=>fn());};
   async function rpc(name,args){const r=await db().rpc(name,args);if(r.error)throw r.error;return r.data;}
   function key(row){return row.source_kind==='education'?'education:'+row.id:row.id;}
   async function list(){
@@ -18355,9 +18444,13 @@ Object.assign(window, {
   async function listEducationFavorites(){const r=await db().from('educational_resource_favorites').select('resource_id');if(r.error)throw r.error;return (r.data||[]).map(r=>r.resource_id);}
   async function favorite(row,on){
     if(row.source_kind!=='education')return window.catalogStore.toggleCompanyFavorite(row.id);
+    const view=currentView();
+    if(view.snapshot.favoritesPhase!=='loaded')throw new Error('CONVENIOS_FAVORITES_NOT_READY');
     const api=db(),u=await api.auth.getUser();if(u.error||!u.data.user)throw u.error||new Error('AUTH_REQUIRED');
+    if(!isCurrent(view))throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
     const r=on?await api.from('educational_resource_favorites').insert({auth_user_id:u.data.user.id,resource_id:row.id}):await api.from('educational_resource_favorites').delete().eq('resource_id',row.id);
-    if(r.error)throw r.error;invalidate();
+    if(r.error)throw r.error;
+    if(isCurrent(view))await readView(view,'favorites',true);
   }
   async function saveCompany(id,fields){const saved=await rpc('save_company_ficha',{p_company_id:id||null,p_fields:fields});invalidate();return {id:saved};}
   async function saveAgreement(row){const saved=await rpc('save_agreement_ficha',{p_fields:row});invalidate();return saved;}
@@ -18375,14 +18468,59 @@ Object.assign(window, {
     return {id,url:api.storage.from('company-assets').getPublicUrl(path).data.publicUrl};
   }
   async function attachImage(companyId,assetId,role){await rpc('attach_company_ficha_image',{p_company_id:companyId,p_asset_id:assetId,p_role:role});invalidate();}
+  // One ephemeral projection for the mounted Convenios list/detail. No settled
+  // state survives the last consumer or an Auth/impersonation context change.
+  const viewListeners=new Set();let viewState=null,offContext=null;
+  function currentView(){
+    const epoch=window.PrivateResourceDemand.context();
+    if(!viewState||viewState.epoch!==epoch)viewState={epoch,content:null,favorites:null,snapshot:{phase:'loading',rows:[],error:null,refreshing:false,favoritesPhase:'loading',favorites:[],favoritesError:null}};
+    return viewState;
+  }
+  function isCurrent(view){return window.PrivateResourceDemand.context()===view.epoch&&viewState===view;}
+  function emitView(){viewListeners.forEach(fn=>fn());}
+  function updateView(view,patch){if(!isCurrent(view))return;view.snapshot={...view.snapshot,...patch};emitView();}
+  function readView(view,part,force=false){
+    if(view.epoch===null||!isCurrent(view))return Promise.resolve();
+    if(view[part]&&!force)return view[part].promise;
+    const request={};view[part]=request;
+    const content=part==='content';
+    updateView(view,content?{phase:view.snapshot.phase==='loaded'?'loaded':'loading',refreshing:true,error:null}:{favoritesPhase:'loading',favoritesError:null});
+    request.promise=Promise.resolve().then(()=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      return content?list():listEducationFavorites();
+    }).then(rows=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      updateView(view,content?{phase:'loaded',rows,error:null,refreshing:false}:{favoritesPhase:'loaded',favorites:rows,favoritesError:null});
+    }).catch(error=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      // A failed authority never falls back to the previous projection.
+      updateView(view,content?{phase:'error',rows:[],error,refreshing:false}:{favoritesPhase:'error',favorites:[],favoritesError:error});
+    }).finally(()=>{if(view[part]===request)view[part]=null;});
+    return request.promise;
+  }
+  function refreshView(force=false){
+    if(!viewListeners.size){viewState=null;return;}
+    const view=currentView();return Promise.all([readView(view,'content',force),readView(view,'favorites',force)]);
+  }
+  function onViewFocus(){refreshView();}
+  function onViewContext(){currentView();emitView();refreshView();}
+  function subscribeView(fn){
+    viewListeners.add(fn);
+    if(viewListeners.size===1){offContext=window.PrivateResourceDemand.subscribe(onViewContext);window.addEventListener('focus',onViewFocus);}
+    const view=currentView();
+    if(view.snapshot.phase==='loading')readView(view,'content');
+    if(view.snapshot.favoritesPhase==='loading')readView(view,'favorites');
+    return()=>{
+      viewListeners.delete(fn);
+      if(!viewListeners.size){if(offContext)offContext();offContext=null;window.removeEventListener('focus',onViewFocus);viewState=null;}
+    };
+  }
+  const snapshot=()=>currentView().snapshot;
+  const retryFavorites=()=>readView(currentView(),'favorites');
   window.ConveniosRepository=Object.freeze({list,key,invalidate,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},favorite,saveCompany,saveAgreement,uploadImage,attachImage,activity:id=>rpc('get_company_activity',{p_company_id:id})});
   window.useConvenios=function(){
-    const epoch=window.PrivateResourceDemand.useContext();
-    const[state,setState]=React.useState({phase:'loading',rows:[],favorites:[],error:null});
-    const[version,setVersion]=React.useState(0);
-    React.useEffect(()=>{const reload=()=>setVersion(v=>v+1);const off=window.ConveniosRepository.subscribe(reload);window.addEventListener('focus',reload);return()=>{off();window.removeEventListener('focus',reload);};},[]);
-    React.useEffect(()=>{let live=true;setState({phase:'loading',rows:[],favorites:[],error:null});Promise.all([list(),listEducationFavorites()]).then(([rows,favorites])=>{if(live)setState({phase:'loaded',rows,favorites,error:null});}).catch(error=>{if(live)setState({phase:'error',rows:[],favorites:[],error});});return()=>{live=false;};},[epoch,version]);
-    return {...state,retry:()=>setVersion(v=>v+1)};
+    const state=React.useSyncExternalStore(subscribeView,snapshot);
+    return {...state,retry:onViewFocus,retryFavorites};
   };
 })();
 })();
@@ -18867,6 +19005,87 @@ Object.assign(window, {
       r: 20
     })));
   }
+  function FavoritesNotice({
+    directory
+  }) {
+    if (directory.favoritesPhase === 'loaded') return null;
+    const failed = directory.favoritesPhase === 'error';
+    return React.createElement('div', {
+      'data-convenios-favorites-state': directory.favoritesPhase,
+      role: failed ? 'alert' : 'status',
+      style: {
+        padding: '10px 20px',
+        fontSize: 13,
+        color: 'var(--ink-2)'
+      }
+    }, failed ? 'No pudimos cargar tus favoritos.' : 'Cargando favoritos…', failed && React.createElement(window.Btn, {
+      size: 'sm',
+      variant: 'outline',
+      onClick: directory.retryFavorites,
+      style: {
+        marginLeft: 8
+      }
+    }, 'Reintentar favoritos'));
+  }
+  function toggleFavorite(company, on, directory, app) {
+    if (company.source_kind === 'education' && directory.favoritesPhase !== 'loaded') {
+      if (app.toast) app.toast(directory.favoritesPhase === 'error' ? 'Reintenta cargar tus favoritos.' : 'Los favoritos se están actualizando.');
+      return;
+    }
+    return window.ConveniosRepository.favorite(company, on).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+  }
+  function DetailState({
+    app,
+    directory
+  }) {
+    const loading = directory.phase === 'loading',
+      failed = directory.phase === 'error';
+    return React.createElement('div', {
+      'data-convenio-state': loading ? 'loading' : failed ? 'error' : 'empty',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        overflowY: 'auto',
+        paddingBottom: 30
+      }
+    }, React.createElement('div', {
+      style: {
+        padding: 16
+      }
+    }, React.createElement(window.Btn, {
+      variant: 'outline',
+      icon: 'arrowL',
+      onClick: app.back
+    }, 'Volver')), loading ? React.createElement('div', {
+      role: 'status',
+      'aria-label': 'Cargando convenio',
+      style: {
+        padding: '0 20px'
+      }
+    }, React.createElement(window.Skeleton, {
+      h: 240,
+      r: 20
+    }), React.createElement(window.Skeleton, {
+      h: 32,
+      r: 8,
+      style: {
+        marginTop: 20
+      }
+    }), React.createElement(window.Skeleton, {
+      h: 110,
+      r: 16,
+      style: {
+        marginTop: 20
+      }
+    })) : React.createElement(window.EmptyState, {
+      icon: failed ? 'alert' : 'tag',
+      title: failed ? 'No pudimos cargar la ficha' : 'Este convenio ya no está disponible',
+      action: failed ? React.createElement(window.Btn, {
+        onClick: directory.retry
+      }, 'Reintentar') : null
+    }));
+  }
   function ConveniosScreen({
     app
   }) {
@@ -18908,7 +19127,7 @@ Object.assign(window, {
     const needle = q.trim().toLocaleLowerCase('es-MX');
     const list = base.filter(c => (cat === 'Todos' || classifications(c).includes(cat)) && (!needle || [c.display_name, c.description, ...classifications(c)].concat(catalog.byCompany(c.id).map(p => p.nombre)).some(x => String(x || '').toLocaleLowerCase('es-MX').includes(needle))));
     const isFav = c => c.source_kind === 'education' ? directory.favorites.includes(c.id) : catalog.isCompanyFavorite(c.id);
-    const toggleFav = c => window.ConveniosRepository.favorite(c, !isFav(c)).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+    const toggleFav = c => toggleFavorite(c, !isFav(c), directory, app);
     const selectCat = value => {
       setCat(value);
       setFilters(false);
@@ -18925,6 +19144,8 @@ Object.assign(window, {
       variant: 'convenios'
     }), React.createElement(AdCarousel, {
       ads: visual.marketplaceBanners || []
+    }), React.createElement(FavoritesNotice, {
+      directory
     }), React.createElement('div', {
       style: {
         padding: '20px 16px 0'
@@ -19026,15 +19247,9 @@ Object.assign(window, {
     const catalog = window.useCatalogStore();
     const [viewer, setViewer] = useState(null);
     const company = directory.rows.find(c => c.public_key === window.ConveniosRepository.key(params.company || {}));
-    if (directory.phase === 'loading') return React.createElement(LoadingLayout, {
-      app
-    });
-    if (!company) return React.createElement(window.EmptyState, {
-      icon: 'tag',
-      title: directory.phase === 'error' ? 'No pudimos cargar la ficha' : 'Este convenio ya no está disponible',
-      action: React.createElement(window.Btn, {
-        onClick: directory.phase === 'error' ? directory.retry : app.back
-      }, directory.phase === 'error' ? 'Reintentar' : 'Volver')
+    if (directory.phase === 'loading' || directory.phase === 'error' || !company) return React.createElement(DetailState, {
+      app,
+      directory
     });
     const fav = company.source_kind === 'education' ? directory.favorites.includes(company.id) : catalog.isCompanyFavorite(company.id);
     const products = catalog.byCompany(company.id).filter(p => p.activo !== false);
@@ -19094,7 +19309,7 @@ Object.assign(window, {
       on: fav,
       onClick: event => {
         event && event.stopPropagation && event.stopPropagation();
-        window.ConveniosRepository.favorite(company, !fav).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+        toggleFavorite(company, !fav, directory, app);
       },
       size: 40,
       iconSize: 21,
@@ -19123,7 +19338,9 @@ Object.assign(window, {
         fontWeight: 800,
         pointerEvents: 'none'
       }
-    }, 'AMPLIAR')), React.createElement('div', {
+    }, 'AMPLIAR')), React.createElement(FavoritesNotice, {
+      directory
+    }), React.createElement('div', {
       style: {
         padding: 20
       }
@@ -36279,6 +36496,7 @@ Object.assign(window, {
   });
   const programLabel = row => row && row.program_item && row.program_item.name || row && row.product && row.product.name || row && row.membership && [row.membership.company_raw, row.membership.concept].filter(Boolean).join(' · ') || row && row.company && row.company.display_name || PROGRAM_LABELS[row && row.program_id] || row && row.program_id || 'Solicitud';
   const requestTypeLabel = row => row && row.program_id === 'prestamo' ? 'Préstamo' : row && row.membership_offering_id ? 'Membresía' : row && row.request_type === 'quote' ? 'Cotización' : 'Programa / producto';
+  const queueProgramLabel = row => row.program_id === 'prestamo' ? row.requested_fund || 'Fondo no registrado' : programLabel(row);
   const statusMeta = status => REQUEST_STATUS[status] || {
     label: 'Estado no reconocido',
     tone: 'gray'
@@ -36315,6 +36533,30 @@ Object.assign(window, {
     const snapshot = approved ? detail && detail.financial_approval_snapshot : detail && detail.financial_submission_snapshot;
     return snapshot && snapshot.financialResult || null;
   };
+  const detailFullName = row => String(row && row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado';
+  const detailProgramLabel = row => row && row.program_id === 'prestamo' ? (snapshotResult(row, false) || {}).fund || row.requested_fund || 'Fondo no registrado' : programLabel(row);
+  const DOCUMENT_STATUS = Object.freeze({
+    PENDING_REVIEW: {
+      label: 'Pendiente de revisión',
+      tone: 'amber'
+    },
+    UNDER_REVIEW: {
+      label: 'En revisión',
+      tone: 'blue'
+    },
+    VERIFIED: {
+      label: 'Verificado',
+      tone: 'green'
+    },
+    REJECTED: {
+      label: 'Rechazado',
+      tone: 'red'
+    },
+    REUPLOAD_REQUIRED: {
+      label: 'Requiere nuevo archivo',
+      tone: 'amber'
+    }
+  });
   const badge = (meta, attr, value) => {
     const tone = TONES[meta.tone] || TONES.gray;
     return h('span', {
@@ -36339,8 +36581,8 @@ Object.assign(window, {
       .finwb-results{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;font-size:11.5px;color:var(--ink-3);font-weight:700}.finwb-results button{border:0;background:transparent;color:var(--guinda);font:inherit;cursor:pointer}
       .finwb-grid{display:grid;grid-template-columns:minmax(315px,.95fr) minmax(350px,1.05fr);gap:12px;min-height:560px;max-height:calc(100vh - 286px)}
       .finwb-panel{background:var(--surface);border-radius:17px;box-shadow:var(--neo-sm);min-width:0;min-height:0;overflow:hidden}
-      .finwb-queue{display:flex;flex-direction:column}.finwb-queue-head{display:grid;grid-template-columns:82px minmax(118px,1fr) 100px 112px 48px;gap:6px;padding:10px 9px;border-bottom:1px solid var(--hairline);font-size:9.5px;color:var(--ink-3);font-weight:900;letter-spacing:.03em;text-transform:uppercase}
-      .finwb-queue-body{overflow:auto;min-height:0}.finwb-row{width:100%;display:grid;grid-template-columns:82px minmax(118px,1fr) 100px 112px 48px;gap:6px;align-items:center;padding:11px 9px;border:0;border-bottom:1px solid var(--hairline);background:transparent;text-align:left;font-family:inherit;cursor:pointer;color:var(--ink)}.finwb-row>span{display:block;min-width:0}
+      .finwb-queue{display:flex;flex-direction:column}.finwb-queue-head{display:grid;grid-template-columns:82px 40px minmax(118px,1fr) 100px 112px 48px;gap:6px;padding:10px 9px;border-bottom:1px solid var(--hairline);font-size:9.5px;color:var(--ink-3);font-weight:900;letter-spacing:.03em;text-transform:uppercase}
+      .finwb-queue-body{overflow:auto;min-height:0}.finwb-row{width:100%;display:grid;grid-template-columns:82px 40px minmax(118px,1fr) 100px 112px 48px;gap:6px;align-items:center;padding:11px 9px;border:0;border-bottom:1px solid var(--hairline);background:transparent;text-align:left;font-family:inherit;cursor:pointer;color:var(--ink)}.finwb-row>span{display:block;min-width:0}
       .finwb-row[aria-selected=true]{background:#F8EDF1;box-shadow:inset 3px 0 0 var(--guinda)}.finwb-row:focus-visible{outline:2px solid var(--guinda);outline-offset:-2px}.finwb-folio{font:800 10.5px/1.35 var(--mono);color:var(--guinda);overflow-wrap:anywhere}.finwb-person{font-size:12.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-sub{font-size:10.5px;color:var(--ink-3);font-weight:650;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finwb-row .finwb-sub{display:block;max-width:100%}.finwb-amount{font-size:12.5px;font-weight:850}.finwb-age{font:800 11px var(--mono);color:var(--guinda)}
       .finwb-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;font-size:10.5px;font-weight:850;line-height:1.2}.finwb-stage{font-size:10.5px;color:var(--ink-3);font-weight:750;margin-top:4px}
       .finwb-empty{display:grid;place-items:center;align-content:center;gap:8px;min-height:240px;padding:24px;text-align:center;color:var(--ink-3);font-size:12.5px;font-weight:700}
@@ -36350,10 +36592,12 @@ Object.assign(window, {
       .finwb-timeline{display:flex;flex-direction:column;gap:9px}.finwb-event{display:grid;grid-template-columns:10px 1fr;gap:9px}.finwb-event-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;background:var(--guinda);box-shadow:0 0 0 4px #F8E8EE}.finwb-event strong{font-size:11.5px}.finwb-event p{margin:2px 0 0;font-size:10.5px;color:var(--ink-3);font-weight:650;line-height:1.4}
       .finwb-actionbar{position:absolute;left:0;right:0;bottom:0;padding:11px 12px;background:rgba(248,249,252,.97);border-top:1px solid #DDE2EA;backdrop-filter:blur(10px)}.finwb-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.finwb-note{margin-top:8px;resize:vertical;min-height:52px}.finwb-buttons{display:grid;grid-template-columns:auto auto 1fr;gap:8px;margin-top:8px}.finwb-buttons button{border:0;border-radius:10px;padding:9px 11px;font-family:inherit;font-size:11.5px;font-weight:850;cursor:pointer}.finwb-buttons button:disabled{opacity:.5;cursor:default}.finwb-secondary{background:var(--surface);color:var(--ink-2);box-shadow:var(--neo-sm)}.finwb-primary{background:var(--guinda);color:#fff}.finwb-feedback{margin-top:7px;font-size:11px;font-weight:800}.finwb-feedback[data-tone=saving]{color:#7A5A16}.finwb-feedback[data-tone=success]{color:#087A50}.finwb-feedback[data-tone=error]{color:#A00027}
       @media(max-width:1279px){.finwb-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.finwb-kv{grid-template-columns:1fr}.finwb-grid{grid-template-columns:minmax(285px,.9fr) minmax(330px,1.1fr)}}
-      @media(max-width:1359px){.finwb-queue-head,.finwb-row{grid-template-columns:68px minmax(0,1fr) 92px;gap:5px;padding-left:8px;padding-right:8px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3){display:none}.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:none}.finwb-badge{box-sizing:border-box;max-width:100%;padding:0 6px;font-size:9.5px}}
+      @media(max-width:1359px){.finwb-queue-head,.finwb-row{grid-template-columns:58px 36px minmax(0,1fr) 72px;gap:5px;padding-left:8px;padding-right:8px}.finwb-queue-head>*:nth-child(4),.finwb-row>*:nth-child(4){display:none}.finwb-queue-head>*:nth-child(6),.finwb-row>*:nth-child(6){display:none}.finwb-badge{box-sizing:border-box;max-width:100%;padding:0 6px;font-size:9.5px}}
       @media(min-width:1280px){.finwb-filters{grid-template-columns:minmax(180px,1.5fr) repeat(6,minmax(96px,1fr))}.finwb-grid{grid-template-columns:minmax(470px,1fr) minmax(440px,1fr)}}
       @media(max-width:1023px){.finwb-filters{grid-template-columns:1fr 1fr}.finwb-grid{grid-template-columns:1fr;max-height:none;min-height:0}.finwb-queue{max-height:390px}.finwb-detail{min-height:680px}.finwb-detail-scroll{overflow:visible}.finwb-actionbar{position:sticky}.finwb-doc{grid-template-columns:58px minmax(0,1fr) auto}.finwb-doc-preview{width:58px;height:50px}}
       .finwb-grid{display:block;min-height:0;max-height:none}.finwb-queue{max-height:calc(100dvh - 285px);min-height:240px}
+      .finwb-row .finwb-person{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.4}.finwb-row .finwb-sub{white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+      .finwb-row .finwb-profile-photo{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#F8EDF1;color:var(--guinda);font-size:12px;font-weight:800;border:1px solid var(--hairline)}.finwb-profile-photo img{width:100%;height:100%;object-fit:cover}.finwb-profile-photo[data-photo-state=error]{border-style:dashed}
       .finwb-modal{box-sizing:border-box;width:88vw;max-width:1600px;height:calc(100dvh - 40px);max-height:calc(100dvh - 40px);min-height:0;margin:auto;padding:0;border:1px solid #DCE1EA;border-radius:22px;background:#F3F5F9;color:var(--ink);font-family:inherit;overflow:hidden;box-shadow:0 24px 100px #14203855}
       .finwb-modal[open]{display:flex;flex-direction:column}.finwb-modal::backdrop{background:rgba(15,23,42,.58)}
       .finwb-modal .finwb-detail-head{flex:none;align-items:center;padding:18px 24px;gap:16px;background:#fff}.finwb-modal-heading{min-width:0;flex:1}.finwb-modal .finwb-detail-head strong{font-size:13px;color:var(--guinda)}.finwb-modal-heading h2{font-size:21px;line-height:1.2;margin:5px 0;color:var(--ink);overflow-wrap:anywhere}.finwb-modal .finwb-detail-head .finwb-sub{white-space:normal;font-size:12px;line-height:1.4}
@@ -36361,11 +36605,52 @@ Object.assign(window, {
       .finwb-modal .finwb-detail-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;align-items:start;gap:16px;scrollbar-gutter:stable}.finwb-modal .finwb-card{min-width:0;margin:0;padding:18px}.finwb-modal .finwb-card h3{font-size:15px;margin-bottom:14px}.finwb-modal .finwb-kv{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.finwb-modal .finwb-kv span{font-size:11px}.finwb-modal .finwb-kv strong{font-size:13px;line-height:1.45}.finwb-modal .finwb-doc .finwb-person,.finwb-modal .finwb-doc .finwb-sub{white-space:normal;overflow-wrap:anywhere}.finwb-modal .finwb-flow-current .finwb-sub{display:block;margin-bottom:4px}.finwb-modal .finwb-flow-current{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-responsible{justify-self:start;white-space:normal}.finwb-modal .finwb-step strong{font-size:13px}.finwb-modal .finwb-step p,.finwb-modal .finwb-event p{font-size:12px;overflow-wrap:anywhere}.finwb-modal .finwb-event strong{font-size:13px}
       .finwb-modal .finwb-actionbar{position:static;flex:none;padding:14px 24px;background:#fff;box-shadow:0 -6px 20px #14203808;backdrop-filter:none}.finwb-modal .finwb-action-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}.finwb-modal .finwb-action-grid .finwb-sub{display:block;white-space:normal}.finwb-modal .finwb-note{min-height:44px;height:44px;resize:none;margin-top:8px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-buttons button{min-height:44px;font-size:13px}.finwb-modal .finwb-next-action{margin-top:6px;padding:6px 10px}.finwb-modal .finwb-empty{flex:1;min-height:0;overflow:auto}.finwb-modal .finwb-feedback{overflow-wrap:anywhere}
       .finwb-modal .finwb-buttons:has(.finwb-delete){grid-template-columns:auto auto minmax(0,1fr) auto}.finwb-delete{background:#fff1f3;color:#a00027;box-shadow:inset 0 0 0 1px #edb7c2}.finwb-delete:focus-visible{outline:3px solid #a00027;outline-offset:2px}
-      @media(min-width:768px){.finwb-queue-head,.finwb-row{grid-template-columns:100px minmax(0,1fr) 140px 180px 64px;gap:12px;padding:14px 16px}.finwb-queue-head>*:nth-child(3),.finwb-row>*:nth-child(3),.finwb-queue-head>*:nth-child(5),.finwb-row>*:nth-child(5){display:block}}
+      @media(min-width:768px){.finwb-queue-head,.finwb-row{grid-template-columns:100px 40px minmax(0,1fr) 140px 180px 64px;gap:12px;padding:14px 16px}.finwb-queue-head>*:nth-child(4),.finwb-row>*:nth-child(4),.finwb-queue-head>*:nth-child(6),.finwb-row>*:nth-child(6){display:block}}
       @media(max-width:1023px){.finwb-modal{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);border-radius:16px}.finwb-modal .finwb-detail-head{padding:14px 18px}.finwb-modal .finwb-detail-scroll{padding:16px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:12px 18px}}
       @media(max-width:600px){.finwb-modal{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}.finwb-modal .finwb-detail-head{padding:12px;gap:8px;flex-wrap:wrap}.finwb-modal-heading h2{font-size:17px}.finwb-modal .finwb-detail-head .finwb-badge{max-width:100%;font-size:11px;min-height:24px}.finwb-modal .finwb-detail-head .finwb-sub{font-size:11px}.finwb-modal .finwb-detail-scroll{grid-template-columns:minmax(0,1fr);padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-grid{gap:8px}.finwb-modal .finwb-action-select{font-size:12px;min-width:0;padding:8px}.finwb-modal .finwb-buttons{grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}.finwb-modal .finwb-primary{grid-column:1/-1}.finwb-modal .finwb-buttons button{padding:8px;font-size:12px}.finwb-modal .finwb-next-action{font-size:10px;line-height:1.3}.finwb-modal .finwb-note{margin-top:6px}.finwb-modal .finwb-feedback{font-size:10px;margin-top:4px}}
       @media(max-width:600px){.finwb-modal .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr}.finwb-modal .finwb-buttons:has(.finwb-delete) .finwb-primary{grid-column:auto}}
       @media(max-height:600px){.finwb-modal .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:16px;margin:2px 0}.finwb-modal .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-note{height:36px;min-height:36px}.finwb-modal .finwb-buttons{grid-template-columns:auto auto minmax(0,1fr)}.finwb-modal .finwb-primary{grid-column:auto}}
+
+      /* Detail-only presentation. Queue, sister tabs and action dialogs retain their styles. */
+      .finwb-modal > .finwb-detail-head{padding:14px 24px;gap:12px;flex-wrap:nowrap}
+      .finwb-modal-heading h2{font-size:22px;font-weight:750;margin:4px 0;line-height:1.25}
+      .finwb-modal .finwb-profile-photo.finwb-detail-photo{display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:50%;font-size:20px;background:#F4E8ED;color:var(--guinda);overflow:hidden}
+      .finwb-modal .finwb-detail-photo img{display:block;width:100%;height:100%;object-fit:cover}
+      .finwb-modal > .finwb-detail-head > .finwb-badge{flex:none;max-width:160px;text-align:center}
+      .finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px;padding:16px 24px}
+      .finwb-modal .finwb-detail-column{display:flex;flex-direction:column;gap:16px;min-width:0}
+      .finwb-modal .finwb-card{padding:16px}
+      .finwb-modal .finwb-card-group{padding:0;overflow:hidden}
+      .finwb-modal .finwb-card-group > .finwb-card{border:0;border-radius:0}
+      .finwb-modal .finwb-card-group > .finwb-card + .finwb-card{border-top:1px solid var(--hairline)}
+      .finwb-modal .finwb-sub,.finwb-modal .finwb-kv span,.finwb-modal .finwb-flow-current p,.finwb-modal .finwb-step p,.finwb-modal .finwb-event p,.finwb-modal .finwb-empty{color:#657086}
+      .finwb-modal .finwb-sub,.finwb-modal .finwb-kv span,.finwb-modal .finwb-snapshot-note{font-size:12px;line-height:1.45}
+      .finwb-modal .finwb-kv span{font-weight:650}
+      .finwb-modal .finwb-flow-summary{border:0;border-radius:0;background:none;padding:0 0 12px;margin-bottom:4px;border-bottom:1px solid var(--hairline)}
+      .finwb-modal .finwb-event{grid-template-columns:24px minmax(0,1fr);gap:9px;padding:7px 0}
+      .finwb-modal .finwb-event-dot{margin:5px auto 0}
+      .finwb-modal .finwb-timeline{gap:0}
+      .finwb-modal .finwb-doc{grid-template-columns:64px minmax(0,1fr) auto;gap:12px}
+      .finwb-modal .finwb-doc button,.finwb-modal .finwb-doc a{font-family:inherit;font-size:12px;font-weight:750;line-height:1.35;min-height:44px}
+      .finwb-modal .finwb-doc .finwb-doc-preview{width:64px;height:48px;min-height:48px;padding:0;border-radius:10px;color:#657086}
+      .finwb-modal .finwb-doc-preview img{display:block;width:100%;height:100%;min-height:0;object-fit:contain;object-position:center}
+      .finwb-modal .finwb-doc-preview iframe{display:block;width:100%;height:100%;min-height:0}
+      .finwb-modal .finwb-doc-status{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:4px 0}
+      .finwb-modal .finwb-doc-status .finwb-badge{font-size:12px;min-height:24px;white-space:normal;padding:3px 8px}
+      .finwb-modal > .finwb-actionbar{padding:12px 24px}
+      .finwb-modal .finwb-action-fields{display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:4px 12px;align-items:stretch}
+      .finwb-modal .finwb-action-fields > select{grid-column:1;grid-row:1;min-height:44px}
+      .finwb-modal .finwb-action-context{grid-column:1;grid-row:2;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 6px;min-width:0;line-height:1.35}
+      .finwb-modal .finwb-action-context .finwb-sub{margin:0}
+      .finwb-modal .finwb-action-fields > .finwb-note{grid-column:2;grid-row:1/3;margin:0;height:100%;min-height:64px}
+      .finwb-modal > .finwb-actionbar .finwb-buttons,.finwb-modal > .finwb-actionbar .finwb-buttons:has(.finwb-delete){grid-template-columns:auto auto minmax(0,1fr) auto;align-items:stretch;gap:8px}
+      .finwb-modal > .finwb-actionbar .finwb-primary{grid-column:3;justify-self:end;min-width:200px;max-width:100%;white-space:normal}
+      .finwb-modal > .finwb-actionbar .finwb-delete{background:none;box-shadow:none;color:#A00027;margin-left:8px;border-left:1px solid var(--hairline);border-radius:0;padding-left:16px}
+      @media(max-width:1100px){.finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1.35fr) minmax(270px,1fr);padding:16px}.finwb-modal > .finwb-detail-head{padding:12px 18px}.finwb-modal > .finwb-actionbar{padding:12px 18px}}
+      @media(max-width:850px){.finwb-modal > .finwb-detail-scroll{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-detail-column{gap:12px}.finwb-modal .finwb-action-fields{grid-template-columns:minmax(220px,280px) minmax(0,1fr)}}
+      @media(max-width:600px){.finwb-modal > .finwb-detail-head{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;padding:12px;align-items:start}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal-heading{grid-column:2;grid-row:1}.finwb-modal-heading h2{font-size:18px}.finwb-modal > .finwb-detail-head > .finwb-badge{grid-column:2;grid-row:2;justify-self:start;max-width:100%}.finwb-modal-close{grid-column:3;grid-row:1}.finwb-modal > .finwb-detail-scroll{padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-card-group{padding:0}.finwb-modal > .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-fields{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-action-fields > .finwb-note{grid-column:1;grid-row:3;min-height:44px;height:44px;margin-top:4px}.finwb-modal > .finwb-actionbar .finwb-buttons,.finwb-modal > .finwb-actionbar .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr;gap:6px}.finwb-modal > .finwb-actionbar .finwb-primary{grid-column:1;justify-self:stretch;min-width:0}.finwb-modal > .finwb-actionbar .finwb-delete{margin-left:0;padding-left:8px}.finwb-modal .finwb-doc{gap:8px}.finwb-modal .finwb-doc button,.finwb-modal .finwb-doc a{padding:8px}}
+      @media(max-height:600px) and (min-width:601px){.finwb-modal > .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:18px;margin:2px 0}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal > .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-action-fields{grid-template-columns:240px minmax(0,1fr)}.finwb-modal .finwb-action-fields > select{min-height:36px}.finwb-modal .finwb-action-fields > .finwb-note{min-height:52px}.finwb-modal > .finwb-actionbar .finwb-buttons button{min-height:36px}.finwb-modal > .finwb-actionbar .finwb-primary{min-width:0}}
+      @media(max-height:450px) and (min-width:601px){.finwb-modal-heading h2{font-size:16px}.finwb-modal > .finwb-actionbar .finwb-buttons button{padding:6px 8px}.finwb-modal > .finwb-actionbar .finwb-buttons{margin-top:6px}.finwb-modal > .finwb-actionbar .finwb-action-grid .finwb-action-select{padding:6px 8px;min-height:32px}.finwb-modal > .finwb-actionbar .finwb-next-action{margin-top:4px;padding:4px 8px}}
     `;
     document.head.appendChild(style);
   }
@@ -37018,6 +37303,39 @@ Object.assign(window, {
       }
     }, 'Entendido'));
   }
+  function FinanceQueuePhoto({
+    row,
+    detailPhoto = false
+  }) {
+    const ref = React.useRef(null),
+      demand = window.PrivateResourceDemand;
+    const visible = demand.useVisible(ref);
+    const source = demand.useSource('finance-queue-photo:' + row.affiliate_id, () => demand.run('finance-queue-photo:' + row.affiliate_id, async () => {
+      const photo = await window.AffiliateRepository.getProfilePhoto(row.affiliate_id);
+      return photo ? {
+        signedUrl: photo.signedUrl,
+        expiresIn: Math.max(1, (photo.expiresAt - Date.now()) / 1000)
+      } : {
+        signedUrl: ''
+      };
+    }), visible, 240);
+    const initials = row.nombre.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+    const label = source.error ? 'Foto no disponible' : source.url ? 'Foto de ' + row.nombre : 'Sin foto de perfil';
+    return h('span', {
+      ref,
+      className: 'finwb-profile-photo' + (detailPhoto ? ' finwb-detail-photo' : ''),
+      [detailPhoto ? 'data-financial-detail-photo' : 'data-financial-queue-photo']: row.affiliate_id,
+      'data-photo-state': source.error ? 'error' : source.url ? 'photo' : 'initials',
+      title: label,
+      'aria-label': label
+    }, source.url ? h('img', {
+      src: source.url,
+      alt: '',
+      loading: 'lazy',
+      decoding: 'async',
+      onError: source.onError
+    }) : initials);
+  }
   function DesktopFinancialWorkbench({
     app,
     onCount,
@@ -37056,7 +37374,7 @@ Object.assign(window, {
     const load = React.useCallback(async quiet => {
       try {
         if (!quiet) setPhase('loading');
-        const source = await window.ProgramRequestRepository.listAdminFlowQueue();
+        const source = await window.AdminFinanceQueueRepository.enrich(await window.ProgramRequestRepository.listAdminFlowQueue());
         const scoped = initialAffiliateId ? source.filter(row => row.affiliate_id === initialAffiliateId) : source;
         setRows(scoped.slice());
         setError('');
@@ -37079,7 +37397,7 @@ Object.assign(window, {
     const visible = React.useMemo(() => {
       const needle = search.trim().toLocaleLowerCase('es-MX');
       const filtered = rows.filter(row => {
-        const text = [row.folio, row.nombre, row.numero_control, programLabel(row)].join(' ').toLocaleLowerCase('es-MX');
+        const text = [row.folio, row.nombre, row.numero_control, queueProgramLabel(row)].join(' ').toLocaleLowerCase('es-MX');
         if (needle && !text.includes(needle)) return false;
         if (statusFilter !== 'all' && row.status !== statusFilter) return false;
         if (programFilter !== 'all' && row.program_id + ':' + (row.request_type || '') !== programFilter) return false;
@@ -37518,8 +37836,11 @@ Object.assign(window, {
       }, h('div', {
         className: 'finwb-person'
       }, title), h('div', {
-        className: 'finwb-sub'
-      }, (scope === 'request' ? 'Estado al enviar: ' : 'Estado vigente: ') + status), h('div', {
+        className: 'finwb-sub finwb-doc-status'
+      }, h('span', null, scope === 'request' ? 'Estado al enviar:' : 'Estado vigente:'), badge(DOCUMENT_STATUS[status] || {
+        label: status === 'No disponible' ? status : 'Estado no reconocido: ' + status,
+        tone: 'gray'
+      }, 'data-financial-document-status', status)), h('div', {
         className: 'finwb-sub'
       }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
@@ -37558,36 +37879,9 @@ Object.assign(window, {
         events = timelineEvents(detail);
       return h(React.Fragment, null, h('div', {
         className: 'finwb-detail-scroll'
-      }, h('section', {
-        className: 'finwb-card',
-        'data-financial-detail-person': 'true'
-      }, h('h3', null, h(I, {
-        name: 'user',
-        size: 17,
-        stroke: 2
-      }), 'Solicitante'), h('div', {
-        className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detail.nombre)), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
-        reference: detail.deposit_reference
-      })), h('section', {
-        className: 'finwb-card'
-      }, h('h3', null, h(I, {
-        name: 'receipt',
-        size: 17,
-        stroke: 2
-      }), 'Resumen'), h('div', {
-        className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
-        className: 'finwb-snapshot-note',
-        style: {
-          marginTop: 10
-        }
-      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))), renderWorkflow(), h('section', {
-        className: 'finwb-card',
-        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
-      }, h('h3', null, 'Registro en Google'), h('div', {
-        className: 'finwb-snapshot-note'
-      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), renderProductPayment(productPayment), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), h('section', {
+      }, h('div', {
+        className: 'finwb-detail-column finwb-detail-main'
+      }, renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow(), h('section', {
         className: 'finwb-card',
         'data-financial-documents': 'true'
       }, h('h3', null, h(I, {
@@ -37616,7 +37910,42 @@ Object.assign(window, {
         className: 'finwb-snapshot-note'
       }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
         className: 'finwb-sub'
-      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate')), h('section', {
+      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate'))), h('div', {
+        className: 'finwb-detail-column finwb-detail-context'
+      }, h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h('section', {
+        className: 'finwb-card',
+        'data-financial-detail-person': 'true'
+      }, h('h3', null, h(I, {
+        name: 'user',
+        size: 17,
+        stroke: 2
+      }), 'Solicitante'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
+        reference: detail.deposit_reference
+      })), h('section', {
+        className: 'finwb-card'
+      }, h('h3', null, h(I, {
+        name: 'receipt',
+        size: 17,
+        stroke: 2
+      }), 'Resumen'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
+        className: 'finwb-snapshot-note',
+        style: {
+          marginTop: 10
+        }
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes)))), h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h('section', {
+        className: 'finwb-card',
+        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
+      }, h('h3', null, 'Registro en Google'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), h('section', {
         className: 'finwb-card',
         'data-financial-terms': 'true'
       }, h('h3', null, h(I, {
@@ -37625,7 +37954,7 @@ Object.assign(window, {
         stroke: 2
       }), 'Términos aceptados'), h('div', {
         className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible')))), h('section', {
+      }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible'))))), h('section', {
         className: 'finwb-card',
         'data-financial-timeline': 'true'
       }, h('h3', null, h(I, {
@@ -37644,11 +37973,11 @@ Object.assign(window, {
         key: event.title + eventIndex
       }, h('span', {
         className: 'finwb-event-dot'
-      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text))))))), h('div', {
+      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text)))))))), h('div', {
         className: 'finwb-actionbar',
         'data-financial-safe-action-bar': 'true'
       }, actionOptions.length ? h(React.Fragment, null, h('div', {
-        className: 'finwb-action-grid'
+        className: 'finwb-action-fields'
       }, h('select', {
         className: 'finwb-action-select',
         value: action,
@@ -37661,13 +37990,22 @@ Object.assign(window, {
       }, actionOptions.map(item => h('option', {
         key: item.id,
         value: item.id
-      }, item.label))), h('div', null, h('span', {
+      }, item.label))), h('div', {
+        className: 'finwb-action-context'
+      }, h('span', {
         className: 'finwb-sub'
       }, 'Etapa actual'), h('strong', {
         style: {
           fontSize: 11.5
         }
-      }, stageLabel(detail)))), action === 'quoteAdvance' && h('div', {
+      }, stageLabel(detail))), h('textarea', {
+        className: 'finwb-note',
+        value: actionNote,
+        disabled: busy || action === 'handoff',
+        onChange: event => setActionNote(event.target.value),
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
+        'aria-label': 'Observación de la acción'
+      })), action === 'quoteAdvance' && h('div', {
         className: 'finwb-action-grid',
         style: {
           marginTop: 8
@@ -37687,14 +38025,7 @@ Object.assign(window, {
         value: quoteValidUntil,
         onChange: event => setQuoteValidUntil(event.target.value),
         'aria-label': 'Vigencia de la cotización'
-      })), h('textarea', {
-        className: 'finwb-note',
-        value: actionNote,
-        disabled: busy || action === 'handoff',
-        onChange: event => setActionNote(event.target.value),
-        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
-        'aria-label': 'Observación de la acción'
-      }), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
+      })), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
         className: 'finwb-next-action',
         'data-financial-next-action': 'true'
       }, 'Confirmar moverá la solicitud de “' + stageLabel(detail) + '” a “' + nextStage(detail).label + '”. Responsable siguiente: ' + (nextStage(detail).responsible || 'Área responsable') + '.'), h('div', {
@@ -37832,7 +38163,7 @@ Object.assign(window, {
       'data-financial-queue': 'true'
     }, h('div', {
       className: 'finwb-queue-head'
-    }, h('span', null, 'Folio'), h('span', null, 'Afiliado / programa'), h('span', null, 'Monto / plazo'), h('span', null, 'Estado / etapa'), h('span', null, 'Antig.')), h('div', {
+    }, h('span', null, 'Folio'), h('span', null, 'Foto'), h('span', null, 'Afiliado / programa'), h('span', null, 'Monto / plazo'), h('span', null, 'Estado / etapa'), h('span', null, 'Antig.')), h('div', {
       className: 'finwb-queue-body'
     }, phase === 'loading' ? h('div', {
       className: 'finwb-empty'
@@ -37854,12 +38185,14 @@ Object.assign(window, {
       }
     }, h('span', {
       className: 'finwb-folio'
-    }, row.folio), h('span', null, h('span', {
+    }, row.folio), h(FinanceQueuePhoto, {
+      row
+    }), h('span', null, h('span', {
       className: 'finwb-person',
       'data-financial-queue-person': 'true'
     }, row.nombre), h('span', {
       className: 'finwb-sub'
-    }, maskedControl(row.numero_control) + ' · ' + programLabel(row))), h('span', null, h('span', {
+    }, maskedControl(row.numero_control) + ' · ' + queueProgramLabel(row))), h('span', null, h('span', {
       className: 'finwb-amount'
     }, moneyValue(row.requested_amount != null ? row.requested_amount : row.quoted_amount)), h('span', {
       className: 'finwb-sub'
@@ -37874,13 +38207,20 @@ Object.assign(window, {
       titleId: modalTitleId,
       onClose: closeDetail,
       onEscape: () => viewer ? setViewer(null) : closeDetail(),
-      header: h(React.Fragment, null, h('div', {
+      header: h(React.Fragment, null, selected && h(FinanceQueuePhoto, {
+        key: selected.affiliate_id,
+        detailPhoto: true,
+        row: {
+          ...selected,
+          nombre: detailFullName(selected)
+        }
+      }), h('div', {
         className: 'finwb-modal-heading'
       }, h('strong', null, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).folio), h('h2', {
         id: modalTitleId
-      }, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).nombre), h('div', {
+      }, detailFullName(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected)), h('div', {
         className: 'finwb-sub'
-      }, requestTypeLabel(selected) + ' \u00b7 ' + programLabel(selected) + ' \u00b7 ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
+      }, detailProgramLabel(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected) + ' · ' + requestTypeLabel(selected) + ' · ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
     }, actionResult && h(FinancialAuthorizationResult, {
       result: actionResult,
       onClose: () => setActionResult(null)
@@ -40115,1027 +40455,195 @@ Object.assign(window, {
 /* screens-admin-fincat.jsx — Módulo "Catálogo de Finanzas": secciones y
    productos de la pantalla Finanzas, editables. Exporta window.FinCatModule. */
 (function () {
-  const {
-    useState
-  } = React;
+  const { useState } = React;
   const I = window.Icon;
   const A = () => window.ADMIN;
   const S = () => window.finCatStore;
-  const lbl = {
-    fontSize: 12,
-    fontWeight: 800,
-    color: 'var(--ink-2)',
-    display: 'block',
-    marginBottom: 6
-  };
-  const inputBase = {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    background: 'var(--surface-2)',
-    boxShadow: 'var(--neo-inset)',
-    borderRadius: 12,
-    padding: '11px 13px',
-    fontSize: 14,
-    fontWeight: 600,
-    fontFamily: 'inherit',
-    color: 'var(--ink)',
-    boxSizing: 'border-box'
-  };
-  const toneColor = t => ({
-    guinda: 'var(--guinda)',
-    green: '#13794A',
-    blue: '#2456C7',
-    amber: '#9A6B16'
-  })[t] || 'var(--guinda)';
-  function FinCatModule({
-    app,
-    onBack,
-    header,
-    canEdit
-  }) {
+  const lbl = { fontSize: 12, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 6 };
+  const inputBase = { width: '100%', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 12, padding: '11px 13px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', color: 'var(--ink)', boxSizing: 'border-box' };
+  const toneColor = (t) => ({ guinda: 'var(--guinda)', green: '#13794A', blue: '#2456C7', amber: '#9A6B16' }[t] || 'var(--guinda)');
+
+  function FinCatModule({ app, onBack, header, canEdit }) {
     const store = window.useFinCatStore();
     const editable = canEdit !== false;
     const [editing, setEditing] = useState(null); // { gid, item }
     const [recEditing, setRecEditing] = useState(null); // regla de recomendación
-    return React.createElement('div', null, header({
-      title: 'Catálogo de Finanzas',
-      sub: 'Secciones y productos de la pantalla Finanzas',
-      onBack
-    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
-      className: 'su-app-scroll su-stagger',
-      style: {
-        padding: 16
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 12.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        lineHeight: 1.5,
-        marginBottom: 14
-      }
-    }, 'Edita títulos, descripciones, etiquetas, orden y visibilidad. Los cambios se reflejan al instante en la pantalla ', React.createElement('b', {
-      style: {
-        color: 'var(--ink-2)'
-      }
-    }, 'Finanzas'), '.'), React.createElement(RecsCard, {
-      store,
-      editable,
-      onEdit: setRecEditing
-    }), store.groups().map(g => React.createElement(GroupCard, {
-      key: g.id,
-      g,
-      editable,
-      onEdit: item => setEditing({
-        gid: g.id,
-        item
-      }),
-      store
-    })), React.createElement('button', {
-      onClick: () => {
-        if (window.confirm('¿Restaurar el catálogo original de Finanzas?')) store.resetAll();
-      },
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 7,
-        margin: '18px auto 0',
-        background: 'none',
-        border: 'none',
-        color: 'var(--ink-3)',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 700,
-        cursor: 'pointer'
-      }
-    }, React.createElement(I, {
-      name: 'refresh',
-      size: 15,
-      stroke: 2
-    }), 'Restaurar contenido original')), editing && React.createElement(ItemSheet, {
-      gid: editing.gid,
-      item: editing.item,
-      editable,
-      onClose: () => setEditing(null)
-    }), recEditing && React.createElement(RecSheet, {
-      rec: recEditing,
-      editable,
-      onClose: () => setRecEditing(null)
-    }));
+    return React.createElement('div', null,
+      header({ title: 'Catálogo de Finanzas', sub: 'Secciones y productos de la pantalla Finanzas', onBack }),
+      window.ActingBanner && React.createElement(window.ActingBanner, {}),
+      React.createElement('div', { className: 'su-app-scroll su-stagger', style: { padding: 16 } },
+        React.createElement('div', { style: { fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.5, marginBottom: 14 } },
+          'Edita títulos, descripciones, etiquetas, orden y visibilidad. Los cambios se reflejan al instante en la pantalla ', React.createElement('b', { style: { color: 'var(--ink-2)' } }, 'Finanzas'), '.'),
+        React.createElement(RecsCard, { store, editable, onEdit: setRecEditing }),
+        store.groups().map((g) => React.createElement(GroupCard, { key: g.id, g, editable, onEdit: (item) => setEditing({ gid: g.id, item }), store })),
+        React.createElement('button', {
+          onClick: () => { if (window.confirm('¿Restaurar el catálogo original de Finanzas?')) store.resetAll(); },
+          style: { display: 'flex', alignItems: 'center', gap: 7, margin: '18px auto 0', background: 'none', border: 'none', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' },
+        }, React.createElement(I, { name: 'refresh', size: 15, stroke: 2 }), 'Restaurar contenido original')),
+      editing && React.createElement(ItemSheet, { gid: editing.gid, item: editing.item, editable, onClose: () => setEditing(null) }),
+      recEditing && React.createElement(RecSheet, { rec: recEditing, editable, onClose: () => setRecEditing(null) }));
   }
 
   // ── Sección "Recomendado para ti": reglas segmentables ──
-  function RecsCard({
-    store,
-    editable,
-    onEdit
-  }) {
+  function RecsCard({ store, editable, onEdit }) {
     const list = store.recs();
-    return React.createElement('div', {
-      style: {
-        background: 'var(--surface)',
-        borderRadius: 18,
-        padding: 15,
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 9,
-        marginBottom: 6
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 30,
-        height: 30,
-        borderRadius: 9,
-        background: 'var(--guinda-50)',
-        color: 'var(--guinda)',
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0
-      }
-    }, React.createElement(I, {
-      name: 'sparkle',
-      size: 17,
-      stroke: 2
-    })), React.createElement('div', {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 900,
-        color: 'var(--ink)'
-      }
-    }, 'Recomendado para ti'), React.createElement('span', {
-      style: {
-        marginLeft: 'auto',
-        fontSize: 11.5,
-        fontWeight: 700,
-        color: 'var(--ink-3)',
-        background: 'var(--surface-2)',
-        padding: '3px 9px',
-        borderRadius: 999
-      }
-    }, list.length)), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        lineHeight: 1.45,
-        marginBottom: 12
-      }
-    }, 'Define qué servicios se recomiendan y a quién, por tipo de sindicato y categoría de empleado. Cada usuario ve solo las recomendaciones de su perfil.'), React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8
-      }
-    }, list.map((r, i) => {
-      const it = store.findItem(r.itemId);
-      return React.createElement('div', {
-        key: r.id,
-        style: {
-          display: 'flex',
-          alignItems: 'center',
-          gap: 9,
-          background: 'var(--surface-2)',
-          borderRadius: 13,
-          padding: '9px 11px',
-          boxShadow: 'var(--neo-inset)',
-          opacity: r.visible === false ? .55 : 1
-        }
-      }, React.createElement(window.IconTile, {
-        icon: it && it.icon || 'sparkle',
-        size: 36
-      }), React.createElement('button', {
-        onClick: () => onEdit(r),
-        style: {
-          flex: 1,
-          minWidth: 0,
-          textAlign: 'left',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          padding: 0
-        }
-      }, React.createElement('div', {
-        style: {
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6
-        }
-      }, React.createElement('span', {
-        style: {
-          fontSize: 13.5,
-          fontWeight: 800,
-          color: 'var(--ink)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }
-      }, it ? it.label : '(producto eliminado)'), r.audience && r.audience.mode === 'segment' && React.createElement(window.Badge, {
-        tone: 'blue'
-      }, 'SEGMENTADO')), React.createElement('div', {
-        style: {
-          fontSize: 11.5,
-          fontWeight: 600,
-          color: 'var(--ink-3)',
-          marginTop: 1,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }
-      }, (r.reason || 'Sin etiqueta') + ' · ' + (r.cta || 'Ver'))), editable && React.createElement('div', {
-        style: {
-          display: 'flex',
-          gap: 4,
-          flexShrink: 0
-        }
-      }, miniBtn('chevD', () => store.moveRec(r.id, 1), i === list.length - 1, 'Bajar', true), miniBtn('chevD', () => store.moveRec(r.id, -1), i === 0, 'Subir'), React.createElement('button', {
-        onClick: () => store.toggleRec(r.id),
-        'aria-label': 'Mostrar u ocultar',
-        style: {
-          width: 30,
-          height: 30,
-          borderRadius: 9,
-          border: 'none',
-          cursor: 'pointer',
-          display: 'grid',
-          placeItems: 'center',
-          background: r.visible === false ? 'var(--surface)' : 'var(--guinda-50)',
-          color: r.visible === false ? 'var(--ink-3)' : 'var(--guinda)'
-        }
-      }, React.createElement(I, {
-        name: r.visible === false ? 'ban' : 'eye',
-        size: 15,
-        stroke: 2
-      }))));
-    })), editable && React.createElement('button', {
-      onClick: () => onEdit(S().blankRec()),
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 7,
-        width: '100%',
-        marginTop: 10,
-        height: 44,
-        borderRadius: 13,
-        border: '1.5px dashed var(--hairline-strong)',
-        background: 'var(--surface)',
-        color: 'var(--guinda)',
-        fontFamily: 'inherit',
-        fontSize: 13.5,
-        fontWeight: 800,
-        cursor: 'pointer'
-      }
-    }, React.createElement(I, {
-      name: 'plus',
-      size: 18,
-      stroke: 2.6
-    }), 'Agregar recomendación'));
+    return React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 18, padding: 15, boxShadow: 'var(--neo-sm)', marginBottom: 14 } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 6 } },
+        React.createElement('div', { style: { width: 30, height: 30, borderRadius: 9, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: 'sparkle', size: 17, stroke: 2 })),
+        React.createElement('div', { style: { fontSize: 14.5, fontWeight: 900, color: 'var(--ink)' } }, 'Recomendado para ti'),
+        React.createElement('span', { style: { marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', background: 'var(--surface-2)', padding: '3px 9px', borderRadius: 999 } }, list.length)),
+      React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginBottom: 12 } }, 'Define qué servicios se recomiendan y a quién, por tipo de sindicato y categoría de empleado. Cada usuario ve solo las recomendaciones de su perfil.'),
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        list.map((r, i) => {
+          const it = store.findItem(r.itemId);
+          return React.createElement('div', { key: r.id, style: { display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface-2)', borderRadius: 13, padding: '9px 11px', boxShadow: 'var(--neo-inset)', opacity: r.visible === false ? .55 : 1 } },
+            React.createElement(window.IconTile, { icon: (it && it.icon) || 'sparkle', size: 36 }),
+            React.createElement('button', { onClick: () => onEdit(r), style: { flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 } },
+              React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+                React.createElement('span', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, it ? it.label : '(producto eliminado)'),
+                r.audience && r.audience.mode === 'segment' && React.createElement(window.Badge, { tone: 'blue' }, 'SEGMENTADO')),
+              React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, (r.reason || 'Sin etiqueta') + ' · ' + (r.cta || 'Ver'))),
+            editable && React.createElement('div', { style: { display: 'flex', gap: 4, flexShrink: 0 } },
+              miniBtn('chevD', () => store.moveRec(r.id, 1), i === list.length - 1, 'Bajar', true),
+              miniBtn('chevD', () => store.moveRec(r.id, -1), i === 0, 'Subir'),
+              React.createElement('button', { onClick: () => store.toggleRec(r.id), 'aria-label': 'Mostrar u ocultar', style: { width: 30, height: 30, borderRadius: 9, border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', background: r.visible === false ? 'var(--surface)' : 'var(--guinda-50)', color: r.visible === false ? 'var(--ink-3)' : 'var(--guinda)' } }, React.createElement(I, { name: r.visible === false ? 'ban' : 'eye', size: 15, stroke: 2 }))));
+        })),
+      editable && React.createElement('button', {
+        onClick: () => onEdit(S().blankRec()),
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, width: '100%', marginTop: 10, height: 44, borderRadius: 13, border: '1.5px dashed var(--hairline-strong)', background: 'var(--surface)', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, cursor: 'pointer' },
+      }, React.createElement(I, { name: 'plus', size: 18, stroke: 2.6 }), 'Agregar recomendación'));
   }
-  function RecSheet({
-    rec,
-    editable,
-    onClose
-  }) {
-    const [d, setD] = useState(() => ({
-      audience: {
-        mode: 'all',
-        cargos: [],
-        sindicatos: [],
-        niveles: []
-      },
-      ...rec
-    }));
-    const set = (k, v) => setD(p => ({
-      ...p,
-      [k]: v
-    }));
-    const setAud = patch => setD(p => ({
-      ...p,
-      audience: {
-        ...p.audience,
-        ...patch
-      }
-    }));
+
+  function RecSheet({ rec, editable, onClose }) {
+    const [d, setD] = useState(() => ({ audience: { mode: 'all', cargos: [], sindicatos: [], niveles: [] }, ...rec }));
+    const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
+    const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
     const isNew = !S().getRec(rec.id);
-    const allItems = S().groups().reduce((a, g) => a.concat(g.items.map(it => ({
-      ...it,
-      gTitle: g.title
-    }))), []);
-    const save = () => {
-      if (!d.itemId) return;
-      S().saveRec(d);
-      onClose();
-    };
-    const del = () => {
-      S().removeRec(d.id);
-      onClose();
-    };
-    return React.createElement('div', {
-      onClick: onClose,
-      style: {
-        position: 'absolute',
-        inset: 0,
-        zIndex: 76,
-        background: 'rgba(16,12,14,.5)',
-        backdropFilter: 'blur(3px)',
-        display: 'flex',
-        alignItems: 'flex-end'
-      }
-    }, React.createElement('div', {
-      onClick: e => e.stopPropagation(),
-      style: {
-        width: '100%',
-        background: 'var(--surface)',
-        borderRadius: '24px 24px 0 0',
-        padding: '10px 18px calc(18px + env(safe-area-inset-bottom))',
-        maxHeight: '90%',
-        overflowY: 'auto'
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 40,
-        height: 4.5,
-        borderRadius: 999,
-        background: 'var(--hairline-strong)',
-        margin: '4px auto 14px'
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 17,
-        fontWeight: 900,
-        color: 'var(--ink)',
-        marginBottom: 14
-      }
-    }, isNew ? 'Nueva recomendación' : 'Editar recomendación'), React.createElement('label', {
-      style: lbl
-    }, 'Producto o servicio'), React.createElement('select', {
-      value: d.itemId || '',
-      disabled: !editable,
-      onChange: e => set('itemId', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 12,
-        appearance: 'auto'
-      }
-    }, React.createElement('option', {
-      value: ''
-    }, 'Selecciona un producto…'), allItems.map(it => React.createElement('option', {
-      key: it.id,
-      value: it.id
-    }, it.label + ' — ' + it.gTitle))), React.createElement('label', {
-      style: lbl
-    }, 'Etiqueta (por qué se recomienda)'), React.createElement('input', {
-      value: d.reason || '',
-      disabled: !editable,
-      maxLength: 26,
-      placeholder: 'Ej. Eres elegible hoy',
-      onChange: e => set('reason', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 12
-      }
-    }), React.createElement('label', {
-      style: lbl
-    }, 'Texto del botón'), React.createElement('input', {
-      value: d.cta || '',
-      disabled: !editable,
-      maxLength: 14,
-      placeholder: 'Ej. Simular',
-      onChange: e => set('cta', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 14
-      }
-    }), React.createElement('label', {
-      style: lbl
-    }, '¿A quién se recomienda?'), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 8,
-        flexWrap: 'wrap',
-        marginBottom: 12
-      }
-    }, (A() ? A().AUDIENCE_MODES : []).map(m => React.createElement('button', {
-      key: m.value,
-      onClick: () => editable && setAud({
-        mode: m.value
-      }),
-      disabled: !editable,
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        height: 36,
-        padding: '0 13px',
-        borderRadius: 11,
-        border: 'none',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: d.audience.mode === m.value ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
-        color: d.audience.mode === m.value ? '#fff' : 'var(--ink-2)',
-        boxShadow: d.audience.mode === m.value ? 'var(--glow-guinda)' : 'var(--neo-inset)'
-      }
-    }, React.createElement(I, {
-      name: m.icon,
-      size: 14,
-      stroke: 2.2
-    }), m.label))), d.audience.mode === 'segment' && React.createElement('div', {
-      style: {
-        background: 'var(--surface-2)',
-        borderRadius: 14,
-        padding: '13px 13px 3px',
-        boxShadow: 'var(--neo-inset)',
-        marginBottom: 12
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 700,
-        color: 'var(--ink-3)',
-        marginBottom: 10,
-        lineHeight: 1.4
-      }
-    }, 'Deja un grupo vacío para no filtrar por ese criterio.'), React.createElement(AudChips, {
-      label: 'Tipo de sindicato',
-      options: A().SINDICATOS,
-      values: d.audience.sindicatos,
-      editable,
-      onChange: v => setAud({
-        sindicatos: v
-      })
-    }), React.createElement(AudChips, {
-      label: 'Categoría de empleado',
-      options: A().NIVELES,
-      values: d.audience.niveles,
-      editable,
-      onChange: v => setAud({
-        niveles: v
-      })
-    })), React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        lineHeight: 1.45,
-        marginBottom: 14
-      }
-    }, 'Además del filtro de la recomendación, el producto debe ser visible para ese perfil en el catálogo.'), editable ? React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 10
-      }
-    }, !isNew && React.createElement('button', {
-      onClick: del,
-      style: {
-        width: 46,
-        borderRadius: 13,
-        border: 'none',
-        background: '#FDEAEA',
-        color: '#C0341D',
-        cursor: 'pointer',
-        display: 'grid',
-        placeItems: 'center'
-      }
-    }, React.createElement(I, {
-      name: 'trash',
-      size: 18,
-      stroke: 2
-    })), React.createElement(window.Btn, {
-      variant: 'outline',
-      style: {
-        flex: 1
-      },
-      onClick: onClose
-    }, 'Cancelar'), React.createElement(window.Btn, {
-      icon: 'check',
-      style: {
-        flex: 2
-      },
-      onClick: save
-    }, 'Guardar')) : React.createElement(window.Btn, {
-      full: true,
-      variant: 'outline',
-      onClick: onClose
-    }, 'Cerrar')));
+    const allItems = S().groups().reduce((a, g) => a.concat(g.items.map((it) => ({ ...it, gTitle: g.title }))), []);
+    const save = () => { if (!d.itemId) return; S().saveRec(d); onClose(); };
+    const del = () => { S().removeRec(d.id); onClose(); };
+    return React.createElement('div', { onClick: onClose, style: { position: 'absolute', inset: 0, zIndex: 76, background: 'rgba(16,12,14,.5)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end' } },
+      React.createElement('div', { onClick: (e) => e.stopPropagation(), style: { width: '100%', background: 'var(--surface)', borderRadius: '24px 24px 0 0', padding: '10px 18px calc(18px + env(safe-area-inset-bottom))', maxHeight: '90%', overflowY: 'auto' } },
+        React.createElement('div', { style: { width: 40, height: 4.5, borderRadius: 999, background: 'var(--hairline-strong)', margin: '4px auto 14px' } }),
+        React.createElement('div', { style: { fontSize: 17, fontWeight: 900, color: 'var(--ink)', marginBottom: 14 } }, isNew ? 'Nueva recomendación' : 'Editar recomendación'),
+        React.createElement('label', { style: lbl }, 'Producto o servicio'),
+        React.createElement('select', { value: d.itemId || '', disabled: !editable, onChange: (e) => set('itemId', e.target.value), style: { ...inputBase, marginBottom: 12, appearance: 'auto' } },
+          React.createElement('option', { value: '' }, 'Selecciona un producto…'),
+          allItems.map((it) => React.createElement('option', { key: it.id, value: it.id }, it.label + ' — ' + it.gTitle))),
+        React.createElement('label', { style: lbl }, 'Etiqueta (por qué se recomienda)'),
+        React.createElement('input', { value: d.reason || '', disabled: !editable, maxLength: 26, placeholder: 'Ej. Eres elegible hoy', onChange: (e) => set('reason', e.target.value), style: { ...inputBase, marginBottom: 12 } }),
+        React.createElement('label', { style: lbl }, 'Texto del botón'),
+        React.createElement('input', { value: d.cta || '', disabled: !editable, maxLength: 14, placeholder: 'Ej. Simular', onChange: (e) => set('cta', e.target.value), style: { ...inputBase, marginBottom: 14 } }),
+        React.createElement('label', { style: lbl }, '¿A quién se recomienda?'),
+        React.createElement('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 } },
+          (A() ? A().AUDIENCE_MODES : []).map((m) => React.createElement('button', {
+            key: m.value, onClick: () => editable && setAud({ mode: m.value }), disabled: !editable,
+            style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 13px', borderRadius: 11, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, background: d.audience.mode === m.value ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: d.audience.mode === m.value ? '#fff' : 'var(--ink-2)', boxShadow: d.audience.mode === m.value ? 'var(--glow-guinda)' : 'var(--neo-inset)' },
+          }, React.createElement(I, { name: m.icon, size: 14, stroke: 2.2 }), m.label))),
+        d.audience.mode === 'segment' && React.createElement('div', { style: { background: 'var(--surface-2)', borderRadius: 14, padding: '13px 13px 3px', boxShadow: 'var(--neo-inset)', marginBottom: 12 } },
+          React.createElement('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginBottom: 10, lineHeight: 1.4 } }, 'Deja un grupo vacío para no filtrar por ese criterio.'),
+          React.createElement(AudChips, { label: 'Tipo de sindicato', options: A().SINDICATOS, values: d.audience.sindicatos, editable, onChange: (v) => setAud({ sindicatos: v }) }),
+          React.createElement(AudChips, { label: 'Categoría de empleado', options: A().NIVELES, values: d.audience.niveles, editable, onChange: (v) => setAud({ niveles: v }) })),
+        React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginBottom: 14 } }, 'Además del filtro de la recomendación, el producto debe ser visible para ese perfil en el catálogo.'),
+        editable
+          ? React.createElement('div', { style: { display: 'flex', gap: 10 } },
+            !isNew && React.createElement('button', { onClick: del, style: { width: 46, borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', cursor: 'pointer', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'trash', size: 18, stroke: 2 })),
+            React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, onClick: onClose }, 'Cancelar'),
+            React.createElement(window.Btn, { icon: 'check', style: { flex: 2 }, onClick: save }, 'Guardar'))
+          : React.createElement(window.Btn, { full: true, variant: 'outline', onClick: onClose }, 'Cerrar')));
   }
-  function GroupCard({
-    g,
-    editable,
-    onEdit,
-    store
-  }) {
+
+  function GroupCard({ g, editable, onEdit, store }) {
     const items = g.items.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
-    return React.createElement('div', {
-      style: {
-        background: 'var(--surface)',
-        borderRadius: 18,
-        padding: 15,
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 9,
-        marginBottom: 12
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 6,
-        height: 24,
-        borderRadius: 999,
-        background: toneColor(g.tone),
-        flexShrink: 0
-      }
-    }), React.createElement('div', {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 900,
-        color: 'var(--ink)'
-      }
-    }, 'Sección'), React.createElement('span', {
-      style: {
-        marginLeft: 'auto',
-        fontSize: 11.5,
-        fontWeight: 700,
-        color: 'var(--ink-3)',
-        background: 'var(--surface-2)',
-        padding: '3px 9px',
-        borderRadius: 999
-      }
-    }, items.length + ' productos')), React.createElement('label', {
-      style: lbl
-    }, 'Título de la sección'), React.createElement('input', {
-      value: g.title,
-      disabled: !editable,
-      onChange: e => store.saveGroup(g.id, {
-        title: e.target.value
-      }),
-      style: {
-        ...inputBase,
-        marginBottom: 10
-      }
-    }), React.createElement('label', {
-      style: lbl
-    }, 'Subtítulo'), React.createElement('input', {
-      value: g.sub,
-      disabled: !editable,
-      onChange: e => store.saveGroup(g.id, {
-        sub: e.target.value
-      }),
-      style: {
-        ...inputBase,
-        marginBottom: 14
-      }
-    }), React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8
-      }
-    }, items.map((it, i) => React.createElement('div', {
-      key: it.id,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 9,
-        background: 'var(--surface-2)',
-        borderRadius: 13,
-        padding: '9px 11px',
-        boxShadow: 'var(--neo-inset)',
-        opacity: it.visible === false ? .55 : 1
-      }
-    }, React.createElement(window.IconTile, {
-      icon: it.icon,
-      size: 36
-    }), React.createElement('button', {
-      onClick: () => onEdit(it),
-      style: {
-        flex: 1,
-        minWidth: 0,
-        textAlign: 'left',
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        padding: 0
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6
-      }
-    }, React.createElement('span', {
-      style: {
-        fontSize: 13.5,
-        fontWeight: 800,
-        color: 'var(--ink)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, it.label), it.hero && React.createElement(window.Badge, {
-      tone: 'gold',
-      solid: true
-    }, 'POPULAR'), it.audience && it.audience.mode === 'segment' && React.createElement(window.Badge, {
-      tone: 'blue'
-    }, 'SEGMENTADO'), it.audience && it.audience.mode === 'registered' && React.createElement(window.Badge, {
-      tone: 'blue'
-    }, 'REGISTRADOS')), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 1,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, (it.tagline || '') + (it.meta ? ' · ' + it.meta : ''))), editable && React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 4,
-        flexShrink: 0
-      }
-    }, miniBtn('chevD', () => store.moveItem(g.id, it.id, 1), i === items.length - 1, 'Bajar', true), miniBtn('chevD', () => store.moveItem(g.id, it.id, -1), i === 0, 'Subir'), React.createElement('button', {
-      onClick: () => store.toggleItem(g.id, it.id),
-      'aria-label': 'Mostrar u ocultar',
-      style: {
-        width: 30,
-        height: 30,
-        borderRadius: 9,
-        border: 'none',
-        cursor: 'pointer',
-        display: 'grid',
-        placeItems: 'center',
-        background: it.visible === false ? 'var(--surface)' : 'var(--guinda-50)',
-        color: it.visible === false ? 'var(--ink-3)' : 'var(--guinda)'
-      }
-    }, React.createElement(I, {
-      name: it.visible === false ? 'ban' : 'eye',
-      size: 15,
-      stroke: 2
-    })))))));
+    return React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 18, padding: 15, boxShadow: 'var(--neo-sm)', marginBottom: 14 } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } },
+        React.createElement('div', { style: { width: 6, height: 24, borderRadius: 999, background: toneColor(g.tone), flexShrink: 0 } }),
+        React.createElement('div', { style: { fontSize: 14.5, fontWeight: 900, color: 'var(--ink)' } }, 'Sección'),
+        React.createElement('span', { style: { marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', background: 'var(--surface-2)', padding: '3px 9px', borderRadius: 999 } }, items.length + ' productos')),
+      React.createElement('label', { style: lbl }, 'Título de la sección'),
+      React.createElement('input', { value: g.title, disabled: !editable, onChange: (e) => store.saveGroup(g.id, { title: e.target.value }), style: { ...inputBase, marginBottom: 10 } }),
+      React.createElement('label', { style: lbl }, 'Subtítulo'),
+      React.createElement('input', { value: g.sub, disabled: !editable, onChange: (e) => store.saveGroup(g.id, { sub: e.target.value }), style: { ...inputBase, marginBottom: 14 } }),
+      React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        items.map((it, i) => React.createElement('div', { key: it.id, style: { display: 'flex', alignItems: 'center', gap: 9, background: 'var(--surface-2)', borderRadius: 13, padding: '9px 11px', boxShadow: 'var(--neo-inset)', opacity: it.visible === false ? .55 : 1 } },
+          React.createElement(window.IconTile, { icon: it.icon, size: 36 }),
+          React.createElement('button', { onClick: () => onEdit(it), style: { flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 } },
+            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement('span', { style: { fontSize: 13.5, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, it.label),
+              it.hero && React.createElement(window.Badge, { tone: 'gold', solid: true }, 'POPULAR'),
+              it.audience && it.audience.mode === 'segment' && React.createElement(window.Badge, { tone: 'blue' }, 'SEGMENTADO'),
+              it.audience && it.audience.mode === 'registered' && React.createElement(window.Badge, { tone: 'blue' }, 'REGISTRADOS')),
+            React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, (it.tagline || '') + (it.meta ? ' · ' + it.meta : ''))),
+          editable && React.createElement('div', { style: { display: 'flex', gap: 4, flexShrink: 0 } },
+            miniBtn('chevD', () => store.moveItem(g.id, it.id, 1), i === items.length - 1, 'Bajar', true),
+            miniBtn('chevD', () => store.moveItem(g.id, it.id, -1), i === 0, 'Subir'),
+            React.createElement('button', { onClick: () => store.toggleItem(g.id, it.id), 'aria-label': 'Mostrar u ocultar', style: { width: 30, height: 30, borderRadius: 9, border: 'none', cursor: 'pointer', display: 'grid', placeItems: 'center', background: it.visible === false ? 'var(--surface)' : 'var(--guinda-50)', color: it.visible === false ? 'var(--ink-3)' : 'var(--guinda)' } }, React.createElement(I, { name: it.visible === false ? 'ban' : 'eye', size: 15, stroke: 2 })))))));
   }
   function miniBtn(icon, onClick, disabled, label, flip) {
-    return React.createElement('button', {
-      onClick,
-      disabled,
-      'aria-label': label,
-      style: {
-        width: 30,
-        height: 30,
-        borderRadius: 9,
-        border: 'none',
-        cursor: disabled ? 'default' : 'pointer',
-        display: 'grid',
-        placeItems: 'center',
-        background: 'var(--surface)',
-        color: 'var(--ink-3)',
-        opacity: disabled ? .35 : 1,
-        transform: flip ? 'none' : 'rotate(180deg)'
-      }
-    }, React.createElement(I, {
-      name: icon,
-      size: 15,
-      stroke: 2.2
-    }));
+    return React.createElement('button', { onClick, disabled, 'aria-label': label, style: { width: 30, height: 30, borderRadius: 9, border: 'none', cursor: disabled ? 'default' : 'pointer', display: 'grid', placeItems: 'center', background: 'var(--surface)', color: 'var(--ink-3)', opacity: disabled ? .35 : 1, transform: flip ? 'none' : 'rotate(180deg)' } }, React.createElement(I, { name: icon, size: 15, stroke: 2.2 }));
   }
-  function ItemSheet({
-    gid,
-    item,
-    editable,
-    onClose
-  }) {
-    const [d, setD] = useState(() => ({
-      audience: {
-        mode: 'all',
-        cargos: [],
-        sindicatos: [],
-        niveles: []
-      },
-      ...item
-    }));
-    const set = (k, v) => setD(p => ({
-      ...p,
-      [k]: v
-    }));
-    const setAud = patch => setD(p => ({
-      ...p,
-      audience: {
-        ...p.audience,
-        ...patch
-      }
-    }));
-    const save = () => {
-      S().saveItem(gid, d);
-      onClose();
-    };
-    const sw = (label, key) => React.createElement('button', {
-      onClick: () => set(key, !d[key]),
-      disabled: !editable,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        width: '100%',
-        background: 'var(--surface-2)',
-        border: 'none',
-        borderRadius: 12,
-        padding: '11px 13px',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        boxShadow: 'var(--neo-inset)',
-        marginBottom: 12
-      }
-    }, React.createElement('span', {
-      style: {
-        flex: 1,
-        textAlign: 'left',
-        fontSize: 13.5,
-        fontWeight: 700,
-        color: 'var(--ink)'
-      }
-    }, label), React.createElement(window.Toggle, {
-      on: d[key],
-      size: 'sm',
-      glow: false
-    }));
-    return React.createElement('div', {
-      onClick: onClose,
-      style: {
-        position: 'absolute',
-        inset: 0,
-        zIndex: 76,
-        background: 'rgba(16,12,14,.5)',
-        backdropFilter: 'blur(3px)',
-        display: 'flex',
-        alignItems: 'flex-end'
-      }
-    }, React.createElement('div', {
-      onClick: e => e.stopPropagation(),
-      style: {
-        width: '100%',
-        background: 'var(--surface)',
-        borderRadius: '24px 24px 0 0',
-        padding: '10px 18px calc(18px + env(safe-area-inset-bottom))',
-        maxHeight: '90%',
-        overflowY: 'auto'
-      }
-    }, React.createElement('div', {
-      style: {
-        width: 40,
-        height: 4.5,
-        borderRadius: 999,
-        background: 'var(--hairline-strong)',
-        margin: '4px auto 14px'
-      }
-    }), React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 14
-      }
-    }, React.createElement(window.IconTile, {
-      icon: d.icon,
-      size: 40
-    }), React.createElement('div', {
-      style: {
-        fontSize: 17,
-        fontWeight: 900,
-        color: 'var(--ink)'
-      }
-    }, 'Editar producto')), d.id !== 'terrenos' && React.createElement(React.Fragment, null, React.createElement('label', {
-      style: lbl
-    }, 'Imagen de cabecera (opcional)'), React.createElement('div', {
-      style: {
-        borderRadius: 13,
-        overflow: 'hidden',
-        boxShadow: 'var(--neo-inset)',
-        marginBottom: 6,
-        height: 110,
-        position: 'relative',
-        background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))'
-      }
-    }, React.createElement('image-slot', {
-      id: 'fin_hdr_' + d.id,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: editable ? 'Arrastra una imagen' : '',
-      style: Object.assign({
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%'
-      }, editable ? {} : {
-        pointerEvents: 'none'
-      })
-    })), React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        lineHeight: 1.4,
-        marginBottom: 12
-      }
-    }, 'Se muestra en la cabecera de la pantalla de este producto. Si no subes ninguna, se usa el color de la sección.')), React.createElement('label', {
-      style: lbl
-    }, 'Nombre'), React.createElement('input', {
-      value: d.label || '',
-      disabled: !editable,
-      maxLength: 40,
-      onChange: e => set('label', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 12
-      }
-    }), React.createElement('label', {
-      style: lbl
-    }, 'Tagline (línea principal)'), React.createElement('input', {
-      value: d.tagline || '',
-      disabled: !editable,
-      maxLength: 40,
-      onChange: e => set('tagline', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 12
-      }
-    }), React.createElement('label', {
-      style: lbl
-    }, 'Detalle (línea secundaria)'), React.createElement('input', {
-      value: d.meta || '',
-      disabled: !editable,
-      maxLength: 48,
-      onChange: e => set('meta', e.target.value),
-      style: {
-        ...inputBase,
-        marginBottom: 14
-      }
-    }), sw('Insignia "POPULAR"', 'hero'), sw('Visible en la app', 'visible'), React.createElement('label', {
-      style: lbl
-    }, '¿A quién se muestra?'), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 8,
-        flexWrap: 'wrap',
-        marginBottom: 12
-      }
-    }, (A() ? A().AUDIENCE_MODES : []).map(m => React.createElement('button', {
-      key: m.value,
-      onClick: () => editable && setAud({
-        mode: m.value
-      }),
-      disabled: !editable,
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        height: 36,
-        padding: '0 13px',
-        borderRadius: 11,
-        border: 'none',
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: d.audience.mode === m.value ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
-        color: d.audience.mode === m.value ? '#fff' : 'var(--ink-2)',
-        boxShadow: d.audience.mode === m.value ? 'var(--glow-guinda)' : 'var(--neo-inset)'
-      }
-    }, React.createElement(I, {
-      name: m.icon,
-      size: 14,
-      stroke: 2.2
-    }), m.label))), d.audience.mode === 'segment' && React.createElement('div', {
-      style: {
-        background: 'var(--surface-2)',
-        borderRadius: 14,
-        padding: '13px 13px 3px',
-        boxShadow: 'var(--neo-inset)',
-        marginBottom: 12
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 700,
-        color: 'var(--ink-3)',
-        marginBottom: 10,
-        lineHeight: 1.4
-      }
-    }, 'Deja un grupo vacío para no filtrar por ese criterio.'), React.createElement(AudChips, {
-      label: 'Tipo de sindicato',
-      options: A().SINDICATOS,
-      values: d.audience.sindicatos,
-      editable,
-      onChange: v => setAud({
-        sindicatos: v
-      })
-    }), React.createElement(AudChips, {
-      label: 'Categoría de empleado',
-      options: A().NIVELES,
-      values: d.audience.niveles,
-      editable,
-      onChange: v => setAud({
-        niveles: v
-      })
-    })), React.createElement('div', {
-      style: {
-        fontSize: 11,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        lineHeight: 1.45,
-        marginBottom: 14
-      }
-    }, 'La insignia "SE COTIZA" y la acción del producto se administran en el módulo Fondos y reglas.'), editable ? React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 10
-      }
-    }, React.createElement(window.Btn, {
-      variant: 'outline',
-      style: {
-        flex: 1
-      },
-      onClick: onClose
-    }, 'Cancelar'), React.createElement(window.Btn, {
-      icon: 'check',
-      style: {
-        flex: 2
-      },
-      onClick: save
-    }, 'Guardar')) : React.createElement(window.Btn, {
-      full: true,
-      variant: 'outline',
-      onClick: onClose
-    }, 'Cerrar')));
+
+  function ItemSheet({ gid, item, editable, onClose }) {
+    if(window.ProgramGeneralInfo.keys.includes(item.id))return React.createElement('div',{style:{position:'absolute',inset:0,zIndex:76,background:'var(--bg)',overflowY:'auto',padding:18}},React.createElement(window.Btn,{onClick:onClose,variant:'outline'},'Cerrar'),React.createElement(window.ProgramGeneralInfo.Editor,{programKey:item.id,canWrite:window.AdminRepository.has('program_catalog.write')||window.AdminRepository.has('workflow.write')}));
+    const [d, setD] = useState(() => ({ audience: { mode: 'all', cargos: [], sindicatos: [], niveles: [] }, ...item }));
+    const set = (k, v) => setD((p) => ({ ...p, [k]: v }));
+    const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
+    const save = async () => { await S().saveItem(gid, d.id, d); onClose(); };
+    const sw = (label, key) => React.createElement('button', { onClick: () => set(key, !d[key]), disabled: !editable, style: { display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'var(--surface-2)', border: 'none', borderRadius: 12, padding: '11px 13px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--neo-inset)', marginBottom: 12 } },
+      React.createElement('span', { style: { flex: 1, textAlign: 'left', fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' } }, label),
+      React.createElement(window.Toggle, { on: d[key], size: 'sm', glow: false, }));
+    return React.createElement('div', { onClick: onClose, style: { position: 'absolute', inset: 0, zIndex: 76, background: 'rgba(16,12,14,.5)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'flex-end' } },
+      React.createElement('div', { onClick: (e) => e.stopPropagation(), style: { width: '100%', background: 'var(--surface)', borderRadius: '24px 24px 0 0', padding: '10px 18px calc(18px + env(safe-area-inset-bottom))', maxHeight: '90%', overflowY: 'auto' } },
+        React.createElement('div', { style: { width: 40, height: 4.5, borderRadius: 999, background: 'var(--hairline-strong)', margin: '4px auto 14px' } }),
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 } },
+          React.createElement(window.IconTile, { icon: d.icon, size: 40 }),
+          React.createElement('div', { style: { fontSize: 17, fontWeight: 900, color: 'var(--ink)' } }, 'Editar producto')),
+        d.id !== 'terrenos' && React.createElement(React.Fragment, null,
+          React.createElement('label', { style: lbl }, 'Imagen de cabecera (opcional)'),
+          React.createElement('div', { style: { borderRadius: 13, overflow: 'hidden', boxShadow: 'var(--neo-inset)', marginBottom: 6, height: 110, position: 'relative', background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))' } },
+            React.createElement('image-slot', { id: 'fin_hdr_' + d.id, shape: 'rect', fit: 'cover', placeholder: editable ? 'Arrastra una imagen' : '', style: Object.assign({ position: 'absolute', inset: 0, width: '100%', height: '100%' }, editable ? {} : { pointerEvents: 'none' }) })),
+          React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.4, marginBottom: 12 } }, 'Se muestra en la cabecera de la pantalla de este producto. Si no subes ninguna, se usa el color de la sección.')),
+        React.createElement('label', { style: lbl }, 'Nombre'),
+        React.createElement('input', { value: d.label || '', disabled: !editable, maxLength: 40, onChange: (e) => set('label', e.target.value), style: { ...inputBase, marginBottom: 12 } }),
+        React.createElement('label', { style: lbl }, 'Tagline (línea principal)'),
+        React.createElement('input', { value: d.tagline || '', disabled: !editable, maxLength: 40, onChange: (e) => set('tagline', e.target.value), style: { ...inputBase, marginBottom: 12 } }),
+        React.createElement('label', { style: lbl }, 'Detalle (línea secundaria)'),
+        React.createElement('input', { value: d.meta || '', disabled: !editable, maxLength: 48, onChange: (e) => set('meta', e.target.value), style: { ...inputBase, marginBottom: 14 } }),
+        sw('Insignia "POPULAR"', 'hero'),
+        sw('Visible en la app', 'visible'),
+        React.createElement('label', { style: lbl }, '¿A quién se muestra?'),
+        React.createElement('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 } },
+          (A() ? A().AUDIENCE_MODES : []).map((m) => React.createElement('button', {
+            key: m.value, onClick: () => editable && setAud({ mode: m.value }), disabled: !editable,
+            style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 36, padding: '0 13px', borderRadius: 11, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, background: d.audience.mode === m.value ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: d.audience.mode === m.value ? '#fff' : 'var(--ink-2)', boxShadow: d.audience.mode === m.value ? 'var(--glow-guinda)' : 'var(--neo-inset)' },
+          }, React.createElement(I, { name: m.icon, size: 14, stroke: 2.2 }), m.label))),
+        d.audience.mode === 'segment' && React.createElement('div', { style: { background: 'var(--surface-2)', borderRadius: 14, padding: '13px 13px 3px', boxShadow: 'var(--neo-inset)', marginBottom: 12 } },
+          React.createElement('div', { style: { fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', marginBottom: 10, lineHeight: 1.4 } }, 'Deja un grupo vacío para no filtrar por ese criterio.'),
+          React.createElement(AudChips, { label: 'Tipo de sindicato', options: A().SINDICATOS, values: d.audience.sindicatos, editable, onChange: (v) => setAud({ sindicatos: v }) }),
+          React.createElement(AudChips, { label: 'Categoría de empleado', options: A().NIVELES, values: d.audience.niveles, editable, onChange: (v) => setAud({ niveles: v }) })),
+        React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginBottom: 14 } }, 'La insignia "SE COTIZA" y la acción del producto se administran en el módulo Fondos y reglas.'),
+        editable
+          ? React.createElement('div', { style: { display: 'flex', gap: 10 } },
+            React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, onClick: onClose }, 'Cancelar'),
+            React.createElement(window.Btn, { icon: 'check', style: { flex: 2 }, onClick: save }, 'Guardar'))
+          : React.createElement(window.Btn, { full: true, variant: 'outline', onClick: onClose }, 'Cerrar')));
   }
-  function AudChips({
-    label,
-    options,
-    values,
-    editable,
-    onChange
-  }) {
+
+  function AudChips({ label, options, values, editable, onChange }) {
     const list = values || [];
-    const toggle = o => editable && onChange(list.indexOf(o) !== -1 ? list.filter(x => x !== o) : [...list, o]);
-    return React.createElement('div', {
-      style: {
-        marginBottom: 10
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 800,
-        color: 'var(--ink-2)',
-        marginBottom: 7
-      }
-    }, label), React.createElement('div', {
-      style: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 7
-      }
-    }, (options || []).map(o => {
-      const on = list.indexOf(o) !== -1;
-      return React.createElement('button', {
-        key: o,
-        onClick: () => toggle(o),
-        disabled: !editable,
-        style: {
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 5,
-          height: 32,
-          padding: '0 11px',
-          borderRadius: 999,
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit',
-          fontSize: 12,
-          fontWeight: 700,
-          background: on ? 'var(--grad-guinda-soft)' : 'var(--surface)',
-          color: on ? '#fff' : 'var(--ink-2)',
-          boxShadow: on ? 'var(--glow-guinda)' : 'var(--neo-sm)'
-        }
-      }, on && React.createElement(I, {
-        name: 'check',
-        size: 13,
-        stroke: 3
-      }), o);
-    })));
+    const toggle = (o) => editable && onChange(list.indexOf(o) !== -1 ? list.filter((x) => x !== o) : [...list, o]);
+    return React.createElement('div', { style: { marginBottom: 10 } },
+      React.createElement('div', { style: { fontSize: 11.5, fontWeight: 800, color: 'var(--ink-2)', marginBottom: 7 } }, label),
+      React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 7 } },
+        (options || []).map((o) => {
+          const on = list.indexOf(o) !== -1;
+          return React.createElement('button', {
+            key: o, onClick: () => toggle(o), disabled: !editable,
+            style: { display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 11px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, background: on ? 'var(--grad-guinda-soft)' : 'var(--surface)', color: on ? '#fff' : 'var(--ink-2)', boxShadow: on ? 'var(--glow-guinda)' : 'var(--neo-sm)' },
+          }, on && React.createElement(I, { name: 'check', size: 13, stroke: 3 }), o);
+        })));
   }
+
   window.FinCatModule = FinCatModule;
 })();
 })();
@@ -44787,6 +44295,14 @@ Object.assign(window, {
     error = null,
     loadVersion = 0,
     loadPromise = null;
+  let epoch = window.PrivateResourceDemand.context(),
+    initialLoad = null;
+  let presentation = {
+    phase,
+    error,
+    rows,
+    epoch
+  };
   const base = [{
     id: 'liquidez',
     title: 'Liquidez inmediata',
@@ -44927,7 +44443,15 @@ Object.assign(window, {
       meta: 'Conoce el beneficio'
     }]
   }];
-  const emit = () => listeners.forEach(fn => fn()),
+  const emit = () => {
+      presentation = {
+        phase,
+        error,
+        rows,
+        epoch
+      };
+      listeners.forEach(fn => fn());
+    },
     row = k => rows.find(x => x.item_key === k);
   function fail(e) {
     rows = [];
@@ -44936,22 +44460,24 @@ Object.assign(window, {
     emit();
     console.error('Finance presentation authority error', e);
   }
-  function load() {
-    if (loadPromise) return loadPromise;
-    const version = ++loadVersion;
+  function load(force = false) {
+    if (epoch === null) return Promise.resolve([]);
+    if (loadPromise && force !== true) return loadPromise;
+    const version = ++loadVersion,
+      context = epoch;
     phase = phase === 'loaded' || phase === 'refreshing' ? 'refreshing' : 'loading';
     error = null;
     emit();
     loadPromise = (async () => {
       try {
         const next = await repo.listFinancePresentation();
-        if (version !== loadVersion) return rows;
+        if (version !== loadVersion || window.PrivateResourceDemand.context() !== context) return [];
         rows = next;
         phase = 'loaded';
         emit();
         return rows;
       } catch (e) {
-        if (version === loadVersion) fail(e);
+        if (version === loadVersion && window.PrivateResourceDemand.context() === context) fail(e);
         return [];
       } finally {
         if (version === loadVersion) loadPromise = null;
@@ -44959,6 +44485,36 @@ Object.assign(window, {
     })();
     return loadPromise;
   }
+  const ensureLoaded = () => initialLoad || (initialLoad = load());
+  const onFocus = () => load(),
+    onVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+  function subscribe(fn) {
+    listeners.add(fn);
+    if (listeners.size === 1) {
+      window.addEventListener('focus', onFocus);
+      document.addEventListener('visibilitychange', onVisible);
+    }
+    return () => {
+      listeners.delete(fn);
+      if (!listeners.size) {
+        window.removeEventListener('focus', onFocus);
+        document.removeEventListener('visibilitychange', onVisible);
+      }
+    };
+  }
+  window.PrivateResourceDemand.subscribe(() => {
+    epoch = window.PrivateResourceDemand.context();
+    loadVersion++;
+    loadPromise = null;
+    initialLoad = null;
+    rows = [];
+    phase = 'idle';
+    error = null;
+    emit();
+    if (listeners.size && epoch !== null) ensureLoaded();
+  });
   const configuredOrder = (value, fallback) => Number.isInteger(value) ? value : fallback;
   function groups() {
     return base.map((g, gi) => {
@@ -44971,6 +44527,9 @@ Object.assign(window, {
           return Object.assign({}, it, {
             label: r.label_override || it.label,
             tagline: r.description_override || it.tagline,
+            meta: r.program_info ? r.program_info.detail : it.meta,
+            hero: r.program_info ? r.program_info.popular : it.hero,
+            icon: r.program_info ? r.program_info.icon : it.icon,
             visible: r.enabled !== false,
             order: configuredOrder(r.sort_order, ii)
           });
@@ -44994,6 +44553,8 @@ Object.assign(window, {
       phase,
       error
     }),
+    presentationState: () => presentation,
+    ensureLoaded,
     refresh: load,
     retry: load,
     groups,
@@ -45052,34 +44613,823 @@ Object.assign(window, {
     removeRec: () => {},
     toggleRec: () => {},
     moveRec: () => {},
-    subscribe: fn => {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    }
+    subscribe
   };
-  let initialLoad = null;
-  const ensureLoaded = () => initialLoad || (initialLoad = load());
   window.finCatStore = store;
   window.useFinCatStore = function () {
-    const [, f] = React.useState(0);
-    React.useEffect(() => store.subscribe(() => f(n => n + 1)), []);
+    React.useSyncExternalStore(store.subscribe, store.presentationState);
     React.useEffect(() => {
       ensureLoaded();
     }, []);
-    React.useEffect(() => {
-      const onFocus = () => load();
-      const onVisible = () => {
-        if (document.visibilityState === 'visible') load();
-      };
-      window.addEventListener('focus', onFocus);
-      document.addEventListener('visibilitychange', onVisible);
-      return () => {
-        window.removeEventListener('focus', onFocus);
-        document.removeEventListener('visibilitychange', onVisible);
-      };
-    }, []);
     return store;
   };
+})();
+})();
+/* @@file program-general-info.jsx */
+(function(){
+/* Program catalog headers: one presentation authority shared by both Admin entrances. */
+(function () {
+  const h = React.createElement,
+    {
+      useState,
+      useEffect
+    } = React,
+    I = window.Icon;
+  const keys = Object.freeze(['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'farma', 'cirugias', 'tours', 'market', 'rifas', 'donativos']);
+  const listeners = new Set();
+  const db = () => window.SutiSupabase.getClient();
+  const fields = 'item_key,group_key,label_override,description_override,enabled,sort_order,updated_at,program_info,program_cover_asset_id,cover:app_assets!finance_catalog_presentation_program_cover_asset_id_fkey(id,storage_bucket,storage_path,status,mime_type)';
+  const coverUrl = asset => asset && asset.status === 'READY' ? db().storage.from(asset.storage_bucket).getPublicUrl(asset.storage_path).data.publicUrl : null;
+  async function get(key) {
+    const r = await db().from('finance_catalog_presentation').select(fields).eq('item_key', key).single();
+    if (r.error) throw r.error;
+    if (!r.data.program_info) throw new Error('PROGRAM_INFO_NOT_FOUND');
+    return {
+      ...r.data,
+      cover_url: coverUrl(r.data.cover)
+    };
+  }
+  async function save(row) {
+    const payload = {
+      label_override: row.label_override,
+      description_override: row.description_override,
+      enabled: row.enabled,
+      program_info: row.program_info,
+      program_cover_asset_id: row.program_cover_asset_id
+    };
+    const r = await db().rpc('save_program_general_info', {
+      p_program_key: row.item_key,
+      p_expected_updated_at: row.updated_at,
+      p_payload: payload
+    });
+    if (r.error) throw r.error;
+    listeners.forEach(fn => fn(row.item_key));
+    if (window.finCatStore) await window.finCatStore.refresh(true);
+    return get(row.item_key);
+  }
+  async function upload(file) {
+    const ext = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif'
+    }[file?.type];
+    if (!ext || file.size < 1 || file.size > 10485760) throw new Error('PROGRAM_INFO_IMAGE_INVALID');
+    // Unique path avoids sharing a replaceable product image. Existing Storage/RPC permissions apply.
+    const user = await db().auth.getUser();
+    if (user.error || !user.data.user) throw new Error('AUTH_REQUIRED');
+    const path = 'program-general/' + user.data.user.id + '/' + crypto.randomUUID() + '.' + ext;
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))).map(x => x.toString(16).padStart(2, '0')).join('');
+    const r = await db().storage.from('app-assets').upload(path, file, {
+      upsert: false,
+      contentType: file.type
+    });
+    if (r.error) throw r.error;
+    const a = await db().rpc('register_program_general_cover', {
+      p_path: path,
+      p_mime: file.type,
+      p_size: file.size,
+      p_sha: hash
+    });
+    if (a.error) throw a.error;
+    // Retain uploaded assets on ambiguous network failure; never delete a potentially committed cover.
+    return {
+      id: a.data,
+      url: db().storage.from('app-assets').getPublicUrl(path).data.publicUrl
+    };
+  }
+  function useInfo(key, refreshOnFocus = true) {
+    const [state, setState] = useState({
+        key,
+        phase: 'loading',
+        row: null
+      }),
+      [version, refresh] = useState(0);
+    useEffect(() => {
+      const fn = k => {
+        if (k === key) refresh(v => v + 1);
+      };
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }, [key]);
+    useEffect(() => {
+      let active = true;
+      setState({
+        key,
+        phase: 'loading',
+        row: null
+      });
+      if (!keys.includes(key)) {
+        setState({
+          key,
+          phase: 'not-applicable',
+          row: null
+        });
+        return;
+      }
+      get(key).then(row => {
+        if (active) setState({
+          key,
+          phase: 'loaded',
+          row
+        });
+      }).catch(() => {
+        if (active) setState({
+          key,
+          phase: 'error',
+          row: null
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [key, version]);
+    useEffect(() => {
+      if (!refreshOnFocus) return;
+      const fn = () => refresh(v => v + 1);
+      window.addEventListener('focus', fn);
+      return () => window.removeEventListener('focus', fn);
+    }, [refreshOnFocus]);
+    return {
+      ...(state.key === key ? state : {
+        phase: 'loading',
+        row: null
+      }),
+      retry: () => refresh(v => v + 1)
+    };
+  }
+  // Public text is the same authority projection already loaded by Finanzas.
+  // Covers are independent, deduplicated only within that presentation revision.
+  let coverCache = new WeakMap();
+  window.PrivateResourceDemand.subscribe(() => {
+    coverCache = new WeakMap();
+  });
+  function coverRequests(rows) {
+    let requests = coverCache.get(rows);
+    if (!requests) {
+      requests = new Map();
+      coverCache.set(rows, requests);
+    }
+    return requests;
+  }
+  function readCover(row, rows) {
+    const requests = coverRequests(rows),
+      id = row.program_cover_asset_id;
+    if (requests.has(id)) return requests.get(id);
+    const epoch = window.PrivateResourceDemand.context();
+    const promise = Promise.resolve().then(async () => {
+      if (epoch === null || window.PrivateResourceDemand.context() !== epoch) throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const r = await db().from('app_assets').select('id,storage_bucket,storage_path,status,mime_type').eq('id', id).single();
+      if (r.error) throw r.error;
+      if (window.PrivateResourceDemand.context() !== epoch) throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+      const url = coverUrl(r.data);
+      if (!url) throw new Error('PROGRAM_COVER_UNAVAILABLE');
+      return url;
+    });
+    requests.set(id, promise);
+    return promise;
+  }
+  function usePublicInfo(key) {
+    const store = window.finCatStore,
+      presentation = React.useSyncExternalStore(store.subscribe, store.presentationState);
+    const [cover, setCover] = useState(null),
+      [attempt, retry] = useState(0);
+    useEffect(() => {
+      store.ensureLoaded();
+    }, [store]);
+    const applicable = keys.includes(key),
+      ready = presentation.phase === 'loaded' || presentation.phase === 'refreshing';
+    const row = ready && applicable ? presentation.rows.find(row => row.item_key === key && row.program_info) : null;
+    const id = row && row.program_cover_asset_id;
+    useEffect(() => {
+      if (!id) return;
+      let active = true;
+      readCover(row, presentation.rows).then(url => {
+        if (active) setCover({
+          rows: presentation.rows,
+          id,
+          attempt,
+          url
+        });
+      }, () => {
+        if (active) setCover({
+          rows: presentation.rows,
+          id,
+          attempt,
+          error: true
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [id, presentation.rows, attempt]);
+    const current = cover && cover.rows === presentation.rows && cover.id === id && cover.attempt === attempt;
+    const coverState = {
+      phase: !id ? 'empty' : !current ? 'loading' : cover.error ? 'error' : 'loaded',
+      retry: () => {
+        if (id) coverRequests(presentation.rows).delete(id);
+        retry(n => n + 1);
+      }
+    };
+    return {
+      key,
+      phase: !applicable ? 'not-applicable' : row ? 'loaded' : presentation.phase === 'error' || ready ? 'error' : 'loading',
+      row: row ? {
+        ...row,
+        cover_url: current && !cover.error ? cover.url : null
+      } : null,
+      cover: coverState,
+      retry: () => store.refresh()
+    };
+  }
+  function Cover({
+    url,
+    icon,
+    hue = 210,
+    children,
+    phase,
+    onRetry
+  }) {
+    const [failed, setFailed] = useState(false);
+    useEffect(() => setFailed(false), [url]);
+    return h('div', {
+      'data-program-cover': url ? 'configured' : 'empty',
+      style: {
+        position: 'relative',
+        height: 188,
+        background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`,
+        overflow: 'hidden'
+      }
+    }, url && !failed && h('img', {
+      src: url,
+      alt: 'Portada del programa',
+      onError: () => setFailed(true),
+      style: {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+      }
+    }), h('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))',
+        pointerEvents: 'none'
+      }
+    }), h('div', {
+      style: {
+        position: 'absolute',
+        right: -20,
+        bottom: -30,
+        opacity: .16
+      }
+    }, h(I, {
+      name: icon,
+      size: 220,
+      stroke: 1,
+      style: {
+        color: '#fff'
+      }
+    })), (failed || phase === 'error' || phase === 'loading') && h('span', {
+      role: failed || phase === 'error' ? 'alert' : 'status',
+      style: {
+        position: 'absolute',
+        bottom: 12,
+        left: 20,
+        color: '#fff',
+        fontSize: 'var(--text-12, 12px)'
+      }
+    }, phase === 'loading' && !failed ? 'Cargando portada…' : 'No se pudo cargar la portada', (failed || phase === 'error') && onRetry && h('button', {
+      onClick: () => {
+        setFailed(false);
+        onRetry();
+      },
+      style: {
+        marginLeft: 8
+      }
+    }, 'Reintentar portada')), children);
+  }
+  function PublicHeader({
+    row,
+    onFavorite,
+    favorite,
+    notify,
+    children
+  }) {
+    const p = row.program_info;
+    const contact = kind => {
+      const number = p[kind].replace(/[^+0-9]/g, '');
+      if (!number) {
+        if (notify) notify('El programa aún no tiene un número de contacto registrado.');
+        return;
+      }
+      if (kind === 'phone') window.location.href = 'tel:' + number;else window.open('https://wa.me/' + (/^\d{10}$/.test(number) ? '52' + number : number.replace(/^\+/, '')), '_blank', 'noopener,noreferrer');
+    };
+    const action = (icon, text, fn) => h('button', {
+      key: text,
+      onClick: fn,
+      'aria-pressed': text === 'Guardar' ? favorite : undefined,
+      style: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        background: 'var(--guinda-50)',
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 14,
+        padding: '11px 0',
+        cursor: 'pointer',
+        color: 'var(--guinda)'
+      }
+    }, h(I, {
+      name: icon,
+      size: 21,
+      stroke: 2
+    }), h('span', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700
+      }
+    }, text));
+    return h(React.Fragment, null, h('div', {
+      style: {
+        display: 'flex',
+        gap: 13,
+        alignItems: 'flex-start',
+        minWidth: 0
+      }
+    }, h('div', {
+      'data-category-header-icon': 'true',
+      style: {
+        position: 'relative',
+        zIndex: 2,
+        marginTop: -46,
+        flexShrink: 0,
+        width: 64,
+        height: 64,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-md)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)'
+      }
+    }, h(I, {
+      name: p.icon,
+      size: 32,
+      stroke: 1.8
+    })), h('div', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        paddingTop: 2
+      }
+    }, h('h1', {
+      style: {
+        fontSize: 'var(--text-23, 23px)',
+        fontWeight: 800,
+        letterSpacing: '-.02em',
+        margin: 0
+      }
+    }, row.label_override), h('div', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 2
+      }
+    }, h('span', {
+      style: {
+        color: 'var(--guinda)'
+      }
+    }, 'SutiApp'), ' / ' + (p.breadcrumb || row.label_override)))), h('p', {
+      'data-program-description': true,
+      style: {
+        fontSize: 'var(--text-15, 15px)',
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        lineHeight: 1.55,
+        margin: '16px 0 0',
+        whiteSpace: 'pre-line'
+      }
+    }, p.description), children, h('div', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        marginTop: 18
+      }
+    }, action('phone', 'Llamar', () => contact('phone')), action('message', 'WhatsApp', () => contact('whatsapp')), p.favorite_enabled && action('star', 'Guardar', onFavorite)), h('div', {
+      'data-program-benefits': true,
+      style: {
+        marginTop: 22
+      }
+    }, h(window.SectionHead, {
+      title: p.benefits_title,
+      icon: 'sparkle'
+    }), h('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, p.benefits.map((b, i) => h('div', {
+      key: i,
+      style: {
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center',
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: '13px 14px',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('div', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        background: 'var(--guinda-50)',
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--guinda)',
+        flexShrink: 0
+      }
+    }, h(I, {
+      name: b.icon,
+      size: 20,
+      stroke: 2
+    })), h('div', null, h('div', {
+      style: {
+        fontSize: 'var(--text-14, 14px)',
+        fontWeight: 700
+      }
+    }, b.t), h('div', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 500
+      }
+    }, b.s)))))));
+  }
+  function InfoState({
+    state
+  }) {
+    return h('div', {
+      role: 'status',
+      style: {
+        padding: 20
+      }
+    }, h(window.EmptyState, {
+      icon: state.phase === 'error' ? 'warning' : 'clock',
+      title: state.phase === 'error' ? 'No pudimos cargar la información del programa' : 'Cargando información del programa',
+      sub: state.phase === 'error' ? 'Revisa tu conexión e inténtalo de nuevo.' : ''
+    }), state.phase === 'error' && h(window.Btn, {
+      onClick: state.retry
+    }, 'Reintentar'));
+  }
+  const input = {
+    width: '100%',
+    boxSizing: 'border-box',
+    border: 'none',
+    borderRadius: 12,
+    padding: '11px 13px',
+    background: 'var(--surface-2)',
+    boxShadow: 'var(--neo-inset)',
+    color: 'var(--ink)',
+    font: 'inherit',
+    marginBottom: 12
+  };
+  function Editor({
+    programKey,
+    canWrite = true
+  }) {
+    const state = useInfo(programKey, false),
+      [draft, setDraft] = useState(null),
+      [file, setFile] = useState(null),
+      [busy, setBusy] = useState(false),
+      [message, setMessage] = useState(''),
+      [fav, setFav] = useState(false);
+    useEffect(() => {
+      if (state.row) {
+        setDraft(JSON.parse(JSON.stringify(state.row)));
+        setFile(null);
+      }
+    }, [state.row]);
+    const [previewUrl, setPreviewUrl] = useState(null);
+    useEffect(() => {
+      if (!file) {
+        setPreviewUrl(null);
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }, [file]);
+    if (!draft || draft.item_key !== programKey) return h(InfoState, {
+      state
+    });
+    const p = draft.program_info,
+      disabled = !canWrite || busy;
+    const set = (k, v) => setDraft(d => ({
+      ...d,
+      [k]: v
+    }));
+    const info = (k, v) => setDraft(d => ({
+      ...d,
+      program_info: {
+        ...d.program_info,
+        [k]: v
+      }
+    }));
+    const field = (title, key, value, onChange, multi = false) => h('label', {
+      key,
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        color: 'var(--ink-2)'
+      }
+    }, h('span', {
+      style: {
+        display: 'block',
+        marginBottom: 6
+      }
+    }, title), h(multi ? 'textarea' : 'input', {
+      'data-program-info-field': key,
+      value,
+      disabled,
+      onChange: e => onChange(e.target.value),
+      rows: multi ? 4 : undefined,
+      maxLength: multi ? 6000 : 240,
+      style: input
+    }));
+    const iconField = (title, key, value, onChange) => h('label', {
+      key,
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800
+      }
+    }, title, h('select', {
+      'data-program-info-field': key,
+      value,
+      disabled,
+      onChange: e => onChange(e.target.value),
+      style: input
+    }, window.ICON_CATALOG.names.map(name => h('option', {
+      key: name,
+      value: name
+    }, name))));
+    const submit = async () => {
+      setBusy(true);
+      setMessage('');
+      try {
+        let row = draft;
+        if (file) {
+          const a = await upload(file);
+          row = {
+            ...draft,
+            program_cover_asset_id: a.id,
+            cover_url: a.url
+          };
+          setDraft(row);
+          setFile(null);
+        }
+        const saved = await save(row);
+        setDraft(saved);
+        setMessage('Información guardada.');
+      } catch (e) {
+        setMessage(String(e.message).includes('CONFLICT') ? 'La información cambió en otra sesión. Recarga antes de guardar.' : String(e.message).includes('IMAGE_INVALID') ? 'Selecciona una imagen PNG, JPG, GIF o WebP de hasta 10 MB.' : 'No se pudo guardar la información. Revisa los campos y tus permisos e inténtalo de nuevo.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    const preview = {
+      ...draft,
+      cover_url: previewUrl || draft.cover_url
+    };
+    if (programKey === 'terrenos') return h(React.Fragment, null, h('section', {
+      'data-program-info-editor': programKey,
+      style: {
+        padding: 16,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        marginBottom: 18
+      }
+    }, h('h2', null, 'Información general del programa'), field('Nombre en Finanzas', 'name', draft.label_override, v => set('label_override', v)), field('Tagline en Finanzas', 'tagline', draft.description_override, v => set('description_override', v)), field('Detalle en Finanzas', 'detail', p.detail, v => info('detail', v)), field('Título de cabecera', 'map_title', p.map_title, v => info('map_title', v)), field('Subtítulo', 'map_subtitle', p.map_subtitle, v => info('map_subtitle', v)), field('Nombre del programa en cabecera', 'map_program_label', p.map_program_label, v => info('map_program_label', v)), field('Descripción de cabecera', 'map_description', p.map_description, v => info('map_description', v)), iconField('Icono del programa', 'icon', p.icon, v => info('icon', v)), h('p', null, 'La vista pública de Terrenos conserva el mapa y su cabecera actual.'), h('div', {
+      role: 'status',
+      'data-program-info-message': true
+    }, message), h(window.Btn, {
+      variant: 'outline',
+      disabled: busy,
+      onClick: () => {
+        setDraft(null);
+        state.retry();
+      }
+    }, 'Recargar'), canWrite && h(window.Btn, {
+      'data-program-info-save': true,
+      disabled: busy,
+      onClick: submit
+    }, busy ? 'Guardando…' : 'Guardar información general')), h('section', {
+      'data-program-info-preview': programKey,
+      style: {
+        marginBottom: 24
+      }
+    }, h('h2', null, 'Vista previa de cómo se verá'), h('div', {
+      style: {
+        maxWidth: 430,
+        borderRadius: 24,
+        overflow: 'hidden'
+      }
+    }, h(window.TerrainProgramHeader, {
+      headerInfo: p,
+      app: {
+        back: () => {}
+      }
+    }))));
+    return h(React.Fragment, null, h('section', {
+      'data-program-info-editor': programKey,
+      style: {
+        padding: 16,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 18
+      }
+    }, h('h2', {
+      style: {
+        fontSize: 'var(--text-17, 17px)',
+        margin: '0 0 16px'
+      }
+    }, 'Información general del programa'), field('Nombre público del programa', 'name', draft.label_override, v => set('label_override', v)), field('Tagline de la card en Finanzas', 'tagline', draft.description_override, v => set('description_override', v)), field('Detalle de la card en Finanzas', 'detail', p.detail, v => info('detail', v)), field('Breadcrumb (vacío: nombre del programa)', 'breadcrumb', p.breadcrumb, v => info('breadcrumb', v)), field('Descripción principal', 'description', p.description, v => info('description', v), true), iconField('Icono', 'icon', p.icon, v => info('icon', v)), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        marginBottom: 12
+      }
+    }, 'Portada / imagen principal', h('input', {
+      'data-program-info-cover': true,
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/webp,image/gif',
+      disabled,
+      onChange: e => {
+        setFile(e.target.files[0] || null);
+        e.target.value = '';
+      },
+      style: {
+        display: 'block',
+        marginTop: 8,
+        maxWidth: '100%'
+      }
+    })), preview.cover_url && h('div', {
+      style: {
+        marginBottom: 12
+      }
+    }, h('img', {
+      src: preview.cover_url,
+      alt: 'Portada seleccionada',
+      style: {
+        width: '100%',
+        height: 110,
+        objectFit: 'cover',
+        borderRadius: 12
+      }
+    }), h('button', {
+      disabled,
+      onClick: () => {
+        setFile(null);
+        setDraft(d => ({
+          ...d,
+          program_cover_asset_id: null,
+          cover_url: null
+        }));
+      }
+    }, 'Quitar portada')), field('Teléfono / Llamar', 'phone', p.phone, v => info('phone', v)), field('WhatsApp (incluye código de país)', 'whatsapp', p.whatsapp, v => info('whatsapp', v)), [['favorite_enabled', 'Mostrar Guardar / Favorito'], ['popular', 'Insignia POPULAR']].map(([k, title]) => h('label', {
+      key: k,
+      style: {
+        display: 'block',
+        marginBottom: 12
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: p[k],
+      disabled,
+      onChange: e => info(k, e.target.checked)
+    }), ' ' + title)), h('label', {
+      style: {
+        display: 'block',
+        marginBottom: 12
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: draft.enabled,
+      disabled,
+      onChange: e => set('enabled', e.target.checked)
+    }), ' Visible en la app'), field('Título de ventajas', 'benefits_title', p.benefits_title, v => info('benefits_title', v)), p.benefits.map((b, index) => {
+      const change = (k, v) => info('benefits', p.benefits.map((entry, i) => i === index ? {
+        ...entry,
+        [k]: v
+      } : entry));
+      return h('fieldset', {
+        key: index,
+        disabled,
+        style: {
+          border: '1px solid var(--hairline)',
+          borderRadius: 12,
+          marginBottom: 12,
+          minWidth: 0
+        }
+      }, h('legend', null, 'Ventaja ' + (index + 1)), iconField('Icono', 'benefit-' + index + '-icon', b.icon, v => change('icon', v)), field('Título', 'benefit-' + index + '-title', b.t, v => change('t', v)), field('Texto secundario', 'benefit-' + index + '-text', b.s, v => change('s', v), true), h('button', {
+        onClick: () => info('benefits', p.benefits.filter((_, i) => i !== index))
+      }, 'Quitar ventaja'));
+    }), canWrite && p.benefits.length < 12 && h(window.Btn, {
+      variant: 'outline',
+      onClick: () => info('benefits', p.benefits.concat({
+        icon: 'checkCircle',
+        t: '',
+        s: ''
+      }))
+    }, 'Agregar ventaja'), field('Título del catálogo', 'catalog_title', p.catalog_title, v => info('catalog_title', v)), h('div', {
+      role: 'status',
+      'data-program-info-message': true,
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        marginBottom: 12
+      }
+    }, message), h('div', {
+      style: {
+        display: 'flex',
+        gap: 10
+      }
+    }, h(window.Btn, {
+      variant: 'outline',
+      disabled: busy,
+      onClick: () => {
+        setDraft(null);
+        setMessage('');
+        state.retry();
+      }
+    }, 'Recargar'), canWrite && h(window.Btn, {
+      'data-program-info-save': true,
+      disabled: busy,
+      onClick: submit
+    }, busy ? 'Guardando…' : 'Guardar información general'))), h('section', {
+      'data-program-info-preview': programKey,
+      style: {
+        marginBottom: 24
+      }
+    }, h('h2', {
+      style: {
+        fontSize: 'var(--text-17, 17px)'
+      }
+    }, 'Vista previa de cómo se verá'), h('div', {
+      style: {
+        maxWidth: 430,
+        margin: '0 auto',
+        background: 'var(--bg)',
+        borderRadius: 24,
+        overflow: 'hidden',
+        boxShadow: 'var(--neo-md)'
+      }
+    }, h(Cover, {
+      url: preview.cover_url,
+      icon: p.icon,
+      hue: draft.group_key === 'bienestar' ? 36 : 210
+    }), h('div', {
+      style: {
+        position: 'relative',
+        zIndex: 1,
+        padding: '18px 20px 30px'
+      }
+    }, h(PublicHeader, {
+      row: preview,
+      favorite: fav,
+      onFavorite: () => setFav(!fav),
+      notify: setMessage
+    }), h('div', {
+      style: {
+        marginTop: 24
+      }
+    }, h(window.SectionHead, {
+      title: p.catalog_title
+    }))))));
+  }
+  window.ProgramGeneralInfo = Object.freeze({
+    keys,
+    get,
+    save,
+    upload,
+    useInfo,
+    usePublicInfo,
+    Cover,
+    PublicHeader,
+    InfoState,
+    Editor
+  });
 })();
 })();
 /* @@file savings-panel-repository.js */
@@ -59613,828 +59963,94 @@ Object.assign(window, {
 (function(){
 /* H-SUTIAPP-PROGRAM-PRODUCTS-ADMIN-CUTOVER-001: Admin CRUD lógico over program_catalog_items only. */
 (function () {
-  const {
-      useEffect,
-      useState,
-      useRef
-    } = React,
-    I = window.Icon;
-  const field = {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    background: 'var(--surface-2)',
-    boxShadow: 'var(--neo-inset)',
-    borderRadius: 12,
-    padding: '11px 13px',
-    fontSize: 14,
-    fontWeight: 600,
-    fontFamily: 'inherit',
-    color: 'var(--ink)',
-    boxSizing: 'border-box'
-  };
-  const label = {
-    fontSize: 12,
-    fontWeight: 800,
-    color: 'var(--ink-2)',
-    display: 'block',
-    marginBottom: 6
-  };
-  const chip = (text, tone) => React.createElement('span', {
-    style: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      padding: '4px 8px',
-      borderRadius: 999,
-      fontSize: 10,
-      fontWeight: 900,
-      letterSpacing: '.03em',
-      background: tone === 'green' ? '#E5F6EC' : tone === 'amber' ? '#FFF3DC' : tone === 'red' ? '#FCE8E6' : 'var(--surface-2)',
-      color: tone === 'green' ? '#13794A' : tone === 'amber' ? '#8A5C00' : tone === 'red' ? '#B3261E' : 'var(--ink-3)'
-    }
-  }, text);
-  function iconButton(icon, onClick, disabled, labelText) {
-    return React.createElement('button', {
-      onClick,
-      disabled,
-      'aria-label': labelText,
-      style: {
-        width: 32,
-        height: 32,
-        borderRadius: 9,
-        border: 'none',
-        background: 'var(--surface-2)',
-        color: 'var(--ink-2)',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? .35 : 1
-      }
-    }, React.createElement(I, {
-      name: icon,
-      size: 16,
-      stroke: 2.2
-    }));
-  }
-  function saveErrorMessage(error) {
-    const value = [error && error.message, error && error.code, error && error.details, error && error.hint].filter(Boolean).join(' ').toUpperCase();
-    if (value.includes('PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED')) return 'La galería supera el límite permitido. Puedes conservar o reducir imágenes históricas, pero no aumentar su cantidad.';
-    if (value.includes('PROGRAM_CATALOG_PRICE_REQUIRED')) return 'La modalidad Precio fijo requiere un importe mayor a cero. Un precio histórico vacío puede conservarse sólo si no lo modificas.';
-    if (value.includes('PROGRAM_CATALOG_PRICE_INVALID')) return 'El precio no es válido. Usa cero o un importe positivo según la modalidad.';
-    if (value.includes('PROGRAM_CATALOG_MODE_QUOTE_MISMATCH')) return 'La modalidad y la opción de cotización no coinciden.';
-    if (value.includes('PROGRAM_CATALOG_MODE_INVALID')) return 'Selecciona una modalidad comercial válida.';
-    if (value.includes('PROGRAM_CATALOG_ORDER_INVALID')) return 'El orden debe estar entre 1 y 10,000. Un orden histórico fuera del rango puede conservarse si no lo modificas.';
-    if (value.includes('PROGRAM_CATALOG_ASSET_NOT_OWNED')) return 'Una imagen pertenece a otra sesión administrativa y no puede vincularse.';
-    if (value.includes('PROGRAM_CATALOG_ASSET_DUPLICATE')) return 'La misma imagen aparece más de una vez en la galería.';
-    if (value.includes('PROGRAM_CATALOG_ASSET_LINK_INVALID') || value.includes('PROGRAM_CATALOG_ASSET_LINK_NOT_FOUND') || value.includes('PROGRAM_CATALOG_PUBLIC_ASSET_INVALID') || value.includes('PROGRAM_CATALOG_ASSET_INVALID')) return 'Una imagen ya no es válida o no pertenece a este producto. Recarga el catálogo e inténtalo de nuevo.';
-    if (value.includes('PROGRAM_CATALOG_WRITE_REQUIRED') || value.includes('42501') || value.includes('PERMISSION')) return 'Tu sesión no tiene permiso para editar Programas · Productos.';
-    if (value.includes('PROGRAM_CATALOG_PROGRAM_INVALID')) return 'El programa seleccionado no admite productos desde este editor.';
-    if (value.includes('PROGRAM_CATALOG_NAME_INVALID')) return 'El nombre debe tener entre 2 y 180 caracteres.';
-    if (value.includes('PROGRAM_CATALOG_DESCRIPTION_TOO_LONG')) return 'La descripción supera el máximo permitido.';
-    if (value.includes('PROGRAM_CATALOG_CATEGORY_TOO_LONG')) return 'La categoría supera el máximo permitido.';
-    if (value.includes('PROGRAM_CATALOG_FIELD_NOT_EDITABLE')) return 'El guardado intentó modificar un campo histórico protegido.';
-    if (value.includes('CIRUGIAS_PROGRAM_ALREADY_BOOTSTRAPPED')) return 'Cirugías ya tiene su primer producto. Recarga el catálogo para continuar.';
-    if (value.includes('PROGRAM_CATALOG_ITEM_NOT_FOUND')) return 'El producto ya no existe o cambió. Recarga el catálogo.';
-    if (value.includes('PROGRAM_PRODUCT_SOLD')) return 'El producto está vendido y no admite nuevas solicitudes.';
-    if (value.includes('PROGRAM_CATALOG_CONTRACT_INVALID') || value.includes('PROGRAM_CATALOG_PAYLOAD_INVALID')) return 'Los datos no cumplen el contrato del catálogo. Revisa nombre, modalidad, precio, orden e imágenes.';
+  const {useEffect,useState,useRef}=React,I=window.Icon;
+  const field={width:'100%',border:'none',outline:'none',background:'var(--surface-2)',boxShadow:'var(--neo-inset)',borderRadius:12,padding:'11px 13px',fontSize: 14,fontWeight:600,fontFamily:'inherit',color:'var(--ink)',boxSizing:'border-box'};
+  const label={fontSize: 12,fontWeight:800,color:'var(--ink-2)',display:'block',marginBottom:6};
+  const chip=(text,tone)=>React.createElement('span',{style:{display:'inline-flex',alignItems:'center',padding:'4px 8px',borderRadius:999,fontSize: 10,fontWeight:900,letterSpacing:'.03em',background:tone==='green'?'#E5F6EC':tone==='amber'?'#FFF3DC':tone==='red'?'#FCE8E6':'var(--surface-2)',color:tone==='green'?'#13794A':tone==='amber'?'#8A5C00':tone==='red'?'#B3261E':'var(--ink-3)'}},text);
+  function iconButton(icon,onClick,disabled,labelText){return React.createElement('button',{onClick,disabled,'aria-label':labelText,style:{width:32,height:32,borderRadius:9,border:'none',background:'var(--surface-2)',color:'var(--ink-2)',display:'grid',placeItems:'center',cursor:disabled?'default':'pointer',opacity:disabled?.35:1}},React.createElement(I,{name:icon,size:16,stroke:2.2}));}
+  function saveErrorMessage(error){
+    const value=[error&&error.message,error&&error.code,error&&error.details,error&&error.hint].filter(Boolean).join(' ').toUpperCase();
+    if(value.includes('PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED'))return 'La galería supera el límite permitido. Puedes conservar o reducir imágenes históricas, pero no aumentar su cantidad.';
+    if(value.includes('PROGRAM_CATALOG_PRICE_REQUIRED'))return 'La modalidad Precio fijo requiere un importe mayor a cero. Un precio histórico vacío puede conservarse sólo si no lo modificas.';
+    if(value.includes('PROGRAM_CATALOG_PRICE_INVALID'))return 'El precio no es válido. Usa cero o un importe positivo según la modalidad.';
+    if(value.includes('PROGRAM_CATALOG_MODE_QUOTE_MISMATCH'))return 'La modalidad y la opción de cotización no coinciden.';
+    if(value.includes('PROGRAM_CATALOG_MODE_INVALID'))return 'Selecciona una modalidad comercial válida.';
+    if(value.includes('PROGRAM_CATALOG_ORDER_INVALID'))return 'El orden debe estar entre 1 y 10,000. Un orden histórico fuera del rango puede conservarse si no lo modificas.';
+    if(value.includes('PROGRAM_CATALOG_ASSET_NOT_OWNED'))return 'Una imagen pertenece a otra sesión administrativa y no puede vincularse.';
+    if(value.includes('PROGRAM_CATALOG_ASSET_DUPLICATE'))return 'La misma imagen aparece más de una vez en la galería.';
+    if(value.includes('PROGRAM_CATALOG_ASSET_LINK_INVALID')||value.includes('PROGRAM_CATALOG_ASSET_LINK_NOT_FOUND')||value.includes('PROGRAM_CATALOG_PUBLIC_ASSET_INVALID')||value.includes('PROGRAM_CATALOG_ASSET_INVALID'))return 'Una imagen ya no es válida o no pertenece a este producto. Recarga el catálogo e inténtalo de nuevo.';
+    if(value.includes('PROGRAM_CATALOG_WRITE_REQUIRED')||value.includes('42501')||value.includes('PERMISSION'))return 'Tu sesión no tiene permiso para editar Programas · Productos.';
+    if(value.includes('PROGRAM_CATALOG_PROGRAM_INVALID'))return 'El programa seleccionado no admite productos desde este editor.';
+    if(value.includes('PROGRAM_CATALOG_NAME_INVALID'))return 'El nombre debe tener entre 2 y 180 caracteres.';
+    if(value.includes('PROGRAM_CATALOG_DESCRIPTION_TOO_LONG'))return 'La descripción supera el máximo permitido.';
+    if(value.includes('PROGRAM_CATALOG_CATEGORY_TOO_LONG'))return 'La categoría supera el máximo permitido.';
+    if(value.includes('PROGRAM_CATALOG_FIELD_NOT_EDITABLE'))return 'El guardado intentó modificar un campo histórico protegido.';
+    if(value.includes('CIRUGIAS_PROGRAM_ALREADY_BOOTSTRAPPED'))return 'Cirugías ya tiene su primer producto. Recarga el catálogo para continuar.';
+    if(value.includes('PROGRAM_CATALOG_ITEM_NOT_FOUND'))return 'El producto ya no existe o cambió. Recarga el catálogo.';
+    if(value.includes('PROGRAM_PRODUCT_SOLD'))return 'El producto está vendido y no admite nuevas solicitudes.';
+    if(value.includes('PROGRAM_CATALOG_CONTRACT_INVALID')||value.includes('PROGRAM_CATALOG_PAYLOAD_INVALID'))return 'Los datos no cumplen el contrato del catálogo. Revisa nombre, modalidad, precio, orden e imágenes.';
     return 'No se pudo guardar en el catálogo autoritativo. Inténtalo nuevamente; si continúa, revisa tu sesión.';
   }
-  function ProgramProductsModule({
-    app,
-    onBack,
-    header
-  }) {
-    const store = window.useProgramCatalogAdminStore(),
-      [program, setProgram] = useState(null),
-      [editing, setEditing] = useState(null);
-    const canWrite = app.admin.has('program_catalog.write');
-    useEffect(() => () => store.clearSelection(), []);
-    if (store.state().phase === 'loading' && store.all().length === 0) return React.createElement('div', null, header({
-      title: 'Programas · Productos',
-      sub: 'Cargando catálogo autoritativo',
-      onBack
-    }), React.createElement('div', {
-      style: {
-        padding: 16
-      }
-    }, React.createElement(window.Skeleton, {
-      h: 220,
-      r: 18
-    })));
-    if (store.state().phase === 'error') return React.createElement('div', null, header({
-      title: 'Programas · Productos',
-      sub: 'Fuente autoritativa no disponible',
-      onBack
-    }), React.createElement('div', {
-      style: {
-        padding: 16
-      }
-    }, React.createElement(window.EmptyState, {
-      icon: 'alert',
-      title: 'No pudimos cargar los productos',
-      sub: 'No se usó Marketplace ni una fuente alternativa.',
-      action: React.createElement(window.Btn, {
-        onClick: store.retry
-      }, 'Reintentar')
-    })));
-    const programs = store.programs(),
-      rows = program ? store.byProgram(program.key) : [];
-    return React.createElement('div', null, header({
-      title: program ? program.label : 'Programas · Productos',
-      sub: program ? `${rows.length} productos · ${rows.filter(x => x.activo !== false).length} activos` : `${programs.length} programas · ${store.all().length} productos`,
-      onBack: program ? () => {
-        store.clearSelection();
-        setProgram(null);
-      } : onBack
-    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
-      className: 'su-app-scroll su-stagger',
-      style: {
-        padding: '16px 16px 28px'
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 12.5,
-        fontWeight: 650,
-        color: 'var(--ink-3)',
-        lineHeight: 1.5,
-        marginBottom: 14
-      }
-    }, program ? 'Edita exclusivamente el catálogo propio de este programa. Los cambios se reflejan en la app desde program_catalog_items.' : 'Selecciona un programa para ver claramente sus productos, precios, modalidad, imágenes, estado y orden.'), !program && React.createElement('div', {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))',
-        gap: 11
-      }
-    }, programs.map(p => React.createElement('button', {
-      key: p.key,
-      'data-program-key': p.key,
-      onClick: async () => {
-        if (await store.loadProgram(p.key)) setProgram(p);
-      },
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        textAlign: 'left',
-        width: '100%',
-        border: 'none',
-        background: 'var(--surface)',
-        borderRadius: 16,
-        padding: 14,
-        boxShadow: 'var(--neo-sm)',
-        cursor: 'pointer',
-        fontFamily: 'inherit'
-      }
-    }, React.createElement(window.IconTile, {
-      icon: p.icon,
-      size: 42
-    }), React.createElement('div', {
-      style: {
-        flex: 1,
-        minWidth: 0,
-        textAlign: 'left'
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 900,
-        color: 'var(--ink)'
-      }
-    }, p.label), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 650,
-        color: 'var(--ink-3)',
-        marginTop: 3
-      }
-    }, `${p.count} productos · ${p.active} activos`), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 6,
-        marginTop: 7,
-        flexWrap: 'wrap'
-      }
-    }, p.fixed ? chip(`${p.fixed} precio fijo`, 'green') : null, p.quote ? chip(`${p.quote} cotización`, 'amber') : null, p.direct ? chip(`${p.direct} contacto`) : null, p.sold ? chip(`${p.sold} vendidos`, 'red') : null)), React.createElement(I, {
-      name: 'chevR',
-      size: 19,
-      stroke: 2.2,
-      style: {
-        color: 'var(--ink-3)'
-      }
-    })))), program && React.createElement(React.Fragment, null, canWrite && React.createElement('button', {
-      'data-program-product-add': program.key,
-      onClick: () => setEditing(store.blank(program.key)),
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 7,
-        width: '100%',
-        height: 46,
-        borderRadius: 13,
-        border: 'none',
-        background: 'var(--grad-guinda-soft)',
-        color: '#fff',
-        fontFamily: 'inherit',
-        fontSize: 14,
-        fontWeight: 850,
-        cursor: 'pointer',
-        marginBottom: 14
-      }
-    }, React.createElement(I, {
-      name: 'plus',
-      size: 18,
-      stroke: 2.6
-    }), 'Agregar producto'), rows.length === 0 ? React.createElement(window.EmptyState, {
-      icon: 'cart',
-      title: 'Sin productos',
-      sub: 'Este programa todavía no tiene productos.'
-    }) : React.createElement(ProductRows, {
-      rows,
-      store,
-      canWrite,
-      onEdit: setEditing
-    }))), editing && React.createElement(ProductEditor, {
-      item: editing,
-      programs,
-      onClose: () => setEditing(null),
-      onSaved: () => setEditing(null)
-    }));
+
+  function ProgramProductsModule({app,onBack,header}){
+    const store=window.useProgramCatalogAdminStore(),[program,setProgram]=useState(null),[editing,setEditing]=useState(null);
+    const canWrite=app.admin.has('program_catalog.write');
+    useEffect(()=>()=>store.clearSelection(),[]);
+    if(store.state().phase==='loading'&&store.all().length===0)return React.createElement('div',null,header({title:'Programas · Productos',sub:'Cargando catálogo autoritativo',onBack}),React.createElement('div',{style:{padding:16}},React.createElement(window.Skeleton,{h:220,r:18})));
+    if(store.state().phase==='error')return React.createElement('div',null,header({title:'Programas · Productos',sub:'Fuente autoritativa no disponible',onBack}),React.createElement('div',{style:{padding:16}},React.createElement(window.EmptyState,{icon:'alert',title:'No pudimos cargar los productos',sub:'No se usó Marketplace ni una fuente alternativa.',action:React.createElement(window.Btn,{onClick:store.retry},'Reintentar')})));
+    const programs=store.programs(),rows=program?store.byProgram(program.key):[];
+    return React.createElement('div',null,
+      header({title:program?program.label:'Programas · Productos',sub:program?`${rows.length} productos · ${rows.filter((x)=>x.activo!==false).length} activos`:`${programs.length} programas · ${store.all().length} productos`,onBack:program?()=>{store.clearSelection();setProgram(null);}:onBack}),
+      window.ActingBanner&&React.createElement(window.ActingBanner,{}),
+      React.createElement('div',{className:'su-app-scroll su-stagger',style:{padding:'16px 16px 28px'}},
+        React.createElement('div',{style:{fontSize: 12.5,fontWeight:650,color:'var(--ink-3)',lineHeight:1.5,marginBottom:14}},program?'Edita exclusivamente el catálogo propio de este programa. Los cambios se reflejan en la app desde program_catalog_items.':'Selecciona un programa para ver claramente sus productos, precios, modalidad, imágenes, estado y orden.'),
+        !program&&React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:11}},programs.map((p)=>React.createElement('button',{key:p.key,'data-program-key':p.key,onClick:async()=>{if(await store.loadProgram(p.key))setProgram(p);},style:{display:'flex',alignItems:'center',gap:12,textAlign:'left',width:'100%',border:'none',background:'var(--surface)',borderRadius:16,padding:14,boxShadow:'var(--neo-sm)',cursor:'pointer',fontFamily:'inherit'}},
+          React.createElement(window.IconTile,{icon:p.icon,size:42}),React.createElement('div',{style:{flex:1,minWidth:0,textAlign:'left'}},React.createElement('div',{style:{fontSize: 14.5,fontWeight:900,color:'var(--ink)'}},p.label),React.createElement('div',{style:{fontSize: 11.5,fontWeight:650,color:'var(--ink-3)',marginTop:3}},`${p.count} productos · ${p.active} activos`),React.createElement('div',{style:{display:'flex',gap:6,marginTop:7,flexWrap:'wrap'}},p.fixed?chip(`${p.fixed} precio fijo`,'green'):null,p.quote?chip(`${p.quote} cotización`,'amber'):null,p.direct?chip(`${p.direct} contacto`):null,p.sold?chip(`${p.sold} vendidos`,'red'):null)),React.createElement(I,{name:'chevR',size:19,stroke:2.2,style:{color:'var(--ink-3)'}})))),
+        program&&React.createElement(React.Fragment,null,
+          window.ProgramGeneralInfo.keys.includes(program.key)&&React.createElement(window.ProgramGeneralInfo.Editor,{key:program.key,programKey:program.key,canWrite}),
+          React.createElement('h2',{style:{fontSize: 17,margin:'0 0 14px'}},'Productos del programa'),
+          rows.length===0?React.createElement(window.EmptyState,{icon:'cart',title:'Sin productos',sub:'Este programa todavía no tiene productos.'}):React.createElement(ProductRows,{rows,store,canWrite,onEdit:setEditing}),
+          canWrite&&React.createElement('button',{'data-program-product-add':program.key,onClick:()=>setEditing(store.blank(program.key)),style:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,width:'100%',height:46,borderRadius:13,border:'none',background:'var(--grad-guinda-soft)',color:'#fff',fontFamily:'inherit',fontSize: 14,fontWeight:850,cursor:'pointer',marginBottom:14}},React.createElement(I,{name:'plus',size:18,stroke:2.6}),'Agregar producto'))),
+      editing&&React.createElement(ProductEditor,{item:editing,programs,onClose:()=>setEditing(null),onSaved:()=>setEditing(null)}));
   }
-  function ProductRows({
-    rows,
-    store,
-    canWrite,
-    onEdit
-  }) {
-    const ref = useRef(null);
-    window.useFlipRows(ref);
-    return React.createElement('div', {
-      ref,
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10
-      }
-    }, rows.map((p, index) => React.createElement('div', {
-      key: p.id,
-      'data-flip-key': p.id,
-      'data-program-product': p.id,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 11,
-        background: 'var(--surface)',
-        borderRadius: 15,
-        padding: 11,
-        boxShadow: 'var(--neo-sm)',
-        opacity: p.activo === false ? .55 : 1
-      }
-    }, React.createElement('button', {
-      onClick: () => onEdit(p),
-      style: {
-        width: 54,
-        height: 54,
-        borderRadius: 12,
-        overflow: 'hidden',
-        border: 'none',
-        padding: 0,
-        background: 'var(--surface-2)',
-        display: 'grid',
-        placeItems: 'center',
-        color: 'var(--ink-3)',
-        cursor: 'pointer',
-        flexShrink: 0
-      }
-    }, window.ProgramCatalogRepository.imageAssets(p)[0] ? React.createElement(window.ProgramCatalogImage, {
-      asset: window.ProgramCatalogRepository.imageAssets(p)[0],
-      alt: '',
-      style: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover'
-      }
-    }) : React.createElement(I, {
-      name: 'image',
-      size: 22
-    })), React.createElement('button', {
-      onClick: () => onEdit(p),
-      style: {
-        flex: 1,
-        minWidth: 0,
-        textAlign: 'left',
-        border: 'none',
-        background: 'none',
-        padding: 0,
-        cursor: 'pointer',
-        fontFamily: 'inherit'
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 14,
-        fontWeight: 850,
-        color: 'var(--ink)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, p.nombre), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 650,
-        color: 'var(--ink-3)',
-        marginTop: 3,
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, `${p.category_raw || 'Sin categoría'} · Orden ${p.orden} · ${window.ProgramCatalogRepository.imageAssets(p).length} img`), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 6,
-        marginTop: 7,
-        flexWrap: 'wrap'
-      }
-    }, p.commercialMode === 'PAYROLL_QUOTE' ? chip('REQUIERE COTIZACIÓN', 'amber') : p.commercialMode === 'DIRECT_CONTACT' ? chip('CONTACTO DIRECTO') : chip(p.precio == null ? 'PRECIO FIJO' : window.money(p.precio), 'green'), p.sold ? chip('VENDIDO', 'red') : null, p.activo === false ? chip('INACTIVO') : null)), canWrite && React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 4,
-        flexShrink: 0
-      }
-    }, iconButton('chevD', () => store.move(p.id, -1), index === 0, 'Subir'), iconButton('chevD', () => store.move(p.id, 1), index === rows.length - 1, 'Bajar'), React.createElement(window.Toggle, {
-      on: p.activo !== false,
-      size: 'lg',
-      onClick: () => store.toggle(p.id),
-      'aria-label': 'Activar o desactivar'
-    })))));
+
+  function ProductRows({rows,store,canWrite,onEdit}){
+    const ref=useRef(null);window.useFlipRows(ref);
+    return React.createElement('div',{ref,style:{display:'flex',flexDirection:'column',gap:10}},rows.map((p,index)=>React.createElement('div',{key:p.id,'data-flip-key':p.id,'data-program-product':p.id,style:{display:'flex',alignItems:'center',gap:11,background:'var(--surface)',borderRadius:15,padding:11,boxShadow:'var(--neo-sm)',opacity:p.activo===false?.55:1}},
+      React.createElement('button',{onClick:()=>onEdit(p),style:{width:54,height:54,borderRadius:12,overflow:'hidden',border:'none',padding:0,background:'var(--surface-2)',display:'grid',placeItems:'center',color:'var(--ink-3)',cursor:'pointer',flexShrink:0}},window.ProgramCatalogRepository.imageAssets(p)[0]?React.createElement(window.ProgramCatalogImage,{asset:window.ProgramCatalogRepository.imageAssets(p)[0],alt:'',style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement(I,{name:'image',size:22})),
+      React.createElement('button',{onClick:()=>onEdit(p),style:{flex:1,minWidth:0,textAlign:'left',border:'none',background:'none',padding:0,cursor:'pointer',fontFamily:'inherit'}},React.createElement('div',{style:{fontSize: 14,fontWeight:850,color:'var(--ink)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},p.nombre),React.createElement('div',{style:{fontSize: 11.5,fontWeight:650,color:'var(--ink-3)',marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},`${p.category_raw||'Sin categoría'} · Orden ${p.orden} · ${window.ProgramCatalogRepository.imageAssets(p).length} img`),React.createElement('div',{style:{display:'flex',gap:6,marginTop:7,flexWrap:'wrap'}},p.commercialMode==='PAYROLL_QUOTE'?chip('REQUIERE COTIZACIÓN','amber'):p.commercialMode==='DIRECT_CONTACT'?chip('CONTACTO DIRECTO'):chip(p.precio==null?'PRECIO FIJO':window.money(p.precio),'green'),p.sold?chip('VENDIDO','red'):null,p.activo===false?chip('INACTIVO'):null)),
+      canWrite&&React.createElement('div',{style:{display:'flex',gap:4,flexShrink:0}},iconButton('chevD',()=>store.move(p.id,-1),index===0,'Subir'),iconButton('chevD',()=>store.move(p.id,1),index===rows.length-1,'Bajar'),React.createElement(window.Toggle,{on:p.activo!==false,size:'lg',onClick:()=>store.toggle(p.id),'aria-label':'Activar o desactivar'})))));
   }
-  function ProductEditor({
-    item,
-    programs,
-    onClose,
-    onSaved
-  }) {
-    const store = window.programCatalogAdminStore,
-      [draft, setDraft] = useState(() => Object.assign({}, item)),
-      [media, setMedia] = useState(() => (item.imagenAssets || []).map(asset => ({
-        kind: 'existing',
-        asset,
-        url: asset.url
-      }))),
-      [busy, setBusy] = useState(false),
-      [error, setError] = useState(''),
-      [preview, setPreview] = useState(null);
-    const previewImage = React.useMemo(() => function EditorPreviewImage({
-      src,
-      ...props
-    }) {
-      const entry = media.find(x => (x.asset && x.asset.link_id || x.url) === src);
-      return entry && entry.asset && entry.asset.resource ? React.createElement(window.ProgramCatalogImage, Object.assign({}, props, {
-        asset: entry.asset
-      })) : React.createElement('img', Object.assign({}, props, {
-        src: entry && entry.url
-      }));
-    }, [media]);
-    const originalImageCount = (item.imagenAssets || []).length,
-      imageLimit = item.id ? Math.max(8, originalImageCount) : 8;
-    const set = (key, value) => setDraft(old => Object.assign({}, old, {
-      [key]: value
-    }));
-    const addFiles = event => {
-      const files = Array.from(event.target.files || []),
-        room = Math.max(0, imageLimit - media.length);
-      setMedia(old => old.concat(files.slice(0, room).map(file => ({
-        kind: 'pending',
-        file,
-        url: URL.createObjectURL(file)
-      }))));
-      event.target.value = '';
-    };
-    const remove = index => setMedia(old => {
-      const next = old.slice(),
-        entry = next.splice(index, 1)[0];
-      if (entry && entry.kind === 'pending') URL.revokeObjectURL(entry.url);
-      return next;
-    });
-    const move = (index, delta) => setMedia(old => {
-      const to = index + delta;
-      if (to < 0 || to >= old.length) return old;
-      const next = old.slice(),
-        entry = next.splice(index, 1)[0];
-      next.splice(to, 0, entry);
-      return next;
-    });
-    const save = async () => {
-      const price = value => value == null ? null : Number(value),
-        draftPrice = price(draft.precio),
-        originalPrice = price(item.precio),
-        draftOrder = Number(draft.orden),
-        originalOrder = Number(item.orden),
-        legacyPricePreserved = !!(item.id && item.commercialMode === 'PAYROLL_FIXED' && !(originalPrice > 0) && draft.commercialMode === 'PAYROLL_FIXED' && draftPrice === originalPrice),
-        legacyOrderPreserved = !!(item.id && !(originalOrder >= 1 && originalOrder <= 10000) && draftOrder === originalOrder);
-      if (!String(draft.nombre || '').trim()) {
-        setError('Escribe el nombre.');
-        return;
-      }
-      if (!draft.program_key) {
-        setError('Selecciona el programa.');
-        return;
-      }
-      if (draft.commercialMode === 'PAYROLL_FIXED' && !(draftPrice > 0) && !legacyPricePreserved) {
-        setError(saveErrorMessage({
-          message: 'PROGRAM_CATALOG_PRICE_REQUIRED'
-        }));
-        return;
-      }
-      if (!(draftOrder >= 1 && draftOrder <= 10000) && !legacyOrderPreserved) {
-        setError(saveErrorMessage({
-          message: 'PROGRAM_CATALOG_ORDER_INVALID'
-        }));
-        return;
-      }
-      if (media.length > imageLimit) {
-        setError(saveErrorMessage({
-          message: 'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED'
-        }));
-        return;
-      }
-      setBusy(true);
-      setError('');
-      try {
-        await store.save(draft, media);
-        media.filter(x => x.kind === 'pending').forEach(x => URL.revokeObjectURL(x.url));
-        onSaved();
-      } catch (e) {
-        setError(saveErrorMessage(e));
-        setBusy(false);
-      }
-    };
-    return React.createElement('div', {
-      'data-program-product-editor': item.id || 'new',
-      style: {
-        position: 'absolute',
-        inset: 0,
-        zIndex: 82,
-        background: 'var(--bg)',
-        display: 'flex',
-        flexDirection: 'column'
-      }
-    }, React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 12px',
-        background: 'var(--surface)',
-        borderBottom: '1px solid var(--hairline)'
-      }
-    }, React.createElement('button', {
-      onClick: onClose,
-      'aria-label': 'Cerrar',
-      style: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        border: 'none',
-        background: 'transparent',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        color: 'var(--ink)'
-      }
-    }, React.createElement(I, {
-      name: 'close',
-      size: 22,
-      stroke: 2
-    })), React.createElement('span', {
-      style: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: 850
-      }
-    }, item.id ? 'Editar producto' : 'Nuevo producto')), React.createElement('div', {
-      className: 'su-app-scroll',
-      style: {
-        flex: 1,
-        overflowY: 'auto',
-        padding: 16
-      }
-    }, React.createElement('label', {
-      style: label
-    }, 'Imágenes'), React.createElement('div', {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit,minmax(96px,1fr))',
-        gap: 9,
-        marginBottom: 8
-      }
-    }, media.map((entry, index) => React.createElement('div', {
-      key: entry.url || index,
-      style: {
-        position: 'relative',
-        aspectRatio: '4/3',
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: 'var(--surface-2)',
-        boxShadow: 'var(--neo-inset)'
-      }
-    }, React.createElement('button', {
-      onClick: () => setPreview(index),
-      style: {
-        position: 'absolute',
-        inset: 0,
-        border: 'none',
-        padding: 0,
-        background: 'none',
-        cursor: 'zoom-in'
-      }
-    }, React.createElement(entry.asset && entry.asset.resource ? window.ProgramCatalogImage : 'img', {
-      asset: entry.asset,
-      src: entry.url,
-      alt: '',
-      style: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover'
-      }
-    })), index === 0 && React.createElement('span', {
-      style: {
-        position: 'absolute',
-        left: 5,
-        bottom: 5,
-        fontSize: 9,
-        fontWeight: 900,
-        background: 'rgba(0,0,0,.62)',
-        color: '#fff',
-        padding: '3px 7px',
-        borderRadius: 999
-      }
-    }, 'PORTADA'), React.createElement('div', {
-      style: {
-        position: 'absolute',
-        right: 4,
-        top: 4,
-        display: 'flex',
-        gap: 3
-      }
-    }, iconButton('chevD', () => move(index, -1), index === 0, 'Mover antes'), iconButton('chevD', () => move(index, 1), index === media.length - 1, 'Mover después'), iconButton('close', () => remove(index), false, 'Quitar')))), media.length < imageLimit && React.createElement('label', {
-      style: {
-        position: 'relative',
-        aspectRatio: '4/3',
-        borderRadius: 12,
-        border: '1.5px dashed var(--hairline-strong)',
-        background: 'var(--surface)',
-        cursor: 'pointer',
-        display: 'grid',
-        placeItems: 'center',
-        color: 'var(--guinda)'
-      }
-    }, React.createElement(I, {
-      name: 'plus',
-      size: 24,
-      stroke: 2.6
-    }), React.createElement('input', {
-      'data-program-product-image-input': 'true',
-      type: 'file',
-      accept: 'image/png,image/jpeg,image/gif,image/webp',
-      multiple: true,
-      onChange: addFiles,
-      style: {
-        display: 'none'
-      }
-    }))), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 650,
-        color: 'var(--ink-3)',
-        lineHeight: 1.45,
-        marginBottom: 15
-      }
-    }, originalImageCount > 8 ? `Galería histórica de ${originalImageCount} imágenes: puedes conservarla, reordenarla, reemplazar sin crecer o reducirla. Nuevos productos admiten hasta 8.` : 'La primera imagen es la portada. Puedes ampliar, reordenar o quitar sin borrar la procedencia histórica del asset.'), React.createElement('label', {
-      style: label
-    }, 'Programa'), React.createElement('select', {
-      'data-program-product-field': 'program_key',
-      value: draft.program_key || '',
-      onChange: e => set('program_key', e.target.value),
-      style: Object.assign({}, field, {
-        marginBottom: 12,
-        appearance: 'auto'
-      })
-    }, programs.map(p => React.createElement('option', {
-      key: p.key,
-      value: p.key
-    }, p.label))), React.createElement('label', {
-      style: label
-    }, 'Nombre'), React.createElement('input', {
-      'data-program-product-field': 'name',
-      value: draft.nombre || '',
-      maxLength: 180,
-      onChange: e => set('nombre', e.target.value),
-      style: Object.assign({}, field, {
-        marginBottom: 12
-      })
-    }), React.createElement('label', {
-      style: label
-    }, 'Categoría'), React.createElement('input', {
-      'data-program-product-field': 'category',
-      value: draft.category_raw || '',
-      maxLength: 240,
-      onChange: e => set('category_raw', e.target.value),
-      placeholder: 'Opcional',
-      style: Object.assign({}, field, {
-        marginBottom: 12
-      })
-    }), React.createElement('label', {
-      style: label
-    }, 'Descripción'), React.createElement('textarea', {
-      'data-program-product-field': 'description',
-      value: draft.desc || '',
-      rows: 5,
-      onChange: e => set('desc', e.target.value),
-      style: Object.assign({}, field, {
-        marginBottom: 12,
-        resize: 'vertical',
-        lineHeight: 1.5
-      })
-    }), React.createElement('label', {
-      style: label
-    }, 'Modalidad'), React.createElement('div', {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
-        gap: 8,
-        marginBottom: 12
-      }
-    }, [['PAYROLL_FIXED', 'fixed', 'PRECIO FIJO', 'Precio visible en la app'], ['PAYROLL_QUOTE', 'quote', 'REQUIERE COTIZACIÓN', 'La app muestra “Se cotiza”'], ['DIRECT_CONTACT', 'direct', 'CONTACTO DIRECTO', 'Precio informativo · sin financiamiento SutiApp']].map(([value, mode, title, sub]) => {
-      const on = draft.commercialMode === value;
-      return React.createElement('button', {
-        key: mode,
-        'data-program-product-mode': mode,
-        onClick: () => setDraft(old => Object.assign({}, old, {
-          commercialMode: value,
-          cotiza: value === 'PAYROLL_QUOTE'
-        })),
-        style: {
-          textAlign: 'left',
-          border: on ? '2px solid var(--guinda)' : '1px solid var(--hairline)',
-          borderRadius: 13,
-          padding: 10,
-          background: on ? 'var(--guinda-50)' : 'var(--surface)',
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-          minWidth: 0
-        }
-      }, React.createElement('div', {
-        style: {
-          fontSize: 10.5,
-          fontWeight: 900,
-          color: on ? 'var(--guinda)' : 'var(--ink)',
-          overflowWrap: 'anywhere'
-        }
-      }, title), React.createElement('div', {
-        style: {
-          fontSize: 9.5,
-          fontWeight: 600,
-          color: 'var(--ink-3)',
-          marginTop: 3,
-          lineHeight: 1.35
-        }
-      }, sub));
-    })), React.createElement('label', {
-      style: label
-    }, draft.commercialMode === 'PAYROLL_FIXED' ? 'Precio fijo obligatorio' : draft.commercialMode === 'DIRECT_CONTACT' ? 'Precio informativo (opcional)' : 'Precio importado/referencial (opcional)'), React.createElement('input', {
-      'data-program-product-field': 'price',
-      type: 'number',
-      min: 0,
-      step: '0.01',
-      value: draft.precio == null ? '' : draft.precio,
-      onChange: e => set('precio', e.target.value === '' ? null : Number(e.target.value)),
-      style: Object.assign({}, field, {
-        marginBottom: 12
-      })
-    }), React.createElement('label', {
-      style: label
-    }, 'Orden'), React.createElement('input', {
-      'data-program-product-field': 'order',
-      type: 'number',
-      min: 1,
-      max: 10000,
-      value: draft.orden == null ? '' : draft.orden,
-      onChange: e => set('orden', Number(e.target.value)),
-      style: Object.assign({}, field, {
-        marginBottom: 12
-      })
-    }), React.createElement('div', {
-      'data-program-product-active-control': 'true',
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        background: 'var(--surface)',
-        borderRadius: 14,
-        padding: '12px 15px',
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('div', {
-      style: {
-        flex: 1
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 14,
-        fontWeight: 850
-      }
-    }, 'Activo en la app'), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 3
-      }
-    }, 'Desactivar conserva el producto y su historia.')), React.createElement(window.Toggle, {
-      on: draft.activo !== false,
-      size: 'lg',
-      onClick: () => set('activo', draft.activo === false)
-    })), React.createElement('div', {
-      'data-program-product-sold-control': 'true',
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        background: 'var(--surface)',
-        borderRadius: 14,
-        padding: '12px 15px',
-        boxShadow: 'var(--neo-sm)',
-        marginBottom: 14
-      }
-    }, React.createElement('div', {
-      style: {
-        flex: 1
-      }
-    }, React.createElement('div', {
-      style: {
-        fontSize: 14,
-        fontWeight: 850
-      }
-    }, 'Vendido'), React.createElement('div', {
-      style: {
-        fontSize: 11.5,
-        fontWeight: 600,
-        color: 'var(--ink-3)',
-        marginTop: 3
-      }
-    }, 'Marca el artículo como no disponible para nuevas solicitudes.')), React.createElement(window.Toggle, {
-      on: draft.sold === true,
-      size: 'lg',
-      onClick: () => set('sold', draft.sold !== true)
-    })), React.createElement('div', {
-      style: {
-        background: 'var(--surface-2)',
-        borderRadius: 13,
-        padding: 12,
-        marginBottom: 14,
-        fontSize: 11.5,
-        fontWeight: 650,
-        color: 'var(--ink-3)',
-        lineHeight: 1.55
-      }
-    }, React.createElement('div', null, React.createElement('b', null, 'Origen: '), draft.record_origin || 'ADMIN_PROGRAM_CATALOG'), React.createElement('div', null, React.createElement('b', null, 'Modo de solicitud: '), draft.requestMode || draft.request_mode || 'supabase'), draft.source_sheet && React.createElement('div', null, React.createElement('b', null, 'Procedencia: '), draft.source_sheet, ' · fila ', draft.source_row_ordinal)), error && React.createElement('div', {
-      style: {
-        color: '#C0341D',
-        fontSize: 12.5,
-        fontWeight: 750,
-        marginBottom: 12
-      }
-    }, error), React.createElement('div', {
-      style: {
-        display: 'flex',
-        gap: 10
-      }
-    }, React.createElement(window.Btn, {
-      variant: 'outline',
-      style: {
-        flex: 1
-      },
-      onClick: onClose
-    }, 'Cancelar'), React.createElement(window.Btn, {
-      'data-program-product-save': 'true',
-      icon: 'check',
-      style: {
-        flex: 2
-      },
-      disabled: busy,
-      onClick: save
-    }, busy ? 'Guardando…' : 'Guardar'))), preview != null && React.createElement(window.ImageViewer, {
-      sources: media.map(x => x.asset && x.asset.link_id || x.url),
-      imageComponent: previewImage,
-      startIndex: preview,
-      alt: 'Imagen del producto',
-      onClose: () => setPreview(null)
-    }));
+
+  function ProductEditor({item,programs,onClose,onSaved}){
+    const store=window.programCatalogAdminStore,[draft,setDraft]=useState(()=>Object.assign({},item)),[media,setMedia]=useState(()=>((item.imagenAssets||[]).map((asset)=>({kind:'existing',asset,url:asset.url})))),[busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState(null);
+    const previewImage=React.useMemo(()=>function EditorPreviewImage({src,...props}){const entry=media.find(x=>(x.asset&&x.asset.link_id||x.url)===src);return entry&&entry.asset&&entry.asset.resource?React.createElement(window.ProgramCatalogImage,Object.assign({},props,{asset:entry.asset})):React.createElement('img',Object.assign({},props,{src:entry&&entry.url}));},[media]);
+    const originalImageCount=(item.imagenAssets||[]).length,imageLimit=item.id?Math.max(8,originalImageCount):8;
+    const set=(key,value)=>setDraft((old)=>Object.assign({},old,{[key]:value}));
+    const addFiles=(event)=>{const files=Array.from(event.target.files||[]),room=Math.max(0,imageLimit-media.length);setMedia((old)=>old.concat(files.slice(0,room).map((file)=>({kind:'pending',file,url:URL.createObjectURL(file)}))));event.target.value='';};
+    const remove=(index)=>setMedia((old)=>{const next=old.slice(),entry=next.splice(index,1)[0];if(entry&&entry.kind==='pending')URL.revokeObjectURL(entry.url);return next;});
+    const move=(index,delta)=>setMedia((old)=>{const to=index+delta;if(to<0||to>=old.length)return old;const next=old.slice(),entry=next.splice(index,1)[0];next.splice(to,0,entry);return next;});
+    const save=async()=>{const price=(value)=>value==null?null:Number(value),draftPrice=price(draft.precio),originalPrice=price(item.precio),draftOrder=Number(draft.orden),originalOrder=Number(item.orden),legacyPricePreserved=!!(item.id&&item.commercialMode==='PAYROLL_FIXED'&&!(originalPrice>0)&&draft.commercialMode==='PAYROLL_FIXED'&&draftPrice===originalPrice),legacyOrderPreserved=!!(item.id&&!(originalOrder>=1&&originalOrder<=10000)&&draftOrder===originalOrder);if(!String(draft.nombre||'').trim()){setError('Escribe el nombre.');return;}if(!draft.program_key){setError('Selecciona el programa.');return;}if(draft.commercialMode==='PAYROLL_FIXED'&&(!(draftPrice>0))&&!legacyPricePreserved){setError(saveErrorMessage({message:'PROGRAM_CATALOG_PRICE_REQUIRED'}));return;}if(!(draftOrder>=1&&draftOrder<=10000)&&!legacyOrderPreserved){setError(saveErrorMessage({message:'PROGRAM_CATALOG_ORDER_INVALID'}));return;}if(media.length>imageLimit){setError(saveErrorMessage({message:'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED'}));return;}setBusy(true);setError('');try{await store.save(draft,media);media.filter((x)=>x.kind==='pending').forEach((x)=>URL.revokeObjectURL(x.url));onSaved();}catch(e){setError(saveErrorMessage(e));setBusy(false);}};
+    return React.createElement('div',{'data-program-product-editor':item.id||'new',style:{position:'absolute',inset:0,zIndex:82,background:'var(--bg)',display:'flex',flexDirection:'column'}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:8,padding:'10px 12px',background:'var(--surface)',borderBottom:'1px solid var(--hairline)'}},React.createElement('button',{onClick:onClose,'aria-label':'Cerrar',style:{width:40,height:40,borderRadius:12,border:'none',background:'transparent',display:'grid',placeItems:'center',cursor:'pointer',color:'var(--ink)'}},React.createElement(I,{name:'close',size:22,stroke:2})),React.createElement('span',{style:{flex:1,fontSize: 16,fontWeight:850}},item.id?'Editar producto':'Nuevo producto')),
+      React.createElement('div',{className:'su-app-scroll',style:{flex:1,overflowY:'auto',padding:16}},
+        React.createElement('label',{style:label},'Imágenes'),React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(96px,1fr))',gap:9,marginBottom:8}},media.map((entry,index)=>React.createElement('div',{key:entry.url||index,style:{position:'relative',aspectRatio:'4/3',borderRadius:12,overflow:'hidden',background:'var(--surface-2)',boxShadow:'var(--neo-inset)'}},React.createElement('button',{onClick:()=>setPreview(index),style:{position:'absolute',inset:0,border:'none',padding:0,background:'none',cursor:'zoom-in'}},React.createElement(entry.asset&&entry.asset.resource?window.ProgramCatalogImage:'img',{asset:entry.asset,src:entry.url,alt:'',style:{width:'100%',height:'100%',objectFit:'cover'}})),index===0&&React.createElement('span',{style:{position:'absolute',left:5,bottom:5,fontSize: 9,fontWeight:900,background:'rgba(0,0,0,.62)',color:'#fff',padding:'3px 7px',borderRadius:999}},'PORTADA'),React.createElement('div',{style:{position:'absolute',right:4,top:4,display:'flex',gap:3}},iconButton('chevD',()=>move(index,-1),index===0,'Mover antes'),iconButton('chevD',()=>move(index,1),index===media.length-1,'Mover después'),iconButton('close',()=>remove(index),false,'Quitar')))),media.length<imageLimit&&React.createElement('label',{style:{position:'relative',aspectRatio:'4/3',borderRadius:12,border:'1.5px dashed var(--hairline-strong)',background:'var(--surface)',cursor:'pointer',display:'grid',placeItems:'center',color:'var(--guinda)'}},React.createElement(I,{name:'plus',size:24,stroke:2.6}),React.createElement('input',{'data-program-product-image-input':'true',type:'file',accept:'image/png,image/jpeg,image/gif,image/webp',multiple:true,onChange:addFiles,style:{display:'none'}}))),
+        React.createElement('div',{style:{fontSize: 11.5,fontWeight:650,color:'var(--ink-3)',lineHeight:1.45,marginBottom:15}},originalImageCount>8?`Galería histórica de ${originalImageCount} imágenes: puedes conservarla, reordenarla, reemplazar sin crecer o reducirla. Nuevos productos admiten hasta 8.`:'La primera imagen es la portada. Puedes ampliar, reordenar o quitar sin borrar la procedencia histórica del asset.'),
+        React.createElement('label',{style:label},'Programa'),React.createElement('select',{'data-program-product-field':'program_key',value:draft.program_key||'',onChange:(e)=>set('program_key',e.target.value),style:Object.assign({},field,{marginBottom:12,appearance:'auto'})},programs.map((p)=>React.createElement('option',{key:p.key,value:p.key},p.label))),
+        React.createElement('label',{style:label},'Nombre'),React.createElement('input',{'data-program-product-field':'name',value:draft.nombre||'',maxLength:180,onChange:(e)=>set('nombre',e.target.value),style:Object.assign({},field,{marginBottom:12})}),
+        React.createElement('label',{style:label},'Categoría'),React.createElement('input',{'data-program-product-field':'category',value:draft.category_raw||'',maxLength:240,onChange:(e)=>set('category_raw',e.target.value),placeholder:'Opcional',style:Object.assign({},field,{marginBottom:12})}),
+        React.createElement('label',{style:label},'Descripción'),React.createElement('textarea',{'data-program-product-field':'description',value:draft.desc||'',rows:5,onChange:(e)=>set('desc',e.target.value),style:Object.assign({},field,{marginBottom:12,resize:'vertical',lineHeight:1.5})}),
+        React.createElement('label',{style:label},'Modalidad'),React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8,marginBottom:12}},[['PAYROLL_FIXED','fixed','PRECIO FIJO','Precio visible en la app'],['PAYROLL_QUOTE','quote','REQUIERE COTIZACIÓN','La app muestra “Se cotiza”'],['DIRECT_CONTACT','direct','CONTACTO DIRECTO','Precio informativo · sin financiamiento SutiApp']].map(([value,mode,title,sub])=>{const on=draft.commercialMode===value;return React.createElement('button',{key:mode,'data-program-product-mode':mode,onClick:()=>setDraft((old)=>Object.assign({},old,{commercialMode:value,cotiza:value==='PAYROLL_QUOTE'})),style:{textAlign:'left',border:on?'2px solid var(--guinda)':'1px solid var(--hairline)',borderRadius:13,padding:10,background:on?'var(--guinda-50)':'var(--surface)',fontFamily:'inherit',cursor:'pointer',minWidth:0}},React.createElement('div',{style:{fontSize: 10.5,fontWeight:900,color:on?'var(--guinda)':'var(--ink)',overflowWrap:'anywhere'}},title),React.createElement('div',{style:{fontSize: 9.5,fontWeight:600,color:'var(--ink-3)',marginTop:3,lineHeight:1.35}},sub));})),
+        React.createElement('label',{style:label},draft.commercialMode==='PAYROLL_FIXED'?'Precio fijo obligatorio':draft.commercialMode==='DIRECT_CONTACT'?'Precio informativo (opcional)':'Precio importado/referencial (opcional)'),React.createElement('input',{'data-program-product-field':'price',type:'number',min:0,step:'0.01',value:draft.precio==null?'':draft.precio,onChange:(e)=>set('precio',e.target.value===''?null:Number(e.target.value)),style:Object.assign({},field,{marginBottom:12})}),
+        React.createElement('label',{style:label},'Orden'),React.createElement('input',{'data-program-product-field':'order',type:'number',min:1,max:10000,value:draft.orden==null?'':draft.orden,onChange:(e)=>set('orden',Number(e.target.value)),style:Object.assign({},field,{marginBottom:12})}),
+        React.createElement('div',{'data-program-product-active-control':'true',style:{display:'flex',alignItems:'center',gap:12,background:'var(--surface)',borderRadius:14,padding:'12px 15px',boxShadow:'var(--neo-sm)',marginBottom:14}},React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{fontSize: 14,fontWeight:850}},'Activo en la app'),React.createElement('div',{style:{fontSize: 11.5,fontWeight:600,color:'var(--ink-3)',marginTop:3}},'Desactivar conserva el producto y su historia.')),React.createElement(window.Toggle,{on:draft.activo!==false,size:'lg',onClick:()=>set('activo',draft.activo===false)})),
+        React.createElement('div',{'data-program-product-sold-control':'true',style:{display:'flex',alignItems:'center',gap:12,background:'var(--surface)',borderRadius:14,padding:'12px 15px',boxShadow:'var(--neo-sm)',marginBottom:14}},React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{fontSize: 14,fontWeight:850}},'Vendido'),React.createElement('div',{style:{fontSize: 11.5,fontWeight:600,color:'var(--ink-3)',marginTop:3}},'Marca el artículo como no disponible para nuevas solicitudes.')),React.createElement(window.Toggle,{on:draft.sold===true,size:'lg',onClick:()=>set('sold',draft.sold!==true)})),
+        React.createElement('div',{style:{background:'var(--surface-2)',borderRadius:13,padding:12,marginBottom:14,fontSize: 11.5,fontWeight:650,color:'var(--ink-3)',lineHeight:1.55}},React.createElement('div',null,React.createElement('b',null,'Origen: '),draft.record_origin||'ADMIN_PROGRAM_CATALOG'),React.createElement('div',null,React.createElement('b',null,'Modo de solicitud: '),draft.requestMode||draft.request_mode||'supabase'),draft.source_sheet&&React.createElement('div',null,React.createElement('b',null,'Procedencia: '),draft.source_sheet,' · fila ',draft.source_row_ordinal)),
+        error&&React.createElement('div',{style:{color:'#C0341D',fontSize: 12.5,fontWeight:750,marginBottom:12}},error),React.createElement('div',{style:{display:'flex',gap:10}},React.createElement(window.Btn,{variant:'outline',style:{flex:1},onClick:onClose},'Cancelar'),React.createElement(window.Btn,{'data-program-product-save':'true',icon:'check',style:{flex:2},disabled:busy,onClick:save},busy?'Guardando…':'Guardar'))),
+      preview!=null&&React.createElement(window.ImageViewer,{sources:media.map((x)=>x.asset&&x.asset.link_id||x.url),imageComponent:previewImage,startIndex:preview,alt:'Imagen del producto',onClose:()=>setPreview(null)}));
   }
-  window.ProgramProductsModule = ProgramProductsModule;
-  window.ProgramProductSaveErrorMessage = saveErrorMessage;
+  window.ProgramProductsModule=ProgramProductsModule;
+  window.ProgramProductSaveErrorMessage=saveErrorMessage;
 })();
 })();
 /* @@file screens-admin-catalogo.jsx */
@@ -62735,12 +62351,13 @@ Object.assign(window, {
   const url=(a)=>a&&a.status==='READY'?db().storage.from(a.storage_bucket).getPublicUrl(a.storage_path).data.publicUrl:null;
   const project=(r)=>Object.freeze(Object.assign({},r,{empresa:r.company_raw,concepto:r.concept,monto:Number(r.amount),pagos:r.installments,activo:r.enabled,logo:url(r.logo_asset)}));
   async function list(){const r=await db().from('membership_offerings').select(fields).order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));}
+  async function paymentQuote(id){const r=await db().rpc('get_current_membership_payment_quote',{p_membership_offering_id:id});if(r.error)throw r.error;const q=r.data,f=q&&q.financialResult;if(!q||q.contract_version!=='MEMBERSHIP_PAYMENT_V1'||q.membership_offering_id!==id||!/^[a-f0-9]{64}$/.test(q.quote_hash||'')||!f||!['amount','total','paymentCount','paymentPerPeriod','lastPayment','capital','administrativeFeeTotal'].every(k=>typeof f[k]==='number'&&Number.isFinite(f[k]))||!['quincenal','mensual'].includes(f.paymentPeriod)||f.rate!==0||f.interest!==0||f.administrativeFeeIncluded!==true)throw new Error('MEMBERSHIP_PAYMENT_QUOTE_INVALID');return Object.freeze(q);}
   const enabledFrom=(row)=>row.activo===undefined?row.enabled!==false:row.activo!==false;
   async function save(row){const values={company_raw:String(row.empresa||row.company_raw||'').trim(),concept:String(row.concepto||row.concept||'').trim(),amount:Number(row.monto??row.amount),installments:Number(row.pagos??row.installments),logo_asset_id:row.logo_asset_id||null,enabled:enabledFrom(row),sort_order:Number(row.sort_order||1)};let q;if(row.id)q=db().from('membership_offerings').update(values).eq('id',row.id);else{values.record_origin='ADMIN_PHASE4';q=db().from('membership_offerings').insert(values);}const r=await q.select('id').single();if(r.error)throw r.error;return r.data;}
   async function setEnabled(id,enabled){if(!id)throw new Error('MEMBERSHIP_ID_REQUIRED');const next=enabled===true;const r=await db().from('membership_offerings').update({enabled:next}).eq('id',id).select('id,enabled').single();if(r.error)throw r.error;if(!r.data||r.data.enabled!==next)throw new Error('MEMBERSHIP_ENABLED_MISMATCH');return r.data;}
   async function remove(id){const r=await db().from('membership_offerings').delete().eq('id',id).select('id');if(r.error)throw r.error;if(!r.data||r.data.length!==1)throw new Error('MEMBERSHIP_DELETE_COUNT_MISMATCH');}
   async function uploadLogo(file){return window.AdminRepository.uploadManagedAsset(file,'app-assets','MEMBERSHIP_LOGO','membership.logo');}
-  window.MembershipRepository=Object.freeze({list,save,setEnabled,remove,uploadLogo});
+  window.MembershipRepository=Object.freeze({list,paymentQuote,save,setEnabled,remove,uploadLogo});
 })();
 })();
 /* @@file membership-store.jsx */
@@ -63227,6 +62844,7 @@ Object.assign(window, {
       [requirements, setRequirements] = useState([]),
       [documents, setDocuments] = useState([]),
       [terms, setTerms] = useState(null);
+    const [paymentQuote, setPaymentQuote] = useState(null);
     const [busy, setBusy] = useState(false),
       [error, setError] = useState(''),
       [sent, setSent] = useState(null),
@@ -63254,9 +62872,12 @@ Object.assign(window, {
       }
       setPhase('loading');
       setError('');
+      setPaymentQuote(null);
       try {
         const rows = await window.DocumentWorkflowRepository.requirements('membership', offering.id);
-        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'), window.ProgramTermsRepository.current('membership', offering.id)]);
+        const [dResult, tResult, qResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'), window.ProgramTermsRepository.current('membership', offering.id), window.MembershipRepository.paymentQuote(offering.id)]);
+        if (qResult.status !== 'fulfilled') throw qResult.reason;
+        setPaymentQuote(qResult.value);
         setRequirements(rows.slice());
         setDocuments(dResult.status === 'fulfilled' ? dResult.value.slice() : []);
         setTerms(tResult.status === 'fulfilled' ? tResult.value : null);
@@ -63265,12 +62886,13 @@ Object.assign(window, {
         if (tResult.status === 'rejected') warnings.push('No fue posible verificar los términos publicados.');
         setError(warnings.join(' '));
         setPhase('ready');
-      } catch (_) {
+      } catch (failure) {
         setRequirements([]);
         setDocuments([]);
         setTerms(null);
         setPhase('error');
-        setError('No fue posible consultar los requisitos autorizados.');
+        const code = String(failure && failure.message || '');
+        setError(code.includes('MEMBERSHIP_PAYROLL_CATEGORY_UNRESOLVED') ? 'Tu categoría laboral aún no tiene una periodicidad de descuento definida. Solicita su revisión en Administración.' : code.includes('MEMBERSHIP_INCLUDED_FEES_EXCEED_TOTAL') ? 'El monto configurado no cubre los gastos administrativos incluidos. Solicita su revisión en Administración.' : 'No fue posible consultar los requisitos y las condiciones de pago. Reintenta para continuar.');
       }
     }, [offering && offering.id]);
     useEffect(() => {
@@ -63302,8 +62924,9 @@ Object.assign(window, {
     const total = requiredRequirements.length + FIELDS.length,
       completed = total - missingItems.length,
       missing = missingItems.length;
-    const ready = phase === 'ready' && missing === 0 && !!terms;
-    const pay = offering ? Number(offering.monto) / Math.max(1, Number(offering.pagos)) : 0;
+    const ready = phase === 'ready' && missing === 0 && !!terms && !!paymentQuote;
+    const payment = paymentQuote && paymentQuote.financialResult;
+    const pay = payment ? payment.paymentPerPeriod : null;
     const submit = async () => {
       if (!ready || busy) return;
       setBusy(true);
@@ -63316,11 +62939,15 @@ Object.assign(window, {
           rfc: data.rfc,
           curp: data.curp,
           termsVersionId: terms.id,
-          idempotencyKey: idem.current
+          idempotencyKey: idem.current,
+          paymentQuoteHash: paymentQuote.quote_hash
         });
         setSent(request);
-      } catch (_) {
-        setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
+      } catch (failure) {
+        if (String(failure && failure.message || '').includes('MEMBERSHIP_CONDITIONS_CHANGED')) {
+          await load();
+          setError('Las condiciones de la membresía cambiaron. Revisa los importes actualizados y vuelve a confirmar.');
+        } else setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
       } finally {
         setBusy(false);
       }
@@ -63436,22 +63063,26 @@ Object.assign(window, {
       className: 'mr-figure-label'
     }, 'Costo total'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-total': Number(offering.monto)
-    }, money(offering.monto))), h('div', {
+      'data-membership-total': payment && payment.total
+    }, payment ? money(payment.total) : '—')), h('div', {
       className: 'mr-figure'
     }, h('div', {
       className: 'mr-figure-label'
     }, 'Parcialidades'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-installments': Number(offering.pagos)
-    }, Number(offering.pagos) === 1 ? '1 pago' : offering.pagos + ' pagos')), h('div', {
+      'data-membership-installments': payment && payment.paymentCount
+    }, payment ? payment.paymentCount === 1 ? '1 pago' : payment.paymentCount + ' pagos' : '—')), h('div', {
       className: 'mr-figure'
     }, h('div', {
       className: 'mr-figure-label'
-    }, 'Cada quincena'), h('div', {
+    }, payment ? payment.paymentPeriod === 'mensual' ? 'Cada mes' : 'Cada quincena' : 'Por descuento'), h('div', {
       className: 'mr-figure-value',
-      'data-membership-fortnight': pay
-    }, money(pay)))), h('p', {
+      'data-membership-fortnight': pay,
+      'data-membership-payment-period': payment && payment.paymentPeriod
+    }, payment ? money(pay) : '—'))), payment && h('p', {
+      className: 'mr-payroll-note',
+      'data-membership-included-fees': payment.administrativeFeeTotal
+    }, 'Sin intereses. Incluye ' + money(payment.administrativeFeeTotal) + ' de gastos administrativos (' + money(payment.administrativeFeePerPayment) + ' por pago).' + (payment.lastPayment !== payment.paymentPerPeriod ? ' Último pago: ' + money(payment.lastPayment) + '.' : '')), h('p', {
       className: 'mr-payroll-note'
     }, 'Se descuenta vía nómina a partir del mes siguiente a la aprobación.'))), h('main', {
       className: 'mr-body'
@@ -68215,15 +67846,22 @@ Object.assign(window, {
     if(reg){const sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe();}
     if(failure)throw failure;
   }
-  function syncIdentity(){if(!supported())return;serial=serial.catch(()=>{}).then(async()=>{
-    const phase=window.AffiliateAuth.getState().phase;if(!['authenticated','unauthenticated','signing_out','error'].includes(phase))return;
-    const binding=await device(s=>s.get('binding'));if(binding&&binding.user_id!==identity())await clearDevice(false);
+  function syncIdentity(){if(!supported())return;
+    // Capture the delivered context: loading/network errors are not a logout.
+    // A queued logout must still close its binding even if Auth recovers quickly.
+    const context=window.AffiliateAuth.getState(),owner=identity();
+    if(!['authenticated','unauthenticated','signing_out','archived','unlinked','identity_error','ineligible'].includes(context.phase))return;
+    serial=serial.catch(()=>{}).then(async()=>{
+    const binding=await device(s=>s.get('binding'));if(binding&&binding.user_id!==owner)await clearDevice(false);
   });serial.catch(()=>{});}
+  function unavailableState(){const phase=window.AffiliateAuth.getState().phase;return {phase:phase==='error'?'error':phase==='loading'?'loading':'unavailable'};}
   async function state(){
-    if(!supported())return {phase:'unsupported'};if(!identity())return {phase:'unavailable'};
-    await serial;const config=await rpc('get_self_request_push_config');if(!config.enabled||!config.public_key)return {phase:'unavailable'};
+    if(!supported())return {phase:'unsupported'};
+    await serial;const owner=identity();if(!owner)return unavailableState();
+    const config=await rpc('get_self_request_push_config');if(!config.enabled||!config.public_key)return {phase:'unavailable'};
     const reg=await registration(),sub=await reg.pushManager.getSubscription(),binding=await device(s=>s.get('binding'));
-    const active=sub&&binding&&binding.user_id===identity()&&Notification.permission==='granted'&&await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id});
+    const active=sub&&binding&&binding.user_id===owner&&Notification.permission==='granted'&&await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id});
+    if(identity()!==owner)return unavailableState();
     return {phase:active?'active':Notification.permission==='denied'?'denied':'ready',config};
   }
   // Permission is requested synchronously within the user's click (including Safari).
@@ -68231,7 +67869,7 @@ Object.assign(window, {
     const owner=identity();if(!owner||!config||!config.public_key)return Promise.reject(Error('PUSH_UNAVAILABLE'));
     const permission=Notification.permission==='granted'?Promise.resolve('granted'):Notification.requestPermission();
     return permission.then(async granted=>{
-      if(granted!=='granted')return {phase:'denied',config};await serial;if(identity()!==owner)throw Error('PUSH_CONTEXT_CHANGED');
+      if(granted!=='granted')return {phase:granted==='denied'?'denied':'ready',config};await serial;if(identity()!==owner)throw Error('PUSH_CONTEXT_CHANGED');
       const reg=await registration();let sub=await reg.pushManager.getSubscription();const binding=await device(s=>s.get('binding'));
       if(sub&&(!binding||binding.user_id!==owner||!await rpc('get_self_request_push_status',{p_subscription_id:binding.subscription_id}))){await sub.unsubscribe();sub=null;}
       const b64=config.public_key.replace(/-/g,'+').replace(/_/g,'/');
@@ -68253,10 +67891,11 @@ Object.assign(window, {
   }
   function RequestPushInvitation(){
     const [current,setCurrent]=React.useState({phase:'loading'}),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
-    const refresh=()=>state().then(setCurrent).catch(()=>setCurrent({phase:'error'}));
-    React.useEffect(()=>{let active=true;const load=()=>state().then(s=>{if(active)setCurrent(s);}).catch(()=>{if(active)setCurrent({phase:'error'});});load();const unbind=window.AffiliateAuth.subscribe(load);window.addEventListener('focus',load);if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('controllerchange',load);return()=>{active=false;unbind();window.removeEventListener('focus',load);if(navigator.serviceWorker)navigator.serviceWorker.removeEventListener('controllerchange',load);};},[]);
+    const revision=React.useRef(0),mounted=React.useRef(false);
+    const refresh=()=>{const request=++revision.current;return state().then(s=>{if(request===revision.current)setCurrent(s);}).catch(()=>{if(request===revision.current)setCurrent({phase:'error'});});};
+    React.useEffect(()=>{mounted.current=true;refresh();const unbind=window.AffiliateAuth.subscribe(refresh);window.addEventListener('focus',refresh);window.addEventListener('online',refresh);if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('controllerchange',refresh);return()=>{mounted.current=false;revision.current++;unbind();window.removeEventListener('focus',refresh);window.removeEventListener('online',refresh);if(navigator.serviceWorker)navigator.serviceWorker.removeEventListener('controllerchange',refresh);};},[]);
     if(['loading','unavailable'].includes(current.phase))return null;
-    const run=task=>{setBusy(true);setError('');task.then(setCurrent).catch(()=>setError('No pudimos actualizar las notificaciones. Intenta de nuevo.')).finally(()=>setBusy(false));};
+    const run=task=>{const request=++revision.current;setBusy(true);setError('');task.then(s=>{if(!mounted.current)return;if(request===revision.current)setCurrent(s);else refresh();}).catch(()=>{if(request===revision.current)setError('No pudimos actualizar las notificaciones. Intenta de nuevo.');}).finally(()=>{if(mounted.current)setBusy(false);});};
     const style={minHeight:44,border:0,borderRadius:12,padding:'10px 15px',background:'var(--guinda)',color:'#fff',fontWeight:800,cursor:'pointer'};
     return h('section',{'data-request-push':current.phase,style:{background:'var(--surface)',borderRadius:16,padding:16,marginBottom:14,boxShadow:'var(--neo-sm)'}},
       h('strong',null,current.phase==='active'?'Notificaciones activas en este dispositivo':'Avisos de tus solicitudes'),

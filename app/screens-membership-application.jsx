@@ -131,6 +131,7 @@
   function MembershipApplicationScreen({app,params}){
     const offering=window.membershipStore.get(params&&params.id);
     const[phase,setPhase]=useState('loading'),[requirements,setRequirements]=useState([]),[documents,setDocuments]=useState([]),[terms,setTerms]=useState(null);
+    const[paymentQuote,setPaymentQuote]=useState(null);
     const[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(null),[touched,setTouched]=useState({}),[highlighted,setHighlighted]=useState('');
     const[data,setData]=useState(()=>{
       const user=app.user||{},affiliate=app.affiliate||{};
@@ -149,12 +150,16 @@
       }
       setPhase('loading');
       setError('');
+      setPaymentQuote(null);
       try{
         const rows=await window.DocumentWorkflowRepository.requirements('membership',offering.id);
-        const[dResult,tResult]=await Promise.allSettled([
+        const[dResult,tResult,qResult]=await Promise.allSettled([
           window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_MEMBERSHIP'),
           window.ProgramTermsRepository.current('membership',offering.id),
+          window.MembershipRepository.paymentQuote(offering.id),
         ]);
+        if(qResult.status!=='fulfilled')throw qResult.reason;
+        setPaymentQuote(qResult.value);
         setRequirements(rows.slice());
         setDocuments(dResult.status==='fulfilled'?dResult.value.slice():[]);
         setTerms(tResult.status==='fulfilled'?tResult.value:null);
@@ -163,12 +168,13 @@
         if(tResult.status==='rejected')warnings.push('No fue posible verificar los términos publicados.');
         setError(warnings.join(' '));
         setPhase('ready');
-      }catch(_){
+      }catch(failure){
         setRequirements([]);
         setDocuments([]);
         setTerms(null);
         setPhase('error');
-        setError('No fue posible consultar los requisitos autorizados.');
+        const code=String(failure&&failure.message||'');
+        setError(code.includes('MEMBERSHIP_PAYROLL_CATEGORY_UNRESOLVED')?'Tu categoría laboral aún no tiene una periodicidad de descuento definida. Solicita su revisión en Administración.':code.includes('MEMBERSHIP_INCLUDED_FEES_EXCEED_TOTAL')?'El monto configurado no cubre los gastos administrativos incluidos. Solicita su revisión en Administración.':'No fue posible consultar los requisitos y las condiciones de pago. Reintenta para continuar.');
       }
     },[offering&&offering.id]);
     useEffect(()=>{load();},[load]);
@@ -184,8 +190,9 @@
       return documentItems.concat(fieldItems);
     },[requiredDocumentState,fieldValidity]);
     const total=requiredRequirements.length+FIELDS.length,completed=total-missingItems.length,missing=missingItems.length;
-    const ready=phase==='ready'&&missing===0&&!!terms;
-    const pay=offering?Number(offering.monto)/Math.max(1,Number(offering.pagos)):0;
+    const ready=phase==='ready'&&missing===0&&!!terms&&!!paymentQuote;
+    const payment=paymentQuote&&paymentQuote.financialResult;
+    const pay=payment?payment.paymentPerPeriod:null;
 
     const submit=async()=>{
       if(!ready||busy)return;
@@ -200,10 +207,13 @@
           curp:data.curp,
           termsVersionId:terms.id,
           idempotencyKey:idem.current,
+          paymentQuoteHash:paymentQuote.quote_hash,
         });
         setSent(request);
-      }catch(_){
-        setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
+      }catch(failure){
+        if(String(failure&&failure.message||'').includes('MEMBERSHIP_CONDITIONS_CHANGED')){
+          await load();setError('Las condiciones de la membresía cambiaron. Revisa los importes actualizados y vuelve a confirmar.');
+        }else setError('No pudimos registrar la solicitud. Revisa los requisitos e inténtalo de nuevo.');
       }finally{
         setBusy(false);
       }
@@ -261,9 +271,10 @@
               h('div',{className:'mr-logo','data-membership-logo-source':offering.logo?'admin':'placeholder'},offering.logo?h('img',{src:offering.logo,alt:offering.empresa}):h(I,{name:'card',size:30,stroke:2})),
               h('div',{className:'mr-member-copy'},h('h1',{'data-membership-company':offering.empresa},offering.empresa),h('p',{'data-membership-concept':offering.concepto},offering.concepto))),
             h('div',{className:'mr-figures'},
-              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},'Costo total'),h('div',{className:'mr-figure-value','data-membership-total':Number(offering.monto)},money(offering.monto))),
-              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},'Parcialidades'),h('div',{className:'mr-figure-value','data-membership-installments':Number(offering.pagos)},Number(offering.pagos)===1?'1 pago':offering.pagos+' pagos')),
-              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},'Cada quincena'),h('div',{className:'mr-figure-value','data-membership-fortnight':pay},money(pay)))),
+              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},'Costo total'),h('div',{className:'mr-figure-value','data-membership-total':payment&&payment.total},payment?money(payment.total):'—')),
+              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},'Parcialidades'),h('div',{className:'mr-figure-value','data-membership-installments':payment&&payment.paymentCount},payment?(payment.paymentCount===1?'1 pago':payment.paymentCount+' pagos'):'—')),
+              h('div',{className:'mr-figure'},h('div',{className:'mr-figure-label'},payment?(payment.paymentPeriod==='mensual'?'Cada mes':'Cada quincena'):'Por descuento'),h('div',{className:'mr-figure-value','data-membership-fortnight':pay,'data-membership-payment-period':payment&&payment.paymentPeriod},payment?money(pay):'—'))),
+            payment&&h('p',{className:'mr-payroll-note','data-membership-included-fees':payment.administrativeFeeTotal},'Sin intereses. Incluye '+money(payment.administrativeFeeTotal)+' de gastos administrativos ('+money(payment.administrativeFeePerPayment)+' por pago).'+(payment.lastPayment!==payment.paymentPerPeriod?' Último pago: '+money(payment.lastPayment)+'.':'')),
             h('p',{className:'mr-payroll-note'},'Se descuenta vía nómina a partir del mes siguiente a la aprobación.'))),
         h('main',{className:'mr-body'},
           h('section',{className:'mr-tracker'+(trackerDone?' is-done':''),'data-requirement-count':phase==='ready'?total:'loading','data-requirement-missing':phase==='ready'?missing:'loading','aria-busy':phase==='loading'?'true':'false'},

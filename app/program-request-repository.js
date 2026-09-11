@@ -50,7 +50,7 @@
     });
     if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key()});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);

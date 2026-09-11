@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "baseCommit": "2aa05b90dab2d9f9309033743665bf0238e187b7",
+  "bundleVersion": 243,
+  "bundleSources": 115,
+  "bundleSha256": "e23bc72375243c2b13965136ec3ce61f29a1c50ccb72ac87e3d5da7aa86c8b36",
+  "changedBundleSources": [
+    "admin-finance-queue-repository.js",
+    "screens-admin-finanzas.jsx"
+  ],
+  "deletedSources": [],
+  "backendWrites": 0
+}

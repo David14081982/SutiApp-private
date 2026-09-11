@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "googleColumnsEtoI": [
+    "Vales y membresias",
+    0,
+    2,
+    200,
+    200
+  ],
+  "doubleCharge": false,
+  "legacyRequestsUnchanged": true,
+  "sharedRepositoryNonMembershipIdentical": true,
+  "googleOtherColumnsIdentical": true,
+  "uiCssIdentical": true,
+  "quoteAuthorityAndErrors": true,
+  "externalWrites": 0
+}

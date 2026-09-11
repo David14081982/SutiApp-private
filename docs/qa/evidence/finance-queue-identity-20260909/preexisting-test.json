@@ -1,0 +1,6 @@
+{
+  "test": "scripts/test-admin-financial-requests-workbench.js",
+  "status": "PREEXISTING_FAILURE",
+  "baselineFailure": "Admin y afiliado ya muestran la etapa vigente",
+  "changedByThisTask": false
+}

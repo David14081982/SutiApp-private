@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "kind": "FOCAL_BUILD_AND_SYNTAX",
+  "changedModules": [
+    "convenios-repository.js",
+    "screens-convenios.jsx"
+  ],
+  "unrelatedModulesIdentical": 116,
+  "bundleSha256": "53e3d18039ad4ea77a8aae64ddd0ddae6c90b2f7925f45eeed2d963e24ed2d8b",
+  "cachebuster": 241
+}

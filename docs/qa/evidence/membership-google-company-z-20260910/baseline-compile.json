@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "version": 43,
+  "resultKeys": [
+    "id",
+    "slug",
+    "name",
+    "status",
+    "version",
+    "created_at",
+    "verify_jwt",
+    "import_map",
+    "entrypoint_path",
+    "ezbr_sha256"
+  ],
+  "compiledHash": "37dbeecc73a9ab7cc67808801e4e684632eaaae3b9c19884b366012fa139a14c",
+  "liveHash": "cdc02f94eff2a79a341df4492ddcf063b0d719a7a1b9e8e3d8a64c644f324ff0"
+}

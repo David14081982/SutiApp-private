@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-09-11T06:18:15.731Z",
+  "readOnly": true,
+  "rows": [
+    {
+      "origin": "https://sutiapp.com/SutiApp.html",
+      "resolvedHtml": "https://sutiapp.com/SutiApp.html",
+      "bundleUrl": "https://sutiapp.com/app/bundle.js?v=248",
+      "bundleSha256": "193bbc03c019d1a33bef0a7b895dcb3a1f0fb2a6f71258de285ea9a9f1f1699b",
+      "bundleSyntax": "PASS",
+      "modules": [
+        {
+          "file": "affiliate-auth.js",
+          "sha256": "cc6fd66a8e5f313eb42bd9d83fcd3022887560b878e392504a6fd3e78472fe78",
+          "localSha256": "cc6fd66a8e5f313eb42bd9d83fcd3022887560b878e392504a6fd3e78472fe78",
+          "localEqualsPublished": true,
+          "lifecycleLogicEqualsLocal": true,
+          "differences": []
+        },
+        {
+          "file": "request-push.js",
+          "sha256": "3b88672895ae60850272651da74572754e40f4efd06998d1406cdb7b4355bc02",
+          "localSha256": "65aa67aea7bc36f833b4c9477441515ec25eb6e4307c257e7861e896bba49bc0",
+          "localEqualsPublished": false,
+          "lifecycleLogicEqualsLocal": true,
+          "differences": [
+            "UI fontSize:13 becomes var(--text-13, 13px); all other module code identical"
+          ]
+        }
+      ]
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/SutiApp.html",
+      "resolvedHtml": "https://sutiapp.com/SutiApp.html",
+      "bundleUrl": "https://sutiapp.com/app/bundle.js?v=248",
+      "bundleSha256": "193bbc03c019d1a33bef0a7b895dcb3a1f0fb2a6f71258de285ea9a9f1f1699b",
+      "bundleSyntax": "PASS",
+      "modules": [
+        {
+          "file": "affiliate-auth.js",
+          "sha256": "cc6fd66a8e5f313eb42bd9d83fcd3022887560b878e392504a6fd3e78472fe78",
+          "localSha256": "cc6fd66a8e5f313eb42bd9d83fcd3022887560b878e392504a6fd3e78472fe78",
+          "localEqualsPublished": true,
+          "lifecycleLogicEqualsLocal": true,
+          "differences": []
+        },
+        {
+          "file": "request-push.js",
+          "sha256": "3b88672895ae60850272651da74572754e40f4efd06998d1406cdb7b4355bc02",
+          "localSha256": "65aa67aea7bc36f833b4c9477441515ec25eb6e4307c257e7861e896bba49bc0",
+          "localEqualsPublished": false,
+          "lifecycleLogicEqualsLocal": true,
+          "differences": [
+            "UI fontSize:13 becomes var(--text-13, 13px); all other module code identical"
+          ]
+        }
+      ]
+    }
+  ]
+}

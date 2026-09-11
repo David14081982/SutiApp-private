@@ -14,7 +14,7 @@ const out=path.join(root,'docs/qa/evidence/text-size-small-20260911');
  await assert.rejects(()=>api.write('a','huge'));const before=calls.length;await assert.rejects(()=>api.write('b','large'));assert.equal(calls.length,before);await assert.rejects(()=>api.read('b'));
  readError=true;await assert.rejects(()=>api.read('a'));readError=false;writeError=true;await assert.rejects(()=>api.write('a','large'));assert.equal(user.user_metadata.sutiapp_text_size,'normal');writeError=false;
  user.user_metadata.sutiapp_text_size='invalid';await assert.rejects(()=>api.read('a'));assert.equal(await api.write('a','large'),'large');
- const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+ const browser=await chromium.launch({executablePath:process.env.SUTIAPP_CHROMIUM_EXECUTABLE||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  try{
   const page=await browser.newPage();await page.setContent('<div id="root"></div>');for(const file of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js'])await page.addScriptTag({path:path.join(root,file)});
   await page.evaluate(()=>{window.__saved='normal';window.__fail=false;window.__writes=[];window.SutiSupabase={getClient:()=>({auth:{getUser:async()=>({data:{user:{id:'a',user_metadata:{sutiapp_text_size:__saved}}}}),updateUser:async p=>{__writes.push(p);await new Promise(r=>window.__resolveSave=r);if(__fail)return {error:Error('offline')};__saved=p.data.sutiapp_text_size;return {data:{user:{id:'a',user_metadata:{sutiapp_text_size:__saved}}}};}}})};window.Btn=p=>React.createElement('button',{onClick:p.onClick},p.children);});

@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## 2026-09-11 - H-USER-TEXT-SIZE-SMALL-001 published
+
+PASS: owner-authorized main integration and GitHub Pages deployment completed at
+54ef4026bb6d8203ea55cb731d3d2279ffa03680. Live site: https://sutiapp.com/.
+All 11 later main commits retained; only the preference module differs among 116
+modules. Bundle v250 / CSS v244 / SW v196 served hashes match. Merged local tests,
+72 captures, cache compatibility, backend contracts, production preference save /
+refresh / rollback and global local + production image/PDF tests PASS. Original
+test preference restored; no business, backend, permissions or Google changes.
+Release evidence: docs/qa/evidence/text-size-small-20260911/release/. Physical iPhone
+not claimed. Final follow-up records evidence only, with identical runtime files.
+
 ## 2026-09-11 — H-USER-TEXT-SIZE-SMALL-001
 
 PASS for local implementation on `codex/user-text-size-small-001`, baseline

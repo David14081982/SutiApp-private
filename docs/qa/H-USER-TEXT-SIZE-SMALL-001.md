@@ -1,5 +1,10 @@
 # H-USER-TEXT-SIZE-SMALL-001
 
+Current status: **PASS - integrated into main and deployed to https://sutiapp.com/**.
+Production commit: 54ef4026bb6d8203ea55cb731d3d2279ffa03680. Final release evidence:
+`docs/qa/evidence/text-size-small-20260911/release/`. Earlier local-only statements
+below are historical stages superseded by the later owner-authorized release.
+
 ## PRE-CHANGE AUDIT — 2026-09-11
 
 - Objective: owner-authorized Small (0.875), preserving existing flows and typography in Normal/Large/Largest.
@@ -163,3 +168,38 @@ text-size-preferences.js differs from main. Final local build matches served ass
 legitimate image/PDF regression PASS. Auth and request deployment contracts PASS.
 Release reviewer: APPROVED_FOR_AUTHORIZED_DEPLOYMENT. Evidence under release/.
 Publication and post-deployment verification follow under the owner's authorization.
+
+
+## Production result and architect review
+
+H-USER-TEXT-SIZE-SMALL-001 RESULT
+Status: PASS - main integrated and production deployed
+Files changed: original focal scope, version references, test harness and evidence;
+  11 later main commits retained; no unrelated runtime modification.
+Source-of-truth verdict: PASS - same self-only Auth metadata, no fallback.
+Invariant verdict: PASS - one changed module among 116; business flows preserved.
+Build: PASS - final served hashes match bundle v250 / CSS v244 / SW v196.
+Tests: PASS - merged 72-case matrix, scale parity, 12 rollback pairs, cache upgrade,
+  backend contracts, live production read/write/refresh/rollback, global local and
+  production assets and legitimate PDF. Test account preference restored.
+Security: existing self-only writer and cross-principal checks preserved; no backend,
+  RLS, CORS or permission edits. No secrets in public files.
+Legacy impact: none; no financial/Google changes or business writes.
+Unexpected files changed: none beyond audited release/evidence scope.
+Known limitations: no physical iPhone test. Recovery retains a small-compatible reader.
+Evidence: release/deployment.json, preflight-review.json, bundle-and-scope.json,
+  global-local.json, global-production.json, preferences-production.json,
+  final-review.json and focused reports. Pages and Membership Google contract
+  workflows completed successfully for commit 54ef4026bb6d8203ea55cb731d3d2279ffa03680.
+
+SUTIAPP ARCHITECT REVIEW
+Task: owner-authorized integration and production release of H-USER-TEXT-SIZE-SMALL-001
+Verdict: APPROVED
+Critical findings: resolved version/changelog merge conflicts without dropping main
+  changes. Test-only Chrome path adjusted to installed Playwright Chromium; unchanged
+  global assertions and corpus. Production hashes and functional checks pass.
+Source of truth / Architecture / Security / Data / Legacy: preserved as above.
+Owner decision: NO - merge/deployment authorization was supplied in the conversation.
+Next action: close the H and report the live app. The final evidence-only follow-up
+  retains byte-identical runtime and needs no repeat of already passed browser tests.
+Response generated for Codex: YES - close PASS; do not start another H.

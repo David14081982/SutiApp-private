@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "commit": "54ef4026bb6d8203ea55cb731d3d2279ffa03680",
+  "servedUrl": "https://sutiapp.com/?text-small=250",
+  "versions": {
+    "bundle": 250,
+    "css": 244,
+    "worker": 196
+  },
+  "hashesLF": {
+    "app/bundle.js": "1a47a54efbd9459d1d17fababacbbaf5fb235d6815900069bda912dc7c81326c",
+    "app/text-size.css": "32e9817416f4e537aca9554c877e08f587b34938b722f73b0870efc366e741ae",
+    "sw.js": "03d90951557a0293198e030cb08b845ccdcb9c59fa6d2c32504085c6566cee71"
+  },
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 34609953207,
+      "headSha": "54ef4026bb6d8203ea55cb731d3d2279ffa03680",
+      "status": "completed",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34609953207",
+      "workflowName": "Membership Google contract"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 34609953219,
+      "headSha": "54ef4026bb6d8203ea55cb731d3d2279ffa03680",
+      "status": "completed",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34609953219",
+      "workflowName": "Deploy SutiApp to GitHub Pages"
+    }
+  ],
+  "backendChanges": 0
+}

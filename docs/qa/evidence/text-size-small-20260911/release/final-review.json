@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "architectVerdict": "APPROVED",
+  "deployedCommit": "54ef4026bb6d8203ea55cb731d3d2279ffa03680",
+  "site": "https://sutiapp.com/",
+  "versions": {
+    "bundle": 250,
+    "css": 244,
+    "worker": 196
+  },
+  "retainedMainCommits": 11,
+  "bundledModules": 116,
+  "changedRuntimeModule": "text-size-preferences.js",
+  "localPreflight": "PASS",
+  "productionPreferenceReadWriteRefreshRollback": "PASS",
+  "testPreferenceRestored": true,
+  "globalLocalAssetsAndPdf": "PASS",
+  "globalProductionAssetsAndPdf": "PASS",
+  "deployedHashesMatch": "PASS",
+  "backendContracts": "PASS",
+  "githubPagesWorkflow": "PASS",
+  "membershipGoogleContractWorkflow": "PASS",
+  "businessDataChanges": 0,
+  "unexpectedRuntimeChanges": 0,
+  "knownLimitations": [
+    "No physical iPhone test"
+  ],
+  "followup": "Documentation/evidence only; runtime identical to deployed commit"
+}

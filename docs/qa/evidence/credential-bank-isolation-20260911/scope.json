@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "runtimeSourceChangedLines": 2,
+  "sourceOnlySelfReaderAndAffiliateKey": true,
+  "uiMarkupAndWritersIdentical": true,
+  "htmlAndSwOnlyGeneratedVersions": true,
+  "globalImageRegression": "NOT APPLICABLE: no shared runtime change",
+  "unexpectedTaskFiles": 0
+}

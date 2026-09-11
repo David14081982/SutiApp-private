@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "sourceSha256": "abb5be80cd39d104f9d00f102d3f936845f852aa05d0808209a3cb28d2138def",
+  "bundleSha256": "d6fc0f709bb7e9ea52fa15f250d3d4417812fc277d903eb42394291d27f4346d",
+  "unrelatedModulesIdentical": true,
+  "swLogicIdentical": true,
+  "htmlOnlyCachebusters": true,
+  "bundleVersion": 251,
+  "workerVersion": 197,
+  "pagesBuild": true,
+  "productionDeployed": false
+}

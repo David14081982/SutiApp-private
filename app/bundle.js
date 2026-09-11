@@ -20547,7 +20547,7 @@ Object.assign(window, {
         overflowWrap: 'anywhere'
       }
     }, r[1]))))))), React.createElement(BankAccounts, {
-      app
+      app, key: u.id
     }), React.createElement('div', {
       style: {
         padding: '22px 20px 0'
@@ -20852,7 +20852,7 @@ Object.assign(window, {
     const load = React.useCallback(async () => {
       try {
         setPhase('loading');
-        setRows((await window.BankAccountRepository.list()).slice());
+        setRows((await window.BankAccountRepository.listDeposit()).slice());
         setError('');
         setPhase('ready');
       } catch (_) {

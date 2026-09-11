@@ -53,7 +53,7 @@
             sec.rows.map((r, i, arr) => React.createElement('div', { key: r[0], className: 'su-credential-fact', style: { display: 'flex', justifyContent: 'space-between', gap: 16, padding: '12px', borderBottom: i < arr.length - 1 ? '1px solid var(--hairline)' : 'none' } },
               React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-3)', fontWeight: 600, flexShrink: 0 } }, r[0]),
               React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, textAlign: 'right', overflowWrap: 'anywhere' } }, r[1]))))))),
-      React.createElement(BankAccounts, { app }),
+      React.createElement(BankAccounts, { app, key: u.id }),
       React.createElement('div', { style: { padding: '22px 20px 0' } },
         React.createElement(window.SectionHead, { title: 'Actualiza tus documentos', icon: 'folder' }),
         React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 18, padding: 15, boxShadow: 'var(--neo-sm)', display: 'flex', alignItems: 'center', gap: 12 } },
@@ -103,7 +103,7 @@
 
   function BankAccounts({ app }) {
     const [rows,setRows]=useState([]),[phase,setPhase]=useState('loading'),[editing,setEditing]=useState(null),[error,setError]=useState('');
-    const load=React.useCallback(async()=>{try{setPhase('loading');setRows((await window.BankAccountRepository.list()).slice());setError('');setPhase('ready');}catch(_){setRows([]);setError('No fue posible consultar tus datos bancarios.');setPhase('error');}},[]);
+    const load=React.useCallback(async()=>{try{setPhase('loading');setRows((await window.BankAccountRepository.listDeposit()).slice());setError('');setPhase('ready');}catch(_){setRows([]);setError('No fue posible consultar tus datos bancarios.');setPhase('error');}},[]);
     useEffect(()=>{load();},[load]);
     return React.createElement('div',{'data-banking-authority':'supabase','data-banking-phase':phase,style:{padding:'22px 20px 0'}},
       React.createElement(window.SectionHead,{title:'Datos bancarios',icon:'card'}),

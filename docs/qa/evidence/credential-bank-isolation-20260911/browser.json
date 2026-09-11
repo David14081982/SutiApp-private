@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_CHROME_390x844",
+  "cases": [
+    "own cards, masking, incomplete account, sections and edit entry",
+    "user switch discards prior cards and editor",
+    "empty account list preserves add control",
+    "source error fails closed and retry reloads own accounts",
+    "late response from previous user cannot repopulate section"
+  ],
+  "pageErrors": []
+}

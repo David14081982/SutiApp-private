@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+## 2026-09-11 ? H-CREDENTIAL-BANK-ISOLATION-001 ? RELEASE
+
+Credencial usa la RPC self existente para mostrar s?lo cuentas del afiliado efectivo,
+incluso para Admin. Key por UUID descarta estado/editor anterior. Dos l?neas; resto
+del bundle intacto. Matriz RLS/RPC live y navegador focal PASS. Publicaci?n autorizada
+a main; evidencia en docs/qa/H-CREDENTIAL-BANK-ISOLATION-001.md.
+
 ## 2026-09-11 - H-USER-TEXT-SIZE-SMALL-001 published
 
 PASS: owner-authorized main integration and GitHub Pages deployment completed at

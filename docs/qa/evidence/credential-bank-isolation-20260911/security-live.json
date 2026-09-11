@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "environment": "LIVE_SUPABASE_READ_ONLY",
+  "sessions": [
+    {
+      "alias": "H005_TEST",
+      "scopedRows": 1,
+      "foreignScopedRows": 0,
+      "rlsChecked": true,
+      "adminBroadListReproduced": true
+    }
+  ],
+  "businessWrites": 0,
+  "rlsRoleCases": [
+    {
+      "identityMatches": true,
+      "ownRows": 1,
+      "foreignRpcRows": 0,
+      "foreignRlsRows": 0,
+      "mode": "AUTHENTICATED_ROLE_READ_ONLY_ROLLBACK"
+    },
+    {
+      "identityMatches": true,
+      "ownRows": 1,
+      "foreignRpcRows": 0,
+      "foreignRlsRows": 0,
+      "mode": "AUTHENTICATED_ROLE_READ_ONLY_ROLLBACK"
+    }
+  ],
+  "anonymousDenied": true,
+  "distinctIdentities": 3,
+  "secondaryQaPasswordStale": true
+}

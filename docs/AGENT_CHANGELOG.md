@@ -2938,3 +2938,8 @@ evidencia y resultado en docs/qa/H-MEMBERSHIP-GOOGLE-COMPANY-Z-001.md.
 ## H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001 - 2026-09-10
 
 Shared general-information editor and preview precede products in Admin and are also available from the Finance catalog. Supabase supplies 14 program headers, legitimate covers, contacts, existing favorite behavior and card fields. SQL/recovery/RLS and actual edit description/cover/benefits, save, refresh and public rendering PASS for Auto, Aires, Casa, Solar and Computo. Product prices and modes remain unchanged. Isolated release preserves 110 published modules. Evidence and publication status: docs/qa/H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001.md.
+
+
+## H-CONVENIOS-DETAIL-LATENCY-001 - 2026-09-10
+
+Coordinacion focal de lectura entre listado/detalle de Convenios, favoritos independientes, un listener de foco, invalidacion al guardar/cambiar contexto/desmontar y estados de detalle opacos con volver/reintentar. Solo dos modulos del bundle cambiados; 116 identicos. Tres escenarios pareados: contenido 225.5 -> 64.7 ms (normal), 1337.7 -> 85.9 ms (lento), 287.7 -> 18.2 ms (repetido). Seis comprobaciones funcionales PASS: scroll, favoritos, foco, actualizacion, error/retry y sesion. Browser aislado, cero red/escrituras productivas; no publicacion. Informe y evidencia: docs/qa/H-CONVENIOS-DETAIL-LATENCY-001.md y docs/qa/evidence/convenios-detail-latency-20260910/.

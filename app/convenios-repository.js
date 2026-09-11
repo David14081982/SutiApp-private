@@ -3,7 +3,7 @@
   'use strict';
   const db=()=>window.SutiSupabase.getClient(),listeners=new Set();
   const assetFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
-  const invalidate=()=>listeners.forEach(fn=>fn());
+  const invalidate=()=>{refreshView(true);listeners.forEach(fn=>fn());};
   async function rpc(name,args){const r=await db().rpc(name,args);if(r.error)throw r.error;return r.data;}
   function key(row){return row.source_kind==='education'?'education:'+row.id:row.id;}
   async function list(){
@@ -17,9 +17,13 @@
   async function listEducationFavorites(){const r=await db().from('educational_resource_favorites').select('resource_id');if(r.error)throw r.error;return (r.data||[]).map(r=>r.resource_id);}
   async function favorite(row,on){
     if(row.source_kind!=='education')return window.catalogStore.toggleCompanyFavorite(row.id);
+    const view=currentView();
+    if(view.snapshot.favoritesPhase!=='loaded')throw new Error('CONVENIOS_FAVORITES_NOT_READY');
     const api=db(),u=await api.auth.getUser();if(u.error||!u.data.user)throw u.error||new Error('AUTH_REQUIRED');
+    if(!isCurrent(view))throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
     const r=on?await api.from('educational_resource_favorites').insert({auth_user_id:u.data.user.id,resource_id:row.id}):await api.from('educational_resource_favorites').delete().eq('resource_id',row.id);
-    if(r.error)throw r.error;invalidate();
+    if(r.error)throw r.error;
+    if(isCurrent(view))await readView(view,'favorites',true);
   }
   async function saveCompany(id,fields){const saved=await rpc('save_company_ficha',{p_company_id:id||null,p_fields:fields});invalidate();return {id:saved};}
   async function saveAgreement(row){const saved=await rpc('save_agreement_ficha',{p_fields:row});invalidate();return saved;}
@@ -37,13 +41,58 @@
     return {id,url:api.storage.from('company-assets').getPublicUrl(path).data.publicUrl};
   }
   async function attachImage(companyId,assetId,role){await rpc('attach_company_ficha_image',{p_company_id:companyId,p_asset_id:assetId,p_role:role});invalidate();}
+  // One ephemeral projection for the mounted Convenios list/detail. No settled
+  // state survives the last consumer or an Auth/impersonation context change.
+  const viewListeners=new Set();let viewState=null,offContext=null;
+  function currentView(){
+    const epoch=window.PrivateResourceDemand.context();
+    if(!viewState||viewState.epoch!==epoch)viewState={epoch,content:null,favorites:null,snapshot:{phase:'loading',rows:[],error:null,refreshing:false,favoritesPhase:'loading',favorites:[],favoritesError:null}};
+    return viewState;
+  }
+  function isCurrent(view){return window.PrivateResourceDemand.context()===view.epoch&&viewState===view;}
+  function emitView(){viewListeners.forEach(fn=>fn());}
+  function updateView(view,patch){if(!isCurrent(view))return;view.snapshot={...view.snapshot,...patch};emitView();}
+  function readView(view,part,force=false){
+    if(view.epoch===null||!isCurrent(view))return Promise.resolve();
+    if(view[part]&&!force)return view[part].promise;
+    const request={};view[part]=request;
+    const content=part==='content';
+    updateView(view,content?{phase:view.snapshot.phase==='loaded'?'loaded':'loading',refreshing:true,error:null}:{favoritesPhase:'loading',favoritesError:null});
+    request.promise=Promise.resolve().then(()=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      return content?list():listEducationFavorites();
+    }).then(rows=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      updateView(view,content?{phase:'loaded',rows,error:null,refreshing:false}:{favoritesPhase:'loaded',favorites:rows,favoritesError:null});
+    }).catch(error=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      // A failed authority never falls back to the previous projection.
+      updateView(view,content?{phase:'error',rows:[],error,refreshing:false}:{favoritesPhase:'error',favorites:[],favoritesError:error});
+    }).finally(()=>{if(view[part]===request)view[part]=null;});
+    return request.promise;
+  }
+  function refreshView(force=false){
+    if(!viewListeners.size){viewState=null;return;}
+    const view=currentView();return Promise.all([readView(view,'content',force),readView(view,'favorites',force)]);
+  }
+  function onViewFocus(){refreshView();}
+  function onViewContext(){currentView();emitView();refreshView();}
+  function subscribeView(fn){
+    viewListeners.add(fn);
+    if(viewListeners.size===1){offContext=window.PrivateResourceDemand.subscribe(onViewContext);window.addEventListener('focus',onViewFocus);}
+    const view=currentView();
+    if(view.snapshot.phase==='loading')readView(view,'content');
+    if(view.snapshot.favoritesPhase==='loading')readView(view,'favorites');
+    return()=>{
+      viewListeners.delete(fn);
+      if(!viewListeners.size){if(offContext)offContext();offContext=null;window.removeEventListener('focus',onViewFocus);viewState=null;}
+    };
+  }
+  const snapshot=()=>currentView().snapshot;
+  const retryFavorites=()=>readView(currentView(),'favorites');
   window.ConveniosRepository=Object.freeze({list,key,invalidate,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},favorite,saveCompany,saveAgreement,uploadImage,attachImage,activity:id=>rpc('get_company_activity',{p_company_id:id})});
   window.useConvenios=function(){
-    const epoch=window.PrivateResourceDemand.useContext();
-    const[state,setState]=React.useState({phase:'loading',rows:[],favorites:[],error:null});
-    const[version,setVersion]=React.useState(0);
-    React.useEffect(()=>{const reload=()=>setVersion(v=>v+1);const off=window.ConveniosRepository.subscribe(reload);window.addEventListener('focus',reload);return()=>{off();window.removeEventListener('focus',reload);};},[]);
-    React.useEffect(()=>{let live=true;setState({phase:'loading',rows:[],favorites:[],error:null});Promise.all([list(),listEducationFavorites()]).then(([rows,favorites])=>{if(live)setState({phase:'loaded',rows,favorites,error:null});}).catch(error=>{if(live)setState({phase:'error',rows:[],favorites:[],error});});return()=>{live=false;};},[epoch,version]);
-    return {...state,retry:()=>setVersion(v=>v+1)};
+    const state=React.useSyncExternalStore(subscribeView,snapshot);
+    return {...state,retry:onViewFocus,retryFavorites};
   };
 })();

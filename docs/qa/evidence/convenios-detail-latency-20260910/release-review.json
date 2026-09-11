@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "repositoryMatchesTestedBytes": true,
+  "screenMatchesTestedLogic": true,
+  "preservedPublishedStyles": [
+    "typography CSS variables",
+    "su-ad-slide",
+    "su-ad-copy",
+    "su-convenio-actions"
+  ],
+  "benchmarkScenariosUnchanged": true,
+  "newBenchmarksRun": false,
+  "review": "APPROVED for authorized commit/push"
+}

@@ -1,0 +1,115 @@
+--- before/app/convenios-repository.js
++++ app/convenios-repository.js
+@@ -6 +6 @@
+-  const invalidate=()=>listeners.forEach(fn=>fn());
++  const invalidate=()=>{refreshView(true);listeners.forEach(fn=>fn());};
+@@ -19,0 +20,2 @@
++    const view=currentView();
++    if(view.snapshot.favoritesPhase!=='loaded')throw new Error('CONVENIOS_FAVORITES_NOT_READY');
+@@ -20,0 +23 @@
++    if(!isCurrent(view))throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
+@@ -22 +25,2 @@
+-    if(r.error)throw r.error;invalidate();
++    if(r.error)throw r.error;
++    if(isCurrent(view))await readView(view,'favorites',true);
+@@ -39,0 +44,49 @@
++  // One ephemeral projection for the mounted Convenios list/detail. No settled
++  // state survives the last consumer or an Auth/impersonation context change.
++  const viewListeners=new Set();let viewState=null,offContext=null;
++  function currentView(){
++    const epoch=window.PrivateResourceDemand.context();
++    if(!viewState||viewState.epoch!==epoch)viewState={epoch,content:null,favorites:null,snapshot:{phase:'loading',rows:[],error:null,refreshing:false,favoritesPhase:'loading',favorites:[],favoritesError:null}};
++    return viewState;
++  }
++  function isCurrent(view){return window.PrivateResourceDemand.context()===view.epoch&&viewState===view;}
++  function emitView(){viewListeners.forEach(fn=>fn());}
++  function updateView(view,patch){if(!isCurrent(view))return;view.snapshot={...view.snapshot,...patch};emitView();}
++  function readView(view,part,force=false){
++    if(view.epoch===null||!isCurrent(view))return Promise.resolve();
++    if(view[part]&&!force)return view[part].promise;
++    const request={};view[part]=request;
++    const content=part==='content';
++    updateView(view,content?{phase:view.snapshot.phase==='loaded'?'loaded':'loading',refreshing:true,error:null}:{favoritesPhase:'loading',favoritesError:null});
++    request.promise=Promise.resolve().then(()=>{
++      if(!isCurrent(view)||view[part]!==request)return;
++      return content?list():listEducationFavorites();
++    }).then(rows=>{
++      if(!isCurrent(view)||view[part]!==request)return;
++      updateView(view,content?{phase:'loaded',rows,error:null,refreshing:false}:{favoritesPhase:'loaded',favorites:rows,favoritesError:null});
++    }).catch(error=>{
++      if(!isCurrent(view)||view[part]!==request)return;
++      // A failed authority never falls back to the previous projection.
++      updateView(view,content?{phase:'error',rows:[],error,refreshing:false}:{favoritesPhase:'error',favorites:[],favoritesError:error});
++    }).finally(()=>{if(view[part]===request)view[part]=null;});
++    return request.promise;
++  }
++  function refreshView(force=false){
++    if(!viewListeners.size){viewState=null;return;}
++    const view=currentView();return Promise.all([readView(view,'content',force),readView(view,'favorites',force)]);
++  }
++  function onViewFocus(){refreshView();}
++  function onViewContext(){currentView();emitView();refreshView();}
++  function subscribeView(fn){
++    viewListeners.add(fn);
++    if(viewListeners.size===1){offContext=window.PrivateResourceDemand.subscribe(onViewContext);window.addEventListener('focus',onViewFocus);}
++    const view=currentView();
++    if(view.snapshot.phase==='loading')readView(view,'content');
++    if(view.snapshot.favoritesPhase==='loading')readView(view,'favorites');
++    return()=>{
++      viewListeners.delete(fn);
++      if(!viewListeners.size){if(offContext)offContext();offContext=null;window.removeEventListener('focus',onViewFocus);viewState=null;}
++    };
++  }
++  const snapshot=()=>currentView().snapshot;
++  const retryFavorites=()=>readView(currentView(),'favorites');
+@@ -42,6 +95,2 @@
+-    const epoch=window.PrivateResourceDemand.useContext();
+-    const[state,setState]=React.useState({phase:'loading',rows:[],favorites:[],error:null});
+-    const[version,setVersion]=React.useState(0);
+-    React.useEffect(()=>{const reload=()=>setVersion(v=>v+1);const off=window.ConveniosRepository.subscribe(reload);window.addEventListener('focus',reload);return()=>{off();window.removeEventListener('focus',reload);};},[]);
+-    React.useEffect(()=>{let live=true;setState({phase:'loading',rows:[],favorites:[],error:null});Promise.all([list(),listEducationFavorites()]).then(([rows,favorites])=>{if(live)setState({phase:'loaded',rows,favorites,error:null});}).catch(error=>{if(live)setState({phase:'error',rows:[],favorites:[],error});});return()=>{live=false;};},[epoch,version]);
+-    return {...state,retry:()=>setVersion(v=>v+1)};
++    const state=React.useSyncExternalStore(subscribeView,snapshot);
++    return {...state,retry:onViewFocus,retryFavorites};
+--- before/app/screens-convenios.jsx
++++ app/screens-convenios.jsx
+@@ -52,0 +53,22 @@
++  function FavoritesNotice({ directory }) {
++    if(directory.favoritesPhase==='loaded')return null;
++    const failed=directory.favoritesPhase==='error';
++    return React.createElement('div',{'data-convenios-favorites-state':directory.favoritesPhase,role:failed?'alert':'status',style:{padding:'10px 20px',fontSize:13,color:'var(--ink-2)'}},failed?'No pudimos cargar tus favoritos.':'Cargando favoritos…',failed&&React.createElement(window.Btn,{size:'sm',variant:'outline',onClick:directory.retryFavorites,style:{marginLeft:8}},'Reintentar favoritos'));
++  }
++
++  function toggleFavorite(company,on,directory,app){
++    if(company.source_kind==='education'&&directory.favoritesPhase!=='loaded'){
++      if(app.toast)app.toast(directory.favoritesPhase==='error'?'Reintenta cargar tus favoritos.':'Los favoritos se están actualizando.');
++      return;
++    }
++    return window.ConveniosRepository.favorite(company,on).catch(()=>app.toast&&app.toast('No se pudo actualizar el favorito'));
++  }
++
++  function DetailState({ app, directory }) {
++    const loading=directory.phase==='loading',failed=directory.phase==='error';
++    return React.createElement('div',{'data-convenio-state':loading?'loading':failed?'error':'empty',style:{position:'absolute',inset:0,background:'var(--bg)',overflowY:'auto',paddingBottom:30}},
++      React.createElement('div',{style:{padding:16}},React.createElement(window.Btn,{variant:'outline',icon:'arrowL',onClick:app.back},'Volver')),
++      loading?React.createElement('div',{role:'status','aria-label':'Cargando convenio',style:{padding:'0 20px'}},React.createElement(window.Skeleton,{h:240,r:20}),React.createElement(window.Skeleton,{h:32,r:8,style:{marginTop:20}}),React.createElement(window.Skeleton,{h:110,r:16,style:{marginTop:20}})):
++        React.createElement(window.EmptyState,{icon:failed?'alert':'tag',title:failed?'No pudimos cargar la ficha':'Este convenio ya no está disponible',action:failed?React.createElement(window.Btn,{onClick:directory.retry},'Reintentar'):null}));
++  }
++
+@@ -60 +82 @@
+-    const isFav=(c)=>c.source_kind==='education'?directory.favorites.includes(c.id):catalog.isCompanyFavorite(c.id);const toggleFav=(c)=>window.ConveniosRepository.favorite(c,!isFav(c)).catch(()=>app.toast&&app.toast('No se pudo actualizar el favorito'));const selectCat=(value)=>{setCat(value);setFilters(false);};
++    const isFav=(c)=>c.source_kind==='education'?directory.favorites.includes(c.id):catalog.isCompanyFavorite(c.id);const toggleFav=(c)=>toggleFavorite(c,!isFav(c),directory,app);const selectCat=(value)=>{setCat(value);setFilters(false);};
+@@ -62,0 +85 @@
++      React.createElement(FavoritesNotice,{directory}),
+@@ -72 +95 @@
+-    if(directory.phase==='loading')return React.createElement(LoadingLayout,{app});if(!company)return React.createElement(window.EmptyState,{icon:'tag',title:directory.phase==='error'?'No pudimos cargar la ficha':'Este convenio ya no está disponible',action:React.createElement(window.Btn,{onClick:directory.phase==='error'?directory.retry:app.back},directory.phase==='error'?'Reintentar':'Volver')});
++    if(directory.phase==='loading'||directory.phase==='error'||!company)return React.createElement(DetailState,{app,directory});
+@@ -75 +98,2 @@
+-      React.createElement('div',{'data-convenio-cover-zoom':(company.cover_url||company.logo_url)?'enabled':'disabled',style:{position:'relative'},onClick:()=>images.length&&setViewer(0)},React.createElement(CompanyImage,{company,height:240}),React.createElement('button',{onClick:(event)=>{event.stopPropagation();app.back();},'aria-label':'Volver',style:{position:'absolute',top:12,left:10,width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.35)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'arrowL',size:22,stroke:2})),React.createElement(window.FavHeart,{on:fav,onClick:(event)=>{event&&event.stopPropagation&&event.stopPropagation();window.ConveniosRepository.favorite(company,!fav).catch(()=>app.toast&&app.toast('No se pudo actualizar el favorito'));},size:40,iconSize:21,style:{top:12,right:10}}),React.createElement('div',{style:{position:'absolute',top:12,left:60}},React.createElement(CompanyDiscount,{company})),company.cover_url&&React.createElement('div',{style:{position:'absolute',right:13,bottom:13,padding:'6px 10px',borderRadius:999,background:'rgba(0,0,0,.42)',color:'#fff',fontSize:10.5,fontWeight:800,pointerEvents:'none'}},'AMPLIAR')),
++      React.createElement('div',{'data-convenio-cover-zoom':(company.cover_url||company.logo_url)?'enabled':'disabled',style:{position:'relative'},onClick:()=>images.length&&setViewer(0)},React.createElement(CompanyImage,{company,height:240}),React.createElement('button',{onClick:(event)=>{event.stopPropagation();app.back();},'aria-label':'Volver',style:{position:'absolute',top:12,left:10,width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.35)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'arrowL',size:22,stroke:2})),React.createElement(window.FavHeart,{on:fav,onClick:(event)=>{event&&event.stopPropagation&&event.stopPropagation();toggleFavorite(company,!fav,directory,app);},size:40,iconSize:21,style:{top:12,right:10}}),React.createElement('div',{style:{position:'absolute',top:12,left:60}},React.createElement(CompanyDiscount,{company})),company.cover_url&&React.createElement('div',{style:{position:'absolute',right:13,bottom:13,padding:'6px 10px',borderRadius:999,background:'rgba(0,0,0,.42)',color:'#fff',fontSize:10.5,fontWeight:800,pointerEvents:'none'}},'AMPLIAR')),
++      React.createElement(FavoritesNotice,{directory}),
+--- before/SutiApp.html
++++ SutiApp.html
+@@ -695 +695 @@
+-  <script src="app/bundle.js?v=240" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
++  <script src="app/bundle.js?v=241" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>

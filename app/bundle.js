@@ -17122,7 +17122,7 @@ Object.assign(window, {
   'use strict';
   const db=()=>window.SutiSupabase.getClient(),listeners=new Set();
   const assetFields='id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
-  const invalidate=()=>listeners.forEach(fn=>fn());
+  const invalidate=()=>{refreshView(true);listeners.forEach(fn=>fn());};
   async function rpc(name,args){const r=await db().rpc(name,args);if(r.error)throw r.error;return r.data;}
   function key(row){return row.source_kind==='education'?'education:'+row.id:row.id;}
   async function list(){
@@ -17136,9 +17136,13 @@ Object.assign(window, {
   async function listEducationFavorites(){const r=await db().from('educational_resource_favorites').select('resource_id');if(r.error)throw r.error;return (r.data||[]).map(r=>r.resource_id);}
   async function favorite(row,on){
     if(row.source_kind!=='education')return window.catalogStore.toggleCompanyFavorite(row.id);
+    const view=currentView();
+    if(view.snapshot.favoritesPhase!=='loaded')throw new Error('CONVENIOS_FAVORITES_NOT_READY');
     const api=db(),u=await api.auth.getUser();if(u.error||!u.data.user)throw u.error||new Error('AUTH_REQUIRED');
+    if(!isCurrent(view))throw new Error('PRIVATE_RESOURCE_CONTEXT_CHANGED');
     const r=on?await api.from('educational_resource_favorites').insert({auth_user_id:u.data.user.id,resource_id:row.id}):await api.from('educational_resource_favorites').delete().eq('resource_id',row.id);
-    if(r.error)throw r.error;invalidate();
+    if(r.error)throw r.error;
+    if(isCurrent(view))await readView(view,'favorites',true);
   }
   async function saveCompany(id,fields){const saved=await rpc('save_company_ficha',{p_company_id:id||null,p_fields:fields});invalidate();return {id:saved};}
   async function saveAgreement(row){const saved=await rpc('save_agreement_ficha',{p_fields:row});invalidate();return saved;}
@@ -17156,14 +17160,59 @@ Object.assign(window, {
     return {id,url:api.storage.from('company-assets').getPublicUrl(path).data.publicUrl};
   }
   async function attachImage(companyId,assetId,role){await rpc('attach_company_ficha_image',{p_company_id:companyId,p_asset_id:assetId,p_role:role});invalidate();}
+  // One ephemeral projection for the mounted Convenios list/detail. No settled
+  // state survives the last consumer or an Auth/impersonation context change.
+  const viewListeners=new Set();let viewState=null,offContext=null;
+  function currentView(){
+    const epoch=window.PrivateResourceDemand.context();
+    if(!viewState||viewState.epoch!==epoch)viewState={epoch,content:null,favorites:null,snapshot:{phase:'loading',rows:[],error:null,refreshing:false,favoritesPhase:'loading',favorites:[],favoritesError:null}};
+    return viewState;
+  }
+  function isCurrent(view){return window.PrivateResourceDemand.context()===view.epoch&&viewState===view;}
+  function emitView(){viewListeners.forEach(fn=>fn());}
+  function updateView(view,patch){if(!isCurrent(view))return;view.snapshot={...view.snapshot,...patch};emitView();}
+  function readView(view,part,force=false){
+    if(view.epoch===null||!isCurrent(view))return Promise.resolve();
+    if(view[part]&&!force)return view[part].promise;
+    const request={};view[part]=request;
+    const content=part==='content';
+    updateView(view,content?{phase:view.snapshot.phase==='loaded'?'loaded':'loading',refreshing:true,error:null}:{favoritesPhase:'loading',favoritesError:null});
+    request.promise=Promise.resolve().then(()=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      return content?list():listEducationFavorites();
+    }).then(rows=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      updateView(view,content?{phase:'loaded',rows,error:null,refreshing:false}:{favoritesPhase:'loaded',favorites:rows,favoritesError:null});
+    }).catch(error=>{
+      if(!isCurrent(view)||view[part]!==request)return;
+      // A failed authority never falls back to the previous projection.
+      updateView(view,content?{phase:'error',rows:[],error,refreshing:false}:{favoritesPhase:'error',favorites:[],favoritesError:error});
+    }).finally(()=>{if(view[part]===request)view[part]=null;});
+    return request.promise;
+  }
+  function refreshView(force=false){
+    if(!viewListeners.size){viewState=null;return;}
+    const view=currentView();return Promise.all([readView(view,'content',force),readView(view,'favorites',force)]);
+  }
+  function onViewFocus(){refreshView();}
+  function onViewContext(){currentView();emitView();refreshView();}
+  function subscribeView(fn){
+    viewListeners.add(fn);
+    if(viewListeners.size===1){offContext=window.PrivateResourceDemand.subscribe(onViewContext);window.addEventListener('focus',onViewFocus);}
+    const view=currentView();
+    if(view.snapshot.phase==='loading')readView(view,'content');
+    if(view.snapshot.favoritesPhase==='loading')readView(view,'favorites');
+    return()=>{
+      viewListeners.delete(fn);
+      if(!viewListeners.size){if(offContext)offContext();offContext=null;window.removeEventListener('focus',onViewFocus);viewState=null;}
+    };
+  }
+  const snapshot=()=>currentView().snapshot;
+  const retryFavorites=()=>readView(currentView(),'favorites');
   window.ConveniosRepository=Object.freeze({list,key,invalidate,subscribe:fn=>{listeners.add(fn);return()=>listeners.delete(fn);},favorite,saveCompany,saveAgreement,uploadImage,attachImage,activity:id=>rpc('get_company_activity',{p_company_id:id})});
   window.useConvenios=function(){
-    const epoch=window.PrivateResourceDemand.useContext();
-    const[state,setState]=React.useState({phase:'loading',rows:[],favorites:[],error:null});
-    const[version,setVersion]=React.useState(0);
-    React.useEffect(()=>{const reload=()=>setVersion(v=>v+1);const off=window.ConveniosRepository.subscribe(reload);window.addEventListener('focus',reload);return()=>{off();window.removeEventListener('focus',reload);};},[]);
-    React.useEffect(()=>{let live=true;setState({phase:'loading',rows:[],favorites:[],error:null});Promise.all([list(),listEducationFavorites()]).then(([rows,favorites])=>{if(live)setState({phase:'loaded',rows,favorites,error:null});}).catch(error=>{if(live)setState({phase:'error',rows:[],favorites:[],error});});return()=>{live=false;};},[epoch,version]);
-    return {...state,retry:()=>setVersion(v=>v+1)};
+    const state=React.useSyncExternalStore(subscribeView,snapshot);
+    return {...state,retry:onViewFocus,retryFavorites};
   };
 })();
 })();
@@ -17648,6 +17697,87 @@ Object.assign(window, {
       r: 20
     })));
   }
+  function FavoritesNotice({
+    directory
+  }) {
+    if (directory.favoritesPhase === 'loaded') return null;
+    const failed = directory.favoritesPhase === 'error';
+    return React.createElement('div', {
+      'data-convenios-favorites-state': directory.favoritesPhase,
+      role: failed ? 'alert' : 'status',
+      style: {
+        padding: '10px 20px',
+        fontSize: 13,
+        color: 'var(--ink-2)'
+      }
+    }, failed ? 'No pudimos cargar tus favoritos.' : 'Cargando favoritos…', failed && React.createElement(window.Btn, {
+      size: 'sm',
+      variant: 'outline',
+      onClick: directory.retryFavorites,
+      style: {
+        marginLeft: 8
+      }
+    }, 'Reintentar favoritos'));
+  }
+  function toggleFavorite(company, on, directory, app) {
+    if (company.source_kind === 'education' && directory.favoritesPhase !== 'loaded') {
+      if (app.toast) app.toast(directory.favoritesPhase === 'error' ? 'Reintenta cargar tus favoritos.' : 'Los favoritos se están actualizando.');
+      return;
+    }
+    return window.ConveniosRepository.favorite(company, on).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+  }
+  function DetailState({
+    app,
+    directory
+  }) {
+    const loading = directory.phase === 'loading',
+      failed = directory.phase === 'error';
+    return React.createElement('div', {
+      'data-convenio-state': loading ? 'loading' : failed ? 'error' : 'empty',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        overflowY: 'auto',
+        paddingBottom: 30
+      }
+    }, React.createElement('div', {
+      style: {
+        padding: 16
+      }
+    }, React.createElement(window.Btn, {
+      variant: 'outline',
+      icon: 'arrowL',
+      onClick: app.back
+    }, 'Volver')), loading ? React.createElement('div', {
+      role: 'status',
+      'aria-label': 'Cargando convenio',
+      style: {
+        padding: '0 20px'
+      }
+    }, React.createElement(window.Skeleton, {
+      h: 240,
+      r: 20
+    }), React.createElement(window.Skeleton, {
+      h: 32,
+      r: 8,
+      style: {
+        marginTop: 20
+      }
+    }), React.createElement(window.Skeleton, {
+      h: 110,
+      r: 16,
+      style: {
+        marginTop: 20
+      }
+    })) : React.createElement(window.EmptyState, {
+      icon: failed ? 'alert' : 'tag',
+      title: failed ? 'No pudimos cargar la ficha' : 'Este convenio ya no está disponible',
+      action: failed ? React.createElement(window.Btn, {
+        onClick: directory.retry
+      }, 'Reintentar') : null
+    }));
+  }
   function ConveniosScreen({
     app
   }) {
@@ -17689,7 +17819,7 @@ Object.assign(window, {
     const needle = q.trim().toLocaleLowerCase('es-MX');
     const list = base.filter(c => (cat === 'Todos' || classifications(c).includes(cat)) && (!needle || [c.display_name, c.description, ...classifications(c)].concat(catalog.byCompany(c.id).map(p => p.nombre)).some(x => String(x || '').toLocaleLowerCase('es-MX').includes(needle))));
     const isFav = c => c.source_kind === 'education' ? directory.favorites.includes(c.id) : catalog.isCompanyFavorite(c.id);
-    const toggleFav = c => window.ConveniosRepository.favorite(c, !isFav(c)).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+    const toggleFav = c => toggleFavorite(c, !isFav(c), directory, app);
     const selectCat = value => {
       setCat(value);
       setFilters(false);
@@ -17706,6 +17836,8 @@ Object.assign(window, {
       variant: 'convenios'
     }), React.createElement(AdCarousel, {
       ads: visual.marketplaceBanners || []
+    }), React.createElement(FavoritesNotice, {
+      directory
     }), React.createElement('div', {
       style: {
         padding: '20px 16px 0'
@@ -17807,15 +17939,9 @@ Object.assign(window, {
     const catalog = window.useCatalogStore();
     const [viewer, setViewer] = useState(null);
     const company = directory.rows.find(c => c.public_key === window.ConveniosRepository.key(params.company || {}));
-    if (directory.phase === 'loading') return React.createElement(LoadingLayout, {
-      app
-    });
-    if (!company) return React.createElement(window.EmptyState, {
-      icon: 'tag',
-      title: directory.phase === 'error' ? 'No pudimos cargar la ficha' : 'Este convenio ya no está disponible',
-      action: React.createElement(window.Btn, {
-        onClick: directory.phase === 'error' ? directory.retry : app.back
-      }, directory.phase === 'error' ? 'Reintentar' : 'Volver')
+    if (directory.phase === 'loading' || directory.phase === 'error' || !company) return React.createElement(DetailState, {
+      app,
+      directory
     });
     const fav = company.source_kind === 'education' ? directory.favorites.includes(company.id) : catalog.isCompanyFavorite(company.id);
     const products = catalog.byCompany(company.id).filter(p => p.activo !== false);
@@ -17875,7 +18001,7 @@ Object.assign(window, {
       on: fav,
       onClick: event => {
         event && event.stopPropagation && event.stopPropagation();
-        window.ConveniosRepository.favorite(company, !fav).catch(() => app.toast && app.toast('No se pudo actualizar el favorito'));
+        toggleFavorite(company, !fav, directory, app);
       },
       size: 40,
       iconSize: 21,
@@ -17904,7 +18030,9 @@ Object.assign(window, {
         fontWeight: 800,
         pointerEvents: 'none'
       }
-    }, 'AMPLIAR')), React.createElement('div', {
+    }, 'AMPLIAR')), React.createElement(FavoritesNotice, {
+      directory
+    }), React.createElement('div', {
       style: {
         padding: 20
       }

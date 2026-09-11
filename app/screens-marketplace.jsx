@@ -15,11 +15,11 @@
   }
 
   // generic full-screen shell with image hero
-  function HeroShell({ app, item, hue, children, fav, onFav }) {
+  function HeroShell({ app, item, hue, children, fav, onFav, metadata }) {
     return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto' } },
         // hero
-        React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
+        metadata ? React.createElement(window.ProgramGeneralInfo.Cover, {url:metadata.cover_url,icon:metadata.program_info.icon,hue}, React.createElement('div',{style:{position:'absolute',top:10,left:8,right:8,display:'flex',justifyContent:'space-between'}},circBtn('arrowL',app.back),onFav&&React.createElement('button',{onClick:onFav,'aria-label':'Guardar programa','aria-pressed':fav,style:{width:40,height:40,borderRadius:'50%',border:'none',background:'rgba(0,0,0,.25)',backdropFilter:'blur(6px)',display:'grid',placeItems:'center',cursor:'pointer',color:'#fff'}},React.createElement(I,{name:'heart',size:21,stroke:2,style:{fill:fav?'#fff':'none'}})))) : React.createElement('div', { style: { position: 'relative', height: 188, background: `linear-gradient(135deg, hsl(${hue} 48% 42%), hsl(${hue} 55% 26%))`, overflow: 'hidden' } },
           React.createElement(window.ResSlot, { resKey: 'fin.hero.' + item.id, shape: 'rect', fit: 'cover', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' } }),
           React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'linear-gradient(120deg, rgba(20,8,12,.42), rgba(20,8,12,.08))', pointerEvents: 'none' } }),
           React.createElement('div', { style: { position: 'absolute', right: -20, bottom: -30, opacity: .16 } }, React.createElement(I, { name: item.icon, size: 220, stroke: 1, style: { color: '#fff' } })),
@@ -39,12 +39,13 @@
   const LISTING_CATS = ['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'market', 'tours', 'farma', 'cirugias', 'rifas', 'donativos'];
 
   function ProductScreen({ app, params }) {
+    const metadata = window.ProgramGeneralInfo.useInfo(params.id);
+    const managed = window.ProgramGeneralInfo.keys.includes(params.id);
     const found = findItem(params.id);
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
     const cs = window.useCatalogStore ? window.useCatalogStore({programKey:params.id}) : null;
-    if (!found) return null;
-    const { it } = found;
-    const hue = { guinda: 345, green: 150, blue: 210, amber: 36 }[found.g.tone];
+    const it = metadata.row ? { ...found?.it, id:params.id, label:metadata.row.label_override, icon:metadata.row.program_info.icon } : (found?.it || {id:params.id});
+    const hue = { guinda: 345, green: 150, blue: 210, amber: 36 }[found?.g.tone] || 210;
     const [fav, setFav] = useState(false);
     const [sheet, setSheet] = useState(false);
     const [qSheet, setQSheet] = useState(false);
@@ -59,9 +60,12 @@
     const quoteReady = quote && quote.estado === 'cotizada';
     React.useEffect(() => { if (quoteReady && !quote.visto) qs.markVisto(quote.id); }, [quoteReady, quote && quote.id]);
 
+    if(managed && metadata.phase!=='loaded') return React.createElement('div',null,React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
+    if(!found && !metadata.row) return null;
     return React.createElement(React.Fragment, null,
-      React.createElement(HeroShell, { app, item: it, hue, fav, onFav: () => setFav(!fav) },
+      React.createElement(HeroShell, { app, item: it, hue, fav, metadata:metadata.row, onFav: !managed || metadata.row.program_info.favorite_enabled ? () => setFav(!fav) : null },
         React.createElement('div', { style: { position: 'relative', zIndex: 1, overflow: 'visible', padding: isListing ? '18px 20px 30px' : '18px 20px 120px' } },
+          metadata.row ? React.createElement(window.ProgramGeneralInfo.PublicHeader,{row:metadata.row,favorite:fav,onFavorite:()=>setFav(!fav),notify:app.toast},needsQuote&&React.createElement(QuoteStatusCard,{quote,it})) : React.createElement(React.Fragment,null,
           // title block
           React.createElement('div', { style: { display: 'flex', gap: 13, alignItems: 'flex-start', minWidth: 0 } },
             React.createElement('div', { 'data-category-header-icon': 'true', style: { position: 'relative', zIndex: 2, marginTop: -46, flexShrink: 0, width: 64, height: 64, borderRadius: 18, background: 'var(--surface)', boxShadow: 'var(--neo-md)', display: 'grid', placeItems: 'center', color: 'var(--guinda)' } },
@@ -81,10 +85,10 @@
             React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
               benefits.map((b) => React.createElement('div', { key: b.t, style: { display: 'flex', gap: 12, alignItems: 'center', background: 'var(--surface)', borderRadius: 14, padding: '13px 14px', boxShadow: 'var(--neo-sm)' } },
                 React.createElement('div', { style: { width: 38, height: 38, borderRadius: 11, background: 'var(--guinda-50)', display: 'grid', placeItems: 'center', color: 'var(--guinda)', flexShrink: 0 } }, React.createElement(I, { name: b.icon, size: 20, stroke: 2 })),
-                React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 700 } }, b.t), React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 500 } }, b.s)))))),
+                React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 700 } }, b.t), React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 500 } }, b.s))))))),
           // listings (administrables desde el módulo Marketplace)
           isListing && React.createElement('div', { style: { marginTop: 24 } },
-            React.createElement(window.SectionHead, { title: 'Disponibles ahora' }),
+            React.createElement(window.SectionHead, { title: metadata.row ? metadata.row.program_info.catalog_title : 'Disponibles ahora' }),
             catalogState.phase === 'loading'
               ? React.createElement(window.EmptyState, { icon: 'clock', title: 'Cargando disponibles', sub: 'Consultando el catálogo productivo…' })
               : catalogState.phase === 'error'
@@ -186,26 +190,10 @@
     const m = {
       ahorro: 'Aparta una parte de tu quincena de forma automática y recíbela con rendimiento preferente al cierre del semestre. Sin comisiones.',
       inversion: 'Haz crecer tu dinero con el portafolio sindical, diseñado para afiliados. Empieza desde $1,000 y consulta tu rendimiento en tiempo real.',
-      solar: 'Los paneles solares requieren poco mantenimiento, reducen tu recibo de luz y aumentan el valor de tu propiedad. Financiamiento verde a meses sin intereses.',
-      farma: 'Consulta medicamentos y presentaciones disponibles del catálogo histórico de Suti Farma.',
-      tours: 'Explora viajes, alojamientos y experiencias disponibles en el catálogo de Suti Tours.',
-      auto: 'Consulta los vehículos disponibles. Las condiciones de financiamiento se revisan después de registrar tu solicitud.',
-      renta: 'Consulta los vehículos disponibles para renta y registra tu solicitud desde aquí.',
-      casa: 'Explora propiedades publicadas en el catálogo histórico de Suti Casa.',
-      terrenos: 'Consulta los terrenos publicados. El cálculo de financiamiento se realiza durante la revisión.',
-      aires: 'Consulta equipos de aire acondicionado disponibles y su precio de contado histórico.',
-      puertas: 'Consulta modelos de puertas de seguridad disponibles.',
-      computo: 'Consulta equipos de cómputo disponibles.',
-      donativos: 'Consulta las organizaciones y causas publicadas para donativos.',
     };
     return m[it.id] || (it.tagline + '. ' + it.meta + '. Solicítalo con las mejores condiciones gracias a tu sindicato, con descuento cómodo vía nómina y sin letras chiquitas.');
   }
   function benefitsFor(id) {
-    if (LISTING_CATS.includes(id) || id === 'donativos') return [
-      { icon: 'checkCircle', t: 'Catálogo verificado', s: 'Filas históricas reconciliadas sin productos simulados' },
-      { icon: 'image', t: 'Información disponible', s: 'Imágenes y datos vigentes de cada opción' },
-      { icon: 'shield', t: 'Proceso protegido', s: 'Tu solicitud se registra antes de cualquier revisión financiera' },
-    ];
     const base = [
       { icon: 'percent', t: 'Tasa preferente sindical', s: 'Mejores condiciones que el mercado' },
       { icon: 'calendar', t: 'Descuento vía nómina', s: 'Pagos cómodos cada quincena' },

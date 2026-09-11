@@ -2934,3 +2934,7 @@ Z de Historial de solicitudes. Pruebas aisladas de seis empresas, las otras
 Sin cambios a SQL, Apps Script, UI, reglas financieras ni históricos. Respaldo
 del Edge, cotejo exacto de fuentes activas, compilación y readback del despliegue;
 evidencia y resultado en docs/qa/H-MEMBERSHIP-GOOGLE-COMPANY-Z-001.md.
+
+## H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001 - 2026-09-10
+
+Shared general-information editor and preview precede products in Admin and are also available from the Finance catalog. Supabase supplies 14 program headers, legitimate covers, contacts, existing favorite behavior and card fields. SQL/recovery/RLS and actual edit description/cover/benefits, save, refresh and public rendering PASS for Auto, Aires, Casa, Solar and Computo. Product prices and modes remain unchanged. Isolated release preserves 110 published modules. Evidence and publication status: docs/qa/H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001.md.

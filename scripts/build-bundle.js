@@ -28,7 +28,7 @@ const files = [
   'funds-store.jsx', 'admin-popup-editor.jsx', 'savings-review-repository.js', 'savings-access-admin.jsx', 'savings-recorded-history.jsx', 'savings-withdrawal-list.jsx', 'savings-review-admin.jsx',
   'section-responsibility.jsx', 'screens-admin-roles.jsx', 'screens-admin-content.jsx', 'screens-admin-news.jsx',
   'screens-admin-convenios.jsx', 'screens-admin-sindicato.jsx', 'screens-admin-finanzas.jsx', 'screens-admin-fondos.jsx', 'screens-admin-fincat.jsx', 'screens-admin-flujos.jsx', 'screens-admin-documents.jsx',
-  'fincat-store.jsx',
+  'fincat-store.jsx', 'program-general-info.jsx',
   'savings-panel-repository.js',
   'savings-panel-reference.jsx',
   'savings-panel-admin.jsx',

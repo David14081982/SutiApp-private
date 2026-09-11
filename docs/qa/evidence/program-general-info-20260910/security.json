@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "matrix": [
+    {
+      "status": "PASS",
+      "authenticated_read": true,
+      "direct_update_denied": true,
+      "affiliate_write_denied": true,
+      "affiliate_cover_denied": true,
+      "anonymous_write_denied": true,
+      "business_writes": 0
+    }
+  ]
+}

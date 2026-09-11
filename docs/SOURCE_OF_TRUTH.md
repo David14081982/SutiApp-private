@@ -386,3 +386,7 @@ marketplace_categories conserva la autoridad compartida de categorías comercial
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 membership_offerings.amount/installments siguen siendo la autoridad del precio comercial y número total de descuentos. affiliates.financial_employee_category_code determina la periodicidad: JUBILADOS_PENSIONADOS mensual; BASE, EVENTUALES, SUPLENTES_FIJOS, SUPLENTES_VARIABLES y CONFIANZA quincenal. get_current_membership_payment_quote obtiene el contexto efectivo autenticado; create_membership_request de ocho argumentos valida la cotización aceptada. El trigger exclusivo de nuevas membresías captura financial_submission_snapshot y financial_profile_snapshot inmutables. Finanzas y Google leen esa captura mediante sus lectores existentes. Sin nuevos catálogos financieros, cachés persistentes ni fallback.
+
+## H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001 - 2026-09-10
+
+Program catalog headers use finance_catalog_presentation exclusively. item_key equals program_key; label_override/description_override retain name/tagline; program_info holds the existing description, breadcrumb, icon, header contacts, benefits and section texts; program_cover_asset_id references app_assets. institutional_programs remains the separate institutional directory. Both Admin entrances share save_program_general_info; ProductScreen and the Terrenos header read this authority. No per-product metadata, browser storage or runtime seed. program_catalog_items products, prices, modes and requests remain unchanged.

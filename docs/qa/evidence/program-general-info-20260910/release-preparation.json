@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "base": "f244fea14930028133e39c6a3bbe2c17abfed04a",
+  "files": [
+    {
+      "file": "app/screens-marketplace.jsx",
+      "published": "050c9f42b93d992d67cb356648d0a850a517158626882c7bda9ebacf14f6ab13",
+      "candidate": "5a062f9610cd98bbdb2f06ed13063c586a72aa55dfc958087f0225c16cd87fd3"
+    },
+    {
+      "file": "app/screens-admin-program-products.jsx",
+      "published": "4de0f4ac58ceb558bba1280bec48ccff936415c2dc923074d2fd4b703a095737",
+      "candidate": "f2df468b9ba67f6d5b33a00f40c9ea2d0bd5605f0e68fd6b624e22eee23cc21c"
+    },
+    {
+      "file": "app/screens-admin-fincat.jsx",
+      "published": "162ae3ec051e4b7df8c744719592c5537e09cfa3694ecddee6b3023856a90096",
+      "candidate": "4a1697fa50b514825365b1a97168c343fce3b09c730320fad13f67a627673a23"
+    },
+    {
+      "file": "app/screens-terreno.jsx",
+      "published": "ee2ba510e9767abebb94d278b1e811fc49aba43ebbb93e42b90d6cf7888c38fc",
+      "candidate": "66e19f682ba84bccc4621209c34f20b167880f9ddb93f35248a3c2df0cc9be05"
+    },
+    {
+      "file": "app/fincat-store.jsx",
+      "published": "909c3877d07c2f47edc764eabcd4ff3633f7d588f0fc691f032908833c9a28ee",
+      "candidate": "a540c846ffd6c2060f00f068c051a7bf352043558730520069522d64527bf551"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "published": "0a76698474709c71865230442ff182c6b79c66c36361cb72ce9f75587edffa91",
+      "candidate": "3bcde457b073320ce3aa47568268d21058e195b967a87b44fcd4635626bdfa82"
+    },
+    {
+      "file": "scripts/test-program-catalog-cutover.js",
+      "published": "0542aa2e6c77c816c10f66966234be4577021dbac8c6ce68eb8c5a9967f43549",
+      "candidate": "31e738129db3a31aa83cae1febc7570e97dfd952ab67fbc7323597a8b08456d1"
+    }
+  ],
+  "additions": [
+    "app/program-general-info.jsx",
+    "supabase/migrations/20260910000200_program_general_info.sql",
+    "supabase/recovery/20260910000200_program_general_info.sql",
+    "docs/qa/H-PROGRAM-CATALOG-GENERAL-INFO-ADMIN-001.md",
+    "scripts/program-general-info-build.js",
+    "scripts/program-general-info-prepare.js",
+    "scripts/program-general-info-release.py",
+    "scripts/program-general-info-tools.py",
+    "scripts/test-program-general-info-browser.js",
+    "scripts/test-program-general-info-security.sql",
+    "scripts/test-program-general-info.sql"
+  ],
+  "bundleVersion": 246,
+  "bundleSha256": "54476520ae2c83fbc6688e9adf69952ac92876f9e1f228bb71bcdf160e252d73"
+}

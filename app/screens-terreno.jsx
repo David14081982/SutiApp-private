@@ -180,7 +180,36 @@
   }
 
   // ============================================================
+  function TerrainProgramHeader({headerInfo,app}) { return (<div style={{ flexShrink: 0, background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '8px 14px 0', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', right: -40, top: -34, opacity: 0.12 }}><window.SutiSeal size={170} /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, position: 'relative' }}>
+            <button onClick={app.back} style={{ width: 42, height: 42, borderRadius: 14, border: '1px solid rgba(255,255,255,.22)', background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0 }}>
+              <I name="arrowL" size={22} stroke={2} />
+            </button>
+            <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: '0 6px 16px -6px rgba(0,0,0,.4)' }}>
+              <FresLogo size={34} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 'var(--text-24, 24px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.01em' }}>{headerInfo.map_title}</div>
+              <div style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .85, marginTop: 2 }}>{headerInfo.map_subtitle}</div>
+            </div>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.22)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', borderRadius: 999, padding: '6px 12px' }}>
+            <I name={headerInfo.icon} size={14} stroke={2} />
+            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, letterSpacing: '.04em' }}>{headerInfo.map_program_label}</span>
+            <span style={{ width: 3, height: 3, borderRadius: 999, background: 'rgba(255,255,255,.5)' }} />
+            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .9 }}>{headerInfo.map_description}</span>
+          </div>
+          {/* labio blanco redondeado (firma de la app) */}
+          <div style={{ position: 'relative', height: 24, background: F.bg, borderRadius: '26px 26px 0 0', marginTop: 16 }}>
+            <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', width: 40, height: 5, borderRadius: 999, background: 'var(--hairline-strong)' }} />
+          </div>
+        </div>); }
+  window.TerrainProgramHeader=TerrainProgramHeader;
+
   function TerrenoScreen({ app }) {
+    const metadata=window.ProgramGeneralInfo.useInfo("terrenos");
+    const headerInfo=metadata.row?.program_info;
     const [filter, setFilter] = useState('todos');
     const [sel, setSel] = useState(null); // lot id
     const selLot = LOTS.find((l) => l.id === sel) || null;
@@ -294,34 +323,11 @@
       setSel(null);
     };
 
+    if(metadata.phase!=='loaded')return <div><window.Btn onClick={app.back}>Volver</window.Btn><window.ProgramGeneralInfo.InfoState state={metadata}/></div>;
     return (
       <div onClick={onBgClick} style={{ position: 'absolute', inset: 0, background: F.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif" }}>
         {/* ---------- HEADER (línea Suti: gradiente guinda + chrome frosted + labio blanco) ---------- */}
-        <div style={{ flexShrink: 0, background: 'var(--header-bg, var(--grad-guinda))', color: '#fff', padding: '8px 14px 0', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', right: -40, top: -34, opacity: 0.12 }}><window.SutiSeal size={170} /></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11, position: 'relative' }}>
-            <button onClick={app.back} style={{ width: 42, height: 42, borderRadius: 14, border: '1px solid rgba(255,255,255,.22)', background: 'rgba(255,255,255,.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0 }}>
-              <I name="arrowL" size={22} stroke={2} />
-            </button>
-            <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, boxShadow: '0 6px 16px -6px rgba(0,0,0,.4)' }}>
-              <FresLogo size={34} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 'var(--text-24, 24px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.01em' }}>El Fresnillo</div>
-              <div style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .85, marginTop: 2 }}>Reserva Campestre · Hermosillo, Sonora</div>
-            </div>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.22)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', borderRadius: 999, padding: '6px 12px' }}>
-            <I name="land" size={14} stroke={2} />
-            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, letterSpacing: '.04em' }}>SUTI TERRENO</span>
-            <span style={{ width: 3, height: 3, borderRadius: 999, background: 'rgba(255,255,255,.5)' }} />
-            <span style={{ fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, opacity: .9 }}>Lotes a plazos · descuento vía nómina</span>
-          </div>
-          {/* labio blanco redondeado (firma de la app) */}
-          <div style={{ position: 'relative', height: 24, background: F.bg, borderRadius: '26px 26px 0 0', marginTop: 16 }}>
-            <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', width: 40, height: 5, borderRadius: 999, background: 'var(--hairline-strong)' }} />
-          </div>
-        </div>
+        <TerrainProgramHeader headerInfo={headerInfo} app={app} />
 
         {/* ---------- STATS ---------- */}
         <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '12px 14px 4px' }}>

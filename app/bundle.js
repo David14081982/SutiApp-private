@@ -19086,6 +19086,218 @@ Object.assign(window, {
       }, 'Reintentar') : null
     }));
   }
+  function ConveniosCategoryCarousel({
+    items,
+    value,
+    onChange
+  }) {
+    const rowRef = useRef(null),
+      scrollerRef = useRef(null);
+    const interaction = useRef({
+      hover: false,
+      pointer: false,
+      touch: false,
+      keyboard: false,
+      resumeAt: 0,
+      drag: null,
+      suppressClick: false
+    });
+    const categories = items.filter(item => item !== 'Todos');
+    useEffect(() => {
+      const row = rowRef.current,
+        scroller = scrollerRef.current;
+      if (!row || !scroller) return;
+      let frame = 0,
+        last = 0,
+        position = scroller.scrollLeft,
+        direction = 1,
+        visible = true,
+        max = 0;
+      const measure = () => {
+        max = Math.max(0, scroller.scrollWidth - scroller.clientWidth);
+      };
+      measure();
+      const resize = new ResizeObserver(measure);
+      resize.observe(scroller);
+      resize.observe(scroller.firstElementChild);
+      const observer = new IntersectionObserver(([entry]) => {
+        visible = entry.isIntersecting;
+        last = 0;
+      });
+      observer.observe(row);
+      const release = () => {
+        const state = interaction.current;
+        state.pointer = false;
+        state.drag = null;
+        state.resumeAt = performance.now() + 900;
+      };
+      const touchEnd = event => {
+        if (!event.touches.length) {
+          interaction.current.touch = false;
+          release();
+        }
+      };
+      const reset = () => {
+        Object.assign(interaction.current, {
+          hover: false,
+          pointer: false,
+          touch: false,
+          keyboard: false,
+          drag: null
+        });
+        last = 0;
+      };
+      window.addEventListener('pointerup', release);
+      window.addEventListener('pointercancel', release);
+      window.addEventListener('touchend', touchEnd);
+      window.addEventListener('touchcancel', touchEnd);
+      window.addEventListener('blur', reset);
+      const tick = now => {
+        const state = interaction.current,
+          motion = window.MOTION;
+        if (!visible || !motion || motion.reduced() || motion.frozen() || state.hover || state.pointer || state.touch || state.keyboard || now < state.resumeAt || max <= 0) {
+          last = 0;
+          position = scroller.scrollLeft;
+        } else {
+          const elapsed = last ? Math.min(now - last, 50) : 0;
+          last = now;
+          position = Math.max(0, Math.min(max, position + direction * elapsed * .024));
+          scroller.scrollLeft = position;
+          if (elapsed && (position >= max || position <= 0)) {
+            direction = position >= max ? -1 : 1;
+            state.resumeAt = now + 900;
+          }
+        }
+        frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+      return () => {
+        cancelAnimationFrame(frame);
+        resize.disconnect();
+        observer.disconnect();
+        window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
+        window.removeEventListener('touchend', touchEnd);
+        window.removeEventListener('touchcancel', touchEnd);
+        window.removeEventListener('blur', reset);
+      };
+    }, [JSON.stringify(categories)]);
+    useEffect(() => {
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+      const selected = Array.from(scroller.querySelectorAll('button')).find(button => button.dataset.conveniosCategory === value);
+      if (value === 'Todos') scroller.scrollLeft = 0;else if (selected) {
+        const bounds = scroller.getBoundingClientRect(),
+          chipBounds = selected.getBoundingClientRect();
+        if (chipBounds.left < bounds.left || chipBounds.right > bounds.right) scroller.scrollLeft += chipBounds.left - bounds.left - (bounds.width - chipBounds.width) / 2;
+      }
+      interaction.current.resumeAt = performance.now() + 900;
+    }, [value]);
+    const chip = label => React.createElement('button', {
+      key: label,
+      type: 'button',
+      'data-convenios-category': label,
+      'aria-pressed': value === label,
+      onClick: () => onChange(label),
+      style: {
+        flex: '0 0 auto',
+        height: 38,
+        padding: '0 16px',
+        borderRadius: 999,
+        border: 'none',
+        background: value === label ? 'var(--grad-guinda-soft)' : 'var(--surface)',
+        boxShadow: value === label ? 'var(--glow-guinda)' : 'var(--neo-sm)',
+        color: value === label ? '#fff' : 'var(--ink-2)',
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 600,
+        fontFamily: 'inherit',
+        cursor: 'pointer',
+        whiteSpace: 'nowrap'
+      }
+    }, label);
+    return React.createElement('div', {
+      ref: rowRef,
+      'data-convenios-category-carousel': '',
+      role: 'group',
+      'aria-label': 'Categorías de convenios',
+      onPointerEnter: event => {
+        if (event.pointerType !== 'touch') interaction.current.hover = true;
+      },
+      onPointerLeave: event => {
+        if (event.pointerType !== 'touch') interaction.current.hover = false;
+      },
+      onPointerDown: () => {
+        interaction.current.pointer = true;
+        interaction.current.keyboard = false;
+        interaction.current.suppressClick = false;
+      },
+      onTouchStart: () => {
+        interaction.current.touch = true;
+      },
+      onFocusCapture: event => {
+        if (event.target.matches(':focus-visible')) interaction.current.keyboard = true;
+      },
+      onKeyDown: () => {
+        interaction.current.keyboard = true;
+      },
+      onBlurCapture: event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) interaction.current.keyboard = false;
+      },
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        minWidth: 0,
+        padding: '14px 16px 2px'
+      }
+    }, chip('Todos'), React.createElement('div', {
+      ref: scrollerRef,
+      'data-convenios-category-track': '',
+      onPointerDown: event => {
+        if (event.pointerType === 'mouse' && event.button === 0) interaction.current.drag = {
+          id: event.pointerId,
+          x: event.clientX,
+          left: event.currentTarget.scrollLeft
+        };
+      },
+      onPointerMove: event => {
+        const state = interaction.current,
+          drag = state.drag;
+        if (!drag || drag.id !== event.pointerId || Math.abs(event.clientX - drag.x) < 6) return;
+        state.suppressClick = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.currentTarget.scrollLeft = drag.left - (event.clientX - drag.x);
+        event.preventDefault();
+      },
+      onClickCapture: event => {
+        if (interaction.current.suppressClick) {
+          event.preventDefault();
+          event.stopPropagation();
+          interaction.current.suppressClick = false;
+        }
+      },
+      onWheel: () => {
+        interaction.current.resumeAt = performance.now() + 900;
+      },
+      style: {
+        flex: '1 1 0',
+        minWidth: 0,
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        overscrollBehaviorX: 'contain',
+        padding: '8px 0',
+        margin: '-8px 0'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'nowrap',
+        gap: 9,
+        width: 'max-content',
+        padding: '0 2px'
+      }
+    }, categories.map(chip))));
+  }
   function ConveniosScreen({
     app
   }) {
@@ -19155,13 +19367,10 @@ Object.assign(window, {
       value: q,
       onChange: setQ,
       onFilter: () => setFilters(true)
-    })), React.createElement(window.ChipBar, {
+    })), React.createElement(ConveniosCategoryCarousel, {
       items: cats,
       value: cat,
-      onChange: setCat,
-      style: {
-        padding: '14px 16px 2px'
-      }
+      onChange: setCat
     }), cat === 'Todos' && !q && React.createElement('section', {
       'data-convenios-section': 'featured',
       style: {

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "baseCommit": "35d7c30",
+  "sourceDelta": "Local component and invocation only",
+  "publishedTextSizePreserved": true,
+  "unrelatedBundleModulesByteIdentical": true,
+  "bundleVersion": 253,
+  "bundleSha256": "8458c2c60621f8faff8c14e862da80ee67f6c1d48cc06168ee4ebdb03c84a37f",
+  "syntax": "PASS",
+  "sourceOfTruth": "UNCHANGED",
+  "sharedUI": "UNCHANGED",
+  "legacy": "UNCHANGED"
+}

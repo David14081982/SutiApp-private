@@ -3019,3 +3019,8 @@ no migration, backend, Google or business writes. Deployment evidence will follo
 PASS local: tres entradas del sidebar se mueven de Finanzas a Ahorro, después de Ahorro. Dos arrays modificados, mismas rutas/permisos/pantallas; bundle focal idéntico en los demás módulos y cachebuster v252. Chrome 1440/390 y build Pages PASS; cero escrituras de negocio. Publicación aislada autorizada desde origin/main, sin incluir modificaciones previas. Evidencia y revisión: [H-ADMIN-SAVINGS-MENU-001](qa/H-ADMIN-SAVINGS-MENU-001.md).
 
 H-ADMIN-SAVINGS-MENU-001 publicación final PASS: runtime a245e29 en main, workflow 34629879308 SUCCESS, bundle público idéntico, Chrome producción desktop/móvil PASS con cero escrituras. Evidencia productiva en el informe focal.
+
+
+## H-CONVENIOS-FILTER-CAROUSEL-001 — publicación autorizada
+
+Carrusel focal con Todos fijo, pausa hover/touch/teclado y scroll manual. Release aislado sobre 35d7c30 preserva ajustes de texto existentes y menú Ahorro. Bundle focal v253; sin cambios de datos ni helpers compartidos. Informe: [H-CONVENIOS-FILTER-CAROUSEL-001](qa/H-CONVENIOS-FILTER-CAROUSEL-001.md).

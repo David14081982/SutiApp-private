@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_BROWSER",
+  "networkRequests": 0,
+  "checks": [
+    "Autoplay advances; Todos stays fixed",
+    "Hover pauses",
+    "Single row at 320/390/430/1440; no page overflow",
+    "Hover exit resumes",
+    "Native swipe and touch hold pause, including pointercancel; release resumes",
+    "Mouse drag scrolls without accidental selection",
+    "Category selection and Todos reset",
+    "Keyboard focus pauses; Enter selects",
+    "End reverses smoothly",
+    "Published CSS and all four text sizes preserve one row",
+    "Reduced motion disables autoplay",
+    "No overflow and empty categories stay stable",
+    "Unmount cleans observers and events"
+  ],
+  "errors": []
+}

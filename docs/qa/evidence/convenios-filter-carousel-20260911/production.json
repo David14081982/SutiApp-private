@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "checks": [
+    "Autoplay; Todos fixed",
+    "Hover pauses",
+    "Real category filtering and Todos restore",
+    "One row mobile/desktop with current text-size CSS",
+    "Touch pauses and release resumes",
+    "Ads, search, featured, list and bottom navigation retained",
+    "Refresh loads carousel"
+  ],
+  "pageErrors": [],
+  "businessWrites": 0
+}

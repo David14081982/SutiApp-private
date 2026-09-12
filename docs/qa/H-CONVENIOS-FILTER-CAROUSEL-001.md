@@ -72,3 +72,11 @@ Evidencia: browser.json, build.json, local-release.json y local-release-row-{390
 CLAUDE UI PRESERVATION REVIEW: PASS — captura real inspeccionada; Todos estático y categorías en fila; resto de fuente intacto.
 SUTIAPP ARCHITECT REVIEW: APPROVED — comparación de fuente y bundle contra main 35d7c30 limita el delta a componente local + llamada + cachebuster. Tipografía actual preservada. No hay cambios de datos, seguridad, legacy, SW ni helpers compartidos.
 RESPONSE TO CODEX: publicar exclusivamente este delta autorizado y verificar GitHub Pages y la pantalla productiva; no incluir cambios previos del workspace principal.
+
+FINAL PUBLICATION — PASS
+Runtime commit: a93f5a754f9c9b6a93bb4646c1d3d25954065b96; push a main confirmado.
+GitHub Pages workflow 34671311804: completed / success.
+https://sutiapp.com/ sirve bundle v253 idéntico byte a byte al release verificado.
+Chrome producción: autoplay/Todos fijo, hover, filtro real/Todos, fila móvil/escritorio, pausa/reanudación touch, secciones existentes y refresh PASS. pageErrors=0, businessWrites=0.
+Evidencia productiva: production.json, production-row-390.png, production-row-1440.png y publication.json.
+H-CONVENIOS-FILTER-CAROUSEL-001 RESULT final: PASS. Architect reviewer: APPROVED. Fuentes, invariantes, seguridad y legacy permanecen sin cambios. Ningún archivo inesperado incluido; workspace principal preservado. El estado anterior local/no publicado queda supersedido por este cierre.

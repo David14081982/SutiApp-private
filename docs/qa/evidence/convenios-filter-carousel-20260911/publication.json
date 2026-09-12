@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "runtimeCommit": "a93f5a754f9c9b6a93bb4646c1d3d25954065b96",
+  "workflow": 34671311804,
+  "workflowConclusion": "success",
+  "bundleVersion": 253,
+  "publishedBundleByteIdentical": true,
+  "sha256": "8458c2c60621f8faff8c14e862da80ee67f6c1d48cc06168ee4ebdb03c84a37f"
+}

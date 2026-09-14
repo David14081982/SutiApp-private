@@ -3047,3 +3047,8 @@ H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 AP
 ### H-ADMIN-USER-MODULES-001 - publication verified
 
 Code f130ff5 pushed to main and published at https://sutiapp.com/; Pages run 34889134243 succeeded. Migration 20260914000200 applied; existing assignments and business rows preserved. Live v257/SW201 hash matches isolated release. Real production editor and unchanged global local/production suites PASS. Final audit and deployment.json supersede earlier local-only/pending states. No real permissions assigned during tests.
+
+
+### H-ADMIN-SCREEN-PERMISSIONS-002 - sidebar screen assignment
+
+Permisos por pantalla now reuses the installed account/module editor and shows the complete 33-screen sidebar catalog, including Afiliados. Existing section-action controls remain available. Owner clarified screen restriction only, retaining authorized actions. One focal source; 121 other bundle chunks unchanged. Local exact affiliates-only assignment/readback, menu/route isolation, mobile save and existing editor regression PASS. No backend or real assignment changes. See the focal audit and evidence.

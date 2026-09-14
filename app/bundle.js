@@ -57480,7 +57480,8 @@ Object.assign(window, {
   }
   function UserModuleEditor({
     email: selectedEmail,
-    onSaved
+    onSaved = () => {},
+    showCatalog = false
   }) {
     const repo = window.AdminCutoverRepository;
     const [email, setEmail] = React.useState(selectedEmail || ''),
@@ -57604,7 +57605,41 @@ Object.assign(window, {
       onClick: () => search(email)
     }, busy ? 'Consultando…' : 'Buscar cuenta')), !catalog && !error && h('p', {
       role: 'status'
-    }, 'Cargando pantallas…'), target && h('div', {
+    }, 'Cargando pantallas…'), showCatalog && !target && catalog && h('div', {
+      'data-admin-screen-catalog': 'sidebar',
+      style: {
+        marginTop: 14
+      }
+    }, h('strong', {
+      style: {
+        fontSize: 13
+      }
+    }, 'Pantallas del menú lateral'), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, 'Busca la cuenta para seleccionar sus pantallas. Para darle acceso únicamente a Afiliados, marca sólo Afiliados y guarda.'), h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(205px,1fr))',
+        gap: 8
+      }
+    }, catalog.map(item => h('div', {
+      key: item.key,
+      'data-admin-screen-option': item.key,
+      style: {
+        padding: 9,
+        border: '1px solid var(--line)',
+        borderRadius: 10,
+        fontSize: 12
+      }
+    }, item.label, item.total_only && h('small', {
+      style: {
+        display: 'block',
+        color: 'var(--ink-3)'
+      }
+    }, 'Administrador Total'))))), target && h('div', {
       'data-admin-module-account': 'resolved',
       style: {
         marginTop: 14
@@ -57822,7 +57857,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginBottom: 7
       }
-    }, 'Pantalla o sección'), h('select', {
+    }, 'Sección para acciones específicas'), h('select', {
       value: selected,
       onChange: e => setSelected(e.target.value),
       style: input
@@ -57849,7 +57884,25 @@ Object.assign(window, {
       expanded: true,
       app
     }));
-    return page(header, 'Permisos por pantalla', 'Acciones exactas sobre secciones con enforcement backend', onBack, h(React.Fragment, null, picker, panel));
+    return page(header, 'Permisos por pantalla', 'Asigna a cada cuenta las pantallas del menú lateral', onBack, h(React.Fragment, null, app.admin.has('authorization.write') && h(UserModuleEditor, {
+      showCatalog: true
+    }), h('div', {
+      style: {
+        marginTop: 24,
+        marginBottom: 12
+      }
+    }, h('strong', {
+      style: {
+        fontSize: 15
+      }
+    }, 'Acciones específicas por sección'), h('p', {
+      style: {
+        fontSize: 12.5,
+        lineHeight: 1.5,
+        color: 'var(--ink-3)',
+        marginBottom: 0
+      }
+    }, 'Conserva aquí la asignación de responsables y acciones sobre secciones. Para elegir las pantallas del menú lateral, usa el selector de cuenta de arriba.')), picker, panel));
   }
   function affiliateResult(row, selected, setSelected) {
     return h('button', {

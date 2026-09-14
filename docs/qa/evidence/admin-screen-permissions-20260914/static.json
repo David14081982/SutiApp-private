@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "cases": [
+    "total33",
+    "exact4",
+    "sameCardsAndSidebar",
+    "missingContextDenied",
+    "legacyRolePreserved",
+    "legacySectionPreserved",
+    "revokedEmpty",
+    "UIControlsPreserved",
+    "bundleSyntax"
+  ],
+  "network": false
+}

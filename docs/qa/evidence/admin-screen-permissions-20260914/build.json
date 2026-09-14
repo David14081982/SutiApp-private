@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "e3259b1",
+  "changedChunks": [
+    "screens-admin-access.jsx"
+  ],
+  "preservedChunks": 121,
+  "totalChunks": 122,
+  "bundleVersion": 258,
+  "serviceWorkerVersion": 202,
+  "sha256": "c3180ba1c5511c0ac0ddf9b8d332e32d6c19ee110c83402d5dd483f951317dad",
+  "backendChanged": false,
+  "sharedRoutingChanged": false,
+  "swLogicChanged": false
+}

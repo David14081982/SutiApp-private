@@ -1,0 +1,19 @@
+{
+  "deployment": "NOT_DEPLOYED",
+  "migration": "NOT_APPLIED",
+  "sha256": {
+    "app/screens-admin-access.jsx": "b37eedea331374fa5e70688024c0e32b2786dcf1b8f0ba1f91df93bd20a1204b",
+    "app/screens-admin.jsx": "d4752466e43645a45d2179fd79e497c07caebbd1e7739d99123679c177b45f98",
+    "app/admin-repository.js": "58a62dae3a763c907c614113d31280d7e4a5862765a788252c290bcbfcfdf2bd",
+    "app/admin-cutover-repository.js": "726a9597eb376a5dbe7f8456dcaa1c53dfeb4074bba885dbe86406a1187c6bab",
+    "app/admin-cutover-store.jsx": "7fe7ce940dc03d791bd279f878d6186516b2082666c2bfb1da505f54ed02d98c",
+    "app/app.jsx": "e2b2e621ac3f830d2877e25ae444062615e05fd25105f8b6dfd0bfe5cf033e22",
+    "app/section-responsibility.jsx": "fc335f47054a25bafb08c6b8245282eb6571fc330521bc365c9a5c74703fb430",
+    "app/program-request-repository.js": "0cfdd2f2984a388d8270935b085a1b5eb1e019f3ce5e14da706783b82acd9fb7",
+    "app/bundle.js": "47ac5984b9645fbb029b2cfc12698874eb61fa80ad652f035312a6e3324c3cb5",
+    "SutiApp.html": "91768feffc5a0269a423627246b3f2ffd21ebf6afbf904138ebd3eeb8b5f3020",
+    "sw.js": "cea8d304b5bc9e609d09cc902579ed61dee2d9bddcf8f624b71781e6ec5b5bd0",
+    "supabase/migrations/20260914000200_admin_user_modules.sql": "6314fb81e15f98d225440e3e13893b059e5a7af5fd1b58e8e87ca4a2f513786f",
+    "supabase/recovery/20260914000200_admin_user_modules.sql": "b4ea6400123bf526a2135f0bd53e1940a46e89b2935865c47f331a5359809561"
+  }
+}

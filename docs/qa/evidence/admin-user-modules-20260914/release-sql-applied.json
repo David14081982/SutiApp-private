@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "version": "20260914000200",
+  "migrationSha256": "6314fb81e15f98d225440e3e13893b059e5a7af5fd1b58e8e87ca4a2f513786f",
+  "proof": [
+    {
+      "status": "PASS",
+      "migration_sha256": "6314fb81e15f98d225440e3e13893b059e5a7af5fd1b58e8e87ca4a2f513786f",
+      "before": {
+        "assets": 187,
+        "objects": 13512,
+        "requests": "70bd82fd5aa0e6f4a7184432c25ba92f",
+        "affiliates": "6a4671cb8ff4b3612cd2bb5b5cf8095a",
+        "assignments": "c8d6f68b887d962fd742f03f66161459",
+        "existing_roles": "43deef6ec74da7e0ba7f5529f2e4add4",
+        "private_assets": 13281,
+        "responsibilities": "877791fd3ccbaeaf1dc39e9428a7ec33",
+        "role_permissions": "d51e4081fc0ec3524b7c919929ef3259"
+      },
+      "after": {
+        "assets": 187,
+        "objects": 13512,
+        "requests": "70bd82fd5aa0e6f4a7184432c25ba92f",
+        "affiliates": "6a4671cb8ff4b3612cd2bb5b5cf8095a",
+        "assignments": "c8d6f68b887d962fd742f03f66161459",
+        "existing_roles": "43deef6ec74da7e0ba7f5529f2e4add4",
+        "private_assets": 13281,
+        "responsibilities": "877791fd3ccbaeaf1dc39e9428a7ec33",
+        "role_permissions": "d51e4081fc0ec3524b7c919929ef3259"
+      }
+    }
+  ],
+  "existingAssignmentsChanged": 0,
+  "businessRowsChanged": 0
+}

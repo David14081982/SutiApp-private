@@ -406,3 +406,11 @@ Aplicadas las migraciones de operaciones, jubilación, rendimientos, certificaci
 ## Nuevos ingresos de Ahorro ? 2026-09-14
 
 Las solicitudes JOIN de autoservicio pueden registrarse durante la revisi?n privada, respetando la apertura del administrador y la identidad exacta. Esto no publica saldos ni habilita otros movimientos. get_self_savings_join_context deriva categor?a/calendario y proyecciones de affiliates, solicitudes propias y planes aprobados; no es un saldo. savings_runtime_submit conserva timestamp, monto, actor/contexto e idempotencia. La aprobaci?n del Admin sigue siendo necesaria para activar el plan. Fechas: JUB5, quincenal15/30 y febrero15/28, primera permitida desde solicitud+30 d?as; d?a10 descartado expresamente.
+
+
+## H-ADMIN-USER-MODULES-001 ? candidato local, 2026-09-14
+
+La selecci?n administrativa por cuenta reutiliza admin_assignments/admin_roles y admin_section_responsibilities; admin_section_definitions incorpora metadata de los 33 m?dulos existentes. module_admin es un marcador t?cnico sin permisos propios. get_admin_access_context deriva module_keys y capacidades desde las responsabilidades activas, sin almacenamiento alternativo. El correo s?lo resuelve un UUID Auth confirmado. save_admin_user_modules conserva el escritor de roles, registra auditor?a y controla concurrencia por versi?n. Las asignaciones actuales no se modifican al instalar. list_module_general_requests proyecta ?nicamente solicitudes generales y nombres necesarios desde sus autoridades existentes; no crea otro padr?n. Migraci?n preparada y validada con ROLLBACK, todav?a NO APLICADA.
+
+
+H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.

@@ -2,6 +2,8 @@
 (function(){
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
+  const moduleScoped=()=>{const state=window.AdminRepository&&window.AdminRepository.getState();return Boolean(state&&state.assignment&&Array.isArray(state.assignment.moduleKeys));};
+  async function moduleGeneralRows(id){const r=await db().rpc('list_module_general_requests',{p_request_id:id||null});if(r.error)throw r.error;return r.data||[];}
   const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,seen_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
@@ -57,6 +59,7 @@
     const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listGeneralQueue(){
+    if(moduleScoped())return Object.freeze((await moduleGeneralRows()).map(project));
     const r=await db().from('program_requests').select(queueFields).is('financial_processing_status',null).order('created_at',{ascending:false}).limit(250);
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
@@ -65,6 +68,7 @@
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listMobile(){
+    if(moduleScoped())return Object.freeze((await moduleGeneralRows()).map(project));
     const r=await db().from('program_requests').select(mobileFields).order('created_at',{ascending:false});
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
@@ -81,8 +85,9 @@
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function detail(id){
-    const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
+    const base=moduleScoped()?{data:(await moduleGeneralRows(id))[0]||null}:await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
+    if(!base.data)throw new Error('REQUEST_NOT_FOUND_OR_FORBIDDEN');
     const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
     const workflow=db().rpc('get_self_request_workflow_state',{p_request_id:id});

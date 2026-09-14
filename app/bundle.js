@@ -7304,7 +7304,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
     publish(roleCode||fullAccess||sectionActions.length?{
       phase:'authorized',
-      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode}),
+      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:roleCode==='module_admin'?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null}),
       subjectKey:accessSubject(value,identity),
       contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
     }:{phase:'denied'});
@@ -7420,6 +7420,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     else{requirePermission(permission);requirePermission('assets.write');}
     const ext=fileContract(file,bucket); const digest=await digestOf(file);const db=client();
     let path=`admin/${digest}.${ext}`;
+    if(section==='membership'&&state.assignment&&Array.isArray(state.assignment.moduleKeys)){const user=await db.auth.getUser();if(user.error||!user.data.user)throw user.error||new Error('AUTH_REQUIRED');path=`membership/${user.data.user.id}/${digest}.${ext}`;}
     if(sectionAsset){const user=await db.auth.getUser();if(user.error||!user.data.user)throw user.error||new Error('AUTH_REQUIRED');path=`${section}/${user.data.user.id}/${digest}.${ext}`;}
     const existing=await db.from('app_assets').select(assetFields).eq('storage_bucket',bucket).eq('storage_path',path).maybeSingle();
     if(existing.error)throw existing.error;
@@ -7555,13 +7556,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function upsertSection(table,row,conflict){try{return await upsert(table,row,conflict);}catch(error){if(!String(error&&error.message||error).includes('ADMIN_ORIGIN_REQUIRED'))throw error;return upsert(table,Object.assign({},row,{record_origin:'ADMIN_SECTION_ROLLOUT'}),conflict);}}
   async function remove(table,id){ return run(client().from(table).delete().eq('id',id)); }
   const api={
-    listRoles:()=>list('admin_roles','id,code,name,description,system_role,enabled,admin_role_permissions(permission)',q=>q.order('system_role',{ascending:false}).order('name')),
+    listRoles:()=>list('admin_roles','id,code,name,description,system_role,enabled,admin_role_permissions(permission)',q=>q.neq('code','module_admin').order('system_role',{ascending:false}).order('name')),
     saveRole:async(r)=>{const x=await run(client().rpc('save_admin_role',{p_role_id:r.id||null,p_name:r.name,p_description:r.desc||'',p_permissions:r.permissions||[]}));return x;},
     deleteRole:(id)=>run(client().rpc('delete_admin_role',{p_role_id:id})),
     assignRole:(authId,roleId,enabled)=>run(client().rpc('assign_admin_role',{p_auth_user_id:authId,p_role_id:roleId,p_enabled:enabled!==false})),
     listAdminAssignments:()=>run(client().rpc('list_admin_assignments')),
     addTotalAdmin:(email)=>run(client().rpc('set_total_admin_by_email',{p_email:String(email||'').trim()})),
     revokeAdmin:(authId)=>run(client().rpc('revoke_admin_assignment',{p_auth_user_id:authId})),
+    listModuleCatalog:()=>run(client().rpc('list_admin_module_catalog')),
+    getUserModules:(email)=>run(client().rpc('get_admin_user_modules',{p_email:String(email||'').trim()})),
+    saveUserModules:(email,mode,modules,version)=>run(client().rpc('save_admin_user_modules',{p_email:String(email||'').trim(),p_mode:mode,p_modules:modules,p_expected_version:version})),
     listSegments:()=>list('segmentation_catalog_entries','id,catalog_type,code,label,enabled,sort_order,source_sheet,source_range,source_snapshot_hash',q=>q.order('catalog_type').order('sort_order')),
     saveSegment:(r)=>upsert('segmentation_catalog_entries',r,'catalog_type,code'),
     deleteSegment:(id)=>remove('segmentation_catalog_entries',id),
@@ -7724,6 +7728,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 (function(){
   'use strict';
   const db=()=>window.SutiSupabase.getClient();
+  const moduleScoped=()=>{const state=window.AdminRepository&&window.AdminRepository.getState();return Boolean(state&&state.assignment&&Array.isArray(state.assignment.moduleKeys));};
+  async function moduleGeneralRows(id){const r=await db().rpc('list_module_general_requests',{p_request_id:id||null});if(r.error)throw r.error;return r.data||[];}
   const fields=`id,folio,actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,numero_control,program_id,program_item_id,product_id,membership_offering_id,terms_version_id,applicant_profile_snapshot,document_requirements_snapshot,company_id,request_type,status,quantity,notes,terms_accepted,financial_processing_status,legacy_reference,requested_amount,requested_term,requested_term_semantics,financial_profile_snapshot,financial_submission_snapshot,financial_approval_snapshot,financial_approved_at,quoted_amount,quote_note,valid_until,responded_at,seen_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),membership:membership_offerings!membership_offering_id(company_raw,concept,amount),company:companies!company_id(display_name),financial_export:financial_request_export_audit(export_status,attempt_count,error_code,updated_at)`;
   const queueFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,request_type,status,quantity,financial_processing_status,quoted_amount,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
   const detailFields=`id,folio,affiliate_id,numero_control,program_id,program_item_id,product_id,company_id,document_requirements_snapshot,request_type,status,quantity,notes,terms_accepted,financial_processing_status,quoted_amount,quote_note,valid_until,responded_at,created_at,updated_at,affiliate:affiliates!affiliate_id(full_name,display_name,numero_control),program_item:program_catalog_items!program_item_id(name,program_key,price_cash),product:marketplace_products!product_id(name,price),company:companies!company_id(display_name)`;
@@ -7779,6 +7785,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const r=await q;if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listGeneralQueue(){
+    if(moduleScoped())return Object.freeze((await moduleGeneralRows()).map(project));
     const r=await db().from('program_requests').select(queueFields).is('financial_processing_status',null).order('created_at',{ascending:false}).limit(250);
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
@@ -7787,6 +7794,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function listMobile(){
+    if(moduleScoped())return Object.freeze((await moduleGeneralRows()).map(project));
     const r=await db().from('program_requests').select(mobileFields).order('created_at',{ascending:false});
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
@@ -7803,8 +7811,9 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function detail(id){
-    const base=await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
+    const base=moduleScoped()?{data:(await moduleGeneralRows(id))[0]||null}:await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
+    if(!base.data)throw new Error('REQUEST_NOT_FOUND_OR_FORBIDDEN');
     const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
     const workflow=db().rpc('get_self_request_workflow_state',{p_request_id:id});
@@ -25365,11 +25374,29 @@ Object.assign(window, {
   }
   function contextSecurity(next) {
     const a = next.assignment || {};
-    return JSON.stringify([a.fullAccess, a.roleCode, (a.permissions || []).slice().sort(), (a.sectionActions || []).map(x => x.section_key + ':' + x.action).sort()]);
+    return JSON.stringify([a.fullAccess, a.roleCode, a.moduleKeys == null ? null : a.moduleKeys.slice().sort(), (a.permissions || []).slice().sort(), (a.sectionActions || []).map(x => x.section_key + ':' + x.action).sort()]);
   }
   function flush() {
     if (activeLoad) return activeLoad;
     if (!contentContext || contentContext.phase !== 'authorized' || !visible() || !pending.size) return Promise.resolve();
+    if (contentContext.assignment && Array.isArray(contentContext.assignment.moduleKeys)) {
+      const A = window.AdminRepository,
+        eligible = {
+          roles: false,
+          segments: A.has('segmentation.read'),
+          access: contentContext.assignment.moduleKeys.includes('pantallas'),
+          companies: A.has('companies.read'),
+          profiles: contentContext.assignment.moduleKeys.some(k => k === 'convenios' || k === 'sindicato'),
+          rules: contentContext.assignment.moduleKeys.some(k => k === 'convenios' || k === 'sindicato'),
+          banners: A.has('banners.read')
+        };
+      domainKeys.forEach(key => {
+        if (!eligible[key]) {
+          pending.delete(key);
+          clearDomain(key);
+        }
+      });
+    }
     const selected = jobs.filter(job => pending.has(job[0])),
       epoch = generation;
     const versions = Object.assign({}, contentContext.contentVersions || {});
@@ -25482,6 +25509,16 @@ Object.assign(window, {
   });
   store.roleActionCount = r => Object.values(r.perms || {}).reduce((n, p) => n + Object.values(p).filter(Boolean).length, 0);
   store.can = (action, resource) => {
+    const admin = window.AdminRepository,
+      state = admin && admin.getState(),
+      assignment = state && state.assignment;
+    if (assignment && Array.isArray(assignment.moduleKeys)) {
+      const moduleId = resource.startsWith('savings_') ? 'savings' : resource;
+      if (!assignment.moduleKeys.includes(moduleId) && !(moduleId === 'convenios' && assignment.moduleKeys.includes('sindicato'))) return false;
+      const base = resource === 'planes' ? 'company_portal' : resourcePermission(resource),
+        special = specialPermissions[resource];
+      return admin.has(special ? action === 'ver' ? special.read : special.write : base + (action === 'ver' ? '.read' : '.write'));
+    }
     const r = store.actingRole(),
       p = r.perms && r.perms[resource];
     return !!(p && p[action]);
@@ -30729,7 +30766,7 @@ Object.assign(window, {
     app,
     expanded
   }) {
-    const effectiveActions = [...new Set((allowedActions || []).concat('export'))];
+    const effectiveActions = [...new Set(allowedActions || [])];
     const A = window.AdminRepository,
       canRead = A.has('authorization.read'),
       canWrite = A.has('authorization.write');
@@ -57367,7 +57404,7 @@ Object.assign(window, {
       }
     }, text);
   }
-  function assignmentCard(row, canWrite, busy, revoke) {
+  function assignmentCard(row, canWrite, busy, revoke, configure) {
     return h('article', {
       key: row.assignment_id,
       'data-admin-assignment': row.enabled ? 'active' : 'revoked',
@@ -57415,7 +57452,19 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 3
       }
-    }, 'Asignado ', new Date(row.assigned_at).toLocaleDateString(), ' por ', row.assigned_by_email || 'migración histórica', !row.enabled && row.revoked_at ? ' · Revocado ' + new Date(row.revoked_at).toLocaleDateString() : '')), canWrite && row.enabled && !row.protected_assignment && h('button', {
+    }, 'Asignado ', new Date(row.assigned_at).toLocaleDateString(), ' por ', row.assigned_by_email || 'migración histórica', !row.enabled && row.revoked_at ? ' · Revocado ' + new Date(row.revoked_at).toLocaleDateString() : '')), canWrite && h('button', {
+      disabled: busy,
+      onClick: () => configure(row.email),
+      style: {
+        border: '1px solid var(--line)',
+        borderRadius: 10,
+        padding: '8px 10px',
+        background: 'var(--surface)',
+        color: 'var(--guinda)',
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, 'Pantallas'), canWrite && row.enabled && !row.protected_assignment && h('button', {
       disabled: busy,
       onClick: () => revoke(row),
       style: {
@@ -57429,11 +57478,220 @@ Object.assign(window, {
       }
     }, 'Revocar'));
   }
+  function UserModuleEditor({
+    email: selectedEmail,
+    onSaved
+  }) {
+    const repo = window.AdminCutoverRepository;
+    const [email, setEmail] = React.useState(selectedEmail || ''),
+      [catalog, setCatalog] = React.useState(null),
+      [target, setTarget] = React.useState(null),
+      [mode, setMode] = React.useState('limited'),
+      [modules, setModules] = React.useState([]),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [note, setNote] = React.useState('');
+    const sequence = React.useRef(0),
+      lock = React.useRef(false),
+      region = React.useRef(null);
+    const explain = e => {
+      const code = String(e && e.message || e);
+      return code.includes('ADMIN_ACCESS_CHANGED') ? 'Los permisos cambiaron en otra sesión. Vuelve a buscar la cuenta antes de guardar.' : code.includes('SELF_ASSIGNMENT') ? 'No puedes modificar tu propio acceso.' : code.includes('PROTECTED') ? 'La cuenta principal protegida conserva su acceso total.' : code.includes('NOT_FOUND') || code.includes('AMBIGUOUS') ? 'No se encontró una cuenta confirmada y única con ese correo.' : code.includes('INVALID_ADMIN_MODULE') ? 'Selecciona al menos una pantalla permitida.' : 'No fue posible confirmar la operación. Inténtalo de nuevo.';
+    };
+    const apply = value => {
+      setTarget(value);
+      setMode(value.mode === 'total' ? 'total' : 'limited');
+      setModules(value.mode === 'limited' ? value.modules || [] : []);
+    };
+    React.useEffect(() => {
+      let alive = true;
+      repo.listModuleCatalog().then(value => {
+        if (alive) setCatalog(value);
+      }).catch(() => {
+        if (alive) setError('No fue posible cargar el catálogo de permisos. Vuelve a abrir esta pantalla.');
+      });
+      return () => {
+        alive = false;
+        sequence.current++;
+      };
+    }, []);
+    const search = async value => {
+      if (lock.current) return;
+      const request = ++sequence.current;
+      lock.current = true;
+      setBusy(true);
+      setTarget(null);
+      setError('');
+      setNote('');
+      try {
+        const found = await repo.getUserModules(value);
+        if (request === sequence.current) apply(found);
+      } catch (e) {
+        if (request === sequence.current) setError(explain(e));
+      } finally {
+        lock.current = false;
+        if (request === sequence.current) setBusy(false);
+      }
+    };
+    React.useEffect(() => {
+      if (selectedEmail) {
+        setEmail(selectedEmail);
+        search(selectedEmail);
+        if (region.current) region.current.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth'
+        });
+      }
+    }, [selectedEmail]);
+    const save = async () => {
+      if (lock.current || !target) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      setNote('');
+      try {
+        const saved = await repo.saveUserModules(target.email, mode, mode === 'total' ? [] : modules, target.version);
+        apply(saved);
+        setNote(saved.mode === 'total' ? 'Acceso total guardado.' : 'Pantallas guardadas. La cuenta tendrá acceso únicamente a la selección.');
+        await onSaved();
+      } catch (e) {
+        setError(explain(e));
+        if (String(e && e.message || e).includes('ADMIN_ACCESS_CHANGED')) setTarget(null);
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    };
+    const frozen = busy || Boolean(target && (target.self || target.protected));
+    return h('section', {
+      ref: region,
+      'data-admin-user-modules': 'true',
+      style: Object.assign({}, card, {
+        marginTop: 16
+      })
+    }, h('strong', {
+      style: {
+        fontSize: 15
+      }
+    }, 'Asignar pantallas a una cuenta'), h('p', {
+      style: {
+        fontSize: 12.5,
+        lineHeight: 1.5,
+        color: 'var(--ink-3)'
+      }
+    }, 'Busca una cuenta confirmada. La selección controla Resumen, menú lateral y acceso al módulo.'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, h('input', {
+      type: 'email',
+      value: email,
+      disabled: busy,
+      'aria-label': 'Correo para asignar pantallas',
+      placeholder: 'correo@dominio',
+      style: input,
+      onChange: e => {
+        setEmail(e.target.value);
+        setTarget(null);
+        setNote('');
+      },
+      onKeyDown: e => {
+        if (e.key === 'Enter' && email.includes('@')) search(email);
+      }
+    }), h(window.Btn, {
+      disabled: busy || !catalog || !email.includes('@'),
+      onClick: () => search(email)
+    }, busy ? 'Consultando…' : 'Buscar cuenta')), !catalog && !error && h('p', {
+      role: 'status'
+    }, 'Cargando pantallas…'), target && h('div', {
+      'data-admin-module-account': 'resolved',
+      style: {
+        marginTop: 14
+      }
+    }, h('strong', null, target.email), target.existing_role && h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, 'Acceso actual: ', target.existing_role), (target.self || target.protected) && h('p', {
+      role: 'status'
+    }, target.self ? 'Tu propia asignación está protegida.' : 'La cuenta principal protegida conserva acceso total.'), h('label', {
+      style: {
+        display: 'block',
+        fontSize: 12,
+        fontWeight: 800,
+        marginTop: 10
+      }
+    }, 'Tipo de acceso', h('select', {
+      'aria-label': 'Tipo de acceso administrativo',
+      value: mode,
+      disabled: frozen,
+      style: Object.assign({}, input, {
+        marginTop: 6
+      }),
+      onChange: e => {
+        setMode(e.target.value);
+        setNote('');
+      }
+    }, h('option', {
+      value: 'limited'
+    }, 'Sólo pantallas seleccionadas'), h('option', {
+      value: 'total'
+    }, 'Administrador Total'))), h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(205px,1fr))',
+        gap: 8,
+        marginTop: 14
+      }
+    }, (catalog || []).map(item => h('label', {
+      key: item.key,
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center',
+        minHeight: 40,
+        padding: 9,
+        border: '1px solid var(--line)',
+        borderRadius: 10,
+        fontSize: 12,
+        opacity: mode === 'limited' && item.total_only ? 0.6 : 1
+      }
+    }, h('input', {
+      type: 'checkbox',
+      'data-admin-module-choice': item.key,
+      checked: mode === 'total' || modules.includes(item.key),
+      disabled: frozen || mode === 'total' || item.total_only,
+      onChange: e => {
+        setModules(current => e.target.checked ? [...new Set(current.concat(item.key))] : current.filter(key => key !== item.key));
+        setNote('');
+      }
+    }), h('span', null, item.label, item.total_only && h('small', {
+      style: {
+        display: 'block',
+        color: 'var(--ink-3)'
+      }
+    }, 'Administrador Total'))))), target.mode === 'total' && mode === 'limited' && h('p', {
+      role: 'status',
+      style: {
+        fontSize: 12,
+        color: 'var(--guinda)'
+      }
+    }, 'Al guardar, el acceso total se sustituirá por estas pantallas.'), h(window.Btn, {
+      disabled: frozen || !catalog || mode === 'limited' && !modules.length,
+      onClick: save,
+      style: {
+        marginTop: 14
+      }
+    }, busy ? 'Guardando…' : 'Guardar pantallas')), message(error, 'error'), message(note, 'ok'));
+  }
   function AdministratorsModule({
     app,
     onBack,
     header
   }) {
+    const [configurationEmail, setConfigurationEmail] = React.useState('');
     const [email, setEmail] = React.useState(''),
       [rows, setRows] = React.useState([]),
       [busy, setBusy] = React.useState(false),
@@ -57527,13 +57785,16 @@ Object.assign(window, {
         letterSpacing: '.06em',
         marginBottom: 9
       }
-    }, 'ASIGNACIONES'), rows.map(row => assignmentCard(row, canWrite, busy, revoke)), !rows.length && !error && h('div', {
+    }, 'ASIGNACIONES'), rows.map(row => assignmentCard(row, canWrite, busy, revoke, setConfigurationEmail)), !rows.length && !error && h('div', {
       style: {
         color: 'var(--ink-3)',
         fontSize: 12
       }
     }, 'Sin asignaciones.'));
-    return page(header, 'Administradores', 'Acceso total resuelto por cuenta Auth confirmada', onBack, h(React.Fragment, null, form, list));
+    return page(header, 'Administradores', 'Acceso por cuenta Auth confirmada', onBack, h(React.Fragment, null, form, canWrite && h(UserModuleEditor, {
+      email: configurationEmail,
+      onSaved: load
+    }), list));
   }
   function ScreenPermissionsModule({
     app,
@@ -58149,7 +58410,7 @@ Object.assign(window, {
       const sectionAccess = sectionKeys.some(key => sectionActions.some(entry => entry.section_key === key));
       const sectionExport = m.id === 'data_exports' && sectionActions.some(x => x.action === 'export');
       const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
-      const canView = sectionExport || sectionAccess || (permission ? app.admin.has(permission) : productive);
+      const canView = Array.isArray(assignment.moduleKeys) ? assignment.moduleKeys.includes(m.id) : sectionExport || sectionAccess || (permission ? app.admin.has(permission) : productive);
       const usable = productive && canView;
       const desktopCanView = canView;
       const desktopUsable = productive && desktopCanView;
@@ -60017,7 +60278,22 @@ Object.assign(window, {
   function AdminScreen({
     app
   }) {
-    const [view, setView] = useState('menu'); // 'menu' | 'popups' | 'roles' | ...
+    const readAdminRoute = () => {
+      const match = /^#\/admin\/([a-z_]+)$/.exec(window.location.hash);
+      return match ? match[1] : 'menu';
+    };
+    const [view, setViewState] = useState(readAdminRoute);
+    const setView = next => {
+      setViewState(next);
+      if (typeof next === 'string') window.history.replaceState(window.history.state, '', '#/admin/' + next);
+    };
+    useEffect(() => {
+      const update = () => {
+        if (window.location.hash.startsWith('#/admin/')) setViewState(readAdminRoute());
+      };
+      window.addEventListener('hashchange', update);
+      return () => window.removeEventListener('hashchange', update);
+    }, []);
     const [viewContext, setViewContext] = useState(null);
     const company = window.useCompanyStore ? window.useCompanyStore() : null;
     const desktop = useAdminDesktop();
@@ -60044,7 +60320,12 @@ Object.assign(window, {
     }
     const access = adminModuleAccess(app);
     const activeModule = MODULES.find(m => m.id === view);
-    if (activeModule && !access.stateFor(activeModule).canView) {
+    const unionChild = Boolean(viewContext && viewContext.from === 'sindicato' && viewContext.view === view && app.admin.assignment && Array.isArray(app.admin.assignment.moduleKeys) && app.admin.assignment.moduleKeys.includes('sindicato') && (window.UNION_SCREEN_REGISTRY || []).some(m => m.admin_editor.view === view));
+    if (activeModule && !access.stateFor(activeModule).canView && !unionChild) {
+      setView('menu');
+      return null;
+    }
+    if (view === 'directory_admin' && !access.stateFor(MODULES.find(m => m.id === 'sindicato')).canView) {
       setView('menu');
       return null;
     }
@@ -60108,6 +60389,13 @@ Object.assign(window, {
       app,
       onBack: () => setView('menu'),
       header: headerFn
+    });else if (view === 'documents_admin' && unionChild) body = React.createElement(window.VisualCrudModule, {
+      kind: 'documents',
+      app,
+      onBack: backFromEditor,
+      header: headerFn,
+      filterKinds: viewContext.kinds,
+      title: viewContext.title
     });else if (view === 'documents_admin') body = React.createElement(window.DocumentsAdminModule, {
       app,
       onBack: backFromAffiliateLink,
@@ -60145,7 +60433,9 @@ Object.assign(window, {
       onBack: () => setView('menu'),
       header: headerFn,
       onOpenEditor: (id, context) => {
-        setViewContext(context || null);
+        setViewContext(Object.assign({}, context, {
+          from: 'sindicato'
+        }));
         setView(id);
       }
     });else if (view === 'fincat') body = React.createElement(window.FinCatModule, {
@@ -72668,7 +72958,7 @@ Object.assign(window, {
     const admin = window.useAdminAuth();
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore(); // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin'));
+    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash) && !auth.impersonation ? 'admin' : auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin'));
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{
       name: 'savings',
       params: {}
@@ -72733,7 +73023,7 @@ Object.assign(window, {
     const back = useCallback(() => popOne(), [popOne]);
     const commitTab = useCallback(id => {
       setOutgoing(null);
-      if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search);
+      if (window.location.hash === '#/savings' || id !== 'admin' && window.location.hash.startsWith('#/admin/')) history.replaceState(history.state, '', window.location.pathname + window.location.search);
       if (window.MOTION) window.MOTION.shared.clear();
       setStack([]);
       setTabState(id);
@@ -72845,19 +73135,24 @@ Object.assign(window, {
       stack,
       tab,
       popupItems,
+      adminAuthorized,
       defaultTab: auth.affiliateView ? 'home' : 'admin'
     };
     useEffect(() => {
       history.pushState({
         sut: 1
       }, '');
-      const onPop = () => {
+      const onPop = event => {
         const {
           stack,
           tab,
           popupItems,
           defaultTab
         } = navRef.current;
+        if (/^#\/admin\/[a-z_]+$/.test(window.location.hash) && !(event.state && event.state.sut) && navRef.current.adminAuthorized) {
+          setTabState('admin');
+          return;
+        }
         if (popupItems) {
           setPopupItems(null);
           history.pushState({

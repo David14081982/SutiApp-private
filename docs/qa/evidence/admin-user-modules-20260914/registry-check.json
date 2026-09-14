@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "scope": "generated index freshness, focal RPC nodes, lookup, non-runtime authority, no email/token/private key content",
+  "generatorChangedByThisTask": false,
+  "fullGeneratorDeterminismSuite": "NOT_RUN: generator unchanged; focal generated-output validation used",
+  "runtimeOptimization": "Equivalent escaped-literal absence prefilter; positive candidates use original regex; tested ASCII and Unicode case equivalents"
+}

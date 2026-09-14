@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "tests": [
+    "total33",
+    "editorExactSaveAndReadback",
+    "staleSaveDenied",
+    "scopedDesktopCards",
+    "sidebarMatches",
+    "directDenied",
+    "mobileMatches",
+    "unionChildEditorPreserved"
+  ],
+  "errors": [],
+  "scope": "real browser; isolated new editor API fixtures; real login and legacy reads; backend verified separately",
+  "businessWrites": 0,
+  "permissionWrites": 0
+}

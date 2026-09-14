@@ -3,7 +3,7 @@
   'use strict';
   const labels={read:'Leer',create:'Crear',update:'Editar',delete:'Eliminar',publish:'Publicar',order:'Ordenar',assets:'Archivos',export:'Exportar'};
   function SectionResponsibilityPanel({sectionKey,sectionName,allowedActions,app,expanded}){
-    const effectiveActions=[...new Set((allowedActions||[]).concat('export'))];
+    const effectiveActions=[...new Set(allowedActions||[])];
     const A=window.AdminRepository,canRead=A.has('authorization.read'),canWrite=A.has('authorization.write');
     const[email,setEmail]=React.useState('');const[resolved,setResolved]=React.useState(null);const[actions,setActions]=React.useState(['read']);const[rows,setRows]=React.useState([]);const[audit,setAudit]=React.useState([]);const[busy,setBusy]=React.useState(false);const[open,setOpen]=React.useState(Boolean(expanded));
     const load=async()=>{if(!canRead)return;const pair=await Promise.all([A.listSectionResponsibilities(sectionKey),A.listSectionResponsibilityAudit(sectionKey)]);setRows(pair[0]);setAudit(pair[1]);};

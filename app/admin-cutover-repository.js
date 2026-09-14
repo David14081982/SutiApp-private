@@ -10,13 +10,16 @@
   async function upsertSection(table,row,conflict){try{return await upsert(table,row,conflict);}catch(error){if(!String(error&&error.message||error).includes('ADMIN_ORIGIN_REQUIRED'))throw error;return upsert(table,Object.assign({},row,{record_origin:'ADMIN_SECTION_ROLLOUT'}),conflict);}}
   async function remove(table,id){ return run(client().from(table).delete().eq('id',id)); }
   const api={
-    listRoles:()=>list('admin_roles','id,code,name,description,system_role,enabled,admin_role_permissions(permission)',q=>q.order('system_role',{ascending:false}).order('name')),
+    listRoles:()=>list('admin_roles','id,code,name,description,system_role,enabled,admin_role_permissions(permission)',q=>q.neq('code','module_admin').order('system_role',{ascending:false}).order('name')),
     saveRole:async(r)=>{const x=await run(client().rpc('save_admin_role',{p_role_id:r.id||null,p_name:r.name,p_description:r.desc||'',p_permissions:r.permissions||[]}));return x;},
     deleteRole:(id)=>run(client().rpc('delete_admin_role',{p_role_id:id})),
     assignRole:(authId,roleId,enabled)=>run(client().rpc('assign_admin_role',{p_auth_user_id:authId,p_role_id:roleId,p_enabled:enabled!==false})),
     listAdminAssignments:()=>run(client().rpc('list_admin_assignments')),
     addTotalAdmin:(email)=>run(client().rpc('set_total_admin_by_email',{p_email:String(email||'').trim()})),
     revokeAdmin:(authId)=>run(client().rpc('revoke_admin_assignment',{p_auth_user_id:authId})),
+    listModuleCatalog:()=>run(client().rpc('list_admin_module_catalog')),
+    getUserModules:(email)=>run(client().rpc('get_admin_user_modules',{p_email:String(email||'').trim()})),
+    saveUserModules:(email,mode,modules,version)=>run(client().rpc('save_admin_user_modules',{p_email:String(email||'').trim(),p_mode:mode,p_modules:modules,p_expected_version:version})),
     listSegments:()=>list('segmentation_catalog_entries','id,catalog_type,code,label,enabled,sort_order,source_sheet,source_range,source_snapshot_hash',q=>q.order('catalog_type').order('sort_order')),
     saveSegment:(r)=>upsert('segmentation_catalog_entries',r,'catalog_type,code'),
     deleteSegment:(id)=>remove('segmentation_catalog_entries',id),

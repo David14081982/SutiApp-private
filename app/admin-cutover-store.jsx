@@ -65,11 +65,15 @@
   }
   function contextSecurity(next){
     const a=next.assignment||{};
-    return JSON.stringify([a.fullAccess,a.roleCode,(a.permissions||[]).slice().sort(),(a.sectionActions||[]).map(x=>x.section_key+':'+x.action).sort()]);
+    return JSON.stringify([a.fullAccess,a.roleCode,a.moduleKeys==null?null:a.moduleKeys.slice().sort(),(a.permissions||[]).slice().sort(),(a.sectionActions||[]).map(x=>x.section_key+':'+x.action).sort()]);
   }
   function flush(){
     if(activeLoad)return activeLoad;
     if(!contentContext||contentContext.phase!=='authorized'||!visible()||!pending.size)return Promise.resolve();
+    if(contentContext.assignment&&Array.isArray(contentContext.assignment.moduleKeys)){
+      const A=window.AdminRepository,eligible={roles:false,segments:A.has('segmentation.read'),access:contentContext.assignment.moduleKeys.includes('pantallas'),companies:A.has('companies.read'),profiles:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),rules:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),banners:A.has('banners.read')};
+      domainKeys.forEach(key=>{if(!eligible[key]){pending.delete(key);clearDomain(key);}});
+    }
     const selected=jobs.filter(job=>pending.has(job[0])),epoch=generation;
     const versions=Object.assign({},contentContext.contentVersions||{});
     selected.forEach(job=>pending.delete(job[0]));
@@ -134,7 +138,16 @@
   store.setActingRole=id=>{acting=id;emit();};
   store.blankRole=()=>({id:null,name:'',desc:'',system:false,all:false,impersonate:false,perms:uiPerms([])});
   store.roleActionCount=r=>Object.values(r.perms||{}).reduce((n,p)=>n+Object.values(p).filter(Boolean).length,0);
-  store.can=(action,resource)=>{const r=store.actingRole(),p=r.perms&&r.perms[resource];return!!(p&&p[action]);};
+  store.can=(action,resource)=>{
+    const admin=window.AdminRepository,state=admin&&admin.getState(),assignment=state&&state.assignment;
+    if(assignment&&Array.isArray(assignment.moduleKeys)){
+      const moduleId=resource.startsWith('savings_')?'savings':resource;
+      if(!assignment.moduleKeys.includes(moduleId)&&!(moduleId==='convenios'&&assignment.moduleKeys.includes('sindicato')))return false;
+      const base=resource==='planes'?'company_portal':resourcePermission(resource),special=specialPermissions[resource];
+      return admin.has(special?(action==='ver'?special.read:special.write):base+(action==='ver'?'.read':'.write'));
+    }
+    const r=store.actingRole(),p=r.perms&&r.perms[resource];return!!(p&&p[action]);
+  };
   function technicalPermissions(role){const out=new Set();Object.keys(role.perms||{}).forEach(id=>{const p=role.perms[id],special=specialPermissions[id];if(special){if(p.ver)out.add(special.read);if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(special.read);out.add(special.write);}return;}const bases=[resourcePermission(id)].concat(id==='convenios'?['segmentation']:[]);bases.forEach(base=>{if(p.ver)out.add(base+'.read');if(p.crear||p.editar||p.eliminar||p.reordenar){out.add(base+'.read');out.add(base+'.write');}});});if(role.impersonate)out.add('affiliates.impersonate');return Array.from(out);}
   store.saveRole=role=>repo.saveRole({id:role.id,name:role.name,desc:role.desc,permissions:technicalPermissions(role)}).then(load).catch(fail);
   store.removeRole=id=>repo.deleteRole(id).then(load).catch(fail);

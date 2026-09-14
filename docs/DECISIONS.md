@@ -1093,3 +1093,11 @@ Aplicadas las migraciones de operaciones, jubilación, rendimientos, certificaci
 
 
 H-SAVINGS-SELF-JOIN-001: Owner autoriza conectar nuevas altas directamente a Supabase sin publicar saldos revisados. Se retira d?a10 por error de escritura. Se conserva aprobaci?n administrativa existente y calendario autorizado; proyecciones no equivalen a dinero recibido.
+
+
+## H-ADMIN-USER-MODULES-001 ? alcance autorizado y candidato local
+
+El propietario solicita implementar quir?rgicamente la correcci?n de permisos preservando UI y flujos funcionales. Se a?ade selecci?n por cuenta en Administradores, conservando alta total y revocaci?n. Se reutilizan las autoridades del contrato ADR-098; sus tres migraciones hist?ricas permanecen intactas. La nueva migraci?n captura las definiciones instaladas, incluidas extensiones posteriores, en vez de restaurar versiones antiguas. Esta entrega no cambia cuentas productivas ni constituye publicaci?n. El ?rbol local contiene cambios previos ajenos y difiere del sitio publicado: una futura publicaci?n requiere preparar ?nicamente este alcance sobre la versi?n vigente.
+
+
+H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.

@@ -281,3 +281,11 @@ Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 202609080006
 ## Eliminación de Banners — H-ADMIN-BANNERS-DELETE-001
 
 archive_admin_banner(uuid) exige auth.uid() y has_admin_permission('banners.write') OR has_section_action('banners','delete'), contrato existente de AdminRepository.has. SECURITY DEFINER con search_path vacío, ejecución anon revocada. banner_deletions fuerza RLS, sin grants browser y SELECT service-only. Actor y tiempo derivados en backend; nada del cliente concede permisos. Tres policies restrictivas excluyen archivados de SELECT/UPDATE/DELETE bajo los permisos originales. La consulta booleana de archivo no expone actor ni auditoría. PK y lock de fila garantizan idempotencia; fallo al auditar revierte todo.
+
+
+## H-ADMIN-USER-MODULES-001 ? extensi?n preparada, no aplicada
+
+Las cuentas module_admin reciben exclusivamente los m?dulos seleccionados y sus dependencias funcionales. Administradores, Permisos por pantalla y Roles permanecen reservados al acceso total; Tomar control exige selecci?n expl?cita. RLS restrictiva y guards SECURITY DEFINER acotan operaciones compartidas, incluyendo solicitudes/finanzas, workflow/cat?logo, segmentaci?n/acceso, publicidad/aprobaciones y assets/branding. El navegador s?lo refleja el contexto derivado; ruta/hash no conceden permisos. Tu Sindicato conserva sus editores internos can?nicos sin incorporar tarjetas adicionales al men?. Se preservan las autorizaciones de autoservicio y empresa propias y la rama exacta de roles previos. Los helpers anteriores se copian con ejecuci?n browser revocada y se conservan para recuperaci?n. Recovery se niega despu?s de asignaciones, auditor?a de uso o cambios posteriores de funciones. Pruebas de instalaci?n, aislamiento y recuperaci?n transaccionales: evidencia en docs/qa/evidence/admin-user-modules-20260914.
+
+
+H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.

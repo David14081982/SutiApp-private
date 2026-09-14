@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "migrationSha256": "6314fb81e15f98d225440e3e13893b059e5a7af5fd1b58e8e87ca4a2f513786f",
+  "matrix": [
+    {
+      "status": "PASS",
+      "checks": "total parity, exact selection, persistence, optimistic conflict, governance denial, finance RPC denial, RLS, section isolation, Savings, revocation, anonymous"
+    }
+  ],
+  "persistentMutations": 0
+}

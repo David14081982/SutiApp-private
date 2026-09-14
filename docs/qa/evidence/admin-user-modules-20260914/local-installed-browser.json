@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "url": "http://127.0.0.1:60056/SutiApp.html",
+  "mode": "LOCAL_RELEASE_INSTALLED_BACKEND",
+  "realNewRPCs": true,
+  "mocks": false,
+  "checks": [
+    "fullAdmin33",
+    "realCatalog33",
+    "confirmedSelfLookup",
+    "selfChangeDisabled",
+    "installedContextVersion1",
+    "unknownAccountControlled"
+  ],
+  "permissionWrites": 0,
+  "businessWrites": 0,
+  "errors": []
+}

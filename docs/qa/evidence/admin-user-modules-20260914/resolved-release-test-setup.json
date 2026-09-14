@@ -1,0 +1,8 @@
+{
+  "status": "RESOLVED",
+  "issues": [
+    "Windows checkout converted vendor scripts to CRLF, invalidating SRI in local test. Restored exact Git blobs; browser PASS.",
+    "Installed matrix initially started before installation completed. Repeated after confirmed installation; PASS."
+  ],
+  "productionRegressions": 0
+}

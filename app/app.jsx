@@ -387,7 +387,7 @@
     const admin = window.useAdminAuth();
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
+    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash)&&!auth.impersonation?'admin':auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null);   // pop-ups administrables mostrándose
@@ -436,7 +436,7 @@
 
     const push = useCallback((name, params = {}) => { setOutgoing(null); if (name === 'savings') history.replaceState(history.state, '', '#/savings'); setStack((s) => [...s, { name, params }]); }, []);
     const back = useCallback(() => popOne(), [popOne]);
-    const commitTab = useCallback((id) => { setOutgoing(null); if (window.location.hash === '#/savings') history.replaceState(history.state, '', window.location.pathname + window.location.search); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
+    const commitTab = useCallback((id) => { setOutgoing(null); if (window.location.hash === '#/savings'||(id!=='admin'&&window.location.hash.startsWith('#/admin/'))) history.replaceState(history.state, '', window.location.pathname + window.location.search); if (window.MOTION) window.MOTION.shared.clear(); setStack([]); setTabState(id); }, []);
     const setTab = useCallback((id) => {
       if(id!=='admin')return commitTab(id);
       if(!adminAuthorized)return false;
@@ -495,11 +495,12 @@
     // Atrás se consume esa entrada; si hay a dónde retroceder dentro de la app
     // (pop-up → pantalla apilada → tab ≠ home) se retrocede y se re-arma la trampa.
     // Sólo en Inicio, con la pila vacía, se deja salir (cierra la app).
-    navRef.current = { stack, tab, popupItems, defaultTab: auth.affiliateView ? 'home' : 'admin' };
+    navRef.current = { stack, tab, popupItems, adminAuthorized, defaultTab: auth.affiliateView ? 'home' : 'admin' };
     useEffect(() => {
       history.pushState({ sut: 1 }, '');
-      const onPop = () => {
+      const onPop = (event) => {
         const { stack, tab, popupItems, defaultTab } = navRef.current;
+        if(/^#\/admin\/[a-z_]+$/.test(window.location.hash)&&!(event.state&&event.state.sut)&&navRef.current.adminAuthorized){setTabState('admin');return;}
         if (popupItems) {
           setPopupItems(null);
           history.pushState({ sut: 1 }, '');

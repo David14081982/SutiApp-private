@@ -1,0 +1,16 @@
+{
+  "app/screens-admin-access.jsx": "ea9e03a42c1e1445183d5b129c829e46c6aeca21b3fac6b8e5b5452be0c47e91",
+  "app/screens-admin.jsx": "7231615e53db074904acde1fdd17d06a801d176fee7e50a4fc8b271e3dd0f10a",
+  "app/admin-repository.js": "02f57ddcc5d68b75d52623242c3b8618e8690529820a5c8df31b18bb08694d43",
+  "app/admin-cutover-repository.js": "4e6816ec7754f3960633e5e9f71dfd9a5a2acd5869e4942d898caa8748f631b0",
+  "app/admin-cutover-store.jsx": "5e36a5e8f8ca9243228b44bc323ac17d61cd384ae3ddc4bf8d2923e14c076145",
+  "app/app.jsx": "812717ada4e512e97bcc76bd0397d7e9dd530116f8dc34acd8da046e3fe37b28",
+  "app/section-responsibility.jsx": "e2c639b56c1e05bf9be5a4c60c74ca66e46de9ea79e3c21dd62d1dfa821ff193",
+  "app/bundle.js": "751a7527855374a3ab1a29097b8f425d0b81c9f1baa62c122851246d0b9cd7f2",
+  "SutiApp.html": "551e8932aef4ff5b903ebe9b6d21836c380d0a16c8e8fa2b49c1339ef3f37adb",
+  "sw.js": "dddfddea33fc2dbbad0ae7469e8e2922ec65fde2695bcc2994d88158db174ae6",
+  "docs/SOURCE_OF_TRUTH.md": "e7ef3d7e98d27f12f5274bed923b03084e7b637f3d622dcd2ccac3f8d1dbd1c8",
+  "docs/SECURITY_RULES.md": "4bbb21c52af6f470f0f42973369c6424df2213f857d35dade9412a7da7f1dd67",
+  "docs/DECISIONS.md": "08fa7552a77074decc3970c5927434f181b64a5615b6895d03b40e913372b07f",
+  "docs/AGENT_CHANGELOG.md": "6671d9107ee4848a9b1265f6d03a7ba5344b3d8c45b96bcd00e8aa13246c13b4"
+}

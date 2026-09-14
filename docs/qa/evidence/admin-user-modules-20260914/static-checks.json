@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "command": "node scripts/test-admin-user-modules.js",
+      "exitCode": 0,
+      "stdout": "{\"status\":\"PASS\",\"cases\":[\"total33\",\"exact4\",\"sameCardsAndSidebar\",\"missingContextDenied\",\"legacyRolePreserved\",\"legacySectionPreserved\",\"revokedEmpty\",\"UIControlsPreserved\",\"bundleSyntax\"],\"network\":false}",
+      "stderr": ""
+    },
+    {
+      "command": "node scripts/test-admin-access-protected-contract.js",
+      "exitCode": 0,
+      "stdout": "{\"status\":\"PASS\",\"protected_contract\":true,\"protected_sha\":\"b8c1f6c0057dabded90804ffadd5bd012fb41a1a\",\"migrations\":3,\"invariants\":10,\"focused_static\":true,\"global_suites\":\"NOT_EXECUTED\",\"functional_change\":false,\"production_data_change\":false}",
+      "stderr": ""
+    },
+    {
+      "command": "node scripts/test-union-canonical-cutover.js",
+      "exitCode": 0,
+      "stdout": "{\"status\":\"PASS\",\"frontend_canonical_cards\":9,\"admin_canonical_cards\":9,\"mismatch\":0,\"local_union_asset_authorities\":0,\"emergencias\":\"OBSOLETE\"}",
+      "stderr": ""
+    },
+    {
+      "command": "node scripts/test-union-institutional-documents-storage-cutover.js",
+      "exitCode": 0,
+      "stdout": "{\"status\":\"PASS\",\"sourceRows\":8,\"regulations\":2,\"downloadSourceRows\":6,\"expectedVisibleUniqueDocuments\":7,\"duplicateSourceRows\":0,\"productiveGoogleDependencies\":0,\"uiRedesign\":false}",
+      "stderr": ""
+    }
+  ]
+}

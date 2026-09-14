@@ -31,7 +31,7 @@
     const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
     publish(roleCode||fullAccess||sectionActions.length?{
       phase:'authorized',
-      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode}),
+      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:roleCode==='module_admin'?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null}),
       subjectKey:accessSubject(value,identity),
       contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
     }:{phase:'denied'});
@@ -147,6 +147,7 @@
     else{requirePermission(permission);requirePermission('assets.write');}
     const ext=fileContract(file,bucket); const digest=await digestOf(file);const db=client();
     let path=`admin/${digest}.${ext}`;
+    if(section==='membership'&&state.assignment&&Array.isArray(state.assignment.moduleKeys)){const user=await db.auth.getUser();if(user.error||!user.data.user)throw user.error||new Error('AUTH_REQUIRED');path=`membership/${user.data.user.id}/${digest}.${ext}`;}
     if(sectionAsset){const user=await db.auth.getUser();if(user.error||!user.data.user)throw user.error||new Error('AUTH_REQUIRED');path=`${section}/${user.data.user.id}/${digest}.${ext}`;}
     const existing=await db.from('app_assets').select(assetFields).eq('storage_bucket',bucket).eq('storage_path',path).maybeSingle();
     if(existing.error)throw existing.error;

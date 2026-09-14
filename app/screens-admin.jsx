@@ -95,7 +95,7 @@
       const sectionAccess=sectionKeys.some((key)=>sectionActions.some((entry)=>entry.section_key===key));
       const sectionExport=m.id==='data_exports'&&sectionActions.some((x)=>x.action==='export');
       const productive=m.ready||String(m.classification||'').startsWith('PRODUCTIVE_');
-      const canView=sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
+      const canView=Array.isArray(assignment.moduleKeys)?assignment.moduleKeys.includes(m.id):sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
       const usable=productive&&canView;
       const desktopCanView=canView;
       const desktopUsable=productive&&desktopCanView;
@@ -471,7 +471,10 @@
   // Screen raíz del tab Admin
   // ─────────────────────────────────────────────────────────────
   function AdminScreen({ app }) {
-    const [view, setView] = useState('menu');       // 'menu' | 'popups' | 'roles' | ...
+    const readAdminRoute=()=>{const match=/^#\/admin\/([a-z_]+)$/.exec(window.location.hash);return match?match[1]:'menu';};
+    const [view, setViewState] = useState(readAdminRoute);
+    const setView=(next)=>{setViewState(next);if(typeof next==='string')window.history.replaceState(window.history.state,'','#/admin/'+next);};
+    useEffect(()=>{const update=()=>{if(window.location.hash.startsWith('#/admin/'))setViewState(readAdminRoute());};window.addEventListener('hashchange',update);return()=>window.removeEventListener('hashchange',update);},[]);
     const [viewContext, setViewContext] = useState(null);
     const company=window.useCompanyStore?window.useCompanyStore():null;
     const desktop=useAdminDesktop();
@@ -492,7 +495,9 @@
 
     const access=adminModuleAccess(app);
     const activeModule=MODULES.find((m)=>m.id===view);
-    if(activeModule&&!access.stateFor(activeModule).canView){setView('menu');return null;}
+    const unionChild=Boolean(viewContext&&viewContext.from==='sindicato'&&viewContext.view===view&&app.admin.assignment&&Array.isArray(app.admin.assignment.moduleKeys)&&app.admin.assignment.moduleKeys.includes('sindicato')&&(window.UNION_SCREEN_REGISTRY||[]).some(m=>m.admin_editor.view===view));
+    if(activeModule&&!access.stateFor(activeModule).canView&&!unionChild){setView('menu');return null;}
+    if(view==='directory_admin'&&!access.stateFor(MODULES.find(m=>m.id==='sindicato')).canView){setView('menu');return null;}
     const headerFn = (props) => React.createElement(desktop?AdminDesktopHeader:AdminHeader, Object.assign({}, props, { onViewApp:app.viewApp }));
     const openView=(id)=>{setViewContext(null);setView(id);};
     const affiliateContext=viewContext&&viewContext.from==='affiliates'?viewContext:null;
@@ -509,6 +514,7 @@
     else if(view==='marketplace')body=React.createElement(window.MarketplaceModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('marketplace.create')||app.admin.has('marketplace.update')});
     else if(view==='program_products')body=React.createElement(window.ProgramProductsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='membresias')body=React.createElement(window.MembresiasModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='documents_admin'&&unionChild)body=React.createElement(window.VisualCrudModule,{kind:'documents',app,onBack:backFromEditor,header:headerFn,filterKinds:viewContext.kinds,title:viewContext.title});
     else if(view==='documents_admin')body=React.createElement(window.DocumentsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='planes')body=React.createElement(window.PlanesModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
@@ -516,7 +522,7 @@
     else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});
-    else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(context||null);setView(id);}});
+    else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(Object.assign({},context,{from:'sindicato'}));setView(id);}});
     else if(view==='fincat')body=React.createElement(window.FinCatModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='flujos')body=React.createElement(window.FlujosModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('workflow.write')});
     else if(view==='convenios')body=React.createElement(window.ConveniosModule,{app,onBack:backFromEditor,header:headerFn});

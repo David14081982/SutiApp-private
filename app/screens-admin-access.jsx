@@ -6,17 +6,47 @@
   const input={width:'100%',boxSizing:'border-box',minHeight:44,border:'1px solid var(--line)',borderRadius:12,padding:'10px 12px',background:'var(--surface)',color:'var(--ink)',fontFamily:'inherit',fontSize:13};
   function page(header,title,sub,onBack,children){return h('div',null,header({title,sub,onBack}),h('div',{className:'su-app-scroll',style:{padding:18}},children));}
   function message(text,tone){return text&&h('div',{role:tone==='error'?'alert':'status',style:{marginTop:11,padding:'10px 12px',borderRadius:11,background:tone==='error'?'#FDEAEA':'#E7F6ED',color:tone==='error'?'#A32921':'#13794A',fontSize:12.5,fontWeight:750}},text);}
-  function assignmentCard(row,canWrite,busy,revoke){
+  function assignmentCard(row,canWrite,busy,revoke,configure){
     return h('article',{key:row.assignment_id,'data-admin-assignment':row.enabled?'active':'revoked',style:Object.assign({},card,{display:'flex',alignItems:'center',gap:12,marginBottom:9,opacity:row.enabled?1:.62})},
       h('div',{style:{width:38,height:38,borderRadius:11,display:'grid',placeItems:'center',background:row.protected_assignment?'var(--guinda-50)':'var(--surface-2)',color:'var(--guinda)'}},h(I,{name:row.protected_assignment?'shield':'users',size:20})),
       h('div',{style:{flex:1,minWidth:0}},
         h('strong',{style:{display:'block',fontSize:13.5}},row.display_name||row.email),
         h('span',{style:{display:'block',fontSize:11.5,color:'var(--ink-3)',marginTop:2}},row.email,' · ',row.role_name,row.enabled?' · Activo':' · Revocado'),
         h('span',{style:{display:'block',fontSize:10.5,color:'var(--ink-3)',marginTop:3}},'Asignado ',new Date(row.assigned_at).toLocaleDateString(),' por ',row.assigned_by_email||'migración histórica',!row.enabled&&row.revoked_at?' · Revocado '+new Date(row.revoked_at).toLocaleDateString():'')),
+      canWrite&&h('button',{disabled:busy,onClick:()=>configure(row.email),style:{border:'1px solid var(--line)',borderRadius:10,padding:'8px 10px',background:'var(--surface)',color:'var(--guinda)',fontWeight:800,cursor:'pointer'}},'Pantallas'),
       canWrite&&row.enabled&&!row.protected_assignment&&h('button',{disabled:busy,onClick:()=>revoke(row),style:{border:'none',borderRadius:10,padding:'8px 10px',background:'#FDEAEA',color:'#A32921',fontWeight:800,cursor:'pointer'}},'Revocar'));
   }
 
+  function UserModuleEditor({email:selectedEmail,onSaved}){
+    const repo=window.AdminCutoverRepository;
+    const[email,setEmail]=React.useState(selectedEmail||''),[catalog,setCatalog]=React.useState(null),[target,setTarget]=React.useState(null),[mode,setMode]=React.useState('limited'),[modules,setModules]=React.useState([]),[busy,setBusy]=React.useState(false),[error,setError]=React.useState(''),[note,setNote]=React.useState('');
+    const sequence=React.useRef(0),lock=React.useRef(false),region=React.useRef(null);
+    const explain=e=>{const code=String(e&&e.message||e);return code.includes('ADMIN_ACCESS_CHANGED')?'Los permisos cambiaron en otra sesión. Vuelve a buscar la cuenta antes de guardar.':code.includes('SELF_ASSIGNMENT')?'No puedes modificar tu propio acceso.':code.includes('PROTECTED')?'La cuenta principal protegida conserva su acceso total.':code.includes('NOT_FOUND')||code.includes('AMBIGUOUS')?'No se encontró una cuenta confirmada y única con ese correo.':code.includes('INVALID_ADMIN_MODULE')?'Selecciona al menos una pantalla permitida.':'No fue posible confirmar la operación. Inténtalo de nuevo.';};
+    const apply=value=>{setTarget(value);setMode(value.mode==='total'?'total':'limited');setModules(value.mode==='limited'?value.modules||[]:[]);};
+    React.useEffect(()=>{let alive=true;repo.listModuleCatalog().then(value=>{if(alive)setCatalog(value);}).catch(()=>{if(alive)setError('No fue posible cargar el catálogo de permisos. Vuelve a abrir esta pantalla.');});return()=>{alive=false;sequence.current++;};},[]);
+    const search=async value=>{if(lock.current)return;const request=++sequence.current;lock.current=true;setBusy(true);setTarget(null);setError('');setNote('');try{const found=await repo.getUserModules(value);if(request===sequence.current)apply(found);}catch(e){if(request===sequence.current)setError(explain(e));}finally{lock.current=false;if(request===sequence.current)setBusy(false);}};
+    React.useEffect(()=>{if(selectedEmail){setEmail(selectedEmail);search(selectedEmail);if(region.current)region.current.scrollIntoView({block:'nearest',behavior:'smooth'});}},[selectedEmail]);
+    const save=async()=>{if(lock.current||!target)return;lock.current=true;setBusy(true);setError('');setNote('');try{const saved=await repo.saveUserModules(target.email,mode,mode==='total'?[]:modules,target.version);apply(saved);setNote(saved.mode==='total'?'Acceso total guardado.':'Pantallas guardadas. La cuenta tendrá acceso únicamente a la selección.');await onSaved();}catch(e){setError(explain(e));if(String(e&&e.message||e).includes('ADMIN_ACCESS_CHANGED'))setTarget(null);}finally{lock.current=false;setBusy(false);}};
+    const frozen=busy||Boolean(target&&(target.self||target.protected));
+    return h('section',{ref:region,'data-admin-user-modules':'true',style:Object.assign({},card,{marginTop:16})},
+      h('strong',{style:{fontSize:15}},'Asignar pantallas a una cuenta'),
+      h('p',{style:{fontSize:12.5,lineHeight:1.5,color:'var(--ink-3)'}},'Busca una cuenta confirmada. La selección controla Resumen, menú lateral y acceso al módulo.'),
+      h('div',{style:{display:'flex',gap:8}},h('input',{type:'email',value:email,disabled:busy,'aria-label':'Correo para asignar pantallas',placeholder:'correo@dominio',style:input,onChange:e=>{setEmail(e.target.value);setTarget(null);setNote('');},onKeyDown:e=>{if(e.key==='Enter'&&email.includes('@'))search(email);}}),h(window.Btn,{disabled:busy||!catalog||!email.includes('@'),onClick:()=>search(email)},busy?'Consultando…':'Buscar cuenta')),
+      !catalog&&!error&&h('p',{role:'status'},'Cargando pantallas…'),
+      target&&h('div',{'data-admin-module-account':'resolved',style:{marginTop:14}},
+        h('strong',null,target.email),
+        target.existing_role&&h('p',{style:{fontSize:12,color:'var(--ink-3)'}},'Acceso actual: ',target.existing_role),
+        (target.self||target.protected)&&h('p',{role:'status'},target.self?'Tu propia asignación está protegida.':'La cuenta principal protegida conserva acceso total.'),
+        h('label',{style:{display:'block',fontSize:12,fontWeight:800,marginTop:10}},'Tipo de acceso',h('select',{'aria-label':'Tipo de acceso administrativo',value:mode,disabled:frozen,style:Object.assign({},input,{marginTop:6}),onChange:e=>{setMode(e.target.value);setNote('');}},h('option',{value:'limited'},'Sólo pantallas seleccionadas'),h('option',{value:'total'},'Administrador Total'))),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(205px,1fr))',gap:8,marginTop:14}},(catalog||[]).map(item=>h('label',{key:item.key,style:{display:'flex',gap:8,alignItems:'center',minHeight:40,padding:9,border:'1px solid var(--line)',borderRadius:10,fontSize:12,opacity:(mode==='limited'&&item.total_only)?0.6:1}},
+          h('input',{type:'checkbox','data-admin-module-choice':item.key,checked:mode==='total'||modules.includes(item.key),disabled:frozen||mode==='total'||item.total_only,onChange:e=>{setModules(current=>e.target.checked?[...new Set(current.concat(item.key))]:current.filter(key=>key!==item.key));setNote('');}}),h('span',null,item.label,item.total_only&&h('small',{style:{display:'block',color:'var(--ink-3)'}},'Administrador Total'))))),
+        target.mode==='total'&&mode==='limited'&&h('p',{role:'status',style:{fontSize:12,color:'var(--guinda)'}},'Al guardar, el acceso total se sustituirá por estas pantallas.'),
+        h(window.Btn,{disabled:frozen||!catalog||(mode==='limited'&&!modules.length),onClick:save,style:{marginTop:14}},busy?'Guardando…':'Guardar pantallas')),
+      message(error,'error'),message(note,'ok'));
+  }
+
   function AdministratorsModule({app,onBack,header}){
+    const[configurationEmail,setConfigurationEmail]=React.useState('');
     const[email,setEmail]=React.useState(''),[rows,setRows]=React.useState([]),[busy,setBusy]=React.useState(false),[note,setNote]=React.useState(''),[error,setError]=React.useState('');
     const canWrite=app.admin.has('authorization.write'),repo=window.AdminCutoverRepository;
     const load=React.useCallback(async()=>{setError('');try{setRows(await repo.listAdminAssignments());}catch(_){setError('No fue posible consultar las asignaciones administrativas.');}},[]);
@@ -28,8 +58,8 @@
       h('p',{style:{fontSize:12.5,lineHeight:1.5,color:'var(--ink-3)'}},'El correo se usa solamente para localizar una cuenta confirmada. La asignación queda vinculada de forma durable a esa cuenta.'),
       canWrite&&h('div',{style:{display:'flex',gap:8}},h('input',{value:email,onChange:e=>setEmail(e.target.value),onKeyDown:e=>{if(e.key==='Enter'&&email.includes('@'))add();},placeholder:'correo@dominio','aria-label':'Correo del nuevo administrador',style:input}),h(window.Btn,{onClick:add,disabled:busy||!email.includes('@')},busy?'Guardando…':'Agregar')),
       message(error,'error'),message(note,'ok'));
-    const list=h('section',{style:{marginTop:16}},h('div',{style:{fontSize:12,fontWeight:900,color:'var(--ink-3)',letterSpacing:'.06em',marginBottom:9}},'ASIGNACIONES'),rows.map(row=>assignmentCard(row,canWrite,busy,revoke)),!rows.length&&!error&&h('div',{style:{color:'var(--ink-3)',fontSize:12}},'Sin asignaciones.'));
-    return page(header,'Administradores','Acceso total resuelto por cuenta Auth confirmada',onBack,h(React.Fragment,null,form,list));
+    const list=h('section',{style:{marginTop:16}},h('div',{style:{fontSize:12,fontWeight:900,color:'var(--ink-3)',letterSpacing:'.06em',marginBottom:9}},'ASIGNACIONES'),rows.map(row=>assignmentCard(row,canWrite,busy,revoke,setConfigurationEmail)),!rows.length&&!error&&h('div',{style:{color:'var(--ink-3)',fontSize:12}},'Sin asignaciones.'));
+    return page(header,'Administradores','Acceso por cuenta Auth confirmada',onBack,h(React.Fragment,null,form,canWrite&&h(UserModuleEditor,{email:configurationEmail,onSaved:load}),list));
   }
 
   function ScreenPermissionsModule({app,onBack,header}){

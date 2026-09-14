@@ -3034,3 +3034,11 @@ H-SAVINGS-RUNTIME-20260913: preparación privada instalada. Evidencia: docs/qa/e
 H-SAVINGS-SELF-JOIN-001: conecta alta propia, fecha de solicitud y calendario previsto a Supabase manteniendo PRIVATE y dem?s programas. Pruebas transaccionales de seis categor?as, retiros cerrados, reintentos, identidad y recuperaci?n; navegador m?vil/escritorio. Evidencia final en docs/qa/evidence/savings-self-join-20260914.
 
 H-SAVINGS-CONTROL-ACCESS-001: acceso directo a controles existentes de retiros generales/individuales y tasa por periodo, sin modificar datos ni permisos. Evidencia: docs/qa/H-SAVINGS-CONTROL-ACCESS-001.md.
+
+
+## 2026-09-14 ? H-ADMIN-USER-MODULES-001 ? candidato local
+
+Editor por cuenta Auth en Administradores; selecci?n exacta para Resumen/sidebar/rutas, guards backend para dominios compartidos, concurrencia, revocaci?n y navegaci?n interna de Tu Sindicato. Se conservan el formulario de alta total, listado y m?dulos originales. Migraci?n/recovery 20260914000200 preparados; cero mutaciones productivas persistidas. Build, matriz SQL con ROLLBACK, pruebas focales de contrato protegido y Chrome desktop/m?vil: PASS. Informe final y alcance verificable: docs/audits/H-ADMIN-USER-MODULES-001.md. No se publica el bundle local que contiene tambi?n fuentes preexistentes ajenas a la H.
+
+
+H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.

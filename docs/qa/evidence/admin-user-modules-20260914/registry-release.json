@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "generatorChanged": false,
+  "checks": [
+    "freshness",
+    "moduleRPCs",
+    "lookup",
+    "noEmailsOrSecrets"
+  ],
+  "runtimeOptimization": "equivalent literal absence prefilter; matching candidates use original regex"
+}

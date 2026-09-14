@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "matrix": [
+    {
+      "status": "PASS",
+      "checks": "total parity, exact selection, persistence, optimistic conflict, governance denial, finance RPC denial, RLS, section isolation, Savings, revocation, anonymous"
+    }
+  ],
+  "recovery": "NOT_RUN_INSTALLED",
+  "persistedTestMutations": 0,
+  "installed": true
+}

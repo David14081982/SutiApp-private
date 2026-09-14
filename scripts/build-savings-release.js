@@ -1,7 +1,7 @@
 'use strict';
 // Compile the Savings scope while preserving every unrelated published module.
 const fs=require('fs'),path=require('path'),cp=require('child_process'),vm=require('vm'),assert=require('assert/strict');
-const root=path.resolve(__dirname,'..'),baseline=process.argv[3]||'450213a4cc47ab57e425f78fc515377de8671549';
+const root=path.resolve(__dirname,'..'),baseline=process.argv[3]||'41efd554e61bd609acdeed13a2315f8f13e51ecd';
 const allowed=new Set(['savings-repository.js','savings-panel-repository.js','savings-panel-reference.jsx','savings-panel-admin.jsx','savings-certification-admin.jsx','savings-runtime-admin.jsx','savings-operations-admin.jsx','savings-retirement-admin.jsx','savings-yield-admin.jsx','savings-request-form.jsx','screens-savings.jsx']);
 const original=cp.execFileSync('git',['show',baseline+':app/bundle.js'],{cwd:root,maxBuffer:20*1024*1024}).toString('utf8');
 cp.execFileSync(process.execPath,[path.join(__dirname,'build-bundle.js'),path.resolve(process.argv[2])],{cwd:root,stdio:'pipe'});

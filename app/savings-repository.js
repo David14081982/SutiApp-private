@@ -89,6 +89,18 @@
     } finally { if (writing) invalidateSelf(true); }
   }
 
+  async function submitJoin(input) {
+    const identity = syncSelfIdentity(); if (!identity) throw contextError();
+    invalidateSelf(false);
+    try {
+      const result = await db().rpc('submit_self_savings_join', { p_amount: Number(input.newContributionAmount), p_expected_affiliate_id: identity.affiliate, p_observation: input.reason || '', p_idempotency_key: input.idempotencyKey || key() });
+      if (result.error) throw result.error;
+      const current = syncSelfIdentity();
+      if (!current || current.key !== identity.key || !result.data || result.data.usuario_contexto_affiliate_id !== identity.affiliate || result.data.actor_real_auth_user_id !== identity.actor) throw contextError();
+      return result.data;
+    } finally { invalidateSelf(false); }
+  }
+
   const api = {
     newIdempotencyKey: key,
     previewPeriodYield: (periodId) => rpc('preview_savings_period_yield', { p_yield_period_id: periodId }),
@@ -110,8 +122,16 @@
     clearSelfCache: () => invalidateSelf(false),
     subscribeSelfInvalidation: (fn) => { selfListeners.add(fn); return () => selfListeners.delete(fn); },
     getAdminDashboard: (participantId) => rpc('get_admin_savings_dashboard', { p_participant_id: participantId || null }),
+    getJoinContext: async (amount) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const value = await rpc('get_self_savings_join_context', { p_amount: amount == null ? null : Number(amount) });
+      const current = syncSelfIdentity(), context = value && value.context;
+      if (!current || current.key !== identity.key || !context || context.actor_auth_user_id !== identity.actor || context.effective_affiliate_id !== identity.affiliate) throw contextError();
+      return value;
+    },
     submitRequest: (values) => {
       const input = values || {};
+      if (input.requestType === 'JOIN') return submitJoin(input);
       return rpc('submit_self_savings_request', {
         p_request_type: input.requestType,
         p_amount: input.amount == null ? null : Number(input.amount),

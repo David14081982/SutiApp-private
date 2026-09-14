@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "applied_at": "2026-09-14T06:24:04.356Z",
+  "mode": "PRIVATE",
+  "publications": 0,
+  "business_data_unchanged": true,
+  "source_sha256": "055b7bf444e02b9448d6dc5a253a53da65208dde8278d01abaad7e2cb62715c2",
+  "installed": {
+    "context_ready": true,
+    "submit_ready": true,
+    "user_read": true,
+    "anonymous_read": false,
+    "anonymous_write": false
+  }
+}

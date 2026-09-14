@@ -3029,3 +3029,6 @@ H-CONVENIOS-FILTER-CAROUSEL-001 publicación final PASS: runtime a93f5a7 en main
 
 
 H-SAVINGS-RUNTIME-20260913: preparación privada instalada. Evidencia: docs/qa/evidence/savings-runtime-20260913/. No publicación, certificados ni movimientos financieros automáticos; se conservan UI y módulos ajenos. Ver GUIA_REVISION_AHORRO.md para revisión del encargado.
+
+
+H-SAVINGS-SELF-JOIN-001: conecta alta propia, fecha de solicitud y calendario previsto a Supabase manteniendo PRIVATE y dem?s programas. Pruebas transaccionales de seis categor?as, retiros cerrados, reintentos, identidad y recuperaci?n; navegador m?vil/escritorio. Evidencia final en docs/qa/evidence/savings-self-join-20260914.

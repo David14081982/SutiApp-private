@@ -15,3 +15,5 @@ La publicación requiere terminar las revisiones, hacer las pruebas y confirmar 
 Una corrección de saldo conserva el registro anterior. Los cambios de monto o de continuidad se autorizan por sus operaciones correspondientes; corregir una cifra del archivo anterior no cambia automáticamente un plan ya confirmado.
 
 La entrega de retiros conserva la protección por préstamos. Falta identificar y enlazar la comprobación existente indicada por el propietario; no se reconstruyó el programa de Préstamos.
+
+Los nuevos ahorradores pueden solicitar su ingreso desde Ahorro mientras se revisan los saldos anteriores. Capturan el monto de cada descuento y revisan las fechas previstas. La solicitud guarda fecha y hora; la encargada la revisa en Retiros y cambios y, al aprobarla, se activa el plan. Registrar o proyectar un descuento no acredita dinero recibido.

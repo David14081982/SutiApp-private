@@ -8470,6 +8470,18 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     } finally { if (writing) invalidateSelf(true); }
   }
 
+  async function submitJoin(input) {
+    const identity = syncSelfIdentity(); if (!identity) throw contextError();
+    invalidateSelf(false);
+    try {
+      const result = await db().rpc('submit_self_savings_join', { p_amount: Number(input.newContributionAmount), p_expected_affiliate_id: identity.affiliate, p_observation: input.reason || '', p_idempotency_key: input.idempotencyKey || key() });
+      if (result.error) throw result.error;
+      const current = syncSelfIdentity();
+      if (!current || current.key !== identity.key || !result.data || result.data.usuario_contexto_affiliate_id !== identity.affiliate || result.data.actor_real_auth_user_id !== identity.actor) throw contextError();
+      return result.data;
+    } finally { invalidateSelf(false); }
+  }
+
   const api = {
     newIdempotencyKey: key,
     previewPeriodYield: (periodId) => rpc('preview_savings_period_yield', { p_yield_period_id: periodId }),
@@ -8491,8 +8503,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     clearSelfCache: () => invalidateSelf(false),
     subscribeSelfInvalidation: (fn) => { selfListeners.add(fn); return () => selfListeners.delete(fn); },
     getAdminDashboard: (participantId) => rpc('get_admin_savings_dashboard', { p_participant_id: participantId || null }),
+    getJoinContext: async (amount) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const value = await rpc('get_self_savings_join_context', { p_amount: amount == null ? null : Number(amount) });
+      const current = syncSelfIdentity(), context = value && value.context;
+      if (!current || current.key !== identity.key || !context || context.actor_auth_user_id !== identity.actor || context.effective_affiliate_id !== identity.affiliate) throw contextError();
+      return value;
+    },
     submitRequest: (values) => {
       const input = values || {};
+      if (input.requestType === 'JOIN') return submitJoin(input);
       return rpc('submit_self_savings_request', {
         p_request_type: input.requestType,
         p_amount: input.amount == null ? null : Number(input.amount),
@@ -11847,7 +11867,29 @@ Object.assign(window, {
       isWithdrawal = type === 'WITHDRAW',
       isStop = type === 'TERMINATE';
     const number = valid ? Number(amount) : null;
-    const allowed = dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions[type];
+    const [quote, setQuote] = useState(null),
+      [quoteError, setQuoteError] = useState('');
+    React.useEffect(() => {
+      if (type !== 'JOIN' || !valid || number < 200) {
+        setQuote(null);
+        return;
+      }
+      let alive = true;
+      setQuote(null);
+      setQuoteError('');
+      const timer = setTimeout(() => {
+        Promise.resolve().then(() => window.SavingsRepository.getJoinContext(number)).then(v => {
+          if (alive) setQuote(v);
+        }).catch(() => {
+          if (alive) setQuoteError('No se pudieron consultar las fechas. Cambia el importe o vuelve a abrir la solicitud para reintentar.');
+        });
+      }, 250);
+      return () => {
+        alive = false;
+        clearTimeout(timer);
+      };
+    }, [type, amount]);
+    const allowed = type === 'JOIN' ? Boolean((dashboard.join_context && dashboard.join_context.can_join || dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions.JOIN) && quote && quote.can_join && quote.amount === number) : dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions[type];
     const ready = allowed && (isStop || valid && number > 0 && (isWithdrawal ? typeof available === 'number' && number <= available : number >= 200));
     function change(fn, value) {
       fn(value);
@@ -11895,7 +11937,7 @@ Object.assign(window, {
     }
     if (done) return h('div', {
       role: 'status'
-    }, h('p', null, 'Solicitud registrada. Puedes consultar su estado en tu ahorro.'), h('p', null, done.folio || done.request && done.request.folio || ''), h('button', {
+    }, h('p', null, 'Solicitud registrada. Puedes consultar su estado en tu ahorro.'), type === 'JOIN' && h('p', null, 'Primer descuento previsto: ' + joinDate(done.effective_from) + '. La encargada revisar? tu solicitud.'), h('p', null, done.folio || done.request && done.request.folio || ''), h('button', {
       className: 'sav-primary',
       onClick: onClose
     }, 'Entendido'));
@@ -11938,7 +11980,15 @@ Object.assign(window, {
       value: 'yes'
     }, 'Continuar ahorrando'), h('option', {
       value: 'no'
-    }, 'Dejar de ahorrar')))), isStop && h('p', null, 'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'), !isWithdrawal && !isStop && h('p', null, 'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'), h('label', {
+    }, 'Dejar de ahorrar')))), isStop && h('p', null, 'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'), !isWithdrawal && !isStop && h('p', null, 'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'), type === 'JOIN' && h('div', {
+      'data-savings-join-preview': ''
+    }, quoteError && h('p', {
+      role: 'alert'
+    }, quoteError), valid && number >= 200 && !quote && !quoteError && h('p', null, 'Consultando fechas?'), quote && h(React.Fragment, null, h('p', null, 'Descuento ' + (quote.frequency === 'MONTHLY' ? 'mensual, el d?a 5.' : 'quincenal, los d?as 15 y 30; en febrero, 15 y 28.')), h('p', null, 'Fecha de registro prevista: ' + joinDate(quote.registration_date)), h('p', null, 'Primer descuento previsto: ' + joinDate(quote.first_discount_on)), !quote.can_join && h('p', {
+      role: 'alert'
+    }, joinReason(quote.reason)), h(SavingsJoinSchedule, {
+      rows: quote.upcoming
+    }))), h('label', {
       style: {
         display: 'grid',
         gap: 8,
@@ -12104,6 +12154,101 @@ Object.assign(window, {
       disabled: !valid || busy
     }, busy ? 'Guardando?' : review ? 'Confirmar beneficiarios' : 'Revisar beneficiarios'));
   }
+  function joinDate(value) {
+    return value ? new Date(value + (String(value).length === 10 ? 'T12:00:00Z' : '')).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'America/Hermosillo'
+    }) : 'Por confirmar';
+  }
+  function joinReason(reason) {
+    return {
+      IDENTITY_REVIEW: 'La encargada debe revisar la vinculaci?n de tu Folio.',
+      OPENING_REVIEW: 'Tu registro anterior est? en revisi?n. La encargada debe confirmarlo antes de un nuevo ingreso.',
+      CATEGORY_REQUIRED: 'Falta confirmar tu tipo de trabajador para calcular las fechas. Comun?cate con la encargada.',
+      INTAKE_CLOSED: 'Por el momento no se reciben nuevos ingresos al ahorro.',
+      REQUEST_PENDING: 'Tu solicitud de ingreso est? pendiente de revisi?n.'
+    }[reason] || '';
+  }
+  function SavingsJoinSchedule({
+    rows
+  }) {
+    return h('details', {
+      'data-savings-join-schedule': ''
+    }, h('summary', null, 'Pr?ximos descuentos previstos'), h('p', null, 'Proyecci?n de un a?o. No es saldo recibido y no incluye rendimientos.'), (rows || []).map(r => h('div', {
+      className: 'sav-row',
+      key: r.contribution_date
+    }, h('span', null, joinDate(r.contribution_date)), h('b', null, new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(r.expected_amount)))));
+  }
+  function SavingsJoinAccess({
+    revision,
+    onJoin,
+    existing
+  }) {
+    const [context, setContext] = useState(null),
+      [error, setError] = useState(false),
+      [retry, setRetry] = useState(0);
+    React.useEffect(() => {
+      let alive = true;
+      setContext(null);
+      setError(false);
+      Promise.resolve().then(() => window.SavingsRepository.getJoinContext()).then(v => {
+        if (alive) setContext(v);
+      }).catch(() => {
+        if (alive) setError(true);
+      });
+      return () => {
+        alive = false;
+      };
+    }, [revision, retry]);
+    if (existing && (!context || !context.request && !context.can_join)) return error ? h('p', {
+      role: 'alert'
+    }, 'No se pudo consultar el registro de ingreso.', h('button', {
+      className: 'sav-retry',
+      onClick: () => setRetry(v => v + 1)
+    }, 'Reintentar')) : null;
+    const request = context && context.request,
+      states = {
+        SUBMITTED: 'Recibida',
+        UNDER_REVIEW: 'En revisi?n',
+        APPROVED: 'Aprobada',
+        REJECTED: 'Rechazada',
+        CANCELLED: 'Cancelada',
+        APPLIED: 'Aplicada'
+      };
+    return h('div', {
+      'data-savings-join-access': '',
+      style: existing ? {
+        margin: '12px 16px'
+      } : undefined
+    }, (!existing || context.can_join) && h('button', {
+      type: 'button',
+      className: 'sav-primary',
+      disabled: !context || !context.can_join,
+      onClick: () => onJoin(context)
+    }, 'Ingresar al ahorro'), !context && !error && !existing && h('p', {
+      role: 'status'
+    }, 'Consultando disponibilidad?'), error && h('p', {
+      role: 'alert'
+    }, 'No se pudo consultar el ingreso al ahorro. ', h('button', {
+      className: 'sav-retry',
+      onClick: () => setRetry(v => v + 1)
+    }, 'Reintentar')), context && joinReason(context.reason) && h('p', null, joinReason(context.reason)), request && h('div', {
+      style: {
+        textAlign: 'left'
+      }
+    }, h('h3', null, 'Tu solicitud de ingreso'), h('p', null, states[request.status] || 'Por confirmar'), h('p', null, 'Registrada: ' + joinDate(request.submitted_at)), h('p', null, 'Monto por descuento: ' + new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(request.amount)), h('p', null, 'Primer descuento previsto: ' + joinDate(request.effective_from)), h(SavingsJoinSchedule, {
+      rows: context.upcoming
+    })));
+  }
+  window.SavingsJoinAccess = SavingsJoinAccess;
   window.SavingsRequestHistory = SavingsRequestHistory;
   window.SavingsBeneficiariesForm = SavingsBeneficiariesForm;
   window.SavingsRequestForm = SavingsRequestForm;
@@ -12234,8 +12379,26 @@ Object.assign(window, {
     const store = window.useSavingsStore('self'),
       state = store.state(),
       dashboard = state.self;
+    const identityKey = window.SavingsRepository.getSelfIdentityKey ? window.SavingsRepository.getSelfIdentityKey() : '';
     const [sheet, setSheet] = React.useState('');
-    const reload = () => store.loadSelf(true);
+    React.useEffect(() => {
+      setSheet('');
+      setJoinContext(null);
+    }, [identityKey]);
+    const [joinContext, setJoinContext] = React.useState(null),
+      [joinRevision, setJoinRevision] = React.useState(0);
+    const reload = () => {
+      setJoinRevision(v => v + 1);
+      return store.loadSelf(true);
+    };
+    const joinAccess = () => h(window.SavingsJoinAccess, {
+      key: identityKey,
+      revision: joinRevision,
+      onJoin: value => {
+        setJoinContext(value);
+        setSheet('JOIN');
+      }
+    });
     if (state.selfPhase === 'loading' || state.selfPhase === 'idle') return h('div', {
       className: 'su-savings',
       'data-savings-screen': '',
@@ -12412,12 +12575,7 @@ Object.assign(window, {
       'data-savings-balance-state': balanceView.status
     }, h('span', {
       className: 'sav-icon'
-    }, icon('cash', 22)), h('h2', null, 'Ahorro no encontrado'), h('p', null, 'No encontramos una cuenta de ahorro vinculada a tu perfil.'), h('button', {
-      type: 'button',
-      className: 'sav-primary',
-      disabled: !(canWriteRequests && dashboard.actions && dashboard.actions.JOIN),
-      onClick: () => setSheet('JOIN')
-    }, 'Ingresar al ahorro')))), ['JOIN', 'WITHDRAW', 'CHANGE_AMOUNT', 'TERMINATE'].includes(sheet) && h(Sheet, {
+    }, icon('cash', 22)), h('h2', null, 'Ahorro no encontrado'), h('p', null, 'No encontramos una cuenta de ahorro vinculada a tu perfil.'), joinAccess()))), ['JOIN', 'WITHDRAW', 'CHANGE_AMOUNT', 'TERMINATE'].includes(sheet) && h(Sheet, {
       title: {
         JOIN: 'Ingresar al ahorro',
         WITHDRAW: 'Retirar ahorro',
@@ -12427,12 +12585,23 @@ Object.assign(window, {
       code: sheet.toLowerCase(),
       onClose: () => setSheet('')
     }, h(window.SavingsRequestForm, {
-      key: sheet,
+      key: sheet + '-' + identityKey,
       type: sheet,
-      dashboard,
-      onSaved: reload,
+      dashboard: sheet === 'JOIN' ? {
+        ...dashboard,
+        join_context: joinContext
+      } : dashboard,
+      onSaved: sheet === 'JOIN' ? () => setJoinRevision(v => v + 1) : reload,
       onClose: () => setSheet('')
-    })), sheet === 'INFO' && h(Sheet, {
+    })), participant && h(window.SavingsJoinAccess, {
+      key: identityKey,
+      revision: joinRevision,
+      existing: true,
+      onJoin: value => {
+        setJoinContext(value);
+        setSheet('JOIN');
+      }
+    }), sheet === 'INFO' && h(Sheet, {
       title: 'Acerca de tu ahorro',
       code: 'info',
       onClose: () => setSheet('')

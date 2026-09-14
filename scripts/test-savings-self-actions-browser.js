@@ -10,7 +10,7 @@ async function main(){
   await page.evaluate(()=>{
    window.calls=[];window.count=0;window.fail=false;window.crypto.randomUUID=()=>`test-${++count}`;
    window.dashboard={participant:{id:'p'},balances:{capital:900,yield_amount:100,total:1000,available:1000},annual:[{year:'2026-S2',label:'2026 - Julio a diciembre',subtotal_label:'Subtotal registrado',capital:900,yield:100,closed:false}],enrollment:{status:'Ahorrando',current_contribution_amount:500,frequency:'TWICE_MONTHLY',enrollment_started_at:'2026-01-15'},actions:{WITHDRAW:true,CHANGE_AMOUNT:true,TERMINATE:true,JOIN:true},write_capabilities:{requests:true,beneficiaries:true},history:[],withdrawals:[],beneficiaries:[],requests:[],upcoming:[]};
-   window.SavingsRepository={submitRequest:async v=>{calls.push({kind:'request',...v});if(fail){fail=false;throw Error('NETWORK');}return {folio:'AH-TEST'};},replaceBeneficiaries:async(v,k)=>{calls.push({kind:'beneficiaries',rows:v,key:k});}};
+   window.SavingsRepository={getJoinContext:async()=>({can_join:false,reason:"ALREADY_SAVING",upcoming:[]}),submitRequest:async v=>{calls.push({kind:'request',...v});if(fail){fail=false;throw Error('NETWORK');}return {folio:'AH-TEST'};},replaceBeneficiaries:async(v,k)=>{calls.push({kind:'beneficiaries',rows:v,key:k});}};
    window.useSavingsStore=()=>({state:()=>({self:dashboard,selfPhase:'ready'}),loadSelf:async()=>{}});
    window.SavingsBalanceReadModel={select:s=>({status:'ready',value:s.self.balances.total,label:'$1,000.00'})};
    window.root=ReactDOM.createRoot(document.getElementById('root'));window.mount=()=>root.render(React.createElement(SavingsScreen,{app:{back:()=>{}}}));mount();

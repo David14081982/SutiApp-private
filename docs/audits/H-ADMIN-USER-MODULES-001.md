@@ -95,3 +95,55 @@ La autorizaci?n expresa posterior de commit, push y publicaci?n sustituye el l?m
 
 
 Prepublicaci?n: regresi?n global del artefacto v257 con backend instalado PASS. La versi?n publicada anterior v256 present? IMAGE_TIMEOUT en una o dos im?genes del cat?logo en las repeticiones; el artefacto local carg? las 248 im?genes. No hay cambio de filas, objetos ni de los repositorios de cat?logo entre ambas versiones. Se publica el candidato validado y se mantiene la verificaci?n global de la versi?n nueva pendiente hasta ejecutarla; no se atribuye PASS productivo a las ejecuciones con timeout.
+
+
+## Final publication verification - 2026-09-14
+
+This section supersedes the historical local-only and pending-publication verdicts above. Code commit f130ff563b565403e372dbc7b9dffb252cc66a41 is pushed to main and deployed by successful Pages run 34889134243. The public https://sutiapp.com/ returns bundle v257 and SW v201; the fetched bundle hash matches release-build.json exactly. Backend migration 20260914000200 is applied.
+
+The unmodified official global regression passed against the deployed v257: 167 public assets, 29 legacy images, 248 program images, profile, Admin Afiliados, Membership, loan documents, Marketplace, fullscreen, refresh, fresh profile without service worker and a legitimate protected PDF. No production data writes. Previous v256 timeouts remain in prepublication-global-pages.json; they are not represented as passing runs. The underlying runner labels custom domains as local; test-admin-user-modules-global.js explicitly uses https://sutiapp.com/ for the pages result.
+
+### H-ADMIN-USER-MODULES-001 RESULT - deployed
+
+Status: PASS.
+Files changed: 52 files in f130ff5, including exactly eight focal application sources, their bundle/cachebusters, additive migration/recovery, focal scripts, evidence and declared governance/derived index. Follow-up evidence commit changes only documentation/evidence and derived registry.
+Source-of-truth verdict: PASS; existing Supabase roles/assignments/responsibilities remain authoritative.
+Invariant verdict: PASS; protected administrative contract, confirmed Auth UUID and legacy identities preserved.
+Build: PASS; 122 chunks, 114 unchanged; live artifact hash matches the isolated release. GitHub Pages build, backend compatibility gates and postdeployment request check succeeded.
+Tests: PASS; focal static and eight browser cases, installed SQL matrix with ROLLBACK, real production editor reads, global local and production regression.
+Security: PASS within verified scope; backend module boundaries, governance/self protection and optimistic concurrency. No secrets committed. No new permission assignments made by deployment.
+Legacy impact: no Google, formulas, financial history, existing business rows or assets rewritten.
+Unexpected files changed: none in the published commit. Preexisting root workspace changes excluded. Vendor files have local line-ending normalization only and are absent from the commit diff.
+Known limitations: limited-user browser behavior uses isolated fixtures; SQL access matrix uses real installed backend and rolls back. No persistent test administrator was created. Production validation is a point-in-time check.
+Evidence: deployment.json, production-browser.json, global-pages.json, global-local.json, release-build.json, release-sql-applied.json, backend.json, browser.json, static-checks.json and registry-release.json in docs/qa/evidence/admin-user-modules-20260914/.
+
+### ARCHITECT REVIEW - published release
+
+Task reviewed: authorized commit, push and publication of H-ADMIN-USER-MODULES-001.
+Verdict: APPROVED.
+What Codex did correctly: isolated the release from unrelated workspace changes; compared the actual commit scope, preserved chunk hashes, migration before/after hashes, installed backend tests and published browser evidence.
+Important findings: exactly eight focal sources changed; 114 unrelated bundle chunks preserved; all required current global checks pass without modifying the runner or replacing assets.
+Problems detected: no unresolved defect within this delivery. Historical prepublication timeouts remain disclosed. WORK_QUEUE_HISTORY.md is absent; WORK_QUEUE.md concerns a separate financial task and does not authorize continuing it.
+Architecture implications: existing repositories and authoritative tables extended; no duplicate data authority.
+Source-of-truth implications: assignments/responsibilities remain authoritative, module context is derived.
+Security implications: backend enforcement complements visible module selection; public catalog data remains public by existing policy.
+Data implications: installation proofs show existing assignments and business rows unchanged; test mutations rolled back.
+Owner decision required: NO.
+Recommended next action: deliver the published result and stop; do not advance another H.
+
+### RESPONSE TO CODEX
+
+Approve the published H-ADMIN-USER-MODULES-001. Commit only final evidence and the refreshed derived index; communicate the deployed site and verification result. Do not assign real users, rewrite data or begin another H.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-ADMIN-USER-MODULES-001 publication.
+Verdict: APPROVED.
+Critical findings: none unresolved within this scope.
+Source of truth: preserved.
+Architecture: eight focal sources; unrelated public UI preserved.
+Security: installed matrix and production read verification PASS.
+Data: existing assignments and business rows preserved.
+Legacy: unchanged.
+Owner decision: NO.
+Next action: final evidence delivery, no task continuation.
+Response generated for Codex: YES.

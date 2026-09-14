@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-09-14T19:57:16.639091+00:00",
+  "codeCommit": "f130ff563b565403e372dbc7b9dffb252cc66a41",
+  "baseCommit": "6a4b5fb002c1669182cc031d3dca11fe458adc6e",
+  "url": "https://sutiapp.com/",
+  "workflow": {
+    "id": 34889134243,
+    "conclusion": "success",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34889134243"
+  },
+  "liveBundleVersion": 257,
+  "liveServiceWorkerVersion": 201,
+  "liveBundleSha256": "01f8256e7d956582dd1d78cef54161f1810bd2657413dd1262d54b5b783541e0",
+  "migration": "20260914000200",
+  "migrationStatus": "APPLIED",
+  "codeFiles": 8,
+  "preservedBundleChunks": 114,
+  "unexpectedCodeFiles": 0,
+  "existingAssignmentsChanged": 0,
+  "businessRowsChanged": 0,
+  "globalLocal": "PASS",
+  "globalProduction": "PASS",
+  "realProductionEditor": "PASS",
+  "globalRunnerChanged": false,
+  "globalRunnerTargetNote": "Wrapper label pages and actual target https://sutiapp.com/. The unchanged underlying runner calls custom domains LOCAL_BUILD_WITH_PRODUCTION_BACKEND; that label is a classifier limitation, not the URL used.",
+  "legitimatePdf": {
+    "status": "PASS",
+    "account": "H005_TEST",
+    "found": true,
+    "http": 200,
+    "mime": "application/pdf",
+    "opened": true
+  },
+  "registry": "Refreshed after evidence update",
+  "reviewer": "APPROVED",
+  "limitations": [
+    "No persistent limited-user assignment was created for testing. SQL matrix rolled back; limited UI fixtures isolated.",
+    "Prior v256 image timeouts preserved as historical evidence; current v257 global run passes without test or asset changes."
+  ]
+}

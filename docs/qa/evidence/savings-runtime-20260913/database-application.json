@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "applied_at": "2026-09-14T05:19:42.383Z",
+  "inputs": [
+    {
+      "name": "20260906000100_savings_operations",
+      "sha256": "e956b3c2e660deb9524fd6bb1691e2fc1c50286e26d19bbecd54990a7428d936"
+    },
+    {
+      "name": "20260906000200_savings_retirement_transition",
+      "sha256": "230d907c91323da2828ce22920db38bf37e47e8f80c0df7c977b47148d2f0769"
+    },
+    {
+      "name": "20260913000000_savings_identity_compatibility",
+      "sha256": "7293a9a92b4fce0d67c8e948506a37fed392073763d439a6aa6b91c4a07825ab"
+    },
+    {
+      "name": "20260906000400_savings_period_yield",
+      "sha256": "07e2ab7bcbf1fa1215659b8675f5bede2b0cf9b27a479259400af787a87a7268"
+    },
+    {
+      "name": "20260907000100_savings_balance_certification",
+      "sha256": "f74f2107a6dbfcf16dda161ff21a3ab1f7fbd8bc77b03b7014bb0062cc504ff6"
+    },
+    {
+      "name": "20260913000100_savings_runtime_completion",
+      "sha256": "ffb112a4664bef5703e42a4df32ebae54811c6e397c7b7ae7d64548a7a09d38a"
+    },
+    {
+      "name": "20260913000200_savings_publication",
+      "sha256": "878c63b8e9bba5b91295855ba80bd0b9af830c5a0a0f91c9ad0e76bb691b7463"
+    },
+    {
+      "name": "20260913000300_savings_requests_runtime",
+      "sha256": "8e78a6929d2fc71e89cfd862525d52d542d1009163ef6d7a9c72a1f45118140a"
+    },
+    {
+      "name": "20260913000400_savings_source_refresh",
+      "sha256": "85ebfdff51e604cc3ef18bc14d70074d04ca14b9706e82513e1f3d1de88b1f8e"
+    },
+    {
+      "name": "20260913000500_savings_account_receipts",
+      "sha256": "129f08adbc3e6cdaa26a67315cd3813a71567b4550036e0d3dccc164c3befda4"
+    },
+    {
+      "name": "20260913000600_savings_admin_current_summary",
+      "sha256": "d5ae7e741eac4976c6d075799d27f2e84a2d7251e302d4cdddbec246cc0838c3"
+    }
+  ],
+  "backup_sha256": "aa03aa3b3f17dc7b20daa7e95e16d719c09b395bd27ceb9982835513d6d3a7f6",
+  "before": [
+    {
+      "reviews": "5fa2cb99fa833f2270a4feec6ebe68ea",
+      "events": "261cf53fb0597c41e853a45935e3ec03",
+      "participants": "fb0b6d28371fd50b420adba6486d224a",
+      "transactions": 0
+    }
+  ],
+  "after": [
+    {
+      "reviews": "5fa2cb99fa833f2270a4feec6ebe68ea",
+      "events": "261cf53fb0597c41e853a45935e3ec03",
+      "participants": "fb0b6d28371fd50b420adba6486d224a",
+      "transactions": 0
+    }
+  ],
+  "result": {
+    "mode": "PRIVATE",
+    "certifications": 0,
+    "publications": 0,
+    "observations": 3,
+    "accepted_observations": 0,
+    "transactions": 0
+  },
+  "google_writes": 0
+}

@@ -1,0 +1,16 @@
+begin;
+do $$ begin if exists(select 1 from public.savings_audit_events where action='ADJUST_CONFIRMED_BALANCE') then raise exception 'RECOVERY_BLOCKED_FINANCIAL_CORRECTIONS';end if;end $$;
+drop function public.admin_adjust_savings_balance(uuid,numeric,numeric,text,text,uuid);
+drop function public.get_admin_savings_period_report(date,date);
+drop function public.get_admin_savings_financial_account(uuid,date);
+alter function public.savings_account_before_runtime(uuid,date) rename to get_admin_savings_financial_account;
+drop function public.admin_override_savings_contribution(uuid,date,numeric,text,uuid);
+alter function public.savings_override_before_runtime(uuid,date,numeric,text,uuid) rename to admin_override_savings_contribution;
+do $$ declare r record;begin for r in select * from public.savings_runtime_function_backup loop execute r.definition;end loop;end $$;
+grant execute on function public.get_admin_savings_financial_account(uuid,date),public.admin_override_savings_contribution(uuid,date,numeric,text,uuid) to authenticated;
+do $$ begin if exists(select 1 from public.savings_contribution_overrides where length(btrim(reason))<3) then raise exception 'RECOVERY_BLOCKED_OPTIONAL_NOTES_HISTORY';end if;end $$;
+alter table public.savings_contribution_overrides drop constraint savings_override_reason_check;
+alter table public.savings_contribution_overrides add constraint savings_override_reason_check check(length(btrim(reason)) between 3 and 1000);
+drop function public.savings_balance_review_version(uuid);
+drop table public.savings_runtime_function_backup;
+commit;

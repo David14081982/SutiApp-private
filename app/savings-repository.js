@@ -91,6 +91,19 @@
 
   const api = {
     newIdempotencyKey: key,
+    previewPeriodYield: (periodId) => rpc('preview_savings_period_yield', { p_yield_period_id: periodId }),
+    confirmPeriodYield: (values) => rpc('admin_confirm_savings_period_yield', {
+      p_yield_period_id: values.periodId, p_fingerprint: values.fingerprint,
+      p_reason: values.reason, p_client_action_id: values.clientActionId,
+    }),
+    previewProcessTransition: (eventId, effectiveFrom) => rpc('preview_savings_process_transition', { p_event_id: eventId, p_effective_from: effectiveFrom }),
+    confirmProcessTransition: (values) => rpc('admin_confirm_savings_process_transition', {
+      p_event_id: values.eventId, p_effective_from: values.effectiveFrom, p_reason: values.reason,
+      p_plan_fingerprint: values.planFingerprint, p_client_action_id: values.clientActionId,
+    }),
+    getOperations: (participantId) => rpc('get_admin_savings_operations', { p_participant_id: participantId || null }),
+    configureOperation: (command, actionId) => rpc('admin_configure_savings_operation', { p_command: command, p_client_action_id: actionId }),
+    authorizeDate: (planId, date, reason, actionId) => rpc('admin_authorize_savings_date', { p_plan_id: planId, p_authorized_date: date, p_reason: reason, p_client_action_id: actionId }),
     getSelfDashboard,
     getSelfIdentityKey: () => { const value = selfIdentity(); return value ? value.key : ''; },
     prepareSelfContext: syncSelfIdentity,

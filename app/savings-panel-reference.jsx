@@ -70,7 +70,7 @@
       name: 'users',
       size: 15,
       stroke: 2.2
-    }), k.activos + ' ahorrando al corte', React.createElement('span', {
+    }), k.activos + (k.current_summary ? ' ahorrando al día' : ' ahorrando al corte'), React.createElement('span', {
       style: {
         opacity: .5
       }

@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "verified_at": "2026-09-14T05:21:30.576Z",
+  "rows": [
+    {
+      "result": {
+        "panel": {
+          "mode": "PRIVATE",
+          "total": 366,
+          "current_summary": true
+        },
+        "publication": {
+          "mode": "PRIVATE",
+          "ready": false,
+          "pending": 366
+        },
+        "native_total": 0,
+        "report_totals": {
+          "yield_credited": 0,
+          "actual_received": 0,
+          "yield_delivered": 0,
+          "capital_delivered": 0
+        },
+        "dashboard_loaded": true,
+        "operation_settings_loaded": true
+      }
+    }
+  ]
+}

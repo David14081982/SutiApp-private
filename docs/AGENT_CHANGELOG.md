@@ -3026,3 +3026,6 @@ H-ADMIN-SAVINGS-MENU-001 publicación final PASS: runtime a245e29 en main, workf
 Carrusel focal con Todos fijo, pausa hover/touch/teclado y scroll manual. Release aislado sobre 35d7c30 preserva ajustes de texto existentes y menú Ahorro. Bundle focal v253; sin cambios de datos ni helpers compartidos. Informe: [H-CONVENIOS-FILTER-CAROUSEL-001](qa/H-CONVENIOS-FILTER-CAROUSEL-001.md).
 
 H-CONVENIOS-FILTER-CAROUSEL-001 publicación final PASS: runtime a93f5a7 en main, workflow 34671311804 SUCCESS, bundle v253 público idéntico y Chrome producción móvil/escritorio PASS. Todos fijo, scroll automático, pausa/reanudación y filtros verificados; cero escrituras de negocio. Evidencia productiva en el informe focal.
+
+
+H-SAVINGS-RUNTIME-20260913: preparación privada instalada. Evidencia: docs/qa/evidence/savings-runtime-20260913/. No publicación, certificados ni movimientos financieros automáticos; se conservan UI y módulos ajenos. Ver GUIA_REVISION_AHORRO.md para revisión del encargado.

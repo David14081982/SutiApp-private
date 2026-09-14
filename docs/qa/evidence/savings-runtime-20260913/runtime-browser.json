@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "viewports": [
+    320,
+    430,
+    1440
+  ],
+  "physical_devices": false,
+  "checks": [
+    "original styles, collapsible sections",
+    "business Folio distinct from request code",
+    "stop saving without payout",
+    "optional ordinary notes",
+    "retry key and draft preservation",
+    "rejection/date-exception reason",
+    "payment components with confirmation",
+    "audited cancellation command",
+    "server totals without client sums",
+    "CSV formula guard and text Folio",
+    "no auto-publication",
+    "explicit publication checkbox/fingerprint/retry",
+    "existing opening/rate components load only when opened with server props",
+    "no overflow or browser errors"
+  ]
+}

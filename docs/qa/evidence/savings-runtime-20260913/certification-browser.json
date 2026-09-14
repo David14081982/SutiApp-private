@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "physical_devices": false,
+  "results": [
+    {
+      "width": 320,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    "current/private/published labels and pending receipt notice",
+    "confirmed hero preserves original reference",
+    "native list/detail/search/filters/page-neighbors",
+    "native load error and retry",
+    "never-started dates null",
+    "native receipt enrollment identity",
+    "retirement exact participant",
+    "source update conflicts/preview invalidation",
+    "empty components are explicit",
+    "optional observations",
+    "server preview invalidated by edit",
+    "idempotent preview/confirmation/receipt retry",
+    "future dates cannot be received",
+    "blank differs from confirmed zero",
+    "server projection query",
+    "audited correction command/version",
+    "stale receipt refresh preserves capture and reviews latest version",
+    "read-only permission",
+    "stale person response ignored",
+    "loading/error/retry/empty",
+    "no horizontal overflow",
+    "no page errors"
+  ]
+}

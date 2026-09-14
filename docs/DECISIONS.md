@@ -1085,3 +1085,8 @@ Release de H-USER-TEXT-SIZE-SMALL-001, 2026-09-11: al integrar los 11 commits
 posteriores de main, la entrega conjunta queda en bundle v250, CSS v244 y SW/cache
 v196. Estas versiones reemplazan las del candidato local inicial; la autoridad,
 comportamiento de lectores desconocidos y recovery compatible no cambian.
+
+
+## Ahorro: preparación privada 2026-09-13
+
+Aplicadas las migraciones de operaciones, jubilación, rendimientos, certificación, publicaciones, solicitudes, actualizaciones de origen, descuentos y resumen administrativo. La autoridad operativa privada reside en Supabase; cada saldo confirmado es un movimiento inicial por capital/rendimiento con historial inmutable. Q es la referencia aceptada de origen; sus rendimientos ya incluidos no se vuelven a abonar. Los importes futuros son derivados de planes fechados y no son dinero recibido. La publicación es una decisión única y explícita en savings_publication_state. Mientras mode=PRIVATE, el autoservicio conserva su lector anterior; no existe fallback ante errores. Al publicar, Ahorro, Inicio y Finanzas consultan el mismo saldo. Se preservaron 1,463 registros originales, ocho eventos de revisión y 363 participantes; se agregaron tres observaciones privadas, ninguna aceptada automáticamente. Los Folios se vinculan por texto exacto, nunca por nombre o email. Pruebas físicas y PDF permanecen para la etapa indicada por el propietario.

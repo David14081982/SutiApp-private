@@ -69,3 +69,43 @@ Response generated for Codex: YES.
 ## RESPONSE TO CODEX
 
 Approve the focal candidate. Commit and publish only declared changes, verify public v258/SW202 and real account lookup/self protection, record the result, and stop. Do not change actual user assignments, backend permission semantics, unrelated UI or data.
+
+
+## Verification scope extension - inherited membership snapshot assertion
+
+Pages run 34898300664 succeeded and the real production screen test passed. Independent Membership Google contract run 34898300683 failed in a whole-file equality check for app/program-request-repository.js. That file is byte-identical to e3259b1 (before this H). Its approved f130ff5 module-scoped read additions intentionally differ from the historical 9f880bf baseline.
+
+Before editing, extend scope only to scripts/test-membership-payment-contract.js and focal evidence. The test will remove exactly the reviewed module-read additions for baseline comparison, asserting each exact fragment and its occurrence count; it will still compare all remaining non-membership code to the same historical baseline. Financial mapper calculations, columns, membership writer/UI/repository and all production code remain unchanged. No workflow change, external read/write or financial operation. Legacy guardian classification SAFE CHANGE for isolated test maintenance; equivalence is exact source comparison after the explicitly approved read-boundary delta, and original financial projection assertions remain intact. Recovery is reverting this test-only amendment.
+
+
+## Published result and final review
+
+H-ADMIN-SCREEN-PERMISSIONS-002 RESULT
+Status: PASS.
+Files changed: one UI source, generated bundle/version strings, focal preparation/browser scripts, one inherited contract test, declared evidence/governance/index.
+Source-of-truth verdict: PASS; unchanged installed account/module RPCs.
+Invariant verdict: PASS; all 33 sidebar keys/labels match; accounts can be limited to Afiliados only. Authorized actions retain prior semantics per owner clarification.
+Build: PASS; deployed ae2d5ac, v258/SW202, exact public hash verified. Pages run 34898300664 succeeded.
+Tests: PASS local focal/static/existing editor suites and actual production account lookup/catalog/self-protection. Membership financial contract PASS after exact normalization of the six approved module-read insertions; all other non-membership repository code still equals the original audited baseline. No production financial code changed.
+Security: existing backend controls unchanged. No real assignment or business writes during QA.
+Legacy impact: isolated static contract test maintenance only; no external reads/writes, calculations, financial code or source values modified.
+Unexpected files changed: none committed outside declared scope.
+Known limitations: isolated writer fixtures validate the UI; production smoke uses real reads/self-protection without assigning a real limited account. Initial obsolete Membership snapshot assertion failure is retained in Actions 34898300683, and corrected by the follow-up test/evidence commit. No production defect was inferred from that snapshot mismatch.
+Evidence: deployment.json, production.json, browser.json, build.json, existing-editor-regression.json, static.json, contracts.json and screenshots under docs/qa/evidence/admin-screen-permissions-20260914.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-ADMIN-SCREEN-PERMISSIONS-002 completed correction and verified publication.
+Verdict: APPROVED.
+Critical findings: sidebar assignment placed on the intended screen; exactly 121 unrelated chunks preserved. Whole-repository snapshot test amended only for exact already-approved reader fragments with enforced occurrence counts; no arbitrary difference is ignored.
+Source of truth: unchanged.
+Architecture: existing editor reused, original section controls retained.
+Security: backend unchanged; exact selection/route/guard verification passed.
+Data: no real permission/business mutation.
+Legacy: financial projections and original writer/UI contracts pass unchanged.
+Owner decision: NO.
+Next action: push the test/evidence follow-up, confirm CI, deliver the path to assign Afiliados and stop.
+Response generated for Codex: YES.
+
+## RESPONSE TO CODEX - final
+
+Approve the completed correction. Publish only the verified test/evidence follow-up, confirm CI and deliver the result. Do not change account assignments, financial flows or another screen.

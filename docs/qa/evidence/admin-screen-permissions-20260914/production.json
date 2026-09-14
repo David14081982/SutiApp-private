@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "mode": "PRODUCTION",
+  "url": "https://sutiapp.com/",
+  "checks": [
+    "all33SidebarScreensAndLabelsMatch",
+    "affiliatesVisibleBeforeLookup",
+    "legacySectionPickerPreserved",
+    "realConfirmedAccountLookup",
+    "selfProtectionPreserved"
+  ],
+  "errors": [],
+  "catalog": "real installed RPC",
+  "permissionWrites": 0,
+  "businessWrites": 0
+}

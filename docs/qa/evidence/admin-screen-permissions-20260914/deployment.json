@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/",
+  "codeCommit": "ae2d5acd08851a435ef76874c3574b18899fa98b",
+  "workflow": 34898300664,
+  "workflowConclusion": "success",
+  "bundleVersion": 258,
+  "serviceWorkerVersion": 202,
+  "sha256": "c3180ba1c5511c0ac0ddf9b8d332e32d6c19ee110c83402d5dd483f951317dad",
+  "expected": "c3180ba1c5511c0ac0ddf9b8d332e32d6c19ee110c83402d5dd483f951317dad",
+  "productionSmoke": "PASS",
+  "permissionWrites": 0,
+  "businessWrites": 0
+}

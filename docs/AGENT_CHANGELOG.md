@@ -3052,3 +3052,6 @@ Code f130ff5 pushed to main and published at https://sutiapp.com/; Pages run 348
 ### H-ADMIN-SCREEN-PERMISSIONS-002 - sidebar screen assignment
 
 Permisos por pantalla now reuses the installed account/module editor and shows the complete 33-screen sidebar catalog, including Afiliados. Existing section-action controls remain available. Owner clarified screen restriction only, retaining authorized actions. One focal source; 121 other bundle chunks unchanged. Local exact affiliates-only assignment/readback, menu/route isolation, mobile save and existing editor regression PASS. No backend or real assignment changes. See the focal audit and evidence.
+
+
+H-ADMIN-SCREEN-PERMISSIONS-002 publication: ae2d5ac deployed successfully (Pages 34898300664), public v258/SW202 hash verified; real screen catalog/account lookup/self guards PASS. Inherited Membership contract test now accounts for exact approved module-read additions while retaining original financial assertions; local contract PASS, zero external writes.

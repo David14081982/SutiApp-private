@@ -3032,3 +3032,5 @@ H-SAVINGS-RUNTIME-20260913: preparación privada instalada. Evidencia: docs/qa/e
 
 
 H-SAVINGS-SELF-JOIN-001: conecta alta propia, fecha de solicitud y calendario previsto a Supabase manteniendo PRIVATE y dem?s programas. Pruebas transaccionales de seis categor?as, retiros cerrados, reintentos, identidad y recuperaci?n; navegador m?vil/escritorio. Evidencia final en docs/qa/evidence/savings-self-join-20260914.
+
+H-SAVINGS-CONTROL-ACCESS-001: acceso directo a controles existentes de retiros generales/individuales y tasa por periodo, sin modificar datos ni permisos. Evidencia: docs/qa/H-SAVINGS-CONTROL-ACCESS-001.md.

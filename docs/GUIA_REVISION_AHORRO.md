@@ -17,3 +17,13 @@ Una corrección de saldo conserva el registro anterior. Los cambios de monto o d
 La entrega de retiros conserva la protección por préstamos. Falta identificar y enlazar la comprobación existente indicada por el propietario; no se reconstruyó el programa de Préstamos.
 
 Los nuevos ahorradores pueden solicitar su ingreso desde Ahorro mientras se revisan los saldos anteriores. Capturan el monto de cada descuento y revisan las fechas previstas. La solicitud guarda fecha y hora; la encargada la revisa en Retiros y cambios y, al aprobarla, se activa el plan. Registrar o proyectar un descuento no acredita dinero recibido.
+
+
+## Retiros y rendimientos
+
+En Admin > Ahorro, pulsa **Retiros y rendimientos**, junto a Accesos y datos anteriores. Abre directamente los controles existentes.
+
+- En Tasa y rendimientos por periodo puedes preparar el periodo y su tasa propuesta. Guardar el periodo no abona rendimientos. La tasa se confirma al registrar la apertura.
+- En Control del programa > Retiros > Abrir retiros, selecciona Todos los ahorradores o un ahorrador identificado por Folio. Revisa fechas, periodo, corte y tasa antes de confirmar.
+- Consulta el periodo para revisar quienes cumplen requisitos antes de acreditar rendimientos. La apertura no entrega dinero ni confirma saldos automaticamente.
+- Se conservan los permisos existentes: una cuenta sin permiso para configurar no puede abrir retiros ni guardar periodos. Este acceso no concede permisos nuevos.

@@ -29858,7 +29858,11 @@ Object.assign(window, {
       };
     }, []);
     function keys(event) {
-      if (event.key === 'Escape' && !busy) onClose();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!busy) onClose();
+      }
       if (event.key !== 'Tab') return;
       const nodes = Array.from(ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)'));
       if (!nodes.length) return;
@@ -49074,9 +49078,10 @@ Object.assign(window, {
   }
   function Settings({
     app,
-    onSaved
+    onSaved,
+    defaultOpen = false
   }) {
-    const [opened, setOpened] = useState(false),
+    const [opened, setOpened] = useState(defaultOpen),
       [state, reload] = useRemote(() => window.SavingsRepository.getAdminDashboard(null), [], opened);
     async function saved() {
       reload();
@@ -49086,18 +49091,21 @@ Object.assign(window, {
       title: 'Aperturas, cambios y rendimientos',
       icon: 'calendar'
     }, h('details', {
+      open: opened,
       onToggle: e => setOpened(e.currentTarget.open)
     }, h('summary', {
       className: 'svp-note'
     }, 'Administrar fechas, opciones y tasa de rendimiento'), opened && h(React.Fragment, null, h(Feedback, {
       state,
       reload
-    }), state.data && !state.loading && !state.error && h(React.Fragment, null, h(window.SavingsOperationsAdmin, {
+    }), state.data && !state.loading && !state.error && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, 'Define la tasa del periodo y revisa quién cumple las reglas. Al abrir retiros puedes elegir todos los ahorradores o sólo una persona. Estos controles no entregan dinero automáticamente.'), h('h3', null, 'Habilitar retiros para todos o para una persona'), h(window.SavingsOperationsAdmin, {
       app,
       participants: state.data.participants,
       periods: state.data.yield_periods,
       onSaved: saved
-    }), h(window.SavingsYieldAdmin, {
+    }), h('h3', null, 'Tasa y rendimientos por periodo'), h(window.SavingsYieldAdmin, {
       app,
       periods: state.data.yield_periods,
       onSaved: saved
@@ -49108,7 +49116,11 @@ Object.assign(window, {
     onSaved,
     app
   }) {
-    return tab === 'cobranza' ? h(Reports) : tab === 'solicitudes' ? h(Requests, {
+    return tab === 'configuracion' ? h(Settings, {
+      app,
+      onSaved,
+      defaultOpen: true
+    }) : tab === 'cobranza' ? h(Reports) : tab === 'solicitudes' ? h(Requests, {
       onSaved
     }) : tab === 'revision' ? h(React.Fragment, null, h(Publication, {
       onSaved
@@ -49144,7 +49156,7 @@ Object.assign(window, {
     estados
   } = V;
   const tabs = [['cobranza', 'Cobranza'], ['padron', 'Ahorradores'], ['solicitudes', 'Retiros y cambios'], ['revision', 'Revisión']];
-  const css = `.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
+  const css = `.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
   function Btn({
     children,
     onClick,
@@ -49908,6 +49920,7 @@ Object.assign(window, {
       [open, setOpen] = useState(null),
       [request, setRequest] = useState(null),
       [toolsOpen, setToolsOpen] = useState(false),
+      [settingsOpen, setSettingsOpen] = useState(false),
       [revision, setRevision] = useState(0),
       [nativeOffset, setNativeOffset] = useState(0);
     const root = useRef(),
@@ -50143,9 +50156,18 @@ Object.assign(window, {
       className: 'svp-body'
     }, h('div', {
       className: 'svp-notice'
-    }, h('span', null, d && d.publication_mode === 'PUBLISHED' ? 'Saldos publicados a los ahorradores' : 'Revisión privada · Sin publicar a los ahorradores'), h(Btn, {
+    }, h('span', null, d && d.publication_mode === 'PUBLISHED' ? 'Saldos publicados a los ahorradores' : 'Revisión privada · Sin publicar a los ahorradores'), h('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap'
+      }
+    }, h(Btn, {
+      tone: 'primary',
+      onClick: () => setSettingsOpen(true)
+    }, 'Retiros y rendimientos'), h(Btn, {
       onClick: () => setToolsOpen(true)
-    }, 'Accesos y datos anteriores')), navError && h('p', {
+    }, 'Accesos y datos anteriores'))), navError && h('p', {
       role: 'alert',
       className: 'svp-note warn'
     }, navError), !d && state.loading ? h(Loading) : state.error ? h('div', {
@@ -50306,7 +50328,16 @@ Object.assign(window, {
       canWrite: d && d.can_write,
       onClose: () => setRequest(null),
       onSaved: refresh
-    }), toolsOpen && h(Modal, {
+    }), settingsOpen && h(Modal, {
+      title: 'Retiros y rendimientos',
+      onClose: () => setSettingsOpen(false)
+    }, h('div', {
+      className: 'svp-settings'
+    }, h(window.SavingsRuntimeAdmin, {
+      tab: 'configuracion',
+      app,
+      onSaved: refresh
+    }))), toolsOpen && h(Modal, {
       title: 'Accesos y datos anteriores',
       onClose: () => setToolsOpen(false)
     }, h(window.SavingsAccessAdmin), h('p', {

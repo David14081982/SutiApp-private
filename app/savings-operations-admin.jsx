@@ -40,7 +40,7 @@
       return () => { if (opener.current && opener.current.isConnected) opener.current.focus(); };
     }, []);
     function keys(event) {
-      if (event.key === 'Escape' && !busy) onClose();
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (!busy) onClose(); }
       if (event.key !== 'Tab') return;
       const nodes = Array.from(ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)'));
       if (!nodes.length) return;

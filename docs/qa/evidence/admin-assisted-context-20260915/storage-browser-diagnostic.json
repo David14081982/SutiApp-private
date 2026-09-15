@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "scope": "Unmodified Chrome isolated image decode; authorized existing assets; no response interception",
+  "results": [
+    {
+      "status": "PASS",
+      "width": 1200,
+      "height": 1600,
+      "elapsedMs": 533
+    },
+    {
+      "status": "PASS",
+      "width": 960,
+      "height": 1280,
+      "elapsedMs": 463
+    }
+  ],
+  "businessWrites": 0
+}

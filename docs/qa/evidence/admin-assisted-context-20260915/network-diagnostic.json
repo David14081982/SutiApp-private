@@ -1,0 +1,30 @@
+{
+  "observationOnly": true,
+  "responseInterception": false,
+  "timeoutsChanged": false,
+  "suiteChanged": false,
+  "events": [
+    {
+      "family": "storage",
+      "pathHash": "7758a247c0feac50",
+      "status": 0,
+      "error": "net::ERR_ABORTED",
+      "elapsedMs": 40002
+    },
+    {
+      "family": "storage",
+      "pathHash": "6d45fc3781292b36",
+      "status": 0,
+      "error": "net::ERR_ABORTED",
+      "elapsedMs": 40023
+    },
+    {
+      "family": "storage",
+      "pathHash": "01a695f110872802",
+      "status": 0,
+      "error": "net::ERR_ABORTED",
+      "elapsedMs": 296
+    }
+  ],
+  "privateUrlsLogged": false
+}

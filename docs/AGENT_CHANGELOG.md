@@ -3060,3 +3060,5 @@ H-ADMIN-SCREEN-PERMISSIONS-002 publication: ae2d5ac deployed successfully (Pages
 ## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
 
 Implemented H-ADMIN-ASSISTED-CONTEXT-003 with three focal frontend sources, generated bundle v259/SW v203, private authorization readers, additive migration and guarded recovery. SQL matrices (new assistance and prior per-screen modules) PASS under ROLLBACK; exact pre/post installation data preservation PASS. Browser and publication evidence in docs/qa/evidence/admin-assisted-context-20260915; final results recorded in H audit.
+
+H-ADMIN-ASSISTED-CONTEXT-003 publication update: owner authorized exact main destination; 8f9ec65 pushed/deployed, both CI workflows success, real attended Admin/edit form/exit on sutiapp.com PASS. Overall H verification remains FAIL due catalog timeouts in unchanged global Pages suite; direct binary fetch and isolated Chrome decode PASS. See publication-result.json and H audit; do not claim global PASS.

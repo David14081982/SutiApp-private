@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "commit": "8f9ec652f661d238c42f64e86ec336357c6dfb80",
+  "site": "https://sutiapp.com/",
+  "bundleVersion": 259,
+  "serviceWorkerVersion": 203,
+  "bundleSha256": "9085e67908d003e1ec03df432cd6ca34cae74bad454b26064577efc8168e7e74"
+}

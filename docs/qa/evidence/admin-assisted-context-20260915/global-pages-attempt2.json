@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "label": "pages",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "{\"status\":\"FAIL\",\"error\":\"[{\\\"family\\\":\\\"C_AFFILIATE_DOCUMENTS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"SELF_SERVICE_LOAN\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"}]\\n\\n'FAIL' !== 'PASS'\\n\"}\n"
+}

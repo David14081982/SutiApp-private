@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "scope": "Direct authenticated signing and binary fetch of the two browser timeout assets",
+  "results": [
+    {
+      "status": 200,
+      "elapsedMs": 552,
+      "mime": "image/jpeg",
+      "bytes": 163556,
+      "expectedBytes": 163556,
+      "sha256": "c69cb4840c34b3e827a74614d5225596e064b43447907b50d8d2c8a4bc3017c2"
+    },
+    {
+      "status": 200,
+      "elapsedMs": 487,
+      "mime": "image/jpeg",
+      "bytes": 89784,
+      "expectedBytes": 89784,
+      "sha256": "f0578945886b2b183dce0bbf93ebac278b35370fe439b0fe203010bdbcaa844c"
+    }
+  ],
+  "businessWrites": 0
+}

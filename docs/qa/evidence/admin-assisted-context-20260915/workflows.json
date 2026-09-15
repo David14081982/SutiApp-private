@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "commit": "8f9ec652f661d238c42f64e86ec336357c6dfb80",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 34932649824,
+      "status": "completed",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34932649824",
+      "workflowName": "Deploy SutiApp to GitHub Pages"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 34932649826,
+      "status": "completed",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/34932649826",
+      "workflowName": "Membership Google contract"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "status": "FAIL",
+  "publication": "PASS",
+  "functionalCommit": "8f9ec652f661d238c42f64e86ec336357c6dfb80",
+  "site": "https://sutiapp.com/",
+  "bundleVersion": 259,
+  "serviceWorkerVersion": 203,
+  "assistedAdminProduction": "PASS",
+  "backendSecurity": "PASS",
+  "ciWorkflows": "PASS",
+  "globalLocal": "PASS",
+  "globalPages": "FAIL",
+  "knownLimitation": "Four unchanged production suite runs failed on catalog image timeouts. Two affected existing assets return HTTP 200 with exact bytes and decode in unmodified Chrome in under one second individually. One earlier run also reported a document preview error, absent from subsequent failure reports. Cause under mass load remains unresolved; do not declare global PASS.",
+  "customerBusinessWrites": 0,
+  "permissionWrites": 0,
+  "supportSessionAudit": "authorized real support sessions started and ended",
+  "approval": "Owner explicitly authorized commit, push to existing main destination and deployment after the automatic review rejection."
+}

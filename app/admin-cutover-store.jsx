@@ -71,7 +71,7 @@
     if(activeLoad)return activeLoad;
     if(!contentContext||contentContext.phase!=='authorized'||!visible()||!pending.size)return Promise.resolve();
     if(contentContext.assignment&&Array.isArray(contentContext.assignment.moduleKeys)){
-      const A=window.AdminRepository,eligible={roles:false,segments:A.has('segmentation.read'),access:contentContext.assignment.moduleKeys.includes('pantallas'),companies:A.has('companies.read'),profiles:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),rules:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),banners:A.has('banners.read')};
+      const A=window.AdminRepository,eligible={roles:contentContext.assignment.moduleKeys.includes('roles')&&A.has('authorization.read'),segments:A.has('segmentation.read'),access:contentContext.assignment.moduleKeys.includes('pantallas'),companies:A.has('companies.read'),profiles:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),rules:contentContext.assignment.moduleKeys.some(k=>k==='convenios'||k==='sindicato'),banners:A.has('banners.read')};
       domainKeys.forEach(key=>{if(!eligible[key]){pending.delete(key);clearDomain(key);}});
     }
     const selected=jobs.filter(job=>pending.has(job[0])),epoch=generation;

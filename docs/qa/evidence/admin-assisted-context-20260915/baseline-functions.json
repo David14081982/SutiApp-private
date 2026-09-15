@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "functions": [
+    {
+      "name": "assign_admin_role",
+      "signature": "assign_admin_role(uuid,uuid,boolean)",
+      "definitionMd5": "64549e3239044fa8fc9eb75db1a00cb6"
+    },
+    {
+      "name": "get_admin_access_context",
+      "signature": "get_admin_access_context()",
+      "definitionMd5": "24e92a7b601ca2e6b630e38222dbe24b"
+    },
+    {
+      "name": "get_admin_user_modules",
+      "signature": "get_admin_user_modules(text)",
+      "definitionMd5": "dd3459ea5bdef4990695306cd672963e"
+    },
+    {
+      "name": "get_current_affiliate_access_state",
+      "signature": "get_current_affiliate_access_state()",
+      "definitionMd5": "efb57d261cb6bac808992e67862471d9"
+    },
+    {
+      "name": "get_effective_affiliate_id",
+      "signature": "get_effective_affiliate_id()",
+      "definitionMd5": "61ae1db35088da20c59947c7692855cb"
+    },
+    {
+      "name": "get_impersonation_context",
+      "signature": "get_impersonation_context()",
+      "definitionMd5": "151f652fbc20d17ed6477d4532734b9e"
+    },
+    {
+      "name": "has_admin_module",
+      "signature": "has_admin_module(text,text)",
+      "definitionMd5": "63dcd08b3a61e1fdf9c0475928301b51"
+    },
+    {
+      "name": "has_admin_permission",
+      "signature": "has_admin_permission(text)",
+      "definitionMd5": "89bab1027b47ab3b506ee9d071a325a7"
+    },
+    {
+      "name": "has_section_action",
+      "signature": "has_section_action(text,text)",
+      "definitionMd5": "0ee3575a6fd44e717a4e8c327e9737d7"
+    },
+    {
+      "name": "is_active_admin",
+      "signature": "is_active_admin()",
+      "definitionMd5": "97d19fc2dc02738551aee3990987ac40"
+    },
+    {
+      "name": "is_module_admin",
+      "signature": "is_module_admin()",
+      "definitionMd5": "bd1b944d3a5f9dc6a0d1528cb4118a47"
+    },
+    {
+      "name": "list_admin_module_catalog",
+      "signature": "list_admin_module_catalog()",
+      "definitionMd5": "c46cb6b4910f52a4255cf31b95d4a510"
+    },
+    {
+      "name": "module_effective_permissions",
+      "signature": "module_effective_permissions()",
+      "definitionMd5": "30506252a800651a4e5f94188ea46471"
+    },
+    {
+      "name": "module_prior_get_admin_access_context",
+      "signature": "module_prior_get_admin_access_context()",
+      "definitionMd5": "770089bdbcb39c64d7b0bf8207362d9e"
+    },
+    {
+      "name": "module_prior_has_admin_permission",
+      "signature": "module_prior_has_admin_permission(text)",
+      "definitionMd5": "6d4c90dea3a402709e7df1cb480e005e"
+    },
+    {
+      "name": "module_prior_has_section_action",
+      "signature": "module_prior_has_section_action(text,text)",
+      "definitionMd5": "eb91ca7917ff48d4bd486422cb81ae18"
+    },
+    {
+      "name": "resolve_current_loan_snapshot_quote",
+      "signature": "resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)",
+      "definitionMd5": "25ebce43c0f9ebf946a66f4f10676e0e"
+    },
+    {
+      "name": "save_admin_user_modules",
+      "signature": "save_admin_user_modules(text,text,text[],text)",
+      "definitionMd5": "8b2445a6a8226898feaf699c681b710d"
+    },
+    {
+      "name": "savings_admin_access_allowed",
+      "signature": "savings_admin_access_allowed()",
+      "definitionMd5": "119d25ec7190b4467d8c787d9250deb4"
+    },
+    {
+      "name": "savings_context_before_20260906",
+      "signature": "savings_context_before_20260906()",
+      "definitionMd5": "80d14522535e0863397aa946256536bd"
+    },
+    {
+      "name": "savings_permission_before_20260906",
+      "signature": "savings_permission_before_20260906(text)",
+      "definitionMd5": "7550385caccf2f04e6f66e4eece28030"
+    },
+    {
+      "name": "search_affiliates_for_impersonation",
+      "signature": "search_affiliates_for_impersonation(text)",
+      "definitionMd5": "688ae5ed64e455c59517c581a5d47ea7"
+    },
+    {
+      "name": "start_affiliate_impersonation",
+      "signature": "start_affiliate_impersonation(uuid,text)",
+      "definitionMd5": "94557a41ec7f21965ec843c3ff69e688"
+    },
+    {
+      "name": "stop_affiliate_impersonation",
+      "signature": "stop_affiliate_impersonation()",
+      "definitionMd5": "e11cb799d3732d1529c23eab52b5fccd"
+    }
+  ]
+}

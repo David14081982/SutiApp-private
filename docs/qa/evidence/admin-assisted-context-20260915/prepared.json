@@ -1,0 +1,42 @@
+{
+  "status": "PREPARED",
+  "baselineFunctions": 24,
+  "privateReaders": [
+    "is_module_admin",
+    "has_admin_module",
+    "module_effective_permissions",
+    "module_prior_has_section_action",
+    "has_section_action",
+    "savings_permission_before_20260906",
+    "savings_admin_access_allowed",
+    "module_prior_has_admin_permission",
+    "has_admin_permission",
+    "savings_context_before_20260906",
+    "module_prior_get_admin_access_context",
+    "get_admin_access_context",
+    "is_active_admin"
+  ],
+  "changedPublicFunctions": [
+    "has_admin_permission",
+    "has_section_action",
+    "get_admin_access_context",
+    "is_module_admin",
+    "has_admin_module",
+    "module_effective_permissions",
+    "is_active_admin",
+    "savings_admin_access_allowed",
+    "get_effective_affiliate_id",
+    "get_current_affiliate_access_state",
+    "get_impersonation_context",
+    "start_affiliate_impersonation",
+    "stop_affiliate_impersonation",
+    "search_affiliates_for_impersonation",
+    "resolve_current_loan_snapshot_quote",
+    "list_admin_module_catalog",
+    "get_admin_user_modules",
+    "save_admin_user_modules",
+    "assign_admin_role"
+  ],
+  "migrationSha256": "f4717fdf346c9131eb4d9325420ab624b049a73d5defba5ea596fe515b5cf652",
+  "businessWrites": 0
+}

@@ -289,3 +289,8 @@ Las cuentas module_admin reciben exclusivamente los m?dulos seleccionados y sus 
 
 
 H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.
+
+
+## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
+
+During a valid session-bound Tomar control, Admin capabilities are the intersection of operator and attended account. No attended Auth/permissions means no attended Admin. Private subject readers are inaccessible to browser roles. admin_actor_can_impersonate verifies operator authority independently for identity/start/stop; public administrative writers retain effective helper checks. Audit details include actor, subject and support session; affiliate_admin_events are linked through existing admin_audit_log. Recovery refuses applied-definition drift or assisted history; use forward repair instead of deleting history.

@@ -414,3 +414,8 @@ La selecci?n administrativa por cuenta reutiliza admin_assignments/admin_roles y
 
 
 H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.
+
+
+## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
+
+Admin assistance uses existing admin_assignments, admin_roles, admin_role_permissions, admin_section_responsibilities and server-owned impersonation_sessions. admin_support_private parameterized readers and recovery definitions are derived code, never a parallel permission authority. Frontend supportContext is verified session metadata, not authorization. Business writers retain auth.uid() as the real actor.

@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "installed": false,
+  "matrix": [
+    {
+      "status": "PASS",
+      "checks": "actor/target parity, exact screen, write capability, backend denial, session binding, revoke/exit, expiry, no Auth, no escalation, actor audit"
+    }
+  ],
+  "previousModuleMatrix": [
+    {
+      "status": "PASS",
+      "checks": "total parity, exact selection, persistence, optimistic conflict, governance denial, finance RPC denial, RLS, section isolation, Savings, revocation, anonymous"
+    }
+  ],
+  "recovery": [
+    {
+      "recovery": "PASS"
+    }
+  ],
+  "businessWrites": 0,
+  "permissionWrites": 0,
+  "fixtures": "ROLLBACK only"
+}

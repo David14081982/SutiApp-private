@@ -1,0 +1,10 @@
+'use strict';
+const fs=require('fs'),path=require('path');const {query}=require('./savings-admin-review-db');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/admin-assisted-context-20260915');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8'),body=p=>read(p).trim().replace(/^begin;/,'').replace(/commit;$/,'');
+(async()=>{const installed=process.argv.includes('--installed'),forward=body('supabase/migrations/20260915000100_admin_assisted_context.sql');
+ const matrix=await query('begin;'+(installed?'':forward)+read('scripts/admin-assisted-context-test.sql')+'rollback;');
+ const old=await query('begin;'+(installed?'':forward)+read('scripts/test-admin-user-modules.sql')+'rollback;');
+ const recovery=installed?'NOT_RUN_INSTALLED':await query('begin;'+forward+body('supabase/recovery/20260915000100_admin_assisted_context.sql')+"select 'PASS' as recovery;rollback;");
+ const result={status:'PASS',installed,matrix,previousModuleMatrix:old,recovery,businessWrites:0,permissionWrites:0,fixtures:'ROLLBACK only'};fs.writeFileSync(path.join(out,'backend.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+})().catch(e=>{console.error(e.message);process.exitCode=1;});

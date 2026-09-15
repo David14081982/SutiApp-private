@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "tests": [
+    "realTargetExactPermissions",
+    "realTargetCanOpenEdit",
+    "realExitRestoresOwnAdmin"
+  ],
+  "rights": {
+    "read": true,
+    "write": true,
+    "governance": false,
+    "bound": true
+  },
+  "errors": [],
+  "businessWrites": 0,
+  "permissionWrites": 0,
+  "sessionWrites": "one authorized support session started and ended",
+  "noTargetDetailsLogged": true
+}

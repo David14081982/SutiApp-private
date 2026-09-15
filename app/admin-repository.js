@@ -31,8 +31,8 @@
     const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
     publish(roleCode||fullAccess||sectionActions.length?{
       phase:'authorized',
-      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:roleCode==='module_admin'?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null}),
-      subjectKey:accessSubject(value,identity),
+      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:(roleCode==='module_admin'||value.support_context)?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null,supportContext:value.support_context?Object.freeze({sessionId:value.support_context.session_id,subjectAuthUserId:value.support_context.subject_auth_user_id,affiliateId:value.support_context.affiliate_id}):null}),
+      subjectKey:accessSubject(value,identity)+(value.support_context?':support:'+value.support_context.session_id+':'+value.support_context.subject_auth_user_id:''),
       contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
     }:{phase:'denied'});
     return state;

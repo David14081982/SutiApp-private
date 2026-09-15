@@ -1101,3 +1101,8 @@ El propietario solicita implementar quir?rgicamente la correcci?n de permisos pr
 
 
 H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 APPLIED y matriz instalada PASS; cero cambios en asignaciones existentes/datos de negocio. Publicaci?n v257 preparada sobre la versi?n vigente conservando 114 chunks ajenos. El estado anterior NO APPLIED corresponde al candidato hist?rico.
+
+
+## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
+
+Owner explicitly authorizes seeing and executing the attended account's authorized Admin actions through Tomar control. Preserve UI/screens and existing ordinary permissions. Implement server-bound actor/subject intersection; never borrow privileges from a stronger attended account. Volver al Admin confirms assistance termination before opening the operator's own Admin. Additive migration 20260915000100; ADR-098 protected historical migrations unchanged.

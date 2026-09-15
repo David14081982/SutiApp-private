@@ -369,12 +369,12 @@
     const [busy,setBusy]=useState(false);
     const [error,setError]=useState('');
     if(!context)return null;
-    const stop=async()=>{setBusy(true);setError('');try{await window.AdminRepository.stopImpersonation();}catch(_){setError('No se pudo cerrar la sesión. Reintenta salir de tomar control.');}finally{setBusy(false);}};
+    const stop=async(returnToAdmin=false)=>{setBusy(true);setError('');try{await window.AdminRepository.stopImpersonation();if(returnToAdmin)onAdmin();}catch(_){setError('No se pudo cerrar la sesión. Reintenta salir de tomar control.');}finally{setBusy(false);}};
     return React.createElement('div',{'data-impersonation-active':'true',role:'status',style:{display:'flex',flexShrink:0,flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:10,padding:'8px 13px',background:'#FFF4D8',color:'#6B4700',borderBottom:'1px solid #E7C96B',fontSize: 'var(--text-12, 12px)',fontWeight:800,zIndex:60}},
       React.createElement('span',null,'Estás viendo SutiApp como ',affiliateName,' · Control ',affiliate.numeroControl),
       React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:6,alignItems:'center'}},
-        React.createElement('button',{type:'button',onClick:onAdmin,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},'Volver al Admin'),
-        React.createElement('button',{type:'button',onClick:stop,disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')),
+        React.createElement('button',{type:'button',onClick:()=>stop(true),disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'var(--guinda)',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},'Volver al Admin'),
+        React.createElement('button',{type:'button',onClick:()=>stop(),disabled:busy,style:{border:'none',borderRadius:9,padding:'10px',minHeight:40,background:'#6B4700',color:'#fff',fontFamily:'inherit',fontSize: 'var(--text-11, 11px)',fontWeight:850,cursor:'pointer'}},busy?'Cerrando…':'Salir de tomar control')),
       error&&React.createElement('span',{role:'alert',style:{width:'100%'}},error));
   }
 
@@ -384,10 +384,13 @@
     const institutional = window.useInstitutionalContent();
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
-    const admin = window.useAdminAuth();
+    const adminState = window.useAdminAuth();
+    const support = adminState.assignment&&adminState.assignment.supportContext;
+    const supportMatches = auth.impersonation ? Boolean(support&&support.sessionId===auth.impersonation.session_id&&support.affiliateId===(auth.affiliate&&auth.affiliate.id)) : !support;
+    const admin = supportMatches?adminState:Object.assign({},adminState,{phase:'denied',assignment:null,has:()=>false});
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash)&&!auth.impersonation?'admin':auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
+    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash)?'admin':auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null);   // pop-ups administrables mostrándose
@@ -596,7 +599,7 @@
     return React.createElement(React.Fragment, null,
       React.createElement('div', { 'data-text-size': tab === 'admin' ? undefined : textPreference.value, style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--header-bg, var(--grad-guinda))', overflow: 'hidden', fontSize: 'var(--text-control, 16px)', paddingTop: 'env(safe-area-inset-top)' } },
       textPreference.error && tab !== 'admin' && React.createElement('div', { role: 'alert', className: 'su-text-preference-error' }, textPreference.error, React.createElement('button', { onClick: () => push('settings') }, 'Tamaño de texto')),
-      React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);setTab('admin');}}),
+      React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);commitTab('admin');}}),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
         React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },
@@ -604,7 +607,7 @@
             ? React.createElement(tabScreen, { app, t })
             : React.createElement(window.ScreenLocked, { screen: tab })),
         // bottom nav
-        React.createElement(BottomNav, { tab, setTab, textSize: textPreference.value, adminOnly: !auth.affiliateView || (!!auth.impersonation && tab === 'admin'), showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin') }),
+        React.createElement(BottomNav, { tab, setTab, textSize: textPreference.value, adminOnly: !auth.affiliateView, showAdmin: adminAuthorized }),
         // pushed full-screen routes (capa de presencia · entrada + salida)
         // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.
         // Mientras únicamente queda la capa saliente (pointer-events:none), el

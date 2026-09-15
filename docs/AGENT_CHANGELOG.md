@@ -3055,3 +3055,8 @@ Permisos por pantalla now reuses the installed account/module editor and shows t
 
 
 H-ADMIN-SCREEN-PERMISSIONS-002 publication: ae2d5ac deployed successfully (Pages 34898300664), public v258/SW202 hash verified; real screen catalog/account lookup/self guards PASS. Inherited Membership contract test now accounts for exact approved module-read additions while retaining original financial assertions; local contract PASS, zero external writes.
+
+
+## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
+
+Implemented H-ADMIN-ASSISTED-CONTEXT-003 with three focal frontend sources, generated bundle v259/SW v203, private authorization readers, additive migration and guarded recovery. SQL matrices (new assistance and prior per-screen modules) PASS under ROLLBACK; exact pre/post installation data preservation PASS. Browser and publication evidence in docs/qa/evidence/admin-assisted-context-20260915; final results recorded in H audit.

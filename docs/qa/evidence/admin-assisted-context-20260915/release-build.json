@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "base": "983e3d071f56958decf9d6e8a6e95a25abbdbebb",
+  "changedChunks": [
+    "admin-repository.js",
+    "admin-cutover-store.jsx",
+    "app.jsx"
+  ],
+  "preservedChunks": 119,
+  "totalChunks": 122,
+  "sha256": "9085e67908d003e1ec03df432cd6ca34cae74bad454b26064577efc8168e7e74"
+}

@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "label": "local",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "{\"status\":\"FAIL\",\"error\":\"[{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"}]\\n\\n'FAIL' !== 'PASS'\\n\"}\n"
+}

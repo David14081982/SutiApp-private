@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "tests": [
+    "ordinary33",
+    "assistedAdminExactScreen",
+    "authorizedEditForm",
+    "unassignedScreenDenied",
+    "mobileExactScreen",
+    "failedExitKeepsSubject",
+    "confirmedExitRestoresOwnAdmin",
+    "mismatchedSessionFailsClosed"
+  ],
+  "errors": [],
+  "businessWrites": 0,
+  "permissionWrites": 0,
+  "scope": "Isolated assistance RPC fixtures; real login, affiliate reads and edit form; real SQL writes separately verified under ROLLBACK"
+}

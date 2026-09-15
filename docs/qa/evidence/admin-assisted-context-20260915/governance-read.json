@@ -1,0 +1,61 @@
+[
+  {
+    "path": "AGENTS.md",
+    "sha256": "d60937e8ea9f4374e6a129123344e3fc8f937d1e265140053d9365ba1a20a874",
+    "charactersRead": 5950
+  },
+  {
+    "path": "docs/WORK_QUEUE.md",
+    "sha256": "12416d6496739dfda2ff2f0d20d5ad7bc08f456c0ae385bd70b4a7948f2b5238",
+    "charactersRead": 2125
+  },
+  {
+    "path": "docs/WORK_QUEUE_HISTORY.md",
+    "status": "MISSING"
+  },
+  {
+    "path": "docs/SOURCE_OF_TRUTH.md",
+    "sha256": "c434b41469a9323e879d39f5cf046ecbc238ece0550282b3c397737fe5705325",
+    "charactersRead": 78649
+  },
+  {
+    "path": "docs/INVARIANTS.md",
+    "sha256": "72a7674bbf07cdd02d8ee34b0087e82580cdc10917704b602ad7d0f841ca4630",
+    "charactersRead": 63187
+  },
+  {
+    "path": "docs/DECISIONS.md",
+    "sha256": "475492366866af79a487744252c4e2c5565aac810c807f3de85496f6866cbd8f",
+    "charactersRead": 171019
+  },
+  {
+    "path": "docs/DATA_GOVERNANCE.md",
+    "sha256": "e6a176796c0007568afe030fc60cddaeb44c4128d969cc133a3a1a06daa4b18e",
+    "charactersRead": 6379
+  },
+  {
+    "path": "docs/MIGRATION_RULES.md",
+    "sha256": "77f92c013cf95a4a71e8c42f28c904a26080062a2f29e6ecc6bad9d455ed8561",
+    "charactersRead": 30102
+  },
+  {
+    "path": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+    "sha256": "ff32d9579b4d08a5d409a2cf737e635e79afcca6d5fe59d3531a3a7b6da4b707",
+    "charactersRead": 7572
+  },
+  {
+    "path": "docs/SECURITY_RULES.md",
+    "sha256": "75e01c9691b184b6bfa3de29c7dc5105e54e9bd176ea0f523e1561bc2b56ab13",
+    "charactersRead": 44547
+  },
+  {
+    "path": "docs/DATA_MAPPING.md",
+    "sha256": "ba33478d899824f47b8b7866aa4c8773ad74ae5ca97ae4fc4128caea6dbb976d",
+    "charactersRead": 51300
+  },
+  {
+    "path": "docs/AGENT_CHANGELOG.md",
+    "sha256": "f7c4f219932ee828d2b59faee114dd1d879df4b543ac80180a2316c8278f1746",
+    "charactersRead": 306058
+  }
+]

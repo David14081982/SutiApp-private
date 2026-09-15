@@ -7304,8 +7304,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const value=context||{},permissions=value.technical_permissions||[],sectionActions=value.section_actions||[],fullAccess=Boolean(value.full_access),roleCode=value.role_code||null;
     publish(roleCode||fullAccess||sectionActions.length?{
       phase:'authorized',
-      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:roleCode==='module_admin'?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null}),
-      subjectKey:accessSubject(value,identity),
+      assignment:Object.freeze({permissions:Object.freeze(permissions.slice()),sectionActions:Object.freeze(sectionActions.slice()),fullAccess,roleCode,moduleKeys:(roleCode==='module_admin'||value.support_context)?Object.freeze((Array.isArray(value.module_keys)?value.module_keys:[]).slice()):null,supportContext:value.support_context?Object.freeze({sessionId:value.support_context.session_id,subjectAuthUserId:value.support_context.subject_auth_user_id,affiliateId:value.support_context.affiliate_id}):null}),
+      subjectKey:accessSubject(value,identity)+(value.support_context?':support:'+value.support_context.session_id+':'+value.support_context.subject_auth_user_id:''),
       contentVersions:value.content_versions?Object.freeze(Object.assign({},value.content_versions)):null,
     }:{phase:'denied'});
     return state;
@@ -25382,7 +25382,7 @@ Object.assign(window, {
     if (contentContext.assignment && Array.isArray(contentContext.assignment.moduleKeys)) {
       const A = window.AdminRepository,
         eligible = {
-          roles: false,
+          roles: contentContext.assignment.moduleKeys.includes('roles') && A.has('authorization.read'),
           segments: A.has('segmentation.read'),
           access: contentContext.assignment.moduleKeys.includes('pantallas'),
           companies: A.has('companies.read'),
@@ -72924,11 +72924,12 @@ Object.assign(window, {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     if (!context) return null;
-    const stop = async () => {
+    const stop = async (returnToAdmin = false) => {
       setBusy(true);
       setError('');
       try {
         await window.AdminRepository.stopImpersonation();
+        if (returnToAdmin) onAdmin();
       } catch (_) {
         setError('No se pudo cerrar la sesión. Reintenta salir de tomar control.');
       } finally {
@@ -72962,7 +72963,7 @@ Object.assign(window, {
       }
     }, React.createElement('button', {
       type: 'button',
-      onClick: onAdmin,
+      onClick: () => stop(true),
       disabled: busy,
       style: {
         border: 'none',
@@ -72978,7 +72979,7 @@ Object.assign(window, {
       }
     }, 'Volver al Admin'), React.createElement('button', {
       type: 'button',
-      onClick: stop,
+      onClick: () => stop(),
       disabled: busy,
       style: {
         border: 'none',
@@ -73008,10 +73009,17 @@ Object.assign(window, {
     const institutional = window.useInstitutionalContent();
     const visual = window.useVisualContent();
     const editorial = window.useEditorialContent();
-    const admin = window.useAdminAuth();
+    const adminState = window.useAdminAuth();
+    const support = adminState.assignment && adminState.assignment.supportContext;
+    const supportMatches = auth.impersonation ? Boolean(support && support.sessionId === auth.impersonation.session_id && support.affiliateId === (auth.affiliate && auth.affiliate.id)) : !support;
+    const admin = supportMatches ? adminState : Object.assign({}, adminState, {
+      phase: 'denied',
+      assignment: null,
+      has: () => false
+    });
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore(); // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash) && !auth.impersonation ? 'admin' : auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin'));
+    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash) ? 'admin' : auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin'));
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{
       name: 'savings',
       params: {}
@@ -73365,7 +73373,7 @@ Object.assign(window, {
       auth,
       onAdmin: () => {
         setPopupItems(null);
-        setTab('admin');
+        commitTab('admin');
       }
     }), React.createElement('div', {
       style: {
@@ -73399,8 +73407,8 @@ Object.assign(window, {
       tab,
       setTab,
       textSize: textPreference.value,
-      adminOnly: !auth.affiliateView || !!auth.impersonation && tab === 'admin',
-      showAdmin: adminAuthorized && (!auth.impersonation || tab === 'admin')
+      adminOnly: !auth.affiliateView,
+      showAdmin: adminAuthorized
     }),
     // pushed full-screen routes (capa de presencia · entrada + salida)
     // E·#1: el contenedor captura eventos SOLO si hay una capa entrante viva.

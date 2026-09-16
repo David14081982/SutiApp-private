@@ -89,7 +89,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     close,
     busy,
     children,
-    textSize = 'normal'
+    textSize = 'normal',
+    error
   }) {
     const ref = useRef(null),
       label = React.useId();
@@ -147,7 +148,10 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         fontWeight: 800,
         margin: '0 0 14px'
       }
-    }, title), children))), document.body);
+    }, title), children, error && /*#__PURE__*/React.createElement("p", {
+      className: "error",
+      role: "alert"
+    }, error)))), document.body);
   }
   function Results({
     q,
@@ -1072,6 +1076,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "check"
     }), question.title.trim() ? 'Guardar pregunta' : 'Falta la pregunta'))), archive && /*#__PURE__*/React.createElement(Sheet, {
+      error: error,
       textSize: app?.textPreference?.value,
       admin: true,
       title: "Eliminar consulta",
@@ -1094,6 +1099,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         setDraft(null);
       })
     }, "Eliminar consulta"))), exports && /*#__PURE__*/React.createElement(Sheet, {
+      error: error,
       textSize: app?.textPreference?.value,
       admin: true,
       title: "Exportar a Excel",

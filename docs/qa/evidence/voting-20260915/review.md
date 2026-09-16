@@ -1,7 +1,7 @@
 # SUTIAPP ARCHITECT REVIEW
 
 Task: H-SUTIAPP-VOTACIONES-PRODUCTION-001 — implementación y preparación de publicación.
-Verdict: APPROVED (implementación; cierre final sujeto a verificación productiva).
+Verdict: APPROVED. Publicación y verificación productiva completadas; ver result.md.
 
 - Solicitud contrastada con owner-request.md y owner-design.md, SQL aplicado, fuentes del worktree y diff contra origin/main.
 - Frontend: Home integra VotingHome antes de Ecosistema; devuelve null cuando no hay consultas, sin wrapper vacío. Admin conserva lista/editor, audiencias, preguntas, reordenamiento, duplicación, publicación, archivo y exportaciones.
@@ -15,5 +15,5 @@ Verdict: APPROVED (implementación; cierre final sujeto a verificación producti
 - Límite de evidencia: concurrencia demostrada por constraint UNIQUE inmediato y locking PostgreSQL; no prueba de carga contra producción. Las pruebas funcionales de voto se ejecutaron con ROLLBACK.
 
 Owner decision: NO.
-Next action: publicar el commit aislado autorizado, comprobar GitHub Pages y ejecutar regresión global productiva; registrar cierre y detenerse.
+Next action: detenerse. GitHub Pages, igualdad SHA y regresión global productiva PASS.
 Response generated for Codex: YES. No se autoriza una H posterior.

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "checks": [
+    "original_inner_padding",
+    "three_text_sizes",
+    "unbroken_option_labels",
+    "no_option_overflow"
+  ]
+}

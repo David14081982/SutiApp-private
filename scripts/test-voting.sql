@@ -1,0 +1,77 @@
+-- Runs after forward migration inside a transaction that always rolls back.
+create function pg_temp.check_vote(ok boolean,label text) returns void language plpgsql as $$ begin if ok is distinct from true then raise exception 'CHECK_FAILED:%',label;end if;end $$;
+create temporary table voting_test_state(c uuid,q uuid,a uuid,b uuid,actor uuid,normal uuid);
+insert into voting_test_state(a,b,actor,normal)
+ select a.id,b.id,aa.auth_user_id,b.auth_user_id from public.admin_assignments aa join public.admin_roles r on r.id=aa.role_id and r.code='principal_admin' join public.affiliates a on a.auth_user_id=aa.auth_user_id
+ cross join lateral(select f.id,f.auth_user_id from public.affiliates f join auth.users u on u.id=f.auth_user_id where f.auth_user_id<>aa.auth_user_id and not f.is_archived and u.email_confirmed_at is not null and not exists(select 1 from public.admin_assignments x where x.auth_user_id=f.auth_user_id and x.enabled) limit 1)b where aa.enabled limit 1;
+do $$declare s record;payload jsonb;cid uuid;qid uuid;v jsonb;r jsonb;denied boolean;copy_id uuid;before_votes integer;sid uuid;begin
+ select * into s from voting_test_state;
+ perform pg_temp.check_vote(s.actor is not null and s.normal is not null,'test_principals');
+ perform set_config('request.jwt.claim.sub',s.actor::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',s.actor,'role','authenticated','session_id','voting-transaction-test')::text,true);
+ perform pg_temp.check_vote(public.get_effective_affiliate_id()=s.a,'admin_affiliate_identity');
+ payload:=jsonb_build_object('title','ISOLATED TRANSACTION VOTING TEST','closes_on','2099-12-31','electorate',100,'published',true,'audience','{"mode":"all","unions":[],"categories":[],"positions":[],"emails":[]}'::jsonb,'questions',jsonb_build_array(jsonb_build_object('title','Pregunta de prueba','detail','Sin persistencia')));
+ cid:=public.save_voting_consultation(null,null,payload);
+ select id into qid from public.voting_questions where consultation_id=cid;
+ update voting_test_state set c=cid,q=qid;
+ r:=public.list_voting_consultations(false);
+ perform pg_temp.check_vote((select x#>'{questions,0,results}'='null'::jsonb from jsonb_array_elements(r->'consultations')x where x->>'id'=cid::text),'results_hidden_before');
+ v:=public.cast_voting_vote(cid,qid,'si');
+ perform pg_temp.check_vote(v->>'answer'='si' and length(v->>'folio')>30,'vote_and_backend_folio');
+ denied:=false;begin perform public.cast_voting_vote(cid,qid,'no');exception when unique_violation then denied:=true;end;
+ perform pg_temp.check_vote(denied,'duplicate_denied');
+ denied:=false;begin update public.voting_votes set answer='no' where question_id=qid;exception when insufficient_privilege then denied:=true;end;
+ perform pg_temp.check_vote(denied,'vote_immutable');
+ perform pg_temp.check_vote((public.list_voting_consultations(false)#>'{consultations,0,questions,0,results,total}')='1'::jsonb,'results_after');
+ payload:=jsonb_set(payload,'{questions}',jsonb_build_array(jsonb_build_object('id',qid,'title','Changed','detail','Sin persistencia')));
+ denied:=false;begin perform public.save_voting_consultation(cid,1,payload);exception when others then if sqlerrm='QUESTION_HAS_VOTES' then denied:=true;else raise;end if;end;
+ perform pg_temp.check_vote(denied,'question_text_frozen');
+ copy_id:=public.voting_consultation_action(cid,1,'duplicate');
+ perform pg_temp.check_vote(not(select published from public.voting_consultations where id=copy_id) and not exists(select 1 from public.voting_votes where consultation_id=copy_id),'duplicate_has_no_votes');
+ perform pg_temp.check_vote(jsonb_array_length(public.export_voting_consultation(cid,true))=1,'nominal_authorized');
+ perform pg_temp.check_vote(public.export_voting_consultation(cid,false)#>>'{0,Sí}'='1','results_export');
+ perform set_config('request.jwt.claim.sub',s.normal::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',s.normal,'role','authenticated','session_id','second-device')::text,true);
+ perform pg_temp.check_vote(public.get_effective_affiliate_id()=s.b,'normal_affiliate_identity');
+ r:=public.list_voting_consultations(false);
+ perform pg_temp.check_vote((select x#>'{questions,0,results}'='null'::jsonb and x#>'{questions,0,mine}'='null'::jsonb from jsonb_array_elements(r->'consultations')x where x->>'id'=cid::text),'cross_affiliate_privacy');
+ denied:=false;begin perform public.export_voting_consultation(cid,true);exception when insufficient_privilege then denied:=true;end;
+ perform pg_temp.check_vote(denied,'nominal_denied');
+ denied:=false;begin perform public.list_voting_consultations(true);exception when insufficient_privilege then denied:=true;end;
+ perform pg_temp.check_vote(denied,'admin_denied');
+ v:=public.cast_voting_vote(cid,qid,'abs');
+ perform pg_temp.check_vote(v#>>'{results,total}'='2','second_affiliate');
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',s.normal,'role','authenticated','session_id','another-device')::text,true);
+ denied:=false;begin perform public.cast_voting_vote(cid,qid,'no');exception when unique_violation then denied:=true;end;
+ perform pg_temp.check_vote(denied,'second_device_denied');
+ perform set_config('request.jwt.claim.sub',s.actor::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',s.actor,'role','authenticated','session_id','voting-transaction-test')::text,true);
+ -- Nominal separation for a scoped admin: use subtransaction, automatically restore afterward.
+ begin
+ update public.admin_assignments set role_id=(select id from public.admin_roles where code='module_admin') where auth_user_id=s.normal;
+ if not found then insert into public.admin_assignments(auth_user_id,role,permissions,role_id,enabled) values(s.normal,'visual_admin','{}',(select id from public.admin_roles where code='module_admin'),true);end if;
+ insert into public.admin_section_responsibilities(auth_user_id,section_key,action,granted_by_auth_user_id) values(s.normal,'admin_votaciones','read',s.actor),(s.normal,'admin_votaciones','update',s.actor);
+ perform set_config('request.jwt.claim.sub',s.normal::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',s.normal,'role','authenticated')::text,true);
+ perform pg_temp.check_vote(public.voting_can('update') and public.voting_can('results') and not public.voting_can('export_identified_votes'),'admin_is_not_nominal');
+ raise exception 'REVERT_SCOPED_FIXTURE';
+ exception when others then if sqlerrm<>'REVERT_SCOPED_FIXTURE' then raise;end if;end;
+ perform pg_temp.check_vote(public.voting_audience_matches('{"mode":"registered"}') ,'registered_audience');
+ perform pg_temp.check_vote(not public.voting_audience_matches('{"mode":"emails","emails":[]}'),'empty_nominal_audience');
+ perform pg_temp.check_vote(public.voting_audience_matches(jsonb_build_object('mode','emails','emails',jsonb_build_array((select lower(btrim(historical_email_raw)) from public.affiliates where id=s.a)))),'nominal_audience');
+ perform pg_temp.check_vote(public.voting_audience_matches('{"mode":"segment","unions":[],"categories":[],"positions":[]}'),'segment_empty_groups');
+ perform pg_temp.check_vote(not public.voting_audience_matches('{"mode":"segment","unions":["NONEXISTENT"],"categories":[],"positions":[]}'),'segment_denial');
+ perform public.voting_consultation_action(cid,1,'hide');
+ denied:=false;begin perform public.cast_voting_vote(cid,qid,'no');exception when insufficient_privilege then denied:=true;end;
+ perform pg_temp.check_vote(denied,'hidden_vote_denied');
+ update public.voting_consultations set published=true,closes_on='2000-01-01' where id=cid;
+ denied:=false;begin perform public.cast_voting_vote(cid,qid,'no');exception when insufficient_privilege then denied:=true;end;
+ perform pg_temp.check_vote(denied,'closed_vote_denied');
+ perform public.voting_consultation_action(cid,2,'archive');
+ perform pg_temp.check_vote((select count(*) from public.voting_votes where consultation_id=cid)=2,'archive_preserves_history');
+ perform pg_temp.check_vote(exists(select 1 from public.admin_audit_log where resource='voting' and action='EXPORT_IDENTIFIED'),'audit_export');
+ perform pg_temp.check_vote(exists(select 1 from public.admin_audit_log where resource='voting' and action='VOTE'),'audit_vote');
+ perform pg_temp.check_vote(not has_table_privilege('authenticated','public.voting_votes','SELECT') and not has_table_privilege('authenticated','public.voting_votes','INSERT'),'direct_table_denied');
+ perform pg_temp.check_vote(not has_function_privilege('anon','public.cast_voting_vote(uuid,uuid,text)','EXECUTE') and not has_function_privilege('authenticated','public.voting_question_result(uuid,integer)','EXECUTE'),'private_helpers');
+end $$;
+select 'PASS' status,'identity, create, publish, vote, immutable, duplicate, second-device, privacy, segment, nominal permission, export, archive, audit, grants' checks;

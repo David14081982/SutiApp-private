@@ -419,3 +419,14 @@ H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 AP
 ## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
 
 Admin assistance uses existing admin_assignments, admin_roles, admin_role_permissions, admin_section_responsibilities and server-owned impersonation_sessions. admin_support_private parameterized readers and recovery definitions are derived code, never a parallel permission authority. Frontend supportContext is verified session metadata, not authorization. Business writers retain auth.uid() as the real actor.
+
+
+## H-SUTIAPP-VOTACIONES-PRODUCTION-001 — Votaciones
+
+Supabase `voting_consultations`, `voting_questions` y `voting_votes` son las autoridades únicas de consultas, audiencia, preguntas, fecha de cierre, padrón convocado y votos. `VotingRepository` sólo transporta RPC; las pantallas mantienen borradores/proyecciones efímeros en memoria. Sin localStorage, seeds, conteos demo ni fallback. Resultados y porcentajes se derivan de votos reales; el padrón convocado lo configura Admin.
+
+Auth → `get_effective_affiliate_id()` → affiliates resuelve al votante. Los códigos de sindicato/categoría y el motor `matches_current_affiliate_audience` existentes se reutilizan; cargo sindical proviene de `affiliates.union_position_raw`, y la lista nominal compara correos históricos normalizados del mismo maestro. La vista asistida usa el afiliado efectivo; emitir votos está prohibido durante impersonación. Cada voto conserva snapshot de identidad de negocio y folio UUID generado en backend, con UNIQUE inmediato por afiliado/consulta/pregunta y trigger inmutable.
+
+Permisos: catálogo de pantallas existente `admin_votaciones` para administración/resultados; `admin_votaciones_nominal` para exportación identificada explícita. Acciones granulares reutilizan `admin_section_responsibilities`. Principal recibe permisos explícitos; administrar consultas no concede nominal a cuentas limitadas. La tabla de votos carece de acceso directo browser. Las RPC separan resultados propios/post-voto de resultados Admin y exportación nominal. `admin_audit_log` registra creación, edición, publicación, archivo, duplicación, exportaciones y emisión sin exponer respuesta en metadata genérica.
+
+Eliminar archiva consultas/preguntas y preserva votos. Preguntas con votos conservan texto y explicación; duplicar crea preguntas nuevas, ocultas y sin votos. Cierre al final de la fecha indicada en America/Hermosillo. Export CSV UTF-8 BOM, `sep=;`, escape de comillas y neutralización de fórmulas. Migración `20260915000200` aplicada; recovery revoca RPC y preserva íntegramente historia. Sin impacto financiero/Google/Storage/Auth global.

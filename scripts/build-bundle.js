@@ -15,6 +15,7 @@ if (babelPath) {
 }
 
 const files = [
+  'voting-design.js', 'voting-repository.js', 'screens-voting.jsx',
   'vendor-qrcode-generator.js',
   'assets-registry.jsx', 'assets-store.jsx', 'assets-resolver.jsx', 'motion.jsx',
   'icons.jsx', 'brand.jsx', 'ui.jsx', 'request-submission-success.jsx', 'image-viewer.jsx', 'rich-text.jsx', 'press.jsx', 'reveal-cards.jsx',

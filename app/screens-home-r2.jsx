@@ -309,7 +309,7 @@
     const blocks = {
       banner_convenio: () => React.createElement(Banner, { app }),
       noticias: () => React.createElement(Noticias, { app }),
-      ecosistema: () => React.createElement(Ecosistema, { app }),
+      ecosistema: () => React.createElement(React.Fragment, null, React.createElement(window.VotingHome, { app }), React.createElement(Ecosistema, { app })),
       comite: () => React.createElement(Comite, { app }),
     };
     const defOrder = ['banner_convenio', 'ecosistema', 'comite', 'noticias'];

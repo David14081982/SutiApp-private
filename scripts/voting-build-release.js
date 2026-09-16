@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('fs'),path=require('path'),vm=require('vm'),cp=require('child_process'),crypto=require('crypto'),assert=require('assert/strict');
+const workspace=path.resolve(__dirname,'..'),root=path.join(workspace,'tmp/voting-release'),out=path.join(workspace,'docs/qa/evidence/voting-20260915');
+const base=cp.execFileSync('git',['show','origin/main:app/bundle.js'],{cwd:root,maxBuffer:30000000}).toString().replace(/\r\n/g,'\n');
+const sandbox={};vm.createContext(sandbox);vm.runInContext(fs.readFileSync('C:/tmp/babel-standalone-7.29.0.min.js','utf8'),sandbox);
+const changed=['screens-home-r2.jsx','screens-admin.jsx'],added=['voting-design.js','voting-repository.js','screens-voting.jsx'];
+const parts=s=>[...s.matchAll(/\/\* @@file ([^\n]+) \*\/\n([\s\S]*?)(?=\/\* @@file |$)/g)];
+const compile=name=>{const source=fs.readFileSync(path.join(root,'app',name),'utf8').replace(/\r\n/g,'\n');return `/* @@file ${name} */\n(function(){\n${name.endsWith('.jsx')?sandbox.Babel.transform(source,{presets:['react'],filename:name}).code:source.trimEnd()}\n})();\n`;};
+const chunks=parts(base);assert(chunks.length>100);const seen=[];
+const next=added.map(compile).join('')+chunks.map(m=>{if(!changed.includes(m[1]))return m[0];seen.push(m[1]);return compile(m[1]);}).join('');assert.equal(seen.length,2);new vm.Script(next);
+const after=Object.fromEntries(parts(next).map(m=>[m[1],m[0]]));for(const m of chunks)if(!changed.includes(m[1]))assert.equal(after[m[1]],m[0]);
+fs.writeFileSync(path.join(root,'app/bundle.js'),next);fs.mkdirSync(out,{recursive:true});
+const result={status:'PASS',changed,added,preservedChunks:chunks.length-changed.length,sha256:crypto.createHash('sha256').update(next).digest('hex')};fs.writeFileSync(path.join(out,'build.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));

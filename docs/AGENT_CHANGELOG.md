@@ -3062,3 +3062,10 @@ H-ADMIN-SCREEN-PERMISSIONS-002 publication: ae2d5ac deployed successfully (Pages
 Implemented H-ADMIN-ASSISTED-CONTEXT-003 with three focal frontend sources, generated bundle v259/SW v203, private authorization readers, additive migration and guarded recovery. SQL matrices (new assistance and prior per-screen modules) PASS under ROLLBACK; exact pre/post installation data preservation PASS. Browser and publication evidence in docs/qa/evidence/admin-assisted-context-20260915; final results recorded in H audit.
 
 H-ADMIN-ASSISTED-CONTEXT-003 publication update: owner authorized exact main destination; 8f9ec65 pushed/deployed, both CI workflows success, real attended Admin/edit form/exit on sutiapp.com PASS. Overall H verification remains FAIL due catalog timeouts in unchanged global Pages suite; direct binary fetch and isolated Chrome decode PASS. See publication-result.json and H audit; do not claim global PASS.
+
+
+## H-SUTIAPP-VOTACIONES-PRODUCTION-001
+
+Módulo afiliado entre carrusel y Tu sindicato y editor Admin basados en HTML owner. Estilos e iconos extraídos y encapsulados; tamaños consumen tokens actuales de producción. Supabase es autoridad exclusiva; nuevo schema aditivo, RPC/identidad backend, voto definitivo, audiencia, permisos separados, folios, exportaciones y bitácora. Tabla histórica inmutable; archivo lógico. Publicación aislada sobre origin/main, conservando 120 chunks ajenos del bundle sin cambio.
+
+Evidencia: docs/qa/evidence/voting-20260915 y docs/audits/H-SUTIAPP-VOTACIONES-PRODUCTION-001.md. Matriz SQL con ROLLBACK PASS a la primera, navegador focal PASS tras corregir entorno aislado, seguridad adicional PASS. La concurrencia se garantiza mediante UNIQUE inmediato y locks compartidos; no se ejecutó carga productiva ni se dejaron votos/consultas de ejemplo. Consultar result.md para estado final de despliegue/regresiones.

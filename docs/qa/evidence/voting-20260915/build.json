@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "changed": [
+    "screens-home-r2.jsx",
+    "screens-admin.jsx"
+  ],
+  "added": [
+    "voting-design.js",
+    "voting-repository.js",
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 120,
+  "sha256": "7eac76a4eaf07d63e5fe70bf3985c28ce4b1317b58e34aeb7f4b3cdfd73aee24"
+}

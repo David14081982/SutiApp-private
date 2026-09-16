@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": [
+    "results_hidden",
+    "confirmation_once_results_receipt",
+    "affiliate_three_text_sizes",
+    "editor_question_segment",
+    "normalized_deduplicated_emails",
+    "save_complete_draft",
+    "nominal_export_control",
+    "csv_bom_delimiter_injection_escaping"
+  ],
+  "errors": [],
+  "scope": "Isolated browser fixtures only. SQL authorization and persistence tested separately.",
+  "productionWrites": 0
+}

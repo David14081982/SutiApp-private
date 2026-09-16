@@ -1,0 +1,13 @@
+{
+  "error": "page.evaluate: Error: DOCUMENT_PREVIEW_UNAVAILABLE\n    at failure ([URL])\n    at preview ([URL])\n    at async eval (eval at evaluate (:311:30), <anonymous>:15:29)\n    at async <anonymous>:337:30",
+  "network": [
+    {
+      "endpoint": "financial-legacy",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "endpoint": "document-access",
+      "failure": "net::ERR_FAILED"
+    }
+  ]
+}

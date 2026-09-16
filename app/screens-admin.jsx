@@ -28,6 +28,8 @@
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [
+    { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
+    { id: 'votaciones_nominal', label: 'Votos identificados', icon: 'doc', desc: 'Exportación nominal autorizada', ready: true },
     { id: 'administrators', label: 'Administradores', icon: 'shield', desc: 'Altas, asignaciones y revocación', ready: true },
     { id: 'screen_permissions', label: 'Permisos por pantalla', icon: 'lock', desc: 'Responsables y acciones exactas', ready: true },
     { id: 'impersonation', label: 'Tomar control', icon: 'eye', desc: 'Atención temporal como afiliado', ready: true },
@@ -66,17 +68,18 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
     administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
     affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
-  const SECTION_MODULE = Object.freeze({noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
+  const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
-    { id:'content', label:'Contenido', icon:'news', modules:['sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
+    { id:'content', label:'Contenido', icon:'news', modules:['votaciones','votaciones_nominal','sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
     { id:'settings', label:'Acceso y configuración', icon:'settings', modules:['catalogos','roles','pantallas','secciones','menus','formularios','branding'] },
     { id:'data', label:'Datos y respaldos', icon:'download', modules:['data_exports'] },
   ]);
@@ -504,7 +507,8 @@
     const backFromAffiliateLink=()=>{if(affiliateContext)setView('affiliates');else openView('menu');};
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
-    if (view === 'administrators') body = React.createElement(window.AdministratorsModule, { app, onBack: () => openView('menu'), header: headerFn });
+    if (view === 'votaciones' || view === 'votaciones_nominal') body = React.createElement(window.VotingAdmin, { app, onBack: () => openView('menu') });
+    else if (view === 'administrators') body = React.createElement(window.AdministratorsModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'screen_permissions') body = React.createElement(window.ScreenPermissionsModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'impersonation') body = React.createElement(window.ImpersonationModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'affiliates') body = React.createElement(window.AffiliatesAdminModule, { app, initialAffiliateId:affiliateContext&&affiliateContext.affiliateId, onBack: () => openView('menu'), header: headerFn, onOpenModule:(id,context)=>{setViewContext(context||null);setView(id);} });

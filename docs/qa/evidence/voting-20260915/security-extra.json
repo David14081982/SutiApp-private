@@ -1,0 +1,6 @@
+[
+  {
+    "status": "PASS",
+    "checks": "real impersonation denied; forced RLS; immediate unique index and shared lock enforce concurrent voting invariant"
+  }
+]

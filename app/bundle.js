@@ -11839,7 +11839,7 @@ Object.assign(window, {
       distance: 10
     });
     const modules = window.UNION_SCREEN_REGISTRY;
-    const open = m => m.frontend_route.type === 'tab' ? app.setTab(m.frontend_route.target) : app.push('modulo', {
+    const open = m => m.screen_key === 'finanzas' ? app.setTab('financiera') : m.frontend_route.type === 'tab' ? app.setTab(m.frontend_route.target) : app.push('modulo', {
       m
     });
     return React.createElement('div', {

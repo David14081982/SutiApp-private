@@ -197,7 +197,9 @@
     const gridRef = React.useRef(null);
     window.useReveal(gridRef, { key: 'home:eco', step: 25, distance: 10 });
     const modules = window.UNION_SCREEN_REGISTRY;
-    const open = (m) => m.frontend_route.type === 'tab'
+    const open = (m) => m.screen_key === 'finanzas'
+      ? app.setTab('financiera')
+      : m.frontend_route.type === 'tab'
       ? app.setTab(m.frontend_route.target)
       : app.push('modulo', { m });
     return React.createElement('div', { style: { padding: '0 20px' } },

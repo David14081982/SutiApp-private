@@ -2,7 +2,7 @@
 
 ## 2026-09-17 — Votaciones: texto de fecha en la tarjeta
 
-A pedido del propietario la tarjeta de Votaciones en Inicio dice «Fecha el …» en lugar de «Cierra el …». Sólo cambia el trozo  del bundle (); el editor Admin conserva «Cierra el». Restauración: tag .
+A pedido del propietario la tarjeta de Votaciones en Inicio dice «Fecha el …» en lugar de «Cierra el …». Sólo cambia el trozo `screens-voting.jsx` del bundle (`voting-fecha-20260917-001`); el editor Admin conserva «Cierra el». Restauración: tag `restore/pre-fecha-votacion-20260917`.
 
 ## 2026-09-17 — H-SUTIAPP-CONVENIOS-ANUNCIOS-001
 

@@ -39,3 +39,9 @@
 - Navegador aislado (`scripts/test-voting-live-browser.js`): 24 comprobaciones con fixtures, 3 tamaños de texto, 1920/1280/1024/390 px, remontaje del Admin, sin errores de consola.
 - Integrado (`scripts/test-voting-live-integrated.js`): build local contra Supabase productivo con login real; evento Realtime entregado al navegador; pantalla gigante sobrevive al cruce a escritorio; Inicio sin resultados. Única escritura técnica: `changed_at` de la fila en vivo.
 - Resultado final y verificación productiva: `docs/qa/evidence/voting-live-20260916/result.md`.
+
+## Ajuste 2026-09-17 — Sello institucional en la pantalla gigante
+
+- Solicitud: sustituir el círculo decorativo superior derecho de «Votación en vivo» por el Sello institucional de Admin → Ícono e instalación → Íconos e identidad visual.
+- Implementación: `window.SutiSeal` (misma autoridad `app_settings.institutional_seal_asset` que el pie de Inicio), sin copia local ni fallback: si el sello no carga, no se pinta decoración. Filtro `brightness(0) invert(1)` y opacidad .12 para conservar la marca de agua blanca del diseño; el PNG publicado tiene fondo transparente.
+- Verificación: prueba aislada con la imagen real del sello (`VOTING_SEAL_PREVIEW`), bundle solo con los trozos de votaciones y verificación productiva de que el sello cargado aparece en la pantalla gigante (`production-sello.json`).

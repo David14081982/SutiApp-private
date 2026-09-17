@@ -2,7 +2,8 @@
 // Rebuilds app/bundle.js from the published bundle, replacing only the voting chunks (all other chunks byte-identical).
 const fs=require('fs'),path=require('path'),vm=require('vm'),cp=require('child_process'),crypto=require('crypto'),assert=require('assert/strict');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/voting-live-20260916');
-const VERSION='voting-live-20260916-001';
+const arg=(name,fallback)=>(process.argv.find(x=>x.startsWith('--'+name+'='))||'').split('=')[1]||fallback;
+const VERSION=arg('version','voting-live-20260916-001'),EVIDENCE=arg('evidence','build.json');
 const git=(...args)=>cp.execFileSync('git',args,{cwd:root,maxBuffer:64*1024*1024}).toString().replace(/\r\n/g,'\n');
 const sandbox={};vm.createContext(sandbox);vm.runInContext(fs.readFileSync('C:/tmp/babel-standalone-7.29.0.min.js','utf8'),sandbox);
 const chunk=(name,source)=>`/* @@file ${name} */\n(function(){\n${name.endsWith('.jsx')?sandbox.Babel.transform(source,{presets:['react'],filename:name}).code:source.trimEnd()}\n})();\n`;
@@ -21,4 +22,4 @@ const htmlFile=path.join(root,'SutiApp.html'),html=git('show','origin/main:SutiA
 assert.equal(matches.length,1,'expected one bundle cachebuster');
 fs.writeFileSync(htmlFile,html.replace(matches[0],'app/bundle.js?v='+VERSION));
 const result={status:'PASS',version:VERSION,previousCachebuster:matches[0],changed,preservedChunks:preserved,totalChunks:chunks.length,compilerReproducesPublished:true,sha256:crypto.createHash('sha256').update(next).digest('hex')};
-fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'build.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,EVIDENCE),JSON.stringify(result,null,2));console.log(JSON.stringify(result));

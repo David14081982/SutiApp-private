@@ -8,11 +8,13 @@ const {query,env}=require('./voting-live-db');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/voting-live-20260916');
 const production=process.argv.includes('--production');
 const PAGES='https://david14081982.github.io/SutiApp-private/';
+const arg=(name,fallback)=>(process.argv.find(x=>x.startsWith('--'+name+'='))||'').split('=')[1]||fallback;
+const VERSION=arg('version','voting-live-20260916-001'),TAG=arg('tag','');
 
 async function waitFor(fn,ms,label){const end=Date.now()+ms;for(;;){if(await fn())return;if(Date.now()>end)throw Error('TIMEOUT '+label);await new Promise(r=>setTimeout(r,200));}}
 
 (async()=>{
- fs.mkdirSync(out,{recursive:true});const values=env(),tag=production?'production':'integrated-local';
+ fs.mkdirSync(out,{recursive:true});const values=env(),tag=(production?'production':'integrated-local')+(TAG?'-'+TAG:'');
  const server=production?null:await serve(),target=production?PAGES+'SutiApp.html':`http://127.0.0.1:${server.address().port}/SutiApp.html`;
  const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
  const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'}),page=await context.newPage();
@@ -26,7 +28,7 @@ async function waitFor(fn,ms,label){const end=Date.now()+ms;for(;;){if(await fn(
    from public.voting_consultations c where c.archived_at is null order by c.created_at desc limit 1`))[0];
   assert(db&&db.id,'expected the existing production consultation');
   await page.goto(target+'#/admin/votaciones',{waitUntil:'domcontentloaded'});
-  if(production){const html=await (await fetch(PAGES+'SutiApp.html?verify='+Date.now(),{cache:'no-store'})).text();assert(html.includes('app/bundle.js?v=voting-live-20260916-001'),'published HTML cachebuster');}
+  if(production){const html=await (await fetch(PAGES+'SutiApp.html?verify='+Date.now(),{cache:'no-store'})).text();assert(html.includes('app/bundle.js?v='+VERSION),'published HTML cachebuster');}
   await page.locator('input[type=email]').fill(values.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(values.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
   await page.locator('[data-voting-admin]').waitFor({timeout:60000});await page.getByRole('button',{name:'Nueva consulta',exact:true}).waitFor({timeout:30000});
   assert.equal(await page.locator('[data-voting-admin] [role=alert]').count(),0);
@@ -50,6 +52,7 @@ async function waitFor(fn,ms,label){const end=Date.now()+ms;for(;;){if(await fn(
   // Big screen opens, polls get_voting_live and stops when closed.
   await page.locator('[data-voting-live-open]').click();const live=page.locator('[data-voting-live]');await live.waitFor();
   await page.setViewportSize({width:1920,height:1080});await page.waitForTimeout(1200);await live.waitFor({timeout:5000});checks.push('big_screen_survives_desktop_breakpoint');
+  await live.locator('.lseal [data-branding-seal-state=loaded] img').waitFor({state:'attached',timeout:20000});checks.push('big_screen_institutional_seal');
   await waitFor(async()=>(rpc.get_voting_live||0)>=3,12000,'live polling');
   if(!db.active)await live.getByText(/Esperando la primera pregunta|Esperando la siguiente pregunta/).first().waitFor({timeout:10000});
   assert.equal(await live.locator('[role=alert]').count(),0);

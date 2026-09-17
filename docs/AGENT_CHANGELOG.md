@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-17 — H-SUTIAPP-VOTACIONES-LIVE-002 · Sello institucional
+
+La marca de agua de «Votación en vivo» usa el Sello institucional administrado en Admin → Ícono e instalación (`SutiSeal` / `app_settings`), en blanco y baja opacidad, en lugar del círculo decorativo. Solo cambia el trozo `screens-voting.jsx` del bundle (`voting-live-20260917-002`). Punto de restauración: tag `restore/pre-sello-votacion-en-vivo-20260917`.
+
 ## 2026-09-16 — H-SUTIAPP-VOTACIONES-LIVE-002
 
 Votación en vivo: una pregunta al aire controlada desde Admin, afiliado sin resultados y con avance N de M, total de votantes automático y pantalla gigante «Votación en vivo» con conteo en tiempo real. Supabase `20260916000200` aplicado tras punto de restauración (tag + `voting_restore_private`). Bundle: sólo trozos `voting-repository.js` y `screens-voting.jsx`; 123 trozos idénticos.

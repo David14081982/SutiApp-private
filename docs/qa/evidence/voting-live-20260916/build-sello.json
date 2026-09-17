@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "voting-live-20260917-002",
+  "previousCachebuster": "app/bundle.js?v=voting-live-20260916-001",
+  "changed": [
+    "voting-repository.js",
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 123,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "sha256": "bceba0248cbdd2dfde6090a8772048efacf49752d38e4f3927648470d090bf66"
+}

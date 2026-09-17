@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/app/bundle.js?v=voting-live-20260916-001",
+  "httpStatus": 200,
+  "version": "voting-live-20260916-001",
+  "sha256": "360313a717d78aab3dcf0010f3714960fe021adf79b7000e00c92cf530ab1276",
+  "expected": "360313a717d78aab3dcf0010f3714960fe021adf79b7000e00c92cf530ab1276",
+  "commit": "99d97f9",
+  "deployment": "https://github.com/David14081982/SutiApp-private/actions/runs/35192422100",
+  "attempts": 1
+}

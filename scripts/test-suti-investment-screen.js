@@ -26,6 +26,10 @@ for (const marker of [
   'data-investment-footer-return', 'data-investment-cta',
 ]) assert.ok(screen.includes(marker), `interaction marker missing: ${marker}`);
 
+assert.ok(screen.includes("const WHATSAPP = '526623423660'"), 'investment CTA lost the authorized WhatsApp contact');
+assert.ok(screen.includes("'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(text)"), 'investment CTA does not open the authorized WhatsApp deep link');
+assert.ok(screen.includes("'Quiero información para invertir ' + money(amount)"), 'investment CTA lost the owner default message');
+assert.ok(screen.includes("'noopener,noreferrer'"), 'investment CTA opens WhatsApp without noopener,noreferrer');
 assert.ok(finance.includes("app.push('investment')"), 'Mi Financiera Invertir does not push the full-screen route');
 assert.ok(app.includes('investment: window.InvestmentScreen'), 'investment route is not registered');
 assert.ok(builder.includes("'screens-inversion.jsx'"), 'bundle builder is missing the investment source');
@@ -34,8 +38,7 @@ assert.ok(bundle.includes('data-investment-screen'), 'bundle/source investment c
 
 for (const forbidden of [
   /localStorage/, /sessionStorage/, /indexedDB/i, /FinancialLegacyRepository/,
-  /financialLegacyStore/, /SutiSupabase/, /\.rpc\(/, /fetch\(/, /wa\.me/i,
-  /window\.open/, /program_requests/, /createFinancial/, /confirmLoanSession/,
+  /financialLegacyStore/, /SutiSupabase/, /\.rpc\(/, /fetch\(/, /program_requests/, /createFinancial/, /confirmLoanSession/,
 ]) assert.doesNotMatch(screen, forbidden, `forbidden authority or side effect in screen: ${forbidden}`);
 
 const sandbox = {

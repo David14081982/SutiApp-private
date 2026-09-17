@@ -14454,6 +14454,8 @@ Object.assign(window, {
   const MAX = 2000000;
   const STEP = 10000;
   const TERMS = [6, 12];
+  // Contacto autorizado por el propietario para pedir información de inversión.
+  const WHATSAPP = '526623423660';
   const CSS = `
     .su-investment{--inv-guinda:#910022;--inv-guinda-700:#6a001b;--inv-guinda-50:#fbeef1;--inv-coral:#e8364f;--inv-ink:#14213d;--inv-ink-2:#5a6378;--inv-ink-3:#97a0b3;--inv-navy:#14213d;--inv-ok:#13794a;--inv-surface:#fff;--inv-surface-2:#eef1f6;--inv-bg:#f2f3f5;--inv-hairline:#e6eaf1;--inv-shadow-lg:0 24px 56px -18px rgba(20,33,61,.26);--inv-neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--inv-neo-md:0 14px 30px -12px rgba(20,33,61,.2),0 4px 10px -2px rgba(20,33,61,.06);--inv-inset:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:var(--inv-bg);color:var(--inv-ink);font-family:Nunito,system-ui,-apple-system,sans-serif}
     .su-investment *{box-sizing:border-box}
@@ -14552,6 +14554,10 @@ Object.assign(window, {
   `;
   function money(value) {
     return '$' + Math.round(value).toLocaleString('en-US');
+  }
+  function askOnWhatsApp(amount) {
+    const text = 'Quiero información para invertir ' + money(amount);
+    window.open('https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
   }
   function icon(name, size) {
     return h(I, {
@@ -14868,9 +14874,9 @@ Object.assign(window, {
     }, '+' + money(totalReturn))), h('button', {
       type: 'button',
       className: 'su-inv-cta',
-      onClick: () => app.toast && app.toast('Simulación informativa · inversión no enviada'),
+      onClick: () => askOnWhatsApp(amount),
       'data-investment-cta': '',
-      'aria-label': 'Invertir ' + money(amount) + ', simulación informativa'
+      'aria-label': 'Pedir información por WhatsApp para invertir ' + money(amount)
     }, icon('finance', 21), h('span', null, 'Invertir ' + money(amount)))));
   }
   window.InvestmentScreen = InvestmentScreen;

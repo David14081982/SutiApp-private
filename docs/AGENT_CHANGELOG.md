@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-16 — H-SUTIAPP-VOTACIONES-LIVE-002
+
+Votación en vivo: una pregunta al aire controlada desde Admin, afiliado sin resultados y con avance N de M, total de votantes automático y pantalla gigante «Votación en vivo» con conteo en tiempo real. Supabase `20260916000200` aplicado tras punto de restauración (tag + `voting_restore_private`). Bundle: sólo trozos `voting-repository.js` y `screens-voting.jsx`; 123 trozos idénticos.
+
 ## 2026-09-16 — H-PROFILE-PHOTO-EDIT-001
 
 Cambio de foto propia al pulsar el avatar de Mi Perfil, cámara a la derecha, validación/conversión JPEG, estados de carga/error e invalidación de caché. Supabase `20260916000100` aplicado: marcador único de foto vigente y RPC self-only auditada, con versiones/documentos anteriores conservados. Backend/recuperación en ROLLBACK, aislamiento Storage, browser focal, build y regresión global local (`localhost:8080`) / GitHub Pages PASS. Frontend aún no publicado; ninguna foto real fue sustituida por pruebas. Evidencia y revisión: `docs/qa/H-PROFILE-PHOTO-EDIT-001.md` y `docs/qa/evidence/profile-photo-edit-20260916/`. Trabajo ajeno preexistente conservado.

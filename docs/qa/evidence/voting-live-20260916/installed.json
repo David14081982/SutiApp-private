@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "migration_recorded": 1,
+  "consultations": 1,
+  "questions": 3,
+  "votes": 7,
+  "votes_hash": "7d22ae318d2f9a880ceae8bfd84cb118",
+  "live_rows": 1,
+  "on_air": 0,
+  "realtime": 1,
+  "signal_select": true,
+  "signal_update": false,
+  "votes_select": false,
+  "anon_activate": false,
+  "restore_point_votes": 7,
+  "historyUnchanged": true
+}

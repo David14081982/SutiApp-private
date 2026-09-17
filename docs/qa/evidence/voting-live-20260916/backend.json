@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "migrationSha256": "23494b9e82efec07738931d137aaf56bf9b8571fc12280c387610ef49d3b2f57",
+  "recoverySha256": "46abc28d83ea18bbbd809c4239204a476a2fb846567e5477509685f4f018d295",
+  "groups": [
+    "between_questions",
+    "control_permissions",
+    "electorate_modes",
+    "first_question_on_air",
+    "hide_remove_duplicate_archive",
+    "module_admin_scope",
+    "off_air_contract",
+    "realtime_rls_and_totals",
+    "schema_grants_backfill",
+    "switch_and_reactivate",
+    "zero_total"
+  ],
+  "recoveryVerified": {
+    "newFunctionsDropped": true,
+    "unpublished": true,
+    "electorateCheck": "CHECK ((electorate > 0))",
+    "functionMd5sRestored": true
+  },
+  "productionAfterRollback": {
+    "consultations": 1,
+    "questions": 3,
+    "votes": 7,
+    "live_table": 0,
+    "votes_hash": "7d22ae318d2f9a880ceae8bfd84cb118",
+    "matchesRestorePoint": true
+  },
+  "fixturesPersisted": 0
+}

@@ -1,5 +1,16 @@
 # Registro de decisiones arquitectónicas
 
+## H-SUTIAPP-VOTACIONES-LIVE-002 — Votación en vivo, 2026-09-16 (ADR-112)
+
+El propietario cambia el flujo de Votaciones a una sola pregunta al aire controlada desde Admin. Cada pregunta guardada tiene interruptor; activar una apaga la anterior y se puede reactivar cualquier pregunta sin límite de tiempo. El afiliado sólo recibe el texto de la pregunta activa, confirma, ve «Voto registrado · folio …» y la pregunta desaparece para él; ya no recibe su voto, barras, porcentajes ni participación. La tarjeta permanece con avance N de M, abierta, y se reabre al activarse otra pregunta.
+
+Los resultados en vivo se muestran sólo en «Votación en vivo», pantalla completa dentro de Admin → Votaciones, con permiso de resultados: pregunta activa, ya votaron/faltan y gráfica Sí/No/Abstención; entre preguntas conserva la última activa como resultado final. Sin diseño previo: misma línea gráfica del módulo en tamaño grande.
+
+Total de votantes automático en todos los modos: Todos = afiliados activos del padrón con o sin cuenta; Solo registrados = afiliados activos con cuenta vinculada; Segmentado = afiliados activos que cumplen cargo/sindicato/nivel con o sin cuenta; Solo estas personas = número de correos de la lista. Se elimina la captura manual del padrón.
+
+Activar/desactivar requiere el mismo permiso que publicar. Tiempo real por Supabase Realtime sobre una señal sin datos de negocio, con sondeo acotado de respaldo. Punto de restauración: tag `restore/pre-votacion-en-vivo-20260916` y esquema privado `voting_restore_private`.
+
+
 ## H-PROFILE-PHOTO-EDIT-001 — 2026-09-16
 
 El propietario solicita cambiar la foto pulsando el avatar circular de Mi Perfil, con cámara a la derecha y almacenamiento en el Supabase existente. Writer sobre la misma autoridad `affiliate_files/private_assets/private-assets`, con marcador único de foto vigente. Conservar versiones, objetos y documentos anteriores; el cambio de avatar no modifica la revisión documental ni Google. Backend self-only, sin impersonación, valida objeto/propietario/MIME/tamaño y audita el cambio. No borrar objetos tras respuestas ambiguas: una carga sin vínculo queda privada y requiere conciliación administrativa posterior, nunca fallback productivo.

@@ -21,17 +21,33 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     const url=URL.createObjectURL(new Blob([csv(rows,identified)],{type:'text/csv;charset=utf-8;'}));
     const a=document.createElement('a');a.href=url;a.download='votaciones-'+(identified?'votos':'resultados')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  // voting_live_state only carries ids and a timestamp (RLS by audience): any change means "reload from the RPC".
+  let channels=0;
+  function watch(onChange){
+    let status='CLOSED',closed=false,joined=false,client=null,channel=null;
+    try{
+      client=window.SutiSupabase.getClient();
+      channel=client.channel('voting-live-'+(++channels)+'-'+Date.now().toString(36))
+        .on('postgres_changes',{event:'*',schema:'public',table:'voting_live_state'},()=>{if(!closed)onChange();})
+        .subscribe(s=>{status=s;if(s==='SUBSCRIBED'){if(joined&&!closed)onChange();joined=true;}});
+    }catch(_){channel=null;}
+    return Object.freeze({connected:()=>!closed&&status==='SUBSCRIBED',stop:()=>{if(closed)return;closed=true;if(channel)client.removeChannel(channel);}});
+  }
   window.VotingRepository=Object.freeze({
     list:admin=>rpc('list_voting_consultations',{p_admin:!!admin}),
     vote:(c,q,answer)=>rpc('cast_voting_vote',{p_consultation:c,p_question:q,p_answer:answer}),
-    save:c=>rpc('save_voting_consultation',{p_id:c.id||null,p_version:c.version||null,p_value:{title:c.title,closes_on:c.closes_on,electorate:Number(c.electorate),published:c.published,audience:c.audience,questions:c.questions.map(q=>({id:q.id||null,title:q.title,detail:q.detail||''}))}}),
-    action:(c,action)=>rpc('voting_consultation_action',{p_id:c.id,p_version:c.version,p_action:action}),download,csv,
+    save:c=>rpc('save_voting_consultation',{p_id:c.id||null,p_version:c.version||null,p_value:{title:c.title,closes_on:c.closes_on,published:c.published,audience:c.audience,questions:c.questions.map(q=>({id:q.id||null,title:q.title,detail:q.detail||''}))}}),
+    action:(c,action)=>rpc('voting_consultation_action',{p_id:c.id,p_version:c.version,p_action:action}),
+    activate:(consultation,question)=>rpc('set_voting_active_question',{p_consultation:consultation,p_question:question||null}),
+    live:consultation=>rpc('get_voting_live',{p_consultation:consultation}),
+    electorate:audience=>rpc('count_voting_electorate',{p_audience:audience}),
+    watch,download,csv,
   });
 })();
 })();
 /* @@file screens-voting.jsx */
 (function(){
-/* Owner Pantalla A/B, integrated into existing Home and Admin. */
+/* Owner Pantalla A/B, integrated into existing Home and Admin. Live flow: one question on air, controlled from Admin. */
 (function () {
   const {
     useState,
@@ -57,6 +73,27 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     color: '#5a6378'
   }];
   const modes = [['all', 'Todos', 'globe', 'Toda la audiencia; votar requiere identidad autenticada'], ['registered', 'Solo registrados', 'user', 'Usuarios con sesión iniciada'], ['segment', 'Segmentado', 'filter', 'Por cargo, sindicato y nivel'], ['emails', 'Solo estas personas', 'message', 'Lista de correos autorizados']];
+  const extraIcons = {
+    screen: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/>',
+    expand: '<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>',
+    shrink: '<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>'
+  };
+  // Module additions to the owner CSS: waiting states, question on air, automatic total and the big screen.
+  const liveCss = ".voting-affiliate .wait{display:flex;gap:12px;align-items:center;padding:16px 0 0;border-top:1px solid var(--line)}.voting-affiliate .wico{width:40px;height:40px;border-radius:12px;background:var(--guinda-50);color:var(--guinda);display:grid;place-items:center;flex-shrink:0}.voting-affiliate .wait.done .wico{background:var(--ok-bg);color:var(--ok)}.voting-affiliate .wait b{display:block;font-size:var(--text-14-5,14.5px);font-weight:800;line-height:1.3;overflow-wrap:anywhere}.voting-affiliate .wait s{display:block;text-decoration:none;font-size:var(--text-12,12px);font-weight:600;color:var(--ink-3);line-height:1.4;margin-top:3px}.voting-affiliate .q[data-voting-on-air]{animation:voting-reveal .32s ease}" + ".voting-ui .dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:currentColor;flex-shrink:0;animation:voting-pulse 1.6s ease-in-out infinite}@keyframes voting-pulse{0%,100%{opacity:1}50%{opacity:.3}}" + ".voting-admin .qrow.live{box-shadow:0 0 0 2px var(--guinda),var(--neo-sm)}.voting-admin .qlive{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:6px}.voting-admin .qlivelabel{display:inline-flex;align-items:center;gap:7px;font-size:var(--text-12,12px);font-weight:800;color:var(--ink-3);min-width:0}.voting-admin .qlive.on .qlivelabel{color:var(--guinda)}.voting-admin .total-field{display:flex;align-items:center;gap:8px;font-weight:800;min-height:46px;color:var(--ink)}.voting-admin .total-note{display:block;font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);margin-top:5px;line-height:1.35}" + ".voting-live{position:fixed;inset:0;z-index:10050;overflow:auto;background:var(--grad-guinda);color:#fff;display:flex;flex-direction:column;gap:clamp(16px,2.4vw,40px);padding:clamp(18px,3vw,56px) clamp(16px,4vw,80px);outline:none;-webkit-font-smoothing:antialiased}.voting-live .lseal{position:fixed;right:-6vw;top:-8vw;width:min(46vw,640px);opacity:.1;pointer-events:none}.voting-live .lseal svg{display:block;width:100%;height:auto}.voting-live .ltools{position:absolute;top:clamp(10px,1.4vw,24px);right:clamp(10px,1.4vw,24px);display:flex;gap:8px;z-index:2}.voting-live .ltool{width:44px;height:44px;border-radius:12px;border:none;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer;opacity:.55;transition:opacity .2s}.voting-live .ltool:hover,.voting-live .ltool:focus-visible{opacity:1}.voting-live button:focus-visible{outline-color:#fff}" + ".voting-live .lhead{position:relative;padding-right:112px;min-width:0}.voting-live .lstate{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--guinda);padding:6px 14px;border-radius:999px;font-size:clamp(12px,1.05vw,18px);font-weight:800;letter-spacing:.08em}.voting-live .lstate.final,.voting-live .lstate.wait,.voting-live .lstate.closed{background:rgba(255,255,255,.18);color:#fff}.voting-live .lstate.draft{background:#FFF4D6;color:#7A4B00}.voting-live .ltitle{font-size:clamp(22px,2.6vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:12px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lsub{font-size:clamp(14px,1.3vw,22px);font-weight:700;opacity:.85;margin-top:6px}" + ".voting-live .lgrid{position:relative;flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,3.2vw,64px);align-items:center}.voting-live .lq{min-width:0}.voting-live .lnum{font-size:clamp(13px,1.2vw,20px);font-weight:800;letter-spacing:.1em;opacity:.8}.voting-live .lqtext{font-size:clamp(28px,3.8vw,72px);font-weight:800;line-height:1.12;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lqdet{font-size:clamp(15px,1.5vw,26px);font-weight:600;line-height:1.4;opacity:.85;margin:14px 0 0;overflow-wrap:anywhere}" + ".voting-live .lpart{margin-top:clamp(20px,3vw,52px);background:rgba(255,255,255,.12);border-radius:clamp(18px,1.6vw,28px);padding:clamp(16px,1.8vw,32px)}.voting-live .lbig{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.voting-live .lbig b{font-size:clamp(48px,6.4vw,124px);font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.voting-live .lbig span{font-size:clamp(16px,1.7vw,30px);font-weight:700;opacity:.9}.voting-live .ltrack{display:block;height:clamp(10px,1vw,16px);border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:clamp(12px,1.4vw,22px)}.voting-live .lfill{display:block;height:100%;border-radius:999px;background:#fff;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lmeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:clamp(14px,1.3vw,24px);font-weight:800;font-variant-numeric:tabular-nums}.voting-live .lnext{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(14px,1.6vw,26px);font-size:clamp(14px,1.3vw,22px);font-weight:800;background:rgba(255,255,255,.16);padding:10px 16px;border-radius:999px}" + ".voting-live .lres{min-width:0;background:var(--surface);color:var(--ink);border-radius:clamp(20px,2vw,36px);box-shadow:0 40px 90px -30px rgba(20,33,61,.5);padding:clamp(18px,2.4vw,44px);display:flex;flex-direction:column;gap:clamp(14px,1.8vw,32px)}.voting-live .lrowtop{display:flex;justify-content:space-between;align-items:center;gap:12px}.voting-live .llabel{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,1.9vw,34px);font-weight:800;min-width:0}.voting-live .lico{width:clamp(34px,2.6vw,48px);height:clamp(34px,2.6vw,48px);border-radius:12px;color:#fff;display:grid;place-items:center;flex-shrink:0}.voting-live .lpct{font-size:clamp(26px,3vw,56px);font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.voting-live .lbar{display:block;height:clamp(14px,1.4vw,24px);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}.voting-live .lbarfill{display:block;height:100%;border-radius:999px;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lcount{font-size:clamp(13px,1.2vw,20px);font-weight:700;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}.voting-live .ltotal{border-top:1px solid var(--hairline);padding-top:clamp(10px,1.2vw,20px);font-size:clamp(14px,1.3vw,22px);font-weight:800;color:var(--ink-2)}" + ".voting-live .lcenter{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}.voting-live .lwaitico{width:clamp(84px,8vw,140px);height:clamp(84px,8vw,140px);border-radius:999px;background:rgba(255,255,255,.16);display:grid;place-items:center}.voting-live .lwaitt{font-size:clamp(26px,3.4vw,64px);font-weight:800;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere}.voting-live .lwaits{font-size:clamp(15px,1.5vw,26px);font-weight:600;opacity:.85;margin:0}.voting-live .lretry{margin-top:12px;border:none;border-radius:14px;background:#fff;color:var(--guinda);font-weight:800;font-size:16px;padding:12px 22px;cursor:pointer}.voting-live .lerror{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:calc(100% - 32px);background:rgba(20,33,61,.88);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px}" + "@media (max-width:860px),(orientation:portrait){.voting-live .lgrid{grid-template-columns:minmax(0,1fr);align-items:start}}";
+  const enterFull = () => {
+    try {
+      const p = document.documentElement.requestFullscreen?.();
+      p && p.catch(() => {});
+    } catch (_) {}
+  };
+  const exitFull = () => {
+    try {
+      if (document.fullscreenElement) {
+        const p = document.exitFullscreen?.();
+        p && p.catch(() => {});
+      }
+    } catch (_) {}
+  };
   function Icon({
     name,
     size = 19
@@ -72,16 +109,16 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       strokeLinejoin: "round",
       "aria-hidden": "true",
       dangerouslySetInnerHTML: {
-        __html: name === 'minus' ? '<path d="M6 12h12"/>' : name === 'back' ? '<path d="M20 12H5m6-6-6 6 6 6"/>' : window.VotingDesign.icons[name] || window.VotingDesign.icons.ballot
+        __html: name === 'minus' ? '<path d="M6 12h12"/>' : name === 'back' ? '<path d="M20 12H5m6-6-6 6 6 6"/>' : extraIcons[name] || window.VotingDesign.icons[name] || window.VotingDesign.icons.ballot
       }
     });
   }
   function Style() {
-    return /*#__PURE__*/React.createElement("style", null, window.VotingDesign.css);
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, window.VotingDesign.css), /*#__PURE__*/React.createElement("style", null, liveCss));
   }
   function errorText(e) {
     const s = String(e?.message || e);
-    return s.includes('23505') || e?.code === '23505' ? 'Ya votaste esta pregunta. Tu voto es definitivo.' : s.includes('CHANGED') ? 'La consulta cambió en otra sesión. Vuelve a cargarla antes de guardar.' : s.includes('HAS_VOTES') ? 'Esta pregunta ya tiene votos y conserva su texto original.' : s.includes('IMPERSONATION') ? 'No puedes votar durante Tomar control.' : s.includes('UNAVAILABLE') ? 'Esta votación ya no está disponible.' : s.includes('DENIED') ? 'No tienes permiso para esta acción.' : s.includes('INVALID') ? 'Revisa los datos de la consulta.' : 'No pudimos confirmar la operación. Reintenta para consultar su estado.';
+    return s.includes('23505') || e?.code === '23505' ? 'Ya votaste esta pregunta. Tu voto es definitivo.' : s.includes('CHANGED') ? 'La consulta cambió en otra sesión. Vuelve a cargarla antes de guardar.' : s.includes('HAS_VOTES') ? 'Esta pregunta ya tiene votos y conserva su texto original.' : s.includes('IMPERSONATION') ? 'No puedes votar durante Tomar control.' : s.includes('NOT_ACTIVE') ? 'Esta pregunta ya no está activa. Espera la siguiente.' : s.includes('UNAVAILABLE') ? 'Esta votación ya no está disponible.' : s.includes('DENIED') ? 'No tienes permiso para esta acción.' : s.includes('INVALID') ? 'Revisa los datos de la consulta.' : 'No pudimos confirmar la operación. Reintenta para consultar su estado.';
   }
   function Sheet({
     admin = false,
@@ -153,79 +190,102 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       role: "alert"
     }, error)))), document.body);
   }
-  function Results({
-    q,
-    electorate
-  }) {
-    const r = q.results,
-      m = q.mine;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "res"
-    }, m && /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 12,
-        flexWrap: 'wrap'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      className: 'mine ' + m.answer
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "checkCircle",
-      size: 14
-    }), "Tu voto: ", options.find(o => o.id === m.answer)?.label), /*#__PURE__*/React.createElement("span", {
-      className: "folio"
-    }, m.folio)), r && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      className: "bars"
-    }, options.map(o => {
-      const pct = r.total ? Math.round(r[o.id] / r.total * 100) : 0;
-      return /*#__PURE__*/React.createElement("div", {
-        className: "brow",
-        key: o.id
-      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-        className: 'blabel ' + (m?.answer === o.id ? 'on' : '')
-      }, o.label), /*#__PURE__*/React.createElement("span", {
-        className: "bpct"
-      }, pct, "%", /*#__PURE__*/React.createElement("em", null, nf(r[o.id])))), /*#__PURE__*/React.createElement("span", {
-        className: "track"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: "fill",
-        style: {
-          background: o.color,
-          width: pct + '%'
-        }
-      })));
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "total"
-    }, nf(r.total), " votos \xB7 ", r.participation, "% del padr\xF3n de ", nf(electorate))));
+  // Live refresh: the Realtime signal reloads at once (with jitter so a whole assembly does not hit the backend in the same
+  // instant); bounded foreground polling covers sockets that drop or are refused. Hidden documents never poll.
+  function useLive(refresh, {
+    jitter = 0,
+    poll = 15000,
+    idle = 60000
+  } = {}) {
+    const fn = useRef(refresh);
+    fn.current = refresh;
+    useEffect(() => {
+      let timer = 0,
+        stopped = false,
+        last = Date.now();
+      const run = () => {
+        if (stopped || document.hidden) return;
+        last = Date.now();
+        fn.current(true).catch(() => {});
+      };
+      const schedule = () => {
+        if (stopped || timer) return;
+        timer = setTimeout(() => {
+          timer = 0;
+          run();
+        }, Math.round(Math.random() * jitter));
+      };
+      const watch = R().watch(schedule);
+      const tick = setInterval(() => {
+        if (document.hidden || timer) return;
+        if (Date.now() - last >= (watch.connected() ? idle : poll)) run();
+      }, Math.max(500, Math.min(poll, idle, 5000) / 2));
+      const visible = () => {
+        if (!document.hidden) schedule();
+      };
+      document.addEventListener('visibilitychange', visible);
+      return () => {
+        stopped = true;
+        clearTimeout(timer);
+        clearInterval(tick);
+        document.removeEventListener('visibilitychange', visible);
+        watch.stop();
+      };
+    }, []);
   }
+  const EMPTY = {
+    loading: true,
+    consultations: [],
+    permissions: {},
+    catalog: {
+      segments: [],
+      positions: []
+    }
+  };
+  // The Admin shell remounts its module when the layout crosses 1024px (entering fullscreen often does): the open editor
+  // and the big screen come back if the module is remounted right away.
+  // React renders the new instance before the old one unmounts, so a mounted instance also counts as a live session.
+  const adminSession = {
+      draft: null,
+      live: null,
+      mounted: 0,
+      leftAt: 0
+    },
+    resumable = () => adminSession.mounted > 0 || Date.now() - adminSession.leftAt < 3000;
   function useVoting(admin) {
-    const [state, setState] = useState({
-        loading: true,
-        consultations: [],
-        permissions: {},
-        catalog: {
-          segments: [],
-          positions: []
-        }
-      }),
+    const [state, setState] = useState(EMPTY),
       [error, setError] = useState('');
     const seq = useRef(0),
-      mounted = useRef(true);
-    const reload = async () => {
+      mounted = useRef(true),
+      loaded = useRef(false),
+      failed = useRef(false);
+    // A quiet (background) reload never clears an action error and only reports failures when nothing is on screen.
+    const reload = async quiet => {
       const request = ++seq.current;
-      setError('');
+      if (!quiet) {
+        setError('');
+        failed.current = false;
+      }
       try {
         const data = await R().list(admin);
-        if (mounted.current && request === seq.current) setState({
-          ...data,
-          loading: false
-        });
+        if (mounted.current && request === seq.current) {
+          setState({
+            ...data,
+            loading: false
+          });
+          loaded.current = true;
+          if (quiet && failed.current) {
+            failed.current = false;
+            setError('');
+          }
+        }
         return data;
       } catch (e) {
         if (mounted.current && request === seq.current) {
-          setError(errorText(e));
+          if (!quiet || !loaded.current || failed.current) {
+            setError(errorText(e));
+            failed.current = true;
+          }
           setState(s => ({
             ...s,
             loading: false
@@ -241,15 +301,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       const stop = window.AffiliateAuth?.subscribe?.(s => {
         const key = [s.session?.user?.id, s.affiliate?.id, s.impersonation?.session_id].join(':');
         if (subject && key !== subject) {
-          setState({
-            loading: true,
-            consultations: [],
-            permissions: {},
-            catalog: {
-              segments: [],
-              positions: []
-            }
-          });
+          loaded.current = false;
+          setState(EMPTY);
           reload().catch(() => {});
         }
         subject = key;
@@ -260,42 +313,110 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         stop?.();
       };
     }, [admin]);
+    useLive(reload, {
+      jitter: admin ? 250 : 2000
+    });
     return {
       state,
+      setState,
       error,
       setError,
       reload
     };
+  }
+  const onAirOf = c => c.questions.find(q => q.id === c.active_question_id) || null;
+  const pendingOf = c => {
+    const q = onAirOf(c);
+    return c.open && q && !q.mine ? q : null;
+  };
+  function Waiting({
+    icon,
+    title,
+    text,
+    done
+  }) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: 'wait' + (done ? ' done' : ''),
+      role: "status"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "wico"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: icon,
+      size: 20
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("b", null, title), /*#__PURE__*/React.createElement("s", null, text)));
   }
   function VotingHome({
     app
   }) {
     const {
         state,
+        setState,
         error,
         setError,
         reload
       } = useVoting(false),
-      [open, setOpen] = useState({}),
+      [collapsed, setCollapsed] = useState({}),
       [pick, setPick] = useState(null),
       [busy, setBusy] = useState(false);
-    const lock = useRef(false);
+    const lock = useRef(false),
+      onAir = useRef({});
     useEffect(() => {
       if (state.loading) {
         setPick(null);
-        setOpen({});
+        setCollapsed({});
+        onAir.current = {};
       }
     }, [state.loading]);
+    // A question that goes on air reopens its card; one that leaves the air closes its pending confirmation.
+    useEffect(() => {
+      const reopen = {};
+      for (const c of state.consultations) {
+        const q = pendingOf(c),
+          id = q ? q.id : null;
+        if (id && onAir.current[c.id] !== id) reopen[c.id] = false;
+        onAir.current[c.id] = id;
+      }
+      if (Object.keys(reopen).length) setCollapsed(s => ({
+        ...s,
+        ...reopen
+      }));
+      if (pick && !busy) {
+        const c = state.consultations.find(x => x.id === pick.c.id);
+        if (!c || !pendingOf(c) || pendingOf(c).id !== pick.q.id) {
+          setPick(null);
+          app?.toast?.('Esa pregunta ya no está activa');
+        }
+      }
+    }, [state.consultations]);
     const confirm = async () => {
       if (lock.current) return;
       lock.current = true;
       setBusy(true);
       setError('');
+      const target = pick;
       try {
-        const v = await R().vote(pick.c.id, pick.q.id, pick.o.id);
+        const v = await R().vote(target.c.id, target.q.id, target.o.id);
         setPick(null);
+        setState(s => ({
+          ...s,
+          consultations: s.consultations.map(c => c.id !== target.c.id ? c : {
+            ...c,
+            questions: c.questions.map(q => q.id !== target.q.id ? q : {
+              ...q,
+              mine: {
+                answer: v.answer,
+                folio: v.folio,
+                cast_at: v.cast_at
+              }
+            })
+          })
+        }));
         app?.toast?.('Voto registrado · folio ' + v.folio);
-        await reload();
+        await reload().catch(() => {});
       } catch (e) {
         setError(errorText(e));
         await reload().catch(() => {});
@@ -328,9 +449,14 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, error, /*#__PURE__*/React.createElement("button", {
       onClick: () => reload().catch(() => {})
     }, "Reintentar")), state.consultations.map(c => {
-      const n = c.questions.filter(q => q.mine).length,
-        expanded = !!open[c.id],
-        pending = c.questions.length - n;
+      const total = c.questions.length,
+        n = c.questions.filter(q => q.mine).length,
+        current = onAirOf(c),
+        q = pendingOf(c),
+        index = q ? c.questions.indexOf(q) : -1,
+        expanded = !collapsed[c.id],
+        finished = total > 0 && n === total;
+      const hint = expanded ? 'Ocultar las preguntas' : !c.open ? 'Ver tu avance' : q ? 'Toca para votar la pregunta ' + (index + 1) : finished ? 'Ya respondiste todas las preguntas' : 'Espera la siguiente pregunta';
       return /*#__PURE__*/React.createElement("article", {
         className: "card",
         key: c.id,
@@ -339,9 +465,9 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         className: "head",
         "aria-expanded": expanded,
         "aria-controls": 'voting-' + c.id,
-        onClick: () => setOpen(s => ({
+        onClick: () => setCollapsed(s => ({
           ...s,
-          [c.id]: !s[c.id]
+          [c.id]: expanded
         }))
       }, /*#__PURE__*/React.createElement("span", {
         className: "seal"
@@ -399,7 +525,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         style: {
           display: 'block'
         }
-      }, expanded ? 'Ocultar las preguntas' : pending ? 'Toca para votar · ' + pending + ' preguntas por responder' : 'Ver tus votos y el conteo')), /*#__PURE__*/React.createElement("span", {
+      }, hint)), /*#__PURE__*/React.createElement("span", {
         className: "chev"
       }, /*#__PURE__*/React.createElement(Icon, {
         name: "chevD"
@@ -407,23 +533,28 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         className: "avance"
       }, /*#__PURE__*/React.createElement("span", {
         className: "segs"
-      }, c.questions.map((q, i) => /*#__PURE__*/React.createElement("i", {
-        key: q.id,
-        className: q.mine ? 'on' : ''
+      }, c.questions.map(x => /*#__PURE__*/React.createElement("i", {
+        key: x.id,
+        className: x.mine ? 'on' : ''
       }))), /*#__PURE__*/React.createElement("span", {
         className: "acount"
-      }, n, " de ", c.questions.length)))), expanded && /*#__PURE__*/React.createElement("div", {
+      }, n, " de ", total)))), expanded && /*#__PURE__*/React.createElement("div", {
         className: "body",
         id: 'voting-' + c.id
-      }, c.questions.map((q, i) => /*#__PURE__*/React.createElement("div", {
+      }, !c.open ? /*#__PURE__*/React.createElement(Waiting, {
+        icon: "lock",
+        title: "La votaci\xF3n ya cerr\xF3",
+        text: finished ? 'Respondiste todas las preguntas.' : 'Ya no se reciben votos.'
+      }) : q ? /*#__PURE__*/React.createElement("div", {
         className: "q",
         key: q.id,
-        "data-voting-question": q.id
+        "data-voting-question": q.id,
+        "data-voting-on-air": "true"
       }, /*#__PURE__*/React.createElement("div", {
         className: "qtop"
       }, /*#__PURE__*/React.createElement("span", {
-        className: 'qnum ' + (q.mine ? 'voted' : '')
-      }, i + 1), /*#__PURE__*/React.createElement("div", {
+        className: "qnum"
+      }, index + 1), /*#__PURE__*/React.createElement("div", {
         style: {
           flex: 1,
           minWidth: 0
@@ -432,12 +563,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         className: "qtext"
       }, q.title), /*#__PURE__*/React.createElement("div", {
         className: "qdet"
-      }, q.detail))), q.mine ? /*#__PURE__*/React.createElement(Results, {
-        q: q,
-        electorate: c.electorate
-      }) : !c.open ? /*#__PURE__*/React.createElement("p", {
-        className: "qdet"
-      }, "No votaste esta pregunta y la consulta ya cerr\xF3.") : /*#__PURE__*/React.createElement("div", {
+      }, q.detail))), /*#__PURE__*/React.createElement("div", {
         className: "opts"
       }, options.map(o => /*#__PURE__*/React.createElement("button", {
         key: o.id,
@@ -449,17 +575,26 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
             c,
             q,
             o,
-            i
+            i: index
           });
         }
       }, /*#__PURE__*/React.createElement(Icon, {
         name: o.icon
-      }), /*#__PURE__*/React.createElement("span", null, o.label)))))), /*#__PURE__*/React.createElement("div", {
+      }), /*#__PURE__*/React.createElement("span", null, o.label))))) : finished ? /*#__PURE__*/React.createElement(Waiting, {
+        done: true,
+        icon: "checkCircle",
+        title: "Ya respondiste todas las preguntas",
+        text: "Gracias por participar."
+      }) : /*#__PURE__*/React.createElement(Waiting, {
+        icon: "clock",
+        title: "Espera la siguiente pregunta",
+        text: current && current.mine ? 'Tu voto quedó registrado. La siguiente pregunta aparecerá aquí en cuanto se active.' : 'La pregunta aparecerá aquí en cuanto se active.'
+      }), /*#__PURE__*/React.createElement("div", {
         className: "foot"
       }, /*#__PURE__*/React.createElement(Icon, {
         name: "shield",
         size: 14
-      }), /*#__PURE__*/React.createElement("span", null, !state.can_vote ? 'Tomar control permite consultar, pero no emitir votos.' : 'Tu voto es secreto frente a otros afiliados y definitivo. Administradores con permiso específico pueden consultarlo. El conteo se revela después de votar cada pregunta.'))));
+      }), /*#__PURE__*/React.createElement("span", null, !state.can_vote ? 'Tomar control permite consultar, pero no emitir votos.' : 'Tu voto es secreto frente a otros afiliados y definitivo. Administradores con permiso específico pueden consultarlo.'))));
     }), pick && /*#__PURE__*/React.createElement(Sheet, {
       textSize: app?.textPreference?.value,
       title: "Confirma tu voto",
@@ -505,6 +640,215 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       name: "checkCircle"
     }), busy ? 'Confirmando…' : 'Confirmar voto'))));
   }
+  // Big screen for the room: follows the question on air; between questions it keeps the last one with its final count.
+  function VotingLive({
+    id,
+    onClose
+  }) {
+    const [data, setData] = useState(null),
+      [error, setError] = useState(''),
+      [full, setFull] = useState(() => !!document.fullscreenElement);
+    const ref = useRef(null),
+      seq = useRef(0);
+    const load = async () => {
+      const n = ++seq.current;
+      try {
+        const r = await R().live(id);
+        if (n === seq.current) {
+          setData(r);
+          setError('');
+        }
+        return r;
+      } catch (e) {
+        if (n === seq.current) setError(errorText(e));
+        throw e;
+      }
+    };
+    useLive(load, {
+      poll: 2000,
+      idle: 2000
+    });
+    useEffect(() => {
+      load().catch(() => {});
+      const previous = document.activeElement;
+      ref.current?.focus();
+      const change = () => setFull(!!document.fullscreenElement);
+      document.addEventListener('fullscreenchange', change);
+      return () => {
+        seq.current++;
+        document.removeEventListener('fullscreenchange', change);
+        previous?.isConnected && previous.focus();
+      };
+    }, [id]);
+    const close = () => {
+      exitFull();
+      onClose();
+    };
+    const toggleFull = () => {
+        if (document.fullscreenElement) exitFull();else enterFull();
+      },
+      canFull = !!document.documentElement.requestFullscreen;
+    const q = data?.question,
+      r = q?.results,
+      electorate = Number(data?.electorate || 0),
+      voted = Number(r?.total || 0);
+    const status = !data ? null : !data.published ? ['draft', 'NO PUBLICADA'] : !data.open ? ['closed', 'VOTACIÓN CERRADA'] : data.active ? ['live', 'EN VIVO'] : q ? ['final', 'RESULTADO FINAL'] : ['wait', 'EN ESPERA'];
+    return ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
+      ref: ref,
+      className: "voting-ui voting-live",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": "Votaci\xF3n en vivo",
+      tabIndex: -1,
+      "data-voting-live": id,
+      onKeyDown: e => {
+        if (e.key === 'Escape' && !document.fullscreenElement) {
+          e.preventDefault();
+          close();
+        }
+      }
+    }, /*#__PURE__*/React.createElement(Style, null), /*#__PURE__*/React.createElement("span", {
+      className: "lseal",
+      "aria-hidden": "true"
+    }, /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 100 100",
+      fill: "none",
+      stroke: "#fff",
+      strokeWidth: "1.4"
+    }, /*#__PURE__*/React.createElement("circle", {
+      cx: "50",
+      cy: "50",
+      r: "46"
+    }), /*#__PURE__*/React.createElement("circle", {
+      cx: "50",
+      cy: "50",
+      r: "38"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: "M50 18v64M18 50h64"
+    }))), /*#__PURE__*/React.createElement("div", {
+      className: "ltools"
+    }, canFull && /*#__PURE__*/React.createElement("button", {
+      className: "ltool",
+      onClick: toggleFull,
+      "aria-label": full ? 'Salir de pantalla completa' : 'Pantalla completa'
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: full ? 'shrink' : 'expand'
+    })), /*#__PURE__*/React.createElement("button", {
+      className: "ltool",
+      onClick: close,
+      "aria-label": "Cerrar votaci\xF3n en vivo"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "close"
+    }))), /*#__PURE__*/React.createElement("header", {
+      className: "lhead"
+    }, status && /*#__PURE__*/React.createElement("span", {
+      className: 'lstate ' + status[0],
+      "data-voting-live-state": status[0]
+    }, status[0] === 'live' && /*#__PURE__*/React.createElement("i", {
+      className: "dot",
+      "aria-hidden": "true"
+    }), status[1]), /*#__PURE__*/React.createElement("h1", {
+      className: "ltitle"
+    }, data ? data.title : 'Votación en vivo'), q && /*#__PURE__*/React.createElement("div", {
+      className: "lsub"
+    }, "Pregunta ", q.number, " de ", data.question_count)), !data ? /*#__PURE__*/React.createElement("div", {
+      className: "lcenter",
+      role: "status"
+    }, error ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+      className: "lwaitt"
+    }, error), /*#__PURE__*/React.createElement("button", {
+      className: "lretry",
+      onClick: () => load().catch(() => {})
+    }, "Reintentar")) : /*#__PURE__*/React.createElement("p", {
+      className: "lwaitt"
+    }, "Cargando\u2026")) : !q ? /*#__PURE__*/React.createElement("div", {
+      className: "lcenter",
+      role: "status"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "lwaitico"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "clock",
+      size: 48
+    })), /*#__PURE__*/React.createElement("p", {
+      className: "lwaitt"
+    }, "Esperando la primera pregunta"), /*#__PURE__*/React.createElement("p", {
+      className: "lwaits"
+    }, "Aparecer\xE1 aqu\xED en cuanto se active.")) : /*#__PURE__*/React.createElement("main", {
+      className: "lgrid",
+      "data-voting-live-question": q.id
+    }, /*#__PURE__*/React.createElement("section", {
+      className: "lq"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "lnum"
+    }, "PREGUNTA ", q.number), /*#__PURE__*/React.createElement("h2", {
+      className: "lqtext"
+    }, q.title), q.detail && /*#__PURE__*/React.createElement("p", {
+      className: "lqdet"
+    }, q.detail), /*#__PURE__*/React.createElement("div", {
+      className: "lpart"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "lbig"
+    }, /*#__PURE__*/React.createElement("b", {
+      "data-voting-live-voted": true
+    }, nf(voted)), /*#__PURE__*/React.createElement("span", null, "de ", nf(electorate), " ya votaron")), /*#__PURE__*/React.createElement("span", {
+      className: "ltrack"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "lfill",
+      style: {
+        transform: 'scaleX(' + (electorate ? Math.min(1, voted / electorate) : 0) + ')'
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "lmeta"
+    }, /*#__PURE__*/React.createElement("span", null, r.participation, "% de participaci\xF3n"), /*#__PURE__*/React.createElement("span", {
+      "data-voting-live-missing": true
+    }, "Faltan ", nf(Math.max(electorate - voted, 0))))), !data.active && /*#__PURE__*/React.createElement("div", {
+      className: "lnext",
+      role: "status"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "clock",
+      size: 18
+    }), "Esperando la siguiente pregunta")), /*#__PURE__*/React.createElement("section", {
+      className: "lres",
+      "aria-live": "polite",
+      "aria-label": "Resultados de la pregunta"
+    }, options.map(o => {
+      const pct = voted ? Math.round(r[o.id] / voted * 100) : 0;
+      return /*#__PURE__*/React.createElement("div", {
+        className: "lrow",
+        key: o.id,
+        "data-voting-live-option": o.id
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "lrowtop"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "llabel"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "lico",
+        style: {
+          background: o.color
+        }
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: o.icon,
+        size: 20
+      })), o.label), /*#__PURE__*/React.createElement("span", {
+        className: "lpct"
+      }, pct, "%")), /*#__PURE__*/React.createElement("span", {
+        className: "lbar"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "lbarfill",
+        style: {
+          background: o.color,
+          transform: 'scaleX(' + pct / 100 + ')'
+        }
+      })), /*#__PURE__*/React.createElement("div", {
+        className: "lcount"
+      }, nf(r[o.id]), " ", Number(r[o.id]) === 1 ? 'voto' : 'votos'));
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "ltotal"
+    }, nf(voted), " ", voted === 1 ? 'voto emitido' : 'votos emitidos'))), error && data && /*#__PURE__*/React.createElement("div", {
+      className: "lerror",
+      role: "alert"
+    }, error)), document.body);
+  }
   function SectionTitle({
     icon,
     title,
@@ -529,25 +873,65 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         setError,
         reload
       } = useVoting(true),
-      [draft, setDraft] = useState(null),
+      [draft, setDraft] = useState(() => resumable() ? adminSession.draft : null),
       [question, setQuestion] = useState(null),
       [mail, setMail] = useState(''),
       [mailError, setMailError] = useState(''),
       [busy, setBusy] = useState(false),
       [archive, setArchive] = useState(false),
-      [exports, setExports] = useState(null);
-    const lock = useRef(false);
+      [exports, setExports] = useState(null),
+      [live, setLive] = useState(() => resumable() ? adminSession.live : null),
+      [total, setTotal] = useState(null);
+    const lock = useRef(false),
+      booted = useRef(false);
     useEffect(() => {
-      if (state.loading) {
+      if (state.loading && booted.current) {
         setDraft(null);
         setQuestion(null);
         setExports(null);
         setArchive(false);
+        setLive(null);
       }
+      if (!state.loading) booted.current = true;
     }, [state.loading]);
+    useEffect(() => {
+      adminSession.draft = draft;
+      adminSession.live = live;
+    }, [draft, live]);
+    useEffect(() => {
+      adminSession.mounted++;
+      return () => {
+        adminSession.mounted--;
+        adminSession.leftAt = Date.now();
+      };
+    }, []);
     const p = state.permissions || {},
-      d = draft;
-    const mutate = async (fn, done) => {
+      d = draft,
+      saved = d?.id ? state.consultations.find(c => c.id === d.id) : null;
+    // Total of voters: an email list counts itself; every other audience is counted by the backend (debounced).
+    const audienceKey = d ? JSON.stringify(d.audience) : '';
+    useEffect(() => {
+      if (!d) {
+        setTotal(null);
+        return;
+      }
+      if (d.audience.mode === 'emails') {
+        setTotal(d.audience.emails.length);
+        return;
+      }
+      let alive = true;
+      setTotal(null);
+      const t = setTimeout(() => R().electorate(d.audience).then(n => {
+        if (alive) setTotal(n);
+      }, () => {
+        if (alive) setTotal(undefined);
+      }), 250);
+      return () => {
+        alive = false;
+        clearTimeout(t);
+      };
+    }, [audienceKey]);
+    const mutate = async (fn, done, message) => {
       if (lock.current) return;
       lock.current = true;
       setBusy(true);
@@ -556,7 +940,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         await fn();
         done?.();
         await reload();
-        app?.toast?.('Operación confirmada');
+        app?.toast?.(message || 'Operación confirmada');
       } catch (e) {
         setError(errorText(e));
       } finally {
@@ -575,7 +959,6 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     const newDraft = () => edit({
       title: '',
       closes_on: '',
-      electorate: '',
       published: false,
       audience: {
         mode: 'all',
@@ -586,6 +969,10 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       },
       questions: []
     });
+    const openLive = id => {
+      if (!document.fullscreenElement) enterFull();
+      setLive(id);
+    };
     const canEdit = d?.id ? p.update : p.create;
     const audienceLabel = c => c.audience.mode === 'emails' ? c.audience.emails.length + ' correos' : modes.find(m => m[0] === c.audience.mode)?.[1];
     const addMail = () => {
@@ -757,23 +1144,24 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onChange: e => update({
         closes_on: e.target.value
       })
-    })), /*#__PURE__*/React.createElement("label", {
+    })), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: '1 1 140px'
       }
     }, /*#__PURE__*/React.createElement("span", {
-      className: "lab"
-    }, "PADR\xD3N CONVOCADO"), /*#__PURE__*/React.createElement("input", {
-      className: "field",
-      type: "number",
-      min: "1",
-      step: "1",
-      disabled: !canEdit || busy,
-      value: d.electorate,
-      onChange: e => update({
-        electorate: e.target.value
-      })
-    }))), /*#__PURE__*/React.createElement("div", {
+      className: "lab",
+      id: "voting-total-label"
+    }, "TOTAL DE VOTANTES"), /*#__PURE__*/React.createElement("div", {
+      className: "field total-field",
+      role: "status",
+      "aria-labelledby": "voting-total-label",
+      "data-voting-electorate": total == null ? '' : String(total)
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "users",
+      size: 17
+    }), total === null ? 'Calculando…' : total === undefined ? 'No disponible' : nf(total)), /*#__PURE__*/React.createElement("span", {
+      className: "total-note"
+    }, "Autom\xE1tico seg\xFAn \xABQui\xE9n puede ver esta votaci\xF3n\xBB"))), /*#__PURE__*/React.createElement("div", {
       className: "switchrow"
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -791,60 +1179,81 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, /*#__PURE__*/React.createElement("i", null))), /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "menu",
       title: "Preguntas",
-      sub: "Se vota S\xED \xB7 No \xB7 Abstenci\xF3n \xB7 los cambios se aplican al guardar la consulta"
-    }), d.questions.map((q, i) => /*#__PURE__*/React.createElement("div", {
-      className: "qrow",
-      key: q.id || q.key
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "qnum"
-    }, i + 1), /*#__PURE__*/React.createElement("button", {
-      disabled: !canEdit || busy,
-      style: {
-        flex: 1,
-        minWidth: 0,
-        border: 0,
-        background: 'transparent',
-        textAlign: 'left',
-        color: 'inherit'
-      },
-      onClick: () => setQuestion({
-        ...q,
-        index: i
-      })
-    }, /*#__PURE__*/React.createElement("b", null, q.title), q.detail && /*#__PURE__*/React.createElement("s", null, q.detail), /*#__PURE__*/React.createElement("div", {
-      className: "count"
-    }, q.results ? options.map(o => o.label + ' ' + (q.results.total ? Math.round(q.results[o.id] / q.results.total * 100) : 0) + '%').join(' · ') + ' · ' + nf(q.results.total) + ' votos' : p.results ? 'Sin votos todavía' : 'Resultados restringidos'), q.locked && /*#__PURE__*/React.createElement("s", null, "Texto definitivo: esta pregunta ya tiene votos.")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6
-      }
-    }, [-1, 1].map(dir => /*#__PURE__*/React.createElement("button", {
-      key: dir,
-      className: "icobtn sm",
-      "aria-label": dir < 0 ? 'Subir' : 'Bajar',
-      disabled: !canEdit || busy || i + dir < 0 || i + dir >= d.questions.length,
-      onClick: () => {
-        const list = [...d.questions];
-        list.splice(i + dir, 0, list.splice(i, 1)[0]);
-        update({
-          questions: list
-        });
-      }
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: dir < 0 ? 'chevU' : 'chevD',
-      size: 16
-    })))), (p.delete || !d.id) && /*#__PURE__*/React.createElement("button", {
-      className: "icobtn sm",
-      "aria-label": "Eliminar pregunta",
-      disabled: !canEdit || busy,
-      onClick: () => update({
-        questions: d.questions.filter((_, j) => j !== i)
-      })
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "trash",
-      size: 16
-    })))), !d.questions.length && /*#__PURE__*/React.createElement("p", {
+      sub: "Se vota S\xED \xB7 No \xB7 Abstenci\xF3n \xB7 activa una pregunta a la vez para mostrarla al instante; los dem\xE1s cambios se aplican al guardar la consulta"
+    }), d.questions.map((q, i) => {
+      const on = !!q.id && saved?.active_question_id === q.id,
+        results = q.id && saved?.questions.find(x => x.id === q.id)?.results || q.results;
+      return /*#__PURE__*/React.createElement("div", {
+        className: 'qrow' + (on ? ' live' : ''),
+        key: q.id || q.key,
+        "data-voting-admin-question": q.id || ''
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "qnum"
+      }, i + 1), /*#__PURE__*/React.createElement("button", {
+        disabled: !canEdit || busy,
+        style: {
+          flex: 1,
+          minWidth: 0,
+          border: 0,
+          background: 'transparent',
+          textAlign: 'left',
+          color: 'inherit'
+        },
+        onClick: () => setQuestion({
+          ...q,
+          index: i
+        })
+      }, /*#__PURE__*/React.createElement("b", null, q.title), q.detail && /*#__PURE__*/React.createElement("s", null, q.detail), /*#__PURE__*/React.createElement("div", {
+        className: "count"
+      }, results ? options.map(o => o.label + ' ' + (results.total ? Math.round(results[o.id] / results.total * 100) : 0) + '%').join(' · ') + ' · ' + nf(results.total) + ' votos' : p.results ? 'Sin votos todavía' : 'Resultados restringidos'), q.locked && /*#__PURE__*/React.createElement("s", null, "Texto definitivo: esta pregunta ya tiene votos.")), /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6
+        }
+      }, [-1, 1].map(dir => /*#__PURE__*/React.createElement("button", {
+        key: dir,
+        className: "icobtn sm",
+        "aria-label": dir < 0 ? 'Subir' : 'Bajar',
+        disabled: !canEdit || busy || i + dir < 0 || i + dir >= d.questions.length,
+        onClick: () => {
+          const list = [...d.questions];
+          list.splice(i + dir, 0, list.splice(i, 1)[0]);
+          update({
+            questions: list
+          });
+        }
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: dir < 0 ? 'chevU' : 'chevD',
+        size: 16
+      })))), (p.delete || !d.id) && /*#__PURE__*/React.createElement("button", {
+        className: "icobtn sm",
+        "aria-label": "Eliminar pregunta",
+        disabled: !canEdit || busy,
+        onClick: () => update({
+          questions: d.questions.filter((_, j) => j !== i)
+        })
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "trash",
+        size: 16
+      })), d.id && /*#__PURE__*/React.createElement("div", {
+        className: 'qlive' + (on ? ' on' : '')
+      }, q.id ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+        className: "qlivelabel"
+      }, on ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("i", {
+        className: "dot",
+        "aria-hidden": "true"
+      }), "Activa: los afiliados la ven ahora") : 'Inactiva'), /*#__PURE__*/React.createElement("button", {
+        className: "tog",
+        role: "switch",
+        "aria-checked": on,
+        "aria-label": (on ? 'Desactivar' : 'Activar') + ' pregunta ' + (i + 1),
+        disabled: !p.publish || busy,
+        onClick: () => mutate(() => R().activate(d.id, on ? null : q.id), null, on ? 'Pregunta ' + (i + 1) + ' desactivada' : 'Pregunta ' + (i + 1) + ' activa para los afiliados')
+      }, /*#__PURE__*/React.createElement("i", null))) : /*#__PURE__*/React.createElement("span", {
+        className: "qlivelabel"
+      }, "Guarda la consulta para poder activarla")));
+    }), !d.questions.length && /*#__PURE__*/React.createElement("p", {
       className: "panel"
     }, "Sin preguntas. Agrega la primera: es lo que ver\xE1 el afiliado en Inicio."), canEdit && /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
@@ -963,7 +1372,18 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "close",
       size: 13
-    })))))), d.id && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    })))))), d.id && p.results && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
+      icon: "screen",
+      title: "Votaci\xF3n en vivo",
+      sub: "Pantalla gigante con la pregunta activa y su conteo en tiempo real"
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "btn pri",
+      disabled: busy,
+      "data-voting-live-open": "true",
+      onClick: () => openLive(d.id)
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "screen"
+    }), "Votaci\xF3n en vivo")), d.id && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "download",
       title: "Exportar a Excel",
       sub: "Archivo .csv que Excel abre directo"
@@ -1002,7 +1422,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }
     }, "Cancelar"), canEdit && /*#__PURE__*/React.createElement("button", {
       className: "btn pri",
-      disabled: busy || !d.title.trim() || !d.closes_on || !Number.isInteger(Number(d.electorate)) || Number(d.electorate) < 1 || d.published && !d.questions.length,
+      disabled: busy || !d.title.trim() || !d.closes_on || d.published && !d.questions.length,
       onClick: () => mutate(() => R().save(d), () => setDraft(null)),
       style: {
         flex: 2
@@ -1123,7 +1543,10 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onClick: () => mutate(() => R().download(exports.id, true), () => setExports(null))
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "doc"
-    }), "Votos emitidos"))));
+    }), "Votos emitidos"))), live && /*#__PURE__*/React.createElement(VotingLive, {
+      id: live,
+      onClose: () => setLive(null)
+    }));
   }
   window.VotingHome = VotingHome;
   window.VotingAdmin = VotingAdmin;

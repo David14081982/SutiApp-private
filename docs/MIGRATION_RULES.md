@@ -1,5 +1,9 @@
 # Reglas de migración
 
+## 20260916000200 — votación en vivo
+
+APPLIED / VERIFIED. Aditiva: tabla `voting_live_state` (una fila por consulta, FK compuestas a preguntas, RLS forzada, SELECT browser filtrado por audiencia y publicación Realtime), constraint `electorate` relajada a `>= 0`, seis funciones reemplazadas con guardas md5 contra la línea base y cinco funciones nuevas. No modifica consultas, preguntas, votos ni bitácora existentes; sólo agrega la fila en vivo vacía por consulta. Punto de restauración previo: esquema privado `voting_restore_private` (copias y definiciones con md5) y tag `restore/pre-votacion-en-vivo-20260916`. Forward, matriz y recovery se ejecutaron juntos con `ROLLBACK`; la aplicación conservó conteos y huella de votos. Recovery `supabase/recovery/20260916000200_voting_live.sql` retira la publicación y funciones nuevas, restaura las definiciones exactas y eleva a 1 sólo los totales en 0 antes de restaurar `electorate > 0`; conserva `voting_live_state` inerte. Evidencia: `docs/qa/evidence/voting-live-20260916/`.
+
 ## 20260916000100 — edición de foto de perfil
 
 APPLIED / backend VERIFIED. Marcador aditivo `affiliate_files.is_current_profile_photo`, índice único parcial y RPC self-only. Inicializa el marcador desde el contrato histórico Photo/DK sin cambiar timestamps de importación; el trigger de timestamps se deshabilita solo durante ese backfill dentro de la misma transacción y se reactiva antes de commit. No cambia políticas Storage ni borra objetos, relaciones o documentos. La matriz live se ejecutó con ROLLBACK; recovery compilado/revertido antes de apply. Recovery de schema aborta si hay una edición de foto auditada para evitar perder la selección vigente. Evidencia: `docs/qa/evidence/profile-photo-edit-20260916/`.

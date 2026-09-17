@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "checks": [
+    "affiliate_waiting_open_card_no_results",
+    "question_on_air_appears_live",
+    "affiliate_three_text_sizes",
+    "vote_hides_question_without_results",
+    "card_reopens_on_new_question",
+    "sheet_closes_when_question_leaves_air",
+    "not_active_error_message",
+    "reactivation_and_finished_state",
+    "impersonation_and_closed_states",
+    "admin_total_and_switches",
+    "admin_single_question_on_air",
+    "admin_reflects_other_session_live",
+    "admin_total_follows_audience",
+    "unsaved_question_cannot_go_on_air",
+    "admin_three_text_sizes",
+    "repository_payloads_and_offline_watch",
+    "switch_requires_publish_permission",
+    "big_screen_survives_admin_remount",
+    "big_screen_on_air",
+    "big_screen_counts_by_polling",
+    "big_screen_follows_next_question",
+    "big_screen_responsive",
+    "big_screen_closes_and_stops",
+    "stale_session_not_restored"
+  ],
+  "errors": [],
+  "scope": "Isolated browser fixtures only; backend authorization, locks and Realtime policy tested in SQL with ROLLBACK.",
+  "productionWrites": 0
+}

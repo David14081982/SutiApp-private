@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "created": "2026-09-17T06:31:28.954Z",
+  "git_tag": "restore/pre-votacion-en-vivo-20260916",
+  "tag_object": "444fd68d36633b3757a427b2b03723bf1bb2daeb",
+  "base_commit": "b74ddbb0412823efd44c1e1f7fca2d349e2fb526",
+  "db_schema": "voting_restore_private",
+  "tables": [
+    "consultations_20260916",
+    "questions_20260916",
+    "votes_20260916",
+    "functions_20260916",
+    "manifest_20260916"
+  ],
+  "counts": {
+    "votes": 7,
+    "questions": 3,
+    "consultations": 1
+  },
+  "row_hashes": {
+    "votes": "7d22ae318d2f9a880ceae8bfd84cb118",
+    "questions": "3436123fc4d02abbe4822488fe068564",
+    "consultations": "ec1bfd09606e625c9b31343a2294a859"
+  },
+  "functions": {
+    "voting_can(text)": "8b2ea47edf9c7552cffc137a7a6ed028",
+    "voting_immutable_vote()": "e48ea1b6ed4b344a2d4599c4c9e1788c",
+    "voting_audience_matches(jsonb)": "a46ad282e6d2ef0f7f3a10f51a490dc4",
+    "cast_voting_vote(uuid,uuid,text)": "9ecf47942170e69166c73f6f45e658dc",
+    "list_voting_consultations(boolean)": "26eab209f9562fb9ff0349e15237be4b",
+    "voting_question_result(uuid,integer)": "bcbba2fa57f7c6cc5950c4e58502ac4c",
+    "export_voting_consultation(uuid,boolean)": "bc0d4b61056dd9c79ff59ec89b764663",
+    "save_voting_consultation(uuid,integer,jsonb)": "d13f9433be8d89eda247d1663903069d",
+    "voting_consultation_action(uuid,integer,text)": "cc923ae6438dc23472670d03d37263d2"
+  },
+  "constraints": {
+    "voting_votes_pkey": "PRIMARY KEY (id)",
+    "voting_questions_pkey": "PRIMARY KEY (id)",
+    "voting_votes_folio_key": "UNIQUE (folio)",
+    "voting_consultations_pkey": "PRIMARY KEY (id)",
+    "voting_votes_answer_check": "CHECK ((answer = ANY (ARRAY['si'::text, 'no'::text, 'abs'::text])))",
+    "voting_questions_title_check": "CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 1000)))",
+    "voting_questions_detail_check": "CHECK ((length(detail) <= 4000))",
+    "voting_votes_affiliate_id_fkey": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+    "voting_consultations_title_check": "CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 240)))",
+    "voting_questions_sort_order_check": "CHECK ((sort_order >= 0))",
+    "voting_consultations_audience_check": "CHECK (((audience ->> 'mode'::text) = ANY (ARRAY['all'::text, 'registered'::text, 'segment'::text, 'emails'::text])))",
+    "voting_consultations_created_by_fkey": "FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE RESTRICT",
+    "voting_votes_actor_auth_user_id_fkey": "FOREIGN KEY (actor_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+    "voting_consultations_electorate_check": "CHECK ((electorate > 0))",
+    "voting_questions_consultation_id_fkey": "FOREIGN KEY (consultation_id) REFERENCES voting_consultations(id) ON DELETE RESTRICT",
+    "voting_questions_consultation_id_id_key": "UNIQUE (consultation_id, id)",
+    "voting_votes_consultation_id_question_id_fkey": "FOREIGN KEY (consultation_id, question_id) REFERENCES voting_questions(consultation_id, id) ON DELETE RESTRICT",
+    "voting_votes_affiliate_id_consultation_id_question_id_key": "UNIQUE (affiliate_id, consultation_id, question_id)"
+  },
+  "pii_in_repo": false
+}

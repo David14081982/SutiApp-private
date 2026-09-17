@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "voting-live-20260916-001",
+  "previousCachebuster": "app/bundle.js?v=profile-photo-20260916",
+  "changed": [
+    "voting-repository.js",
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 123,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "sha256": "360313a717d78aab3dcf0010f3714960fe021adf79b7000e00c92cf530ab1276"
+}

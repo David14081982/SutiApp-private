@@ -311,6 +311,13 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 - **INV-226:** publicar promociones requiere aprobación administrativa real; pop-ups requieren el beneficio del plan y conservan revisión/publicación existentes. Los cambios empresariales permitidos se proyectan públicamente sin fuentes alternas.
 - **INV-227:** el lector comercial empresarial no expone firmas, documentos, snapshots financieros ni registros eliminados; no concede SELECT de program_requests. Historial estadístico se habilita por plan y se deriva de operaciones canónicas.
 
+## Votación en vivo — ADR-112
+
+- **INV-228:** una consulta tiene como máximo una pregunta al aire (`voting_live_state`, una fila por consulta). `cast_voting_vote` rechaza cualquier pregunta que no sea la activa; cambiar la pregunta toma lock exclusivo y espera a los votos en curso, así ningún voto entra después de que la pregunta sale del aire.
+- **INV-229:** el afiliado nunca recibe resultados ni el texto de preguntas fuera del aire; sólo su marca de voto propio para el avance. Los conteos en vivo requieren permiso de resultados Admin.
+- **INV-230:** el total de votantes se deriva de la audiencia en cada lectura y nunca se captura; la participación con total 0 es 0, sin división. La columna `electorate` sólo conserva el valor calculado al guardar.
+- **INV-231:** la señal Realtime sólo expone ids y timestamp bajo RLS por audiencia o lectura Admin; el navegador no puede escribirla y ante su falla la pantalla sigue funcionando con sondeo acotado en primer plano.
+
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; monto a solicitar = total a pagar = importe comercial del catálogo; número de pagos = installments. Gastos administrativos = 15 × pagos INCLUIDOS; capital = total − gastos. Redondeo por descuento con ajuste final para conservar total. Cambios de catálogo o perfil antes de confirmar invalidan la cotización; después no recalculan la solicitud. financial_processing_status permanece NULL para conservar el workflow de membresías. Prohibido completar históricos o alterar reglas de otros programas en esta H.

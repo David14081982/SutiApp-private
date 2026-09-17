@@ -20,6 +20,8 @@ const noOverflow=page=>page.evaluate(()=>document.documentElement.scrollWidth<=i
   await page.addStyleTag({path:path.join(root,'app/text-size.css')});
   for(const f of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js','app/voting-design.js','app/voting-repository.js'])await page.addScriptTag({path:path.join(root,f)});
   const sealSrc=process.env.VOTING_SEAL_PREVIEW?'data:image/png;base64,'+fs.readFileSync(process.env.VOTING_SEAL_PREVIEW).toString('base64'):'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#111" stroke-width="6"/><rect x="38" y="30" width="24" height="40" rx="6" fill="#910022"/></svg>');
+  // Reproduces production: brandingPhase reports 'error' while branding (and the seal URL) is loaded.
+  await page.addScriptTag({content:'window.useVisualBranding=function(){return {phase:"error",branding:{institutional_seal_url:'+JSON.stringify(sealSrc)+'}};};'});
   await page.addScriptTag({content:'window.SutiSeal=function({size=96}){return React.createElement("div",{"data-branding-seal-state":"loaded",style:{width:size,height:size,position:"relative",display:"inline-block",verticalAlign:"top"}},React.createElement("img",{src:'+JSON.stringify(sealSrc)+',alt:"Sello institucional SUTISSSTESON",style:{width:"100%",height:"100%",objectFit:"contain",display:"block",filter:"none"}}));};'});
   await page.addScriptTag({content:source});
   await page.evaluate(()=>{
@@ -153,7 +155,7 @@ const noOverflow=page=>page.evaluate(()=>document.documentElement.scrollWidth<=i
   await page.setViewportSize({width:1920,height:1080});
   await page.locator('[data-voting-live-open]').click();const live=page.locator('[data-voting-live]');await live.waitFor();
   await live.getByText('Esperando la primera pregunta',{exact:true}).waitFor();assert(await noOverflow(page));
-  assert.equal(await live.locator('.lseal [data-branding-seal-state=loaded] img').count(),1,'institutional seal watermark');assert.equal(await live.locator('.lseal svg').count(),0,'old circle decoration removed');
+  await live.locator('.lseal img[data-voting-live-seal]').waitFor({state:'attached'});assert(await live.locator('.lseal img[data-voting-live-seal]').evaluate(i=>i.complete&&i.naturalWidth>0),'institutional seal watermark loaded');assert.equal(await live.locator('.lseal svg').count(),0,'old circle decoration removed');
   assert.equal(await live.locator('.lseal').evaluate(e=>getComputedStyle(e).filter),'brightness(0) invert(1)');checks.push('big_screen_institutional_seal');
   await page.evaluate(()=>{window.shellSwap=!window.shellSwap;const app={toast:m=>toasts.push(m),textPreference:{value:'normal'}};root.render(React.createElement(shellSwap?'section':'div',{'data-shell':'swap'},React.createElement(window.VotingAdmin,{app,onBack:()=>{}})));});
   await live.getByText('Esperando la primera pregunta',{exact:true}).waitFor({timeout:3000});assert.equal(await page.locator('[data-voting-live-open]').count(),1,'editor restored behind the big screen');checks.push('big_screen_survives_admin_remount');

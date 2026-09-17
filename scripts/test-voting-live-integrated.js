@@ -52,7 +52,8 @@ async function waitFor(fn,ms,label){const end=Date.now()+ms;for(;;){if(await fn(
   // Big screen opens, polls get_voting_live and stops when closed.
   await page.locator('[data-voting-live-open]').click();const live=page.locator('[data-voting-live]');await live.waitFor();
   await page.setViewportSize({width:1920,height:1080});await page.waitForTimeout(1200);await live.waitFor({timeout:5000});checks.push('big_screen_survives_desktop_breakpoint');
-  await live.locator('.lseal [data-branding-seal-state=loaded] img').waitFor({state:'attached',timeout:20000});checks.push('big_screen_institutional_seal');
+  await live.locator('.lseal img[data-voting-live-seal]').waitFor({state:'attached',timeout:20000});
+  await waitFor(()=>live.locator('.lseal img[data-voting-live-seal]').evaluate(i=>i.complete&&i.naturalWidth>0),20000,'seal image loaded');checks.push('big_screen_institutional_seal');
   await waitFor(async()=>(rpc.get_voting_live||0)>=3,12000,'live polling');
   if(!db.active)await live.getByText(/Esperando la primera pregunta|Esperando la siguiente pregunta/).first().waitFor({timeout:10000});
   assert.equal(await live.locator('[role=alert]').count(),0);

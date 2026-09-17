@@ -58,6 +58,17 @@
   ico('convenios.card.pin', 'Icono de ubicación', CONV, 'pin');
   ico('convenios.detail.credencial', 'Icono de credencial en el detalle', CONV, 'idcard');
 
+  // Credencial · marca de la esquina superior derecha del frente (imagen del propietario, fondo transparente)
+  ENTRIES['credencial.card.mark'] = {
+    key: 'credencial.card.mark',
+    kind: 'image',
+    label: 'Puño de la credencial digital',
+    group: 'Credencial',
+    src: './assets/branding/credencial-puno.png',
+    icon: 'idcard',
+    admin: true,
+  };
+
   // ---- Proveedores dinámicos ----
   // Un namespace cuyas entradas no se pueden enumerar en tiempo de carga
   // (productos que el admin crea/edita) se declara con un proveedor: una

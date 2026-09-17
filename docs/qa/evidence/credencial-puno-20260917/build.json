@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "version": "credencial-puno-20260917-001",
+  "cssVersion": "245",
+  "previousCachebuster": "app/bundle.js?v=branding-seal-20260917-001",
+  "changed": [
+    "assets-registry.jsx",
+    "screens-credencial.jsx"
+  ],
+  "preservedChunks": 123,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "whitespaceOnlyDrift": [
+    "screens-credencial.jsx"
+  ],
+  "sha256": "84cb8938968c52574fc0fdddf6a2a32ab6374468c46fb6f81b00d68b468e9364"
+}

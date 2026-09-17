@@ -29,6 +29,7 @@ const publicFiles = [
   'icon-512.png',
   'icon-maskable-512.png',
   'assets/branding/home-header-collapsed.webp',
+  'assets/branding/credencial-puno.png',
   'app/bundle.js',
   'app/text-size.css',
   'app/vendor/react-18.3.1/react.production.min.js',

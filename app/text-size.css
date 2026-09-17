@@ -94,7 +94,7 @@
 
 [data-text-size] .su-chip-row { display: flex !important; flex-wrap: wrap; width: 100%; }
 [data-text-size] .su-chip-row button { max-width: 100%; padding: 8px 14px !important; }
-[data-text-size] .su-credential-face { min-height: 420px; }
+[data-text-size] .su-credential-face { min-height: 390px; }
 [data-text-size] .su-credential-fact { flex-wrap: wrap; gap: 4px 16px !important; }
 [data-text-size] .su-credential-fact > span:last-child { margin-left: auto; }
 [data-text-size] .su-text-preference-error { flex-shrink: 0; padding: 10px 16px; background: var(--surface); color: var(--ink); }

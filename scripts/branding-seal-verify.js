@@ -6,7 +6,8 @@ const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=r
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const {serve}=require('./test-admin-user-modules-browser');
 const {env}=require('./voting-live-db');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/branding-seal-20260917');
+const outArg=process.argv.find(x=>x.startsWith('--out='));
+const root=path.resolve(__dirname,'..'),out=path.join(root,outArg?outArg.slice('--out='.length):'docs/qa/evidence/branding-seal-20260917');
 const mode=process.argv[2],production=process.argv.includes('--production'),PAGES='https://david14081982.github.io/SutiApp-private/';
 const write=(name,data)=>{fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,name),JSON.stringify(data,null,2));};
 

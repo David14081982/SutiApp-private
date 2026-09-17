@@ -40,7 +40,7 @@
       React.createElement('div', { style: { padding: '8px 20px 0', textAlign: 'center' } },
         React.createElement('p', { style: { fontSize: 'var(--text-14, 14px)', color: 'var(--ink-3)', fontWeight: 600, margin: 0 } }, 'Toca la credencial para girarla')),
       React.createElement('div', { 'data-press': 'subtle', style: { padding: '16px 20px 0', perspective: 1400 } },
-        React.createElement('div', { onClick: () => setFlipped(!flipped), role: 'button', tabIndex: 0, 'aria-label': flipped ? 'Ver frente de credencial' : 'Ver reverso de credencial', onKeyDown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlipped(!flipped); } }, className: 'su-credential-flip', style: { position: 'relative', display: 'grid', minHeight: 420, cursor: 'pointer', transformStyle: 'preserve-3d', transition: 'transform .7s cubic-bezier(.4,0,.2,1)', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' } },
+        React.createElement('div', { onClick: () => setFlipped(!flipped), role: 'button', tabIndex: 0, 'aria-label': flipped ? 'Ver frente de credencial' : 'Ver reverso de credencial', onKeyDown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFlipped(!flipped); } }, className: 'su-credential-flip', style: { position: 'relative', display: 'grid', minHeight: 390, cursor: 'pointer', transformStyle: 'preserve-3d', transition: 'transform .7s cubic-bezier(.4,0,.2,1)', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' } },
           React.createElement('div', { 'aria-hidden': flipped, style: { position: 'relative', gridArea: '1 / 1', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' } }, React.createElement(CardFront, { u })),
           React.createElement('div', { 'aria-hidden': !flipped, style: { position: 'relative', gridArea: '1 / 1', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' } }, React.createElement(CardBack, { u, qrUrl, secs, qr, retry: issueQr })))),
       React.createElement('div', { style: { display: 'flex', padding: '18px 20px 0' } },
@@ -72,7 +72,7 @@
         React.createElement('div', null,
           React.createElement('div', { style: { fontSize: 'var(--text-11, 11px)', letterSpacing: '.18em', fontWeight: 700, opacity: .8 } }, 'CREDENCIAL DIGITAL'),
           React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, marginTop: 2 } }, 'SUTISSSTESON')),
-        React.createElement(window.FistMark, { size: 36, color: '#fff' })),
+        React.createElement(window.Res, { resKey: 'credencial.card.mark', size: 36, fit: 'contain', alt: '', style: { flexShrink: 0 }, 'aria-hidden': 'true', 'data-credential-mark': 'true' })),
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 16, marginTop: 'auto' } },
         React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 76, tone: '#fff', 'data-profile-photo-consumer': 'credential' }),
         React.createElement('div', { style: { width: 40, height: 30, borderRadius: 7, background: 'linear-gradient(135deg,#e9c97a,#b8902f)', opacity: .9 } })),
@@ -89,16 +89,16 @@
   }
 
   function CardBack({ u, qrUrl, secs, qr, retry }) {
-    return React.createElement('div', { className: 'su-credential-face', style: { width: '100%', height: '100%', borderRadius: 26, overflow: 'hidden', position: 'relative', background: 'var(--surface)', boxShadow: 'var(--shadow-lg)', padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' } },
-      React.createElement('div', { style: { height: 44, background: 'var(--ink)', margin: '-24px -24px 0', width: 'calc(100% + 48px)' } }),
-      React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800, color: 'var(--guinda)', marginTop: 22, letterSpacing: '.04em' } }, 'ACCESO Y BENEFICIOS'),
+    return React.createElement('div', { className: 'su-credential-face', style: { width: '100%', height: '100%', borderRadius: 26, overflow: 'hidden', position: 'relative', background: 'var(--surface)', boxShadow: 'var(--shadow-lg)', padding: '24px 24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
+      React.createElement('div', { style: { height: 36, background: 'var(--ink)', margin: '-24px -24px 0', width: 'calc(100% + 48px)' } }),
+      React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800, color: 'var(--guinda)', marginTop: 16, letterSpacing: '.04em' } }, 'ACCESO Y BENEFICIOS'),
       React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 4, textAlign: 'center' } }, qr.phase === 'error' ? 'No se pudo emitir el código' : 'Escanea para validar tu identidad sindical'),
-      React.createElement('div', { style: { marginTop: 18, padding: 16, background: '#fff', borderRadius: 18, boxShadow: 'var(--neo-sm)' } }, React.createElement(QRCode, { size: 176, fg: 'var(--guinda)', value: qrUrl })),
+      React.createElement('div', { style: { marginTop: 12, padding: 16, background: '#fff', borderRadius: 18, boxShadow: 'var(--neo-sm)' } }, React.createElement(QRCode, { size: 176, fg: 'var(--guinda)', value: qrUrl })),
       qr.phase === 'error' && React.createElement('button', { onClick: (e) => { e.stopPropagation(); retry(); }, style: { marginTop: 12, border: 'none', borderRadius: 10, padding: '8px 12px', fontWeight: 800, color: 'var(--guinda)' } }, 'Reintentar'),
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, marginTop: 16, color: 'var(--ink-3)' } },
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, marginTop: 12, color: 'var(--ink-3)' } },
         React.createElement(I, { name: 'refresh', size: 15, stroke: 2.2 }),
         React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 700 } }, 'Código visual · se renueva en ' + secs + 's')),
-      React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontFamily: 'var(--mono)', color: 'var(--ink-2)', marginTop: 10, fontWeight: 600 } }, u.numeroControl));
+      React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontFamily: 'var(--mono)', color: 'var(--ink-2)', marginTop: 6, fontWeight: 600 } }, u.numeroControl));
   }
 
   function BankAccounts({ app }) {

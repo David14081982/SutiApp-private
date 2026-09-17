@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-17 — H-SUTIAPP-CREDENCIAL-PUNO-001
+
+Credencial: marca superior derecha con el puño del propietario (recurso `credencial.card.mark`, 36 px) y reverso compacto sin cambiar el QR (176 px); la tarjeta baja 34 px en todos los tamaños de texto. Bundle `credencial-puno-20260917-001` (trozos assets-registry.jsx y screens-credencial.jsx), CSS v245 y nueva imagen publicada. Verificación real y regresión global PASS.
+
 ## 2026-09-17 — H-SUTIAPP-BRANDING-SEAL-PHASE-001
 
 El Sello institucional vuelve a mostrarse en Inicio: `visual-content.js` ya no reinicia `brandingPhase` a error al terminar (ni borra la identidad visual si falla otro contenido). Defecto previo desde 3a1b5ff. Bundle `branding-seal-20260917-001`: trozos `visual-content.js` y `screens-voting.jsx` (comentario); 123 idénticos. Diferencial, app real y regresión global PASS.

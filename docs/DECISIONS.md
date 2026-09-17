@@ -1,5 +1,10 @@
 # Registro de decisiones arquitectónicas
 
+## H-SUTIAPP-CREDENCIAL-PUNO-001 — Credencial, 2026-09-17
+
+El propietario entrega la imagen del puño blanco (fondo transparente) para la esquina superior derecha del frente, al mismo tamaño pequeño, y elige reducir el hueco vertical compactando los espacios del reverso sin cambiar el tamaño del QR (176 px). La imagen se registra como recurso visual `credencial.card.mark`.
+
+
 ## H-SUTIAPP-BRANDING-SEAL-PHASE-001 — Sello institucional en Inicio, 2026-09-17
 
 El propietario autoriza corregir el módulo compartido `visual-content.js` tras confirmarse en producción que el Sello institucional no se muestra en Inicio. La fase de la identidad visual depende sólo de su propia carga; se ejecuta la regresión global obligatoria.

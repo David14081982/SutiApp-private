@@ -1,0 +1,107 @@
+{
+  "status": "PASS",
+  "target": "local build + production Supabase",
+  "sizes": {
+    "small": {
+      "card": 390,
+      "gap": 104,
+      "mark": {
+        "w": 36,
+        "h": 36,
+        "right": 24,
+        "top": 24,
+        "natural": 144,
+        "src": "./assets/branding/credencial-puno.png"
+      },
+      "frontFits": true,
+      "backFits": true,
+      "qrBox": {
+        "w": 208,
+        "h": 208
+      },
+      "qrInner": 176,
+      "pageOverflowX": false
+    },
+    "normal": {
+      "card": 398,
+      "gap": 94,
+      "mark": {
+        "w": 36,
+        "h": 36,
+        "right": 24,
+        "top": 24,
+        "natural": 144,
+        "src": "./assets/branding/credencial-puno.png"
+      },
+      "frontFits": true,
+      "backFits": true,
+      "qrBox": {
+        "w": 208,
+        "h": 208
+      },
+      "qrInner": 176,
+      "pageOverflowX": false,
+      "baseline": {
+        "card": 432,
+        "gap": 128
+      },
+      "cardReduction": 34,
+      "gapReduction": 34
+    },
+    "large": {
+      "card": 435,
+      "gap": 110,
+      "mark": {
+        "w": 36,
+        "h": 36,
+        "right": 24,
+        "top": 24,
+        "natural": 144,
+        "src": "./assets/branding/credencial-puno.png"
+      },
+      "frontFits": true,
+      "backFits": true,
+      "qrBox": {
+        "w": 208,
+        "h": 208
+      },
+      "qrInner": 176,
+      "pageOverflowX": false,
+      "baseline": {
+        "card": 469,
+        "gap": 144
+      },
+      "cardReduction": 34,
+      "gapReduction": 34
+    },
+    "largest": {
+      "card": 486,
+      "gap": 132,
+      "mark": {
+        "w": 36,
+        "h": 36,
+        "right": 24,
+        "top": 24,
+        "natural": 144,
+        "src": "./assets/branding/credencial-puno.png"
+      },
+      "frontFits": true,
+      "backFits": true,
+      "qrBox": {
+        "w": 208,
+        "h": 208
+      },
+      "qrInner": 176,
+      "pageOverflowX": false,
+      "baseline": {
+        "card": 520,
+        "gap": 166
+      },
+      "cardReduction": 34,
+      "gapReduction": 34
+    }
+  },
+  "registryValidate": [],
+  "qrIssued": 0,
+  "businessWrites": 0
+}

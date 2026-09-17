@@ -3918,6 +3918,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   ico('convenios.card.pin', 'Icono de ubicación', CONV, 'pin');
   ico('convenios.detail.credencial', 'Icono de credencial en el detalle', CONV, 'idcard');
 
+  // Credencial · marca de la esquina superior derecha del frente (imagen del propietario, fondo transparente)
+  ENTRIES['credencial.card.mark'] = {
+    key: 'credencial.card.mark',
+    kind: 'image',
+    label: 'Puño de la credencial digital',
+    group: 'Credencial',
+    src: './assets/branding/credencial-puno.png',
+    icon: 'idcard',
+    admin: true
+  };
+
   // ---- Proveedores dinámicos ----
   // Un namespace cuyas entradas no se pueden enumerar en tiempo de carga
   // (productos que el admin crea/edita) se declara con un proveedor: una
@@ -22771,7 +22782,7 @@ Object.assign(window, {
       style: {
         position: 'relative',
         display: 'grid',
-        minHeight: 420,
+        minHeight: 390,
         cursor: 'pointer',
         transformStyle: 'preserve-3d',
         transition: 'transform .7s cubic-bezier(.4,0,.2,1)',
@@ -22864,7 +22875,8 @@ Object.assign(window, {
         overflowWrap: 'anywhere'
       }
     }, r[1]))))))), React.createElement(BankAccounts, {
-      app, key: u.id
+      app,
+      key: u.id
     }), React.createElement('div', {
       style: {
         padding: '22px 20px 0'
@@ -22979,9 +22991,16 @@ Object.assign(window, {
         fontWeight: 800,
         marginTop: 2
       }
-    }, 'SUTISSSTESON')), React.createElement(window.FistMark, {
+    }, 'SUTISSSTESON')), React.createElement(window.Res, {
+      resKey: 'credencial.card.mark',
       size: 36,
-      color: '#fff'
+      fit: 'contain',
+      alt: '',
+      style: {
+        flexShrink: 0
+      },
+      'aria-hidden': 'true',
+      'data-credential-mark': 'true'
     })), React.createElement('div', {
       style: {
         display: 'flex',
@@ -23079,14 +23098,14 @@ Object.assign(window, {
         position: 'relative',
         background: 'var(--surface)',
         boxShadow: 'var(--shadow-lg)',
-        padding: 24,
+        padding: '24px 24px 18px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center'
       }
     }, React.createElement('div', {
       style: {
-        height: 44,
+        height: 36,
         background: 'var(--ink)',
         margin: '-24px -24px 0',
         width: 'calc(100% + 48px)'
@@ -23096,7 +23115,7 @@ Object.assign(window, {
         fontSize: 'var(--text-13, 13px)',
         fontWeight: 800,
         color: 'var(--guinda)',
-        marginTop: 22,
+        marginTop: 16,
         letterSpacing: '.04em'
       }
     }, 'ACCESO Y BENEFICIOS'), React.createElement('div', {
@@ -23109,7 +23128,7 @@ Object.assign(window, {
       }
     }, qr.phase === 'error' ? 'No se pudo emitir el código' : 'Escanea para validar tu identidad sindical'), React.createElement('div', {
       style: {
-        marginTop: 18,
+        marginTop: 12,
         padding: 16,
         background: '#fff',
         borderRadius: 18,
@@ -23137,7 +23156,7 @@ Object.assign(window, {
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        marginTop: 16,
+        marginTop: 12,
         color: 'var(--ink-3)'
       }
     }, React.createElement(I, {
@@ -23154,7 +23173,7 @@ Object.assign(window, {
         fontSize: 'var(--text-12, 12px)',
         fontFamily: 'var(--mono)',
         color: 'var(--ink-2)',
-        marginTop: 10,
+        marginTop: 6,
         fontWeight: 600
       }
     }, u.numeroControl));

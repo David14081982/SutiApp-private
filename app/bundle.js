@@ -14484,7 +14484,10 @@ Object.assign(window, {
     .su-inv-card-head,.su-inv-subhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
     .su-inv-card-head b{font-size:var(--text-15, 15px);font-weight:900;letter-spacing:-.01em}
     .su-inv-card-head span,.su-inv-subhead span{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--inv-ink-3);letter-spacing:.05em}
-    .su-inv-amount,.su-inv-amount-input{display:block;border:0;background:transparent;padding:0;margin:6px 0 10px;font-size:var(--text-44, 44px);font-weight:900;letter-spacing:-.03em;color:var(--inv-guinda);font-variant-numeric:tabular-nums;width:100%;min-width:0;text-align:center;white-space:nowrap}
+    .su-inv-amount,.su-inv-amount-input{display:block;border:0;background:transparent;padding:0;margin:6px 0 10px;font-size:44px;font-weight:900;letter-spacing:-.03em;color:var(--inv-guinda);font-variant-numeric:tabular-nums;width:100%;min-width:0;text-align:center;white-space:nowrap}
+    /* El monto es una cifra de presentacion, no texto de lectura: conserva su tamano
+       en las cuatro preferencias (incluida "Muy grande") y no se parte en dos lineas. */
+    .su-investment .su-inv-amount,.su-investment .su-inv-amount-input{font-size:44px !important;line-height:1.15 !important;white-space:nowrap !important}
     .su-inv-amount{cursor:text;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit}
     .su-inv-amount-pen{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:var(--inv-guinda-50);color:var(--inv-guinda);box-shadow:var(--inv-inset)}
     .su-inv-amount-input{outline:0;border-bottom:2px solid var(--inv-guinda)}
@@ -14545,7 +14548,7 @@ Object.assign(window, {
     .su-inv-footer-row b{font-size:var(--text-13-5, 13.5px);font-weight:900;color:var(--inv-ok);font-variant-numeric:tabular-nums}
     .su-inv-cta{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:56px;border:0;border-radius:18px;cursor:pointer;background:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);color:#fff;font-size:var(--text-16-5, 16.5px);font-weight:900;letter-spacing:-.01em;box-shadow:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4)}
     .su-investment button:focus-visible,.su-investment input:focus-visible{outline:2px solid var(--inv-guinda);outline-offset:2px}
-    @media(max-width:400px){.su-inv-hero{padding-left:16px;padding-right:16px}.su-inv-body,.su-inv-footer{padding-left:16px;padding-right:16px}.su-inv-rate{gap:12px;padding-left:14px;padding-right:14px}.su-inv-chip svg{display:none}.su-inv-split>div+div{padding-left:7px}.su-inv-split>div{padding-right:5px}.su-inv-amount,.su-inv-amount-input{font-size:var(--text-40, 40px)}.su-inv-amount-pen{width:30px;height:30px;border-radius:11px}}
+    @media(max-width:400px){.su-inv-hero{padding-left:16px;padding-right:16px}.su-inv-body,.su-inv-footer{padding-left:16px;padding-right:16px}.su-inv-rate{gap:12px;padding-left:14px;padding-right:14px}.su-inv-chip svg{display:none}.su-inv-split>div+div{padding-left:7px}.su-inv-split>div{padding-right:5px}.su-investment .su-inv-amount,.su-investment .su-inv-amount-input{font-size:40px !important}.su-inv-amount-pen{width:30px;height:30px;border-radius:11px}}
   `;
   function money(value) {
     return '$' + Math.round(value).toLocaleString('en-US');

@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-17 — H-SUTIAPP-BRANDING-SEAL-PHASE-001
+
+El Sello institucional vuelve a mostrarse en Inicio: `visual-content.js` ya no reinicia `brandingPhase` a error al terminar (ni borra la identidad visual si falla otro contenido). Defecto previo desde 3a1b5ff. Bundle `branding-seal-20260917-001`: trozos `visual-content.js` y `screens-voting.jsx` (comentario); 123 idénticos. Diferencial, app real y regresión global PASS.
+
 ## 2026-09-17 — H-SUTIAPP-VOTACIONES-LIVE-002 · Sello institucional
 
 La marca de agua de «Votación en vivo» usa el Sello institucional administrado en Admin → Ícono e instalación (`SutiSeal` / `app_settings`), en blanco y baja opacidad, en lugar del círculo decorativo. Solo cambia el trozo `screens-voting.jsx` del bundle (`voting-live-20260917-002`). Punto de restauración: tag `restore/pre-sello-votacion-en-vivo-20260917`.

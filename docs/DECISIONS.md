@@ -1,5 +1,10 @@
 # Registro de decisiones arquitectónicas
 
+## H-SUTIAPP-BRANDING-SEAL-PHASE-001 — Sello institucional en Inicio, 2026-09-17
+
+El propietario autoriza corregir el módulo compartido `visual-content.js` tras confirmarse en producción que el Sello institucional no se muestra en Inicio. La fase de la identidad visual depende sólo de su propia carga; se ejecuta la regresión global obligatoria.
+
+
 ## H-SUTIAPP-VOTACIONES-LIVE-002 — Votación en vivo, 2026-09-16 (ADR-112)
 
 El propietario cambia el flujo de Votaciones a una sola pregunta al aire controlada desde Admin. Cada pregunta guardada tiene interruptor; activar una apaga la anterior y se puede reactivar cualquier pregunta sin límite de tiempo. El afiliado sólo recibe el texto de la pregunta activa, confirma, ve «Voto registrado · folio …» y la pregunta desaparece para él; ya no recibe su voto, barras, porcentajes ni participación. La tarjeta permanece con avance N de M, abierta, y se reabre al activarse otra pregunta.

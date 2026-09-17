@@ -1,0 +1,114 @@
+{
+  "status": "PASS",
+  "scenarios": {
+    "full_load": {
+      "published": {
+        "phase": "loaded",
+        "brandingPhase": "error",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "fixed": {
+        "phase": "loaded",
+        "brandingPhase": "loaded",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "states": 4,
+      "headerCalls": 1
+    },
+    "login_then_full_load": {
+      "published": {
+        "phase": "loaded",
+        "brandingPhase": "error",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "fixed": {
+        "phase": "loaded",
+        "brandingPhase": "loaded",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "states": 4,
+      "headerCalls": 1
+    },
+    "banners_fail": {
+      "published": {
+        "phase": "error",
+        "brandingPhase": "error",
+        "branding": false,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "fixed": {
+        "phase": "error",
+        "brandingPhase": "loaded",
+        "branding": true,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "states": 4,
+      "headerCalls": 1
+    },
+    "login_then_banners_fail": {
+      "published": {
+        "phase": "error",
+        "brandingPhase": "error",
+        "branding": false,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "fixed": {
+        "phase": "error",
+        "brandingPhase": "loaded",
+        "branding": true,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "states": 4,
+      "headerCalls": 1
+    },
+    "branding_fails": {
+      "published": {
+        "phase": "error",
+        "brandingPhase": "error",
+        "branding": false,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "fixed": {
+        "phase": "error",
+        "brandingPhase": "error",
+        "branding": false,
+        "homeBanners": 0,
+        "errorCode": "SOURCE_ERROR"
+      },
+      "states": 4,
+      "headerCalls": 1
+    },
+    "retry_after_load": {
+      "published": {
+        "phase": "loaded",
+        "brandingPhase": "error",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "fixed": {
+        "phase": "loaded",
+        "brandingPhase": "loaded",
+        "branding": true,
+        "homeBanners": 1,
+        "errorCode": null
+      },
+      "states": 8,
+      "headerCalls": 2
+    }
+  },
+  "reproducedDefect": "published full_load ends with brandingPhase=error while branding is loaded"
+}

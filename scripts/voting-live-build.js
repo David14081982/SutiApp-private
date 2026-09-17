@@ -1,14 +1,14 @@
 'use strict';
 // Rebuilds app/bundle.js from the published bundle, replacing only the voting chunks (all other chunks byte-identical).
 const fs=require('fs'),path=require('path'),vm=require('vm'),cp=require('child_process'),crypto=require('crypto'),assert=require('assert/strict');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/voting-live-20260916');
 const arg=(name,fallback)=>(process.argv.find(x=>x.startsWith('--'+name+'='))||'').split('=')[1]||fallback;
+const root=path.resolve(__dirname,'..'),out=path.join(root,arg('out','docs/qa/evidence/voting-live-20260916'));
 const VERSION=arg('version','voting-live-20260916-001'),EVIDENCE=arg('evidence','build.json');
 const git=(...args)=>cp.execFileSync('git',args,{cwd:root,maxBuffer:64*1024*1024}).toString().replace(/\r\n/g,'\n');
 const sandbox={};vm.createContext(sandbox);vm.runInContext(fs.readFileSync('C:/tmp/babel-standalone-7.29.0.min.js','utf8'),sandbox);
 const chunk=(name,source)=>`/* @@file ${name} */\n(function(){\n${name.endsWith('.jsx')?sandbox.Babel.transform(source,{presets:['react'],filename:name}).code:source.trimEnd()}\n})();\n`;
 const parts=s=>[...s.matchAll(/\/\* @@file ([^\n]+) \*\/\n([\s\S]*?)(?=\/\* @@file |$)/g)];
-const changed=['voting-repository.js','screens-voting.jsx'];
+const changed=arg('files','voting-repository.js,screens-voting.jsx').split(',');
 const base=git('show','origin/main:app/bundle.js'),chunks=parts(base);
 assert(chunks.length>100,'unexpected bundle shape');assert.equal(chunks.map(m=>m[0]).join(''),base,'chunk split must be lossless');
 // The compiler must reproduce the published chunks from the published sources before it is trusted with new ones.

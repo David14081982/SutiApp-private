@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "branding-seal-20260917-001",
+  "previousCachebuster": "app/bundle.js?v=voting-live-20260917-003",
+  "changed": [
+    "visual-content.js",
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 123,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "sha256": "39ca28fe3046f0dfe901e112a6837a6f347dd2597060398df79d3ce1f6a3419d"
+}

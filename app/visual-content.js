@@ -31,7 +31,8 @@
 
   function bootstrap() {
     if (loadPromise) return loadPromise;
-    publish({ phase: 'loading', errorCode: null });
+    // Branding has its own phase (bootstrapBranding): reloading or failing the other content must not reset it.
+    publish({ phase: 'loading', errorCode: null, branding: state.branding, brandingPhase: state.brandingPhase });
     loadPromise = Promise.all([
       window.BannerRepository.list('home'),
       window.BannerRepository.list('marketplace'),
@@ -39,10 +40,10 @@
       window.CompaniesRepository.list(),
       bootstrapBranding(),
     ]).then(([homeBanners, marketplaceBanners, popups, companies, branding]) => {
-      publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, errorCode: null });
+      publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, brandingPhase: 'loaded', errorCode: null });
       return state;
     }).catch(() => {
-      publish({ phase: 'error', errorCode: 'SOURCE_ERROR' });
+      publish({ phase: 'error', errorCode: 'SOURCE_ERROR', branding: state.branding, brandingPhase: state.brandingPhase });
       return state;
     });
     return loadPromise;

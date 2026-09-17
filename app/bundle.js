@@ -641,8 +641,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }), busy ? 'Confirmando…' : 'Confirmar voto'))));
   }
   // Big screen for the room: follows the question on air; between questions it keeps the last one with its final count.
-  // Watermark = Sello institucional managed in Admin → Ícono e instalación (app_settings), rendered in white. Same source as
-  // SutiSeal, but reads branding directly: after the full visual bootstrap brandingPhase stays 'error' even with branding loaded.
+  // Watermark = Sello institucional managed in Admin → Ícono e instalación (app_settings via useVisualBranding, same source as
+  // SutiSeal), rendered in white. A bare img so the watermark CSS alone controls size and filter.
   function LiveSeal() {
     const visual = window.useVisualBranding ? window.useVisualBranding() : null,
       url = visual && visual.branding ? visual.branding.institutional_seal_url : null;
@@ -8700,7 +8700,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   function bootstrap() {
     if (loadPromise) return loadPromise;
-    publish({ phase: 'loading', errorCode: null });
+    // Branding has its own phase (bootstrapBranding): reloading or failing the other content must not reset it.
+    publish({ phase: 'loading', errorCode: null, branding: state.branding, brandingPhase: state.brandingPhase });
     loadPromise = Promise.all([
       window.BannerRepository.list('home'),
       window.BannerRepository.list('marketplace'),
@@ -8708,10 +8709,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       window.CompaniesRepository.list(),
       bootstrapBranding(),
     ]).then(([homeBanners, marketplaceBanners, popups, companies, branding]) => {
-      publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, errorCode: null });
+      publish({ phase: 'loaded', homeBanners, marketplaceBanners, popups, companies, branding, brandingPhase: 'loaded', errorCode: null });
       return state;
     }).catch(() => {
-      publish({ phase: 'error', errorCode: 'SOURCE_ERROR' });
+      publish({ phase: 'error', errorCode: 'SOURCE_ERROR', branding: state.branding, brandingPhase: state.brandingPhase });
       return state;
     });
     return loadPromise;

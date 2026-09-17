@@ -318,6 +318,10 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 - **INV-230:** el total de votantes se deriva de la audiencia en cada lectura y nunca se captura; la participación con total 0 es 0, sin división. La columna `electorate` sólo conserva el valor calculado al guardar.
 - **INV-231:** la señal Realtime sólo expone ids y timestamp bajo RLS por audiencia o lectura Admin; el navegador no puede escribirla y ante su falla la pantalla sigue funcionando con sondeo acotado en primer plano.
 
+## Identidad visual — H-SUTIAPP-BRANDING-SEAL-PHASE-001
+
+- **INV-232:** `brandingPhase` refleja sólo la carga de la identidad visual (`bootstrapBranding`). Cargar, recargar o fallar banners, pop-ups o empresas no la reinicia ni oculta una identidad ya cargada; el Sello institucional se pinta siempre que la identidad visual esté cargada.
+
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; monto a solicitar = total a pagar = importe comercial del catálogo; número de pagos = installments. Gastos administrativos = 15 × pagos INCLUIDOS; capital = total − gastos. Redondeo por descuento con ajuste final para conservar total. Cambios de catálogo o perfil antes de confirmar invalidan la cotización; después no recalculan la solicitud. financial_processing_status permanece NULL para conservar el workflow de membresías. Prohibido completar históricos o alterar reglas de otros programas en esta H.

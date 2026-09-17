@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "target": "local build + production Supabase",
+  "phase": "loaded",
+  "brandingPhase": "loaded",
+  "seals": [
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    },
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    },
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    }
+  ],
+  "businessWrites": 0
+}

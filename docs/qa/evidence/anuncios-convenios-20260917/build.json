@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "version": "anuncios-convenios-20260917-001",
+  "cssVersion": null,
+  "previousCachebuster": "app/bundle.js?v=credencial-puno-20260917-001",
+  "changed": [
+    "visual-repositories.js",
+    "visual-content.js",
+    "admin-repository.js",
+    "admin-cutover-store.jsx",
+    "screens-admin-convenios.jsx",
+    "screens-convenios.jsx"
+  ],
+  "preservedChunks": 119,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "whitespaceOnlyDrift": [],
+  "sha256": "967577aa15db698643bf2f0ea6cc88e6b429d83b1dfc7770f01e0a1a31b9a035"
+}

@@ -29,7 +29,25 @@
     return brandingPromise;
   }
 
+  // Banners depend on the viewer's audience: reload them when the signed-in person changes without a page reload.
+  let identity;
+  function watchIdentity() {
+    if (identity !== undefined || !window.AffiliateAuth || !window.AffiliateAuth.subscribe) return;
+    identity = null;
+    window.AffiliateAuth.subscribe((auth) => {
+      const next = (auth && auth.session && auth.session.user && auth.session.user.id) || '';
+      if (identity === null) { identity = next; return; }
+      if (next === identity) return;
+      identity = next;
+      if (!loadPromise) return;
+      Promise.all([window.BannerRepository.list('home'), window.BannerRepository.list('marketplace')])
+        .then(([homeBanners, marketplaceBanners]) => { if (state.phase === 'loaded') publish(Object.assign({}, state, { homeBanners, marketplaceBanners })); })
+        .catch(() => {});
+    });
+  }
+
   function bootstrap() {
+    watchIdentity();
     if (loadPromise) return loadPromise;
     // Branding has its own phase (bootstrapBranding): reloading or failing the other content must not reset it.
     publish({ phase: 'loading', errorCode: null, branding: state.branding, brandingPhase: state.brandingPhase });

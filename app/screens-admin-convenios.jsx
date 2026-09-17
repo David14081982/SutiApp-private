@@ -17,7 +17,7 @@
     const [editing, setEditing] = useState(null);
     const [adEditing, setAdEditing] = useState(null);
     const viewer = store.viewer();
-    const P = { crear: app.admin.has('agreements.create'), editar: app.admin.has('agreements.update'), eliminar: app.admin.has('agreements.delete'), publicar:app.admin.has('agreements.publish'),reordenar: app.admin.has('agreements.order'),baseCreate:app.admin.has('companies.create')||app.admin.has('agreements.create'),baseDelete:app.admin.has('companies.delete'),basePublish:app.admin.has('companies.publish')||app.admin.has('agreements.publish'),baseOrder:app.admin.has('companies.order')||app.admin.has('agreements.order') };
+    const P = { adAssets: app.admin.has('banners.assets'), crear: app.admin.has('agreements.create'), editar: app.admin.has('agreements.update'), eliminar: app.admin.has('agreements.delete'), publicar:app.admin.has('agreements.publish'),reordenar: app.admin.has('agreements.order'),baseCreate:app.admin.has('companies.create')||app.admin.has('agreements.create'),baseDelete:app.admin.has('companies.delete'),basePublish:app.admin.has('companies.publish')||app.admin.has('agreements.publish'),baseOrder:app.admin.has('companies.order')||app.admin.has('agreements.order') };
     const items = store.conveniosAll();
     const ads = store.anunciosAll();
 
@@ -326,7 +326,7 @@
         ? React.createElement('div', { onPointerDown: onGrab, onTouchStart: onGrab, style: { display: 'grid', placeItems: 'center', width: 30, background: 'var(--surface-2)', color: 'var(--ink-3)', cursor: 'grab', touchAction: 'none', flexShrink: 0 } }, React.createElement(I, { name: 'grip', size: 17, stroke: 2 }))
         : React.createElement('div', { style: { width: 8, flexShrink: 0 } }),
       React.createElement('div', { style: { width: 44, alignSelf: 'stretch', background: `linear-gradient(150deg, hsl(${a.hue || 215},55%,46%), hsl(${a.hue || 215},60%,30%))`, position: 'relative', flexShrink: 0, overflow: 'hidden' } },
-        React.createElement('image-slot', { id: a.slotId, shape: 'rect', fit: 'cover', placeholder: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } })),
+        a.image_url && React.createElement('img', { src: a.image_url, alt: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })),
       React.createElement('button', { onClick: () => (P.editar ? onEdit(a) : null), style: { flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: '10px 11px', cursor: P.editar ? 'pointer' : 'default', fontFamily: 'inherit' } },
         React.createElement('div', { style: { fontSize: 14, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, a.empresa || 'Sin nombre'),
         React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, a.etiqueta || ''),
@@ -339,38 +339,86 @@
         React.createElement(window.Toggle, { on: a.visible !== false, size: 'md', onClick: (e) => { e.stopPropagation(); if (P.editar) store.toggleAnuncio(a.id); }, disabled: !P.editar, 'aria-label': 'Visible', })));
   }
 
+  function adError(error, action) {
+    const s = String(((error && error.code) || '') + ' ' + ((error && error.message) || error || '')).toUpperCase();
+    if (s.includes('AD_IMAGE_REQUIRED')) return 'Sube la imagen del anuncio antes de guardar.';
+    if (s.includes('INVALID_ASSET')) return 'Usa una imagen PNG, JPG, GIF o WebP de máximo 10 MB.';
+    if (s.includes('42501') || s.includes('DENIED') || s.includes('PERMISSION') || s.includes('JWT')) return 'Tu cuenta no tiene permiso para esta acción o la sesión expiró.';
+    if (action === 'upload') return 'No fue posible subir la imagen. Reintenta.';
+    if (action === 'remove') return 'No fue posible eliminar el anuncio. Reintenta.';
+    return 'No fue posible guardar el anuncio en Supabase. Reintenta.';
+  }
+
   function AdEditor({ item, store, P, onClose }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(item)));
+    const [busy, setBusy] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState('');
+    const input = useRef(null);
+    const uploaded = useRef([]);
     const isNew = !store.getAnuncio(item.id);
     const set = (patch) => setD((p) => ({ ...p, ...patch }));
     const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
     const lbl = { fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 7 };
-    return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 72, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
+    // Images uploaded in this editor and not kept by the saved ad are discarded (best effort), like the Banners editor.
+    const discard = (keep) => { uploaded.current.filter((a) => a.id !== keep).forEach((a) => window.AdminRepository.discardAsset(a).catch(() => {})); uploaded.current = []; };
+    const upload = async (file) => {
+      if (!file) return;
+      setUploading(true); setError('');
+      try {
+        const asset = await window.AdminRepository.uploadManagedAsset(file, 'app-assets', 'BANNER', 'banners.image_asset_id');
+        if (asset.created) uploaded.current.push(asset);
+        set({ image_asset_id: asset.id, image_url: asset.url });
+      } catch (e) { setError(adError(e, 'upload')); }
+      finally { setUploading(false); }
+    };
+    const save = async () => {
+      if (busy) return;
+      setBusy(true); setError('');
+      try { await store.saveAnuncio(d); discard(d.image_asset_id); onClose(); }
+      catch (e) { setError(adError(e, 'save')); setBusy(false); }
+    };
+    const remove = async () => {
+      if (busy) return;
+      setBusy(true); setError('');
+      try { await store.removeAnuncio(d.id); discard(null); onClose(); }
+      catch (e) { setError(adError(e, 'remove')); setBusy(false); }
+    };
+    const cancel = () => { if (busy) return; discard(isNew ? null : item.image_asset_id); onClose(); };
+    return React.createElement('div', { 'data-ad-editor': isNew ? 'new' : 'edit', style: { position: 'absolute', inset: 0, zIndex: 72, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)', flexShrink: 0 } },
-        React.createElement('button', { onClick: onClose, style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'close', size: 22, stroke: 2 })),
+        React.createElement('button', { onClick: cancel, disabled: busy, 'aria-label': 'Cerrar', style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'close', size: 22, stroke: 2 })),
         React.createElement('span', { style: { flex: 1, fontSize: 16.5, fontWeight: 800 } }, isNew ? 'Nuevo anuncio' : 'Editar anuncio')),
       React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: 16 } },
-        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Empresa'), React.createElement('input', { value: d.empresa, placeholder: 'Ej. Coppel', onChange: (e) => set({ empresa: e.target.value }), style: inputBase })),
-        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Etiqueta / mensaje'), React.createElement('input', { value: d.etiqueta, placeholder: 'Ej. Hasta 18 meses sin intereses', onChange: (e) => set({ etiqueta: e.target.value }), style: inputBase })),
-        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Enlace (URL)'), React.createElement('input', { value: d.link, placeholder: 'https://…', onChange: (e) => set({ link: e.target.value }), style: inputBase })),
+        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Empresa'), React.createElement('input', { value: d.empresa, placeholder: 'Ej. Coppel', disabled: busy, onChange: (e) => set({ empresa: e.target.value }), style: inputBase })),
+        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Etiqueta / mensaje'), React.createElement('input', { value: d.etiqueta, placeholder: 'Ej. Hasta 18 meses sin intereses', disabled: busy, onChange: (e) => set({ etiqueta: e.target.value }), style: inputBase })),
+        React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Enlace (URL)'), React.createElement('input', { value: d.link, placeholder: 'https://…', disabled: busy, onChange: (e) => set({ link: e.target.value }), style: inputBase })),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Imagen'),
-          React.createElement('div', { style: { borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--neo-sm)', height: 120, position: 'relative', background: `linear-gradient(140deg, hsl(${d.hue} 55% 46%), hsl(${d.hue} 60% 28%))` } },
-            React.createElement('image-slot', { id: d.slotId, shape: 'rect', fit: 'cover', placeholder: 'Arrastra una imagen', style: { position: 'absolute', inset: 0, width: '100%', height: '100%' } }))),
+          React.createElement('div', { 'data-ad-image': d.image_url ? 'ready' : 'empty', style: { borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--neo-sm)', height: 120, position: 'relative', display: 'grid', placeItems: 'center', color: '#fff', background: `linear-gradient(140deg, hsl(${d.hue} 55% 46%), hsl(${d.hue} 60% 28%))` } },
+            d.image_url
+              ? React.createElement('img', { src: d.image_url, alt: '', style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' } })
+              : React.createElement('span', { style: { fontSize: 12.5, fontWeight: 800, opacity: .92 } }, uploading ? 'Subiendo…' : 'Sin imagen')),
+          React.createElement('input', { ref: input, type: 'file', accept: 'image/png,image/jpeg,image/gif,image/webp', style: { display: 'none' }, onChange: (e) => { const file = e.target.files && e.target.files[0]; e.target.value = ''; upload(file); } }),
+          React.createElement('button', { type: 'button', 'data-ad-upload': 'true', disabled: busy || uploading || !P.adAssets, onClick: () => input.current && input.current.click(), style: { marginTop: 9, width: '100%', minHeight: 44, border: 'none', borderRadius: 12, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 } },
+            React.createElement(I, { name: 'upload', size: 17, stroke: 2.2 }), uploading ? 'Subiendo imagen…' : d.image_url ? 'Reemplazar imagen' : 'Subir imagen'),
+          React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', marginTop: 6, lineHeight: 1.4 } }, 'Se guarda en Supabase. Recomendado: horizontal, 1720 × 896 px o mayor.')),
         React.createElement('div', { style: { marginBottom: 16 } }, React.createElement('label', { style: lbl }, 'Color de acento'),
           React.createElement('div', { style: { display: 'flex', gap: 9, flexWrap: 'wrap' } },
-            HUES.map((h) => React.createElement('button', { key: h, onClick: () => set({ hue: h }), style: { width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', background: `hsl(${h},68%,45%)`, border: d.hue === h ? '3px solid var(--ink)' : '3px solid transparent', boxShadow: 'var(--neo-sm)' } })))),
-        React.createElement('button', { onClick: () => set({ visible: d.visible === false }), style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', border: 'none', boxShadow: 'var(--neo-sm)', borderRadius: 15, padding: '12px 15px', cursor: 'pointer', marginBottom: 18 } },
+            HUES.map((h) => React.createElement('button', { key: h, 'aria-label': 'Color ' + h, 'aria-pressed': d.hue === h, disabled: busy, onClick: () => set({ hue: h }), style: { width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', background: `hsl(${h},68%,45%)`, border: d.hue === h ? '3px solid var(--ink)' : '3px solid transparent', boxShadow: 'var(--neo-sm)' } })))),
+        React.createElement('button', { onClick: () => set({ visible: d.visible === false }), disabled: busy, style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', border: 'none', boxShadow: 'var(--neo-sm)', borderRadius: 15, padding: '12px 15px', cursor: 'pointer', marginBottom: 18 } },
           React.createElement('div', { style: { flex: 1, fontSize: 14, fontWeight: 800, color: 'var(--ink)' } }, d.visible === false ? 'Oculto' : 'Visible'), toggleDot(d.visible !== false)),
-        React.createElement(SectionTitle, { icon: 'filter', label: 'Segmentaci\u00f3n' }),
-        React.createElement(AudiencePicker, { d, setAud })),
+        React.createElement(SectionTitle, { icon: 'filter', label: 'Segmentación' }),
+        React.createElement(AudiencePicker, { d, setAud, hideCargos: true })),
+      error && React.createElement('div', { role: 'alert', 'data-ad-error': 'true', style: { margin: '0 16px 10px', padding: '10px 13px', borderRadius: 12, background: '#FDEAEA', color: '#A32921', fontSize: 12.5, fontWeight: 750, lineHeight: 1.4 } }, error),
       React.createElement('div', { style: { display: 'flex', gap: 12, padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', borderTop: '1px solid var(--hairline)', flexShrink: 0 } },
-        !isNew && P.eliminar && React.createElement('button', { onClick: () => { store.removeAnuncio(d.id); onClose(); }, style: { width: 50, height: 50, borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 } }, React.createElement(I, { name: 'trash', size: 20, stroke: 2 })),
-        React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, onClick: onClose }, 'Cancelar'),
-        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: !d.empresa.trim(), onClick: () => { store.saveAnuncio(d); onClose(); } }, 'Guardar')));
+        !isNew && P.eliminar && React.createElement('button', { onClick: remove, disabled: busy, 'aria-label': 'Eliminar anuncio', style: { width: 50, height: 50, borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0 } }, React.createElement(I, { name: 'trash', size: 20, stroke: 2 })),
+        React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, disabled: busy, onClick: cancel }, 'Cancelar'),
+        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: busy || uploading || !d.empresa.trim() || !d.image_asset_id, onClick: save }, busy ? 'Guardando…' : !d.image_asset_id ? 'Falta la imagen' : 'Guardar')));
   }
 
+
   // Selector de audiencia reutilizable (modos + chips segmentación)
-  function AudiencePicker({ d, setAud }) {
+  function AudiencePicker({ d, setAud, hideCargos }) {
     return React.createElement('div', null,
       React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 } },
         A().AUDIENCE_MODES.map((m) => {
@@ -386,6 +434,6 @@
         React.createElement('div', { style: { fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', marginBottom: 12, lineHeight: 1.4 } }, 'Deja un grupo vac\u00edo para no filtrar por ese criterio.'),
         Chips('Sindicato', A().SINDICATOS, d.audience.sindicatos, (v) => setAud({ sindicatos: v })),
         Chips('Categor\u00eda de empleado', A().NIVELES, d.audience.niveles, (v) => setAud({ niveles: v })),
-        Chips('Cargo en la aplicaci\u00f3n', A().CARGOS, d.audience.cargos, (v) => setAud({ cargos: v }))));
+        !hideCargos && Chips('Cargo en la aplicaci\u00f3n', A().CARGOS, d.audience.cargos, (v) => setAud({ cargos: v }))));
   }
 })();

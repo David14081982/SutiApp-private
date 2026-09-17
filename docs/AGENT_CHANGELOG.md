@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-17 — H-SUTIAPP-CONVENIOS-ANUNCIOS-001
+
+Anuncios de Convenios funcionales: imagen subida a Supabase, guardado como banners `marketplace`, segmentación por sindicato/categoría y color de acento persistidos, carrusel filtrado por perfil vía `list_public_banners` y RLS. Supabase `20260917000100` aplicado tras punto de restauración (tag + `ads_restore_private`). Bundle `anuncios-convenios-20260917-001` (6 trozos). Matriz SQL, navegador con escrituras interceptadas y regresión global PASS.
+
 ## 2026-09-17 — H-SUTIAPP-CREDENCIAL-PUNO-001
 
 Credencial: marca superior derecha con el puño del propietario (recurso `credencial.card.mark`, 36 px) y reverso compacto sin cambiar el QR (176 px); la tarjeta baja 34 px en todos los tamaños de texto. Bundle `credencial-puno-20260917-001` (trozos assets-registry.jsx y screens-credencial.jsx), CSS v245 y nueva imagen publicada. Verificación real y regresión global PASS.

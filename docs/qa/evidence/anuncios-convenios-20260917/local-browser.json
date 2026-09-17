@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "target": "local build + production Supabase",
+  "checks": [
+    "admin_anuncios_tab",
+    "admin_save_payload",
+    "admin_list_row",
+    "admin_toggle",
+    "admin_error_and_archive",
+    "admin_cancel_discards_upload",
+    "carousel_real_rpc",
+    "carousel_fixture_accent"
+  ],
+  "realMarketplaceAdsForThisAdmin": 0,
+  "homeBannersServed": 4,
+  "interceptedWrites": {
+    "storageUpload": 2,
+    "assetInsert": 2,
+    "sourceInsert": 2,
+    "assetDelete": 1,
+    "bannerInsert": 1,
+    "bannerPatch": 2,
+    "archive": 1
+  },
+  "savedPayload": {
+    "placement": "marketplace",
+    "title": "AMCO",
+    "description": "Descuentos exclusivos",
+    "action_url": "https://example.invalid/amco",
+    "image_asset_id": "00000000-0000-4000-8000-00000000a001",
+    "enabled": true,
+    "sort_order": 5,
+    "audience_mode": "segment",
+    "union_codes": [
+      "SUTISSSTESON"
+    ],
+    "employment_category_codes": [
+      "BASE"
+    ],
+    "gender_codes": [],
+    "tag_codes": [],
+    "accent_hue": 150,
+    "record_origin": "ADMIN_H009"
+  },
+  "businessWrites": 0
+}

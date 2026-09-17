@@ -8640,8 +8640,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   window.BannerRepository = Object.freeze({
     async list(placement) {
-      const rows = await list('banners', `id,placement,title,description,action_label,action_url,company_raw,category_raw,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
-        (query) => query.eq('placement', placement).eq('enabled', true).order('sort_order', { ascending: true }));
+      // Audience-aware reader (list_public_banners): each viewer only receives the banners addressed to their profile.
+      let rows;
+      try {
+        const result = await window.SutiSupabase.getClient().rpc('list_public_banners', { p_placement: placement });
+        if (result.error) throw result.error;
+        rows = Array.isArray(result.data) ? result.data : [];
+      } catch (error) {
+        throw new VisualRepositoryError('banners', error);
+      }
       return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset, { width: 860, height: 448, resize: 'cover', quality: 82 }) }))));
     },
   });
@@ -8709,7 +8716,25 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     return brandingPromise;
   }
 
+  // Banners depend on the viewer's audience: reload them when the signed-in person changes without a page reload.
+  let identity;
+  function watchIdentity() {
+    if (identity !== undefined || !window.AffiliateAuth || !window.AffiliateAuth.subscribe) return;
+    identity = null;
+    window.AffiliateAuth.subscribe((auth) => {
+      const next = (auth && auth.session && auth.session.user && auth.session.user.id) || '';
+      if (identity === null) { identity = next; return; }
+      if (next === identity) return;
+      identity = next;
+      if (!loadPromise) return;
+      Promise.all([window.BannerRepository.list('home'), window.BannerRepository.list('marketplace')])
+        .then(([homeBanners, marketplaceBanners]) => { if (state.phase === 'loaded') publish(Object.assign({}, state, { homeBanners, marketplaceBanners })); })
+        .catch(() => {});
+    });
+  }
+
   function bootstrap() {
+    watchIdentity();
     if (loadPromise) return loadPromise;
     // Branding has its own phase (bootstrapBranding): reloading or failing the other content must not reset it.
     publish({ phase: 'loading', errorCode: null, branding: state.branding, brandingPhase: state.brandingPhase });
@@ -8843,7 +8868,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   let loadVersion = 0;
   const assetFields = 'id,asset_key,storage_bucket,storage_path,mime_type,alt_text,status';
   const managed = Object.freeze({
-    banners: { table:'banners',section:'banners',permission:'banners.write',origin:'ADMIN_H009',fields:`id,placement,title,description,action_label,action_url,company_raw,category_raw,image_asset_id,enabled,start_at,end_at,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['placement','title','description','action_label','action_url','company_raw','category_raw','image_asset_id','enabled','start_at','end_at','sort_order'] },
+    banners: { table:'banners',section:'banners',permission:'banners.write',origin:'ADMIN_H009',fields:`id,placement,title,description,action_label,action_url,company_raw,category_raw,image_asset_id,enabled,start_at,end_at,sort_order,record_origin,audience_mode,union_codes,employment_category_codes,gender_codes,tag_codes,accent_hue,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['placement','title','description','action_label','action_url','company_raw','category_raw','image_asset_id','enabled','start_at','end_at','sort_order','audience_mode','union_codes','employment_category_codes','gender_codes','tag_codes','accent_hue'] },
     popups: { table:'popups',section:'popups',permission:'popups.write',origin:'ADMIN_H009',fields:`id,title,body,image_asset_id,action_label,action_url,audience_raw,enabled,start_at,end_at,sort_order,record_origin,image_asset:app_assets!image_asset_id(${assetFields})`,editable:['title','body','image_asset_id','action_label','action_url','audience_raw','enabled','start_at','end_at','sort_order'] },
     companies: { table:'companies',section:'companies',permission:'companies.write',origin:'ADMIN_H009',fields:`id,display_name,description,category_raw,address_raw,location_raw,phone_raw,whatsapp_raw,email_raw,website_url,public_details,logo_asset_id,enabled,sort_order,record_origin,logo_asset:app_assets!logo_asset_id(${assetFields}),company_assets(role,sort_order,asset:app_assets!asset_id(${assetFields}))`,editable:['display_name','description','category_raw','address_raw','location_raw','phone_raw','whatsapp_raw','email_raw','website_url','public_details','logo_asset_id','enabled','sort_order'] },
     documents: { table:'institutional_documents',section:'documents',permission:'documents.write',origin:'ADMIN_H009',fields:`id,kind,title,description,image_asset_id,document_asset_id,enabled,sort_order,record_origin,image_asset:app_assets!institutional_documents_image_asset_id_fkey(${assetFields}),document_asset:app_assets!institutional_documents_document_asset_id_fkey(${assetFields})`,editable:['kind','title','description','image_asset_id','document_asset_id','enabled','sort_order'] },
@@ -20662,7 +20687,8 @@ Object.assign(window, {
     onClick,
     onZoom
   }) {
-    const image = ad && ad.image_url;
+    const image = ad && ad.image_url,
+      accent = ad && ad.accent_hue != null ? Number(ad.accent_hue) : null;
     return React.createElement('div', {
       onClick,
       className: 'su-press su-ad-slide',
@@ -20674,7 +20700,7 @@ Object.assign(window, {
         overflow: 'hidden',
         position: 'relative',
         cursor: empty ? 'default' : 'pointer',
-        background: 'linear-gradient(140deg,var(--guinda),#4c1025)',
+        background: accent == null ? 'linear-gradient(140deg,var(--guinda),#4c1025)' : 'linear-gradient(140deg,hsl(' + accent + ' 55% 46%),hsl(' + accent + ' 60% 28%))',
         boxShadow: active ? '0 18px 40px -16px rgba(20,33,61,.4)' : 'var(--neo-sm)',
         transform: active ? 'scale(calc(1 * var(--press-s, 1)))' : 'scale(calc(.94 * var(--press-s, 1)))',
         opacity: active ? 1 : .65,
@@ -20719,7 +20745,7 @@ Object.assign(window, {
         width: 6,
         height: 6,
         borderRadius: '50%',
-        background: 'var(--gold-2)'
+        background: accent == null ? 'var(--gold-2)' : 'hsl(' + accent + ' 68% 50%)'
       }
     }), 'PATROCINADO'), image && React.createElement('button', {
       onClick: event => {
@@ -20786,7 +20812,7 @@ Object.assign(window, {
         background: 'rgba(255,255,255,.95)',
         display: 'grid',
         placeItems: 'center',
-        color: 'var(--guinda)',
+        color: accent == null ? 'var(--guinda)' : 'hsl(' + accent + ' 60% 36%)',
         boxShadow: '0 6px 16px -6px rgba(0,0,0,.5)'
       }
     }, React.createElement(I, {
@@ -26994,7 +27020,7 @@ Object.assign(window, {
         if (key === 'roles') roles = v.map(projectRole);else if (key === 'segments') segments = v;else if (key === 'access') {
           access = {};
           v.forEach(x => access[x.screen_id] = x);
-        } else if (key === 'companies') companies = v;else if (key === 'profiles') companyProfiles = v;else if (key === 'rules') companyRules = v;else if (key === 'banners') ads = v.filter(x => x.placement === 'marketplace' || x.placement === 'convenios');
+        } else if (key === 'companies') companies = v;else if (key === 'profiles') companyProfiles = v;else if (key === 'rules') companyRules = v;else if (key === 'banners') ads = v.filter(x => x.placement === 'marketplace');
       });
       if (failedDomains.length && window.__sutiToast) window.__sutiToast('No se pudo cargar: ' + failedDomains.join(', '));
       if (!acting || !roles.some(r => r.id === acting)) acting = (roles[0] || {}).id || null;
@@ -27398,59 +27424,92 @@ Object.assign(window, {
   });
   const projectAd = a => ({
     id: a.id,
-    empresa: a.title,
+    empresa: a.title || '',
     etiqueta: a.description || '',
-    link: a.action_url || '#',
-    hue: 215,
+    link: a.action_url || '',
+    hue: a.accent_hue == null ? 215 : a.accent_hue,
     visible: a.enabled,
     order: a.sort_order,
+    image_asset_id: a.image_asset_id || null,
+    image_url: window.AssetRepository.publicUrl(a.image_asset) || null,
     audience: {
-      mode: 'all',
-      sindicatos: [],
-      niveles: [],
-      cargos: []
+      mode: a.audience_mode || 'all',
+      sindicatos: toLabels('union', a.union_codes),
+      niveles: toLabels('employment_category', a.employment_category_codes),
+      generos: toLabels('gender', a.gender_codes),
+      cargos: toLabels('tag', a.tag_codes)
     }
   });
+  // Convenios ads are banners with placement "marketplace" (the Convenios carousel). Audience and accent persist in Supabase; removal archives.
+  const adRow = a => {
+    const aud = a.audience || {},
+      segment = aud.mode === 'segment';
+    return {
+      id: a.id || undefined,
+      placement: 'marketplace',
+      title: String(a.empresa || '').trim(),
+      description: String(a.etiqueta || '').trim(),
+      action_url: String(a.link || '').trim() || null,
+      enabled: a.visible !== false,
+      sort_order: a.id ? a.order : undefined,
+      image_asset_id: a.image_asset_id,
+      accent_hue: a.hue == null ? null : Number(a.hue),
+      audience_mode: aud.mode || 'all',
+      union_codes: segment ? toCodes('union', aud.sindicatos) : [],
+      employment_category_codes: segment ? toCodes('employment_category', aud.niveles) : [],
+      gender_codes: segment ? toCodes('gender', aud.generos) : [],
+      tag_codes: segment ? toCodes('tag', aud.cargos) : []
+    };
+  };
   store.anunciosAll = () => ads.map(projectAd);
   store.getAnuncio = id => store.anunciosAll().find(x => x.id === id);
-  store.anunciosLive = () => store.anunciosAll().filter(x => x.visible);
-  store.anuncioVisibleFor = a => a.visible;
+  store.anuncioVisibleFor = (a, v) => a.visible && store.audienceMatch(a, v || store.viewer());
+  store.anunciosLive = v => store.anunciosAll().filter(x => store.anuncioVisibleFor(x, v));
   store.blankAnuncio = () => ({
     id: null,
     empresa: '',
     etiqueta: '',
-    link: '#',
+    link: '',
     hue: 215,
     visible: true,
     order: ads.length + 1,
+    image_asset_id: null,
+    image_url: null,
     audience: {
       mode: 'all',
       sindicatos: [],
       niveles: [],
+      generos: [],
       cargos: []
     }
   });
-  store.saveAnuncio = a => window.AdminRepository.saveManaged('banners', {
-    id: a.id || undefined,
-    placement: 'convenios',
-    title: a.empresa,
-    description: a.etiqueta,
-    action_url: a.link,
-    enabled: a.visible !== false,
-    sort_order: a.order || 0
-  }).then(load).catch(fail);
+  store.saveAnuncio = async a => {
+    if (!a.image_asset_id) throw new Error('AD_IMAGE_REQUIRED');
+    const saved = await window.AdminRepository.saveManaged('banners', adRow(a));
+    await load();
+    return saved;
+  };
   store.toggleAnuncio = id => {
     const a = store.getAnuncio(id);
-    a.visible = !a.visible;
-    store.saveAnuncio(a);
+    if (a) window.AdminRepository.saveManaged('banners', {
+      id,
+      enabled: !a.visible
+    }).then(load).catch(fail);
   };
-  store.removeAnuncio = id => window.AdminRepository.removeManaged('banners', id).then(load).catch(fail);
+  store.removeAnuncio = async id => {
+    const r = await window.SutiSupabase.getClient().rpc('archive_admin_banner', {
+      p_banner_id: id
+    });
+    if (r.error) throw r.error;
+    await load();
+  };
   store.duplicateAnuncio = id => {
     const a = store.getAnuncio(id);
-    a.id = null;
-    a.empresa += ' (copia)';
-    a.visible = false;
-    store.saveAnuncio(a);
+    if (a) store.saveAnuncio(Object.assign({}, a, {
+      id: null,
+      empresa: a.empresa + ' (copia)',
+      visible: false
+    })).catch(fail);
   };
   store.reorderAnuncios = ids => window.AdminRepository.reorderManaged('banners', ids).then(load).catch(fail);
   const structural = () => {
@@ -35991,6 +36050,7 @@ Object.assign(window, {
     const [adEditing, setAdEditing] = useState(null);
     const viewer = store.viewer();
     const P = {
+      adAssets: app.admin.has('banners.assets'),
       crear: app.admin.has('agreements.create'),
       editar: app.admin.has('agreements.update'),
       eliminar: app.admin.has('agreements.delete'),
@@ -37707,16 +37767,15 @@ Object.assign(window, {
         flexShrink: 0,
         overflow: 'hidden'
       }
-    }, React.createElement('image-slot', {
-      id: a.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: '',
+    }, a.image_url && React.createElement('img', {
+      src: a.image_url,
+      alt: '',
       style: {
         position: 'absolute',
         inset: 0,
         width: '100%',
-        height: '100%'
+        height: '100%',
+        objectFit: 'cover'
       }
     })), React.createElement('button', {
       onClick: () => P.editar ? onEdit(a) : null,
@@ -37774,6 +37833,15 @@ Object.assign(window, {
       'aria-label': 'Visible'
     })));
   }
+  function adError(error, action) {
+    const s = String((error && error.code || '') + ' ' + (error && error.message || error || '')).toUpperCase();
+    if (s.includes('AD_IMAGE_REQUIRED')) return 'Sube la imagen del anuncio antes de guardar.';
+    if (s.includes('INVALID_ASSET')) return 'Usa una imagen PNG, JPG, GIF o WebP de máximo 10 MB.';
+    if (s.includes('42501') || s.includes('DENIED') || s.includes('PERMISSION') || s.includes('JWT')) return 'Tu cuenta no tiene permiso para esta acción o la sesión expiró.';
+    if (action === 'upload') return 'No fue posible subir la imagen. Reintenta.';
+    if (action === 'remove') return 'No fue posible eliminar el anuncio. Reintenta.';
+    return 'No fue posible guardar el anuncio en Supabase. Reintenta.';
+  }
   function AdEditor({
     item,
     store,
@@ -37781,6 +37849,11 @@ Object.assign(window, {
     onClose
   }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(item)));
+    const [busy, setBusy] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState('');
+    const input = useRef(null);
+    const uploaded = useRef([]);
     const isNew = !store.getAnuncio(item.id);
     const set = patch => setD(p => ({
       ...p,
@@ -37800,7 +37873,61 @@ Object.assign(window, {
       display: 'block',
       marginBottom: 7
     };
+    // Images uploaded in this editor and not kept by the saved ad are discarded (best effort), like the Banners editor.
+    const discard = keep => {
+      uploaded.current.filter(a => a.id !== keep).forEach(a => window.AdminRepository.discardAsset(a).catch(() => {}));
+      uploaded.current = [];
+    };
+    const upload = async file => {
+      if (!file) return;
+      setUploading(true);
+      setError('');
+      try {
+        const asset = await window.AdminRepository.uploadManagedAsset(file, 'app-assets', 'BANNER', 'banners.image_asset_id');
+        if (asset.created) uploaded.current.push(asset);
+        set({
+          image_asset_id: asset.id,
+          image_url: asset.url
+        });
+      } catch (e) {
+        setError(adError(e, 'upload'));
+      } finally {
+        setUploading(false);
+      }
+    };
+    const save = async () => {
+      if (busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        await store.saveAnuncio(d);
+        discard(d.image_asset_id);
+        onClose();
+      } catch (e) {
+        setError(adError(e, 'save'));
+        setBusy(false);
+      }
+    };
+    const remove = async () => {
+      if (busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        await store.removeAnuncio(d.id);
+        discard(null);
+        onClose();
+      } catch (e) {
+        setError(adError(e, 'remove'));
+        setBusy(false);
+      }
+    };
+    const cancel = () => {
+      if (busy) return;
+      discard(isNew ? null : item.image_asset_id);
+      onClose();
+    };
     return React.createElement('div', {
+      'data-ad-editor': isNew ? 'new' : 'edit',
       style: {
         position: 'absolute',
         inset: 0,
@@ -37820,7 +37947,9 @@ Object.assign(window, {
         flexShrink: 0
       }
     }, React.createElement('button', {
-      onClick: onClose,
+      onClick: cancel,
+      disabled: busy,
+      'aria-label': 'Cerrar',
       style: {
         width: 40,
         height: 40,
@@ -37858,6 +37987,7 @@ Object.assign(window, {
     }, 'Empresa'), React.createElement('input', {
       value: d.empresa,
       placeholder: 'Ej. Coppel',
+      disabled: busy,
       onChange: e => set({
         empresa: e.target.value
       }),
@@ -37871,6 +38001,7 @@ Object.assign(window, {
     }, 'Etiqueta / mensaje'), React.createElement('input', {
       value: d.etiqueta,
       placeholder: 'Ej. Hasta 18 meses sin intereses',
+      disabled: busy,
       onChange: e => set({
         etiqueta: e.target.value
       }),
@@ -37884,6 +38015,7 @@ Object.assign(window, {
     }, 'Enlace (URL)'), React.createElement('input', {
       value: d.link,
       placeholder: 'https://…',
+      disabled: busy,
       onChange: e => set({
         link: e.target.value
       }),
@@ -37895,26 +38027,82 @@ Object.assign(window, {
     }, React.createElement('label', {
       style: lbl
     }, 'Imagen'), React.createElement('div', {
+      'data-ad-image': d.image_url ? 'ready' : 'empty',
       style: {
         borderRadius: 14,
         overflow: 'hidden',
         boxShadow: 'var(--neo-sm)',
         height: 120,
         position: 'relative',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#fff',
         background: `linear-gradient(140deg, hsl(${d.hue} 55% 46%), hsl(${d.hue} 60% 28%))`
       }
-    }, React.createElement('image-slot', {
-      id: d.slotId,
-      shape: 'rect',
-      fit: 'cover',
-      placeholder: 'Arrastra una imagen',
+    }, d.image_url ? React.createElement('img', {
+      src: d.image_url,
+      alt: '',
       style: {
         position: 'absolute',
         inset: 0,
         width: '100%',
-        height: '100%'
+        height: '100%',
+        objectFit: 'cover'
       }
-    }))), React.createElement('div', {
+    }) : React.createElement('span', {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 800,
+        opacity: .92
+      }
+    }, uploading ? 'Subiendo…' : 'Sin imagen')), React.createElement('input', {
+      ref: input,
+      type: 'file',
+      accept: 'image/png,image/jpeg,image/gif,image/webp',
+      style: {
+        display: 'none'
+      },
+      onChange: e => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        upload(file);
+      }
+    }), React.createElement('button', {
+      type: 'button',
+      'data-ad-upload': 'true',
+      disabled: busy || uploading || !P.adAssets,
+      onClick: () => input.current && input.current.click(),
+      style: {
+        marginTop: 9,
+        width: '100%',
+        minHeight: 44,
+        border: 'none',
+        borderRadius: 12,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        color: 'var(--guinda)',
+        fontFamily: 'inherit',
+        fontSize: 13.5,
+        fontWeight: 800,
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7
+      }
+    }, React.createElement(I, {
+      name: 'upload',
+      size: 17,
+      stroke: 2.2
+    }), uploading ? 'Subiendo imagen…' : d.image_url ? 'Reemplazar imagen' : 'Subir imagen'), React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        marginTop: 6,
+        lineHeight: 1.4
+      }
+    }, 'Se guarda en Supabase. Recomendado: horizontal, 1720 × 896 px o mayor.')), React.createElement('div', {
       style: {
         marginBottom: 16
       }
@@ -37928,6 +38116,9 @@ Object.assign(window, {
       }
     }, HUES.map(h => React.createElement('button', {
       key: h,
+      'aria-label': 'Color ' + h,
+      'aria-pressed': d.hue === h,
+      disabled: busy,
       onClick: () => set({
         hue: h
       }),
@@ -37944,6 +38135,7 @@ Object.assign(window, {
       onClick: () => set({
         visible: d.visible === false
       }),
+      disabled: busy,
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -37967,11 +38159,25 @@ Object.assign(window, {
       }
     }, d.visible === false ? 'Oculto' : 'Visible'), toggleDot(d.visible !== false)), React.createElement(SectionTitle, {
       icon: 'filter',
-      label: 'Segmentaci\u00f3n'
+      label: 'Segmentación'
     }), React.createElement(AudiencePicker, {
       d,
-      setAud
-    })), React.createElement('div', {
+      setAud,
+      hideCargos: true
+    })), error && React.createElement('div', {
+      role: 'alert',
+      'data-ad-error': 'true',
+      style: {
+        margin: '0 16px 10px',
+        padding: '10px 13px',
+        borderRadius: 12,
+        background: '#FDEAEA',
+        color: '#A32921',
+        fontSize: 12.5,
+        fontWeight: 750,
+        lineHeight: 1.4
+      }
+    }, error), React.createElement('div', {
       style: {
         display: 'flex',
         gap: 12,
@@ -37981,10 +38187,9 @@ Object.assign(window, {
         flexShrink: 0
       }
     }, !isNew && P.eliminar && React.createElement('button', {
-      onClick: () => {
-        store.removeAnuncio(d.id);
-        onClose();
-      },
+      onClick: remove,
+      disabled: busy,
+      'aria-label': 'Eliminar anuncio',
       style: {
         width: 50,
         height: 50,
@@ -38006,25 +38211,24 @@ Object.assign(window, {
       style: {
         flex: 1
       },
-      onClick: onClose
+      disabled: busy,
+      onClick: cancel
     }, 'Cancelar'), React.createElement(window.Btn, {
       variant: 'primary',
       icon: 'check',
       style: {
         flex: 2
       },
-      disabled: !d.empresa.trim(),
-      onClick: () => {
-        store.saveAnuncio(d);
-        onClose();
-      }
-    }, 'Guardar')));
+      disabled: busy || uploading || !d.empresa.trim() || !d.image_asset_id,
+      onClick: save
+    }, busy ? 'Guardando…' : !d.image_asset_id ? 'Falta la imagen' : 'Guardar')));
   }
 
   // Selector de audiencia reutilizable (modos + chips segmentación)
   function AudiencePicker({
     d,
-    setAud
+    setAud,
+    hideCargos
   }) {
     return React.createElement('div', null, React.createElement('div', {
       style: {
@@ -38114,7 +38318,7 @@ Object.assign(window, {
       sindicatos: v
     })), Chips('Categor\u00eda de empleado', A().NIVELES, d.audience.niveles, v => setAud({
       niveles: v
-    })), Chips('Cargo en la aplicaci\u00f3n', A().CARGOS, d.audience.cargos, v => setAud({
+    })), !hideCargos && Chips('Cargo en la aplicaci\u00f3n', A().CARGOS, d.audience.cargos, v => setAud({
       cargos: v
     }))));
   }

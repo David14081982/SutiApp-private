@@ -1,0 +1,139 @@
+{
+  "status": "PASS",
+  "created": "2026-09-17T14:16:51.071Z",
+  "git_tag": "restore/pre-anuncios-segmentados-20260917",
+  "base_commit": "1afb8d657439a6be8ff9f24a5c1482368e41b648",
+  "db_schema": "ads_restore_private",
+  "banners": 24,
+  "deletions": 20,
+  "banners_hash": "c34d48b3ac487d83fde758572406df19",
+  "audience_md5": "2ea77e2fe87d8ebab261ca2dd938bb01",
+  "policies": {
+    "banners_admin_read": {
+      "cmd": "r",
+      "check": null,
+      "roles": "{authenticated}",
+      "using": "has_admin_permission('banners.read'::text)",
+      "permissive": true
+    },
+    "banners_public_read": {
+      "cmd": "r",
+      "check": null,
+      "roles": "{anon,authenticated}",
+      "using": "(enabled = true)",
+      "permissive": true
+    },
+    "module_scope_delete": {
+      "cmd": "d",
+      "check": null,
+      "roles": "{authenticated}",
+      "using": "admin_module_boundary(ARRAY['banners'::text], 'update'::text)",
+      "permissive": false
+    },
+    "module_scope_insert": {
+      "cmd": "a",
+      "check": "admin_module_boundary(ARRAY['banners'::text], 'update'::text)",
+      "roles": "{authenticated}",
+      "using": null,
+      "permissive": false
+    },
+    "module_scope_update": {
+      "cmd": "w",
+      "check": "admin_module_boundary(ARRAY['banners'::text], 'update'::text)",
+      "roles": "{authenticated}",
+      "using": "admin_module_boundary(ARRAY['banners'::text], 'update'::text)",
+      "permissive": false
+    },
+    "banners_section_read": {
+      "cmd": "r",
+      "check": null,
+      "roles": "{authenticated}",
+      "using": "has_section_action('banners'::text, 'read'::text)",
+      "permissive": true
+    },
+    "banners_section_write": {
+      "cmd": "*",
+      "check": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'create'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))",
+      "roles": "{authenticated}",
+      "using": "(has_admin_permission('banners.write'::text) OR has_section_action('banners'::text, 'update'::text) OR has_section_action('banners'::text, 'delete'::text) OR has_section_action('banners'::text, 'publish'::text) OR has_section_action('banners'::text, 'order'::text) OR has_section_action('banners'::text, 'assets'::text))",
+      "permissive": true
+    },
+    "banners_not_archived_read": {
+      "cmd": "r",
+      "check": null,
+      "roles": "{anon,authenticated}",
+      "using": "(NOT is_banner_archived(id))",
+      "permissive": false
+    },
+    "banners_not_archived_delete": {
+      "cmd": "d",
+      "check": null,
+      "roles": "{authenticated}",
+      "using": "(NOT is_banner_archived(id))",
+      "permissive": false
+    },
+    "banners_not_archived_update": {
+      "cmd": "w",
+      "check": "(NOT is_banner_archived(id))",
+      "roles": "{authenticated}",
+      "using": "(NOT is_banner_archived(id))",
+      "permissive": false
+    }
+  },
+  "column_grants": [
+    "action_label:INSERT",
+    "action_label:SELECT",
+    "action_label:UPDATE",
+    "action_url:INSERT",
+    "action_url:SELECT",
+    "action_url:UPDATE",
+    "category_raw:INSERT",
+    "category_raw:SELECT",
+    "category_raw:UPDATE",
+    "company_raw:INSERT",
+    "company_raw:SELECT",
+    "company_raw:UPDATE",
+    "created_at:SELECT",
+    "description:INSERT",
+    "description:SELECT",
+    "description:UPDATE",
+    "enabled:INSERT",
+    "enabled:SELECT",
+    "enabled:UPDATE",
+    "end_at:INSERT",
+    "end_at:SELECT",
+    "end_at:UPDATE",
+    "id:SELECT",
+    "image_asset_id:INSERT",
+    "image_asset_id:SELECT",
+    "image_asset_id:UPDATE",
+    "placement:INSERT",
+    "placement:SELECT",
+    "placement:UPDATE",
+    "record_origin:INSERT",
+    "record_origin:SELECT",
+    "sort_order:INSERT",
+    "sort_order:SELECT",
+    "sort_order:UPDATE",
+    "source_column:SELECT",
+    "source_row_ordinal:SELECT",
+    "source_sheet:SELECT",
+    "source_snapshot_hash:SELECT",
+    "start_at:INSERT",
+    "start_at:SELECT",
+    "start_at:UPDATE",
+    "title:INSERT",
+    "title:SELECT",
+    "title:UPDATE",
+    "updated_at:SELECT"
+  ],
+  "constraints": {
+    "banners_pkey": "PRIMARY KEY (id)",
+    "banners_sort_check": "CHECK ((sort_order > 0))",
+    "banners_placement_check": "CHECK ((placement = ANY (ARRAY['home'::text, 'marketplace'::text])))",
+    "banners_source_hash_check": "CHECK ((source_snapshot_hash ~ '^[A-F0-9]{64}$'::text))",
+    "banners_image_asset_id_fkey": "FOREIGN KEY (image_asset_id) REFERENCES app_assets(id) ON DELETE RESTRICT",
+    "banners_record_origin_check": "CHECK ((((record_origin = 'HISTORICAL_IMPORT'::text) AND (source_sheet IS NOT NULL) AND (source_row_ordinal IS NOT NULL) AND (source_snapshot_hash IS NOT NULL)) OR ((record_origin = 'ADMIN_H009'::text) AND (source_sheet IS NULL) AND (source_row_ordinal IS NULL) AND (source_snapshot_hash IS NULL))))"
+  },
+  "pii_in_repo": false
+}

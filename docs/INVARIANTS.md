@@ -322,6 +322,11 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 
 - **INV-232:** `brandingPhase` refleja sólo la carga de la identidad visual (`bootstrapBranding`). Cargar, recargar o fallar banners, pop-ups o empresas no la reinicia ni oculta una identidad ya cargada; el Sello institucional se pinta siempre que la identidad visual esté cargada.
 
+## Anuncios de Convenios — H-SUTIAPP-CONVENIOS-ANUNCIOS-001
+
+- **INV-233:** un banner público sólo llega a quien cumple su audiencia (`matches_current_affiliate_audience`), tanto por la RPC `list_public_banners` como por lectura directa; la audiencia se evalúa en backend y aplica también a administradores en los carruseles. Banners sin audiencia explícita son «Todos».
+- **INV-234:** un anuncio de Convenios es un banner `marketplace` con imagen registrada en `app_assets`; eliminarlo lo archiva (`banner_deletions`) y nunca borra la fila, la imagen compartida ni la auditoría.
+
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; monto a solicitar = total a pagar = importe comercial del catálogo; número de pagos = installments. Gastos administrativos = 15 × pagos INCLUIDOS; capital = total − gastos. Redondeo por descuento con ajuste final para conservar total. Cambios de catálogo o perfil antes de confirmar invalidan la cotización; después no recalculan la solicitud. financial_processing_status permanece NULL para conservar el workflow de membresías. Prohibido completar históricos o alterar reglas de otros programas en esta H.

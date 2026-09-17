@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "recorded": 1,
+  "legacy_defaulted": 23,
+  "legacy_rows": 23,
+  "public_read": "((enabled = true) AND matches_current_affiliate_audience(audience_mode, union_codes, employment_category_codes, gender_codes, tag_codes))",
+  "anon_rpc": true,
+  "audience_insert": true,
+  "deletions": 20,
+  "archivedUntouched": true
+}

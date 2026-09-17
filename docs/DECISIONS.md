@@ -1,5 +1,9 @@
 # Registro de decisiones arquitectónicas
 
+## H-SUTIAPP-CONVENIOS-ANUNCIOS-001 — Anuncios de Convenios, 2026-09-17
+
+El propietario elige implementar de verdad la segmentación y el color de acento de los anuncios: se guardan en Supabase y el carrusel «Espacio publicitario» se filtra según el perfil de cada usuario. Los 13 anuncios archivados de Balam y Willys permanecen archivados. La segmentación de anuncios ofrece sindicato y categoría; el cargo se omite mientras no existan etiquetas de segmento asignadas a afiliados.
+
 ## H-SUTIAPP-CREDENCIAL-PUNO-001 — Credencial, 2026-09-17
 
 El propietario entrega la imagen del puño blanco (fondo transparente) para la esquina superior derecha del frente, al mismo tamaño pequeño, y elige reducir el hueco vertical compactando los espacios del reverso sin cambiar el tamaño del QR (176 px). La imagen se registra como recurso visual `credencial.card.mark`.

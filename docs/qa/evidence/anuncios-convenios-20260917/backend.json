@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "migrationSha256": "f516cdf5dac0045cb83d62271b1053510bfd9a16a56057a9c50a49b9e76543ce",
+  "recoverySha256": "e1030ae8aca8aba34f9460c4faf326ad4cfbe932455474bb1bf06d82c1bf10dd",
+  "groups": [
+    "admin_writer",
+    "direct_reads",
+    "fixtures_and_validation",
+    "public_reader",
+    "schema_grants"
+  ],
+  "recovery": {
+    "rpcDropped": true,
+    "policy": "(enabled = true)",
+    "columnsKept": true
+  },
+  "productionAfterRollback": {
+    "banners": 24,
+    "banners_hash": "c34d48b3ac487d83fde758572406df19",
+    "deletions": 20,
+    "matchesRestorePoint": true
+  },
+  "fixturesPersisted": 0
+}

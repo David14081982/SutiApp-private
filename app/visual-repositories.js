@@ -86,8 +86,15 @@
 
   window.BannerRepository = Object.freeze({
     async list(placement) {
-      const rows = await list('banners', `id,placement,title,description,action_label,action_url,company_raw,category_raw,sort_order,image_asset:app_assets!image_asset_id(${assetFields})`,
-        (query) => query.eq('placement', placement).eq('enabled', true).order('sort_order', { ascending: true }));
+      // Audience-aware reader (list_public_banners): each viewer only receives the banners addressed to their profile.
+      let rows;
+      try {
+        const result = await window.SutiSupabase.getClient().rpc('list_public_banners', { p_placement: placement });
+        if (result.error) throw result.error;
+        rows = Array.isArray(result.data) ? result.data : [];
+      } catch (error) {
+        throw new VisualRepositoryError('banners', error);
+      }
       return Object.freeze(rows.map((row) => Object.freeze(Object.assign({}, row, { image_url: publicUrl(row.image_asset, { width: 860, height: 448, resize: 'cover', quality: 82 }) }))));
     },
   });

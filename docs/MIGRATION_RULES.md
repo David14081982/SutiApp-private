@@ -1,5 +1,9 @@
 # Reglas de migración
 
+## 20260917000100 — audiencia y color de banners
+
+APPLIED / VERIFIED. Aditiva: columnas de audiencia (modelo `company_benefits`) y `accent_hue` con checks y defaults («Todos», sin acento), grants por columna, política `banners_public_read` con `matches_current_affiliate_audience` y RPC `list_public_banners`. No modifica filas existentes ni archivos. Punto de restauración previo: `ads_restore_private` (banners, archivos, políticas, grants) y tag `restore/pre-anuncios-segmentados-20260917`. Forward, matriz y recovery con `ROLLBACK`; producción idéntica tras la prueba. Recovery `supabase/recovery/20260917000100_banners_audience.sql` elimina la RPC y restaura la política anterior, conservando columnas y valores como dato inerte. Evidencia: `docs/qa/evidence/anuncios-convenios-20260917/`.
+
 ## 20260916000200 — votación en vivo
 
 APPLIED / VERIFIED. Aditiva: tabla `voting_live_state` (una fila por consulta, FK compuestas a preguntas, RLS forzada, SELECT browser filtrado por audiencia y publicación Realtime), constraint `electorate` relajada a `>= 0`, seis funciones reemplazadas con guardas md5 contra la línea base y cinco funciones nuevas. No modifica consultas, preguntas, votos ni bitácora existentes; sólo agrega la fila en vivo vacía por consulta. Punto de restauración previo: esquema privado `voting_restore_private` (copias y definiciones con md5) y tag `restore/pre-votacion-en-vivo-20260916`. Forward, matriz y recovery se ejecutaron juntos con `ROLLBACK`; la aplicación conservó conteos y huella de votos. Recovery `supabase/recovery/20260916000200_voting_live.sql` retira la publicación y funciones nuevas, restaura las definiciones exactas y eleva a 1 sólo los totales en 0 antes de restaurar `electorate > 0`; conserva `voting_live_state` inerte. Evidencia: `docs/qa/evidence/voting-live-20260916/`.

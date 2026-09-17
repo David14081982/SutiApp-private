@@ -10,7 +10,6 @@
   const MIN = 50000;
   const MAX = 2000000;
   const STEP = 10000;
-  const PRESETS = [50000, 100000, 250000, 500000, 1000000, 2000000];
   const TERMS = [6, 12];
 
   const CSS = `
@@ -55,9 +54,6 @@
     .su-inv-range::-moz-range-track{height:7px;background:transparent}
     .su-inv-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
     .su-inv-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25)}
-    .su-inv-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:5px}
-    .su-inv-presets button{min-width:0;border:0;border-radius:11px;padding:7px 2px;background:var(--inv-surface-2);color:var(--inv-ink-2);font-size:var(--text-11-5, 11.5px);font-weight:800;cursor:pointer;box-shadow:var(--inv-inset);font-variant-numeric:tabular-nums}
-    .su-inv-presets button[aria-pressed=true]{background:var(--inv-guinda-50);color:var(--inv-guinda);box-shadow:inset 0 0 0 1px #f3d6de}
     .su-inv-subhead{margin:20px 0 9px}
     .su-inv-subhead b{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--inv-ink-2);letter-spacing:.05em;text-transform:uppercase}
     .su-inv-terms{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -233,7 +229,6 @@
               h('div', { className: 'su-inv-track' }),
               h('div', { className: 'su-inv-fill', style: { width: fill + '%' } }),
               h('input', { className: 'su-inv-range', type: 'range', min: MIN, max: MAX, step: STEP, value: amount, 'aria-label': 'Monto a invertir', onChange: (event) => chooseAmount(Number(event.target.value)), 'data-investment-slider': '' })),
-            h('div', { className: 'su-inv-presets', 'data-investment-presets': '' }, PRESETS.map((value) => h('button', { type: 'button', key: value, 'aria-pressed': amount === value, onClick: () => chooseAmount(value), 'data-amount': String(value) }, money(value)))),
             h('div', { className: 'su-inv-subhead' }, h('b', null, 'Plazo'), h('span', null, 'Mínimo 6 meses · renovable')),
             h('div', { className: 'su-inv-terms', 'data-investment-terms': '' }, TERMS.map((term) => h('button', { type: 'button', key: term, 'aria-pressed': months === term, onClick: () => setMonths(term), 'data-months': String(term) }, h('b', null, term), h('i', null, 'meses')))),
             h('div', { className: 'su-inv-result' },
@@ -261,5 +256,5 @@
   }
 
   window.InvestmentScreen = InvestmentScreen;
-  window.SUTI_INVESTMENT_SIMULATION = Object.freeze({ RATE, MIN, MAX, STEP, PRESETS: PRESETS.slice(), TERMS: TERMS.slice(), calculate: (amount, months) => ({ monthlyReturn: amount * RATE, totalReturn: amount * RATE * months, finalCapital: amount }) });
+  window.SUTI_INVESTMENT_SIMULATION = Object.freeze({ RATE, MIN, MAX, STEP, TERMS: TERMS.slice(), calculate: (amount, months) => ({ monthlyReturn: amount * RATE, totalReturn: amount * RATE * months, finalCapital: amount }) });
 })();

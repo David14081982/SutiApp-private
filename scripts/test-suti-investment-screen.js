@@ -21,7 +21,7 @@ for (const copy of [
 
 for (const marker of [
   'data-investment-screen', 'data-investment-back', 'data-investment-slider',
-  'data-investment-presets', 'data-investment-terms', 'data-investment-chart-bars',
+  'data-investment-terms', 'data-investment-chart-bars',
   'data-investment-monthly', 'data-investment-total', 'data-investment-final',
   'data-investment-footer-return', 'data-investment-cta',
 ]) assert.ok(screen.includes(marker), `interaction marker missing: ${marker}`);
@@ -50,7 +50,6 @@ assert.strictEqual(sim.RATE, 0.025);
 assert.strictEqual(sim.MIN, 50000);
 assert.strictEqual(sim.MAX, 2000000);
 assert.strictEqual(sim.STEP, 10000);
-assert.deepStrictEqual(Array.from(sim.PRESETS), [50000, 100000, 250000, 500000, 1000000, 2000000]);
 assert.deepStrictEqual(Array.from(sim.TERMS), [6, 12, 18, 24]);
 assert.deepStrictEqual({ ...sim.calculate(50000, 6) }, { monthlyReturn: 1250, totalReturn: 7500, finalCapital: 50000 });
 assert.deepStrictEqual({ ...sim.calculate(250000, 12) }, { monthlyReturn: 6250, totalReturn: 75000, finalCapital: 250000 });

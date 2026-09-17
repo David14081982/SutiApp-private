@@ -14453,7 +14453,6 @@ Object.assign(window, {
   const MIN = 50000;
   const MAX = 2000000;
   const STEP = 10000;
-  const PRESETS = [50000, 100000, 250000, 500000, 1000000, 2000000];
   const TERMS = [6, 12];
   const CSS = `
     .su-investment{--inv-guinda:#910022;--inv-guinda-700:#6a001b;--inv-guinda-50:#fbeef1;--inv-coral:#e8364f;--inv-ink:#14213d;--inv-ink-2:#5a6378;--inv-ink-3:#97a0b3;--inv-navy:#14213d;--inv-ok:#13794a;--inv-surface:#fff;--inv-surface-2:#eef1f6;--inv-bg:#f2f3f5;--inv-hairline:#e6eaf1;--inv-shadow-lg:0 24px 56px -18px rgba(20,33,61,.26);--inv-neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--inv-neo-md:0 14px 30px -12px rgba(20,33,61,.2),0 4px 10px -2px rgba(20,33,61,.06);--inv-inset:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden;background:var(--inv-bg);color:var(--inv-ink);font-family:Nunito,system-ui,-apple-system,sans-serif}
@@ -14497,9 +14496,6 @@ Object.assign(window, {
     .su-inv-range::-moz-range-track{height:7px;background:transparent}
     .su-inv-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
     .su-inv-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid var(--inv-guinda);box-shadow:0 4px 12px rgba(20,33,61,.25)}
-    .su-inv-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:5px}
-    .su-inv-presets button{min-width:0;border:0;border-radius:11px;padding:7px 2px;background:var(--inv-surface-2);color:var(--inv-ink-2);font-size:var(--text-11-5, 11.5px);font-weight:800;cursor:pointer;box-shadow:var(--inv-inset);font-variant-numeric:tabular-nums}
-    .su-inv-presets button[aria-pressed=true]{background:var(--inv-guinda-50);color:var(--inv-guinda);box-shadow:inset 0 0 0 1px #f3d6de}
     .su-inv-subhead{margin:20px 0 9px}
     .su-inv-subhead b{font-size:var(--text-11-5, 11.5px);font-weight:800;color:var(--inv-ink-2);letter-spacing:.05em;text-transform:uppercase}
     .su-inv-terms{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -14780,15 +14776,6 @@ Object.assign(window, {
       onChange: event => chooseAmount(Number(event.target.value)),
       'data-investment-slider': ''
     })), h('div', {
-      className: 'su-inv-presets',
-      'data-investment-presets': ''
-    }, PRESETS.map(value => h('button', {
-      type: 'button',
-      key: value,
-      'aria-pressed': amount === value,
-      onClick: () => chooseAmount(value),
-      'data-amount': String(value)
-    }, money(value)))), h('div', {
       className: 'su-inv-subhead'
     }, h('b', null, 'Plazo'), h('span', null, 'Mínimo 6 meses · renovable')), h('div', {
       className: 'su-inv-terms',
@@ -14886,7 +14873,6 @@ Object.assign(window, {
     MIN,
     MAX,
     STEP,
-    PRESETS: PRESETS.slice(),
     TERMS: TERMS.slice(),
     calculate: (amount, months) => ({
       monthlyReturn: amount * RATE,

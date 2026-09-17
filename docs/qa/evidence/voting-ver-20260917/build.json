@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "version": "voting-ver-20260917-001",
+  "cssVersion": null,
+  "previousCachebuster": "app/bundle.js?v=voting-fecha-20260917-001",
+  "changed": [
+    "voting-repository.js",
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 123,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "whitespaceOnlyDrift": [],
+  "sha256": "3c937c782c3ff9d973c65e7ce85f8191137a5c520f0a914a841ac5e6ecb416f0"
+}

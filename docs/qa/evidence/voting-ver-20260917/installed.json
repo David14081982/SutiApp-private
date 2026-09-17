@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "migration_recorded": 1,
+  "list_rpc": true,
+  "delete_rpc": true,
+  "anon_delete": false,
+  "votes_delete": false,
+  "trigger_enabled": 1
+}

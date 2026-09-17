@@ -41,6 +41,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     activate:(consultation,question)=>rpc('set_voting_active_question',{p_consultation:consultation,p_question:question||null}),
     live:consultation=>rpc('get_voting_live',{p_consultation:consultation}),
     electorate:audience=>rpc('count_voting_electorate',{p_audience:audience}),
+    votes:consultation=>rpc('list_voting_votes',{p_consultation:consultation}),
+    removeVotes:(consultation,{vote,affiliate})=>rpc('delete_voting_votes',{p_consultation:consultation,p_vote:vote||null,p_affiliate:affiliate||null}),
     watch,download,csv,
   });
 })();
@@ -80,6 +82,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
   };
   // Module additions to the owner CSS: waiting states, question on air, automatic total and the big screen.
   const liveCss = ".voting-affiliate .wait{display:flex;gap:12px;align-items:center;padding:16px 0 0;border-top:1px solid var(--line)}.voting-affiliate .wico{width:40px;height:40px;border-radius:12px;background:var(--guinda-50);color:var(--guinda);display:grid;place-items:center;flex-shrink:0}.voting-affiliate .wait.done .wico{background:var(--ok-bg);color:var(--ok)}.voting-affiliate .wait b{display:block;font-size:var(--text-14-5,14.5px);font-weight:800;line-height:1.3;overflow-wrap:anywhere}.voting-affiliate .wait s{display:block;text-decoration:none;font-size:var(--text-12,12px);font-weight:600;color:var(--ink-3);line-height:1.4;margin-top:3px}.voting-affiliate .q[data-voting-on-air]{animation:voting-reveal .32s ease}" + ".voting-ui .dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:currentColor;flex-shrink:0;animation:voting-pulse 1.6s ease-in-out infinite}@keyframes voting-pulse{0%,100%{opacity:1}50%{opacity:.3}}" + ".voting-admin .qrow.live{box-shadow:0 0 0 2px var(--guinda),var(--neo-sm)}.voting-admin .qlive{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:6px}.voting-admin .qlivelabel{display:inline-flex;align-items:center;gap:7px;font-size:var(--text-12,12px);font-weight:800;color:var(--ink-3);min-width:0}.voting-admin .qlive.on .qlivelabel{color:var(--guinda)}.voting-admin .total-field{display:flex;align-items:center;gap:8px;font-weight:800;min-height:46px;color:var(--ink)}.voting-admin .total-note{display:block;font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);margin-top:5px;line-height:1.35}" + ".voting-live{position:fixed;inset:0;z-index:10050;overflow:auto;background:var(--grad-guinda);color:#fff;display:flex;flex-direction:column;gap:clamp(16px,2.4vw,40px);padding:clamp(18px,3vw,56px) clamp(16px,4vw,80px);outline:none;-webkit-font-smoothing:antialiased}.voting-live .lseal{position:fixed;right:-3vw;top:-5vw;display:block;width:min(42vw,600px);aspect-ratio:1/1;opacity:.12;pointer-events:none;filter:brightness(0) invert(1)}.voting-live .lseal img{display:block;width:100%;height:100%;object-fit:contain}.voting-live .ltools{position:absolute;top:clamp(10px,1.4vw,24px);right:clamp(10px,1.4vw,24px);display:flex;gap:8px;z-index:2}.voting-live .ltool{width:44px;height:44px;border-radius:12px;border:none;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer;opacity:.55;transition:opacity .2s}.voting-live .ltool:hover,.voting-live .ltool:focus-visible{opacity:1}.voting-live button:focus-visible{outline-color:#fff}" + ".voting-live .lhead{position:relative;padding-right:112px;min-width:0}.voting-live .lstate{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--guinda);padding:6px 14px;border-radius:999px;font-size:clamp(12px,1.05vw,18px);font-weight:800;letter-spacing:.08em}.voting-live .lstate.final,.voting-live .lstate.wait,.voting-live .lstate.closed{background:rgba(255,255,255,.18);color:#fff}.voting-live .lstate.draft{background:#FFF4D6;color:#7A4B00}.voting-live .ltitle{font-size:clamp(22px,2.6vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:12px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lsub{font-size:clamp(14px,1.3vw,22px);font-weight:700;opacity:.85;margin-top:6px}" + ".voting-live .lgrid{position:relative;flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,3.2vw,64px);align-items:center}.voting-live .lq{min-width:0}.voting-live .lnum{font-size:clamp(13px,1.2vw,20px);font-weight:800;letter-spacing:.1em;opacity:.8}.voting-live .lqtext{font-size:clamp(28px,3.8vw,72px);font-weight:800;line-height:1.12;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lqdet{font-size:clamp(15px,1.5vw,26px);font-weight:600;line-height:1.4;opacity:.85;margin:14px 0 0;overflow-wrap:anywhere}" + ".voting-live .lpart{margin-top:clamp(20px,3vw,52px);background:rgba(255,255,255,.12);border-radius:clamp(18px,1.6vw,28px);padding:clamp(16px,1.8vw,32px)}.voting-live .lbig{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.voting-live .lbig b{font-size:clamp(48px,6.4vw,124px);font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.voting-live .lbig span{font-size:clamp(16px,1.7vw,30px);font-weight:700;opacity:.9}.voting-live .ltrack{display:block;height:clamp(10px,1vw,16px);border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:clamp(12px,1.4vw,22px)}.voting-live .lfill{display:block;height:100%;border-radius:999px;background:#fff;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lmeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:clamp(14px,1.3vw,24px);font-weight:800;font-variant-numeric:tabular-nums}.voting-live .lnext{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(14px,1.6vw,26px);font-size:clamp(14px,1.3vw,22px);font-weight:800;background:rgba(255,255,255,.16);padding:10px 16px;border-radius:999px}" + ".voting-live .lres{min-width:0;background:var(--surface);color:var(--ink);border-radius:clamp(20px,2vw,36px);box-shadow:0 40px 90px -30px rgba(20,33,61,.5);padding:clamp(18px,2.4vw,44px);display:flex;flex-direction:column;gap:clamp(14px,1.8vw,32px)}.voting-live .lrowtop{display:flex;justify-content:space-between;align-items:center;gap:12px}.voting-live .llabel{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,1.9vw,34px);font-weight:800;min-width:0}.voting-live .lico{width:clamp(34px,2.6vw,48px);height:clamp(34px,2.6vw,48px);border-radius:12px;color:#fff;display:grid;place-items:center;flex-shrink:0}.voting-live .lpct{font-size:clamp(26px,3vw,56px);font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.voting-live .lbar{display:block;height:clamp(14px,1.4vw,24px);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}.voting-live .lbarfill{display:block;height:100%;border-radius:999px;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lcount{font-size:clamp(13px,1.2vw,20px);font-weight:700;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}.voting-live .ltotal{border-top:1px solid var(--hairline);padding-top:clamp(10px,1.2vw,20px);font-size:clamp(14px,1.3vw,22px);font-weight:800;color:var(--ink-2)}" + ".voting-live .lcenter{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}.voting-live .lwaitico{width:clamp(84px,8vw,140px);height:clamp(84px,8vw,140px);border-radius:999px;background:rgba(255,255,255,.16);display:grid;place-items:center}.voting-live .lwaitt{font-size:clamp(26px,3.4vw,64px);font-weight:800;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere}.voting-live .lwaits{font-size:clamp(15px,1.5vw,26px);font-weight:600;opacity:.85;margin:0}.voting-live .lretry{margin-top:12px;border:none;border-radius:14px;background:#fff;color:var(--guinda);font-weight:800;font-size:16px;padding:12px 22px;cursor:pointer}.voting-live .lerror{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:calc(100% - 32px);background:rgba(20,33,61,.88);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px}" + "@media (max-width:860px),(orientation:portrait){.voting-live .lgrid{grid-template-columns:minmax(0,1fr);align-items:start}}";
+  // «VER»: every vote of a consultation, grouped by person, with delete actions.
+  const votesCss = ".voting-admin .vbtn{height:36px;padding:0 12px;border-radius:11px;border:none;background:var(--guinda-50);color:var(--guinda);font-family:inherit;font-size:var(--text-12,12px);font-weight:800;letter-spacing:.06em;cursor:pointer;flex-shrink:0}" + ".voting-admin .vsum{font-size:var(--text-12,12px);font-weight:700;color:var(--ink-3);margin:0 0 10px}.voting-admin .vperson{background:var(--surface);border-radius:16px;box-shadow:var(--neo-sm);padding:13px}.voting-admin .vperson+.vperson{margin-top:10px}" + ".voting-admin .vhead{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}.voting-admin .vhead>div{flex:1 1 160px;min-width:0}.voting-admin .vhead b{font-size:var(--text-14,14px);font-weight:800;display:block;overflow-wrap:anywhere}.voting-admin .vhead s{font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);text-decoration:none;display:block;margin-top:2px;overflow-wrap:anywhere}" + ".voting-admin .vdel{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:11px;border:none;cursor:pointer;font-family:inherit;background:var(--bad-bg);color:var(--bad);font-size:var(--text-12,12px);font-weight:800}.voting-admin .vdel[disabled]{opacity:.55;cursor:default}" + ".voting-admin .vrow{display:flex;align-items:center;gap:10px;border-top:1px solid var(--hairline);margin-top:10px;padding-top:10px}.voting-admin .vrow>div{flex:1;min-width:0}.voting-admin .vrow b{font-size:var(--text-13,13px);font-weight:700;display:block;line-height:1.3;overflow-wrap:anywhere}.voting-admin .vrow s{font-size:var(--text-11,11px);font-weight:600;color:var(--ink-3);text-decoration:none;display:block;margin-top:3px;overflow-wrap:anywhere}" + ".voting-admin .vconfirm{background:var(--surface);border-radius:16px;box-shadow:var(--neo-sm);padding:15px;line-height:1.5}.voting-admin .vconfirm p{margin:0 0 14px}";
   const enterFull = () => {
     try {
       const p = document.documentElement.requestFullscreen?.();
@@ -114,7 +118,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     });
   }
   function Style() {
-    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, window.VotingDesign.css), /*#__PURE__*/React.createElement("style", null, liveCss));
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, window.VotingDesign.css), /*#__PURE__*/React.createElement("style", null, liveCss), /*#__PURE__*/React.createElement("style", null, votesCss));
   }
   function errorText(e) {
     const s = String(e?.message || e);
@@ -845,6 +849,170 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       role: "alert"
     }, error)), document.body);
   }
+  // «VER»: who voted what in one consultation. Deleting frees the question so that person can vote it again.
+  function VotesSheet({
+    consultation,
+    app,
+    onChanged,
+    onClose
+  }) {
+    const [data, setData] = useState(null),
+      [error, setError] = useState(''),
+      [busy, setBusy] = useState(false),
+      [confirm, setConfirm] = useState(null),
+      [find, setFind] = useState('');
+    const lock = useRef(false),
+      seq = useRef(0);
+    const load = async () => {
+      const n = ++seq.current;
+      try {
+        const r = await R().votes(consultation.id);
+        if (n === seq.current) {
+          setData(r);
+          setError('');
+        }
+      } catch (e) {
+        if (n === seq.current) setError(errorText(e));
+      }
+    };
+    useEffect(() => {
+      load();
+      return () => {
+        seq.current++;
+      };
+    }, [consultation.id]);
+    const votes = data?.votes || [],
+      canDelete = !!data?.can_delete;
+    const people = [];
+    const byId = {};
+    for (const v of votes) {
+      let p = byId[v.affiliate_id];
+      if (!p) {
+        p = byId[v.affiliate_id] = {
+          id: v.affiliate_id,
+          name: v.name,
+          numero_control: v.numero_control,
+          email: v.email,
+          votes: []
+        };
+        people.push(p);
+      }
+      p.votes.push(v);
+    }
+    for (const p of people) p.votes.sort((a, b) => (a.question_number ?? 1e9) - (b.question_number ?? 1e9));
+    const term = find.trim().toLowerCase(),
+      shown = term ? people.filter(p => [p.name, p.numero_control, p.email].some(x => String(x || '').toLowerCase().includes(term))) : people;
+    const label = v => options.find(o => o.id === v.answer)?.label;
+    const when = v => new Date(v.cast_at).toLocaleString('es-MX', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+    const remove = async () => {
+      if (lock.current || !confirm) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        const n = await R().removeVotes(consultation.id, confirm.vote ? {
+          vote: confirm.vote.id
+        } : {
+          affiliate: confirm.person.id
+        });
+        setConfirm(null);
+        app?.toast?.(!n ? 'Ese voto ya no existía' : n === 1 ? 'Voto borrado' : 'Se borraron ' + n + ' votos');
+        await load();
+        onChanged?.();
+      } catch (e) {
+        setError(errorText(e));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    };
+    return /*#__PURE__*/React.createElement(Sheet, {
+      admin: true,
+      error: error,
+      busy: busy,
+      textSize: app?.textPreference?.value,
+      title: 'Votos · ' + consultation.title,
+      close: onClose
+    }, !data ? error ? /*#__PURE__*/React.createElement("button", {
+      className: "btn sec",
+      onClick: load
+    }, "Reintentar") : /*#__PURE__*/React.createElement("p", {
+      role: "status"
+    }, "Cargando votos\u2026") : confirm ? /*#__PURE__*/React.createElement("div", {
+      className: "vconfirm",
+      "data-voting-votes-confirm": "true"
+    }, /*#__PURE__*/React.createElement("p", null, confirm.vote ? /*#__PURE__*/React.createElement(React.Fragment, null, "\xBFBorrar el voto ", /*#__PURE__*/React.createElement("b", null, label(confirm.vote)), " de ", /*#__PURE__*/React.createElement("b", null, confirm.vote.name || 'esta persona'), " en la pregunta ", confirm.vote.question_number || 'archivada', "? Esa pregunta volver\xE1 a quedar pendiente para esta persona.") : /*#__PURE__*/React.createElement(React.Fragment, null, "\xBFBorrar los ", /*#__PURE__*/React.createElement("b", null, confirm.person.votes.length, " votos"), " de ", /*#__PURE__*/React.createElement("b", null, confirm.person.name || 'esta persona'), " en esta consulta? Sus preguntas volver\xE1n a quedar pendientes.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn sec",
+      disabled: busy,
+      onClick: () => setConfirm(null)
+    }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+      className: "btn pri",
+      disabled: busy,
+      onClick: remove
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "trash"
+    }), busy ? 'Borrando…' : 'Borrar'))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+      className: "vsum"
+    }, nf(votes.length), " votos \xB7 ", nf(people.length), " personas"), people.length > 1 && /*#__PURE__*/React.createElement("input", {
+      className: "field",
+      "aria-label": "Buscar persona",
+      placeholder: "Buscar por nombre, n\xFAmero de control o correo",
+      value: find,
+      onChange: e => setFind(e.target.value),
+      style: {
+        marginBottom: 12
+      }
+    }), !votes.length && /*#__PURE__*/React.createElement("p", {
+      className: "panel"
+    }, "Esta consulta no tiene votos."), votes.length > 0 && !shown.length && /*#__PURE__*/React.createElement("p", {
+      className: "panel"
+    }, "Nadie coincide con la b\xFAsqueda."), shown.map(p => /*#__PURE__*/React.createElement("section", {
+      className: "vperson",
+      key: p.id,
+      "data-voting-votes-person": p.id
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "vhead"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, p.name || 'Sin nombre'), /*#__PURE__*/React.createElement("s", null, [p.numero_control && 'No. control ' + p.numero_control, p.email].filter(Boolean).join(' · '))), canDelete && p.votes.length > 1 && /*#__PURE__*/React.createElement("button", {
+      className: "vdel",
+      disabled: busy,
+      onClick: () => {
+        setError('');
+        setConfirm({
+          person: p
+        });
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "trash",
+      size: 15
+    }), "Borrar todos (", p.votes.length, ")")), p.votes.map(v => /*#__PURE__*/React.createElement("div", {
+      className: "vrow",
+      key: v.id,
+      "data-voting-votes-vote": v.id
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, v.question_number ? 'Pregunta ' + v.question_number : 'Pregunta archivada', " \xB7 ", v.question_title), /*#__PURE__*/React.createElement("s", null, /*#__PURE__*/React.createElement("span", {
+      className: 'chip' + (v.answer === 'si' ? ' ok' : v.answer === 'no' ? ' bad' : '')
+    }, label(v)), " ", when(v), " \xB7 ", v.folio)), canDelete && /*#__PURE__*/React.createElement("button", {
+      className: "icobtn sm",
+      disabled: busy,
+      "aria-label": 'Borrar voto de ' + (p.name || 'esta persona') + ' en ' + (v.question_number ? 'pregunta ' + v.question_number : 'pregunta archivada'),
+      onClick: () => {
+        setError('');
+        setConfirm({
+          vote: v
+        });
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "trash",
+      size: 16
+    }))))))));
+  }
   function SectionTitle({
     icon,
     title,
@@ -877,7 +1045,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       [archive, setArchive] = useState(false),
       [exports, setExports] = useState(null),
       [live, setLive] = useState(() => resumable() ? adminSession.live : null),
-      [total, setTotal] = useState(null);
+      [total, setTotal] = useState(null),
+      [viewing, setViewing] = useState(null);
     const lock = useRef(false),
       booted = useRef(false);
     useEffect(() => {
@@ -887,6 +1056,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         setExports(null);
         setArchive(false);
         setLive(null);
+        setViewing(null);
       }
       if (!state.loading) booted.current = true;
     }, [state.loading]);
@@ -1086,7 +1256,12 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         alignItems: 'center',
         gap: 6
       }
-    }, (p.results || p.export_identified_votes) && /*#__PURE__*/React.createElement("button", {
+    }, p.export_identified_votes && /*#__PURE__*/React.createElement("button", {
+      className: "vbtn",
+      "aria-label": 'Ver votos de ' + c.title,
+      "data-voting-votes-open": c.id,
+      onClick: () => setViewing(c)
+    }, "VER"), (p.results || p.export_identified_votes) && /*#__PURE__*/React.createElement("button", {
       className: "icobtn",
       "aria-label": "Exportar a Excel",
       onClick: () => setExports(c)
@@ -1379,7 +1554,18 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onClick: () => openLive(d.id)
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "screen"
-    }), "Votaci\xF3n en vivo")), d.id && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    }), "Votaci\xF3n en vivo")), d.id && p.export_identified_votes && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
+      icon: "users",
+      title: "Votos emitidos",
+      sub: "Qui\xE9n vot\xF3 qu\xE9; puedes borrar un voto o todos los de una persona"
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "btn sec",
+      disabled: busy,
+      "data-voting-votes-open": d.id,
+      onClick: () => setViewing(saved || d)
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "users"
+    }), "VER")), d.id && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "download",
       title: "Exportar a Excel",
       sub: "Archivo .csv que Excel abre directo"
@@ -1542,6 +1728,11 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }), "Votos emitidos"))), live && /*#__PURE__*/React.createElement(VotingLive, {
       id: live,
       onClose: () => setLive(null)
+    }), viewing && /*#__PURE__*/React.createElement(VotesSheet, {
+      consultation: viewing,
+      app: app,
+      onChanged: () => reload(true).catch(() => {}),
+      onClose: () => setViewing(null)
     }));
   }
   window.VotingHome = VotingHome;

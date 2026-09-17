@@ -34,6 +34,8 @@
     activate:(consultation,question)=>rpc('set_voting_active_question',{p_consultation:consultation,p_question:question||null}),
     live:consultation=>rpc('get_voting_live',{p_consultation:consultation}),
     electorate:audience=>rpc('count_voting_electorate',{p_audience:audience}),
+    votes:consultation=>rpc('list_voting_votes',{p_consultation:consultation}),
+    removeVotes:(consultation,{vote,affiliate})=>rpc('delete_voting_votes',{p_consultation:consultation,p_vote:vote||null,p_affiliate:affiliate||null}),
     watch,download,csv,
   });
 })();

@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "migrationSha256": "22f43f6a86fb4273c5975d9dcb68528aec449c71793057ec709d2fc164700da9",
+  "recoverySha256": "ee66a5184cc0faf9e67b7f6ba12cc7761a544990f7d3f95b5b1189555a10c649",
+  "groups": [
+    "consistency",
+    "delete_one",
+    "delete_person",
+    "grants",
+    "immutability_outside_rpc",
+    "list",
+    "permissions",
+    "revote",
+    "targets"
+  ],
+  "recoveryVerified": true,
+  "productionAfterRollback": {
+    "consultations": 1,
+    "votes": 7,
+    "audit": 4896,
+    "votes_hash": "7d22ae318d2f9a880ceae8bfd84cb118",
+    "matchesBefore": true
+  },
+  "fixturesPersisted": 0
+}

@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "target": "https://david14081982.github.io/SutiApp-private/",
+  "result": "",
+  "stderr": "{\"status\":\"FAIL\",\"error\":\"[{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"},{\\\"family\\\":\\\"E_PROGRAM_CATALOG_ITEM_ASSETS\\\",\\\"code\\\":\\\"BROKEN_SIGNED_URL\\\",\\\"detail\\\":\\\"IMAGE_TIMEOUT\\\"}]\\n\\n'FAIL' !== 'PASS'\\n\"}\n"
+}

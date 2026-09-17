@@ -1,0 +1,6 @@
+{
+  "code": 1,
+  "target": "http://localhost:8080/SutiApp.html",
+  "result": "",
+  "stderr": "{\"status\":\"FAIL\",\"error\":\"page.evaluate: Object\"}\n"
+}

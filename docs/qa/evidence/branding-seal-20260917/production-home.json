@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com",
+  "phase": "loaded",
+  "brandingPhase": "loaded",
+  "seals": [
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    },
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    },
+    {
+      "state": "loaded",
+      "naturalWidth": 240
+    }
+  ],
+  "businessWrites": 0
+}

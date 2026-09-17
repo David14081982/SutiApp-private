@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "version": "credencial-puno-20260917-001",
+  "bundle": {
+    "status": 200,
+    "sha256": "84cb8938968c52574fc0fdddf6a2a32ab6374468c46fb6f81b00d68b468e9364",
+    "matches": true
+  },
+  "css": {
+    "status": 200,
+    "minHeight390": true
+  },
+  "image": {
+    "status": 200,
+    "type": "image/png",
+    "sha256": "5bd8d128c00a321efd10aeb55f32a8960a3b4b8cd4e960fa5ce3a65f4d17b0d3",
+    "matches": true
+  },
+  "commit": "54d3ba8",
+  "deployment": "https://github.com/David14081982/SutiApp-private/actions/runs/35228208927",
+  "attempts": 1
+}

@@ -1,11 +1,11 @@
 {
   "status": "PASS",
-  "url": "https://sutiapp.com/app/bundle.js?v=voting-live-20260917-002",
+  "url": "https://sutiapp.com/app/bundle.js?v=voting-live-20260917-003",
   "httpStatus": 200,
-  "version": "voting-live-20260917-002",
-  "sha256": "bceba0248cbdd2dfde6090a8772048efacf49752d38e4f3927648470d090bf66",
-  "expected": "bceba0248cbdd2dfde6090a8772048efacf49752d38e4f3927648470d090bf66",
-  "commit": "be5ea00",
-  "deployment": "https://github.com/David14081982/SutiApp-private/actions/runs/35193545196",
+  "version": "voting-live-20260917-003",
+  "sha256": "d683e22d3e0c680e4a51a0c834bcdb90543dc6f8bc425350b835a0bf0295079d",
+  "expected": "d683e22d3e0c680e4a51a0c834bcdb90543dc6f8bc425350b835a0bf0295079d",
+  "commit": "6200667",
+  "deployment": "https://github.com/David14081982/SutiApp-private/actions/runs/35194876589",
   "attempts": 1
 }

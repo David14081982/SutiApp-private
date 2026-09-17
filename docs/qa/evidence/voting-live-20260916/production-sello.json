@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "target": "https://david14081982.github.io/SutiApp-private/",
+  "checks": [
+    "real_login_new_bundle",
+    "editor_real_total_and_switches",
+    "realtime_event_reaches_browser",
+    "big_screen_survives_desktop_breakpoint",
+    "big_screen_institutional_seal",
+    "big_screen_real_backend",
+    "big_screen_stops",
+    "home_card_authorized_without_results"
+  ],
+  "rpcCalls": {
+    "get_admin_access_context": 1,
+    "get_current_affiliate_access_state": 1,
+    "get_effective_affiliate_id": 1,
+    "get_impersonation_context": 1,
+    "list_voting_consultations": 6,
+    "list_company_commercial_requests": 2,
+    "list_paid_company_ids": 1,
+    "get_voting_live": 3,
+    "list_self_marketplace_quote_notifications": 1,
+    "list_self_request_event_notifications": 1,
+    "get_self_savings_if_changed": 1
+  },
+  "consultation": {
+    "id": "ceacd117-2c17-4e92-a2db-61ae75d48fd2",
+    "electorate": 3,
+    "questions": 3,
+    "onAir": null
+  },
+  "homeConsultations": 1,
+  "businessWrites": 0,
+  "technicalWrites": [
+    {
+      "table": "voting_live_state",
+      "column": "changed_at",
+      "consultation_id": "ceacd117-2c17-4e92-a2db-61ae75d48fd2",
+      "purpose": "prove Realtime delivery; state unchanged"
+    }
+  ]
+}

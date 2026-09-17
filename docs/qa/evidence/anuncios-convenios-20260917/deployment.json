@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/app/bundle.js?v=anuncios-convenios-20260917-001",
+  "httpStatus": 200,
+  "version": "anuncios-convenios-20260917-001",
+  "sha256": "967577aa15db698643bf2f0ea6cc88e6b429d83b1dfc7770f01e0a1a31b9a035",
+  "expected": "967577aa15db698643bf2f0ea6cc88e6b429d83b1dfc7770f01e0a1a31b9a035",
+  "commit": "0aab1d9",
+  "deployment": "https://github.com/David14081982/SutiApp-private/actions/runs/35234161740",
+  "attempts": 1
+}

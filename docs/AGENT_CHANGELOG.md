@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-17 — Votaciones: texto de fecha en la tarjeta
+
+A pedido del propietario la tarjeta de Votaciones en Inicio dice «Fecha el …» en lugar de «Cierra el …». Sólo cambia el trozo  del bundle (); el editor Admin conserva «Cierra el». Restauración: tag .
+
 ## 2026-09-17 — H-SUTIAPP-CONVENIOS-ANUNCIOS-001
 
 Anuncios de Convenios funcionales: imagen subida a Supabase, guardado como banners `marketplace`, segmentación por sindicato/categoría y color de acento persistidos, carrusel filtrado por perfil vía `list_public_banners` y RLS. Supabase `20260917000100` aplicado tras punto de restauración (tag + `ads_restore_private`). Bundle `anuncios-convenios-20260917-001` (6 trozos). Matriz SQL, navegador con escrituras interceptadas y regresión global PASS.

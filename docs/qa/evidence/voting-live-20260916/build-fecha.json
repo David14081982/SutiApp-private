@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "version": "voting-fecha-20260917-001",
+  "cssVersion": null,
+  "previousCachebuster": "app/bundle.js?v=anuncios-convenios-20260917-001",
+  "changed": [
+    "screens-voting.jsx"
+  ],
+  "preservedChunks": 124,
+  "totalChunks": 125,
+  "compilerReproducesPublished": true,
+  "whitespaceOnlyDrift": [],
+  "sha256": "66b1ea114d76e475394ffe44c44dd9b8df2b821ae58d79d12482134f4ba6b96b"
+}

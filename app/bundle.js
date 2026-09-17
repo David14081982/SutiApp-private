@@ -516,7 +516,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         style: {
           display: 'block'
         }
-      }, "Cierra el ", new Date(c.closes_on + 'T12:00:00').toLocaleDateString('es-MX', {
+      }, "Fecha el ", new Date(c.closes_on + 'T12:00:00').toLocaleDateString('es-MX', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'

@@ -192,6 +192,7 @@
           .select('id,affiliate_id,private_asset_id,classification,file_key,file_type,source_column,source_column_letter,storage_bucket,storage_path,mime_type,sha256,status,updated_at,url_order')
           .eq('affiliate_id', resolvedAffiliateId)
           .eq('file_key', PROFILE_PHOTO.fileKey)
+          .eq('is_current_profile_photo', true)
           .eq('source_column', PROFILE_PHOTO.sourceColumn)
           .eq('source_column_letter', PROFILE_PHOTO.sourceColumnLetter)
           .eq('classification', 'PRIVATE')
@@ -324,6 +325,47 @@
     const getDocuments=(affiliateId)=>readDocuments(affiliateId,false);
     const getHistoricalDocuments=(affiliateId)=>readDocuments(affiliateId,true);
 
+    async function updateProfilePhoto(file) {
+      if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size < 1 || file.size > 20 * 1024 * 1024) {
+        throw new AffiliateRepositoryError('INVALID_PROFILE_PHOTO', 'Elige una imagen JPG, PNG o WebP de hasta 20 MB.');
+      }
+      const client = provideClient();
+      const principal = await getAuthenticatedUser(client);
+      const affiliate = await getCurrentAffiliate(principal);
+      if (affiliate._impersonation || affiliate.auth_user_id !== principal.id) {
+        throw new AffiliateRepositoryError('PROFILE_PHOTO_SELF_ONLY', 'Solo puedes cambiar la foto desde tu propia sesión.');
+      }
+      let bitmap;
+      let blob;
+      try {
+        bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const ctx = canvas.getContext('2d', { alpha: false });
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .9));
+        if (!blob || blob.size > 5 * 1024 * 1024) throw new Error('INVALID_IMAGE');
+      } catch (_) {
+        throw new AffiliateRepositoryError('INVALID_PROFILE_PHOTO', 'No pudimos leer la imagen. Elige otra foto JPG, PNG o WebP.');
+      } finally { if (bitmap) bitmap.close(); }
+      const sha = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())), byte => byte.toString(16).padStart(2, '0')).join('');
+      const path = 'affiliate-documents/' + affiliate.id + '/' + crypto.randomUUID() + '.jpg';
+      const stored = await client.storage.from('private-assets').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+      if (stored.error) throw sourceError(stored.error);
+      // Never delete after an ambiguous response: registration may already have committed.
+      const registered = await client.rpc('set_self_profile_photo', { p_storage_path: path, p_mime_type: 'image/jpeg', p_file_size: blob.size, p_sha256: sha });
+      if (registered.error) throw sourceError(registered.error);
+      clearProfilePhotoCache();
+      try { return await getProfilePhoto(affiliate.id, principal); }
+      catch (error) {
+        throw new AffiliateRepositoryError('PROFILE_PHOTO_SAVED_REFRESH_FAILED', 'Tu foto se guardó, pero no pudimos mostrarla. Vuelve a abrir tu perfil.', error);
+      }
+    }
+
     function clearProfilePhotoCache() {
       profilePhotoCache.clear();
     }
@@ -338,7 +380,7 @@
 
     return Object.freeze({
       getCurrentAffiliate, getById, getByNumeroControl, getAuthState, claimCurrentIdentity,
-      getProfilePhoto, getDocuments, getHistoricalDocuments, clearProfilePhotoCache,
+      getProfilePhoto, updateProfilePhoto, getDocuments, getHistoricalDocuments, clearProfilePhotoCache,
     });
   }
 

@@ -1,5 +1,10 @@
 # Reglas de seguridad
 
+## Foto de perfil propia — H-PROFILE-PHOTO-EDIT-001
+
+`set_self_profile_photo` deriva identidad efectiva y exige `auth_user_id=auth.uid()` sin impersonación; no acepta destinatario. Valida path dentro del afiliado, owner del objeto, MIME y tamaño reales de metadata Storage (máximo 5 MB). No vincula un hash privado ajeno. RLS y políticas Storage existentes permanecen activas; columna de foto vigente solo tiene SELECT browser y la RPC audita actor/afiliado/versión anterior. Tests transaccionales confirmaron owner, inserción Storage autenticada, denegación cross-user de lectura/subida/path/hash, DML directo y anon. Cero fixtures persistentes.
+
+
 ## Referencia bancaria en solicitudes — ADR-109
 
 El RPC de detalle conserva su gate `program_requests.read` y sólo proyecta banco, titular,

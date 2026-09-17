@@ -19,6 +19,7 @@ function repositoryHarness() {
     limit() {
       const visible = rows.filter((row) => row.affiliate_id === filters.affiliate_id
         && row.file_key === filters.file_key && row.source_column === filters.source_column
+        && row.is_current_profile_photo === filters.is_current_profile_photo
         && row.source_column_letter === filters.source_column_letter
         && row.classification === filters.classification && row.file_type === filters.file_type
         && row.status === filters.status
@@ -56,9 +57,10 @@ function repositoryHarness() {
     classification: 'PRIVATE', file_key: 'profile_photo', file_type: 'image',
     source_column: 'Photo', source_column_letter: 'DK', storage_bucket: 'private-assets',
     storage_path: 'master/private/AA/hash.jpeg', mime_type: 'image/jpeg', sha256: 'A'.repeat(64),
-    status: 'READY', url_order: 1,
+    status: 'READY', url_order: 1, is_current_profile_photo: true,
   };
   h.setRows([row]);
+  h.setRows([row, Object.assign({}, row, { id: 'historical-photo', is_current_profile_photo: false })]);
   const first = await h.repository.getProfilePhoto('affiliate-a');
   assert.equal(first.affiliateId, 'affiliate-a');
   assert.equal(first.assetId, 'asset-a');

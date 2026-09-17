@@ -1,5 +1,10 @@
 # Bitácora de agentes
 
+## 2026-09-16 — H-PROFILE-PHOTO-EDIT-001
+
+Cambio de foto propia al pulsar el avatar de Mi Perfil, cámara a la derecha, validación/conversión JPEG, estados de carga/error e invalidación de caché. Supabase `20260916000100` aplicado: marcador único de foto vigente y RPC self-only auditada, con versiones/documentos anteriores conservados. Backend/recuperación en ROLLBACK, aislamiento Storage, browser focal, build y regresión global local (`localhost:8080`) / GitHub Pages PASS. Frontend aún no publicado; ninguna foto real fue sustituida por pruebas. Evidencia y revisión: `docs/qa/H-PROFILE-PHOTO-EDIT-001.md` y `docs/qa/evidence/profile-photo-edit-20260916/`. Trabajo ajeno preexistente conservado.
+
+
 ## 2026-09-11 ? H-CREDENTIAL-BANK-ISOLATION-001 ? RELEASE
 
 Credencial usa la RPC self existente para mostrar s?lo cuentas del afiliado efectivo,

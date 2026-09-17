@@ -284,6 +284,26 @@
   // ---------- PERFIL ----------
   function PerfilScreen({ app }) {
     const u = app.user;
+    const photoInput = React.useRef(null);
+    const photoLock = React.useRef(false);
+    const [photoBusy, setPhotoBusy] = React.useState(false);
+    const [photoError, setPhotoError] = React.useState('');
+    const changePhoto = async event => {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file || photoLock.current) return;
+      photoLock.current = true;
+      setPhotoBusy(true);
+      setPhotoError('');
+      try {
+        await window.AffiliateRepository.updateProfilePhoto(file);
+        await window.AffiliateAuth.refreshContext();
+        app.toast('Foto de perfil actualizada');
+      } catch (error) {
+        setPhotoError(error && ['INVALID_PROFILE_PHOTO', 'PROFILE_PHOTO_SELF_ONLY', 'PROFILE_PHOTO_SAVED_REFRESH_FAILED'].includes(error.code)
+          ? error.message : 'No pudimos actualizar tu foto. Revisa tu conexión e inténtalo de nuevo.');
+      } finally { photoLock.current = false; setPhotoBusy(false); }
+    };
     const rows = [
       { icon: 'idcard', label: 'Mi credencial digital', go: () => { app.back(); app.setTab('credencial'); } },
       { icon: 'upload', label: 'Mis documentos', go: () => { app.back(); app.push('documentos'); } },
@@ -302,8 +322,12 @@
         React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800 } }, 'Mi Perfil')),
       React.createElement('div', { className: 'su-app-scroll su-route', style: { flex: 1, overflowY: 'auto', padding: 20 } },
         React.createElement('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' } },
-          React.createElement('div', { style: { position: 'relative', borderRadius: '50%' } },
-            React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 84, 'data-profile-photo-consumer': 'profile' })),
+          React.createElement('input', { ref: photoInput, type: 'file', accept: 'image/jpeg,image/png,image/webp', onChange: changePhoto, style: { display: 'none' }, 'data-profile-photo-input': true }),
+          React.createElement('button', { type: 'button', disabled: photoBusy, 'aria-label': 'Cambiar foto de perfil', 'aria-busy': photoBusy, onClick: () => photoInput.current.click(), style: { position: 'relative', borderRadius: '50%', border: 0, padding: 0, background: 'transparent', cursor: photoBusy ? 'wait' : 'pointer' } },
+            React.createElement(window.Avatar, { name: u.name, src: u.photoUrl || undefined, size: 84, 'data-profile-photo-consumer': 'profile' }),
+            React.createElement('span', { 'aria-hidden': true, style: { position: 'absolute', right: -6, bottom: 1, width: 30, height: 30, borderRadius: '50%', border: '3px solid var(--bg)', background: 'var(--guinda)', color: '#fff', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: 'camera', size: 17, stroke: 2 }))),
+          photoBusy && React.createElement('div', { role: 'status', style: { fontSize: 'var(--text-12, 12px)', marginTop: 8, color: 'var(--ink-2)' } }, 'Guardando foto…'),
+          photoError && React.createElement('div', { role: 'alert', style: { fontSize: 'var(--text-12, 12px)', marginTop: 8, color: 'var(--guinda)' } }, photoError),
           React.createElement('div', { 'data-affiliate-field': 'profile-name', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, marginTop: 12 } }, u.name),
           React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 2 } }, u.seccion),
           React.createElement('div', { 'data-affiliate-field': 'profile-control', style: { marginTop: 10 } }, React.createElement(window.Badge, { tone: 'green', icon: 'checkCircle' }, u.status + ' · ' + u.numeroControl))),

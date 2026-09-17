@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "base": "4a6ace20b2035fa45850d2298fbf5f81ee49a5db",
+  "preservedBundleChunks": 124,
+  "changedChunk": "app.jsx",
+  "onlyPerfilScreenChanged": true,
+  "bundleSha256": "0bdbda1c2c0d25a6d3e952c554787905b398c9d72cf1b0d464fdbc05daec490e",
+  "repositorySha256": "cbf298108fe918481ba14734540c58b628903e1e10994ebef8e6a3184472fc99"
+}

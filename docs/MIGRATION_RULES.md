@@ -1,5 +1,10 @@
 # Reglas de migración
 
+## 20260916000100 — edición de foto de perfil
+
+APPLIED / backend VERIFIED. Marcador aditivo `affiliate_files.is_current_profile_photo`, índice único parcial y RPC self-only. Inicializa el marcador desde el contrato histórico Photo/DK sin cambiar timestamps de importación; el trigger de timestamps se deshabilita solo durante ese backfill dentro de la misma transacción y se reactiva antes de commit. No cambia políticas Storage ni borra objetos, relaciones o documentos. La matriz live se ejecutó con ROLLBACK; recovery compilado/revertido antes de apply. Recovery de schema aborta si hay una edición de foto auditada para evitar perder la selección vigente. Evidencia: `docs/qa/evidence/profile-photo-edit-20260916/`.
+
+
 ## 20260908000500 — referencia bancaria de la solicitud
 
 APPLIED / VERIFIED. Modifica sólo la proyección del lector existente; firma, OID, ACL y todos los

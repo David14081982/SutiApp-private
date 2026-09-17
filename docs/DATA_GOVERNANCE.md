@@ -1,5 +1,10 @@
 # Gobierno de datos
 
+## Versiones de foto de perfil — H-PROFILE-PHOTO-EDIT-001
+
+La foto vigente es una relación `affiliate_files` marcada explícitamente, no un archivo sobrescrito. Al reemplazarla se conserva el objeto anterior, su relación, status y vínculos documentales; solo cambia el marcador vigente y su fecha de actualización. La auditoría enlaza nueva relación y anterior con actor real y afiliado. Los nuevos registros identifican procedencia `supabase://private-assets/...`; Photo/DK es la clave semántica compatible, sin escritura en Google. Cargas cuyo resultado de registro sea ambiguo no se borran automáticamente; quedan privadas y sin autoridad mientras no tengan relación, sujetas a conciliación administrativa. La UI comprime y elimina metadata de cámara al convertir a JPEG; URLs firmadas siguen temporales.
+
+
 ## Eliminación explícita de solicitudes — ADR-108
 
 La autorización posterior del propietario permite retirar una solicitud confirmada y sus vínculos

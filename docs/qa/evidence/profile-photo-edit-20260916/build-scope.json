@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "profileOnly": true,
+  "bundleMatches": true,
+  "baseline": "origin/main 4a6ace20b2035fa45850d2298fbf5f81ee49a5db",
+  "hashes": {
+    "app/app.jsx": "d9790e7b3135a768a62e746d96fb0d7a5ff9da6d2ce26575d0ad0b71ba85a333",
+    "app/affiliate-repository.js": "cbf298108fe918481ba14734540c58b628903e1e10994ebef8e6a3184472fc99",
+    "app/bundle.js": "0bdbda1c2c0d25a6d3e952c554787905b398c9d72cf1b0d464fdbc05daec490e",
+    "SutiApp.html": "2d247711bbe69d81e9ef1f26396f998ee03ca7d0a032b1691463fc1e93cbf658",
+    "supabase/migrations/20260916000100_profile_photo_edit.sql": "c96fe72ee9171ce64614ff0e96aac2563a86ac9ad8aacdc4c18dfd66840d8aba",
+    "supabase/recovery/20260916000100_profile_photo_edit.sql": "8841f9add027d19c323788eb0b6d381de88904d88d81c8952831e58c46ad963e"
+  }
+}

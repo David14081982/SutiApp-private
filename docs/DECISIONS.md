@@ -1,5 +1,10 @@
 # Registro de decisiones arquitectónicas
 
+## H-PROFILE-PHOTO-EDIT-001 — 2026-09-16
+
+El propietario solicita cambiar la foto pulsando el avatar circular de Mi Perfil, con cámara a la derecha y almacenamiento en el Supabase existente. Writer sobre la misma autoridad `affiliate_files/private_assets/private-assets`, con marcador único de foto vigente. Conservar versiones, objetos y documentos anteriores; el cambio de avatar no modifica la revisión documental ni Google. Backend self-only, sin impersonación, valida objeto/propietario/MIME/tamaño y audita el cambio. No borrar objetos tras respuestas ambiguas: una carga sin vínculo queda privada y requiere conciliación administrativa posterior, nunca fallback productivo.
+
+
 ## H-USER-TEXT-SIZE-SMALL-001 — Pequeño, 2026-09-11
 
 El propietario autoriza cuatro opciones en orden Pequeño/Normal/Grande/Muy grande,

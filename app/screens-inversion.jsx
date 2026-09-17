@@ -27,7 +27,9 @@
     .su-inv-lede{position:relative;font-size:var(--text-13-5, 13.5px);font-weight:600;opacity:.88;line-height:1.5;margin:9px 0 0;max-width:300px}
     .su-inv-lede strong{font-size:var(--text-15, 15px)}
     .su-inv-rate{position:relative;display:flex;align-items:center;gap:16px;margin-top:22px;padding:16px 18px;border-radius:20px;background:rgba(255,255,255,.13)}
-    .su-inv-rate-big{display:flex;align-items:baseline;gap:2px}
+    .su-inv-rate>div:first-child{flex:0 0 auto}
+    .su-inv-rate>div:last-child{min-width:0}
+    .su-inv-rate-big{display:flex;align-items:baseline;gap:2px;white-space:nowrap}
     .su-inv-rate-big b{font-size:var(--text-44, 44px);font-weight:900;letter-spacing:-.04em;line-height:.9;font-variant-numeric:tabular-nums}
     .su-inv-rate-big i{font-style:normal;font-size:var(--text-22, 22px);font-weight:900;letter-spacing:-.03em}
     .su-inv-rate-label{font-size:var(--text-10-5, 10.5px);font-weight:800;letter-spacing:.1em;opacity:.82;margin-top:4px;white-space:nowrap}

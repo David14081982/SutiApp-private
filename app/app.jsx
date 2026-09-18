@@ -6,6 +6,26 @@
   // identidad: `status` y `overview` no cambian al recotizar.
   const overviewSlice = (snapshot) => ({ status: snapshot.status, overview: snapshot.overview });
 
+  // Equipos Móviles: el ítem `market` del catálogo de Finanzas abre el mismo
+  // flujo de Suti Préstamo (Monto · Depósito · Documentos · Resumen) fijado a
+  // un solo fondo. Es FIJO por decisión de producto: el fondo no se administra
+  // desde el panel. La elegibilidad la sigue resolviendo el servidor; esto sólo
+  // recorta a un fondo lo que el afiliado ya tiene autorizado.
+  const EQUIPOS_MOVILES = { itemId: 'market', fund: 'Caja Chica', title: 'Equipos Móviles' };
+  const equiposMovilesRoute = () => {
+    const store = window.finCatStore;
+    // El encabezado sigue la etiqueta administrable, pero SÓLO con el catálogo
+    // cargado: sin él `findItem` devolvería la semilla ('Suti Market') y el
+    // título quedaría equivocado.
+    const loaded = !!(store && store.presentationState && store.presentationState().phase === 'loaded');
+    const item = loaded && store.findItem ? store.findItem(EQUIPOS_MOVILES.itemId) : null;
+    return {
+      fund: EQUIPOS_MOVILES.fund,
+      title: (item && item.label) || EQUIPOS_MOVILES.title,
+      notes: 'Solicitud originada en el programa Equipos Móviles (fondo ' + EQUIPOS_MOVILES.fund + ').',
+    };
+  };
+
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
     "primary": "#910022",
@@ -480,7 +500,7 @@
       setPopupItems(null);
       commitTab('home');
     }, [auth.affiliateView, commitTab, showToast]);
-  const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); push('product', { id }); }, [push]);
+  const openFinanceItem = useCallback((id) => { if (id === 'prestamo') return push('loan'); if (id === 'ahorro') return push('savings'); if (id === 'terrenos') return push('terreno'); if (id === EQUIPOS_MOVILES.itemId) return push('loan', equiposMovilesRoute()); push('product', { id }); }, [push]);
 
     useEffect(() => {
       const openRequest = () => {

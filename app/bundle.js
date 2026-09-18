@@ -15210,6 +15210,18 @@ Object.assign(window, {
   }) : dash;
   const textOrDash = value => typeof value === 'string' && value.trim() ? value.trim() : dash;
 
+  // Fondo fijo por pantalla (Equipos Móviles → Caja Chica). Suti Préstamo NO
+  // recibe `fundName`: sin él este filtro no existe y la pantalla sigue
+  // resolviendo todos los fondos elegibles del afiliado, como hasta hoy.
+  // La comparación ignora acentos, mayúsculas y espacios repetidos para que la
+  // captura del nombre del fondo en el admin no deje la pantalla sin fondo.
+  // La clase de acentos se arma desde texto a propósito: escrita como literal,
+  // el transpilado deja marcas diacríticas sueltas dentro de la expresión
+  // regular del bundle y cualquier normalización del archivo la rompería.
+  const DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
+  const fundKey = value => String(value == null ? '' : value).normalize('NFD').replace(DIACRITICS, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const programsForFund = (programs, fundName) => fundName ? programs.filter(item => fundKey(item.fund || item.label) === fundKey(fundName)) : programs;
+
   // Pista MODULAR: `cycle + 1` glifos donde el último repite el primero. Las
   // vueltas las produce `MOTION.spinSlot` reiniciando el traslado sobre esa
   // repetición, así que un dígito cuesta 11 nodos y no ~65. Los estilos son
@@ -16420,10 +16432,13 @@ Object.assign(window, {
   }
   function StepSimulatorV2({
     financial,
-    onSimulationChange
+    onSimulationChange,
+    fundName
   }) {
     const overview = financial.overview || {};
-    const programs = Array.isArray(overview.programs) ? overview.programs.filter(item => item.status === 'AVAILABLE') : [];
+    // La elegibilidad la sigue resolviendo el servidor (sindicato + categoría
+    // de empleado). `fundName` sólo recorta lo ya autorizado; nunca amplía.
+    const programs = programsForFund(Array.isArray(overview.programs) ? overview.programs.filter(item => item.status === 'AVAILABLE') : [], fundName);
     // Estado compuesto: una sola transición por intención del afiliado.
     // `immediate` viaja DENTRO de la selección para que no pueda consumirse
     // sobre una selección intermedia que el mismo commit ya invalidó.
@@ -16616,7 +16631,11 @@ Object.assign(window, {
     const initialLoading = !result && !confirmed.quote && !effectiveError && (overviewLoading || !!program);
     const updating = validSelection && !!confirmed.quote && !result && !effectiveError && !overviewLoading;
     const displayedResult = result;
-    const state = initialLoading ? 'LOADING' : requestError ? 'ERROR' : effectiveError ? unavailableError ? 'UNAVAILABLE' : 'ERROR' : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE' : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'INCOMPLETE' : overview.status === 'SCHEDULED' ? 'SCHEDULED' : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE' : !program ? 'UNAVAILABLE' : 'READY';
+    const state = initialLoading ? 'LOADING' : requestError ? 'ERROR' : effectiveError ? unavailableError ? 'UNAVAILABLE' : 'ERROR' : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE' : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'INCOMPLETE' : overview.status === 'SCHEDULED' ? 'SCHEDULED' : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE'
+    // Con fondo fijo, quedarse sin programa NO es una falla del simulador:
+    // el afiliado puede tener otros fondos y no éste. Sin `fundName` esta
+    // rama no existe y Suti Préstamo conserva su 'UNAVAILABLE' de siempre.
+    : !program && fundName && !overviewLoading ? 'NOT_ELIGIBLE' : !program ? 'UNAVAILABLE' : 'READY';
     const paymentPeriod = result ? result.paymentPeriod : textOrDash(program && program.payment_period) === dash ? 'periodo' : program.payment_period;
     const retry = () => {
       if (!validSelection) return window.financialLegacyStore.openLoanSession();
@@ -17438,9 +17457,15 @@ Object.assign(window, {
     if (!labels.length) return 'Te faltan documentos obligatorios para continuar. Revisa tu expediente y completa los pendientes.';
     return 'Te faltan documentos obligatorios para continuar. Pendientes: ' + labels.join(', ') + '.';
   }
+
+  // `params` opcional: `{ fund, title, notes }`. Suti Préstamo entra sin
+  // parámetros (`push('loan')`) y se comporta exactamente igual que antes:
+  // todos los fondos, título 'Suti Préstamo' y notas vacías.
   function LoanScreen({
-    app
+    app,
+    params
   }) {
+    const options = params || {};
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
       status: 'error',
       overview: null,
@@ -17615,7 +17640,10 @@ Object.assign(window, {
         const request = await window.financialLegacyStore.confirmLoanSession({
           programItemId: item.id,
           programId: simulation.program.id,
-          notes: '',
+          // Única huella del origen: la solicitud se registra igual que un
+          // préstamo (mismo programa y mismo producto), así que la nota es lo
+          // que permite a Finanzas saber desde qué pantalla se envió.
+          notes: options.notes || '',
           signature,
           terms: accepted,
           idempotencyKey: idempotencyKey.current,
@@ -17674,7 +17702,8 @@ Object.assign(window, {
     }));
     return React.createElement(Shell, {
       app,
-      onBack: goBack
+      onBack: goBack,
+      title: options.title
     }, React.createElement('div', {
       'data-loan-flow-step': step,
       style: {
@@ -17714,7 +17743,8 @@ Object.assign(window, {
       }
     }, titles[step]), step === 0 && React.createElement(StepSimulatorV2, {
       financial,
-      onSimulationChange: setSimulation
+      onSimulationChange: setSimulation,
+      fundName: options.fund
     }), step === 1 && React.createElement(StepDeposit, {
       value: deposit,
       setValue: setDeposit,
@@ -74867,6 +74897,30 @@ Object.assign(window, {
     status: snapshot.status,
     overview: snapshot.overview
   });
+
+  // Equipos Móviles: el ítem `market` del catálogo de Finanzas abre el mismo
+  // flujo de Suti Préstamo (Monto · Depósito · Documentos · Resumen) fijado a
+  // un solo fondo. Es FIJO por decisión de producto: el fondo no se administra
+  // desde el panel. La elegibilidad la sigue resolviendo el servidor; esto sólo
+  // recorta a un fondo lo que el afiliado ya tiene autorizado.
+  const EQUIPOS_MOVILES = {
+    itemId: 'market',
+    fund: 'Caja Chica',
+    title: 'Equipos Móviles'
+  };
+  const equiposMovilesRoute = () => {
+    const store = window.finCatStore;
+    // El encabezado sigue la etiqueta administrable, pero SÓLO con el catálogo
+    // cargado: sin él `findItem` devolvería la semilla ('Suti Market') y el
+    // título quedaría equivocado.
+    const loaded = !!(store && store.presentationState && store.presentationState().phase === 'loaded');
+    const item = loaded && store.findItem ? store.findItem(EQUIPOS_MOVILES.itemId) : null;
+    return {
+      fund: EQUIPOS_MOVILES.fund,
+      title: item && item.label || EQUIPOS_MOVILES.title,
+      notes: 'Solicitud originada en el programa Equipos Móviles (fondo ' + EQUIPOS_MOVILES.fund + ').'
+    };
+  };
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
     "heroVariant": "aurora",
     "primary": "#910022",
@@ -76397,6 +76451,7 @@ Object.assign(window, {
       if (id === 'prestamo') return push('loan');
       if (id === 'ahorro') return push('savings');
       if (id === 'terrenos') return push('terreno');
+      if (id === EQUIPOS_MOVILES.itemId) return push('loan', equiposMovilesRoute());
       push('product', {
         id
       });

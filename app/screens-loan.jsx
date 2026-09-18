@@ -6,6 +6,21 @@
   const exactMoneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value, { dec: 2 }) : dash;
   const textOrDash = (value) => typeof value === 'string' && value.trim() ? value.trim() : dash;
 
+  // Fondo fijo por pantalla (Equipos Móviles → Caja Chica). Suti Préstamo NO
+  // recibe `fundName`: sin él este filtro no existe y la pantalla sigue
+  // resolviendo todos los fondos elegibles del afiliado, como hasta hoy.
+  // La comparación ignora acentos, mayúsculas y espacios repetidos para que la
+  // captura del nombre del fondo en el admin no deje la pantalla sin fondo.
+  // La clase de acentos se arma desde texto a propósito: escrita como literal,
+  // el transpilado deja marcas diacríticas sueltas dentro de la expresión
+  // regular del bundle y cualquier normalización del archivo la rompería.
+  const DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
+  const fundKey = (value) => String(value == null ? '' : value).normalize('NFD')
+    .replace(DIACRITICS, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const programsForFund = (programs, fundName) => (fundName
+    ? programs.filter((item) => fundKey(item.fund || item.label) === fundKey(fundName))
+    : programs);
+
   // Pista MODULAR: `cycle + 1` glifos donde el último repite el primero. Las
   // vueltas las produce `MOTION.spinSlot` reiniciando el traslado sobre esa
   // repetición, así que un dígito cuesta 11 nodos y no ~65. Los estilos son
@@ -391,9 +406,13 @@
       projectedFromTermOptions: true });
   }
 
-  function StepSimulatorV2({ financial, onSimulationChange }) {
+  function StepSimulatorV2({ financial, onSimulationChange, fundName }) {
     const overview = financial.overview || {};
-    const programs = Array.isArray(overview.programs) ? overview.programs.filter((item) => item.status === 'AVAILABLE') : [];
+    // La elegibilidad la sigue resolviendo el servidor (sindicato + categoría
+    // de empleado). `fundName` sólo recorta lo ya autorizado; nunca amplía.
+    const programs = programsForFund(
+      Array.isArray(overview.programs) ? overview.programs.filter((item) => item.status === 'AVAILABLE') : [],
+      fundName);
     // Estado compuesto: una sola transición por intención del afiliado.
     // `immediate` viaja DENTRO de la selección para que no pueda consumirse
     // sobre una selección intermedia que el mismo commit ya invalidó.
@@ -578,6 +597,10 @@
       : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'INCOMPLETE'
       : overview.status === 'SCHEDULED' ? 'SCHEDULED'
       : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE'
+      // Con fondo fijo, quedarse sin programa NO es una falla del simulador:
+      // el afiliado puede tener otros fondos y no éste. Sin `fundName` esta
+      // rama no existe y Suti Préstamo conserva su 'UNAVAILABLE' de siempre.
+      : !program && fundName && !overviewLoading ? 'NOT_ELIGIBLE'
       : !program ? 'UNAVAILABLE' : 'READY';
     const paymentPeriod = result ? result.paymentPeriod : textOrDash(program && program.payment_period) === dash ? 'periodo' : program.payment_period;
     const retry = () => {
@@ -825,7 +848,11 @@
     return 'Te faltan documentos obligatorios para continuar. Pendientes: ' + labels.join(', ') + '.';
   }
 
-  function LoanScreen({ app }) {
+  // `params` opcional: `{ fund, title, notes }`. Suti Préstamo entra sin
+  // parámetros (`push('loan')`) y se comporta exactamente igual que antes:
+  // todos los fondos, título 'Suti Préstamo' y notas vacías.
+  function LoanScreen({ app, params }) {
+    const options = params || {};
     const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null, quote: null, error: 'UNAVAILABLE' };
     const [step, setStep] = React.useState(0);
     const [simulation, setSimulation] = React.useState(null);
@@ -873,7 +900,10 @@
         const request = await window.financialLegacyStore.confirmLoanSession({
           programItemId: item.id,
           programId: simulation.program.id,
-          notes: '',
+          // Única huella del origen: la solicitud se registra igual que un
+          // préstamo (mismo programa y mismo producto), así que la nota es lo
+          // que permite a Finanzas saber desde qué pantalla se envió.
+          notes: options.notes || '',
           signature,
           terms: accepted,
           idempotencyKey: idempotencyKey.current,
@@ -913,12 +943,12 @@
       } finally { setSubmitting(false); }
     };
     if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount, workflowState:submission.workflowState }));
-    return React.createElement(Shell, { app, onBack: goBack },
+    return React.createElement(Shell, { app, onBack: goBack, title: options.title },
       React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
         React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
       React.createElement('div', { ref: scroller, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '8px 20px 18px' } },
         step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
-        step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation }),
+        step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation, fundName: options.fund }),
         step === 1 && React.createElement(StepDeposit, { value: deposit, setValue: setDeposit, reload: loadDeposit }),
         step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),
         step === 3 && React.createElement(StepSummary, { simulation, deposit:{account:selectedDepositAccount,phone:deposit.phone}, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');},onCorrectDeposit:()=>{setStep(1);setSubmitError('');} })),

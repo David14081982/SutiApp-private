@@ -46700,7 +46700,9 @@ Object.assign(window, {
       setObservation,
       commitDecision,
       go,
-      position
+      position,
+      onDiscard,
+      busyId
     } = props;
     const selected = visibleQueue.find(row => row.id === selectedId) || queue.find(row => row.id === selectedId) || null;
     const canReview = app.admin.has('documents.write');
@@ -46829,8 +46831,13 @@ Object.assign(window, {
       const active = row.id === selectedId,
         info = stateInfo(row.status),
         feedback = rowFeedback[row.id];
-      return h('button', {
+      return h('div', {
         key: row.id,
+        style: {
+          position: 'relative',
+          marginBottom: 7
+        }
+      }, h('button', {
         type: 'button',
         'data-document-queue-item': row.id,
         'aria-current': active ? 'true' : undefined,
@@ -46841,7 +46848,7 @@ Object.assign(window, {
           border: active ? '2px solid var(--guinda)' : '1px solid transparent',
           borderRadius: 13,
           padding: 11,
-          marginBottom: 7,
+          paddingRight: canReview ? 38 : 11,
           textAlign: 'left',
           background: active ? '#FFF7F9' : '#F7F7F9',
           fontFamily: 'inherit',
@@ -46918,7 +46925,36 @@ Object.assign(window, {
           color: feedback.tone === 'error' ? '#A00027' : '#087A50',
           marginTop: 7
         }
-      }, feedback.text));
+      }, feedback.text)), canReview && h('button', {
+        type: 'button',
+        'data-document-queue-discard': row.id,
+        title: 'Descartar de la cola',
+        'aria-label': 'Descartar de la cola: ' + businessLabel(row.document_type) + ' de ' + affiliateName(row),
+        disabled: busyId === row.id,
+        onClick: event => {
+          event.stopPropagation();
+          onDiscard(row);
+        },
+        style: {
+          position: 'absolute',
+          top: 9,
+          right: 9,
+          width: 26,
+          height: 26,
+          padding: 0,
+          border: 0,
+          borderRadius: 8,
+          background: 'transparent',
+          color: 'var(--ink-3)',
+          display: 'grid',
+          placeItems: 'center',
+          cursor: busyId === row.id ? 'default' : 'pointer',
+          opacity: busyId === row.id ? .4 : 1
+        }
+      }, h(I, {
+        name: 'trash',
+        size: 14
+      })));
     }) : h('div', {
       style: {
         padding: 25,
@@ -47851,7 +47887,26 @@ Object.assign(window, {
         color: '#A00027',
         fontWeight: 800
       }
-    }, 'Pedir carga')))) : h(window.EmptyState, {
+    }, 'Pedir carga'), props.app.admin.has('documents.write') && h('button', {
+      type: 'button',
+      'data-document-queue-discard': d.id,
+      title: 'Descartar de la cola',
+      'aria-label': 'Descartar de la cola: ' + businessLabel(d.document_type) + ' de ' + affiliateName(d),
+      disabled: props.busy === d.id,
+      onClick: () => props.discardRow(d),
+      style: {
+        border: 'none',
+        borderRadius: 10,
+        padding: 9,
+        background: 'var(--surface-2)',
+        color: 'var(--ink-3)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, h(I, {
+      name: 'trash',
+      size: 16
+    }))))) : h(window.EmptyState, {
       icon: 'checkCircle',
       title: 'Sin resultados',
       sub: props.reviewFilter ? 'Ningún documento coincide con el filtro.' : 'No hay documentos pendientes de revisión.'
@@ -48272,6 +48327,42 @@ Object.assign(window, {
         setBusy('');
       }
     };
+    const discardRow = async row => {
+      if (!row || !app.admin.has('documents.write')) return;
+      if (!window.confirm('¿Descartar este documento de la cola?\n\n' + businessLabel(row.document_type) + ' · ' + affiliateName(row) + '\n\nSe marca como Rechazado y deja de aparecer en la bandeja. El archivo se conserva en el expediente del afiliado.')) return;
+      const index = visibleQueue.findIndex(entry => entry.id === row.id),
+        nextRow = visibleQueue[index + 1] || visibleQueue[index - 1] || null;
+      setBusy(row.id);
+      setRowFeedback(all => Object.assign({}, all, {
+        [row.id]: {
+          tone: 'saving',
+          text: 'Descartando…'
+        }
+      }));
+      try {
+        await window.DocumentWorkflowRepository.review(row.id, 'REJECTED', 'Descartado de la cola de revisión por la administración.');
+        setQueue(all => all.filter(entry => entry.id !== row.id));
+        setRowFeedback(all => {
+          const next = Object.assign({}, all);
+          delete next[row.id];
+          return next;
+        });
+        if (selectedId === row.id) {
+          setSelectedId(nextRow ? nextRow.id : '');
+          setPreview(null);
+        }
+        app.toast && app.toast('Documento descartado de la cola');
+      } catch (_) {
+        setRowFeedback(all => Object.assign({}, all, {
+          [row.id]: {
+            tone: 'error',
+            text: 'No se pudo descartar · Reintentar'
+          }
+        }));
+      } finally {
+        setBusy('');
+      }
+    };
     const mobileReview = async (id, status) => {
       setBusy(id);
       try {
@@ -48412,7 +48503,8 @@ Object.assign(window, {
       mobileOpen,
       mobilePreview,
       setMobilePreview,
-      createType
+      createType,
+      discardRow
     };
     if (!desktop) return h(MobileDocuments, common);
     const configTab = tab === 'review' ? 'catalog' : tab;
@@ -48503,7 +48595,9 @@ Object.assign(window, {
       commitDecision,
       go,
       position,
-      saving: busy === selectedId
+      saving: busy === selectedId,
+      onDiscard: discardRow,
+      busyId: busy
     }) : h(DesktopConfiguration, Object.assign({}, common, {
       tab,
       setTab

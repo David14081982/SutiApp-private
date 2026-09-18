@@ -50990,10 +50990,129 @@ Object.assign(window, {
     if (/REVIEWED_BALANCE_MISMATCH|DIFFERENCE/.test(s)) return 'El capital y el rendimiento no cuadran con el saldo revisado.';
     if (/PLAN_FIELDS|PLAN_END/.test(s)) return 'Le faltan datos del plan (aportación, fechas o tipo de descuento).';
     if (/CONFIRMATION_FIELDS/.test(s)) return 'Le faltan datos para poder confirmar.';
-    if (/STALE|CHANGED|VERSION/.test(s)) return 'Cambió mientras se revisaba. Actualiza la lista.';
+    if (/STALE|CHANGED|VERSION/.test(s)) return 'Cambió mientras se revisaba. Vuelve a cargar la lista.';
     if (/DATE_NOT_EXPECTED/.test(s)) return 'Esa fecha no corresponde a su calendario.';
     if (/timeout|fetch|network/i.test(s)) return 'La consulta tardó demasiado. Vuelve a intentar.';
     return 'No se pudo completar. Vuelve a cargar la lista para ver en qué quedó este expediente.';
+  }
+  const R = () => window.SavingsPanelRepository;
+  const key = () => crypto.randomUUID();
+
+  // Reads one file and works out what it would take to leave it at today's amount.
+  async function buildItem(row, fallbackToday) {
+    try {
+      const account = await R().financial(row.id);
+      const person = account && account.context && account.context.person || {};
+      if (account.certified === true) {
+        const falta = (account.schedule || []).filter(s => s.future === false && s.confirmed !== true);
+        return falta.length ? {
+          row,
+          person,
+          balance: account.balance,
+          state: 'solo_descuentos',
+          due: falta.map(s => ({
+            date: s.date,
+            expected: s.expected,
+            version: s.version
+          }))
+        } : {
+          row,
+          person,
+          state: 'listo_confirmado'
+        };
+      }
+      const command = commandFor(person);
+      if (!command) return {
+        row,
+        person,
+        state: 'incompleto',
+        detail: 'Le faltan datos para proponer un saldo.'
+      };
+      const preview = await R().previewBalance({
+        id: row.id,
+        command
+      });
+      const today = account.today || fallbackToday;
+      return {
+        row,
+        person,
+        command,
+        preview,
+        update: account.context.source_update,
+        due: (preview.schedule || []).filter(s => s.date <= today),
+        version: account.context.source_version,
+        status: account.context.record_status,
+        state: 'listo'
+      };
+    } catch (e) {
+      return {
+        row,
+        state: 'error',
+        detail: reason(e)
+      };
+    }
+  }
+  // The whole chain for one person, in the same order the single-file panel follows.
+  async function runRow(item, amountOf) {
+    try {
+      if (item.state === 'solo_descuentos') {
+        for (const d of item.due || []) await R().receipt({
+          id: item.row.id,
+          date: d.date,
+          actual: Number(amountOf(d)),
+          version: d.version || 0,
+          observation: null,
+          key: key()
+        });
+        return {
+          ok: true
+        };
+      }
+      if (item.update && item.update.pending === true) await R().acceptSource({
+        id: item.row.id,
+        updateId: item.update.id,
+        version: item.version,
+        key: key()
+      });
+      const state = await R().financial(item.row.id);
+      if (state.context.record_status !== 'RESOLVED') await R().save({
+        id: item.row.id,
+        version: state.context.source_version,
+        changes: {},
+        status: 'RESOLVED',
+        key: key()
+      });
+      const fresh = await R().previewBalance({
+        id: item.row.id,
+        command: item.command
+      });
+      if (Number(fresh.difference) !== 0) return {
+        ok: false,
+        detail: 'El capital y el rendimiento no cuadran con el saldo revisado.'
+      };
+      await R().confirmBalance({
+        id: item.row.id,
+        command: item.command,
+        fingerprint: fresh.fingerprint,
+        key: key()
+      });
+      for (const d of item.due || []) await R().receipt({
+        id: item.row.id,
+        date: d.date,
+        actual: Number(amountOf(d)),
+        version: 0,
+        observation: null,
+        key: key()
+      });
+      return {
+        ok: true
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        detail: reason(e)
+      };
+    }
   }
   function SavingsBulkAdmin({
     app,
@@ -51011,14 +51130,18 @@ Object.assign(window, {
       [done, setDone] = useState({}),
       [amounts, setAmounts] = useState({}),
       [running, setRunning] = useState(false);
+    const [authorised, setAuthorised] = useState(false),
+      [run, setRun] = useState(null);
     const alive = useRef(true),
-      generation = useRef(0);
+      generation = useRef(0),
+      stop = useRef(false);
     const canApprove = app.admin.has('savings.approve'),
       canWrite = app.admin.has('savings.write');
     useEffect(() => {
       alive.current = true;
       return () => {
         alive.current = false;
+        stop.current = true;
         generation.current++;
       };
     }, []);
@@ -51035,7 +51158,7 @@ Object.assign(window, {
       setError('');
       setRows([]);
       try {
-        const list = await window.SavingsPanelRepository.list({
+        const list = await R().list({
           tab: 'padron',
           search: query,
           filter: 'todos',
@@ -51043,62 +51166,7 @@ Object.assign(window, {
         });
         if (!alive.current || generation.current !== mine) return;
         setPage(list);
-        const pending = (list.rows || []).filter(r => r.native === false);
-        const built = await Promise.all(pending.map(async row => {
-          try {
-            const account = await window.SavingsPanelRepository.financial(row.id);
-            const person = account && account.context && account.context.person || {};
-            if (account.certified === true) {
-              const falta = (account.schedule || []).filter(s => s.future === false && s.confirmed !== true);
-              return falta.length ? {
-                row,
-                person,
-                due: falta.map(s => ({
-                  date: s.date,
-                  expected: s.expected,
-                  version: s.version
-                })),
-                balance: account.balance,
-                state: 'solo_descuentos'
-              } : {
-                row,
-                person,
-                state: 'listo_confirmado'
-              };
-            }
-            const update = account && account.context && account.context.source_update;
-            const command = commandFor(person);
-            if (!command) return {
-              row,
-              person,
-              state: 'incompleto',
-              detail: 'Le faltan datos para proponer un saldo.'
-            };
-            const preview = await window.SavingsPanelRepository.previewBalance({
-              id: row.id,
-              command
-            });
-            const today = account.today || asOf;
-            const due = (preview.schedule || []).filter(s => s.date <= today);
-            return {
-              row,
-              person,
-              command,
-              preview,
-              update,
-              due,
-              version: account.context.source_version,
-              status: account.context.record_status,
-              state: 'listo'
-            };
-          } catch (e) {
-            return {
-              row,
-              state: 'error',
-              detail: reason(e)
-            };
-          }
-        }));
+        const built = await Promise.all((list.rows || []).filter(r => r.native === false).map(row => buildItem(row, asOf)));
         if (!alive.current || generation.current !== mine) return;
         setRows(built);
         setAmounts(a => {
@@ -51120,6 +51188,7 @@ Object.assign(window, {
     useEffect(() => {
       load();
     }, [load]);
+    const amountOf = item => d => amounts[item.row.id + ':' + d.date];
     const total = item => {
       const base = item.preview ? cents(item.preview.total) : item.balance ? cents(item.balance.total) : null;
       if (base == null) return null;
@@ -51129,86 +51198,20 @@ Object.assign(window, {
     async function confirm(item) {
       if (busy) return;
       setBusy(item.row.id);
-      const key = () => crypto.randomUUID();
-      try {
-        if (item.state === 'solo_descuentos') {
-          for (const d of item.due || []) await window.SavingsPanelRepository.receipt({
-            id: item.row.id,
-            date: d.date,
-            actual: Number(amounts[item.row.id + ':' + d.date]),
-            version: d.version || 0,
-            observation: null,
-            key: key()
-          });
-          if (!alive.current) return;
-          setDone(v => ({
-            ...v,
-            [item.row.id]: {
-              ok: true,
-              total: total(item)
-            }
-          }));
-          if (onSaved) await onSaved();
-          return;
+      const res = await runRow(item, amountOf(item));
+      if (!alive.current) return;
+      setDone(v => ({
+        ...v,
+        [item.row.id]: res.ok ? {
+          ok: true,
+          total: total(item)
+        } : {
+          ok: false,
+          detail: res.detail
         }
-        let version = item.version;
-        if (item.update && item.update.pending === true) {
-          await window.SavingsPanelRepository.acceptSource({
-            id: item.row.id,
-            updateId: item.update.id,
-            version,
-            key: key()
-          });
-          const after = await window.SavingsPanelRepository.financial(item.row.id);
-          version = after.context.source_version;
-        }
-        const state = await window.SavingsPanelRepository.financial(item.row.id);
-        if (state.context.record_status !== 'RESOLVED') await window.SavingsPanelRepository.save({
-          id: item.row.id,
-          version: state.context.source_version,
-          changes: {},
-          status: 'RESOLVED',
-          key: key()
-        });
-        const fresh = await window.SavingsPanelRepository.previewBalance({
-          id: item.row.id,
-          command: item.command
-        });
-        if (Number(fresh.difference) !== 0) throw Object.assign(new Error('DIFFERENCE'), {});
-        await window.SavingsPanelRepository.confirmBalance({
-          id: item.row.id,
-          command: item.command,
-          fingerprint: fresh.fingerprint,
-          key: key()
-        });
-        for (const d of item.due || []) await window.SavingsPanelRepository.receipt({
-          id: item.row.id,
-          date: d.date,
-          actual: Number(amounts[item.row.id + ':' + d.date]),
-          version: 0,
-          observation: null,
-          key: key()
-        });
-        if (!alive.current) return;
-        setDone(v => ({
-          ...v,
-          [item.row.id]: {
-            ok: true,
-            total: total(item)
-          }
-        }));
-        if (onSaved) await onSaved();
-      } catch (e) {
-        if (alive.current) setDone(v => ({
-          ...v,
-          [item.row.id]: {
-            ok: false,
-            detail: reason(e)
-          }
-        }));
-      } finally {
-        if (alive.current) setBusy('');
-      }
+      }));
+      setBusy('');
+      if (res.ok && onSaved) await onSaved();
     }
     async function confirmPage() {
       if (running) return;
@@ -51219,7 +51222,84 @@ Object.assign(window, {
       }
       if (alive.current) setRunning(false);
     }
-    const pendientes = rows.filter(ready);
+    // One authorisation for the whole padron: walks every page and confirms what is ready,
+    // using the amount the file already states for each due date. Anything that needs a
+    // decision is left untouched and listed at the end.
+    async function confirmAll() {
+      if (run && run.activo) return;
+      stop.current = false;
+      let hechos = 0,
+        ok = 0,
+        cursor = 0,
+        total = null;
+      const pendientes = [];
+      setRun({
+        activo: true,
+        hechos: 0,
+        ok: 0,
+        total: null,
+        pendientes: []
+      });
+      try {
+        while (!stop.current && alive.current) {
+          const list = await R().list({
+            tab: 'padron',
+            search: '',
+            filter: 'todos',
+            offset: cursor
+          });
+          total = list.total;
+          const lote = (list.rows || []).filter(r => r.native === false);
+          if (!lote.length) break;
+          for (const row of lote) {
+            if (stop.current || !alive.current) break;
+            const item = await buildItem(row, asOf);
+            hechos++;
+            if (item.state === 'listo' || item.state === 'solo_descuentos') {
+              const res = await runRow(item, d => Number(d.expected).toFixed(2));
+              if (res.ok) ok++;else pendientes.push({
+                folio: row.folio,
+                nombre: row.nombre,
+                detail: res.detail
+              });
+            } else if (item.state !== 'listo_confirmado') pendientes.push({
+              folio: row.folio,
+              nombre: row.nombre,
+              detail: item.detail || 'Requiere revisión.'
+            });
+            if (alive.current) setRun({
+              activo: true,
+              hechos,
+              ok,
+              total,
+              pendientes: pendientes.slice()
+            });
+          }
+          cursor += 20;
+          if (total != null && cursor >= total) break;
+        }
+      } catch (e) {
+        pendientes.push({
+          folio: '—',
+          nombre: 'Se interrumpió el recorrido',
+          detail: reason(e)
+        });
+      }
+      if (!alive.current) return;
+      setRun({
+        activo: false,
+        hechos,
+        ok,
+        total,
+        pendientes,
+        detenido: stop.current
+      });
+      setAuthorised(false);
+      if (onSaved) await onSaved();
+      load();
+    }
+    const listos = rows.filter(ready);
+    const corriendo = !!(run && run.activo);
     return h(Tarjeta, {
       title: 'Confirmar saldos en lista',
       icon: 'checkCircle'
@@ -51227,10 +51307,55 @@ Object.assign(window, {
       className: 'svp-note'
     }, 'Cada fila confirma el saldo al corte y registra los descuentos ya vencidos, dejando a la persona en el importe que le corresponde hoy. Puedes corregir el importe recibido antes de aceptar.'), !canApprove && h('p', {
       className: 'svp-note warn'
-    }, 'Tu cuenta puede consultar esta lista. Confirmar saldos requiere permiso de autorización.'), h('label', {
+    }, 'Tu cuenta puede consultar esta lista. Confirmar saldos requiere permiso de autorización.'), canApprove && canWrite && h('div', {
+      className: 'svp-audit'
+    }, h('b', null, 'Confirmar a todos los ahorradores'), h('p', {
+      className: 'svp-note'
+    }, 'Recorre el padrón completo y confirma cada expediente que esté listo, con el importe que el archivo ya indica para cada descuento vencido. Los que necesiten tu decisión no se tocan: quedan en una lista al terminar. Puedes detenerlo cuando quieras y lo ya confirmado se conserva.'), !corriendo && h('label', {
+      className: 'svp-note',
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-start'
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: authorised,
+      disabled: !!busy || running,
+      onChange: e => setAuthorised(e.target.checked)
+    }), 'Autorizo confirmar de una vez todos los saldos que estén listos.'), !corriendo && h('button', {
+      type: 'button',
+      className: 'svp-btn primary full',
+      disabled: !authorised || !!busy || running,
+      onClick: confirmAll
+    }, 'Confirmar todos los ahorradores'), corriendo && h(React.Fragment, null, h('p', {
+      role: 'status',
+      className: 'svp-note'
+    }, 'Revisados ' + run.hechos + (run.total ? ' de ' + run.total : '') + ' · confirmados ' + run.ok + ' · con motivo ' + run.pendientes.length), h('button', {
+      type: 'button',
+      className: 'svp-btn',
+      onClick: () => {
+        stop.current = true;
+      }
+    }, 'Detener')), run && !run.activo && h('div', {
+      style: {
+        marginTop: 8
+      }
+    }, h('p', {
+      className: 'svp-success',
+      role: 'status'
+    }, (run.detenido ? 'Detenido. ' : 'Terminado. ') + 'Confirmados ' + run.ok + ' de ' + run.hechos + ' revisados.'), run.pendientes.length > 0 && h('details', null, h('summary', {
+      className: 'svp-note'
+    }, run.pendientes.length + ' necesitan tu decisión'), run.pendientes.slice(0, 80).map((p, i) => h('p', {
+      key: i,
+      className: 'svp-note'
+    }, 'Folio ' + p.folio + ' · ' + (p.nombre || '') + ' — ' + p.detail)), run.pendientes.length > 80 && h('p', {
+      className: 'svp-note'
+    }, 'y ' + (run.pendientes.length - 80) + ' más.')))), h('label', {
       className: 'svp-field'
     }, 'Buscar por nombre o folio', h('input', {
       value: search,
+      disabled: corriendo,
       onChange: e => setSearch(e.target.value),
       autoComplete: 'off'
     })), error && h('div', {
@@ -51245,12 +51370,12 @@ Object.assign(window, {
       className: 'svp-note'
     }, 'Preparando los importes de esta página…'), !loading && page && h(React.Fragment, null, h('p', {
       className: 'svp-note'
-    }, 'Página de ' + rows.length + ' de ' + page.total + ' · ' + pendientes.length + ' lista(s) para confirmar'), pendientes.length > 1 && h('button', {
+    }, 'Página de ' + rows.length + ' de ' + page.total + ' · ' + listos.length + ' lista(s) para confirmar'), listos.length > 1 && !corriendo && h('button', {
       type: 'button',
       className: 'svp-btn primary full',
       disabled: !!busy || running,
       onClick: confirmPage
-    }, running ? 'Confirmando…' : 'Confirmar las ' + pendientes.length + ' filas listas'), rows.map(item => {
+    }, running ? 'Confirmando…' : 'Confirmar las ' + listos.length + ' filas de esta página'), rows.map(item => {
       const r = item.row,
         marca = done[r.id];
       return h('article', {
@@ -51277,8 +51402,8 @@ Object.assign(window, {
         min: 0,
         step: '.01',
         inputMode: 'decimal',
-        value: amounts[r.id + ':' + d.date] ?? '',
-        disabled: !!busy || running || !!marca,
+        value: amounts[r.id + ':' + d.date] == null ? '' : amounts[r.id + ':' + d.date],
+        disabled: !!busy || running || corriendo || !!marca,
         onChange: e => setAmounts(a => ({
           ...a,
           [r.id + ':' + d.date]: e.target.value
@@ -51293,7 +51418,7 @@ Object.assign(window, {
       }, 'Aplicará también la lectura pendiente del archivo.'), !marca && h('button', {
         type: 'button',
         className: 'svp-btn primary',
-        disabled: !ready(item) || !!busy || running,
+        disabled: !ready(item) || !!busy || running || corriendo,
         onClick: () => confirm(item)
       }, busy === r.id ? 'Confirmando…' : 'Confirmar')), marca && h('p', {
         className: marca.ok ? 'svp-success' : 'svp-error',
@@ -51304,12 +51429,12 @@ Object.assign(window, {
     }, h('button', {
       type: 'button',
       className: 'svp-btn',
-      disabled: offset <= 0 || !!busy || running,
+      disabled: offset <= 0 || !!busy || running || corriendo,
       onClick: () => setOffset(Math.max(0, offset - 20))
     }, 'Anterior'), h('button', {
       type: 'button',
       className: 'svp-btn',
-      disabled: offset + rows.length >= page.total || !!busy || running,
+      disabled: offset + rows.length >= page.total || !!busy || running || corriendo,
       onClick: () => setOffset(offset + 20)
     }, 'Siguiente'))));
   }

@@ -32,7 +32,7 @@ const files = [
   'fincat-store.jsx', 'program-general-info.jsx',
   'savings-panel-repository.js',
   'savings-panel-reference.jsx',
-  'savings-certification-admin.jsx', 'savings-runtime-admin.jsx', 'savings-panel-admin.jsx',
+  'savings-certification-admin.jsx', 'savings-bulk-admin.jsx', 'savings-runtime-admin.jsx', 'savings-panel-admin.jsx',
   'screens-admin-branding.jsx', 'screens-admin-visual-crud.jsx', 'screens-admin-identity.jsx', 'screens-admin-pantallas.jsx', 'screens-admin-requests.jsx', 'screens-admin-data-exports.jsx', 'screens-admin-affiliates.jsx', 'screens-admin-savings.jsx', 'screens-admin-access.jsx', 'screens-admin.jsx',
   'company-store.jsx', 'catalog-store.jsx', 'screens-program-product-payment.jsx', 'screens-catalogo.jsx',
   'program-catalog-admin-store.jsx', 'screens-admin-program-products.jsx',

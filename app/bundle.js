@@ -63484,7 +63484,8 @@ Object.assign(window, {
     }
     const access = adminModuleAccess(app);
     const activeModule = MODULES.find(m => m.id === view);
-    const unionChild = Boolean(viewContext && viewContext.from === 'sindicato' && viewContext.view === view && app.admin.assignment && Array.isArray(app.admin.assignment.moduleKeys) && app.admin.assignment.moduleKeys.includes('sindicato') && (window.UNION_SCREEN_REGISTRY || []).some(m => m.admin_editor.view === view));
+    const unionEntry = viewContext && viewContext.from === 'sindicato' && viewContext.view === view ? (window.UNION_SCREEN_REGISTRY || []).find(m => m.admin_editor.view === view) : null;
+    const unionChild = Boolean(unionEntry && app.admin.has(unionEntry.section_permission));
     if (activeModule && !access.stateFor(activeModule).canView && !unionChild) {
       setView('menu');
       return null;

@@ -26,7 +26,18 @@
  function Btn({children,tone='',...props}){return h('button',{type:'button',className:'svp-btn '+tone,...props},children);}
  function Field({label,value,onChange,type='text',disabled=false,...props}){return h('label',{className:'svp-field'},label,h('input',{type,value:text(value),disabled,onChange:e=>onChange(e.target.value),...(type==='number'?{min:0,step:'.01',inputMode:'decimal'}:{}),...props}));}
  function Notes({value,onChange,disabled}){return h('label',{className:'svp-field'},'Observaciones (opcional)',h('textarea',{value,maxLength:1000,disabled,onChange:e=>onChange(e.target.value)}));}
- function defaults(d){const p=d.context.person||{};return {capital:'',yield:'',amount:text(p.aporte),first_date:p.inicio||'',enrollment_start:p.plan_inicio||'',plan_end:p.plan_fin||'',next_date:p.prox||'',process:String(p.proceso||'').toUpperCase()==='JUB'?'JUB':String(p.proceso)==='1'?'PROCESS_1':String(p.proceso)==='3'?'PROCESS_3':'',active:p.estado==='ahorrando',observation:''};}
+ // Proposed split read from the file itself: the yield already included up to the historical
+ // reconciliation date, and the rest as capital. Never a decision: the encargada can change it
+ // and Supabase still requires capital+yield to equal the reviewed balance.
+ const cents=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Math.round(Number(v)*100);
+ function split(p){
+  const total=cents(p.saldo_revision),y=cents(p.rendimiento);
+  if(total==null||total<0)return null;
+  if(total===0)return {capital:'0.00',yield:'0.00',reason:'empty'};
+  if(y==null||y<0||y>total)return null;
+  return {capital:((total-y)/100).toFixed(2),yield:(y/100).toFixed(2),reason:'file'};
+ }
+ function defaults(d){const p=d.context.person||{},s=split(p);return {capital:s?s.capital:'',yield:s?s.yield:'',amount:text(p.aporte),first_date:p.inicio||'',enrollment_start:p.plan_inicio||'',plan_end:p.plan_fin||'',next_date:p.prox||'',process:String(p.proceso||'').toUpperCase()==='JUB'?'JUB':String(p.proceso)==='1'?'PROCESS_1':String(p.proceso)==='3'?'PROCESS_3':'',active:p.estado==='ahorrando',observation:''};}
  function Retirement({participantId,app,onSaved}){
   const [opened,setOpened]=useState(false),[revision,setRevision]=useState(0),[state,setState]=useState({});
   useEffect(()=>{if(!opened)return;let active=true;setState({loading:true});window.SavingsRepository.getAdminDashboard(null).then(data=>{if(active)setState({data});}).catch(error=>{if(active)setState({error:message(error)});});return()=>{active=false;};},[opened,participantId,revision]);
@@ -67,6 +78,7 @@
   function command(){return {...draft,capital:Number(draft.capital),yield:Number(draft.yield),first_date:draft.first_date||null,enrollment_start:draft.enrollment_start||null,amount:draft.active?Number(draft.amount):null,plan_end:draft.plan_end||null,next_date:draft.active?draft.next_date:null,confirmed:true};}
   const valid=draft&&money(draft.capital)&&money(draft.yield)&&((!draft.active&&!draft.first_date&&!draft.enrollment_start)||(date(draft.first_date)&&date(draft.enrollment_start)))&&(!draft.plan_end||date(draft.plan_end))&&(!!draft.process||!draft.active&&!draft.first_date&&!draft.enrollment_start)&&(!draft.active||(money(draft.amount)&&date(draft.next_date)));
   const ctx=data&&data.context,p=ctx&&ctx.person||{},schedule=data&&data.schedule||[],blocked=busy||loading||!!loadError;
+  const proposal=split(p),proposed=!!(proposal&&draft&&draft.capital===proposal.capital&&draft.yield===proposal.yield);
   const allowed=data&&data.can_confirm===true,sourceUpdate=ctx&&ctx.source_update,mayConfirm=allowed&&ctx.record_status==='RESOLVED'&&!(sourceUpdate&&sourceUpdate.pending)&&preview&&preview.can_confirm===true&&!preview.already_confirmed&&preview.difference===0;
   function updateReceipt(k,v){setEdit(e=>({...e,[k]:v}));retry.current=null;setError('');}
   function updateAdjustment(k,v){setAdjust(a=>({...a,[k]:v}));retry.current=null;setError('');}
@@ -98,6 +110,7 @@
       !allowed&&h('p',{className:'svp-note'},'Tu cuenta puede consultar esta información. La confirmación del saldo requiere permiso de autorización.'),
       allowed&&draft&&h(React.Fragment,null,
        h(Field,{label:'Capital disponible al corte',type:'number',value:draft.capital,disabled:blocked,onChange:v=>change('capital',v)}),h(Field,{label:'Rendimiento incluido al corte',type:'number',value:draft.yield,disabled:blocked,onChange:v=>change('yield',v)}),
+       proposed&&h('p',{className:'svp-note'},proposal.reason==='empty'?'Este expediente no tiene saldo en el archivo, así que se proponen ambos importes en cero. Revísalo antes de confirmar.':'Importes propuestos con el archivo: el rendimiento ya incluido y el resto como capital. Compáralos con el expediente; puedes corregirlos antes de revisar.'),
        h(Field,{label:'Primera fecha de ahorro',type:'date',max:ctx.cutoff_on,value:draft.first_date,disabled:blocked,onChange:v=>change('first_date',v)}),
        h(Field,{label:'Inicio del plan actual',type:'date',value:draft.enrollment_start,disabled:blocked,onChange:v=>change('enrollment_start',v)}),h(Field,{label:'Última fecha del plan (opcional)',type:'date',value:draft.plan_end,disabled:blocked,onChange:v=>change('plan_end',v)}),h('p',{className:'svp-note'},'La primera fecha de ahorro conserva su antigüedad. El inicio y la última fecha del plan delimitan sus descuentos actuales.'),
        !draft.active&&!draft.first_date&&!draft.enrollment_start&&h('p',{className:'svp-note'},'Si nunca empezó a ahorrar, conserva ambas fechas vacías. No se inventará una fecha de inicio.'),

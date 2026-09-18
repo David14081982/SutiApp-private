@@ -50269,11 +50269,32 @@ Object.assign(window, {
       onChange: e => onChange(e.target.value)
     }));
   }
-  function defaults(d) {
-    const p = d.context.person || {};
+  // Proposed split read from the file itself: the yield already included up to the historical
+  // reconciliation date, and the rest as capital. Never a decision: the encargada can change it
+  // and Supabase still requires capital+yield to equal the reviewed balance.
+  const cents = v => v == null || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100);
+  function split(p) {
+    const total = cents(p.saldo_revision),
+      y = cents(p.rendimiento);
+    if (total == null || total < 0) return null;
+    if (total === 0) return {
+      capital: '0.00',
+      yield: '0.00',
+      reason: 'empty'
+    };
+    if (y == null || y < 0 || y > total) return null;
     return {
-      capital: '',
-      yield: '',
+      capital: ((total - y) / 100).toFixed(2),
+      yield: (y / 100).toFixed(2),
+      reason: 'file'
+    };
+  }
+  function defaults(d) {
+    const p = d.context.person || {},
+      s = split(p);
+    return {
+      capital: s ? s.capital : '',
+      yield: s ? s.yield : '',
       amount: text(p.aporte),
       first_date: p.inicio || '',
       enrollment_start: p.plan_inicio || '',
@@ -50497,6 +50518,8 @@ Object.assign(window, {
       p = ctx && ctx.person || {},
       schedule = data && data.schedule || [],
       blocked = busy || loading || !!loadError;
+    const proposal = split(p),
+      proposed = !!(proposal && draft && draft.capital === proposal.capital && draft.yield === proposal.yield);
     const allowed = data && data.can_confirm === true,
       sourceUpdate = ctx && ctx.source_update,
       mayConfirm = allowed && ctx.record_status === 'RESOLVED' && !(sourceUpdate && sourceUpdate.pending) && preview && preview.can_confirm === true && !preview.already_confirmed && preview.difference === 0;
@@ -50671,7 +50694,9 @@ Object.assign(window, {
       value: draft.yield,
       disabled: blocked,
       onChange: v => change('yield', v)
-    }), h(Field, {
+    }), proposed && h('p', {
+      className: 'svp-note'
+    }, proposal.reason === 'empty' ? 'Este expediente no tiene saldo en el archivo, así que se proponen ambos importes en cero. Revísalo antes de confirmar.' : 'Importes propuestos con el archivo: el rendimiento ya incluido y el resto como capital. Compáralos con el expediente; puedes corregirlos antes de revisar.'), h(Field, {
       label: 'Primera fecha de ahorro',
       type: 'date',
       max: ctx.cutoff_on,

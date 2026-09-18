@@ -12973,7 +12973,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontWeight: 700
       }
-    }, 'Crédito disponible'), React.createElement('div', {
+    }, 'Préstamo disponible'), React.createElement('div', {
       'data-finance-available-credit': availableCredit === null ? 'loading' : String(availableCredit),
       style: {
         fontSize: 'var(--text-32, 32px)',
@@ -75107,7 +75107,7 @@ Object.assign(window, {
           willChange: 'transform, opacity',
           transformOrigin: '50% 0'
         }
-      }, balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'), balChip('Mi ahorro', savingsBalance.label, 'piggy', {
+      }, balChip('Préstamo disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'), balChip('Mi ahorro', savingsBalance.label, 'piggy', {
         'data-home-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value),
         'data-savings-balance-state': savingsBalance.status
       }))), sheetLip());

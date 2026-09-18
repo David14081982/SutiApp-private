@@ -110,7 +110,7 @@
             React.createElement('div', { style: { fontSize: 'var(--text-14-5, 14.5px)', opacity: .85, fontWeight: 600 } }, saludoHome() + ','),
             React.createElement('div', { 'data-affiliate-field': 'topbar-name', style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', marginTop: 1 } }, u.short)),
           React.createElement('div', { ref: chipsRef, 'data-home-financial-chips': 'complete', 'data-home-credit-state': availableCreditReady ? 'ready' : financial.status === 'error' ? 'error' : 'loading', 'data-home-savings-state': savingsBalance.status, style: { display: 'flex', gap: 11, marginTop: 16, willChange: 'transform, opacity', transformOrigin: '50% 0' } },
-            balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'),
+            balChip('Préstamo disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash'),
             balChip('Mi ahorro', savingsBalance.label, 'piggy', { 'data-home-savings-balance': savingsBalance.value == null ? '' : String(savingsBalance.value), 'data-savings-balance-state': savingsBalance.status }))),
         sheetLip());
     }

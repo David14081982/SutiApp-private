@@ -46,7 +46,7 @@ assert(app.includes("h < 12 ? 'Buenos días' : h < 20 ? 'Buenas tardes' : 'Buena
 assert(app.includes("'data-home-financial-chips': 'complete'"));
 assert(app.includes("'data-home-credit-state': availableCreditReady ? 'ready'"));
 assert(app.includes("'data-home-savings-state': savingsBalance.status"));
-assert(app.includes("balChip('Crédito disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash')"));
+assert(app.includes("balChip('Préstamo disponible', availableCreditReady ? window.money(availableCredit) : '—', 'cash')"));
 assert(app.includes("window.useSelfSavingsBalance(variant === 'home')"));
 assert(app.includes("balChip('Mi ahorro', savingsBalance.label, 'piggy'"));
 assert(app.includes("typeof window.FinancialLegacyRepository.availableCreditTotal === 'function'"));

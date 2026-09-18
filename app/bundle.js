@@ -52927,12 +52927,14 @@ Object.assign(window, {
     useEffect(() => () => {
       navGeneration.current++;
     }, []);
+    // The server only knows padron/cobranza/solicitudes/revision; the list tab reads as padron.
+    const serverTab = tab === 'masivo' ? 'padron' : tab;
     const [state, reload] = useQuery(() => window.SavingsPanelRepository.list({
-      tab,
+      tab: serverTab,
       search: query,
       filter,
       offset
-    }), [tab, query, filter, offset, revision]);
+    }), [serverTab, query, filter, offset, revision]);
     const [nativeState, reloadNative] = useQuery(() => tab === 'padron' ? window.SavingsPanelRepository.nativeList({
       search: query,
       offset: nativeOffset,
@@ -53082,7 +53084,7 @@ Object.assign(window, {
         }
         const target = await window.SavingsPanelRepository.neighbor({
           id: open.id,
-          tab,
+          tab: serverTab,
           search: query,
           filter,
           direction

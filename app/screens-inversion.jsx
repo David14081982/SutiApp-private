@@ -125,6 +125,10 @@
   }
 
   function InvestmentScreen({ app }) {
+    // El copy editorial vive en Supabase (ADR-111). Las constantes de la
+    // simulación siguen fijas arriba y no se administran.
+    const copy = window.useInvestmentCopy();
+    const t = copy.t;
     const [amount, setAmount] = React.useState(250000);
     const [months, setMonths] = React.useState(12);
     const [editing, setEditing] = React.useState(false);
@@ -167,6 +171,32 @@
       return () => animations.forEach((animation) => { try { animation.cancel(); } catch (_) {} });
     }, [amount, months]);
 
+    // Sin copy no se pinta texto inventado: se espera o se ofrece reintentar.
+    if (copy.phase !== 'loaded') {
+      return h('div', { className: 'su-investment', 'data-investment-screen': '', 'data-investment-authority': 'presentation-only' },
+        h('style', null, CSS),
+        h('div', { className: 'su-inv-scroll' },
+          h('header', { className: 'su-inv-hero' },
+            h('div', { className: 'su-inv-seal', 'aria-hidden': 'true' }, window.SutiSeal && h(window.SutiSeal, { size: 250, mono: true })),
+            h('div', { className: 'su-inv-eyebrow' },
+              h('button', { type: 'button', className: 'su-inv-back', onClick: app.back, 'aria-label': 'Atrás', 'data-investment-back': '' }, icon('arrowL', 22)),
+              h('span', null, 'SUTI INVERSIÓN'))),
+          h('main', { className: 'su-inv-body' },
+            h('section', { className: 'su-inv-card', 'data-investment-copy-state': copy.phase, 'aria-live': 'polite' },
+              copy.phase === 'error'
+                ? h(React.Fragment, null,
+                  h('div', { className: 'su-inv-card-head' }, h('b', null, 'No pudimos cargar esta pantalla')),
+                  h('p', { className: 'su-inv-fine' }, 'Revisa tu conexión e inténtalo de nuevo.'),
+                  h('button', { type: 'button', className: 'su-inv-cta', style: { marginTop: 14 }, onClick: copy.retry }, icon('refresh', 20), h('span', null, 'Reintentar')))
+                : [
+                  h(window.Skeleton, { key: 'a', h: 26, w: '72%', r: 8 }),
+                  h('div', { key: 'b', style: { height: 10 } }),
+                  h(window.Skeleton, { key: 'c', h: 14, r: 8 }),
+                  h('div', { key: 'd', style: { height: 8 } }),
+                  h(window.Skeleton, { key: 'e', h: 14, w: '58%', r: 8 }),
+                ]))));
+    }
+
     function finishEditing() {
       const raw = Number(String(draft).replace(/[^\d]/g, ''));
       if (raw) {
@@ -202,14 +232,14 @@
     });
 
     const steps = [
-      ['Eliges monto y plazo', 'Desde $50,000, a 6 y 12 meses. Firmas el contrato con tu firma digital.'],
-      ['El fondo lo presta a afiliados', 'Tu dinero financia préstamos de nómina del propio sindicato, con descuento garantizado.'],
-      ['Cobras el 2.5% cada mes', 'Se deposita en tu cuenta bancaria registrada el día 5 de cada mes, todos los meses del plazo.'],
+      [t('step.1.title'), t('step.1.body')],
+      [t('step.2.title'), t('step.2.body')],
+      [t('step.3.title'), t('step.3.body')],
     ];
     const guarantees = [
-      ['shield', 'Respaldado por el patrimonio del SUTI', 'El fondo responde con reservas propias; no se invierte en bolsa ni en instrumentos de riesgo.'],
-      ['users', 'Auditado por el Comité de Vigilancia', 'Revisión mensual y asamblea informativa cada semestre, abierta a todos los afiliados.'],
-      ['doc', 'Tu capital regresa completo', 'Los rendimientos ya se te pagaron mes a mes: al cerrar el plazo (mínimo 6 meses) recibes íntegro el capital, o lo renuevas.'],
+      ['shield', t('guarantee.1.title'), t('guarantee.1.body')],
+      ['users', t('guarantee.2.title'), t('guarantee.2.body')],
+      ['doc', t('guarantee.3.title'), t('guarantee.3.body')],
     ];
 
     return h('div', { className: 'su-investment', 'data-investment-screen': '', 'data-investment-authority': 'presentation-only' },
@@ -220,16 +250,16 @@
           h('div', { className: 'su-inv-eyebrow' },
             h('button', { type: 'button', className: 'su-inv-back', onClick: app.back, 'aria-label': 'Atrás', 'data-investment-back': '' }, icon('arrowL', 22)),
             h('span', null, 'SUTI INVERSIÓN')),
-          h('h1', null, 'Tu dinero rinde 2.5% mensual'),
-          h('p', { className: 'su-inv-lede' }, h('strong', null, 'Haz que tu dinero trabaje para ti.'), h('br'), 'Tu inversión ayuda a financiar préstamos para otros afiliados, mientras tú recibes rendimientos.'),
+          h('h1', null, t('hero.title')),
+          h('p', { className: 'su-inv-lede' }, h('strong', null, t('hero.lede.strong')), h('br'), t('hero.lede.body')),
           h('div', { className: 'su-inv-rate' },
-            h('div', null, h('div', { className: 'su-inv-rate-big' }, h('b', null, '2.5'), h('i', null, '%')), h('div', { className: 'su-inv-rate-label' }, 'MENSUAL FIJO')),
+            h('div', null, h('div', { className: 'su-inv-rate-big' }, h('b', null, t('hero.rate.value')), h('i', null, '%')), h('div', { className: 'su-inv-rate-label' }, t('hero.rate.label'))),
             h('div', { className: 'su-inv-rate-divider' }),
-            h('div', null, h('div', { className: 'su-inv-annual' }, icon('finance', 17), '30% anual'), h('div', { className: 'su-inv-rate-note' }, 'Tasa fija: 2.5% del capital cada mes, sin interés compuesto'))),
+            h('div', null, h('div', { className: 'su-inv-annual' }, icon('finance', 17), t('hero.rate.annual')), h('div', { className: 'su-inv-rate-note' }, t('hero.rate.note')))),
           h('div', { className: 'su-inv-facts' },
-            h('span', null, icon('cash', 15), 'Desde $50,000'),
-            h('span', null, icon('refresh', 15), 'Plazo mínimo 6 meses'),
-            h('span', null, icon('ban', 15), 'Cero comisiones'))),
+            h('span', null, icon('cash', 15), t('hero.fact.1')),
+            h('span', null, icon('refresh', 15), t('hero.fact.2')),
+            h('span', null, icon('ban', 15), t('hero.fact.3')))),
         h('main', { className: 'su-inv-body' },
           h('section', { className: 'su-inv-card', 'aria-labelledby': 'investment-calculator-title' },
             h('div', { className: 'su-inv-card-head' }, h('b', { id: 'investment-calculator-title' }, 'Calcula tu rendimiento'), h('span', null, 'MONTO')),
@@ -255,12 +285,12 @@
                 h('div', null, h('div', { className: 'su-inv-k' }, 'Capital al final'), h('div', { className: 'su-inv-v2', 'data-investment-final': String(amount) }, money(amount)))),
             h('p', { className: 'su-inv-fine' }, 'El 2.5% es fijo sobre tu capital: no hay interés compuesto. Cada mes se te deposita el rendimiento y al terminar el plazo recibes tu capital completo.'))),
           h('section', { className: 'su-inv-section' },
-            h('div', { className: 'su-inv-section-head' }, icon('info', 18), h('b', null, 'Cómo funciona')),
-            h('div', { className: 'su-inv-panel su-inv-steps' }, steps.map((step, index) => h('div', { className: 'su-inv-step', key: step[0] }, h('span', null, index + 1), h('div', null, h('b', null, step[0]), h('p', null, step[1])))))),
+            h('div', { className: 'su-inv-section-head' }, icon('info', 18), h('b', null, t('steps.title'))),
+            h('div', { className: 'su-inv-panel su-inv-steps' }, steps.map((step, index) => h('div', { className: 'su-inv-step', key: index }, h('span', null, index + 1), h('div', null, h('b', null, step[0]), h('p', null, step[1])))))),
           h('section', { className: 'su-inv-section' },
-            h('div', { className: 'su-inv-section-head' }, icon('shield', 18), h('b', null, 'Tu respaldo')),
-            h('div', { className: 'su-inv-panel' }, guarantees.map((item) => h('div', { className: 'su-inv-guarantee', key: item[1] }, h('span', null, icon(item[0], 18)), h('div', null, h('b', null, item[1]), h('p', null, item[2])))))),
-          h('div', { className: 'su-inv-legal' }, icon('info', 16), h('p', null, 'Producto exclusivo para afiliados con antigüedad mínima de un año. Los rendimientos pasados no garantizan rendimientos futuros.')))),
+            h('div', { className: 'su-inv-section-head' }, icon('shield', 18), h('b', null, t('guarantees.title'))),
+            h('div', { className: 'su-inv-panel' }, guarantees.map((item, index) => h('div', { className: 'su-inv-guarantee', key: index }, h('span', null, icon(item[0], 18)), h('div', null, h('b', null, item[1]), h('p', null, item[2])))))),
+          h('div', { className: 'su-inv-legal' }, icon('info', 16), h('p', null, t('legal.note'))))),
       h('footer', { className: 'su-inv-footer' },
         h('div', { className: 'su-inv-footer-row' }, h('span', null, months + ' meses · 2.5% mensual fijo'), h('b', { 'data-investment-footer-return': String(totalReturn) }, '+' + money(totalReturn))),
         h('button', { type: 'button', className: 'su-inv-cta', onClick: () => askOnWhatsApp(amount), 'data-investment-cta': '', 'aria-label': 'Pedir información por WhatsApp para invertir ' + money(amount) }, icon('finance', 21), h('span', null, 'Invertir ' + money(amount)))));

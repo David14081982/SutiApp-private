@@ -10410,6 +10410,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   window.SavingsRepository = Object.freeze(api);
 })();
 })();
+/* @@file investment-copy-repository.js */
+(function(){
+/* Supabase authority for the editorial copy of the Suti Inversion screen. */
+(function(){
+  'use strict';const db=()=>window.SutiSupabase.getClient();
+  async function list(){const r=await db().from('investment_screen_copy').select('id,value,sort_order').order('sort_order',{ascending:true});if(r.error)throw r.error;return Object.freeze(r.data||[]);}
+  async function save(id,value){const r=await db().from('investment_screen_copy').update({value:String(value)}).eq('id',id).select('id,value,sort_order').single();if(r.error)throw r.error;return r.data;}
+  window.InvestmentCopyRepository=Object.freeze({list,save});
+})();
+})();
 /* @@file admin-request-deletion-repository.js */
 (function(){
 /* Focal Admin request deletion boundary. Never removes affiliate documents or Storage objects. */
@@ -14439,6 +14449,228 @@ Object.assign(window, {
   window.SavingsScreen = SavingsScreen;
 })();
 })();
+/* @@file investment-copy-store.jsx */
+(function(){
+/* Editorial copy of Suti Inversion. Supabase is the only authority: the seeded
+   rows are the defaults and there is no code-side fallback text. The calculator
+   (rate, bounds, terms, formula) is not part of this store by design. */
+(function () {
+  'use strict';
+
+  const repo = () => window.InvestmentCopyRepository;
+  const listeners = new Set();
+  let values = {},
+    phase = 'idle',
+    error = null,
+    promise = null;
+  const GROUPS = Object.freeze([{
+    id: 'hero',
+    label: 'Encabezado',
+    icon: 'sparkle',
+    items: [{
+      id: 'hero.title',
+      label: 'Título principal',
+      area: true
+    }, {
+      id: 'hero.lede.strong',
+      label: 'Frase en negritas'
+    }, {
+      id: 'hero.lede.body',
+      label: 'Párrafo de introducción',
+      area: true
+    }, {
+      id: 'hero.rate.value',
+      label: 'Cifra grande'
+    }, {
+      id: 'hero.rate.label',
+      label: 'Etiqueta bajo la cifra'
+    }, {
+      id: 'hero.rate.annual',
+      label: 'Equivalente anual'
+    }, {
+      id: 'hero.rate.note',
+      label: 'Nota de la tasa',
+      area: true
+    }, {
+      id: 'hero.fact.1',
+      label: 'Dato 1'
+    }, {
+      id: 'hero.fact.2',
+      label: 'Dato 2'
+    }, {
+      id: 'hero.fact.3',
+      label: 'Dato 3'
+    }]
+  }, {
+    id: 'steps',
+    label: 'Cómo funciona',
+    icon: 'info',
+    items: [{
+      id: 'steps.title',
+      label: 'Título de la sección'
+    }, {
+      id: 'step.1.title',
+      label: 'Paso 1 · encabezado'
+    }, {
+      id: 'step.1.body',
+      label: 'Paso 1 · descripción',
+      area: true
+    }, {
+      id: 'step.2.title',
+      label: 'Paso 2 · encabezado'
+    }, {
+      id: 'step.2.body',
+      label: 'Paso 2 · descripción',
+      area: true
+    }, {
+      id: 'step.3.title',
+      label: 'Paso 3 · encabezado'
+    }, {
+      id: 'step.3.body',
+      label: 'Paso 3 · descripción',
+      area: true
+    }]
+  }, {
+    id: 'guarantees',
+    label: 'Tu respaldo',
+    icon: 'shield',
+    items: [{
+      id: 'guarantees.title',
+      label: 'Título de la sección'
+    }, {
+      id: 'guarantee.1.title',
+      label: 'Garantía 1 · encabezado'
+    }, {
+      id: 'guarantee.1.body',
+      label: 'Garantía 1 · descripción',
+      area: true
+    }, {
+      id: 'guarantee.2.title',
+      label: 'Garantía 2 · encabezado'
+    }, {
+      id: 'guarantee.2.body',
+      label: 'Garantía 2 · descripción',
+      area: true
+    }, {
+      id: 'guarantee.3.title',
+      label: 'Garantía 3 · encabezado'
+    }, {
+      id: 'guarantee.3.body',
+      label: 'Garantía 3 · descripción',
+      area: true
+    }]
+  }, {
+    id: 'legal',
+    label: 'Aviso legal',
+    icon: 'doc',
+    items: [{
+      id: 'legal.note',
+      label: 'Texto del aviso',
+      area: true
+    }]
+  }]);
+  const KEYS = Object.freeze(GROUPS.reduce((all, g) => all.concat(g.items.map(i => i.id)), []));
+  const emit = () => listeners.forEach(fn => fn());
+  async function load() {
+    phase = 'loading';
+    error = null;
+    emit();
+    try {
+      const rows = await repo().list();
+      const next = {};
+      rows.forEach(row => {
+        next[row.id] = row.value;
+      });
+      values = next;
+      phase = 'loaded';
+    } catch (e) {
+      values = {};
+      phase = 'error';
+      error = e;
+      console.error('Investment copy authority error', e);
+    }
+    emit();
+    return store;
+  }
+
+  /* Non-blocking advisory: the copy may name a rate or amount the fixed
+     simulation does not use. It never prevents saving. */
+  function advisory(id, value) {
+    const sim = window.SUTI_INVESTMENT_SIMULATION;
+    if (!sim) return null;
+    const monthly = Number((sim.RATE * 100).toFixed(2));
+    const annual = Number((monthly * 12).toFixed(2));
+    const text = String(value == null ? '' : value);
+    const found = [];
+    const near = (a, b) => Math.abs(a - b) < 1e-6;
+    if (id === 'hero.rate.value') {
+      const n = Number(text.replace(/[^\d.]/g, ''));
+      if (n && !near(n, monthly)) found.push(n + '%');
+    }
+    text.replace(/(\d+(?:[.,]\d+)?)\s*%/g, (match, digits) => {
+      const n = Number(String(digits).replace(',', '.'));
+      if (!near(n, monthly) && !near(n, annual)) found.push(n + '%');
+      return match;
+    });
+    text.replace(/\$\s*([\d,]+)/g, (match, digits) => {
+      const n = Number(digits.replace(/,/g, ''));
+      if (n !== sim.MIN && n !== sim.MAX) found.push('$' + n.toLocaleString('en-US'));
+      return match;
+    });
+    if (!found.length) return null;
+    return 'Este texto menciona ' + found.join(', ') + '. La simulación calcula ' + monthly + '% mensual (' + annual + '% anual) desde $' + sim.MIN.toLocaleString('en-US') + '.';
+  }
+  const store = {
+    GROUPS,
+    KEYS,
+    state: () => ({
+      phase,
+      error
+    }),
+    subscribe: fn => {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    text: id => values[id] == null ? '' : values[id],
+    advisory,
+    retry: () => {
+      promise = null;
+      return ensure();
+    },
+    async save(id, value) {
+      const clean = String(value == null ? '' : value).trim();
+      if (!clean || clean.length > 400) return false;
+      try {
+        const row = await repo().save(id, clean);
+        values = Object.assign({}, values, {
+          [id]: row.value
+        });
+        emit();
+        return true;
+      } catch (e) {
+        console.error('Investment copy save failed', e);
+        return false;
+      }
+    }
+  };
+  const ensure = () => promise || (promise = load());
+  window.investmentCopyStore = store;
+  window.useInvestmentCopy = function () {
+    const [, force] = React.useState(0);
+    React.useEffect(() => store.subscribe(() => force(n => n + 1)), []);
+    React.useEffect(() => {
+      ensure();
+    }, []);
+    return {
+      phase,
+      error,
+      t: store.text,
+      retry: store.retry,
+      store
+    };
+  };
+})();
+})();
 /* @@file screens-inversion.jsx */
 (function(){
 /* screens-inversion.jsx — H-SUTI-INVERSION-SCREEN-001
@@ -14570,6 +14802,10 @@ Object.assign(window, {
   function InvestmentScreen({
     app
   }) {
+    // El copy editorial vive en Supabase (ADR-111). Las constantes de la
+    // simulación siguen fijas arriba y no se administran.
+    const copy = window.useInvestmentCopy();
+    const t = copy.t;
     const [amount, setAmount] = React.useState(250000);
     const [months, setMonths] = React.useState(12);
     const [editing, setEditing] = React.useState(false);
@@ -14646,6 +14882,74 @@ Object.assign(window, {
         } catch (_) {}
       });
     }, [amount, months]);
+
+    // Sin copy no se pinta texto inventado: se espera o se ofrece reintentar.
+    if (copy.phase !== 'loaded') {
+      return h('div', {
+        className: 'su-investment',
+        'data-investment-screen': '',
+        'data-investment-authority': 'presentation-only'
+      }, h('style', null, CSS), h('div', {
+        className: 'su-inv-scroll'
+      }, h('header', {
+        className: 'su-inv-hero'
+      }, h('div', {
+        className: 'su-inv-seal',
+        'aria-hidden': 'true'
+      }, window.SutiSeal && h(window.SutiSeal, {
+        size: 250,
+        mono: true
+      })), h('div', {
+        className: 'su-inv-eyebrow'
+      }, h('button', {
+        type: 'button',
+        className: 'su-inv-back',
+        onClick: app.back,
+        'aria-label': 'Atrás',
+        'data-investment-back': ''
+      }, icon('arrowL', 22)), h('span', null, 'SUTI INVERSIÓN'))), h('main', {
+        className: 'su-inv-body'
+      }, h('section', {
+        className: 'su-inv-card',
+        'data-investment-copy-state': copy.phase,
+        'aria-live': 'polite'
+      }, copy.phase === 'error' ? h(React.Fragment, null, h('div', {
+        className: 'su-inv-card-head'
+      }, h('b', null, 'No pudimos cargar esta pantalla')), h('p', {
+        className: 'su-inv-fine'
+      }, 'Revisa tu conexión e inténtalo de nuevo.'), h('button', {
+        type: 'button',
+        className: 'su-inv-cta',
+        style: {
+          marginTop: 14
+        },
+        onClick: copy.retry
+      }, icon('refresh', 20), h('span', null, 'Reintentar'))) : [h(window.Skeleton, {
+        key: 'a',
+        h: 26,
+        w: '72%',
+        r: 8
+      }), h('div', {
+        key: 'b',
+        style: {
+          height: 10
+        }
+      }), h(window.Skeleton, {
+        key: 'c',
+        h: 14,
+        r: 8
+      }), h('div', {
+        key: 'd',
+        style: {
+          height: 8
+        }
+      }), h(window.Skeleton, {
+        key: 'e',
+        h: 14,
+        w: '58%',
+        r: 8
+      })]))));
+    }
     function finishEditing() {
       const raw = Number(String(draft).replace(/[^\d]/g, ''));
       if (raw) {
@@ -14692,8 +14996,8 @@ Object.assign(window, {
         }
       }));
     });
-    const steps = [['Eliges monto y plazo', 'Desde $50,000, a 6 y 12 meses. Firmas el contrato con tu firma digital.'], ['El fondo lo presta a afiliados', 'Tu dinero financia préstamos de nómina del propio sindicato, con descuento garantizado.'], ['Cobras el 2.5% cada mes', 'Se deposita en tu cuenta bancaria registrada el día 5 de cada mes, todos los meses del plazo.']];
-    const guarantees = [['shield', 'Respaldado por el patrimonio del SUTI', 'El fondo responde con reservas propias; no se invierte en bolsa ni en instrumentos de riesgo.'], ['users', 'Auditado por el Comité de Vigilancia', 'Revisión mensual y asamblea informativa cada semestre, abierta a todos los afiliados.'], ['doc', 'Tu capital regresa completo', 'Los rendimientos ya se te pagaron mes a mes: al cerrar el plazo (mínimo 6 meses) recibes íntegro el capital, o lo renuevas.']];
+    const steps = [[t('step.1.title'), t('step.1.body')], [t('step.2.title'), t('step.2.body')], [t('step.3.title'), t('step.3.body')]];
+    const guarantees = [['shield', t('guarantee.1.title'), t('guarantee.1.body')], ['users', t('guarantee.2.title'), t('guarantee.2.body')], ['doc', t('guarantee.3.title'), t('guarantee.3.body')]];
     return h('div', {
       className: 'su-investment',
       'data-investment-screen': '',
@@ -14717,23 +15021,23 @@ Object.assign(window, {
       onClick: app.back,
       'aria-label': 'Atrás',
       'data-investment-back': ''
-    }, icon('arrowL', 22)), h('span', null, 'SUTI INVERSIÓN')), h('h1', null, 'Tu dinero rinde 2.5% mensual'), h('p', {
+    }, icon('arrowL', 22)), h('span', null, 'SUTI INVERSIÓN')), h('h1', null, t('hero.title')), h('p', {
       className: 'su-inv-lede'
-    }, h('strong', null, 'Haz que tu dinero trabaje para ti.'), h('br'), 'Tu inversión ayuda a financiar préstamos para otros afiliados, mientras tú recibes rendimientos.'), h('div', {
+    }, h('strong', null, t('hero.lede.strong')), h('br'), t('hero.lede.body')), h('div', {
       className: 'su-inv-rate'
     }, h('div', null, h('div', {
       className: 'su-inv-rate-big'
-    }, h('b', null, '2.5'), h('i', null, '%')), h('div', {
+    }, h('b', null, t('hero.rate.value')), h('i', null, '%')), h('div', {
       className: 'su-inv-rate-label'
-    }, 'MENSUAL FIJO')), h('div', {
+    }, t('hero.rate.label'))), h('div', {
       className: 'su-inv-rate-divider'
     }), h('div', null, h('div', {
       className: 'su-inv-annual'
-    }, icon('finance', 17), '30% anual'), h('div', {
+    }, icon('finance', 17), t('hero.rate.annual')), h('div', {
       className: 'su-inv-rate-note'
-    }, 'Tasa fija: 2.5% del capital cada mes, sin interés compuesto'))), h('div', {
+    }, t('hero.rate.note')))), h('div', {
       className: 'su-inv-facts'
-    }, h('span', null, icon('cash', 15), 'Desde $50,000'), h('span', null, icon('refresh', 15), 'Plazo mínimo 6 meses'), h('span', null, icon('ban', 15), 'Cero comisiones'))), h('main', {
+    }, h('span', null, icon('cash', 15), t('hero.fact.1')), h('span', null, icon('refresh', 15), t('hero.fact.2')), h('span', null, icon('ban', 15), t('hero.fact.3')))), h('main', {
       className: 'su-inv-body'
     }, h('section', {
       className: 'su-inv-card',
@@ -14849,23 +15153,23 @@ Object.assign(window, {
       className: 'su-inv-section'
     }, h('div', {
       className: 'su-inv-section-head'
-    }, icon('info', 18), h('b', null, 'Cómo funciona')), h('div', {
+    }, icon('info', 18), h('b', null, t('steps.title'))), h('div', {
       className: 'su-inv-panel su-inv-steps'
     }, steps.map((step, index) => h('div', {
       className: 'su-inv-step',
-      key: step[0]
+      key: index
     }, h('span', null, index + 1), h('div', null, h('b', null, step[0]), h('p', null, step[1])))))), h('section', {
       className: 'su-inv-section'
     }, h('div', {
       className: 'su-inv-section-head'
-    }, icon('shield', 18), h('b', null, 'Tu respaldo')), h('div', {
+    }, icon('shield', 18), h('b', null, t('guarantees.title'))), h('div', {
       className: 'su-inv-panel'
-    }, guarantees.map(item => h('div', {
+    }, guarantees.map((item, index) => h('div', {
       className: 'su-inv-guarantee',
-      key: item[1]
+      key: index
     }, h('span', null, icon(item[0], 18)), h('div', null, h('b', null, item[1]), h('p', null, item[2])))))), h('div', {
       className: 'su-inv-legal'
-    }, icon('info', 16), h('p', null, 'Producto exclusivo para afiliados con antigüedad mínima de un año. Los rendimientos pasados no garantizan rendimientos futuros.')))), h('footer', {
+    }, icon('info', 16), h('p', null, t('legal.note'))))), h('footer', {
       className: 'su-inv-footer'
     }, h('div', {
       className: 'su-inv-footer-row'
@@ -25609,6 +25913,10 @@ Object.assign(window, {
     id: 'flujos',
     label: 'Etapas y seguimiento',
     icon: 'clock'
+  }, {
+    id: 'inversion',
+    label: 'Suti Inversión · Textos',
+    icon: 'trending'
   }, {
     id: 'marketplace',
     label: 'Marketplace de productos',
@@ -45739,6 +46047,266 @@ Object.assign(window, {
   window.FlujosModule = FlujosModule;
 })();
 })();
+/* @@file screens-admin-inversion.jsx */
+(function(){
+/* screens-admin-inversion.jsx — Panel: SUTI INVERSIÓN (textos).
+   Edita únicamente el copy editorial de la pantalla Invertir. La calculadora
+   (tasa, montos, plazos y fórmula) permanece fija en código por ADR-070/ADR-111
+   y no se expone aquí. Exporta window.InversionTextosModule. */
+(function () {
+  const {
+    useState,
+    useEffect
+  } = React;
+  const I = window.Icon;
+  const S = () => window.investmentCopyStore;
+  const card = {
+    background: 'var(--surface)',
+    borderRadius: 16,
+    boxShadow: 'var(--neo-sm)'
+  };
+  const inputSt = {
+    width: '100%',
+    border: '1px solid var(--hairline)',
+    borderRadius: 12,
+    padding: '11px 13px',
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--ink)',
+    background: 'var(--surface)',
+    outline: 'none',
+    fontFamily: 'inherit'
+  };
+  const labelSt = {
+    fontSize: 11.5,
+    fontWeight: 800,
+    color: 'var(--ink-3)',
+    letterSpacing: '.04em',
+    marginBottom: 6,
+    textTransform: 'uppercase'
+  };
+  function CopyField({
+    item,
+    canEdit,
+    toast
+  }) {
+    const stored = S().text(item.id);
+    const [draft, setDraft] = useState(stored);
+    const [ok, run] = window.useBtnConfirm();
+    const seen = React.useRef(stored);
+    // La fila adopta un cambio externo del store solo si no hay edición sin guardar.
+    useEffect(() => {
+      if (seen.current === stored) return;
+      setDraft(current => current === seen.current ? stored : current);
+      seen.current = stored;
+    }, [stored]);
+    const clean = String(draft == null ? '' : draft).trim();
+    const dirty = clean !== String(stored).trim();
+    const tooLong = clean.length > 400;
+    const valid = clean.length > 0 && !tooLong;
+    const advisory = valid ? S().advisory(item.id, clean) : null;
+    const save = () => run(() => {
+      S().save(item.id, clean).then(saved => {
+        if (toast) toast(saved ? 'Texto actualizado' : 'No fue posible guardar el texto');
+      });
+    });
+    return React.createElement('div', {
+      style: {
+        marginBottom: 14
+      },
+      'data-investment-copy-field': item.id
+    }, React.createElement('div', {
+      style: labelSt
+    }, item.label), item.area ? React.createElement('textarea', {
+      value: draft,
+      disabled: !canEdit,
+      onChange: e => setDraft(e.target.value),
+      rows: 3,
+      style: Object.assign({}, inputSt, {
+        resize: 'vertical',
+        lineHeight: 1.45
+      })
+    }) : React.createElement('input', {
+      value: draft,
+      disabled: !canEdit,
+      onChange: e => setDraft(e.target.value),
+      style: inputSt
+    }), advisory && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 7,
+        alignItems: 'flex-start',
+        marginTop: 7
+      }
+    }, React.createElement(I, {
+      name: 'info',
+      size: 14,
+      stroke: 2,
+      style: {
+        color: 'var(--ink-3)',
+        flexShrink: 0,
+        marginTop: 2
+      }
+    }), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        lineHeight: 1.45
+      }
+    }, advisory)), tooLong && React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: '#A32921',
+        fontWeight: 700,
+        marginTop: 7
+      }
+    }, 'Máximo 400 caracteres: van ' + clean.length + '.'), !clean.length && dirty && React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: '#A32921',
+        fontWeight: 700,
+        marginTop: 7
+      }
+    }, 'El texto no puede quedar vacío.'), canEdit && dirty && React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        marginTop: 9
+      }
+    }, React.createElement(window.Btn, {
+      size: 'sm',
+      icon: 'check',
+      success: ok,
+      disabled: !valid,
+      onClick: save
+    }, 'Guardar'), React.createElement(window.Btn, {
+      size: 'sm',
+      variant: 'outline',
+      onClick: () => setDraft(stored)
+    }, 'Deshacer')));
+  }
+  function InversionTextosModule({
+    app,
+    onBack,
+    header,
+    canEdit
+  }) {
+    const copy = window.useInvestmentCopy();
+    const toast = app && app.toast;
+    const groups = S().GROUPS;
+    let body;
+    if (copy.phase === 'error') {
+      body = React.createElement(window.EmptyState, {
+        icon: 'finance',
+        title: 'No pudimos cargar los textos',
+        sub: 'La pantalla de inversión conserva lo último publicado. Reintenta para editar.',
+        action: React.createElement(window.Btn, {
+          onClick: copy.retry
+        }, 'Reintentar')
+      });
+    } else if (copy.phase !== 'loaded') {
+      body = React.createElement('div', {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12
+        }
+      }, [0, 1, 2].map(n => React.createElement(window.Skeleton, {
+        key: n,
+        h: 120,
+        r: 16
+      })));
+    } else {
+      body = React.createElement('div', {
+        style: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14
+        }
+      }, groups.map(g => React.createElement('div', {
+        key: g.id,
+        style: Object.assign({}, card, {
+          padding: 15
+        }),
+        'data-investment-copy-group': g.id
+      }, React.createElement('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9,
+          marginBottom: 13
+        }
+      }, React.createElement('div', {
+        style: {
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          background: 'var(--guinda-50)',
+          color: 'var(--guinda)',
+          display: 'grid',
+          placeItems: 'center',
+          flexShrink: 0
+        }
+      }, React.createElement(I, {
+        name: g.icon,
+        size: 19,
+        stroke: 2
+      })), React.createElement('div', {
+        style: {
+          fontSize: 15,
+          fontWeight: 900,
+          color: 'var(--ink)'
+        }
+      }, g.label)), g.items.map(item => React.createElement(CopyField, {
+        key: item.id,
+        item,
+        canEdit: canEdit !== false,
+        toast
+      })))));
+    }
+    return React.createElement('div', null, header({
+      title: 'Suti Inversión',
+      sub: S().KEYS.length + ' textos de la pantalla Invertir',
+      onBack
+    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 16,
+        paddingBottom: 28
+      }
+    }, React.createElement('div', {
+      style: {
+        background: '#EEF3FF',
+        border: '1px solid #D6E2FB',
+        borderRadius: 14,
+        padding: '11px 13px',
+        display: 'flex',
+        gap: 10,
+        alignItems: 'flex-start',
+        marginBottom: 16
+      }
+    }, React.createElement(I, {
+      name: 'info',
+      size: 17,
+      stroke: 2,
+      style: {
+        color: '#2456C7',
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-2)',
+        fontWeight: 600,
+        lineHeight: 1.5
+      }
+    }, 'Aquí se edita ', React.createElement('b', null, 'solo el texto'), '. La calculadora de la pantalla —tasa, montos, plazos, gráfica y sus etiquetas— permanece fija en código y no cambia desde el Admin.')), body));
+  }
+  window.InversionTextosModule = InversionTextosModule;
+})();
+})();
 /* @@file screens-admin-documents.jsx */
 (function(){
 /* Central Admin for document catalog, review, terms and QR policy. */
@@ -60212,6 +60780,12 @@ Object.assign(window, {
     desc: 'Etapas por servicio y fechas reales',
     classification: 'PRODUCTIVE_HYBRID'
   }, {
+    id: 'inversion',
+    label: 'Suti Inversión',
+    icon: 'trending',
+    desc: 'Textos de la pantalla Invertir',
+    classification: 'PRODUCTIVE_SUPABASE'
+  }, {
     id: 'marketplace',
     label: 'Marketplace',
     icon: 'cart',
@@ -60357,6 +60931,7 @@ Object.assign(window, {
     sindicato: 'union_content.read',
     fincat: 'workflow.read',
     flujos: 'workflow.read',
+    inversion: 'workflow.read',
     convenios: 'companies.read',
     catalogos: 'segmentation.read',
     roles: 'authorization.read',
@@ -60393,7 +60968,7 @@ Object.assign(window, {
     id: 'finance',
     label: 'Finanzas',
     icon: 'finance',
-    modules: ['finanzas', 'fondos', 'flujos']
+    modules: ['finanzas', 'fondos', 'flujos', 'inversion']
   }, {
     id: 'savings',
     label: 'Ahorro',
@@ -62482,6 +63057,11 @@ Object.assign(window, {
       onBack: () => setView('menu'),
       header: headerFn
     });else if (view === 'flujos') body = React.createElement(window.FlujosModule, {
+      app,
+      onBack: () => setView('menu'),
+      header: headerFn,
+      canEdit: app.admin.has('workflow.write')
+    });else if (view === 'inversion') body = React.createElement(window.InversionTextosModule, {
       app,
       onBack: () => setView('menu'),
       header: headerFn,

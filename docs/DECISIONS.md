@@ -1,5 +1,16 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-111 — Copy editorial de Suti Inversión administrable, 2026-09-17
+
+- **Enmienda acotada de ADR-070:** el ADR-070 prohibía Supabase, Edge, RPC, `localStorage`, caché y registro productivo para la pantalla `Mi Financiera → Invertir`. Esta decisión levanta esa prohibición **únicamente para el texto editorial**. Todo lo demás del ADR-070 sigue vigente sin cambio.
+- **Autoridad:** `public.investment_screen_copy` es la única fuente de los 25 textos editoriales (encabezado, «Cómo funciona», «Tu respaldo» y aviso legal). No existe copia de respaldo en código: la semilla de la migración es el valor por omisión y la pantalla nunca inventa texto.
+- **Fuera de alcance por decisión expresa del propietario:** la calculadora no se administra. `RATE`, `MIN`, `MAX`, `STEP`, `TERMS`, la fórmula de proyección y **todas las etiquetas del bloque de cálculo, la gráfica, el pie y el CTA** permanecen fijas en `screens-inversion.jsx`. La tabla no almacena ningún número que la simulación consuma.
+- **Límite de autoridad, sin cambio:** la inversión operativa, saldos, contratos, elegibilidad, pagos, solicitudes y rendimientos reales siguen en legacy protegido. La pantalla no los lee ni los sustituye y sigue sin crear solicitudes. El CTA de WhatsApp autorizado aparte conserva su comportamiento.
+- **Contrato de llaves cerrado:** las filas se crean por migración. `authenticated` recibe `select,update`; nunca `insert` ni `delete`. El panel solo puede cambiar valores, no inventar ni destruir llaves. Escribir exige `workflow.write`; leer es público como el resto del contenido de pantalla. Trigger de auditoría administrativa activo.
+- **Permiso reutilizado:** el módulo vive bajo `workflow.read`/`workflow.write`, los mismos de Etapas y seguimiento, para no fabricar un permiso que ningún administrador tuviera asignado. Se registra como módulo `inversion` en `admin_section_definitions` para que sea delegable a una cuenta acotada, con política `restrictive` de escritura ligada a ese módulo. La lectura no lleva política restrictiva: un administrador acotado que además es afiliado debe poder abrir la pantalla de inversión.
+- **Coherencia de cifras:** el panel muestra un aviso no bloqueante cuando un texto nombra un porcentaje o monto distinto al que calcula la simulación. Es informativo: nunca impide guardar. La responsabilidad editorial es del propietario.
+- **Aprobación:** autorización expresa del propietario, 2026-09-17, sobre propuesta quirúrgica previamente revisada.
+
 ## H-SUTIAPP-CONVENIOS-ANUNCIOS-001 — Anuncios de Convenios, 2026-09-17
 
 El propietario elige implementar de verdad la segmentación y el color de acento de los anuncios: se guardan en Supabase y el carrusel «Espacio publicitario» se filtra según el perfil de cada usuario. Los 13 anuncios archivados de Balam y Willys permanecen archivados. La segmentación de anuncios ofrece sindicato y categoría; el cargo se omite mientras no existan etiquetas de segmento asignadas a afiliados.

@@ -70,6 +70,7 @@
     { id: 'fondos', label: 'Fondos y reglas de financiamiento', icon: 'finance' },
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet' },
     { id: 'flujos', label: 'Etapas y seguimiento', icon: 'clock' },
+    { id: 'inversion', label: 'Suti Inversión · Textos', icon: 'trending' },
     { id: 'marketplace', label: 'Marketplace de productos', icon: 'cart' },
     { id: 'noticias', label: 'Noticias del sindicato', icon: 'news' },
     { id: 'convenios', label: 'Convenios y beneficios', icon: 'tag' },

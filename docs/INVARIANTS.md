@@ -1,5 +1,20 @@
 # Invariantes
 
+## Copy editorial de Suti Inversión — ADR-111
+
+- **INV-235:** la calculadora de Suti Inversión no es administrable. `RATE`, `MIN`, `MAX`,
+  `STEP`, `TERMS`, la fórmula de proyección y las etiquetas del bloque de cálculo, la
+  gráfica, el pie y el CTA viven en `screens-inversion.jsx`. `investment_screen_copy` no
+  almacena ningún valor que la simulación consuma.
+- **INV-236:** las 25 llaves editoriales son un contrato cerrado creado por migración.
+  `authenticated` recibe `select,update` y nunca `insert` ni `delete`: el panel cambia
+  valores, no inventa ni destruye llaves. Una llave nueva exige otra migración.
+- **INV-237:** la pantalla de inversión no pinta copy de respaldo. Sin autoridad muestra
+  espera o reintento; no hay texto en código, `DATA`, mock, caché ni `localStorage`.
+- **INV-238:** el límite de ADR-070 sigue vigente salvo en el texto: la inversión
+  operativa, saldos, contratos, elegibilidad, pagos y rendimientos reales permanecen en
+  legacy protegido y esta pantalla no los lee, escribe ni sustituye.
+
 ## Web Push de solicitudes — ADR-110
 
 - **INV-221:** Web Push sólo proyecta eventos confirmados; rollback no deja entrega. Un evento y

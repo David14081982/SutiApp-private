@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "mode": "test",
+  "version": "20260917000300",
+  "sha256": "754c029d1ed48004371b2f5e268262a1a354dddc3d8a13b08465b80d4ed42575",
+  "seedDigest": "39c4edb0c68f40fc01f78c66b45d9e69",
+  "rows": 25,
+  "persisted": 0
+}

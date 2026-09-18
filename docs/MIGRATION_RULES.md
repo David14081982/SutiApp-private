@@ -1,5 +1,19 @@
 # Reglas de migración
 
+## 20260917000300 — copy editorial de Suti Inversión
+
+APPLIED / VERIFIED — 2026-09-17. Crea `public.investment_screen_copy` con 25 filas sembradas: las cadenas exactas ya publicadas en `screens-inversion.jsx`, de modo que aplicar la migración no cambia un solo píxel de la pantalla. Aditiva pura: ninguna tabla, columna, constraint, índice, política o función existente se toca; reutiliza los triggers ya instalados `set_h0072_updated_at()` y `audit_admin_write()`.
+
+Contrato de llaves cerrado por diseño: `authenticated` recibe `select,update` y **nunca** `insert` ni `delete`, así que el panel puede cambiar valores pero no inventar ni destruir llaves. Una llave nueva (por ejemplo un cuarto paso de «Cómo funciona») exige otra migración. `update` exige `has_admin_permission('workflow.write')`; `select` es público como el resto del contenido de pantalla. `check` de formato en `id` y de longitud 1–400 en `value`.
+
+Registra además el módulo `inversion` en `admin_section_definitions` (`module_order` 36, lectura `workflow.read`, escritura `workflow.write`) para que sea delegable como cualquier otro panel, y una política `restrictive` de `update` acotada a ese módulo. La lectura permanece abierta a propósito: una política restrictiva de `select` dejaría sin pantalla de inversión a un administrador acotado que además es afiliado.
+
+No almacena ningún número que consuma la simulación: `RATE`, `MIN`, `MAX`, `STEP`, `TERMS` y la fórmula permanecen en código por ADR-070, enmendado sólo para el texto por ADR-111. Recovery: `drop table public.investment_screen_copy cascade` más `delete from public.admin_section_definitions where section_key='admin_inversion'` — sin efecto sobre otras autoridades; la pantalla queda sin copy y muestra su estado de reintento hasta reponer la tabla.
+
+**Numeración.** El candidato nació como `20260917000200` y hubo que renumerarlo: ese número ya estaba instalado por `voting_vote_admin`. El árbol de trabajo del propietario estaba 102 commits detrás de `origin/main` y no tenía esa migración ni `voting_live` ni `banners_audience`. Antes de numerar una migración hay que consultar `supabase_migrations.schema_migrations`, no el directorio local. Por lo mismo el módulo se registró con `module_order` 36: producción ya tenía 35 módulos.
+
+Verificación: ensayo completo con ROLLBACK (matriz de grants, RLS forzada, 3 políticas con la restrictiva, 2 triggers, módulo registrado, digest de la semilla y prueba de que ninguna otra autoridad cambia) y aplicación en transacción `repeatable read` con snapshot antes/después — `otherAuthoritiesChanged: 0`. Post-apply contra el camino real de la app: lectura anónima por PostgREST 200 con las 25 filas, `PATCH`/`DELETE` anónimos 401, y bajo ROLLBACK un administrador con `workflow.write` actualiza 1 fila mientras un afiliado sin permiso actualiza 0, con auditoría registrada. Ninguna de esas pruebas persistió: digest y `hero.title` intactos, 0 filas de auditoría. Local sin red: `node scripts/test-investment-copy-admin.js`. Evidencia: `docs/qa/evidence/investment-copy-admin-20260917/`.
+
 ## 20260917000100 — audiencia y color de banners
 
 APPLIED / VERIFIED. Aditiva: columnas de audiencia (modelo `company_benefits`) y `accent_hue` con checks y defaults («Todos», sin acento), grants por columna, política `banners_public_read` con `matches_current_affiliate_audience` y RPC `list_public_banners`. No modifica filas existentes ni archivos. Punto de restauración previo: `ads_restore_private` (banners, archivos, políticas, grants) y tag `restore/pre-anuncios-segmentados-20260917`. Forward, matriz y recovery con `ROLLBACK`; producción idéntica tras la prueba. Recovery `supabase/recovery/20260917000100_banners_audience.sql` elimina la RPC y restaura la política anterior, conservando columnas y valores como dato inerte. Evidencia: `docs/qa/evidence/anuncios-convenios-20260917/`.

@@ -44,6 +44,7 @@
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet', desc: 'Secciones y productos de Finanzas', classification: 'PRODUCTIVE_HYBRID' },
     { id: 'program_products', label: 'Programas · Productos', icon: 'cart', desc: 'Productos propios, precios e imágenes', ready: true },
     { id: 'flujos', label: 'Etapas y seguimiento', icon: 'clock', desc: 'Etapas por servicio y fechas reales', classification: 'PRODUCTIVE_HYBRID' },
+    { id: 'inversion', label: 'Suti Inversión', icon: 'trending', desc: 'Textos de la pantalla Invertir', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'marketplace', label: 'Marketplace', icon: 'cart', desc: 'Productos, imágenes y precios por servicio', ready: true },
     { id: 'aprobaciones', label: 'Aprobación de Pop-ups', icon: 'checkCircle', desc: 'Pop-ups de empresas por revisar', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'planes', label: 'Planes de empresas', icon: 'handshake', desc: 'Beneficios, precios y ciclos de pago', ready: true },
@@ -70,13 +71,13 @@
   const MODULE_PERMISSION = Object.freeze({
     votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
     administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
-    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
+    affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',inversion:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos','inversion'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['votaciones','votaciones_nominal','sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
@@ -529,6 +530,7 @@
     else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(Object.assign({},context,{from:'sindicato'}));setView(id);}});
     else if(view==='fincat')body=React.createElement(window.FinCatModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='flujos')body=React.createElement(window.FlujosModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('workflow.write')});
+    else if(view==='inversion')body=React.createElement(window.InversionTextosModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('workflow.write')});
     else if(view==='convenios')body=React.createElement(window.ConveniosModule,{app,onBack:backFromEditor,header:headerFn});
     else if(view==='catalogos')body=React.createElement(window.CatalogosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='roles')body=React.createElement(window.RolesModule,{app,onBack:()=>setView('menu'),header:headerFn});

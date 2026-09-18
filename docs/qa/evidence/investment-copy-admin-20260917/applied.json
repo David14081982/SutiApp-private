@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "mode": "apply",
+  "version": "20260917000300",
+  "sha256": "754c029d1ed48004371b2f5e268262a1a354dddc3d8a13b08465b80d4ed42575",
+  "seedDigest": "39c4edb0c68f40fc01f78c66b45d9e69",
+  "rows": 25,
+  "otherAuthoritiesChanged": 0,
+  "proof": {
+    "status": "PASS",
+    "rows": 25,
+    "digest": "39c4edb0c68f40fc01f78c66b45d9e69",
+    "before": {
+      "roles": "59f620f7b0c9fbe5b489538024527523",
+      "objects": 13635,
+      "requests": 83,
+      "workflows": "d8c0fa124d1070859d19c34c291d893e",
+      "affiliates": "45e81a702713c9a0787aacefd74e3434",
+      "app_assets": 207,
+      "assignments": "65bcf2168d46e6cb7378efa7d4e256b2",
+      "other_modules": "cf70161ca52f5c4b4aa60d3d24c2f6a3",
+      "role_permissions": "d2547a43da96646a175229ee52c7f65a"
+    },
+    "after": {
+      "roles": "59f620f7b0c9fbe5b489538024527523",
+      "objects": 13635,
+      "requests": 83,
+      "workflows": "d8c0fa124d1070859d19c34c291d893e",
+      "affiliates": "45e81a702713c9a0787aacefd74e3434",
+      "app_assets": 207,
+      "assignments": "65bcf2168d46e6cb7378efa7d4e256b2",
+      "other_modules": "cf70161ca52f5c4b4aa60d3d24c2f6a3",
+      "role_permissions": "d2547a43da96646a175229ee52c7f65a"
+    }
+  }
+}

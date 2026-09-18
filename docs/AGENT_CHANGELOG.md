@@ -1,5 +1,60 @@
 # Bitácora de agentes
 
+## 2026-09-17 — ADR-111 — Copy editorial de Suti Inversión administrable
+
+Los 25 textos editoriales de `Mi Financiera → Invertir` (encabezado, «Cómo funciona»,
+«Tu respaldo» y aviso legal) pasan de literales en código a `public.investment_screen_copy`,
+editables desde Admin → Finanzas → **Suti Inversión**, justo debajo de Etapas y seguimiento.
+La calculadora queda intacta por decisión expresa del propietario: tasa, montos, plazos,
+fórmula, gráfica, pie, CTA —incluido el de WhatsApp— y **todas sus etiquetas** siguen fijas
+en `screens-inversion.jsx`; la tabla no almacena ningún número que la simulación consuma.
+
+Migración `20260917000300` **APPLIED / VERIFIED**: 25 filas sembradas con las cadenas exactas
+vigentes, de modo que la pantalla publicada es idéntica al píxel. `authenticated` recibe
+`select,update` y nunca `insert`/`delete`, así que el panel cambia valores pero no inventa ni
+destruye llaves. Escritura con `workflow.write` —el permiso que ya usa Etapas y seguimiento—;
+lectura pública; triggers de `updated_at` y auditoría activos; módulo `inversion` registrado
+en `admin_section_definitions` con política `restrictive` de escritura.
+
+Ensayo completo con ROLLBACK y aplicación en transacción `repeatable read` con snapshot
+antes/después: `otherAuthoritiesChanged: 0`, digest de la semilla
+`39c4edb0c68f40fc01f78c66b45d9e69` idéntico al del archivo revisado. Contra el camino real de
+la app: lectura anónima por PostgREST 200 con las 25 filas; `PATCH` y `DELETE` anónimos 401;
+bajo ROLLBACK un administrador con `workflow.write` actualiza 1 fila y un afiliado sin permiso
+actualiza 0, con auditoría registrada. Esas pruebas no persistieron nada.
+Evidencia: `docs/qa/evidence/investment-copy-admin-20260917/`.
+
+Sin respaldo en código, `DATA`, mock ni `localStorage`: si la carga falla, la pantalla muestra
+reintentar en lugar de inventar texto. El panel avisa de forma no bloqueante cuando un texto
+nombra un porcentaje o monto distinto al que calcula la simulación.
+
+**Numeración y base.** El candidato nació como `20260917000200`, número ya instalado por
+`voting_vote_admin`; se renumeró a `20260917000300` y el módulo se registró con
+`module_order` 36 porque producción ya tenía 35 módulos. El árbol de trabajo del propietario
+estaba **102 commits detrás de `origin/main`**: este release se rearmó entero sobre
+`origin/main` en un worktree limpio, reaplicando cada cambio sobre la versión vigente. De
+haberse publicado la copia local se habrían perdido el CTA de WhatsApp de Suti Inversión y los
+tokens `--text-*` de accesibilidad.
+
+Archivos: `supabase/migrations/20260917000300_investment_screen_copy.sql`;
+`app/investment-copy-repository.js`; `app/investment-copy-store.jsx`;
+`app/screens-admin-inversion.jsx`; `app/screens-inversion.jsx`; `app/screens-admin.jsx`;
+`app/admin-store.jsx`; `scripts/build-bundle.js`; `scripts/apply-investment-screen-copy.js`;
+`scripts/test-investment-copy-admin.js`; `app/bundle.js`; `SutiApp.html`; `sw.js`;
+`docs/DECISIONS.md`; `docs/SOURCE_OF_TRUTH.md`; `docs/MIGRATION_RULES.md`;
+`docs/INVARIANTS.md`; `docs/AGENT_CHANGELOG.md`.
+
+Build: el bundle publicado se conserva byte a byte y solo se sustituyen los 6 bloques de este
+alcance (3 nuevos y 3 modificados); 122 de 128 quedan idénticos. Una recompilación completa
+reformateaba además `screens-admin-fincat.jsx` y `screens-admin-program-products.jsx`, deriva
+preexistente entre el bundle publicado y sus fuentes que este release **no** arrastra.
+`node --check` PASS y prueba focal PASS. Bundle `v=inv-copy-admin-20260917-001`, SW
+`sutiapp-v204`.
+
+`docs/architecture/*` no se regenera aquí: en `origin/main` el registro ya estaba desfasado de
+su propio árbol (65 nodos cambiados y 37 añadidos antes de tocar nada), y regenerarlo mezclaría
+~100 archivos ajenos con este alcance. Queda pendiente como tarea propia.
+
 ## 2026-09-17 — Votaciones: texto de fecha en la tarjeta
 
 A pedido del propietario la tarjeta de Votaciones en Inicio dice «Fecha el …» en lugar de «Cierra el …». Sólo cambia el trozo `screens-voting.jsx` del bundle (`voting-fecha-20260917-001`); el editor Admin conserva «Cierra el». Restauración: tag `restore/pre-fecha-votacion-20260917`.

@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Production negatives/read-only preview. Never sends a valid deletion confirmation.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,cp=require('child_process');
 const root=path.resolve(__dirname,'..'),env={},dir='C:/tmp/sutiapp-request-delete-20260908';
-for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const base=env.SUPABASE_URL,api='https://api.supabase.com/v1/projects/'+new URL(base).hostname.split('.')[0];
 async function call(url,body,token){const r=await fetch(url,{method:'POST',headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),Origin:'https://sutiapp.com'},body:JSON.stringify(body),signal:AbortSignal.timeout(55000)});return{status:r.status,data:await r.json()};}
 async function sql(query){const r=await fetch(api+'/database/query',{method:'POST',headers:{Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query,read_only:true})});assert(r.ok);return r.json();}

@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Owner-authorized equal-revision transport retry of an existing request. No approval/new request.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict;
 const env={},dir='C:/tmp/sutiapp-reference-reconcile-20260908',requestId='5cd836ad-3681-40c8-8cfc-803ac1af2e34';
-for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const url=env.SUPABASE_URL,api='https://api.supabase.com/v1/projects/'+new URL(url).hostname.split('.')[0];
 async function json(url,options){const r=await fetch(url,{...options,signal:AbortSignal.timeout(55000)}),d=await r.json().catch(()=>null);if(!r.ok)throw Error('HTTP_'+r.status+'_'+(d?.error||d?.message||''));return d;}
 const sql=query=>json(api+'/database/query',{method:'POST',headers:{Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query})});

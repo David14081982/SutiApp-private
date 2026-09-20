@@ -1,9 +1,13 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Execute the existing Edge approval against real READS, intercept its sole writer,
 // then test the captured SQL approval in a transaction that always rolls back.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const root = path.resolve(__dirname, '..'), values = {};
-for (const line of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env', 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/)) { const at = line.indexOf('='); if (at > 0) values[line.slice(0, at).trim()] = line.slice(at + 1).trim().replace(/^['"]|['"]$/g, ''); }
+for (const line of fs.readFileSync(ENV_FILE, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/)) { const at = line.indexOf('='); if (at > 0) values[line.slice(0, at).trim()] = line.slice(at + 1).trim().replace(/^['"]|['"]$/g, ''); }
 async function main() {
   const supabase = new Function(fs.readFileSync(path.join(root, 'app/vendor/supabase-js-2.112.3/supabase.min.js'), 'utf8') + ';return supabase;')();
   const realCreate = supabase.createClient;

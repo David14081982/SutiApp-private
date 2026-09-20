@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "checks": 24,
+  "approvalUsesRequestAffiliate": true,
+  "onlyThreeGuarantorDocuments": true,
+  "legacyFourExportPositionsPreserved": true,
+  "otherDocumentGuardsPreserved": true,
+  "failClosed": true
+}

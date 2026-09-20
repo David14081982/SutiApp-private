@@ -69,3 +69,7 @@ No admite escrituras independientes, fallback, uso cruzado ni PII innecesaria. C
 ## Archivo de banners — H-ADMIN-BANNERS-DELETE-001
 
 La eliminación solicitada por el propietario retira el banner de lectores browser y preserva íntegramente su fila original y archivos. banner_deletions es metadata durable, privada y 1:1, con FK restrictiva; no tiene purge ni writer browser directo. admin_audit_log registra BANNERS_DELETE atómicamente con actor real y tiempo backend. Reintentos no duplican metadata ni auditoría. Recovery técnico sólo funciona sin historia de archivo; después corresponde reparación hacia adelante o recuperación de datos explícitamente autorizada, nunca resurrección automática.
+
+## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
+
+PRIVATE_BACKUP_REQUIRED: the old .tmp/beneficiaries-20260918 source CSV, signatures, plans, inventory and before/ backup remain outside Git and are not moved. The 98 pending rows are not automatically activated or repaired. History must survive rollback: beneficiary recovery revokes new writing capabilities rather than deleting distributions/provenance/files. Source reintegration does not authorize another import or any tracking/data repair.

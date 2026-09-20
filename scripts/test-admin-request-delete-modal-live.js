@@ -1,7 +1,11 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Reuse the released modal's focused read-only acceptance; add a real preview and cancel.
 const fs=require('fs'),path=require('path'),vm=require('vm');
-process.env.SUTIAPP_TEST_ENV_FILE='C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env';
+process.env.SUTIAPP_TEST_ENV_FILE ||= ENV_FILE;
 const file=path.join(__dirname,'test-finance-request-detail-modal-live.js');
 let source=fs.readFileSync(file,'utf8').replaceAll('bundle.js?v=228','bundle.js?v=230')
  .replace('headless:true,executablePath:',"headless:true,args:['--disable-http2','--disable-quic'],executablePath:")

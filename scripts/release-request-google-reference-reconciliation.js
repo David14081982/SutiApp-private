@@ -1,9 +1,13 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),assert=require('assert').strict;
 const root=path.resolve(__dirname,'..'),dir='C:/tmp/sutiapp-reference-reconcile-20260908',out=path.join(root,'docs/qa/evidence/reference-reconciliation-20260908'),mode=process.argv[2],env={};
 const migration='20260908000300_request_google_reference_reconciliation',rpc="public.finish_program_request_google_sync(uuid,bigint,jsonb,integer,text)",scriptId='1cw2bLuwFWfJkALd-cSgz-KYmQdX2q9I6a5hABo6nwQIXsZ2mDMzy3h5o',deploymentId='AKfycbwvQ_HZ1-lb5RVv9En4XgTRh1f3EjcIXSZel3zkWhC9gCI4vW_vRLd64RjxvOSQqdIz0g';
 const read=n=>JSON.parse(fs.readFileSync(path.join(dir,n))),sha=s=>crypto.createHash('sha256').update(s).digest('hex'),quote=s=>"'"+String(s).replace(/'/g,"''")+"'";
-for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const api='https://api.supabase.com/v1/projects/'+new URL(env.SUPABASE_URL).hostname.split('.')[0],headers={Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},google='https://script.googleapis.com/v1/projects/'+scriptId;
 async function json(url,options){const r=await fetch(url,{...options,signal:AbortSignal.timeout(60000)});const d=await r.json().catch(()=>null);if(!r.ok){fs.writeFileSync(path.join(dir,'last-private-error.json'),JSON.stringify(d));throw Error('HTTP_'+r.status);}return d;}
 async function sql(query){return json(api+'/database/query',{method:'POST',headers,body:JSON.stringify({query})});}

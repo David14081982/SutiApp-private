@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Candidate migration and recovery always run inside one rolled-back transaction.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict;
 const root=path.resolve(__dirname,'..'),env={},installed=process.argv.includes('--installed');
-for(const line of fs.readFileSync(process.env.SUTIAPP_TEST_ENV_FILE||'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const line of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
 const quote=s=>"'"+String(s).replace(/'/g,"''")+"'";
 const body=file=>fs.readFileSync(path.join(root,file),'utf8').replace(/^begin;\s*/i,'').replace(/commit;\s*$/i,'');
 async function main(){

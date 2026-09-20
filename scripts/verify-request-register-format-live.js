@@ -1,4 +1,8 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),dir='C:/tmp/sutiapp-register-format-backup-20260908',read=n=>JSON.parse(fs.readFileSync(path.join(dir,n))),before=read('sheet-before.json'),after=read('sheet-after.json'),tail=read('target-before.json');
 const b=before.sheets.find(s=>s.properties.sheetId===10616270),a=after.sheets.find(s=>s.properties.sheetId===10616270),same=(x,y)=>assert.deepEqual(x,y);
@@ -23,7 +27,7 @@ for(let i=0;i<rb.length;i++)for(let c=0;c<16;c++){
   else same(ra[i].values?.[c],rb[i].values?.[c]);
 }
 async function main(){
-  const env={};for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+  const env={};for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
   const denied=await fetch(env.SUPABASE_URL+'/functions/v1/financial-legacy',{method:'POST',headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json'},body:JSON.stringify({action:'syncRequest',request_id:'5cd836ad-3681-40c8-8cfc-803ac1af2e34'})});assert([401,403].includes(denied.status));
   const auth=JSON.parse(fs.readFileSync('C:/Users/david/.clasprc.json','utf8')).tokens.default;
   const tokenResponse=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:auth.client_id,client_secret:auth.client_secret,refresh_token:auth.refresh_token,grant_type:'refresh_token',scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/script.webapp.deploy'})});assert(tokenResponse.ok);const token=await tokenResponse.json();

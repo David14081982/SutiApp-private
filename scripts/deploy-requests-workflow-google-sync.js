@@ -1,4 +1,8 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Scoped release preparation. Default is a read-only backup/probe; mutations require an explicit mode.
 const fs=require('fs'),path=require('path'),crypto=require('crypto'),assert=require('assert').strict;
 const root=path.resolve(__dirname,'..'),mode=process.argv[2]||'backup',env={};
@@ -7,7 +11,7 @@ const evidence=path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20
 const scriptId='1cw2bLuwFWfJkALd-cSgz-KYmQdX2q9I6a5hABo6nwQIXsZ2mDMzy3h5o';
 const deploymentId='AKfycbwvQ_HZ1-lb5RVv9En4XgTRh1f3EjcIXSZel3zkWhC9gCI4vW_vRLd64RjxvOSQqdIz0g';
 const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
-for(const line of fs.readFileSync(process.env.SUTIAPP_TEST_ENV_FILE||'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const line of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
 const ref=new URL(env.SUPABASE_URL).hostname.split('.')[0],base='https://api.supabase.com/v1/projects/'+ref+'/functions/';
 const headers={Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN};
 async function json(url,options){const response=await fetch(url,{...options,signal:AbortSignal.timeout(45000)});const data=await response.json().catch(()=>null);if(!response.ok)throw Error('REMOTE_HTTP_'+response.status);return data;}

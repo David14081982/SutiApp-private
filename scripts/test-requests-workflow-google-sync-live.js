@@ -1,10 +1,14 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Explicit focused live acceptance. Uses the controlled QA account and existing real catalog/documents.
 // Requests and their audit/Google rows are retained. No historical row, catalog or financial ledger is edited.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),mode=process.argv[2]||'status',env={};
 const folder=path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908'),stateFile=path.join(folder,'live-requests.json');
-for(const line of fs.readFileSync(process.env.SUTIAPP_TEST_ENV_FILE||'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const line of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const at=line.indexOf('=');if(at>0)env[line.slice(0,at).trim()]=line.slice(at+1).trim().replace(/^['"]|['"]$/g,'');}
 const cases=fs.existsSync(stateFile)?JSON.parse(fs.readFileSync(stateFile,'utf8')):[];
 const save=()=>fs.writeFileSync(stateFile,JSON.stringify(cases,null,2)+'\n');
 const quote=v=>"'"+String(v).replace(/'/g,"''")+"'";

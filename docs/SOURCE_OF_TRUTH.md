@@ -441,3 +441,7 @@ El padrón convocado deja de ser dato capturado: `voting_electorate(audience)` l
 ## H-SUTIAPP-CONVENIOS-ANUNCIOS-001 — Anuncios de Convenios
 
 `public.banners` es la autoridad única de los anuncios del «Espacio publicitario» de Convenios (`placement = 'marketplace'`), incluidos su audiencia (`audience_mode` y códigos de sindicato, categoría, género y etiqueta del catálogo `segmentation_catalog_entries`) y su color de acento. Las imágenes viven en Storage `app-assets` registradas en `app_assets`. El frontend lee con `list_public_banners`, que aplica el motor existente `matches_current_affiliate_audience`; el Admin escribe con `AdminRepository.saveManaged('banners')` y archiva con `archive_admin_banner`. `admin-store.jsx` (localStorage) ya no es lector ni escritor de anuncios.
+
+## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
+
+Savings beneficiary distributions remain exclusively in savings_beneficiary_versions/savings_beneficiaries. savings_beneficiary_import_rows retains private provenance and pending history; savings_beneficiary_authorizations retains signed consent, not another distribution master. CSV is an import artifact, never a runtime fallback. Signed self RPCs are installed; their new frontend is PENDING_FRONTEND_DELIVERY. Guarantor requirements derive from affiliates.financial_employee_category_code through required_guarantor_document_codes/resolve_affiliate_document_requirements and existing document catalogs. Disk IO changes no authority.

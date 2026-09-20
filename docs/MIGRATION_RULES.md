@@ -255,3 +255,7 @@ Owner separa Web Push a H-WEB-PUSH-REQUEST-EVENTS-001. La migraci?n 202609080006
 ## 20260908000800 — archivo de banners
 
 APPLIED / VERIFIED. Aditiva: tabla privada de metadata, dos funciones focales y tres filtros RLS restrictivos; no reemplaza permisos ni triggers existentes. Dry-run y recovery vacío PASS con ROLLBACK; recovery con historia aborta con BANNER_ARCHIVE_HISTORY_MUST_BE_PRESERVED. Pruebas SQL sobre backend real se revierten completas, incluidos cambios de permisos y restricción temporal para simular fallo de auditoría. Apply conservó hash y 23 banners, 176 assets y 13,377 objetos Storage; cero filas de negocio modificadas. Recovery versionado: supabase/recovery/20260908000800_admin_banners_archive.sql.
+
+## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
+
+The three restored migrations (20260907000200, 20260909000300, 20260918120000) describe already-installed production changes. Do not run them against production to reconcile Git. Beneficiary tracking still uses 20260918000100, colliding with the canonical savings_panel_single_projection filename; see ../docs/plans/TRACKING_RECONCILIATION_PLAN.md. Aval/Disk IO exact tracking rows are absent. This is source reconciliation only, not permission for db push/migration up or automatic repair. Aval supersedes four Disk IO definitions while retaining their PT409 changes. Historical recoveries are preserved unchanged: Aval pins OIDs/history; Disk IO refuses definition drift; beneficiary recovery keeps data and only disables new writes.

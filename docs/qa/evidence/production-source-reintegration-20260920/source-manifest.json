@@ -1,0 +1,134 @@
+{
+  "task": "H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001",
+  "base": "4b53d145bd4b408f232ad4660a65c94d84c6bd0e",
+  "sql": [
+    {
+      "path": "supabase/migrations/20260918120000_savings_beneficiaries.sql",
+      "source_sha256": "09a1c82d21311840aed625643120d795c49ca179f00c185580b9b2acddf3f20d",
+      "classification": "ALREADY_INSTALLED_SOURCE"
+    },
+    {
+      "path": "supabase/recovery/20260918120000_savings_beneficiaries.sql",
+      "source_sha256": "1c323b8cc76fe83cf14707272cdec0400bf125cee9c914c869e7c8404758a2da",
+      "classification": "HISTORICAL_RECOVERY_NOT_EXECUTED"
+    },
+    {
+      "path": "supabase/migrations/20260909000300_guarantor_category_requirements.sql",
+      "source_sha256": "b86fc6c181a590d1ce1039bcf892c84cef725d8fe28af99eac324ea9467d6f18",
+      "classification": "ALREADY_INSTALLED_SOURCE"
+    },
+    {
+      "path": "supabase/recovery/20260909000300_guarantor_category_requirements.sql",
+      "source_sha256": "535313757613c7f2326d0ec4cdc196b6819f673e466771ac5a866f0eaa8a6ecb",
+      "classification": "HISTORICAL_RECOVERY_NOT_EXECUTED"
+    },
+    {
+      "path": "supabase/migrations/20260907000200_disk_io_business_conflicts.sql",
+      "source_sha256": "300082eff7c69374fb21fe52a0b985d48bf1159ef0da125ff52a947e06ed0cda",
+      "classification": "ALREADY_INSTALLED_SOURCE"
+    },
+    {
+      "path": "supabase/recovery/20260907000200_disk_io_business_conflicts_recovery.sql",
+      "source_sha256": "4427d9e6b9d2624201d8befb380170aa927c50c06868ea459a2507ef7119bad0",
+      "classification": "HISTORICAL_RECOVERY_NOT_EXECUTED"
+    }
+  ],
+  "support": [
+    {
+      "path": "scripts/savings-beneficiaries-csv.py",
+      "source_sha256": "fdf1d83e7c7806d71431961d132d54d7e1c10091e4156ecc176443f2148a9823",
+      "restored_sha256": "e56f471c9846b86f538430832568997c9ec6bd384ee8778e96679073d6d04dda",
+      "adapted": true
+    },
+    {
+      "path": "scripts/test-savings-beneficiaries-csv.py",
+      "source_sha256": "638535b04127e9160acfb6cdcf4ad50b995dbb1ad1b7671a9f45f5cc9347397a",
+      "restored_sha256": "638535b04127e9160acfb6cdcf4ad50b995dbb1ad1b7671a9f45f5cc9347397a",
+      "adapted": false
+    },
+    {
+      "path": "scripts/test-savings-beneficiaries.sql",
+      "source_sha256": "d2492c982ba6cdb6d637a35f493a2b84175268d71c49aafd1d372ff7d246b980",
+      "restored_sha256": "d2492c982ba6cdb6d637a35f493a2b84175268d71c49aafd1d372ff7d246b980",
+      "adapted": false
+    },
+    {
+      "path": "scripts/test-guarantor-category-edge.js",
+      "source_sha256": "a4af105b50c0d52872c7fd826f02b4a5bf37cd56986de71bbd1eaf053774c40e",
+      "restored_sha256": "a4af105b50c0d52872c7fd826f02b4a5bf37cd56986de71bbd1eaf053774c40e",
+      "adapted": false
+    },
+    {
+      "path": "scripts/test-guarantor-category.sql",
+      "source_sha256": "d0e2ac43c810ce191228d5c75824271a2bff34f9e1eb6880bdd22b70cee06598",
+      "restored_sha256": "d0e2ac43c810ce191228d5c75824271a2bff34f9e1eb6880bdd22b70cee06598",
+      "adapted": false
+    },
+    {
+      "path": "scripts/test-guarantor-category-writers.sql",
+      "source_sha256": "5cbd90db2a4ca36a13d7502ac86472c9ce33fd485b27dff7c3171df0f54414c4",
+      "restored_sha256": "af1a5d0de90a2a41169f8b6d2674631083c5ec8130f3cd6fe005a0fdd5aa2d90",
+      "adapted": true
+    },
+    {
+      "path": "scripts/test-disk-io-business-conflicts.js",
+      "source_sha256": "7b667182c7cb2dbca03e3e689c0b6d3f01220f412674f0bae13b25a795cf3183",
+      "restored_sha256": "4bc222a34ee692cc7ad7c134239779ec676be8eb33b9af0db66d21464405d9ea",
+      "adapted": true
+    },
+    {
+      "path": "scripts/test-disk-io-business-conflicts-http.js",
+      "source_sha256": "8adf174656114a494865a3eca71371aae6a6fd718db2898c55a8d56f3801ac4c",
+      "restored_sha256": "250710bd647b6f74a14d152e252178c67efed1befdf9ab74407e95d809eb68fd",
+      "adapted": true
+    }
+  ],
+  "edge": {
+    "path": "supabase/functions/financial-legacy/index.ts",
+    "old_block": "    if (process === \"3\" && guarantorRefs.some((ref) => !ref)) throw new Error(\"GUARANTOR_DOCUMENTS_NOT_AVAILABLE\");",
+    "new_block": "    const { data: requiredGuarantorCodes, error: guarantorError } = await privileged.rpc(\n      \"required_guarantor_document_codes\", { p_affiliate_id: request.affiliate_id },\n    );\n    if (guarantorError || !Array.isArray(requiredGuarantorCodes)) throw new Error(\"GUARANTOR_REQUIREMENTS_UNAVAILABLE\");\n    if (requiredGuarantorCodes.some((code: string) => !refs[code])) throw new Error(\"GUARANTOR_DOCUMENTS_NOT_AVAILABLE\");"
+  },
+  "portable_scripts": [
+    "scripts/audit-requests-workflow-google-sync-approval.js",
+    "scripts/audit-requests-workflow-google-sync.js",
+    "scripts/deploy-request-register-format.js",
+    "scripts/deploy-requests-workflow-google-sync.js",
+    "scripts/reconcile-requests-workflow-google-secret.js",
+    "scripts/release-admin-banners-delete.js",
+    "scripts/release-admin-request-delete.js",
+    "scripts/release-request-google-reference-reconciliation.js",
+    "scripts/repair-requests-workflow-snapshot-validation.js",
+    "scripts/test-admin-request-bank-reference-live.js",
+    "scripts/test-admin-request-delete-live.js",
+    "scripts/test-admin-request-delete-modal-live.js",
+    "scripts/test-request-google-reference-live.js",
+    "scripts/test-requests-workflow-google-sync-closure.js",
+    "scripts/test-requests-workflow-google-sync-live.js",
+    "scripts/test-requests-workflow-google-sync-realtime-live.js",
+    "scripts/test-requests-workflow-google-sync-security-live.js",
+    "scripts/test-requests-workflow-google-sync-sql.js",
+    "scripts/verify-admin-request-bank-reference-scope.js",
+    "scripts/verify-admin-request-bank-reference.js",
+    "scripts/verify-admin-request-delete-scope.js",
+    "scripts/verify-request-delete-lock-order.js",
+    "scripts/verify-request-register-format-live.js"
+  ],
+  "old_source_hashes": {
+    "supabase/migrations/20260918120000_savings_beneficiaries.sql": "09a1c82d21311840aed625643120d795c49ca179f00c185580b9b2acddf3f20d",
+    "supabase/recovery/20260918120000_savings_beneficiaries.sql": "1c323b8cc76fe83cf14707272cdec0400bf125cee9c914c869e7c8404758a2da",
+    "supabase/migrations/20260909000300_guarantor_category_requirements.sql": "b86fc6c181a590d1ce1039bcf892c84cef725d8fe28af99eac324ea9467d6f18",
+    "supabase/recovery/20260909000300_guarantor_category_requirements.sql": "535313757613c7f2326d0ec4cdc196b6819f673e466771ac5a866f0eaa8a6ecb",
+    "supabase/migrations/20260907000200_disk_io_business_conflicts.sql": "300082eff7c69374fb21fe52a0b985d48bf1159ef0da125ff52a947e06ed0cda",
+    "supabase/recovery/20260907000200_disk_io_business_conflicts_recovery.sql": "4427d9e6b9d2624201d8befb380170aa927c50c06868ea459a2507ef7119bad0",
+    "scripts/savings-beneficiaries-csv.py": "fdf1d83e7c7806d71431961d132d54d7e1c10091e4156ecc176443f2148a9823",
+    "scripts/test-savings-beneficiaries-csv.py": "638535b04127e9160acfb6cdcf4ad50b995dbb1ad1b7671a9f45f5cc9347397a",
+    "scripts/test-savings-beneficiaries.sql": "d2492c982ba6cdb6d637a35f493a2b84175268d71c49aafd1d372ff7d246b980",
+    "scripts/test-guarantor-category-edge.js": "a4af105b50c0d52872c7fd826f02b4a5bf37cd56986de71bbd1eaf053774c40e",
+    "scripts/test-guarantor-category.sql": "d0e2ac43c810ce191228d5c75824271a2bff34f9e1eb6880bdd22b70cee06598",
+    "scripts/test-guarantor-category-writers.sql": "5cbd90db2a4ca36a13d7502ac86472c9ce33fd485b27dff7c3171df0f54414c4",
+    "scripts/test-disk-io-business-conflicts.js": "7b667182c7cb2dbca03e3e689c0b6d3f01220f412674f0bae13b25a795cf3183",
+    "scripts/test-disk-io-business-conflicts-http.js": "8adf174656114a494865a3eca71371aae6a6fd718db2898c55a8d56f3801ac4c",
+    "supabase/functions/financial-legacy/index.ts": "480ef8132ef4c2fdd1f366c92538491e7f03b13e7c8ea421f28ca7f6f332a531"
+  },
+  "production_writes": 0
+}

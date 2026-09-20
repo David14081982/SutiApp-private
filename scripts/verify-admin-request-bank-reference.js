@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Metadata-only receipts. Dry run and recovery roll back; --apply installs only the reader.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'), privateDir=process.env.SUTIAPP_BANK_AUDIT_DIR||'C:/tmp/sutiapp-request-banking-20260908';
-const env={};for(const l of fs.readFileSync(process.env.SUTIAPP_TEST_ENV_FILE||'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+const env={};for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const sql=fs.readFileSync(path.join(root,'supabase/migrations/20260908000500_admin_request_bank_reference.sql'),'utf8').replace(/\r\n/g,'\n');
 const recovery=fs.readFileSync(path.join(root,'supabase/recovery/20260908000500_admin_request_bank_reference_recovery.sql'),'utf8').replace(/\r\n/g,'\n');
 const body=s=>s.trim().replace(/^begin;\s*/i,'').replace(/\s*commit;$/i,'');

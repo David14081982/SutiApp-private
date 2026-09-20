@@ -1147,3 +1147,7 @@ H-ADMIN-USER-MODULES-001 ? actualizaci?n autorizada: migraci?n 20260914000200 AP
 ## H-ADMIN-ASSISTED-CONTEXT-003 - 2026-09-15
 
 Owner explicitly authorizes seeing and executing the attended account's authorized Admin actions through Tomar control. Preserve UI/screens and existing ordinary permissions. Implement server-bound actor/subject intersection; never borrow privileges from a stronger attended account. Volver al Admin confirms assistance termination before opening the operator's own Admin. Additive migration 20260915000100; ADR-098 protected historical migrations unchanged.
+
+## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
+
+Owner authorized local source-only reintegration onto origin/main 4b53d145bd4b408f232ad4660a65c94d84c6bd0e, the narrow installed Aval Edge delta, selected reusable support, semantic documentation additions and portable script paths. No commit/push/deploy/database or tracking writes. Existing later decisions remain intact. Frontend beneficiaries is PENDING_FRONTEND_DELIVERY; private history is PRIVATE_BACKUP_REQUIRED. Counterpart recompute and savings identity protection are HISTORICAL_NOT_APPLIED and excluded. Tracking reconciliation needs independent owner approval, documented as a plan only.

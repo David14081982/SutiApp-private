@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Bounded concurrent no-op updates, always ROLLBACK. Never runs a live request deletion.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),dir='C:/tmp/sutiapp-request-delete-20260908',out=root+'/docs/qa/evidence/admin-request-delete-20260908',env={},mode=process.argv[2];
-for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const l of fs.readFileSync(ENV_FILE,'utf8').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const quote=s=>"'"+s.replace(/'/g,"''")+"'",rpc='public.guard_request_deletion_child()',name='20260908000401_request_delete_sync_lock_order',sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 async function sql(query){const r=await fetch('https://api.supabase.com/v1/projects/'+new URL(env.SUPABASE_URL).hostname.split('.')[0]+'/database/query',{method:'POST',headers:{Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({query}),signal:AbortSignal.timeout(55000)});const d=await r.json();if(!r.ok){const error=Error(d.message||'SQL_FAILED');error.deadlock=/40P01|deadlock detected/i.test(error.message);throw error;}return d;}
 const definition=()=>sql("select oid,proacl::text as acl,pg_get_functiondef(oid) as definition from pg_proc where oid='"+rpc+"'::regprocedure");

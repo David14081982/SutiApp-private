@@ -1,4 +1,8 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),folder=path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8'),git=args=>cp.execFileSync('git',['-c','core.quotePath=false',...args],{cwd:root,encoding:'utf8',maxBuffer:30*1024*1024});
@@ -16,7 +20,7 @@ const cases=JSON.parse(fs.readFileSync(path.join(folder,'live-requests.json'),'u
 const files=[...new Set((git(['diff','--name-only','435fc47'])+'\n'+git(['ls-files','--others','--exclude-standard'])).trim().split(/\r?\n/))].filter(Boolean);
 const exact=['SutiApp.html','sw.js','app/bundle.js',...sources.map(s=>'app/'+s),'docs/AGENT_CHANGELOG.md','docs/DECISIONS.md','docs/INVARIANTS.md','docs/SOURCE_OF_TRUTH.md','docs/LEGACY_GOOGLE_SYSTEMS.md','google-apps-script/financial-handoff/Code.gs','google-apps-script/financial-handoff/README.md','supabase/functions/financial-legacy/index.ts','supabase/functions/financial-legacy/request-google-sync.js'];
 const unexpected=files.filter(f=>!exact.includes(f)&&!/^docs\/architecture\//.test(f)&&!/^docs\/qa\/(?:H-REQUESTS-WORKFLOW-HISTORY-GOOGLE-SYNC-001\.md|evidence\/requests-workflow-google-sync-20260908\/)/.test(f)&&!/^scripts\/(?:audit|deploy|prepare|reconcile|repair|test)-requests-workflow-.*\.js$/.test(f)&&!/^supabase\/(?:migrations|recovery)\/20260908000[12]00_/.test(f));assert.deepEqual(unexpected,[]);
-const env={};for(const line of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=line.indexOf('=');if(i>0)env[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+const env={};for(const line of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=line.indexOf('=');if(i>0)env[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const oauth=JSON.parse(fs.readFileSync('C:/Users/david/.clasprc.json','utf8')).tokens.default,worker=JSON.parse(fs.readFileSync('C:/tmp/sutiapp-requests-workflow-sync-backup-20260908/worker-config.json','utf8'));
 const secrets=[...Object.entries(env).filter(([k])=>/SECRET|ACCESS_TOKEN|PASSWORD/.test(k)).map(([,v])=>v),oauth.refresh_token,oauth.client_secret,worker.secret].filter(v=>typeof v==='string'&&v.length>=8);
 const exposed=files.filter(f=>fs.existsSync(path.join(root,f))&&secrets.some(secret=>fs.readFileSync(path.join(root,f)).includes(Buffer.from(secret))));assert.deepEqual(exposed,[],'SECRET_EXPOSURE');

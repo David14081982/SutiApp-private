@@ -1,0 +1,207 @@
+{
+  "status": "PASS",
+  "captured_at": "2026-09-20T18:08:56.556Z",
+  "mode": "FOCAL_SOURCE_COMPARISON_SELECT_ONLY",
+  "read_only": true,
+  "functions": [
+    {
+      "migration": "20260918120000",
+      "signature": "savings_beneficiary_self_participant()",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "45abb3c6d7bbffe99fa4c1a1bda43024a798349ba47acb84913d690d3fe4d54a"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "savings_validate_beneficiaries(jsonb)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "ea9fcaf75bbfec2fd5a97dea684fcd64418316dd233831dfd237a14d1dfea101"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "savings_beneficiary_total_guard()",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "013bd39cb5f79c15b0ecf7d15a671a9fe7bac19d23a5e7f1c9efb533eb91381d"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "get_self_savings_beneficiaries()",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "b046d8826f02df4c3a0c1b66ecf372297cda929558ce1436780eaab1ef790cb6"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "prepare_self_savings_beneficiaries(jsonb,uuid,uuid,uuid,text,integer,boolean)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "9fe30770a149321007790c2ac014235c19d8dbec90de39623da5f0fafee9853c"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "commit_self_savings_beneficiaries(uuid,uuid)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "89da8cd1b44f4b457f68f99be57df698786e65d177b958d09fe1c7bc22005f65"
+    },
+    {
+      "migration": "20260918120000",
+      "signature": "savings_beneficiary_signature_access(text,boolean)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "291aa10fd99bc30e89eb82b6e4d2c493dc32ada82dda2f3ad854e8a5d6846190"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "required_guarantor_document_codes(uuid)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "19a9d0d8e8891fdf0ea54387e88a8c2cc973eb5075736b53e6a005949b7a7295"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "resolve_affiliate_document_requirements(text,text,uuid)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "a9786832e9f3d431327867a3206f6b3e19a5f10786390963f83a58356a0c6e39"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "resolve_effective_document_requirements(text,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "e663aa42bff7a97b96b8180e8e1acd1e3a3bd240986f61db2f530a9772d78a00"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "get_document_requirement_impact(text,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "ecdcf5f8d0b8b27e463cc3af5bd9eaf0dac454b73b36ce616633454bdf1a6d56"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "capture_document_requirements_snapshot()",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "68944d81efcaf1f98323ec79601bd7b85fff3a6433d9280ac975647d74e6696f"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "9e6d01408d1c5eb8789c32695e89283f7090e911544f73293462ca96e1dd96d2"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "77957c270e941d795967fba31032eb1a537a1026ca899668951f17884cb31953"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "create_validated_financial_program_request_v1_engine(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "4fe1b08e4e34653d838e73b4904a8329416bf815a44cf5117e5fba88d05397b3"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "create_validated_program_product_payment_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,integer,date)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "9a11629394049427c90e10f01cee9be21f1dcbf6a16c9a59ac8aa59231aca4d9"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "create_membership_request(uuid,uuid[],text,text,text,uuid,uuid)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "70409b332e48bc30d56accdf6ad891af1b45353bae5781e2f25ced9bd603f32e"
+    },
+    {
+      "migration": "20260909000300",
+      "signature": "finalize_program_request_context(uuid,uuid,uuid[])",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "ef1e8523248468b4a85613004987aca4ee499ac6948138c1bd9ba509c42e56ff"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "archive_admin_affiliate(uuid,timestamp with time zone,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "12f628a158036fcdf4d7692de8f89e7ac2f836868c55066479f56da72670cac6"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "change_admin_affiliate_status(uuid,timestamp with time zone,text,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "fc5c9eef35f599aee734b5b2670901fba808eadd68a37eea2ba52ea83bc84c0b"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": false,
+      "matched_later_guarantor": true,
+      "definition_sha256": "9e6d01408d1c5eb8789c32695e89283f7090e911544f73293462ca96e1dd96d2"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": false,
+      "matched_later_guarantor": true,
+      "definition_sha256": "77957c270e941d795967fba31032eb1a537a1026ca899668951f17884cb31953"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "create_validated_financial_program_request_v1_engine(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "exact_body": false,
+      "matched_later_guarantor": true,
+      "definition_sha256": "4fe1b08e4e34653d838e73b4904a8329416bf815a44cf5117e5fba88d05397b3"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "create_validated_program_product_payment_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,integer,date)",
+      "exact_body": false,
+      "matched_later_guarantor": true,
+      "definition_sha256": "9a11629394049427c90e10f01cee9be21f1dcbf6a16c9a59ac8aa59231aca4d9"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "restore_admin_affiliate(uuid,timestamp with time zone,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "e290e7f8448c719d71b6f23d408af5a22ef8f405306580905efa058731f5f8a9"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "save_current_declared_payroll(numeric,numeric,integer)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "7c338e9af0d7c2fa599d5d0c00e1dc957b482c56a9884f7f62e282f4d0a31469"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "update_admin_affiliate(uuid,timestamp with time zone,jsonb,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "d9740e0411d60d3d3456d116d6fb01f973846c5cd273afec0212df9336ccab84"
+    },
+    {
+      "migration": "20260907000200",
+      "signature": "update_affiliate_admin_profile(uuid,integer,jsonb,text)",
+      "exact_body": true,
+      "matched_later_guarantor": false,
+      "definition_sha256": "118da4069cb22db8a689f8fb3728db029b83e9ddb47142d851e494310f92bd88"
+    }
+  ],
+  "edge_delta": "PASS",
+  "ddl_executed": 0,
+  "business_writes": 0
+}

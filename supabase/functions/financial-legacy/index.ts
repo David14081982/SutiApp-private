@@ -897,7 +897,11 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     documentRefs = ["profile_photo","ine_front","ine_back","payroll_previous","payroll_latest"].map((code) => refs[code]);
     if (documentRefs.some((ref) => !ref)) throw new Error("REQUIRED_PRIVATE_DOCUMENT_MISSING");
     guarantorRefs = ["guarantor_photo","guarantor_ine_front","guarantor_ine_back","guarantor_payroll_latest"].map((code) => refs[code] || "");
-    if (process === "3" && guarantorRefs.some((ref) => !ref)) throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
+    const { data: requiredGuarantorCodes, error: guarantorError } = await privileged.rpc(
+      "required_guarantor_document_codes", { p_affiliate_id: request.affiliate_id },
+    );
+    if (guarantorError || !Array.isArray(requiredGuarantorCodes)) throw new Error("GUARANTOR_REQUIREMENTS_UNAVAILABLE");
+    if (requiredGuarantorCodes.some((code: string) => !refs[code])) throw new Error("GUARANTOR_DOCUMENTS_NOT_AVAILABLE");
   } catch (error) {
     return { status: 409, body: { error: error instanceof Error ? error.message : "PRIVATE_DOCUMENT_CONTRACT_INVALID" } };
   }

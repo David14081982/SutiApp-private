@@ -1,8 +1,12 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Targeted read-only backend audit; secrets and applicant fields never printed.
 const fs = require('fs'), path = require('path');
 const root = path.resolve(__dirname, '..'), out = path.join(root, 'docs/qa/evidence/requests-workflow-google-sync-20260908');
-const envFile = process.env.SUTIAPP_TEST_ENV_FILE || 'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env';
+const envFile = ENV_FILE;
 const values = {};
 for (const line of fs.readFileSync(envFile, 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/)) { const at = line.indexOf('='); if (at > 0) values[line.slice(0, at).trim()] = line.slice(at + 1).trim().replace(/^['"]|['"]$/g, ''); }
 async function query(sql) {

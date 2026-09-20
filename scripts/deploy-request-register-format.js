@@ -1,10 +1,14 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Existing deployments only. No SQL, secret rotation, workflow action or test request creation.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,crypto=require('crypto');
 const root=path.resolve(__dirname,'..'),mode=process.argv[2],backup='C:/tmp/sutiapp-register-format-backup-20260908',evidence=path.join(root,'docs/qa/evidence/register-format-20260908');
 const scriptId='1cw2bLuwFWfJkALd-cSgz-KYmQdX2q9I6a5hABo6nwQIXsZ2mDMzy3h5o',deploymentId='AKfycbwvQ_HZ1-lb5RVv9En4XgTRh1f3EjcIXSZel3zkWhC9gCI4vW_vRLd64RjxvOSQqdIz0g';
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex'),env={};
-for(const l of fs.readFileSync('C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const l of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=l.indexOf('=');if(i>0)env[l.slice(0,i).trim()]=l.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 const base='https://api.supabase.com/v1/projects/'+new URL(env.SUPABASE_URL).hostname.split('.')[0]+'/functions/',headers={Authorization:'Bearer '+env.SUPABASE_ACCESS_TOKEN};
 const google='https://script.googleapis.com/v1/projects/'+scriptId;
 async function json(url,options){const r=await fetch(url,{...options,signal:AbortSignal.timeout(45000)});if(!r.ok)throw Error('REMOTE_HTTP_'+r.status);return r.json();}

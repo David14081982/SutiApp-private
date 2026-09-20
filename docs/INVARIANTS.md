@@ -345,3 +345,7 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 ## H-MEMBERSHIP-PAYMENT-CONTRACT-001 — 2026-09-10
 
 Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; monto a solicitar = total a pagar = importe comercial del catálogo; número de pagos = installments. Gastos administrativos = 15 × pagos INCLUIDOS; capital = total − gastos. Redondeo por descuento con ajuste final para conservar total. Cambios de catálogo o perfil antes de confirmar invalidan la cotización; después no recalculan la solicitud. financial_processing_status permanece NULL para conservar el workflow de membresías. Prohibido completar históricos o alterar reglas de otros programas en esta H.
+
+## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
+
+Preserve historical controls as text, imported rows (including pending/duplicates), versions and signatures. Beneficiary totals must not exceed 100; no invented relationship/Auth actor for historical import. New distributions require private signature, consent, expected identity/version and idempotency. Only SUPLENTES_FIJOS/SUPLENTES_VARIABLES require the three guarantor documents; all other document/actor/snapshot controls remain. Disk IO replaces twelve deterministic business-conflict SQLSTATEs with PT409, preserving genuine database serialization semantics.

@@ -1,11 +1,15 @@
 'use strict';
+const ENV_FILE = process.env.SUTIAPP_TEST_ENV_FILE
+  || process.env.SUTIAPP_ENV_FILE
+  || require('path').resolve(__dirname, '..', 'supabase.env');
+
 // Real authenticated client, repositories, store and TrackingScreen against retained controlled QA requests.
 // review/decide use the existing focused backend acceptance; status is read-only for production verification.
 const fs=require('fs'),path=require('path'),assert=require('assert').strict,{spawn}=require('child_process');
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const root=path.resolve(__dirname,'..'),mode=process.argv[2]||'status',target=process.argv[3]||'http://localhost:8080',env={};
 const folder=path.join(root,'docs/qa/evidence/requests-workflow-google-sync-20260908');
-for(const line of fs.readFileSync(process.env.SUTIAPP_TEST_ENV_FILE||'C:/Users/david/OneDrive/Documentos/Sutiapp 20082026/supabase.env','utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=line.indexOf('=');if(i>0)env[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
+for(const line of fs.readFileSync(ENV_FILE,'utf8').replace(/^\uFEFF/,'').split(/\r?\n/)){const i=line.indexOf('=');if(i>0)env[line.slice(0,i).trim()]=line.slice(i+1).trim().replace(/^['"]|['"]$/g,'');}
 async function main(){
  assert(['review','decide','status'].includes(mode));const rows=JSON.parse(fs.readFileSync(path.join(folder,'live-requests.json'),'utf8'));assert.equal(rows.length,9);
  const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'}),proof={status:'FAIL',mode,target:target.includes('localhost')?'local':'production',dataSource:'live authenticated self RPC and realtime; no intercepted responses',javascriptErrors:[]};

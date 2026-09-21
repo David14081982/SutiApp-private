@@ -33584,10 +33584,182 @@ Object.assign(window, {
     const text = String(error && error.message || '');
     if (/PREVIEW_CHANGED/.test(text)) return 'Los datos cambiaron. Actualiza el cálculo y vuelve a revisar antes de confirmar.';
     if (/DENIED/.test(text)) return 'Tu cuenta no tiene permiso para esta operación.';
+    if (/OVERRIDE_PERIOD_FROZEN|OVERRIDE_ALREADY_USED/.test(text)) return 'El periodo ya tiene acreditaciones. Sus excepciones deben conservarse para la auditoría.';
     if (/FROZEN|RATE_MISMATCH/.test(text)) return 'El periodo ya tiene una apertura registrada. Su tasa y fechas deben conservarse.';
     if (/RATE_OR_CUTOFF_PENDING/.test(text)) return 'Falta registrar la tasa en la apertura o todavía no llega la fecha de corte.';
     if (/calendar_check|dates_check/.test(text)) return 'Las fechas deben pertenecer al año y semestre seleccionados.';
     return 'No se completó la operación. Conservamos los datos para que puedas reintentar.';
+  }
+  function TenureException({
+    periodId,
+    rows,
+    events,
+    disabled,
+    onSaved
+  }) {
+    const [open, setOpen] = React.useState(false),
+      [form, setForm] = React.useState({
+        scope: 'GLOBAL',
+        participantId: '',
+        reason: '',
+        justification: '',
+        confirmed: false
+      });
+    const [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [revoke, setRevoke] = React.useState({
+        id: '',
+        reason: ''
+      });
+    const lock = React.useRef(false),
+      attempt = React.useRef(null),
+      alive = React.useRef(true);
+    React.useEffect(() => () => {
+      alive.current = false;
+    }, []);
+    const blocked = busy || disabled;
+    function change(name, value) {
+      setForm(old => ({
+        ...old,
+        [name]: value,
+        confirmed: name === 'confirmed' ? value : false
+      }));
+      attempt.current = null;
+      setError('');
+    }
+    async function submit(method, payload) {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      const signature = JSON.stringify({
+        method,
+        payload
+      });
+      if (!attempt.current || attempt.current.signature !== signature) attempt.current = {
+        signature,
+        key: window.SavingsRepository.newIdempotencyKey()
+      };
+      try {
+        await window.SavingsPanelRepository[method]({
+          ...payload,
+          key: attempt.current.key
+        });
+        if (!alive.current) return;
+        attempt.current = null;
+        setOpen(false);
+        setRevoke({
+          id: '',
+          reason: ''
+        });
+        await onSaved();
+      } catch (e) {
+        if (alive.current) setError(errorText(e));
+      } finally {
+        lock.current = false;
+        if (alive.current) setBusy(false);
+      }
+    }
+    const field = (label, name, multiline = false) => h('label', {
+      className: 'sava-field'
+    }, label, h(multiline ? 'textarea' : 'input', {
+      className: 'sava-input',
+      value: form[name],
+      disabled: blocked,
+      maxLength: multiline ? 1000 : 200,
+      onChange: e => change(name, e.target.value)
+    }));
+    return h('div', {
+      'data-tenure-exception': periodId
+    }, h('button', {
+      className: 'sava-button',
+      disabled: blocked,
+      onClick: () => setOpen(!open)
+    }, 'Autorizar excepción de permanencia'), h('p', {
+      className: 'sava-note'
+    }, 'Permite calcular rendimientos para este periodo sin modificar la fecha real de ingreso de los ahorradores.'), open && h('div', {
+      className: 'sava-form',
+      role: 'region',
+      'aria-label': 'Excepción de permanencia'
+    }, h('label', {
+      className: 'sava-field'
+    }, 'Alcance de la excepción', h('select', {
+      className: 'sava-select',
+      'aria-label': 'Alcance de la excepción',
+      value: form.scope,
+      disabled: blocked,
+      onChange: e => change('scope', e.target.value)
+    }, h('option', {
+      value: 'GLOBAL'
+    }, 'Todos los participantes elegibles de este periodo'), h('option', {
+      value: 'INDIVIDUAL'
+    }, 'Un ahorrador en este periodo'))), form.scope === 'INDIVIDUAL' && h('label', {
+      className: 'sava-field'
+    }, 'Ahorrador autorizado', h('select', {
+      className: 'sava-select',
+      'aria-label': 'Ahorrador autorizado',
+      value: form.participantId,
+      disabled: blocked,
+      onChange: e => change('participantId', e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Selecciona un ahorrador'), rows.map(row => h('option', {
+      key: row.participant_id,
+      value: row.participant_id
+    }, row.folio + ' · ' + row.name)))), field('Motivo de la excepción', 'reason'), field('Justificación de la excepción', 'justification', true), h('p', {
+      className: 'sava-note'
+    }, 'Sólo se exceptúa el requisito de seis meses para el periodo seleccionado. Los demás requisitos siguen vigentes. La autorización quedará registrada y no acredita dinero por sí misma.'), h('label', null, h('input', {
+      type: 'checkbox',
+      checked: form.confirmed,
+      disabled: blocked,
+      onChange: e => change('confirmed', e.target.checked)
+    }), 'Confirmo el alcance y el periodo de esta excepción.'), h('button', {
+      className: 'sava-button is-primary',
+      disabled: blocked || !form.confirmed || form.reason.trim().length < 3 || form.justification.trim().length < 3 || form.scope === 'INDIVIDUAL' && !form.participantId,
+      onClick: () => submit('authorizeYieldOverride', {
+        periodId,
+        participantId: form.scope === 'INDIVIDUAL' ? form.participantId : null,
+        reason: form.reason.trim(),
+        justification: form.justification.trim(),
+        confirmed: true
+      })
+    }, 'Confirmar excepción de permanencia')), (events || []).map(event => h('div', {
+      className: 'sava-note',
+      key: event.id
+    }, h('p', null, (event.authorization.scope === 'GLOBAL' ? 'Excepción global del periodo' : 'Excepción individual del periodo') + ' · ' + event.reason + ' · ' + event.created_at), h('button', {
+      className: 'sava-button',
+      disabled: blocked,
+      onClick: () => {
+        setRevoke({
+          id: event.id,
+          reason: ''
+        });
+        attempt.current = null;
+      }
+    }, 'Revocar excepción ' + event.id))), revoke.id && h('div', {
+      className: 'sava-form'
+    }, h('label', {
+      className: 'sava-field'
+    }, 'Motivo de revocación de permanencia', h('textarea', {
+      className: 'sava-input',
+      disabled: blocked,
+      value: revoke.reason,
+      maxLength: 1000,
+      onChange: e => setRevoke({
+        ...revoke,
+        reason: e.target.value
+      })
+    })), h('button', {
+      className: 'sava-button',
+      disabled: blocked || revoke.reason.trim().length < 3,
+      onClick: () => submit('revokeException', {
+        eventId: revoke.id,
+        reason: revoke.reason.trim()
+      })
+    }, 'Confirmar revocación de permanencia')), error && h('p', {
+      role: 'alert',
+      className: 'sava-error'
+    }, error));
   }
   function SavingsYieldAdmin({
     app,
@@ -33613,7 +33785,8 @@ Object.assign(window, {
       busy = React.useRef(false),
       mounted = React.useRef(true);
     const canConfigure = app.admin.has('savings.config'),
-      canApprove = app.admin.has('savings.approve');
+      canApprove = app.admin.has('savings.approve'),
+      canOverride = app.admin.has('savings.yield.override');
     React.useEffect(() => {
       mounted.current = true;
       return () => {
@@ -33779,7 +33952,14 @@ Object.assign(window, {
       role: 'status'
     }, notice), phase === 'loading' && h('p', {
       role: 'status'
-    }, 'Revisando cuentas del periodo…'), preview && h(React.Fragment, null, h('div', {
+    }, 'Revisando cuentas del periodo…'), preview && h(React.Fragment, null, canOverride && h(TenureException, {
+      key: periodId,
+      periodId,
+      rows,
+      events: preview.tenure_exceptions,
+      disabled: saving,
+      onSaved: () => load(periodId)
+    }), h('div', {
       className: 'sava-kpis'
     }, [['Tasa registrada', preview.rate == null ? 'Pendiente' : preview.rate + '%'], ['Fecha de corte', preview.cutoff_on || 'Pendiente'], ['Ahorradores elegibles', preview.eligible_count], ['Requieren revisión', preview.review_count], ['Por acreditar', preview.state === 'READY' ? money(preview.total_to_credit) : '—']].map(([label, value]) => h('div', {
       className: 'sava-kpi',
@@ -33795,7 +33975,7 @@ Object.assign(window, {
       key: label
     }, label)))), h('tbody', null, rows.map(row => h('tr', {
       key: row.participant_id
-    }, [row.folio, row.name, statuses[row.status] || row.status, row.eligible_on || '—', money(row.capital_basis), money(row.yield_amount), row.reason || '—'].map((value, index) => h('td', {
+    }, [row.folio, row.name, statuses[row.status] || row.status, row.eligible_on || '—', money(row.capital_basis), money(row.yield_amount), row.reason || (row.tenure_override && row.ordinary_tenure_pass === false ? 'Excepción de permanencia para este periodo' : '—')].map((value, index) => h('td', {
       key: index
     }, value))))))), !rows.length && h('p', null, 'No hay cuentas para este periodo.'), canApprove && h('div', {
       className: 'sava-form'
@@ -50722,6 +50902,11 @@ Object.assign(window, {
 (function(){
  'use strict';
  async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
+ async function settlement(action,requestId,command,key){
+  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('savings-settlement',{body:{action,request_id:requestId,command:command||{},key:key||null}});
+  if(error){let body;try{body=await error.context.clone().json();}catch(_){}throw Error(body&&body.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');}
+  if(!data||data.error||!data.data)throw Error(data&&data.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');return data.data;
+ }
  window.SavingsPanelRepository=Object.freeze({
   list:q=>rpc('get_admin_savings_panel',{p_tab:q.tab,p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:20}),
   detail:(id,offset=0,limit=6)=>rpc('get_admin_savings_panel_detail',{p_record_id:id,p_history_offset:offset,p_history_limit:limit}),
@@ -50742,7 +50927,11 @@ Object.assign(window, {
   publicationPreview:id=>rpc('get_admin_savings_publication_preview',{p_record_id:id}),
   publish:c=>rpc('admin_publish_savings',{p_version:c.version,p_fingerprint:c.fingerprint,p_confirmed:c.confirmed,p_client_action_id:c.key}),
   runtimeRequests:(folio=null)=>rpc('get_admin_savings_runtime_requests',{p_folio:folio}),
-  operation:c=>rpc('admin_save_savings_operation',{p_command:c.command,p_client_action_id:c.key}),
+  operation:c=>c.command.kind==='SETTLE'?settlement('SETTLE',c.command.request_id,c.command,c.key):rpc('admin_save_savings_operation',{p_command:c.command,p_client_action_id:c.key}),
+  checkWithdrawal:id=>settlement('PREVIEW',id),
+  authorizeWithdrawal:c=>settlement('OVERRIDE',c.requestId,c.command,c.key),
+  revokeException:c=>rpc('admin_revoke_savings_exception',{p_event_id:c.eventId,p_reason:c.reason,p_key:c.key}),
+  authorizeYieldOverride:c=>rpc('admin_authorize_savings_yield_override',{p_period_id:c.periodId,p_participant_id:c.participantId||null,p_reason:c.reason,p_justification:c.justification,p_confirmed:c.confirmed===true,p_key:c.key}),
   report:c=>rpc('get_admin_savings_period_report',{p_from:c.from,p_to:c.to}),
   nativeFinancial:(participantId,until=null)=>rpc('get_admin_savings_account',{p_participant_id:participantId,p_until:until}),
   nativeList:q=>rpc('get_admin_savings_native_accounts',{p_search:q.search||'',p_offset:q.offset||0,p_limit:20,p_filter:q.filter||'todos'}),
@@ -52535,6 +52724,8 @@ Object.assign(window, {
   const columns = [['capital_delivered', 'Capital entregado'], ['yield_delivered', 'Rendimiento entregado'], ['actual_received', 'Descuentos recibidos'], ['yield_credited', 'Rendimiento abonado']];
   function explain(e) {
     const s = String(e && e.message || '');
+    if (/WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN/.test(s)) return 'Retiro bloqueado por préstamo con saldo atrasado.';
+    if (/LOAN_STATUS_DATA_INCONSISTENCY/.test(s)) return 'Los estados del préstamo no coinciden. La entrega queda bloqueada hasta aclarar la información de origen.';
     if (/LOAN_VERIFICATION_UNAVAILABLE/.test(s)) return 'No se pudo comprobar si esta persona tiene adeudos. La entrega queda pendiente hasta que la consulta esté disponible.';
     if (/42501|DENIED/.test(s)) return 'Tu cuenta no tiene permiso para realizar esta acción.';
     if (/STALE|VERSION|CHANGED/.test(s)) return 'La información cambió. Actualiza la consulta y comprueba los datos antes de continuar.';
@@ -52728,6 +52919,166 @@ Object.assign(window, {
       role: 'status',
       className: 'svp-success'
     }, command.notice));
+  }
+  function ExceptionDialog({
+    children,
+    onClose,
+    busy
+  }) {
+    const ref = useRef(null),
+      close = useRef(onClose);
+    close.current = onClose;
+    useEffect(() => {
+      const previous = document.activeElement,
+        el = ref.current;
+      el.showModal();
+      return () => {
+        el.close();
+        previous && previous.isConnected && previous.focus();
+      };
+    }, []);
+    return h('dialog', {
+      ref,
+      className: 'svp svp-modal',
+      style: {
+        maxWidth: 'min(560px, calc(100vw - 32px))',
+        boxSizing: 'border-box'
+      },
+      onCancel: e => {
+        e.preventDefault();
+        if (!busy) close.current();
+      }
+    }, h('h2', null, 'AUTORIZAR RETIRO EXCEPCIONAL'), children, h(Btn, {
+      disabled: busy,
+      onClick: onClose
+    }, 'Cerrar'));
+  }
+  function WithdrawalCheck({
+    row,
+    disabled,
+    onSettle
+  }) {
+    const [data, setData] = useState(null),
+      [loading, setLoading] = useState(false),
+      [error, setError] = useState(''),
+      [form, setForm] = useState(null),
+      [revoke, setRevoke] = useState('');
+    const alive = useRef(true),
+      lock = useRef(false);
+    useEffect(() => () => {
+      alive.current = false;
+    }, []);
+    async function check() {
+      if (lock.current) return;
+      lock.current = true;
+      setLoading(true);
+      setData(null);
+      setError('');
+      try {
+        const value = await window.SavingsPanelRepository.checkWithdrawal(row.id);
+        if (alive.current) setData(value);
+      } catch (e) {
+        if (alive.current) setError(explain(e));
+      } finally {
+        lock.current = false;
+        if (alive.current) setLoading(false);
+      }
+    }
+    const command = useCommand(async () => {
+      setForm(null);
+      setRevoke('');
+      await check();
+    });
+    const busy = disabled || loading || command.busy,
+      update = (key, value) => {
+        setForm(old => ({
+          ...old,
+          [key]: value
+        }));
+        command.clear();
+      };
+    return h('div', {
+      'data-withdrawal-check': row.id
+    }, h(Btn, {
+      disabled: busy,
+      onClick: check
+    }, 'Comprobar préstamos para entrega'), loading && h('p', {
+      role: 'status'
+    }, 'Consultando todos los préstamos del ahorrador…'), error && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), data && h(React.Fragment, null, (data.overdue_loans || []).length > 0 && h('p', {
+      className: 'svp-note warn'
+    }, data.override ? 'Existe una autorización excepcional para este retiro.' : 'Retiro bloqueado por préstamo con saldo atrasado.'), !(data.loans || []).length && h('p', {
+      className: 'svp-note'
+    }, 'No se encontraron préstamos para este Folio.'), (data.loans || []).map(loan => h('p', {
+      key: loan.id,
+      className: 'svp-note'
+    }, 'Préstamo ' + loan.id + ' · ' + loan.fund + ' · ' + loan.status)), !data.can_settle && data.code !== 'WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN' && h('p', {
+      className: 'svp-note'
+    }, 'La entrega sigue pendiente de cumplir los requisitos de la solicitud.'), data.can_settle && h(Btn, {
+      tone: 'primary',
+      disabled: busy,
+      onClick: onSettle
+    }, 'Registrar entrega'), data.can_override && !data.override && h(Btn, {
+      tone: 'outline',
+      disabled: busy,
+      onClick: () => {
+        command.clear();
+        setForm({
+          reason: '',
+          justification: '',
+          confirmed: false
+        });
+      }
+    }, 'AUTORIZAR RETIRO EXCEPCIONAL'), data.override && data.can_override && h('details', null, h('summary', null, 'Revocar autorización excepcional'), h(Notes, {
+      label: 'Motivo de revocación',
+      value: revoke,
+      onChange: setRevoke,
+      disabled: busy
+    }), h(Btn, {
+      disabled: busy || revoke.trim().length < 3,
+      onClick: () => command.run('revokeException', {
+        eventId: data.override.id,
+        reason: revoke.trim()
+      }, 'Autorización revocada.')
+    }, 'Confirmar revocación'))), form && h(ExceptionDialog, {
+      busy,
+      onClose: () => setForm(null)
+    }, h('p', null, 'Esta autorización permitirá continuar el retiro a pesar de existir un préstamo con saldo atrasado. La excepción quedará registrada en la bitácora.'), h(Select, {
+      label: 'Motivo de la excepción',
+      value: form.reason,
+      onChange: v => update('reason', v),
+      disabled: busy,
+      options: [['', 'Selecciona un motivo'], ['DESPIDO', 'Despido'], ['RENUNCIA', 'Renuncia'], ['FALLECIMIENTO', 'Fallecimiento'], ['CONTINGENCIA', 'Contingencia / Emergencia'], ['OTRO', 'Otro caso especial']]
+    }), h(Notes, {
+      label: form.reason === 'OTRO' ? 'Justificación obligatoria' : 'Justificación (opcional)',
+      value: form.justification,
+      onChange: v => update('justification', v),
+      disabled: busy
+    }), h('label', {
+      className: 'svp-note'
+    }, h('input', {
+      type: 'checkbox',
+      checked: form.confirmed,
+      disabled: busy,
+      onChange: e => update('confirmed', e.target.checked)
+    }), 'Confirmo la autorización excepcional de este retiro.'), h(Notice, {
+      command
+    }), h(Btn, {
+      tone: 'primary',
+      disabled: busy || !form.reason || !form.confirmed || form.reason === 'OTRO' && form.justification.trim().length < 3,
+      onClick: () => command.run('authorizeWithdrawal', {
+        requestId: row.id,
+        command: {
+          ...form,
+          justification: form.justification.trim(),
+          fingerprint: data.fingerprint
+        }
+      }, 'Excepción autorizada para esta solicitud.')
+    }, 'Confirmar autorización excepcional')), !form && h(Notice, {
+      command
+    }));
   }
   function RequestForm({
     draft,
@@ -52959,7 +53310,12 @@ Object.assign(window, {
       tone: 'outline',
       disabled: blocked,
       onClick: () => select(row, 'CANCEL')
-    }, 'Cancelar solicitud')), action && action.row.id === row.id && h('div', null, action.kind === 'REVIEW' ? h(React.Fragment, null, h(Select, {
+    }, 'Cancelar solicitud')), !draft && !action && row.requires_loan_verification === true && h(WithdrawalCheck, {
+      key: row.id + ':' + row.status,
+      row,
+      disabled: blocked,
+      onSettle: () => select(row, 'SETTLE')
+    }), action && action.row.id === row.id && h('div', null, action.kind === 'REVIEW' ? h(React.Fragment, null, h(Select, {
       label: 'Decisión de la solicitud',
       value: action.decision,
       disabled: blocked,

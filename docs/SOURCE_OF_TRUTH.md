@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## Ahorro: guard de préstamos y excepciones — candidato local 2026-09-20
+
+H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 prepara, sin desplegar, lectura de todos los
+préstamos de HISTORIAL P V2 (D Folio, C préstamo, G fondo, X estado uniforme).
+El único bloqueo de préstamo ordinario es SALDO ATRASADO; una fuente inválida o
+inconsistente falla cerrada. No existe maestro ni caché paralelo de préstamos.
+`savings_requests` sigue siendo autoridad de solicitudes; `savings_audit_events`
+conserva autorizaciones/revocaciones/evidencia, y `savings_transactions` los movimientos.
+Los snapshots prueban una decisión; nunca sustituyen una lectura actual de Google.
+La permanencia excepcional usa `savings_yield_periods` y esa misma bitácora, sin
+cambiar `savings_enrollments.enrollment_started_at`. Capacidades independientes:
+`savings.withdrawal.override` y `savings.yield.override`. Producción permanece sin
+esta migración hasta una autorización posterior de aplicación.
+
 ## Tamaño de texto personal — H-USER-TEXT-SIZE-ACCESSIBILITY-001
 
 Supabase Auth `user_metadata.sutiapp_text_size` es la única autoridad de esta preferencia visual: `small`, `normal`, `large` o `largest`; ausencia/null significa Normal. `small` corresponde a Pequeño (0.875), autorizado en H-USER-TEXT-SIZE-SMALL-001. El usuario autorizó una solución mínima segura ante la ausencia de preferencias personales. `app_settings` conserva branding global y `useTweaks` su propósito de diseño; ninguno decide el tamaño personal.

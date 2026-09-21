@@ -8,6 +8,8 @@
  const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Aprobada',REJECTED:'Rechazada',SETTLED:'Pagada',APPLIED:'Aplicada',CANCELLED:'Cancelada',PENDING:'Pendiente'};
  const columns=[['capital_delivered','Capital entregado'],['yield_delivered','Rendimiento entregado'],['actual_received','Descuentos recibidos'],['yield_credited','Rendimiento abonado']];
  function explain(e){const s=String(e&&e.message||'');
+  if(/WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN/.test(s))return 'Retiro bloqueado por préstamo con saldo atrasado.';
+  if(/LOAN_STATUS_DATA_INCONSISTENCY/.test(s))return 'Los estados del préstamo no coinciden. La entrega queda bloqueada hasta aclarar la información de origen.';
   if(/LOAN_VERIFICATION_UNAVAILABLE/.test(s))return 'No se pudo comprobar si esta persona tiene adeudos. La entrega queda pendiente hasta que la consulta esté disponible.';
   if(/42501|DENIED/.test(s))return 'Tu cuenta no tiene permiso para realizar esta acción.';
   if(/STALE|VERSION|CHANGED/.test(s))return 'La información cambió. Actualiza la consulta y comprueba los datos antes de continuar.';
@@ -43,6 +45,36 @@
   return {busy,error,notice,run,clear(){attempt.current=null;setError('');setNotice('');}};
  }
  function Notice({command}){return h(React.Fragment,null,command.error&&h('div',{role:'alert',className:'svp-error'},command.error),command.notice&&h('p',{role:'status',className:'svp-success'},command.notice));}
+ function ExceptionDialog({children,onClose,busy}){
+  const ref=useRef(null),close=useRef(onClose);close.current=onClose;
+  useEffect(()=>{const previous=document.activeElement,el=ref.current;el.showModal();return()=>{el.close();previous&&previous.isConnected&&previous.focus();};},[]);
+  return h('dialog',{ref,className:'svp svp-modal',style:{maxWidth:'min(560px, calc(100vw - 32px))',boxSizing:'border-box'},onCancel:e=>{e.preventDefault();if(!busy)close.current();}},h('h2',null,'AUTORIZAR RETIRO EXCEPCIONAL'),children,h(Btn,{disabled:busy,onClick:onClose},'Cerrar'));
+ }
+ function WithdrawalCheck({row,disabled,onSettle}){
+  const [data,setData]=useState(null),[loading,setLoading]=useState(false),[error,setError]=useState(''),[form,setForm]=useState(null),[revoke,setRevoke]=useState('');
+  const alive=useRef(true),lock=useRef(false);
+  useEffect(()=>()=>{alive.current=false;},[]);
+  async function check(){if(lock.current)return;lock.current=true;setLoading(true);setData(null);setError('');try{const value=await window.SavingsPanelRepository.checkWithdrawal(row.id);if(alive.current)setData(value);}catch(e){if(alive.current)setError(explain(e));}finally{lock.current=false;if(alive.current)setLoading(false);}}
+  const command=useCommand(async()=>{setForm(null);setRevoke('');await check();});
+  const busy=disabled||loading||command.busy,update=(key,value)=>{setForm(old=>({...old,[key]:value}));command.clear();};
+  return h('div',{'data-withdrawal-check':row.id},h(Btn,{disabled:busy,onClick:check},'Comprobar préstamos para entrega'),
+   loading&&h('p',{role:'status'},'Consultando todos los préstamos del ahorrador…'),error&&h('p',{role:'alert',className:'svp-error'},error),
+   data&&h(React.Fragment,null,
+    (data.overdue_loans||[]).length>0&&h('p',{className:'svp-note warn'},data.override?'Existe una autorización excepcional para este retiro.':'Retiro bloqueado por préstamo con saldo atrasado.'),
+    !(data.loans||[]).length&&h('p',{className:'svp-note'},'No se encontraron préstamos para este Folio.'),
+    (data.loans||[]).map(loan=>h('p',{key:loan.id,className:'svp-note'},'Préstamo '+loan.id+' · '+loan.fund+' · '+loan.status)),
+    !data.can_settle&&data.code!=='WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN'&&h('p',{className:'svp-note'},'La entrega sigue pendiente de cumplir los requisitos de la solicitud.'),
+    data.can_settle&&h(Btn,{tone:'primary',disabled:busy,onClick:onSettle},'Registrar entrega'),
+    data.can_override&&!data.override&&h(Btn,{tone:'outline',disabled:busy,onClick:()=>{command.clear();setForm({reason:'',justification:'',confirmed:false});}},'AUTORIZAR RETIRO EXCEPCIONAL'),
+    data.override&&data.can_override&&h('details',null,h('summary',null,'Revocar autorización excepcional'),h(Notes,{label:'Motivo de revocación',value:revoke,onChange:setRevoke,disabled:busy}),h(Btn,{disabled:busy||revoke.trim().length<3,onClick:()=>command.run('revokeException',{eventId:data.override.id,reason:revoke.trim()},'Autorización revocada.')},'Confirmar revocación'))),
+   form&&h(ExceptionDialog,{busy,onClose:()=>setForm(null)},
+    h('p',null,'Esta autorización permitirá continuar el retiro a pesar de existir un préstamo con saldo atrasado. La excepción quedará registrada en la bitácora.'),
+    h(Select,{label:'Motivo de la excepción',value:form.reason,onChange:v=>update('reason',v),disabled:busy,options:[['','Selecciona un motivo'],['DESPIDO','Despido'],['RENUNCIA','Renuncia'],['FALLECIMIENTO','Fallecimiento'],['CONTINGENCIA','Contingencia / Emergencia'],['OTRO','Otro caso especial']]}),
+    h(Notes,{label:form.reason==='OTRO'?'Justificación obligatoria':'Justificación (opcional)',value:form.justification,onChange:v=>update('justification',v),disabled:busy}),
+    h('label',{className:'svp-note'},h('input',{type:'checkbox',checked:form.confirmed,disabled:busy,onChange:e=>update('confirmed',e.target.checked)}),'Confirmo la autorización excepcional de este retiro.'),
+    h(Notice,{command}),h(Btn,{tone:'primary',disabled:busy||!form.reason||!form.confirmed||(form.reason==='OTRO'&&form.justification.trim().length<3),onClick:()=>command.run('authorizeWithdrawal',{requestId:row.id,command:{...form,justification:form.justification.trim(),fingerprint:data.fingerprint}},'Excepción autorizada para esta solicitud.')},'Confirmar autorización excepcional')),
+   !form&&h(Notice,{command}));
+ }
  function RequestForm({draft,setDraft,disabled}){
   const update=(key,value)=>setDraft(old=>({...old,[key]:value}));
   const contribution=['JOIN','CHANGE_AMOUNT'].includes(draft.type),withdrawal=draft.type==='WITHDRAW';
@@ -82,6 +114,7 @@
    rows.slice(0,limit).map(row=>h('article',{key:row.id,className:'svp-audit'},h('b',null,row.name||'Folio '+row.folio),h('p',{className:'svp-note'},'Folio '+row.folio+' · '+(types[row.type]||'Operación de ahorro')+' · '+(states[row.status]||'Por revisar')),
     row.request_code&&h(Fila,{label:'Solicitud',valor:row.request_code}),row.amount!=null&&h(Fila,{label:'Importe solicitado',valor:M(row.amount)}),row.new_amount!=null&&h(Fila,{label:'Nueva aportación',valor:M(row.new_amount)}),['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type)&&h(Fila,{label:'Después del retiro',valor:row.continue_saving===true?'Continuará ahorrando':row.continue_saving===false?'Dejará de ahorrar':'Por confirmar'}),row.effective_date&&h(Fila,{label:'Fecha de aplicación',valor:fmt(row.effective_date)}),row.settlement_block_reason&&h('p',{className:'svp-note warn'},row.settlement_block_reason),
     !draft&&!action&&h('div',{className:'svp-actions'},row.can_review===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'REVIEW')},'Revisar solicitud'),row.can_settle===true&&h(Btn,{tone:'primary',disabled:blocked,onClick:()=>select(row,'SETTLE')},'Registrar entrega'),row.can_cancel===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'CANCEL')},'Cancelar solicitud')),
+    !draft&&!action&&row.requires_loan_verification===true&&h(WithdrawalCheck,{key:row.id+':'+row.status,row,disabled:blocked,onSettle:()=>select(row,'SETTLE')}),
     action&&action.row.id===row.id&&h('div',null,
      action.kind==='REVIEW'?h(React.Fragment,null,h(Select,{label:'Decisión de la solicitud',value:action.decision,disabled:blocked,onChange:v=>changeAction('decision',v),options:[['APPROVE','Aprobar'],['REJECT','Rechazar']]}),
       action.decision==='APPROVE'&&['JOIN','CHANGE_AMOUNT'].includes(row.type)&&h(React.Fragment,null,h(Field,{label:'Fecha excepcional (opcional)',type:'date',value:action.effective_date,onChange:v=>changeAction('effective_date',v),disabled:blocked}),h('p',{className:'svp-note'},'Déjala vacía para usar la fecha calculada. Si la cambias, explica el motivo.'),row.type==='JOIN'&&h(Select,{label:'Tipo de descuento autorizado',value:action.process,disabled:blocked,onChange:v=>changeAction('process',v),options:[['','Selecciona una opción'],['PROCESS_1','Quincenal · Clave 1'],['PROCESS_3','Quincenal · Suplente variable'],['JUB','Mensual · Jubilado o pensionado']]})),

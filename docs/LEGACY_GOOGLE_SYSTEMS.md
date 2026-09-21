@@ -1,5 +1,17 @@
 # Sistemas Google legacy
 
+## HISTORIAL P V2 — retiro Ahorro — implementación local 2026-09-20
+
+OWNER identifica SutiApp Final / HISTORIAL P V2 (sheetId 1245291756) como autoridad:
+D Folio exacto, C ID de préstamo, A fecha amortizada, G fondo, X estado actual uniforme.
+El lector preparado consulta todas las filas, agrupa todos los préstamos y bloquea
+SALDO ATRASADO. LIQUIDADO, PAGÓ DE MÁS y AL CORRIENTE no bloquean. Estados inconsistentes,
+fuente no disponible o identidad no resuelta fallan cerrados. Una excepción de retiro
+vive en la bitácora Supabase de esa solicitud; jamás altera el estado de Google.
+No se cambian fórmulas, Apps Script, triggers ni hojas. No existe caché alternativo
+productivo. Edge y migración aún no desplegados; su OAuth directo se verificará sólo
+en un release posterior autorizado. [Evidencia P0](audits/H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001.md).
+
 ## Reparación de referencias autorizada — ADR-107, 2026-09-08
 
 SAFE CHANGE aplicada en el mismo receptor GAS15 y mismo deployment. Tres referencias del registry

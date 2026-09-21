@@ -1,5 +1,18 @@
 # Reglas de seguridad
 
+## Excepciones de Ahorro — candidato local 2026-09-20
+
+La implementación P0 preparada exige `savings.withdrawal.override` para excepciones
+de retiro y `savings.yield.override` para permanencia. No derivar esas facultades de
+`savings.approve`. Principal conserva acceso total; las delegaciones usan módulos
+específicos existentes. La Edge `savings-settlement` verifica Auth antes de leer Google;
+SQL deriva identidad desde la solicitud, revalida actor/sesión/contexto y permisos.
+Sólo service_role llama al wrapper de entrega, con observación fresca de préstamos;
+el navegador no suministra una certificación de adeudos. Helpers privados sin grants.
+La entrega directa sin comprobación sigue bloqueada. Evidencia inmutable, revocación
+explícita anterior al uso e idempotencia de operaciones. Ningún secreto entra al bundle.
+Probado aisladamente; no instalado ni verificado a través del gateway productivo.
+
 ## Foto de perfil propia — H-PROFILE-PHOTO-EDIT-001
 
 `set_self_profile_photo` deriva identidad efectiva y exige `auth_user_id=auth.uid()` sin impersonación; no acepta destinatario. Valida path dentro del afiliado, owner del objeto, MIME y tamaño reales de metadata Storage (máximo 5 MB). No vincula un hash privado ajeno. RLS y políticas Storage existentes permanecen activas; columna de foto vigente solo tiene SELECT browser y la RPC audita actor/afiliado/versión anterior. Tests transaccionales confirmaron owner, inserción Storage autenticada, denegación cross-user de lectura/subida/path/hash, DML directo y anon. Cero fixtures persistentes.

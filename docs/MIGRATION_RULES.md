@@ -1,5 +1,27 @@
 # Reglas de migración
 
+## 20260920000100 — excepciones de Ahorro — PREPARED, NOT APPLIED
+
+Validación sólo aislada por decisión OWNER: prohibido DDL de prueba en producción,
+incluso con ROLLBACK. Reutiliza `savings_audit_events` para excepciones/evidencia,
+agrega RPCs y capacidades específicas mediante el registro de permisos existente,
+respalda cuatro definiciones y el constraint de permisos antes de sustituirlos.
+No crea tablas ni reescribe historia. Permanencia real, ledger y publicación conservan
+su autoridad. `lock_timeout=2s`, `statement_timeout=60s` para una eventual aplicación
+explícitamente autorizada; estas sentencias no se han ejecutado en producción.
+
+Forward y recovery pasan en PostgreSQL aislado con contratos actuales, constraints,
+índices, RLS/grants y fixtures sintéticos. Recuperación: restaura definiciones/ACLs
+anteriores, inhabilita nuevas RPCs y conserva evidencia/backup. Retira metadatos de
+capacidades sólo sin uso ni delegaciones que quedarían huérfanas. El ROLLBACK exterior
+del ensayo restaura datos y esquema previos. Evidencia y límites:
+[auditoría P0](audits/H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001.md).
+
+Release futuro, separadamente autorizado: verificar deriva y número de migración,
+respaldo/recuperación y ventana; comprobar OAuth Sheets del nuevo Edge sin operaciones
+financieras; aplicar backend antes del frontend; verificar JWT/grants/denegaciones y
+readback. Un PASS aislado no autoriza ejecutar esa secuencia en producción.
+
 ## 20260917000300 — copy editorial de Suti Inversión
 
 APPLIED / VERIFIED — 2026-09-17. Crea `public.investment_screen_copy` con 25 filas sembradas: las cadenas exactas ya publicadas en `screens-inversion.jsx`, de modo que aplicar la migración no cambia un solo píxel de la pantalla. Aditiva pura: ninguna tabla, columna, constraint, índice, política o función existente se toca; reutiliza los triggers ya instalados `set_h0072_updated_at()` y `audit_admin_write()`.

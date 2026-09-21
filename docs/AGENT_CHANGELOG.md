@@ -1,5 +1,24 @@
 # Bitácora de agentes
 
+## 2026-09-20 — H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 — preparado y validado localmente
+
+Lector completo de HISTORIAL P V2, guard de entrega con comprobación backend fresca,
+excepción de retiro vinculada a solicitud/snapshot y excepción individual/global de
+permanencia por periodo. Capacidades separadas y eventos inmutables; fecha real de
+ingreso intacta. UI con copy OWNER y confirmaciones. Reutiliza autoridades actuales.
+
+OWNER rechazó expresamente DDL de prueba productivo y eligió entorno aislado. Se
+reprodujeron contratos actuales mediante catálogos read-only, sin datos personales.
+Forward/recovery, reglas financieras y seguridad PASS en PostgreSQL aislado; navegador
+sin red PASS a 320/430/1440. Reutilizado un test browser; cero archivos QA permanentes
+nuevos. Scripts/fixtures/resultados adicionales sólo en %TEMP%. Build focal; lectores
+compartidos y módulos ajenos conservados. DDL/locks de DDL/escrituras/operaciones
+financieras productivas: 0. Sin push ni deployment. Aplicación real requiere otra
+autorización explícita y preflight/recovery. No se inicia otro pendiente de Ahorro.
+
+Detalle, comandos, matriz, recuperación y límites:
+[auditoría P0](audits/H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001.md).
+
 ## 2026-09-17 — ADR-111 — Copy editorial de Suti Inversión administrable
 
 Los 25 textos editoriales de `Mi Financiera → Invertir` (encabezado, «Cómo funciona»,

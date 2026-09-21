@@ -1,5 +1,28 @@
 # Registro de decisiones arquitectónicas
 
+## H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 — Reglas OWNER, 2026-09-20
+
+HISTORIAL P V2 es autoridad de préstamos: D Folio exacto, C préstamo, G fondo,
+X uniforme en todas las filas de cada préstamo. Revisar todos los préstamos:
+LIQUIDADO/PAGÓ DE MÁS/AL CORRIENTE no bloquean; SALDO ATRASADO bloquea. Error de
+fuente, identidad o estados contradictorios cierra la entrega. No modificar Google.
+
+Autorizar excepcionalmente un retiro requiere `savings.withdrawal.override`, motivo,
+confirmación y evidencia inmutable vinculada a esa solicitud y su condición de atraso.
+`savings.approve` no concede esa capacidad. La excepción de permanencia requiere
+otra capacidad, `savings.yield.override`, y sólo exceptúa seis meses para un periodo
+individual/global. Nunca modifica fecha real de ingreso ni se hereda a otro periodo.
+Copy aprobado: **Autorizar excepción de permanencia** — «Permite calcular rendimientos
+para este periodo sin modificar la fecha real de ingreso de los ahorradores.»
+
+Reutilizar solicitudes, periodos, permisos y bitácora existentes. Revocaciones
+explícitas antes del uso; no editar evidencia usada. No publicar Ahorro ni ejecutar
+operaciones financieras reales. El propietario autoriza únicamente validación aislada:
+prohíbe DDL de prueba productivo aun con ROLLBACK. Aplicar realmente la migración exige
+otra autorización explícita y preflight/recovery propios. Implementación preparada,
+sin aplicación ni despliegue productivo. Evidencia en
+[auditoría P0](audits/H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001.md).
+
 ## ADR-111 — Copy editorial de Suti Inversión administrable, 2026-09-17
 
 - **Enmienda acotada de ADR-070:** el ADR-070 prohibía Supabase, Edge, RPC, `localStorage`, caché y registro productivo para la pantalla `Mi Financiera → Invertir`. Esta decisión levanta esa prohibición **únicamente para el texto editorial**. Todo lo demás del ADR-070 sigue vigente sin cambio.

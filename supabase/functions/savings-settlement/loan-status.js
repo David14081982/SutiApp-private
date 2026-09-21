@@ -1,0 +1,50 @@
+// HISTORIAL P V2 is the authority. This module never writes Google or caches loans.
+export const WORKBOOK = '1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80';
+export const SHEET_ID = 1245291756;
+const normalized = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+const statuses = new Set(['LIQUIDADO', 'PAGO DE MAS', 'LIQUIDADO O PAGO DE MAS', 'AL CORRIENTE', 'SALDO ATRASADO']);
+export function evaluateLoans(rows, folio) {
+  if (typeof folio !== 'string' || !folio.trim() || !Array.isArray(rows)) throw Error('SAVINGS_EXACT_IDENTITY_REQUIRED');
+  const loans = new Map();
+  for (const row of rows) {
+    const id = String(row[2] ?? '').trim(), owner = String(row[3] ?? '');
+    if (id && !owner.trim()) throw Error('LOAN_STATUS_DATA_INCONSISTENCY');
+    if (owner !== folio && owner.trim() === folio) throw Error('LOAN_STATUS_DATA_INCONSISTENCY');
+    if (owner !== folio) continue; // Never coerce numeric Folios or drop leading zeroes.
+    const status = normalized(row[23]), fund = String(row[6] ?? '').trim();
+    if (!id || !fund || !statuses.has(status)) throw Error('LOAN_STATUS_DATA_INCONSISTENCY');
+    const prior = loans.get(id);
+    if (prior && (prior.status !== status || prior.fund !== fund)) throw Error('LOAN_STATUS_DATA_INCONSISTENCY');
+    if (!prior) loans.set(id, { id, fund, status, rows: 0 });
+    loans.get(id).rows++;
+  }
+  return [...loans.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+export async function readLoanSource(env, fetcher = fetch) {
+  const response = await fetcher('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: env('GOOGLE_VISIBILITY_OAUTH_CLIENT_ID') || '', client_secret: env('GOOGLE_VISIBILITY_OAUTH_CLIENT_SECRET') || '', refresh_token: env('GOOGLE_VISIBILITY_OAUTH_REFRESH_TOKEN') || '', grant_type: 'refresh_token' }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const token = await response.json();
+  if (!response.ok || !token.access_token) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  const headers = { Authorization: 'Bearer ' + token.access_token };
+  const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + WORKBOOK;
+  const metaResponse = await fetcher(base + '?fields=sheets.properties', { headers, signal: AbortSignal.timeout(15000) });
+  const meta = await metaResponse.json();
+  const sheet = meta.sheets?.find(s => s.properties.sheetId === SHEET_ID)?.properties;
+  if (!metaResponse.ok || sheet?.title !== 'HISTORIAL P V2' || sheet.gridProperties.rowCount < 2) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  // One provider request, all rows, only authoritative columns. No arbitrary row cap.
+  const url = new URL(base + '/values:batchGet');
+  for (const range of ['A:D', 'G:G', 'X:X']) url.searchParams.append('ranges', "'HISTORIAL P V2'!" + range);
+  url.searchParams.set('valueRenderOption', 'FORMATTED_VALUE');
+  const read = await fetcher(url, { headers, signal: AbortSignal.timeout(30000) }), data = await read.json();
+  if (!read.ok || data.valueRanges?.length !== 3) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  const [ids, funds, states] = data.valueRanges.map(r => r.values || []);
+  if (ids[0]?.[0] !== 'Fecha' || ids[0]?.[2] !== 'ID' || ids[0]?.[3] !== 'Folio' || funds[0]?.[0] !== 'Fondo' || normalized(states[0]?.[0]) !== 'ESTATUS DEL PRESTAMO' || ids.length < 2) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  const rows = [];
+  for (let i = 1; i < Math.max(ids.length, funds.length, states.length); i++) {
+    const row = [...(ids[i] || [])]; row[6] = funds[i]?.[0]; row[23] = states[i]?.[0]; rows.push(row);
+  }
+  return { rows, observed_at: new Date().toISOString(), source: WORKBOOK + ':' + SHEET_ID, scanned_rows: rows.length };
+}

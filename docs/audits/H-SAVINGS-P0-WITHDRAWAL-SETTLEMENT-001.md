@@ -12,7 +12,30 @@ read_only true, sheetId 1245291756, 14927 scanned rows and 44 overdue loans.
 The SERVICE_DISABLED blocker recorded below is historical and resolved.
 Migration and Edge already installed; neither reapplied. No financial operations,
 Google writes, new QA files or fixtures. Publishing validated frontend next;
-deployment completion must be checked against the pushed commit and live bundle.
+deployment completion verified below.
+
+### Final production closure — 2026-09-21
+
+P0 WITHDRAWAL SETTLEMENT: PASS / PRODUCTION / CLOSED.
+Push a70aff2cae1e1608e3341ad4f75e5142a03cde8d completed. GitHub Pages run
+35577162916 SUCCESS, including Auth/request compatibility, public artifact build
+and critical request production verification. https://sutiapp.com returns HTTP 200
+and app/bundle.js?v=267 returns HTTP 200 with exactly the validated SHA-256
+65cd96a857307ea21e841e8c1c8285fa8e66b895972ff35829b8f1a6e45ac617.
+Financial readback remains 738 transactions, 0 yield periods, 0 allocations.
+OAuth helper completed successfully, including temporary Picker key cleanup.
+
+Migration: PASS (previous production readback; not repeated).
+Edge / Google READ-ONLY / HISTORIAL P V2: PASS (live HTTP 200 above).
+Overdue guard / withdrawal override / yield override: PASS (installed contracts
+and prior isolated validation; no real financial action used to exercise them).
+Source of truth / invariants / security: PASS; unchanged authority, no frontend
+credentials, no real enrollment date mutation, authenticated service-only probe.
+Legacy impact: Google reads only. Real financial testing operations: 0.
+QA files added: 0. QA residual data: 0. Unexpected changed files: 0.
+Architect closure verdict: APPROVED against the existing validated candidate,
+production readback, successful workflow and exact live bundle hash.
+Next instruction: STOP. No additional stage of #1 and no automatic #2/#3 work.
 
 ## Production release authorization — 2026-09-21
 

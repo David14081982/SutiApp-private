@@ -303,3 +303,14 @@ APPLIED / VERIFIED. Aditiva: tabla privada de metadata, dos funciones focales y 
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 The three restored migrations (20260907000200, 20260909000300, 20260918120000) describe already-installed production changes. Do not run them against production to reconcile Git. Beneficiary tracking still uses 20260918000100, colliding with the canonical savings_panel_single_projection filename; see ../docs/plans/TRACKING_RECONCILIATION_PLAN.md. Aval/Disk IO exact tracking rows are absent. This is source reconciliation only, not permission for db push/migration up or automatic repair. Aval supersedes four Disk IO definitions while retaining their PT409 changes. Historical recoveries are preserved unchanged: Aval pins OIDs/history; Disk IO refuses definition drift; beneficiary recovery keeps data and only disables new writes.
+
+
+## Savings affiliate publication correction - 20260921
+
+20260921000500 is APPLIED. Three publication/read functions accept the exact
+unique active affiliate while preserving archived history. Current production
+contracts were checked before apply; forward/recovery and ACL/identity denials
+passed in isolated PostgreSQL. Existing private function backup enables exact
+function recovery without deleting publication events or money. Owner-authorized
+publication used the existing fingerprint/version RPC after 334/334 projections
+matched ledger and pending=0. No production test DDL or test financial operations.

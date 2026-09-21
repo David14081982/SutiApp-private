@@ -1,13 +1,18 @@
 # Fuentes de verdad
 
-## Owner-Q confirmation ? completed, financial publication PRIVATE
+## Owner-Q confirmation and affiliate publication completed
 
-Owner explicitly confirmed Ahorro Q as the correct closing balance. Existing audited
-writers certified every eligible historical record, using historical opening plus
-actual dated contributions and source historical component evidence. All 328 closing
-balances equal Q; no projected yield or expected receipt was posted as real money.
-Financial authority remains private Supabase certification until the separately scoped
-publication decision. This operation creates no permanent Google synchronization.
+Owner explicitly confirmed Ahorro Q as the closing balance. All 328 historical
+balances were certified; six native accounts complete the 334-account ledger.
+After the owner reported outdated affiliate balances and required full resolution,
+admin_publish_savings switched the existing financial gate to PUBLISHED/version 2
+on 2026-09-21. All 334 canonical user projections matched the ledger before release.
+Inicio and Ahorro now read the same certified Supabase authority. Old self-cache
+versions are invalidated by the existing publication reader. Google remains source
+evidence, never a permanent runtime synchronization or fallback.
+Publication/read identity uses exactly one active affiliate and the exact linked
+Folio; archived duplicates do not block visibility. Multiple active identities are
+denied. P0 settlement and request guards remain unchanged.
 
 ## Ahorro: conciliaci?n por fecha ? backend instalado; frontend preparado
 

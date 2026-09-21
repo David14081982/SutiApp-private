@@ -3306,3 +3306,13 @@ RESPONSE TO CODEX: finish the registry freshness check, commit only the declared
 files, publish this release, verify the public bundle and protected counts, then
 report the deployment and explicit device-coverage limitations. Do not advance
 to another H. Response generated for Codex: YES.
+
+
+## 2026-09-21 - Same P1 closure: affiliate-visible balances
+
+Owner reported that Inicio/Ahorro still showed the previous balance. Certification
+had completed but publication remained PRIVATE; prior closure was incomplete for
+that visible outcome. Corrected three read/publication identity checks, preserving
+archived records and P0 guards. Isolated forward/recovery/ACL PASS; production
+ledger/affiliate/enrollment hashes unchanged. Published through existing admin RPC:
+334 accounts, pending=0, PUBLISHED/version 2. No frontend or financial amounts edited.

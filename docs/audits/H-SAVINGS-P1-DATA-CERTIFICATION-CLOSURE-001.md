@@ -1,5 +1,27 @@
 # H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001
 
+## Owner-reported self-view gap: corrected in production
+
+Prior closure did not include affiliate publication and was incomplete for the
+owner's expected visible outcome. Owner now explicitly requires solving the whole
+publication after being informed it also gates existing request operations.
+Live read-only evidence: mode PRIVATE/version 1, 334 accounts, five publication
+blockers; all five have exactly one active affiliate with the exact linked Folio,
+and only archived duplicates. No active identity ambiguity.
+Scope: migration/recovery 20260921000500 adjusts only publication readiness,
+canonical user projection and the self reader's active-match checks; then run the
+existing authenticated, fingerprinted admin_publish_savings command if ready.
+Authority: certified Supabase ledger; Google Q remains the approved certification
+evidence, not a new runtime source. No money, Google, dates, affiliates, UI,
+settlement/P0 or request-guard changes. Publication changes reader authority through
+the existing global gate and keeps all individual action/business checks.
+Risk/recovery: exact prior function definitions in the existing private backup;
+function recovery preserves financial/publication history. Reverting publication
+itself is not silently attempted after users have used the published system.
+Validation: isolated forward/recovery/ACL, exact active identity and ambiguous
+identity denial; production preflight, projection-to-ledger equality and authenticated
+self/UI reads only. No synthetic production operations or new permanent QA files.
+
 ## Data result: PASS / PRODUCTION ? points 2 and 3
 
 Owner explicitly confirmed live Ahorro column Q as the correct balance and ordered
@@ -163,3 +185,39 @@ Next action: stop; await owner instruction for the next Savings scope.
 Response generated for Codex: YES.
 RESPONSE TO CODEX: Close points 2/3 with this evidence. Do not reopen P0,
 start another H, or include the deferred Savings report.
+
+
+## Affiliate publication final result (supersedes PRIVATE notes above)
+
+Status: PASS / PRODUCTION. Owner's reported visible-balance gap is resolved.
+Migration 20260921000500: APPLIED; forward/recovery/ACL PASS in isolated PostgreSQL.
+One active plus archived duplicates accepted; two active identities and archived
+self access denied; anon denied. No live synthetic fixture or test DDL.
+Production preflight: 334 accounts, pending 0, ready true; 334/334 user projections
+match canonical ledger. Publication executed once through admin_publish_savings,
+version/fingerprint checked, idempotency key recorded by existing audit writer.
+Published at 2026-09-21T16:31:27.069804Z; PUBLISHED/version 2.
+Real self endpoint changed SHADOW_MIRROR to CERTIFIED_OPERATION and invalidated the
+old cache version. Exact ledger/affiliate/enrollment/P0 hashes remained unchanged.
+
+The case in the owner's screenshot was uniquely matched using the visible name,
+contribution and historical capital/yield together. Live mobile browser at width 350
+used the existing audited administrator assistance session. Inicio and Ahorro both
+matched that account's certified total; zero page errors, zero financial write
+requests, zero screenshots. Assistance was closed in finally after every attempt.
+The final verifier used existing accessible navigation IDs rather than abbreviated
+mobile text and navigated normally; no app/router/UI change was needed.
+Individual withdrawal/change controls retain their existing business and assistance
+rules. No real request, withdrawal, payment, exception or yield credit was submitted.
+
+UI preservation: PASS, unchanged sources and published frontend v269.
+Build: NOT APPLICABLE (SQL/documentation only; frontend artifact unchanged).
+Security/source-of-truth/invariants: PASS; no public private data or credentials.
+Permanent QA files added: 0. Production QA residual data: 0.
+Architect verdict: APPROVED for affiliate-visible balance correction and publication.
+Next action: stop; do not auto-start another Savings item or reopen P0.
+
+Registry incremental includes the migration and current authority. Final freshness
+reports one changed file: this closure evidence, edited after generation began.
+It adds no route, RPC, permission or dependency; structural regeneration is not
+repeated for documentation-only outcome text, and freshness is not claimed.

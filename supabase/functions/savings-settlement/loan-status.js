@@ -3,6 +3,9 @@ export const WORKBOOK = '1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80';
 export const SHEET_ID = 1245291756;
 const normalized = value => String(value ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 const statuses = new Set(['LIQUIDADO', 'PAGO DE MAS', 'LIQUIDADO O PAGO DE MAS', 'AL CORRIENTE', 'SALDO ATRASADO']);
+const unavailable = (stage, status, reason) => Object.assign(Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE'), {
+  stage, upstream_status: status, upstream_reason: typeof reason === 'string' && /^[A-Za-z_]+$/.test(reason) ? reason : undefined,
+});
 export function evaluateLoans(rows, folio) {
   if (typeof folio !== 'string' || !folio.trim() || !Array.isArray(rows)) throw Error('SAVINGS_EXACT_IDENTITY_REQUIRED');
   const loans = new Map();
@@ -27,19 +30,19 @@ export async function readLoanSource(env, fetcher = fetch) {
     signal: AbortSignal.timeout(15000),
   });
   const token = await response.json();
-  if (!response.ok || !token.access_token) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  if (!response.ok || !token.access_token) throw unavailable('OAUTH_REFRESH', response.status, token.error);
   const headers = { Authorization: 'Bearer ' + token.access_token };
   const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + WORKBOOK;
   const metaResponse = await fetcher(base + '?fields=sheets.properties', { headers, signal: AbortSignal.timeout(15000) });
   const meta = await metaResponse.json();
   const sheet = meta.sheets?.find(s => s.properties.sheetId === SHEET_ID)?.properties;
-  if (!metaResponse.ok || sheet?.title !== 'HISTORIAL P V2' || sheet.gridProperties.rowCount < 2) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  if (!metaResponse.ok || sheet?.title !== 'HISTORIAL P V2' || sheet.gridProperties.rowCount < 2) throw unavailable('SHEET_METADATA', metaResponse.status, meta.error?.details?.find(d => d.reason)?.reason || meta.error?.status);
   // One provider request, all rows, only authoritative columns. No arbitrary row cap.
   const url = new URL(base + '/values:batchGet');
   for (const range of ['A:D', 'G:G', 'X:X']) url.searchParams.append('ranges', "'HISTORIAL P V2'!" + range);
   url.searchParams.set('valueRenderOption', 'FORMATTED_VALUE');
   const read = await fetcher(url, { headers, signal: AbortSignal.timeout(30000) }), data = await read.json();
-  if (!read.ok || data.valueRanges?.length !== 3) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
+  if (!read.ok || data.valueRanges?.length !== 3) throw unavailable('SHEET_VALUES', read.status, data.error?.status);
   const [ids, funds, states] = data.valueRanges.map(r => r.values || []);
   if (ids[0]?.[0] !== 'Fecha' || ids[0]?.[2] !== 'ID' || ids[0]?.[3] !== 'Folio' || funds[0]?.[0] !== 'Fondo' || normalized(states[0]?.[0]) !== 'ESTATUS DEL PRESTAMO' || ids.length < 2) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
   const rows = [];

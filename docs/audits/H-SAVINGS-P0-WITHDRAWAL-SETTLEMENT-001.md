@@ -1,5 +1,67 @@
 # H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001
 
+## Release continuation — OAuth blocker resolved
+
+Owner authorized restoration of the existing dedicated OAuth client in project
+expanded-talon-506522-r7 (842095692451). Google consent completed as
+soporte.sutiapp@gmail.com with the existing drive.file scope and explicit Picker
+selection of SutiApp Final. Read returned HTTP 200 before replacing the three
+GOOGLE_VISIBILITY_OAUTH secrets. Local client JSON removed; credentials not logged.
+Production savings-settlement/source-status now returns HTTP 200, status PASS,
+read_only true, sheetId 1245291756, 14927 scanned rows and 44 overdue loans.
+The SERVICE_DISABLED blocker recorded below is historical and resolved.
+Migration and Edge already installed; neither reapplied. No financial operations,
+Google writes, new QA files or fixtures. Publishing validated frontend next;
+deployment completion must be checked against the pushed commit and live bundle.
+
+## Production release authorization — 2026-09-21
+
+Owner now explicitly authorizes applying validated commit 132196b to production,
+deploying savings-settlement, verifying Google read-only, pushing and publishing the
+validated frontend, and closing this same H. This supersedes the earlier isolated-only
+delivery boundary below. No real withdrawal, yield credit, fake period, enrollment
+date change or Google write is authorized. No new permanent QA files or repeated
+matrices. Scope: existing migration/recovery, Edge deployment, existing bundle,
+release evidence in existing governance documents and derived deployment metadata.
+Only minimum compatibility/readback and live smoke checks are required. Preflight:
+nine relevant function definitions and permission constraint match the isolated
+baseline; remote main remains 321880b; migration version is unused. Recovery already
+validated; the migration stores prior definitions transactionally and bounds locks.
+Status: BLOCKED — Google Sheets API SERVICE_DISABLED. Migration applied and immediate readback
+PASS: 738 transactions, 0 settled withdrawals/periods/allocations; enrollment-date
+digest unchanged. The only release adaptation is GET /source-status on the existing
+Edge, authenticated with its service credential, returning aggregate source health
+without requests, fixtures, financial RPCs or writes. This is necessary to verify
+live OAuth without creating a withdrawal; all validated financial POST routes stay
+unchanged. Validate just this addition, not the prior matrices.
+
+### Production execution result — 2026-09-21
+
+Migration 20260920000100_savings_settlement_exceptions applied and registered.
+Readback PASS: five recovery definitions, both exception capabilities/modules,
+withdrawal guard and yield exception installed; service access granted and browser
+attestation access denied. Financial aggregates and enrollment-date digest unchanged:
+738 transactions, 0 settled requests, 0 yield periods, 0 allocations; publication
+PRIVATE; enrollment-date digest f2c06747488548ac9f63a473ee03870d.
+
+Edge savings-settlement v4 ACTIVE, verify_jwt enabled. Authenticated read-only
+source-status reaches Google after successful OAuth refresh, but Sheets metadata
+returns HTTP 403 SERVICE_DISABLED; Edge returns HTTP 503
+SAVINGS_LOAN_VERIFICATION_UNAVAILABLE, stage SHEET_METADATA. Anonymous source-status
+and financial PREVIEW both return 401. Focal isolated reader/Edge checks PASS;
+the previously validated financial matrices were not repeated.
+
+BLOCKER: enable Google Sheets API (sheets.googleapis.com) in the Google Cloud project
+associated with GOOGLE_VISIBILITY_OAUTH_CLIENT_ID. No available Cloud administration
+access was established. No Google write or real financial operation was performed.
+
+Frontend publication and push stopped at this dependency. sutiapp.com and its bundle
+return HTTP 200; published v266 bundle matches remote baseline 321880b. Candidate
+frontend remains unpublished. Migration and fail-closed Edge remain installed.
+New QA files: 0. QA residual data: 0. Real financial test operations: 0.
+P0 WITHDRAWAL SETTLEMENT: BLOCKED; no production PASS or definitive closure claimed.
+No additional H or P1 started.
+
 ## Pre-change audit — 2026-09-20
 
 Owner authorizes live loan verification and independent, audited withdrawal and

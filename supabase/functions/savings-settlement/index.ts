@@ -11,6 +11,35 @@ Deno.serve(async (req: Request) => {
   const reply = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers });
   if (origin && !allowed.includes(origin)) return reply(403, { error: 'ORIGIN_DENIED' });
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+  // Service-only, read-only release/operations check; never creates a request or
+  // invokes a financial RPC, and never returns individual borrowers or loans.
+  if (req.method === 'GET' && new URL(req.url).pathname.endsWith('/source-status')) {
+    const authorization = req.headers.get('authorization') || '';
+    if (!authorization.startsWith('Bearer ')) return reply(401, { error: 'AUTH_REQUIRED' });
+    try {
+      // Auth's admin endpoint validates the service credential independently of
+      // gateway-injected key representations. The nil UUID reads no real user.
+      const authCheck = await fetch(Deno.env.get('SUPABASE_URL') + '/auth/v1/admin/users/00000000-0000-0000-0000-000000000000', {
+        headers: { Authorization: authorization, apikey: authorization.slice(7) }, signal: AbortSignal.timeout(10000),
+      });
+      const authResult = await authCheck.json();
+      if (!authCheck.ok && !(authCheck.status === 404 && (authResult.error_code || authResult.code) === 'user_not_found')) return reply(401, { error: 'AUTH_REQUIRED' });
+      const source = await readLoanSource((name: string) => Deno.env.get(name));
+      const groups = new Map<string, unknown[][]>();
+      for (const row of source.rows) {
+        if (!row.some(value => String(value ?? '').trim())) continue;
+        const folio = String(row[3] ?? '');
+        if (!groups.has(folio)) groups.set(folio, []);
+        groups.get(folio)!.push(row);
+      }
+      let overdueLoans = 0;
+      for (const [folio, rows] of groups) overdueLoans += evaluateLoans(rows, folio).filter(loan => loan.status === 'SALDO ATRASADO').length;
+      return reply(200, { status: 'PASS', source: source.source, scanned_rows: source.scanned_rows, overdue_loans: overdueLoans, read_only: true });
+    } catch (failure) {
+      const detail = failure as { stage?: string; upstream_status?: number; upstream_reason?: string };
+      return reply(503, { error: 'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE', stage: detail.stage, upstream_status: detail.upstream_status, upstream_reason: detail.upstream_reason });
+    }
+  }
   if (req.method !== 'POST') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
   try {
     const authorization = req.headers.get('authorization') || '';

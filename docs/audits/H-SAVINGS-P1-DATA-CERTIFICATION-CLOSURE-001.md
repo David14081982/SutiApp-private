@@ -110,3 +110,15 @@ new yield credit, real withdrawal, altered real enrollment date or Google write.
 P2 EXPEDIENTS / IDENTITY: PASS / PRODUCTION / CLOSED.
 P3 BALANCE RECONCILIATION: PASS / PRODUCTION / CLOSED.
 Next work is not started automatically; P0 stays closed and untouched.
+
+## Release follow-up (same H)
+
+Owner explicitly approved publishing commits 7ec65c7/d37923b to the public
+repository. Push PASS; Pages run 35622331464 PASS. Production v268 bundle
+SHA256 matched 80c931a0a62a90c8414e2023cc7f128acfb962b2fdb99d67cb6d96467e36c298.
+The final browser check exposed a literal question mark in the new tab label.
+Scope: correct only that label, regenerate the focal bundle and bump its cache
+references to v269/cache v212. No data, SQL, authority, architecture or P0 change.
+Recovery: revert the label-only release. Focal build PASS: 129 modules, only
+savings-panel-admin.jsx changed from d37923b; all other published modules preserved.
+No new QA files. Final live browser/readback follows the corrected deployment.

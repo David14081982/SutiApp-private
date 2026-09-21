@@ -3327,7 +3327,7 @@ financial rules, other request statuses and established-saver screen unchanged.
 Files: savings-request-form.jsx, focal generated bundle/cache references, this log.
 No DB/Google access or writes. No architecture dependency change; no registry rebuild.
 Validation: focal build and isolated mobile/desktop browser, no permanent QA fixtures.
-Recovery: revert this UI commit. Status: PASS locally; release follows.
+Recovery: revert this UI commit. Status: PASS / PRODUCTION.
 Focal build: 129 modules, only savings-request-form.jsx changed from cd5eacb.
 Isolated browser PASS at 320/390/1440: accents, values, dates, expandable schedule,
 no horizontal overflow; APPROVED/APPLIED/REJECTED/CANCELLED/no-request markup
@@ -3335,3 +3335,7 @@ exactly identical to prior implementation. No screenshots or permanent QA files.
 UI preservation: PASS within owner-authorized pending section. Security/legacy:
 unchanged; zero financial writes. Architect review: APPROVED for focal UI release.
 Registry unchanged structurally: text/styles/markup only, no new data dependency.
+
+Pending JOIN UI release: ca3cc79; Pages run 35627950811 SUCCESS.
+sutiapp.com HTTP 200, v270/cache213, remote bundle equals tested local SHA256
+2b45aefc6d55edb2715de2e5fa87faf375483cd0996a77ebf268c0017c065983.

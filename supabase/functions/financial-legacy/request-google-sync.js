@@ -61,7 +61,7 @@ async function googleToken(env) {
   if(oauthPromise&&oauthExpires>Date.now())return oauthPromise;
   oauthExpires=Date.now()+45*60*1000;
   oauthPromise=(async()=>{
-    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:env('GOOGLE_VISIBILITY_OAUTH_CLIENT_ID')||'',client_secret:env('GOOGLE_VISIBILITY_OAUTH_CLIENT_SECRET')||'',refresh_token:env('GOOGLE_VISIBILITY_OAUTH_REFRESH_TOKEN')||'',grant_type:'refresh_token',scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/script.webapp.deploy'}),signal:AbortSignal.timeout(15000)});
+    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:env('GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_ID')||'',client_secret:env('GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_SECRET')||'',refresh_token:env('GOOGLE_REQUEST_SYNC_OAUTH_REFRESH_TOKEN')||'',grant_type:'refresh_token',scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/script.webapp.deploy'}),signal:AbortSignal.timeout(15000)});
     const data=await response.json();if(!response.ok||!data.access_token)throw Error('REQUEST_SYNC_GOOGLE_AUTH_FAILED');return data.access_token;
   })().catch(error=>{oauthPromise=null;oauthExpires=0;throw error;});
   return oauthPromise;

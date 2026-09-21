@@ -1,0 +1,345 @@
+{
+  "capturedAt": "2026-09-21T18:12:41.248Z",
+  "before": [
+    {
+      "id": "77cfdc80-2c2d-40ff-99c6-c81a21f3cf3f",
+      "folio": "SR-2026-000315",
+      "status": "requires_financial_processing",
+      "business_hash": "0a28703a99a208b943fd14a4148b34e0",
+      "payload_hash": "37de492c51956317d1faf674dd717f3e",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "8d62c921-16ce-48c3-9a9c-0c88c40be2a7",
+      "folio": "SR-2026-000316",
+      "status": "requires_financial_processing",
+      "business_hash": "9876f8d14ed710a07920fbf22663686e",
+      "payload_hash": "bdebbfc1a36e5eb09adf7e8991e5740b",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "b554e3e4-e012-4e79-867a-e864127cb64b",
+      "folio": "SR-2026-000317",
+      "status": "approved",
+      "business_hash": "54aa90245e575ad0b58ddd66bc4459a8",
+      "payload_hash": "2a05f43f3e7dda6e11408c81d1d2b702",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 3,
+      "synced_revision": 0
+    },
+    {
+      "id": "cfda07ab-4098-416c-a69e-1a1de43a5ce6",
+      "folio": "SR-2026-000318",
+      "status": "approved",
+      "business_hash": "83e0018ef8a7b99f920d4e7ac9e17342",
+      "payload_hash": "1c5869d9626b5c27e7a2dfc12977f084",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 3,
+      "synced_revision": 0
+    },
+    {
+      "id": "e08b2733-aa9b-4a61-a48e-88af2917694d",
+      "folio": "SR-2026-000319",
+      "status": "submitted",
+      "business_hash": "c2be245b3d89963b671d660074120db8",
+      "payload_hash": "6c56f93ba5ad3750edccc9c9c71f10ae",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "5d9c740f-98f6-4b03-b38e-e4e7f2e5a61f",
+      "folio": "SR-2026-000320",
+      "status": "requires_financial_processing",
+      "business_hash": "f93f5dfad57d86aa60b84d0a8891badd",
+      "payload_hash": "d9f8b5bc346d0ef06106c553ad5fbf19",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "ef95280f-55b6-4856-86c6-e542414de071",
+      "folio": "SR-2026-000321",
+      "status": "requires_financial_processing",
+      "business_hash": "38dc398d94252952e34f82a31bdd4bed",
+      "payload_hash": "521b428a4c9efb25fe58bb1781c41a19",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "6dfb5e5c-c244-4302-9e8f-15ce2948e17a",
+      "folio": "SR-2026-000322",
+      "status": "requires_financial_processing",
+      "business_hash": "ad902321d64b436b439317fa397aba01",
+      "payload_hash": "bf31bde05082a17c62500d2151e677e7",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "2ae2043c-6c9b-4948-904b-ff4c12560ea1",
+      "folio": "SR-2026-000323",
+      "status": "requires_financial_processing",
+      "business_hash": "a5b1c66eed1c03760c552a5882b6ac0d",
+      "payload_hash": "1f7c3dff3f69af2b15e4c2095c9a462d",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    },
+    {
+      "id": "da636401-c00f-4b5b-8f7f-ef5c08b545dd",
+      "folio": "SR-2026-000324",
+      "status": "requires_financial_processing",
+      "business_hash": "51be4be8d80819a9e236b353c2174e7e",
+      "payload_hash": "0633c5846603432e46310c224180e203",
+      "phase": "error",
+      "error_code": "REQUEST_SYNC_GOOGLE_AUTH_FAILED",
+      "google_row": null,
+      "revision": 1,
+      "synced_revision": 0
+    }
+  ],
+  "scope": "Existing OAuth configuration only; automatic delivery",
+  "secretsLogged": false,
+  "configurationUpdatedAt": "2026-09-21T18:12:42.165Z",
+  "configurationHttp": 201,
+  "after": [
+    {
+      "id": "77cfdc80-2c2d-40ff-99c6-c81a21f3cf3f",
+      "folio": "SR-2026-000315",
+      "status": "requires_financial_processing",
+      "business_hash": "0a28703a99a208b943fd14a4148b34e0",
+      "payload_hash": "37de492c51956317d1faf674dd717f3e",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2440,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "8d62c921-16ce-48c3-9a9c-0c88c40be2a7",
+      "folio": "SR-2026-000316",
+      "status": "requires_financial_processing",
+      "business_hash": "9876f8d14ed710a07920fbf22663686e",
+      "payload_hash": "bdebbfc1a36e5eb09adf7e8991e5740b",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2441,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "b554e3e4-e012-4e79-867a-e864127cb64b",
+      "folio": "SR-2026-000317",
+      "status": "approved",
+      "business_hash": "54aa90245e575ad0b58ddd66bc4459a8",
+      "payload_hash": "2a05f43f3e7dda6e11408c81d1d2b702",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2442,
+      "revision": 3,
+      "synced_revision": 3
+    },
+    {
+      "id": "cfda07ab-4098-416c-a69e-1a1de43a5ce6",
+      "folio": "SR-2026-000318",
+      "status": "approved",
+      "business_hash": "83e0018ef8a7b99f920d4e7ac9e17342",
+      "payload_hash": "1c5869d9626b5c27e7a2dfc12977f084",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2443,
+      "revision": 3,
+      "synced_revision": 3
+    },
+    {
+      "id": "e08b2733-aa9b-4a61-a48e-88af2917694d",
+      "folio": "SR-2026-000319",
+      "status": "submitted",
+      "business_hash": "c2be245b3d89963b671d660074120db8",
+      "payload_hash": "6c56f93ba5ad3750edccc9c9c71f10ae",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2445,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "5d9c740f-98f6-4b03-b38e-e4e7f2e5a61f",
+      "folio": "SR-2026-000320",
+      "status": "requires_financial_processing",
+      "business_hash": "f93f5dfad57d86aa60b84d0a8891badd",
+      "payload_hash": "d9f8b5bc346d0ef06106c553ad5fbf19",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2438,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "ef95280f-55b6-4856-86c6-e542414de071",
+      "folio": "SR-2026-000321",
+      "status": "requires_financial_processing",
+      "business_hash": "38dc398d94252952e34f82a31bdd4bed",
+      "payload_hash": "521b428a4c9efb25fe58bb1781c41a19",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2446,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "6dfb5e5c-c244-4302-9e8f-15ce2948e17a",
+      "folio": "SR-2026-000322",
+      "status": "requires_financial_processing",
+      "business_hash": "ad902321d64b436b439317fa397aba01",
+      "payload_hash": "bf31bde05082a17c62500d2151e677e7",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2448,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "2ae2043c-6c9b-4948-904b-ff4c12560ea1",
+      "folio": "SR-2026-000323",
+      "status": "requires_financial_processing",
+      "business_hash": "a5b1c66eed1c03760c552a5882b6ac0d",
+      "payload_hash": "1f7c3dff3f69af2b15e4c2095c9a462d",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2447,
+      "revision": 1,
+      "synced_revision": 1
+    },
+    {
+      "id": "da636401-c00f-4b5b-8f7f-ef5c08b545dd",
+      "folio": "SR-2026-000324",
+      "status": "requires_financial_processing",
+      "business_hash": "51be4be8d80819a9e236b353c2174e7e",
+      "payload_hash": "0633c5846603432e46310c224180e203",
+      "phase": "synced",
+      "error_code": null,
+      "google_row": 2444,
+      "revision": 1,
+      "synced_revision": 1
+    }
+  ],
+  "checkedAt": "2026-09-21T18:39:43.268Z",
+  "checks": {
+    "allDelivered": true,
+    "businessUnchanged": true,
+    "payloadUnchanged": true
+  },
+  "sharedGoogleRead": {
+    "transport": "existing authenticated Apps Script receiver",
+    "http": 200,
+    "readAvailable": true,
+    "source": "HISTORIAL P V2",
+    "directReaderDependencyRemoved": true
+  },
+  "deployment": [
+    {
+      "status": "PASS",
+      "mode": "deploy",
+      "slug": "financial-legacy",
+      "before": 47,
+      "after": 48,
+      "fingerprint": "b5dcc4c31888e22cb6c66ac2a34f30e88df9cf794447affa4e9ee5c1048f6414",
+      "verifyJwt": true
+    },
+    {
+      "status": "PASS",
+      "mode": "deploy",
+      "slug": "request-delete",
+      "before": 5,
+      "after": 6,
+      "fingerprint": "9a5af7616a69c7223aeb01f684ed13ae848da69470d28e61a0eb54360744f3c0",
+      "verifyJwt": true
+    }
+  ],
+  "overallStatus": "PASS",
+  "cajaChica": {
+    "folio": "SR-2026-000316",
+    "googleRow": 2441,
+    "visibleStatus": "PENDIENTE",
+    "verifiedBy": "Google Drive connector and Supabase outbox"
+  },
+  "readerRecovery": {
+    "compile": {
+      "status": "PASS",
+      "mode": "compile",
+      "before": 7,
+      "after": 7,
+      "fingerprint": "4d78843fb1a481463d68404ff5acd098f0991b4739198c14fa63156aa9c52497"
+    },
+    "google": {
+      "status": "PASS",
+      "mode": "deploy-google",
+      "version": 17,
+      "sameDeployment": true,
+      "sameManifest": true,
+      "sha": "bba55ee98f00cf5e0ffd17d3bab25e29f8d6acf3c235cf190b207bd35d0cf2bf"
+    },
+    "edge": {
+      "status": "PASS",
+      "mode": "deploy-edge",
+      "before": 7,
+      "after": 8,
+      "fingerprint": "4d78843fb1a481463d68404ff5acd098f0991b4739198c14fa63156aa9c52497"
+    },
+    "verified": {
+      "status": "PASS",
+      "mode": "verify",
+      "edgeVersion": 8,
+      "sourceStatusHttp": 200,
+      "sourceStatus": {
+        "status": "PASS",
+        "source": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80:1245291756",
+        "scanned_rows": 14927,
+        "overdue_loans": 44,
+        "read_only": true
+      },
+      "anonymousHttp": 401,
+      "exactSourceReadback": true,
+      "financialWrites": 0
+    },
+    "independentSheets": {
+      "sourceRows": 14927,
+      "distinctLoans": 1908,
+      "overdueLoans": 44,
+      "rawPersonalDataRetained": false
+    }
+  },
+  "closedAt": "2026-09-21T18:43:08.166Z",
+  "tests": {
+    "credentialIsolation": "PASS",
+    "readerContract": "PASS",
+    "existingBridgeCases": 9,
+    "anonymousSavingsHttp": 401,
+    "financialWrites": 0
+  }
+}

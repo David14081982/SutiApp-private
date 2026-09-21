@@ -1,5 +1,15 @@
 # Reglas de seguridad
 
+## Receptor Google: lectura fija del guard de préstamos — 2026-09-21
+
+La acción `read_loan_status` reutiliza OAuth del receptor y su secreto server-side;
+valida el secreto antes de abrir el libro y rechaza selectores externos. Sólo devuelve
+A:D/G/X de HISTORIAL P V2 al servicio autenticado. No ofrece escritura ni autorización
+financiera. `savings-settlement` conserva JWT, permisos/identidad backend y evaluador
+exactos; su diagnóstico service-only expone únicamente agregados. Anónimo devuelve
+401. Los errores de origen fallan cerrados sin fuente alternativa ni caché. No hay
+nuevos secretos frontend, scopes, grants, RLS o bypass de estados de préstamo.
+
 ## Excepciones de Ahorro — candidato local 2026-09-20
 
 La implementación P0 preparada exige `savings.withdrawal.override` para excepciones

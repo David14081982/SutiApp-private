@@ -1,5 +1,29 @@
 # Bitácora de agentes
 
+## 2026-09-21 — H-REQUEST-GOOGLE-OAUTH-REPAIR-20260921 — PASS / production
+
+Supersedes the intermediate BLOCKED entry below. Existing receiver v17 now supplies
+the fixed authenticated READ-ONLY HISTORIAL P V2 projection; Savings Edge v8 verified
+HTTP 200/PASS twice, 14,927 rows and 44 overdue loans, equal to independent connector
+reads. Financial evaluator/index, writers, rules, identity and JWT unchanged.
+All ten original request jobs synced; business/payload hashes unchanged. Caja Chica
+SR-2026-000316 remains Google row 2441. No new OAuth client/file/user action needed.
+Receiver credentials use GOOGLE_REQUEST_SYNC_OAUTH_*; no runtime Edge depends on
+obsolete shared reader names. Scoped tests, source readback, anonymous 401 and
+architect review APPROVED. No financial test operation or frontend release.
+[Evidence](qa/H-REQUEST-GOOGLE-OAUTH-REPAIR-20260921.md).
+
+## 2026-09-21 — H-REQUEST-GOOGLE-OAUTH-REPAIR-20260921 — BLOCKED, requests recovered
+
+All ten failing request deliveries recovered; Caja Chica SR-2026-000316 confirmed
+at Historial de solicitudes!A2441. Business/payload hashes unchanged. Receiver OAuth
+isolated from reader OAuth in financial-legacy v48 / request-delete v6, exact source
+readback and anonymous 401 checks PASS. Initial shared-secret replacement regressed
+Savings direct Sheets reads (SERVICE_DISABLED); this remains unresolved and was
+explicitly reported to owner. Existing dedicated client JSON/consent is needed to
+restore reader authorization. No overall PASS, no financial/data repair or frontend
+publication. [Evidence](qa/H-REQUEST-GOOGLE-OAUTH-REPAIR-20260921.md).
+
 ## 2026-09-21 ? H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001 ? data PASS / production
 
 All 328 historical balances certified and equal to owner-confirmed live Ahorro Q;

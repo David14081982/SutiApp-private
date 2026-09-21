@@ -384,9 +384,33 @@ function deleteRequest_(payload) {
   }finally{lock.releaseLock();}
 }
 
+// Fixed, read-only access for the existing Savings loan guard. No caller-selected
+// workbook/range and no financial interpretation or mutation in this receiver.
+function readLoanStatus_(payload) {
+  const secret=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!secret||!constantTimeEqual_(payload.secret,secret))return failure_('UNAUTHORIZED');
+  if(Object.keys(payload).some(function(key){return !['action','secret','contract_version'].includes(key);})||payload.contract_version!=='LOAN_STATUS_READ_V1')return failure_('INVALID_REQUEST');
+  const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID);
+  if(String(book.getId())!==HANDOFF_SPREADSHEET_ID)throw new Error('WORKBOOK_ID_MISMATCH');
+  const sheet=book.getSheetByName('HISTORIAL P V2');
+  if(!sheet||Number(sheet.getSheetId())!==1245291756||sheet.getLastRow()<2)return failure_('LOAN_SOURCE_UNAVAILABLE');
+  // One read prevents assembling columns from different reads. Only the existing
+  // A:D/G/X contract is returned; trailing empty rows match Sheets values:batchGet.
+  const rows=sheet.getRange(1,1,sheet.getLastRow(),24).getDisplayValues();
+  function project(columns){
+    const values=rows.map(function(row){return columns.map(function(col){return row[col];});});
+    while(values.length&&values[values.length-1].every(function(value){return value==='';}))values.pop();
+    return {values:values};
+  }
+  return jsonResponse_({ok:true,action:'read_loan_status',contract_version:'LOAN_STATUS_READ_V1',
+    workbook_id:HANDOFF_SPREADSHEET_ID,sheet_id:1245291756,sheet_name:'HISTORIAL P V2',
+    valueRanges:[project([0,1,2,3]),project([6]),project([23])],observed_at:new Date().toISOString()});
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
+    if(payload.action==='read_loan_status')return readLoanStatus_(payload);
     if(payload.action==='sync_request')return receiveRequestSync_(payload);
     if(payload.action==='delete_request')return deleteRequest_(payload);
     if(payload.action==='visibility_initialize')return initializeVisibility_(payload);

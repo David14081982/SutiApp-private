@@ -1,5 +1,16 @@
 # SutiApp Financial Handoff
 
+## Fixed loan-status read — 2026-09-21
+
+The same authenticated deployment accepts `read_loan_status` with
+`contract_version=LOAN_STATUS_READ_V1` and the existing server secret. It reads only
+the fixed HISTORIAL P V2 sheet (1245291756), returns A:D/G/X for every source row,
+and accepts no caller-selected workbook/range. No write, financial interpretation
+or trigger is added. `savings-settlement` retains its exact-identity/overdue evaluator.
+All runtime callers now authenticate with `GOOGLE_REQUEST_SYNC_OAUTH_*`; the older
+GOOGLE_VISIBILITY names are no longer runtime dependencies. Existing request
+registration/deletion actions, OAuth scopes and deployment access are unchanged.
+
 ## Contrato vigente de presentación — 2026-09-08
 
 La corrección expresa H-REQUESTS-GOOGLE-REGISTER-FORMAT-001 sustituye la presentación A/J/Y:

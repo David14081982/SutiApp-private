@@ -1,5 +1,17 @@
 # Sistemas Google legacy
 
+## Lectura por receptor existente — 2026-09-21
+
+La reparación de OAuth conserva `SutiApp Final / HISTORIAL P V2` como única fuente
+del guard de préstamos de Ahorro. Apps Script v17 incorpora `read_loan_status`, una
+lectura fija de la misma hoja y columnas A:D/G/X, sin límite arbitrario de filas.
+El receptor valida secreto antes de abrir el libro; no acepta selectores de hoja,
+rangos o usuario. No escribe, no dispara cálculos y no cambia triggers/formulas.
+`savings-settlement` v8 mantiene intacto el evaluador financiero y obtiene la lectura
+mediante la conexión autenticada existente. Lectura productiva y conector independiente:
+14,927 filas, 44 préstamos atrasados. Las diez solicitudes retenidas por el fallo
+OAuth quedaron entregadas por la cola original, sin cambiar sus datos de negocio.
+
 ## HISTORIAL P V2 — retiro Ahorro — implementación local 2026-09-20
 
 OWNER identifica SutiApp Final / HISTORIAL P V2 (sheetId 1245291756) como autoridad:

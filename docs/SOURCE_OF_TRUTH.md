@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## Transporte Google de solicitudes y lectura de préstamos — 2026-09-21
+
+`HISTORIAL P V2` (sheetId 1245291756) sigue siendo la autoridad del guard de
+préstamos de Ahorro. `savings-settlement` lee A:D/G/X completos mediante la acción
+fija `read_loan_status` del receptor Apps Script existente. El receptor sólo lee;
+no interpreta estados ni cambia cálculos. El evaluador y los writers financieros
+permanecen intactos. Sin caché ni fallback a otra fuente.
+
+`GOOGLE_REQUEST_SYNC_OAUTH_*` autentica este mismo transporte y los envíos/borrados
+de solicitudes. Los antiguos secretos `GOOGLE_VISIBILITY_OAUTH_*` ya no tienen
+consumidores en las Edge Functions. `program_requests` conserva la autoridad de
+solicitudes y `Historial de solicitudes` su proyección. Evidencia:
+[reparación](qa/H-REQUEST-GOOGLE-OAUTH-REPAIR-20260921.md).
+
 ## Owner-Q confirmation and affiliate publication completed
 
 Owner explicitly confirmed Ahorro Q as the closing balance. All 328 historical

@@ -26,23 +26,24 @@ export function evaluateLoans(rows, folio) {
 export async function readLoanSource(env, fetcher = fetch) {
   const response = await fetcher('https://oauth2.googleapis.com/token', {
     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: env('GOOGLE_VISIBILITY_OAUTH_CLIENT_ID') || '', client_secret: env('GOOGLE_VISIBILITY_OAUTH_CLIENT_SECRET') || '', refresh_token: env('GOOGLE_VISIBILITY_OAUTH_REFRESH_TOKEN') || '', grant_type: 'refresh_token' }),
+    body: new URLSearchParams({ client_id: env('GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_ID') || '', client_secret: env('GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_SECRET') || '', refresh_token: env('GOOGLE_REQUEST_SYNC_OAUTH_REFRESH_TOKEN') || '', grant_type: 'refresh_token', scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/script.webapp.deploy' }),
     signal: AbortSignal.timeout(15000),
   });
   const token = await response.json();
   if (!response.ok || !token.access_token) throw unavailable('OAUTH_REFRESH', response.status, token.error);
-  const headers = { Authorization: 'Bearer ' + token.access_token };
-  const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + WORKBOOK;
-  const metaResponse = await fetcher(base + '?fields=sheets.properties', { headers, signal: AbortSignal.timeout(15000) });
-  const meta = await metaResponse.json();
-  const sheet = meta.sheets?.find(s => s.properties.sheetId === SHEET_ID)?.properties;
-  if (!metaResponse.ok || sheet?.title !== 'HISTORIAL P V2' || sheet.gridProperties.rowCount < 2) throw unavailable('SHEET_METADATA', metaResponse.status, meta.error?.details?.find(d => d.reason)?.reason || meta.error?.status);
-  // One provider request, all rows, only authoritative columns. No arbitrary row cap.
-  const url = new URL(base + '/values:batchGet');
-  for (const range of ['A:D', 'G:G', 'X:X']) url.searchParams.append('ranges', "'HISTORIAL P V2'!" + range);
-  url.searchParams.set('valueRenderOption', 'FORMATTED_VALUE');
-  const read = await fetcher(url, { headers, signal: AbortSignal.timeout(30000) }), data = await read.json();
-  if (!read.ok || data.valueRanges?.length !== 3) throw unavailable('SHEET_VALUES', read.status, data.error?.status);
+  const url = env('FINANCIAL_LEGACY_API_URL'), secret = env('FINANCIAL_LEGACY_API_TOKEN');
+  if (!url || !secret) throw unavailable('RECEIVER_CONFIG', 503, 'NOT_CONFIGURED');
+  // Same authoritative Google sheet through the existing authenticated receiver.
+  // No direct-API fallback, cache, new connection or caller-selected range.
+  const read = await fetcher(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'read_loan_status', secret, contract_version: 'LOAN_STATUS_READ_V1' }), signal: AbortSignal.timeout(30000) });
+  let data;
+  try { data = await read.json(); } catch { throw unavailable('SHEET_VALUES', read.status, 'INVALID_RESPONSE'); }
+  if (!read.ok || !data.ok || data.action !== 'read_loan_status' || data.contract_version !== 'LOAN_STATUS_READ_V1' ||
+      data.workbook_id !== WORKBOOK || data.sheet_id !== SHEET_ID || data.sheet_name !== 'HISTORIAL P V2' ||
+      !Array.isArray(data.valueRanges) || data.valueRanges.length !== 3 || data.valueRanges.some(r => !Array.isArray(r.values) || r.values.some(row => !Array.isArray(row)))) {
+    throw unavailable('SHEET_VALUES', read.status, data.error || 'INVALID_RESPONSE');
+  }
   const [ids, funds, states] = data.valueRanges.map(r => r.values || []);
   if (ids[0]?.[0] !== 'Fecha' || ids[0]?.[2] !== 'ID' || ids[0]?.[3] !== 'Folio' || funds[0]?.[0] !== 'Fondo' || normalized(states[0]?.[0]) !== 'ESTATUS DEL PRESTAMO' || ids.length < 2) throw Error('SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');
   const rows = [];

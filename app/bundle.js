@@ -10313,9 +10313,57 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
         p_idempotency_key: input.idempotencyKey || key(),
       });
     },
-    replaceBeneficiaries: (beneficiaries, idempotencyKey) => rpc('replace_self_savings_beneficiaries', {
-      p_beneficiaries: beneficiaries || [], p_idempotency_key: idempotencyKey || key(),
-    }),
+    getBeneficiaries: async () => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const result = await db().rpc('get_self_savings_beneficiaries');
+      if (result.error) throw result.error;
+      const current = syncSelfIdentity(), value = result.data;
+      if (!current || current.key !== identity.key || !value || value.affiliate_id !== identity.affiliate || value.actor_auth_user_id !== identity.actor) throw contextError();
+      if (!Array.isArray(value.beneficiaries) || !Array.isArray(value.signatures)) throw new Error('SAVINGS_BENEFICIARIES_RESPONSE_INVALID');
+      return value;
+    },
+    replaceBeneficiaries: async (beneficiaries, idempotencyKey, authorization) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const input = authorization || {};
+      if (!input.accepted || typeof input.signature !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(input.signature)) throw new Error('SAVINGS_SIGNATURE_REQUIRED');
+      const bytes = Uint8Array.from(atob(input.signature.split(',')[1]), c => c.charCodeAt(0));
+      if (bytes.length < 100 || bytes.length > 524288 || [137,80,78,71,13,10,26,10].some((v,i) => bytes[i] !== v)) throw new Error('SAVINGS_SIGNATURE_REQUIRED');
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), x => x.toString(16).padStart(2, '0')).join('');
+      const ensureContext = value => {
+        const current = syncSelfIdentity();
+        if (!current || current.key !== identity.key || value && (value.affiliate_id !== identity.affiliate || value.actor_auth_user_id !== identity.actor)) throw contextError();
+      };
+      ensureContext();
+      const prepared = await db().rpc('prepare_self_savings_beneficiaries', {
+        p_beneficiaries: beneficiaries, p_expected_version_id: input.versionId || null,
+        p_idempotency_key: idempotencyKey, p_expected_affiliate_id: identity.affiliate,
+        p_signature_sha256: hash, p_signature_size: bytes.length, p_accepted: true,
+      });
+      if (prepared.error) throw prepared.error;
+      ensureContext(prepared.data);
+      if (!prepared.data || !prepared.data.authorization_id || prepared.data.bucket !== 'savings-beneficiary-signatures' || !prepared.data.path) throw new Error('SAVINGS_SIGNATURE_RESPONSE_INVALID');
+      if (!prepared.data.committed) {
+        const uploaded = await db().storage.from(prepared.data.bucket).upload(prepared.data.path, new Blob([bytes], { type: 'image/png' }), { contentType: 'image/png', upsert: false });
+        if (uploaded.error && String(uploaded.error.statusCode || uploaded.error.status) !== '409' && uploaded.error.error !== 'Duplicate') throw uploaded.error;
+      }
+      ensureContext();
+      try {
+        const committed = await db().rpc('commit_self_savings_beneficiaries', { p_authorization_id: prepared.data.authorization_id, p_expected_affiliate_id: identity.affiliate });
+        if (committed.error) throw committed.error;
+        ensureContext(committed.data);
+        if (!committed.data || !committed.data.version_id) throw new Error('SAVINGS_BENEFICIARIES_RESPONSE_INVALID');
+        return committed.data;
+      } finally { invalidateSelf(false); }
+    },
+    getBeneficiarySignature: async (path) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const signed = await db().storage.from('savings-beneficiary-signatures').createSignedUrl(path, 300);
+      if (signed.error) throw signed.error;
+      const current = syncSelfIdentity();
+      if (!current || current.key !== identity.key) throw contextError();
+      if (!signed.data || !signed.data.signedUrl) throw new Error('SAVINGS_SIGNATURE_UNAVAILABLE');
+      return signed.data.signedUrl;
+    },
     setActionAvailability: (values) => {
       const input = values || {};
       return rpc('admin_set_savings_action', {
@@ -13843,58 +13891,216 @@ Object.assign(window, {
       currency: 'MXN'
     }).format(r.new_contribution_amount || r.requested_amount) : ''))));
   }
+  function useSavingsBeneficiaries(identityKey, revision) {
+    const [state, setState] = useState({
+        phase: 'loading'
+      }),
+      [retry, setRetry] = useState(0);
+    React.useEffect(() => {
+      let alive = true;
+      setState({
+        phase: 'loading',
+        identityKey
+      });
+      Promise.resolve().then(() => window.SavingsRepository.getBeneficiaries()).then(data => {
+        if (alive) setState({
+          phase: 'ready',
+          data,
+          identityKey
+        });
+      }).catch(e => {
+        if (alive) setState({
+          phase: 'error',
+          identityKey,
+          error: /IDENTITY|AFFILIATE/.test(String(e.message)) ? 'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.' : 'No fue posible consultar tus beneficiarios. Intenta de nuevo.'
+        });
+      });
+      return () => {
+        alive = false;
+      };
+    }, [identityKey, revision, retry]);
+    return {
+      ...(state.identityKey === identityKey ? state : {
+        phase: 'loading'
+      }),
+      retry: () => setRetry(v => v + 1)
+    };
+  }
+  function SavingsBeneficiarySignatures({
+    signatures
+  }) {
+    const [image, setImage] = useState(''),
+      [error, setError] = useState(''),
+      [busy, setBusy] = useState(false);
+    const mounted = useRef(true);
+    React.useEffect(() => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
+      };
+    }, []);
+    async function open(path) {
+      setError('');
+      setBusy(true);
+      setImage('');
+      try {
+        const url = await window.SavingsRepository.getBeneficiarySignature(path);
+        if (mounted.current) setImage(url);
+      } catch (e) {
+        if (mounted.current) setError('No se pudo abrir la firma. Intenta de nuevo.');
+      } finally {
+        if (mounted.current) setBusy(false);
+      }
+    }
+    const files = (signatures || []).filter(s => s.status === 'STORED' && s.path),
+      missing = (signatures || []).filter(s => s.status !== 'STORED').length;
+    return h('div', {
+      'data-beneficiary-signatures': ''
+    }, files.map((s, i) => h('button', {
+      type: 'button',
+      className: 'sav-retry',
+      key: s.path,
+      disabled: busy,
+      onClick: () => open(s.path),
+      style: {
+        margin: '8px 8px 8px 0'
+      }
+    }, 'Ver firma' + (files.length > 1 ? ' ' + (i + 1) : ''))), missing > 0 && h('p', null, 'Hay ' + missing + ' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'), busy && h('p', {
+      role: 'status'
+    }, 'Abriendo firma…'), error && h('p', {
+      role: 'alert'
+    }, error), image && h('div', null, h('img', {
+      src: image,
+      alt: 'Firma de autorización de beneficiarios',
+      style: {
+        display: 'block',
+        maxWidth: '100%',
+        background: '#fff',
+        border: '1px solid var(--line)',
+        borderRadius: 12
+      },
+      onError: () => {
+        setImage('');
+        setError('La firma no se pudo mostrar. Vuelve a abrirla.');
+      }
+    }), h('button', {
+      type: 'button',
+      className: 'sav-retry',
+      onClick: () => setImage('')
+    }, 'Cerrar firma')));
+  }
+  function SavingsBeneficiarySignaturePad({
+    value,
+    onChange
+  }) {
+    const wrap = useRef(null),
+      change = useRef(onChange),
+      [revision, setRevision] = useState(0);
+    change.current = onChange;
+    React.useEffect(() => {
+      let width = wrap.current.clientWidth;
+      const observer = new ResizeObserver(() => {
+        const next = wrap.current.clientWidth;
+        if (next !== width) {
+          width = next;
+          change.current('');
+          setRevision(v => v + 1);
+        }
+      });
+      observer.observe(wrap.current);
+      return () => observer.disconnect();
+    }, []);
+    return h('div', {
+      ref: wrap
+    }, h(window.SignaturePad, {
+      key: revision,
+      value,
+      onChange,
+      label: 'Firma de autorización'
+    }));
+  }
   function SavingsBeneficiariesForm({
     beneficiaries,
+    versionId,
     onSaved,
     onClose
   }) {
     const [rows, setRows] = useState(() => (beneficiaries || []).map(x => ({
-        full_name: x.full_name,
-        relationship: x.relationship,
-        percentage: String(x.percentage)
-      }))),
-      [busy, setBusy] = useState(false),
+      full_name: x.full_name,
+      relationship: x.relationship || '',
+      percentage: String(x.percentage)
+    })));
+    const [busy, setBusy] = useState(false),
       [review, setReview] = useState(false),
-      [error, setError] = useState('');
+      [error, setError] = useState(''),
+      [signature, setSignature] = useState(''),
+      [accepted, setAccepted] = useState(false),
+      [signatureRevision, setSignatureRevision] = useState(0),
+      [saved, setSaved] = useState(false);
     const lock = useRef(false),
       attempt = useRef();
+    function reset() {
+      setReview(false);
+      setError('');
+      setSignature('');
+      setAccepted(false);
+      setSignatureRevision(v => v + 1);
+      attempt.current = null;
+    }
     const update = (i, k, v) => {
       setRows(a => a.map((r, n) => n === i ? {
         ...r,
         [k]: v
       } : r));
-      setReview(false);
-      attempt.current = null;
+      reset();
     };
-    const cents = rows.reduce((n, r) => n + Math.round(Number(r.percentage) * 100), 0),
-      valid = rows.length > 0 && rows.length <= 10 && cents === 10000 && rows.every(r => r.full_name.trim().length >= 3 && r.relationship.trim().length >= 2 && /^\d+(\.\d{1,2})?$/.test(r.percentage) && Number(r.percentage) > 0 && Number(r.percentage) <= 100);
+    const cents = rows.reduce((n, r) => n + Math.round(Number(r.percentage) * 100), 0);
+    const valid = rows.length <= 20 && cents <= 10000 && rows.every(r => r.full_name.trim().length >= 3 && r.full_name.trim().length <= 180 && (!r.relationship.trim() || r.relationship.trim().length >= 2) && /^\d+(\.\d{1,2})?$/.test(r.percentage) && Number(r.percentage) > 0 && Number(r.percentage) <= 100);
     async function submit(e) {
       e.preventDefault();
-      if (lock.current || !valid) return;
+      if (e.nativeEvent && e.nativeEvent.submitter && e.nativeEvent.submitter.getAttribute('data-beneficiary-submit') !== 'true') return;
+      if (lock.current || !valid || saved) return;
       if (!review) {
         setReview(true);
         return;
       }
+      if (!signature || !accepted) return;
       lock.current = true;
       setBusy(true);
       setError('');
       if (!attempt.current) attempt.current = crypto.randomUUID();
       try {
         await window.SavingsRepository.replaceBeneficiaries(rows.map(r => ({
-          ...r,
+          full_name: r.full_name.trim(),
+          relationship: r.relationship.trim() || null,
           percentage: Number(r.percentage)
-        })), attempt.current);
-        await onSaved();
-        onClose();
+        })), attempt.current, {
+          signature,
+          accepted,
+          versionId
+        });
+        setSaved(true);
+        onSaved();
       } catch (e) {
-        setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message)) ? 'Los datos cambiaron. Actualiza tu ahorro y vuelve a revisar.' : 'No se pudieron guardar los beneficiarios. Conservamos tu captura para reintentar.');
+        setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message)) ? 'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.' : /OVER_100|INVALID/.test(String(e.message)) ? 'Revisa nombres y porcentajes. El total no puede superar el 100 %.' : 'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');
       } finally {
         lock.current = false;
         setBusy(false);
       }
     }
+    if (saved) return h('div', {
+      role: 'status'
+    }, h('p', null, 'Tus beneficiarios y la firma de autorización quedaron guardados.'), h('button', {
+      type: 'button',
+      className: 'sav-primary',
+      onClick: onClose
+    }, 'Entendido'));
     return h('form', {
-      onSubmit: submit
+      onSubmit: submit,
+      'data-beneficiaries-form': '',
+      style: {
+        fontSize: 'var(--text-13, 13px)'
+      }
     }, rows.map((r, i) => h('fieldset', {
       key: i,
       disabled: busy,
@@ -13902,9 +14108,10 @@ Object.assign(window, {
         border: '1px solid var(--line)',
         borderRadius: 12,
         margin: '12px 0',
-        padding: 12
+        padding: 12,
+        minWidth: 0
       }
-    }, h('legend', null, 'Beneficiario ' + (i + 1)), [['full_name', 'Nombre completo'], ['relationship', 'Parentesco'], ['percentage', 'Porcentaje']].map(([k, label]) => h('label', {
+    }, h('legend', null, 'Beneficiario ' + (i + 1)), [['full_name', 'Nombre completo'], ['relationship', 'Parentesco (opcional)'], ['percentage', 'Porcentaje']].map(([k, label]) => h('label', {
       key: k,
       style: {
         display: 'grid',
@@ -13920,39 +14127,82 @@ Object.assign(window, {
         font: 'inherit',
         padding: 10,
         border: '1px solid var(--line)',
-        borderRadius: 8
+        borderRadius: 8,
+        minWidth: 0,
+        width: '100%'
       }
     }))), h('button', {
       type: 'button',
       className: 'sav-retry',
       onClick: () => {
         setRows(a => a.filter((_, n) => n !== i));
-        setReview(false);
-        attempt.current = null;
+        reset();
       }
     }, 'Quitar de esta propuesta'))), h('button', {
       type: 'button',
       className: 'sav-retry',
-      disabled: busy || rows.length >= 10,
+      disabled: busy || rows.length >= 20,
       onClick: () => {
         setRows(a => [...a, {
           full_name: '',
           relationship: '',
           percentage: ''
         }]);
-        setReview(false);
+        reset();
+      }
+    }, 'Agregar beneficiario'), h('p', {
+      'aria-live': 'polite'
+    }, 'Total asignado: ' + (Number.isFinite(cents) ? (cents / 100).toFixed(2) : '0') + ' %. Máximo: 100 %.'), cents > 10000 && h('p', {
+      role: 'alert'
+    }, 'La suma de los porcentajes no puede superar el 100 %.'), rows.length === 0 && h('p', null, 'Esta propuesta dejará tu ahorro sin beneficiarios registrados.'), review && h('fieldset', {
+      disabled: busy,
+      style: {
+        border: 0,
+        padding: 0,
+        margin: '14px 0',
+        minWidth: 0
+      }
+    }, h('p', null, 'Revisa la distribución. Esta autorización reemplaza la distribución vigente y conserva el registro anterior.'), h('div', {
+      style: busy ? {
+        pointerEvents: 'none',
+        opacity: .65
+      } : undefined
+    }, h(SavingsBeneficiarySignaturePad, {
+      key: signatureRevision,
+      value: signature,
+      onChange: value => {
+        setSignature(value);
+        setAccepted(false);
+        attempt.current = null;
+      },
+      label: 'Firma de autorización'
+    })), h('label', {
+      style: {
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        fontSize: 'var(--text-13, 13px)',
+        lineHeight: 1.5,
+        margin: '14px 0'
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: accepted,
+      onChange: e => {
+        setAccepted(e.target.checked);
         attempt.current = null;
       }
-    }, 'Agregar beneficiario'), h('p', null, 'Los porcentajes deben sumar 100%. Total: ' + (Number.isFinite(cents) ? (cents / 100).toFixed(2) : '0') + '%'), review && h('p', {
-      role: 'status'
-    }, 'Al confirmar se guardar? esta distribuci?n. Se conservar? el registro anterior.'), error && h('p', {
+    }), 'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')), error && h('p', {
       role: 'alert'
     }, error), h('button', {
       type: 'submit',
+      'data-beneficiary-submit': 'true',
       className: 'sav-primary',
-      disabled: !valid || busy
-    }, busy ? 'Guardando?' : review ? 'Confirmar beneficiarios' : 'Revisar beneficiarios'));
+      disabled: !valid || busy || review && (!signature || !accepted)
+    }, busy ? 'Guardando…' : review ? 'Confirmar beneficiarios' : 'Revisar beneficiarios'));
   }
+  window.useSavingsBeneficiaries = useSavingsBeneficiaries;
+  window.SavingsBeneficiarySignatures = SavingsBeneficiarySignatures;
   function joinDate(value) {
     return value ? new Date(value + (String(value).length === 10 ? 'T12:00:00Z' : '')).toLocaleDateString('es-MX', {
       day: '2-digit',
@@ -14186,6 +14436,7 @@ Object.assign(window, {
     }, [identityKey]);
     const [joinContext, setJoinContext] = React.useState(null),
       [joinRevision, setJoinRevision] = React.useState(0);
+    const beneficiaryState = window.useSavingsBeneficiaries(identityKey, joinRevision);
     const reload = () => {
       setJoinRevision(v => v + 1);
       return store.loadSelf(true);
@@ -14238,7 +14489,7 @@ Object.assign(window, {
     const balanceView = window.SavingsBalanceReadModel.select(state);
     const history = dashboard.history || [],
       withdrawals = dashboard.withdrawals || [],
-      beneficiaries = dashboard.beneficiaries || [];
+      beneficiaries = beneficiaryState.data ? beneficiaryState.data.beneficiaries : [];
     const canWriteRequests = Boolean(dashboard.write_capabilities && dashboard.write_capabilities.requests);
     const detailRow = (label, value) => h('div', {
       className: 'sav-row',
@@ -14258,7 +14509,7 @@ Object.assign(window, {
     }, icon(debit ? 'cash' : 'check', 16)), h('div', null, h('b', null, debit ? item.withdrawal_kind || 'Retiro' : 'Aportación'), h('span', null, shortDate(item.effective_date) + (debit && item.status ? ' · ' + item.status : ''))), h('strong', {
       'data-debit': debit
     }, (debit ? '−' : '+') + money(item.amount)));
-    const detailNav = [['HISTORY', 'Historial', history.length + ' movimientos', 'clock'], ['WITHDRAWALS', 'Retiros', withdrawals.length + ' registros', 'cash'], ['BENEFICIARIES', 'Beneficiarios', beneficiaries.length + ' registrados', 'users']];
+    const detailNav = [['HISTORY', 'Historial', history.length + ' movimientos', 'clock'], ['WITHDRAWALS', 'Retiros', withdrawals.length + ' registros', 'cash'], ['BENEFICIARIES', 'Beneficiarios', beneficiaryState.phase === 'ready' ? beneficiaries.length + ' registrados' : beneficiaryState.phase === 'error' ? 'Revisar' : 'Consultando…', 'users']];
     return h('div', {
       className: 'su-savings',
       'data-savings-screen': '',
@@ -14431,20 +14682,45 @@ Object.assign(window, {
       code: 'edit-beneficiaries',
       onClose: () => setSheet('BENEFICIARIES')
     }, h(window.SavingsBeneficiariesForm, {
+      key: identityKey,
       beneficiaries,
-      onSaved: reload,
+      versionId: beneficiaryState.data && beneficiaryState.data.version_id,
+      onSaved: () => {
+        beneficiaryState.retry();
+        window.SavingsRepository.clearSelfCache();
+      },
       onClose: () => setSheet('BENEFICIARIES')
     })), sheet === 'BENEFICIARIES' && h(Sheet, {
       title: 'Beneficiarios',
       code: 'beneficiaries',
       onClose: () => setSheet('')
-    }, h('div', {
+    }, beneficiaryState.phase === 'loading' && h('p', {
+      role: 'status'
+    }, 'Consultando tus beneficiarios…'), beneficiaryState.phase === 'error' && h('div', null, h('p', {
+      role: 'alert'
+    }, beneficiaryState.error), h('button', {
+      className: 'sav-retry',
+      onClick: beneficiaryState.retry
+    }, 'Reintentar')), beneficiaryState.phase === 'ready' && h(React.Fragment, null, h('div', {
       className: 'sav-sheet-list',
       'data-savings-beneficiaries': ''
-    }, beneficiaries.length ? beneficiaries.map(item => detailRow(item.full_name, (item.relationship || 'Parentesco por confirmar') + ' · ' + Number(item.percentage || 0).toFixed(2) + '%')) : h('p', null, 'No hay beneficiarios registrados.')), dashboard.write_capabilities && dashboard.write_capabilities.beneficiaries && h('button', {
+    }, beneficiaries.length ? beneficiaries.map(item => h('div', {
+      className: 'sav-row',
+      key: item.id
+    }, h('span', {
+      style: {
+        minWidth: 0,
+        overflowWrap: 'anywhere'
+      }
+    }, item.full_name), h('b', null, (item.relationship || 'Parentesco por confirmar') + ' · ' + Number(item.percentage).toFixed(2) + '%'))) : h('p', null, 'No hay beneficiarios registrados.')), beneficiaryState.data.pending_count > 0 && h('p', {
+      role: 'status'
+    }, 'Hay registros anteriores pendientes de revisión que no forman parte de tu distribución vigente.'), h(window.SavingsBeneficiarySignatures, {
+      key: identityKey + '-' + beneficiaryState.data.version_id,
+      signatures: beneficiaryState.data.signatures
+    }), beneficiaryState.data.can_edit && h('button', {
       className: 'sav-primary',
       onClick: () => setSheet('EDIT_BENEFICIARIES')
-    }, 'Actualizar beneficiarios')));
+    }, 'Actualizar beneficiarios'))));
   }
   window.SavingsScreen = SavingsScreen;
 })();

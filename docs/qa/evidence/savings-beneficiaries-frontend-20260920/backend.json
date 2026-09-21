@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "mode": "SYNTHETIC_FIXTURES_ROLLBACK",
+  "result": [
+    {
+      "status": "PASS",
+      "checks": "synthetic self identities, 100/75/0, invalid totals, signatures, history, version conflict, retries, cross-user, anon, direct raw access, unchanged financial state"
+    }
+  ],
+  "counts": {
+    "versions": 101,
+    "import_rows": 210,
+    "pending_review": 98,
+    "signature_path": 162,
+    "active_beneficiaries": 112
+  },
+  "tracking_unchanged": true,
+  "business_hashes_unchanged": true,
+  "fixture_cleanup": "ROLLBACK_CONFIRMED",
+  "auth_affiliates_participants_storage_audit_counts_unchanged": true,
+  "real_affiliates_used": 0
+}

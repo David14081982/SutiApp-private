@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "bundle_modules": 129,
+  "changed_modules": [
+    "savings-repository.js",
+    "savings-request-form.jsx",
+    "screens-savings.jsx"
+  ],
+  "unrelated_modules_unchanged": 126,
+  "repository_other_methods_unchanged": true,
+  "other_savings_forms_unchanged": true,
+  "service_worker_logic_unchanged": true,
+  "html_changes": "CACHEBUSTERS_ONLY"
+}

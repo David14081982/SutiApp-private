@@ -3163,3 +3163,8 @@ Admin «VER» en Votaciones (a pedido del propietario, para pruebas): lista de v
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 Prepared three historical production migration/recovery pairs and the installed Aval Edge delta on the canonical source. Selected support excludes obsolete production apply/import/deploy drivers and tests tied to an unpublished frontend. Replaced 23 old environment-path references (12 mandatory fixes plus 11 legacy fallbacks), preserving override precedence. Added source provenance, focal read-only definition comparison, pending/frontend/private inventory and a metadata-only tracking plan. No production writes, migration execution, commit, push or deployment. See audits/H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001.md and qa/evidence/production-source-reintegration-20260920/.
+
+
+## H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001
+
+Implemented the focal beneficiary source delta on current main, with signed authorization, optional relationship, <=100 validation, immutable version history and identity guards. Rebuilt only the three changed runtime chunks; preserved other savings behavior. Isolated browser/VM checks and synthetic backend ROLLBACK tests preserve protected counts/hashes. Publication uses the normal Pages workflow; no migration/import/tracking replay. See docs/audits/H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001.md.

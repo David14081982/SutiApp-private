@@ -1,6 +1,8 @@
 # PENDING_FRONTEND_DELIVERY — Beneficiarios
 
-Status: preserved in read-only backup; NOT INCLUDED in runtime sources or this release.
+Status: focal source delta implemented and verified by H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001.
+The preservation inventory below records the historical candidate; the current delivery rebuilds
+from canonical sources. See docs/audits/H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001.md.
 
 Candidate base: 50252bbe021cd1c61e1a904ecb5f411788e46df3. Rebase the focal patch onto the then-current canonical source; never replace full current files.
 

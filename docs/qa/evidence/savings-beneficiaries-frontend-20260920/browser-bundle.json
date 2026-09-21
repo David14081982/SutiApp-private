@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "realWrites": 0,
+  "textSizeMatrix": [
+    {
+      "width": 320,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "size": "largest",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "size": "largest",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "size": "normal",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "size": "large",
+      "status": "PASS"
+    },
+    {
+      "width": 1440,
+      "size": "largest",
+      "status": "PASS"
+    }
+  ],
+  "compiledBundle": true,
+  "viewports": [
+    320,
+    390,
+    1440
+  ],
+  "checks": [
+    "existing financial controls remain disabled",
+    "read/edit/add/remove",
+    "total <=100",
+    "signature and consent",
+    "edit invalidates signature",
+    "retry same key",
+    "saved version refresh",
+    "missing historical signature",
+    "source/signature errors",
+    "context switch",
+    "pending notice",
+    "normal/large/largest",
+    "relogin/remount",
+    "historical versions preserved",
+    "touch signature",
+    "resize invalidates signature",
+    "clear does not submit"
+  ]
+}

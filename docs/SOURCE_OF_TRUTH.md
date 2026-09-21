@@ -445,3 +445,8 @@ El padrón convocado deja de ser dato capturado: `voting_electorate(audience)` l
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 Savings beneficiary distributions remain exclusively in savings_beneficiary_versions/savings_beneficiaries. savings_beneficiary_import_rows retains private provenance and pending history; savings_beneficiary_authorizations retains signed consent, not another distribution master. CSV is an import artifact, never a runtime fallback. Signed self RPCs are installed; their new frontend is PENDING_FRONTEND_DELIVERY. Guarantor requirements derive from affiliates.financial_employee_category_code through required_guarantor_document_codes/resolve_affiliate_document_requirements and existing document catalogs. Disk IO changes no authority.
+
+
+## H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001
+
+Beneficiary frontend delivery now consumes only the installed signed self RPCs and private signature bucket. The prior PENDING_FRONTEND_DELIVERY classification is superseded by H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001. No backend authority, tracking or historical data changes.

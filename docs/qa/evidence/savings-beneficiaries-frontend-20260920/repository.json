@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "checks": [
+    "signature required",
+    "SHA256",
+    "expected owner/version",
+    "same-key retry",
+    "no overwrite",
+    "committed retry",
+    "context switch before commit",
+    "signed URL TTL/context",
+    "cross-user read response denied",
+    "malformed responses denied",
+    "stale version propagated",
+    "duplicate upload retry",
+    "invalid signatures denied"
+  ],
+  "realWrites": 0
+}

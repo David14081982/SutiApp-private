@@ -36,13 +36,59 @@
   const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisi?n',APPROVED:'Aprobada',APPLIED:'Aplicada',SETTLED:'Pagada',CANCELLED:'Cancelada',REJECTED:'Rechazada'};
   return h('div',{'data-savings-request-history':''},(requests||[]).map(r=>h('div',{className:'sav-tx',key:r.id},h('div',null,h('b',null,names[r.request_type]||'Solicitud de ahorro'),h('span',null,r.folio+' ? '+(states[r.status]||'Por confirmar')),r.effective_from&&h('span',null,'Fecha prevista: '+new Date(r.effective_from+'T12:00:00').toLocaleDateString('es-MX'))),h('strong',null,r.new_contribution_amount||r.requested_amount?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.new_contribution_amount||r.requested_amount):''))));
  }
- function SavingsBeneficiariesForm({beneficiaries,onSaved,onClose}){
-  const [rows,setRows]=useState(()=>(beneficiaries||[]).map(x=>({full_name:x.full_name,relationship:x.relationship,percentage:String(x.percentage)}))),[busy,setBusy]=useState(false),[review,setReview]=useState(false),[error,setError]=useState('');
-  const lock=useRef(false),attempt=useRef();const update=(i,k,v)=>{setRows(a=>a.map((r,n)=>n===i?{...r,[k]:v}:r));setReview(false);attempt.current=null;};
-  const cents=rows.reduce((n,r)=>n+Math.round(Number(r.percentage)*100),0),valid=rows.length>0&&rows.length<=10&&cents===10000&&rows.every(r=>r.full_name.trim().length>=3&&r.relationship.trim().length>=2&&/^\d+(\.\d{1,2})?$/.test(r.percentage)&&Number(r.percentage)>0&&Number(r.percentage)<=100);
-  async function submit(e){e.preventDefault();if(lock.current||!valid)return;if(!review){setReview(true);return;}lock.current=true;setBusy(true);setError('');if(!attempt.current)attempt.current=crypto.randomUUID();try{await window.SavingsRepository.replaceBeneficiaries(rows.map(r=>({...r,percentage:Number(r.percentage)})),attempt.current);await onSaved();onClose();}catch(e){setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message))?'Los datos cambiaron. Actualiza tu ahorro y vuelve a revisar.':'No se pudieron guardar los beneficiarios. Conservamos tu captura para reintentar.');}finally{lock.current=false;setBusy(false);}}
-  return h('form',{onSubmit:submit},rows.map((r,i)=>h('fieldset',{key:i,disabled:busy,style:{border:'1px solid var(--line)',borderRadius:12,margin:'12px 0',padding:12}},h('legend',null,'Beneficiario '+(i+1)),[['full_name','Nombre completo'],['relationship','Parentesco'],['percentage','Porcentaje']].map(([k,label])=>h('label',{key:k,style:{display:'grid',gap:6,marginBottom:10}},label,h('input',{value:r[k],maxLength:k==='full_name'?180:k==='relationship'?80:6,inputMode:k==='percentage'?'decimal':undefined,onChange:e=>update(i,k,e.target.value),style:{font:'inherit',padding:10,border:'1px solid var(--line)',borderRadius:8}}))),h('button',{type:'button',className:'sav-retry',onClick:()=>{setRows(a=>a.filter((_,n)=>n!==i));setReview(false);attempt.current=null;}},'Quitar de esta propuesta'))),h('button',{type:'button',className:'sav-retry',disabled:busy||rows.length>=10,onClick:()=>{setRows(a=>[...a,{full_name:'',relationship:'',percentage:''}]);setReview(false);attempt.current=null;}},'Agregar beneficiario'),h('p',null,'Los porcentajes deben sumar 100%. Total: '+(Number.isFinite(cents)?(cents/100).toFixed(2):'0')+'%'),review&&h('p',{role:'status'},'Al confirmar se guardar? esta distribuci?n. Se conservar? el registro anterior.'),error&&h('p',{role:'alert'},error),h('button',{type:'submit',className:'sav-primary',disabled:!valid||busy},busy?'Guardando?':review?'Confirmar beneficiarios':'Revisar beneficiarios'));
+ function useSavingsBeneficiaries(identityKey,revision){
+  const [state,setState]=useState({phase:'loading'}),[retry,setRetry]=useState(0);
+  React.useEffect(()=>{let alive=true;setState({phase:'loading',identityKey});
+   Promise.resolve().then(()=>window.SavingsRepository.getBeneficiaries()).then(data=>{if(alive)setState({phase:'ready',data,identityKey});})
+    .catch(e=>{if(alive)setState({phase:'error',identityKey,error:/IDENTITY|AFFILIATE/.test(String(e.message))?'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.':'No fue posible consultar tus beneficiarios. Intenta de nuevo.'});});
+   return()=>{alive=false;};
+  },[identityKey,revision,retry]);
+  return {...(state.identityKey===identityKey?state:{phase:'loading'}),retry:()=>setRetry(v=>v+1)};
  }
+ function SavingsBeneficiarySignatures({signatures}){
+  const [image,setImage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const mounted=useRef(true);React.useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+  async function open(path){setError('');setBusy(true);setImage('');try{const url=await window.SavingsRepository.getBeneficiarySignature(path);if(mounted.current)setImage(url);}catch(e){if(mounted.current)setError('No se pudo abrir la firma. Intenta de nuevo.');}finally{if(mounted.current)setBusy(false);}}
+  const files=(signatures||[]).filter(s=>s.status==='STORED'&&s.path),missing=(signatures||[]).filter(s=>s.status!=='STORED').length;
+  return h('div',{'data-beneficiary-signatures':''},files.map((s,i)=>h('button',{type:'button',className:'sav-retry',key:s.path,disabled:busy,onClick:()=>open(s.path),style:{margin:'8px 8px 8px 0'}},'Ver firma'+(files.length>1?' '+(i+1):''))),
+   missing>0&&h('p',null,'Hay '+missing+' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'),
+   busy&&h('p',{role:'status'},'Abriendo firma…'),error&&h('p',{role:'alert'},error),image&&h('div',null,h('img',{src:image,alt:'Firma de autorización de beneficiarios',style:{display:'block',maxWidth:'100%',background:'#fff',border:'1px solid var(--line)',borderRadius:12},onError:()=>{setImage('');setError('La firma no se pudo mostrar. Vuelve a abrirla.');}}),h('button',{type:'button',className:'sav-retry',onClick:()=>setImage('')},'Cerrar firma')));
+ }
+ function SavingsBeneficiarySignaturePad({value,onChange}){
+  const wrap=useRef(null),change=useRef(onChange),[revision,setRevision]=useState(0);change.current=onChange;
+  React.useEffect(()=>{let width=wrap.current.clientWidth;const observer=new ResizeObserver(()=>{const next=wrap.current.clientWidth;if(next!==width){width=next;change.current('');setRevision(v=>v+1);}});observer.observe(wrap.current);return()=>observer.disconnect();},[]);
+  return h('div',{ref:wrap},h(window.SignaturePad,{key:revision,value,onChange,label:'Firma de autorización'}));
+ }
+ function SavingsBeneficiariesForm({beneficiaries,versionId,onSaved,onClose}){
+  const [rows,setRows]=useState(()=>(beneficiaries||[]).map(x=>({full_name:x.full_name,relationship:x.relationship||'',percentage:String(x.percentage)})));
+  const [busy,setBusy]=useState(false),[review,setReview]=useState(false),[error,setError]=useState(''),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[signatureRevision,setSignatureRevision]=useState(0),[saved,setSaved]=useState(false);
+  const lock=useRef(false),attempt=useRef();
+  function reset(){setReview(false);setError('');setSignature('');setAccepted(false);setSignatureRevision(v=>v+1);attempt.current=null;}
+  const update=(i,k,v)=>{setRows(a=>a.map((r,n)=>n===i?{...r,[k]:v}:r));reset();};
+  const cents=rows.reduce((n,r)=>n+Math.round(Number(r.percentage)*100),0);
+  const valid=rows.length<=20&&cents<=10000&&rows.every(r=>r.full_name.trim().length>=3&&r.full_name.trim().length<=180&&(!r.relationship.trim()||r.relationship.trim().length>=2)&&/^\d+(\.\d{1,2})?$/.test(r.percentage)&&Number(r.percentage)>0&&Number(r.percentage)<=100);
+  async function submit(e){e.preventDefault();if(e.nativeEvent&&e.nativeEvent.submitter&&e.nativeEvent.submitter.getAttribute('data-beneficiary-submit')!=='true')return;if(lock.current||!valid||saved)return;if(!review){setReview(true);return;}if(!signature||!accepted)return;
+   lock.current=true;setBusy(true);setError('');if(!attempt.current)attempt.current=crypto.randomUUID();
+   try{await window.SavingsRepository.replaceBeneficiaries(rows.map(r=>({full_name:r.full_name.trim(),relationship:r.relationship.trim()||null,percentage:Number(r.percentage)})),attempt.current,{signature,accepted,versionId});setSaved(true);onSaved();}
+   catch(e){setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message))?'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.':/OVER_100|INVALID/.test(String(e.message))?'Revisa nombres y porcentajes. El total no puede superar el 100 %.':'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');}
+   finally{lock.current=false;setBusy(false);}
+  }
+  if(saved)return h('div',{role:'status'},h('p',null,'Tus beneficiarios y la firma de autorización quedaron guardados.'),h('button',{type:'button',className:'sav-primary',onClick:onClose},'Entendido'));
+  return h('form',{onSubmit:submit,'data-beneficiaries-form':'',style:{fontSize:'var(--text-13, 13px)'}},rows.map((r,i)=>h('fieldset',{key:i,disabled:busy,style:{border:'1px solid var(--line)',borderRadius:12,margin:'12px 0',padding:12,minWidth:0}},h('legend',null,'Beneficiario '+(i+1)),
+   [['full_name','Nombre completo'],['relationship','Parentesco (opcional)'],['percentage','Porcentaje']].map(([k,label])=>h('label',{key:k,style:{display:'grid',gap:6,marginBottom:10}},label,h('input',{value:r[k],maxLength:k==='full_name'?180:k==='relationship'?80:6,inputMode:k==='percentage'?'decimal':undefined,onChange:e=>update(i,k,e.target.value),style:{font:'inherit',padding:10,border:'1px solid var(--line)',borderRadius:8,minWidth:0,width:'100%'}}))),
+   h('button',{type:'button',className:'sav-retry',onClick:()=>{setRows(a=>a.filter((_,n)=>n!==i));reset();}},'Quitar de esta propuesta'))),
+   h('button',{type:'button',className:'sav-retry',disabled:busy||rows.length>=20,onClick:()=>{setRows(a=>[...a,{full_name:'',relationship:'',percentage:''}]);reset();}},'Agregar beneficiario'),
+   h('p',{'aria-live':'polite'},'Total asignado: '+(Number.isFinite(cents)?(cents/100).toFixed(2):'0')+' %. Máximo: 100 %.'),
+   cents>10000&&h('p',{role:'alert'},'La suma de los porcentajes no puede superar el 100 %.'),
+   rows.length===0&&h('p',null,'Esta propuesta dejará tu ahorro sin beneficiarios registrados.'),
+   review&&h('fieldset',{disabled:busy,style:{border:0,padding:0,margin:'14px 0',minWidth:0}},
+    h('p',null,'Revisa la distribución. Esta autorización reemplaza la distribución vigente y conserva el registro anterior.'),
+    h('div',{style:busy?{pointerEvents:'none',opacity:.65}:undefined},h(SavingsBeneficiarySignaturePad,{key:signatureRevision,value:signature,onChange:value=>{setSignature(value);setAccepted(false);attempt.current=null;},label:'Firma de autorización'})),
+    h('label',{style:{display:'flex',alignItems:'flex-start',gap:10,fontSize:'var(--text-13, 13px)',lineHeight:1.5,margin:'14px 0'}},h('input',{type:'checkbox',checked:accepted,onChange:e=>{setAccepted(e.target.checked);attempt.current=null;}}),'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')),
+   error&&h('p',{role:'alert'},error),h('button',{type:'submit','data-beneficiary-submit':'true',className:'sav-primary',disabled:!valid||busy||review&&(!signature||!accepted)},busy?'Guardando…':review?'Confirmar beneficiarios':'Revisar beneficiarios'));
+ }
+ window.useSavingsBeneficiaries=useSavingsBeneficiaries;
+ window.SavingsBeneficiarySignatures=SavingsBeneficiarySignatures;
 
  function joinDate(value){return value?new Date(value+(String(value).length===10?'T12:00:00Z':'')).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Hermosillo'}):'Por confirmar';}
  function joinReason(reason){return {IDENTITY_REVIEW:'La encargada debe revisar la vinculaci?n de tu Folio.',OPENING_REVIEW:'Tu registro anterior est? en revisi?n. La encargada debe confirmarlo antes de un nuevo ingreso.',CATEGORY_REQUIRED:'Falta confirmar tu tipo de trabajador para calcular las fechas. Comun?cate con la encargada.',INTAKE_CLOSED:'Por el momento no se reciben nuevos ingresos al ahorro.',REQUEST_PENDING:'Tu solicitud de ingreso est? pendiente de revisi?n.'}[reason]||'';}

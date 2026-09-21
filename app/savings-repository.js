@@ -145,9 +145,57 @@
         p_idempotency_key: input.idempotencyKey || key(),
       });
     },
-    replaceBeneficiaries: (beneficiaries, idempotencyKey) => rpc('replace_self_savings_beneficiaries', {
-      p_beneficiaries: beneficiaries || [], p_idempotency_key: idempotencyKey || key(),
-    }),
+    getBeneficiaries: async () => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const result = await db().rpc('get_self_savings_beneficiaries');
+      if (result.error) throw result.error;
+      const current = syncSelfIdentity(), value = result.data;
+      if (!current || current.key !== identity.key || !value || value.affiliate_id !== identity.affiliate || value.actor_auth_user_id !== identity.actor) throw contextError();
+      if (!Array.isArray(value.beneficiaries) || !Array.isArray(value.signatures)) throw new Error('SAVINGS_BENEFICIARIES_RESPONSE_INVALID');
+      return value;
+    },
+    replaceBeneficiaries: async (beneficiaries, idempotencyKey, authorization) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const input = authorization || {};
+      if (!input.accepted || typeof input.signature !== 'string' || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(input.signature)) throw new Error('SAVINGS_SIGNATURE_REQUIRED');
+      const bytes = Uint8Array.from(atob(input.signature.split(',')[1]), c => c.charCodeAt(0));
+      if (bytes.length < 100 || bytes.length > 524288 || [137,80,78,71,13,10,26,10].some((v,i) => bytes[i] !== v)) throw new Error('SAVINGS_SIGNATURE_REQUIRED');
+      const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), x => x.toString(16).padStart(2, '0')).join('');
+      const ensureContext = value => {
+        const current = syncSelfIdentity();
+        if (!current || current.key !== identity.key || value && (value.affiliate_id !== identity.affiliate || value.actor_auth_user_id !== identity.actor)) throw contextError();
+      };
+      ensureContext();
+      const prepared = await db().rpc('prepare_self_savings_beneficiaries', {
+        p_beneficiaries: beneficiaries, p_expected_version_id: input.versionId || null,
+        p_idempotency_key: idempotencyKey, p_expected_affiliate_id: identity.affiliate,
+        p_signature_sha256: hash, p_signature_size: bytes.length, p_accepted: true,
+      });
+      if (prepared.error) throw prepared.error;
+      ensureContext(prepared.data);
+      if (!prepared.data || !prepared.data.authorization_id || prepared.data.bucket !== 'savings-beneficiary-signatures' || !prepared.data.path) throw new Error('SAVINGS_SIGNATURE_RESPONSE_INVALID');
+      if (!prepared.data.committed) {
+        const uploaded = await db().storage.from(prepared.data.bucket).upload(prepared.data.path, new Blob([bytes], { type: 'image/png' }), { contentType: 'image/png', upsert: false });
+        if (uploaded.error && String(uploaded.error.statusCode || uploaded.error.status) !== '409' && uploaded.error.error !== 'Duplicate') throw uploaded.error;
+      }
+      ensureContext();
+      try {
+        const committed = await db().rpc('commit_self_savings_beneficiaries', { p_authorization_id: prepared.data.authorization_id, p_expected_affiliate_id: identity.affiliate });
+        if (committed.error) throw committed.error;
+        ensureContext(committed.data);
+        if (!committed.data || !committed.data.version_id) throw new Error('SAVINGS_BENEFICIARIES_RESPONSE_INVALID');
+        return committed.data;
+      } finally { invalidateSelf(false); }
+    },
+    getBeneficiarySignature: async (path) => {
+      const identity = syncSelfIdentity(); if (!identity) throw contextError();
+      const signed = await db().storage.from('savings-beneficiary-signatures').createSignedUrl(path, 300);
+      if (signed.error) throw signed.error;
+      const current = syncSelfIdentity();
+      if (!current || current.key !== identity.key) throw contextError();
+      if (!signed.data || !signed.data.signedUrl) throw new Error('SAVINGS_SIGNATURE_UNAVAILABLE');
+      return signed.data.signedUrl;
+    },
     setActionAvailability: (values) => {
       const input = values || {};
       return rpc('admin_set_savings_action', {

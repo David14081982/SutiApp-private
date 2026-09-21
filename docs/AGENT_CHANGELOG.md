@@ -3168,3 +3168,105 @@ Prepared three historical production migration/recovery pairs and the installed 
 ## H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001
 
 Implemented the focal beneficiary source delta on current main, with signed authorization, optional relationship, <=100 validation, immutable version history and identity guards. Rebuilt only the three changed runtime chunks; preserved other savings behavior. Isolated browser/VM checks and synthetic backend ROLLBACK tests preserve protected counts/hashes. Publication uses the normal Pages workflow; no migration/import/tracking replay. See docs/audits/H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001.md.
+# H-SAVINGS-BENEFICIARIES-UI-V2-001 — pre-change audit
+
+Scope: `app/screens-savings.jsx` (entry only), beneficiary-only components in
+`app/savings-request-form.jsx`, existing `scripts/test-savings-beneficiaries-browser.js`,
+generated `app/bundle.js` and release cachebusters if published, this compact record,
+and derived architecture registry if mappings change. No other savings controls,
+repositories, Auth, shared signature pad, Storage policies, SQL or Google changes.
+Recovery: revert this UI release; no data migration or historical rewrite.
+
+Authority matrix: names/relationships/percentages/version/signature availability are
+EXISTING via `get_self_savings_beneficiaries`; writer remains
+`prepare_self_savings_beneficiaries` + private signature upload +
+`commit_self_savings_beneficiaries`. Backend derives effective identity and enforces
+version concurrency, consent and RLS. Balance is EXISTING via
+`SavingsBalanceReadModel.select(state)`; money projections, initials, totals and
+equal shares are DERIVED, never persisted. Colors, gradients and transitions are
+VISUAL. Demo names, balance, dates, folios and beneficiary acceptance assertions
+are excluded. No NEW schema fields needed. The reader exposes signatures for the
+designation, without an individual beneficiary association: UI must say so.
+
+Backend audit: relationship optional free text (2–80 chars), maximum 20 rows,
+positive percentages with two decimals and total <=100. This complete-designation
+UI requires 100% per the owner's HTML contract, without changing backend rules.
+One affiliate signature authorizes the complete version, with separate consent.
+Legacy classification: READ ONLY; projections explicitly authorized by this H.
+Tests: reuse repository/browser suites, focal savings tests, representative sizes
+and text scales. Test output outside repository. Production counts require live
+read-only verification; baseline numbers from request are not measured evidence.
+Global regression: ONLY IF REQUIRED BY SHARED-SCOPE CHANGES. Generated bundle
+alone does not trigger it. Pre-change status: PASS for isolated UI implementation.
+
+### Verification and release handoff
+
+H-SAVINGS-BENEFICIARIES-UI-V2-001 RESULT (pre-publication)
+
+- Status: PASS for implementation, build and pre-publication verification.
+- HTML VISUAL CONTRACT: preserved composition, gradient, cards, distribution,
+  chips, percentage controls, editor, details, confirmation sheets and review.
+  Explicit adaptations: one affiliate authorization for the whole designation;
+  20-row backend limit instead of demo 6; current balance without invented period;
+  no demo folio/date or legal assertions of individual beneficiary acceptance.
+- Source-of-truth verdict: SAFE. Same live balance selector, self reader, signed
+  writer and private bucket. Draft/signature capture stays transient until commit;
+  base64 is only the existing writer input converted to a private PNG upload.
+- SUPABASE SCHEMA CHANGE: NO. NEW DATA AUTHORITIES: NONE.
+- Invariant verdict: PASS. Complete UI requires exactly 100%; backend <=100 rule
+  remains unchanged. Equal thirds use integer hundredths: 33.33/33.33/33.34.
+- Build: PASS, `build-savings-beneficiaries-release.js` with Babel 7.29.0 and
+  `build-pages-site.js`. Only `savings-request-form.jsx` and `screens-savings.jsx`
+  compiled modules differ. `SutiApp.html` bundle266/SW209 and `sw.js` version
+  constants are GENERATED_ARTIFACT; service-worker behavior is unchanged.
+- Tests: PASS, existing beneficiary browser suite against compiled chunks on
+  Chrome (touch emulation) and WebKit; 320x568 normal/largest, 390x844 large,
+  412x915 normal, 430x932 largest, 1440x900 normal; editor and review. Covers
+  read/error/empty/detail, add/edit/remove, steps/input/slider/rest/equal shares,
+  over100 rejection, signature/consent, edit invalidation, same-key retry,
+  version refresh, identity changes, pending history, cancellation and overflow.
+- Adjacent tests: PASS, `test-savings-balance-sync.js`,
+  `test-savings-self-join-browser.js`, and existing self-actions assertions for
+  partial/full withdrawal, stop, review and retry extracted to TEMP. Its obsolete
+  unsigned-beneficiary branch was excluded; the dedicated signed suite covers it.
+- Security: PASS, `test-savings-beneficiaries-repository.js` and existing
+  `test-savings-beneficiaries-synthetic-rollback.sql` executed against Supabase.
+  Cross-user Storage/commit/target spoof, anonymous and raw table access DENIED;
+  invalid totals, missing signature/consent and stale versions rejected. History
+  and financial state preserved. Synthetic identities/Storage metadata ROLLED BACK.
+- Real reader: PASS in a READ ONLY transaction under authenticated effective
+  identity; actual authoritative beneficiary count matches, no personal data
+  exported. Live function definitions also confirm identity/consent/version rules.
+- Data integrity before/after: 112 active beneficiaries / 101 versions /
+  98 PENDING_REVIEW / 210 import rows / 162 signature_path. Bucket public=false.
+- Regresión focal Ahorro/Beneficiarios: PASS.
+- Regresión global: ONLY IF REQUIRED BY SHARED-SCOPE CHANGES — NOT APPLICABLE.
+- Legacy impact: no Google reads/writes, imports, reconciliation, financial rules
+  or historical changes introduced by this release.
+- Local site: boot/login/service worker PASS. Windows CRLF vendor copies fail
+  original SRI; local artifact verification used canonical Git vendor bytes,
+  matching the Linux deployment. No vendor or integrity source changes.
+- Known limitations: physical Safari iOS/Android and installed-device PWA were
+  not available; WebKit/Chrome emulation is explicitly distinguished. Configured
+  login test account has no savings; its live browser check covers the empty
+  state, while the real beneficiary reader was separately verified read-only.
+- Production: publish only after final freshness/diff check; deployment workflow
+  and final public bundle/read-only checks are reported in the delivery message.
+- Cleanup: files created in repo=0; permanent tests added=0 (one existing suite
+  updated); temporary test files in repo=0; QA residual data=0; no new QA folders,
+  HTML copies, screenshots or evidence JSON committed. Existing changelog and
+  required derived registry carry the compact evidence. No unexpected changes.
+- Evidence: command results above; three synthetic screenshots and browser
+  summaries under system TEMP `sutiapp-beneficiaries-v2` (not public repository).
+
+SUTIAPP ARCHITECT REVIEW — implementation/release scope
+
+Verdict: APPROVED for the reviewed implementation and authorized publication.
+Source of truth/security/data/legacy: preserved as checked above. No business
+decision or migration needed. WORK_QUEUE_HISTORY.md absent; no unrelated queued
+task is authorized by this review. Owner decision: NO.
+
+RESPONSE TO CODEX: finish the registry freshness check, commit only the declared
+files, publish this release, verify the public bundle and protected counts, then
+report the deployment and explicit device-coverage limitations. Do not advance
+to another H. Response generated for Codex: YES.

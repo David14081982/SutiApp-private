@@ -1,5 +1,14 @@
 # Fuentes de verdad
 
+## Owner-Q confirmation ? completed, financial publication PRIVATE
+
+Owner explicitly confirmed Ahorro Q as the correct closing balance. Existing audited
+writers certified every eligible historical record, using historical opening plus
+actual dated contributions and source historical component evidence. All 328 closing
+balances equal Q; no projected yield or expected receipt was posted as real money.
+Financial authority remains private Supabase certification until the separately scoped
+publication decision. This operation creates no permanent Google synchronization.
+
 ## Ahorro: conciliaci?n por fecha ? backend instalado; frontend preparado
 
 La nueva lista deriva descuentos previstos del calendario can?nico o del expediente

@@ -4,7 +4,7 @@
 
 La autorizaci?n OWNER posterior permite eliminar s?lo registros de Ahorro que jam?s
 tuvieron proyecci?n ni movimientos, inscripciones o solicitudes. Nunca elimina
-Afiliados ni Google. El lote autorizado de 37 registros conserva snapshot exacto de
+Afiliados ni Google. Los dos lotes autorizados, con 38 registros en total, conserva snapshot exacto de
 sus dependencias de Ahorro en savings_registration_removal_archive, privado, inmutable,
 con RLS forzada y sin grants API. La recuperaci?n expl?cita conserva UUIDs y rechaza
 conflictos; no es fallback ni fuente financiera alternativa. El borrado comprob? ledger

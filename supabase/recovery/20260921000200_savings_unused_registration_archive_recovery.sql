@@ -3,7 +3,7 @@ set local lock_timeout='2s';
 -- Explicit data recovery restores the exact original UUIDs and provenance; never a runtime fallback.
 do $$ declare batch record; t text; item jsonb; actual jsonb;begin
  for batch in select * from public.savings_registration_removal_archive
-  where id='31adefe6-2b91-4b86-81f9-c9c832b4387d' order by created_at loop
+  where id in ('31adefe6-2b91-4b86-81f9-c9c832b4387d','c25d29da-493d-4a5d-8fbc-36947e3e8b46') order by created_at loop
   foreach t in array array['savings_participants','savings_review_records','savings_review_import_normalizations',
    'savings_balance_certifications','savings_beneficiary_versions','savings_beneficiaries',
    'savings_beneficiary_import_rows','savings_beneficiary_authorizations','savings_review_events',

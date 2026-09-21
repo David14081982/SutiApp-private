@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-21 ? H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001 ? data PASS / production
+
+All 328 historical balances certified and equal to owner-confirmed live Ahorro Q;
+54 newly certified, 38 never-savers removed only from Savings with private recovery.
+334 participants including native accounts: all identities resolved/certified. No
+Google writes, duplicate financial movements, new yield periods or real-date drift.
+Four focal migrations applied; isolated recovery/security and browser/build PASS.
+Frontend v268/cache v211 awaits exact deployment readback after authorized push.
+
 ## 2026-09-21 ? H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001 ? backend/removal applied, release prepared
 
 Date-based bank reconciliation list and private recovery for owner-authorized removal

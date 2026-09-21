@@ -1,5 +1,15 @@
 # Reglas de migración
 
+## 20260921000300 / 20260921000400 ? certification/receipt compatibility ? APPLIED
+
+Owner-authorized all-Q certification: three certification/review functions accept
+one exact active identity despite archived duplicates and zero openings before genuine
+future starts. Receipt-specific private identity helper applies the same rule to
+receipt/reconciliation entry points. Shared runtime/payout/P0 guards are unchanged.
+Existing private function backup table, exact recovery/ACL/owner tests PASS; no new
+permissions. Both migrations applied with 2s lock / 60s statement timeouts. Positive
+future opening and two active identities remain rejected. Final Q readback 328/328.
+
 ## 20260921000100 / 20260921000200 ? Savings reconciliation/removal recovery ? APPLIED / VERIFIED
 
 Add two authenticated admin RPCs delegating to existing financial/review writers and

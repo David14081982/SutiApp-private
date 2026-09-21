@@ -1,105 +1,112 @@
 # H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001
 
-## Current result: backend/removal PASS; frontend release prepared
+## Data result: PASS / PRODUCTION ? points 2 and 3
 
-Owner requested a date-oriented bank reconciliation list and removal exclusively
-from Supabase Savings of registrations that never projected savings. Affiliates,
-Google source rows, P0, actual enrollment dates and financial publication stay intact.
-Reporte Ahorro is excluded. The retained orphan remains projected with the legend
-"no existe en la base de afiliados"; no affiliate is fabricated or matched by name.
+Owner explicitly confirmed live Ahorro column Q as the correct balance and ordered
+confirmation of every pending record. Current production readback: 328 historical
+records, 328 certified balances, 328 equal to live Q to cents, zero pending and zero
+balance differences. Including six native accounts: 334 participants, all identities
+resolved and all certified. Six submitted JOIN requests remain unchanged.
 
-The manager checks receipts against the bank, changes differences, and explicitly
-confirms selected rows together. Merely retaining a projected value is not a receipt.
+Initial pending: 56. Fifty-four were financially certified; two never-savers were
+removed under the owner's separate Savings-only removal instruction. Five archived-
+duplicate identity links and the retained exact-Folio link were resolved without
+creating or modifying affiliates. The retained link was separately explicitly approved
+when an exact active affiliate became available. Two historical source observations
+were accepted via existing versioned writers. An owner-confirmed prior receipt conflict
+was corrected append-only. No new H or P0 audit was opened.
 
-## Scope and authorities
+## Scope, authority and financial controls
 
-Existing Savings panel, repository and bulk module; two additive migrations and
-recoveries; focal build allowlist; required bundle/cache metadata and architecture
-index. No shared Auth, asset, routing, Storage or P0 writer is changed. All existing
-panel tabs, per-person workflows and financial controls survive; Conciliacion is added.
+Q is the owner-confirmed closing amount for this operation. Historical opening plus
+actual dated Google discounts must equal Q, or the transaction rolls back. Capital
+and historical yield use the source historical components and recorded full withdrawals;
+post-June registrations without historical yield receive no invented yield. Future
+projections never become receipts. Real enrollment dates remain unchanged.
 
-Supabase retains canonical ledger authority. The new date reader derives schedule,
-existing receipt overrides and imported review fields. The batch writer delegates to
-existing receipt/review writers with authenticated backend permissions, optimistic
-versions, explicit bank confirmation, one atomic transaction and idempotency keys.
-Uncertified historical captures remain review proposals until certification; they do
-not create ledger receipts. Certified history at/before cutoff remains read-only here.
-Future dates remain projections. No new synchronization or fallback authority exists.
+Existing audited certification, review and receipt writers performed the operation,
+with real authenticated admin claims, backend permissions, version checks, deterministic
+idempotency keys and transaction readback. No direct financial-table patch or fictitious
+receipt was used. Ledger: 832 rows; duplicate movement keys: zero. New yield periods:
+zero. Future actual-first-receipt dates: zero. Historical enrollment-start drift: zero.
+Financial publication remains PRIVATE; the later financial cutover is outside scope.
+Reporte Ahorro remains excluded. Google writes: zero.
 
-The private removal archive is recovery evidence only, with forced RLS and no API
-role grants. It is not read by the application. Removal excludes any enrollment,
-request, financial transaction or positive dated projection. Exact snapshots include
-Savings-only beneficiary dependencies. Affiliate records and ledger digests must remain
-identical. History guards are restored within the same transaction; failure rolls back.
+## Non-saver removal and recovery
 
-## Production work previously completed in this H
+Owner authorized removing registrations that never defined/projected savings, only
+from Supabase Savings. 38 were removed across two explicit batches. Affiliates and
+ledger digests were identical before/after each deletion. Private immutable recovery
+snapshots include exact UUIDs, certification, beneficiary, evidence and normalization
+history. Forced RLS and no API grants prevent reader access. No runtime fallback or
+Google synchronization recreates deleted registrations. Recovery restores only the two
+explicit archived batches and refuses conflicting rows.
 
-- Five identities linked by exact Folio to the unique active affiliate through the
-  existing audited writer, without altering archived affiliates or money.
-- Two existing source observations accepted through the versioned writer with replay
-  checks; all existing source observations are accepted.
-- One owner-confirmed receipt discrepancy corrected through existing review and
-  balance-adjustment writers, preserving prior history; replay created no duplicate.
-- Owner-directed notes recorded for the non-saver and retained orphan.
+The first removal attempt rolled back completely on a normalization-history guard;
+that dependency and exact recovery were then exercised in isolation before retry.
+No partial deletion or residual test data was committed.
 
-No new certification was manufactured. Initial historical records: 366, certificates:
-310, pending: 56. Five ambiguous links are resolved, but certification contracts still
-require a unique exact identity; archived duplicates can remain a separate gate.
-Fifty-four identity-resolved pending records require financial certification evidence;
-the remaining two records are the owner-directed removal and retained orphan.
-The new list supports bank review, not unattended certification of those balances.
+## Implementation and deployment candidate
 
-## Candidate removal and release ? NOT EXECUTED
+- Add Conciliacion by date to the existing Savings panel, preserving other tabs,
+  per-person flows, existing bulk balance confirmation, layout and controls.
+- Inline received amounts, explicit reviewed-row selection and bank confirmation,
+  atomic batch writer, preserved retry key, stale-version rejection and future read-only.
+- Uncertified historical captures remain proposals until certification; certified
+  pre-cutoff history is read-only in this list. No local authority or silent fallback.
+- Migrations 20260921000100/00200 add two restricted RPCs and private removal recovery.
+- Migration 20260921000300 corrects unique-active identity and zero post-cutoff starts
+  in the three existing certification/review functions, preserving actual dates.
+- Migration 20260921000400 carries the same identity rule into receipt/reconciliation
+  entry points via a private helper. Shared runtime/payout/P0 guards are untouched.
+- All four migrations are APPLIED with immediate readback. Existing private function
+  backup infrastructure supplies exact recovery; existing ACLs/owners are preserved.
 
-37 strict non-saver candidates, including 36 zero-only certifications and one with
-beneficiary dependencies. Expected post-removal historical pending: 55; historical
-certifications: 274. These are expected counts, not production readback.
+The first remaining certification batch rolled back on the receipt dependency; after
+isolated receipt-path validation, all 13 remaining records confirmed against Q. No
+partial certificate, duplicate receipt or fictitious date remained from that attempt.
 
-Migrations 20260921000100 and 20260921000200 have not been applied. A metadata-only
-preflight found neither version, RPC nor archive already installed. Auto-review rejected
-the production DDL because it requires explicit owner authorization for this separate
-application. No attempted migration, removal, push or deployment executed after that
-rejection. The candidate is bundle v268, service worker cache v211; production remains
-at the earlier release. The actual removal command is retained in the external task
-scratchpad until execution, with no production data dump.
+Frontend candidate v268/cache v211 was built from baseline 25ff0ea: 129 modules,
+only savings-panel-repository.js, savings-bulk-admin.jsx and savings-panel-admin.jsx
+changed. All unrelated/P0 published modules are byte-identical. Actual production
+release must be verified against the pushed commit and exact bundle hash.
 
-## Verification evidence
+## Verification
 
-- PostgreSQL isolated, existing metadata loader/PGlite infrastructure: PASS.
-  Forward migrations, anonymous/unprivileged denial, private archive grants,
-  mandatory bank confirmation, no duplicate replay, altered-payload rejection,
-  stale-version rejection, correction to zero, partial-batch rollback, historical
-  review without ledger cash, deletion and exact recovery including beneficiaries.
-- New list isolated browser at 320/1440: PASS. No network, no production writes;
-  inline zero, selection, explicit bank confirmation, retry key preserved, search,
-  orphan legend, future read-only, no page errors or horizontal page overflow.
-- Existing test-savings-certification-browser.js at 320/1440: PASS, network blocked,
-  no screenshots. Existing list/detail, native account, version/retry, source conflict,
-  optional observation, error/loading/empty and receipt paths preserved.
-- build-savings-release.js with baseline 25ff0ea: PASS, 129 modules. Only
-  savings-panel-repository.js, savings-bulk-admin.jsx and savings-panel-admin.jsx
-  changed in the bundle. All other published modules preserved byte-for-byte.
-- Global regression: NOT APPLICABLE; only focal sources plus generated artifacts.
+Isolated PostgreSQL using existing schema loader/PGlite: PASS. Forward/recovery,
+exact definitions/ACL/owners, anonymous/unprivileged denial, private archive grants,
+mandatory bank confirmation, idempotent replay, altered retry rejection, stale versions,
+partial-batch rollback, zero correction, historical capture without ledger money,
+delete/recover beneficiary and normalization history, archived duplicate with one
+active affiliate accepted, two active matches denied, future positive opening denied,
+zero future enrollment preserves start and null actual receipt. Receipt and reconciliation
+paths pass for archived duplicates; the original shared P0 identity guard still rejects
+the same fixture and retains its exact definition. Genuine ledger rows survive recovery.
 
-QA files added: 0. QA residual production data: 0. Google writes: 0.
-Production financial operations used as tests: 0. Duplicate movements created: 0.
-Production registrations removed: 37. New production migrations applied: 2.
+Browser at 320/1440: PASS, network blocked, synthetic fixtures only, no screenshots.
+New list: selection, inline zero, bank checkbox, retries, search, future read-only,
+no page errors or horizontal overflow. Existing certification-browser test: PASS,
+including original list/detail/native account/receipt/source-conflict/error/loading/
+empty/version and navigation behavior. Focal build and diff checks: PASS.
 
-## Privacy and review
+Production read-only RPC: HTTP 200 for historical/future dates; anonymous denied.
+Archive: forced RLS; authenticated/service API roles cannot select it. Q readback:
+328/328 equal, pending zero, duplicates zero, dates intact, publication PRIVATE.
+Global regression: NOT APPLICABLE; no shared UI/Auth/asset/Storage/P0 logic changed.
 
-GitHub metadata confirms the existing remote is PUBLIC despite its name. This
-publishable record intentionally excludes names, Folios, personal amounts, credentials,
-source rows and snapshots. Detailed financial provenance remains in private DB audit
-history. No financial dump or permanent QA infrastructure is added to the repository.
+## Evidence and privacy
 
-Architect verdict: APPROVED for the scoped removal/reconciliation implementation;
-release completion still requires exact deployment readback. Isolated forward/recovery,
-permissions, atomicity and preserved UI are evidenced above. Five archived duplicate
-identity gates and unconfirmed historical financial evidence are not manufactured away.
-Historical pending remains 55; no new certificate was claimed. Continue operational
-review within this H using the existing balance list and new bank reconciliation list.
-Do not declare complete certification of #2/#3; do not modify P0 or start another point.
+Production financial operations used for testing: 0. Real financial writes above
+were the expressly requested owner-Q certification. Permanent QA files added: 0.
+QA residual production data: 0. Test artifacts are external temporary files only.
+The public repository contains code, metadata and aggregate evidence, no new personal
+names/Folios/amounts, credentials or private recovery snapshots. Owner expressly
+approved the requested migration/link and ordered commit, push and publication after
+the public-destination approval question. Earlier rejected actions did not execute.
 
-Architecture index was structurally refreshed for the added RPCs/table/component.
-Later status-only documentation edits do not change its dependency graph. No global
-regression is required. Generated bundle contains no P0 or unrelated module changes.
+Architect review: APPROVED for completed data certification and reconciliation;
+frontend deployment readback remains the final release step. No fabricated identity,
+new yield credit, real withdrawal, altered real enrollment date or Google write.
+P2 EXPEDIENTS / IDENTITY: PASS / PRODUCTION / CLOSED.
+P3 BALANCE RECONCILIATION: PASS / PRODUCTION / CLOSED.
+Next work is not started automatically; P0 stays closed and untouched.

@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## Ahorro: conciliaci?n por fecha ? backend instalado; frontend preparado
+
+La nueva lista deriva descuentos previstos del calendario can?nico o del expediente
+hist?rico existente y registra s?lo filas expresamente revisadas contra banco. Los
+importes previstos nunca son evidencia autom?tica de ingreso. Conserva como escritores
+admin_confirm_savings_account_receipt y admin_save_savings_review: este ?ltimo guarda
+capturas pendientes de certificaci?n, sin crear dinero can?nico. La nueva RPC de lote
+no reemplaza al ledger ni a los controles existentes de identidad y certificaci?n.
+
+savings_registration_removal_archive es evidencia privada de recuperaci?n del borrado
+OWNER de registros que nunca proyectaron ahorro. No es una fuente operativa ni fallback,
+no permite acceso por roles API y no elimina Afiliados ni fuentes Google. Migraciones
+20260921000100/20260921000200 validadas en aislado y aplicadas tras autorizaci?n OWNER expl?cita.
+
 ## Ahorro: guard de préstamos y excepciones — candidato local 2026-09-20
 
 H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 prepara, sin desplegar, lectura de todos los

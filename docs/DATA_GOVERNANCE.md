@@ -1,5 +1,15 @@
 # Gobierno de datos
 
+## Ahorro sin proyecci?n ? H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001
+
+La autorizaci?n OWNER posterior permite eliminar s?lo registros de Ahorro que jam?s
+tuvieron proyecci?n ni movimientos, inscripciones o solicitudes. Nunca elimina
+Afiliados ni Google. El lote autorizado de 37 registros conserva snapshot exacto de
+sus dependencias de Ahorro en savings_registration_removal_archive, privado, inmutable,
+con RLS forzada y sin grants API. La recuperaci?n expl?cita conserva UUIDs y rechaza
+conflictos; no es fallback ni fuente financiera alternativa. El borrado comprob? ledger
+y Afiliados id?nticos, y restaur? controles de historial antes de confirmar.
+
 ## Versiones de foto de perfil — H-PROFILE-PHOTO-EDIT-001
 
 La foto vigente es una relación `affiliate_files` marcada explícitamente, no un archivo sobrescrito. Al reemplazarla se conserva el objeto anterior, su relación, status y vínculos documentales; solo cambia el marcador vigente y su fecha de actualización. La auditoría enlaza nueva relación y anterior con actor real y afiliado. Los nuevos registros identifican procedencia `supabase://private-assets/...`; Photo/DK es la clave semántica compatible, sin escritura en Google. Cargas cuyo resultado de registro sea ambiguo no se borran automáticamente; quedan privadas y sin autoridad mientras no tengan relación, sujetas a conciliación administrativa. La UI comprime y elimina metadata de cámara al convertir a JPEG; URLs firmadas siguen temporales.

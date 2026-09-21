@@ -17,6 +17,8 @@
   save:c=>rpc('admin_save_savings_panel',{p_record_id:c.id,p_version:c.version,p_changes:c.changes,p_status:c.status,p_observation:c.observation||null,p_client_action_id:c.key}),
 
   financial:(id,until=null)=>rpc('get_admin_savings_financial_account',{p_record_id:id,p_until:until}),
+  reconciliation:date=>rpc('get_admin_savings_reconciliation',{p_date:date}),
+  confirmReconciliation:c=>rpc('admin_confirm_savings_reconciliation',{p_date:c.date,p_rows:c.rows,p_confirmed:c.confirmed===true,p_key:c.key}),
   previewBalance:c=>rpc('preview_savings_balance_certification',{p_record_id:c.id,p_command:c.command}),
   confirmBalance:c=>rpc('admin_confirm_savings_balance',{p_record_id:c.id,p_command:c.command,p_fingerprint:c.fingerprint,p_client_action_id:c.key}),
   receipt:c=>rpc('admin_confirm_savings_receipt',{p_record_id:c.id,p_date:c.date,p_actual:c.actual,p_version:c.version,p_observation:c.observation||null,p_client_action_id:c.key}),

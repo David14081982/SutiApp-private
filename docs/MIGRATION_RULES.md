@@ -1,5 +1,17 @@
 # Reglas de migración
 
+## 20260921000100 / 20260921000200 ? Savings reconciliation/removal recovery ? APPLIED / VERIFIED
+
+Add two authenticated admin RPCs delegating to existing financial/review writers and
+one private immutable recovery table with forced RLS/no API grants. Backend verifies
+bank confirmation, versions, permissions and idempotency. Isolated migration and
+exact data recovery including beneficiary dependencies PASS. Lock timeout 2s,
+statement timeout 60s. No existing P0 function or permission changed. Owner explicitly authorized both migrations and removal; production application
+and readback PASS. One initial removal transaction rolled back fully on a history
+guard; isolated recovery coverage was extended before the successful retry. Recovery drops additive RPCs
+without deleting receipt evidence; the removal recovery restores the specific archived
+batch with original UUIDs and refuses conflicts. Archive remains private evidence.
+
 ## 20260920000100 — excepciones de Ahorro — PREPARED, NOT APPLIED
 
 Validación sólo aislada por decisión OWNER: prohibido DDL de prueba en producción,

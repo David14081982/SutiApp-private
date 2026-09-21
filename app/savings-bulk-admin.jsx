@@ -228,4 +228,68 @@
      h('button',{type:'button',className:'svp-btn',disabled:offset+rows.length>=page.total||!!busy||running||corriendo,onClick:()=>setOffset(offset+20)},'Siguiente'))));
  }
  window.SavingsBulkAdmin=SavingsBulkAdmin;
+
+ // Date-oriented bank review. Rendering a suggested amount never confirms receipt.
+ function SavingsReconciliationAdmin({asOf,onSaved}){
+  const [date,setDate]=useState(()=>{const d=String(asOf||'').slice(0,10);return /^\d{4}-\d{2}-\d{2}$/.test(d)?d:'';});
+  const [data,setData]=useState(null),[amounts,setAmounts]=useState({}),[selected,setSelected]=useState({});
+  const [search,setSearch]=useState(''),[bank,setBank]=useState(false),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false);
+  const [error,setError]=useState(''),[notice,setNotice]=useState('');
+  const generation=useRef(0),alive=useRef(true),lock=useRef(false),retry=useRef(null);
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;};},[]);
+  const load=useCallback(async()=>{
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+   const mine=++generation.current;setLoading(true);setError('');setData(null);
+   try{const d=await R().reconciliation(date);if(!alive.current||generation.current!==mine)return;
+    setData(d);setAmounts(Object.fromEntries(d.rows.map(r=>[r.id,r.suggested==null?'':Number(r.suggested).toFixed(2)])));
+    setSelected({});setBank(false);retry.current=null;
+   }catch(e){if(alive.current&&generation.current===mine)setError(reason(e));}
+   finally{if(alive.current&&generation.current===mine)setLoading(false);}
+  },[date]);
+  useEffect(()=>{load();},[load]);
+  const rows=data&&data.rows||[],visible=rows.filter(r=>(r.folio+' '+(r.name||'')).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+  const chosen=rows.filter(r=>selected[r.id]&&r.can_write),valid=chosen.length>0&&chosen.every(r=>money(amounts[r.id]));
+  const dirty=Object.values(selected).some(Boolean);
+  function change(){retry.current=null;setBank(false);setNotice('');}
+  async function confirm(){
+   if(lock.current||!valid||!bank||loading)return;
+   lock.current=true;setBusy(true);setError('');
+   if(!retry.current)retry.current={date,rows:chosen.map(r=>({id:r.id,version:r.version,actual:Number(amounts[r.id])})),confirmed:true,key:key()};
+   try{const result=await R().confirmReconciliation(retry.current);if(!alive.current)return;
+    const reviewed=chosen.filter(r=>r.route==='REVIEW').length;
+    setNotice(result.confirmed+' filas conciliadas.'+(reviewed?' '+reviewed+' capturas históricas guardadas para certificar; no se duplicaron como aportaciones.':''));
+    await load();if(onSaved)await onSaved();
+   }catch(e){if(alive.current)setError(reason(e)+' Si se interrumpió la conexión, reintenta sin cambiar los importes.');}
+   finally{lock.current=false;if(alive.current)setBusy(false);}
+  }
+  return h(Tarjeta,{title:'Conciliación por fecha',icon:'receipt'},
+   h('p',{className:'svp-note'},'Compara la lista con el banco. Conserva el importe previsto si llegó completo, corrígelo si fue distinto o captura 0 si no llegó. Selecciona las filas que revisaste y confirma juntas.'),
+   h('label',{className:'svp-field'},'Fecha del descuento',h('input',{type:'date',value:date,disabled:busy,onChange:e=>{
+    if(dirty&&!window.confirm('Hay filas seleccionadas sin confirmar. ¿Cambiar de fecha y descartar esta captura?'))return;
+    change();setSelected({});setDate(e.target.value);
+   }})),
+   h('label',{className:'svp-field'},'Buscar en la conciliación',h('input',{value:search,disabled:busy,onChange:e=>setSearch(e.target.value),placeholder:'Nombre o Folio'})),
+   error&&h('div',{role:'alert',className:'svp-error'},error,h('button',{type:'button',className:'svp-btn',disabled:busy,onClick:()=>{if(!dirty||window.confirm('¿Volver a cargar y descartar los importes sin confirmar?'))load();}},'Volver a cargar')),
+   notice&&h('p',{role:'status',className:'svp-success'},notice),
+   loading&&h('p',{role:'status'},'Consultando descuentos de la fecha…'),
+   data&&h(React.Fragment,null,
+    date>data.today&&h('p',{className:'svp-note warn'},'Proyección futura: todavía no se puede confirmar dinero recibido.'),
+    h('p',{className:'svp-note'},visible.length+' filas visibles · '+chosen.length+' seleccionadas'),
+    h('button',{type:'button',className:'svp-btn',disabled:busy||!visible.some(r=>r.can_write),onClick:()=>{change();setSelected(s=>({...s,...Object.fromEntries(visible.filter(r=>r.can_write).map(r=>[r.id,true]))}));}},'Seleccionar filas visibles'),
+    h('button',{type:'button',className:'svp-btn',disabled:busy||!dirty,onClick:()=>{change();setSelected({});}},'Quitar selección'),
+    !visible.length?h('p',{className:'svp-empty'},'No hay descuentos para esta fecha o búsqueda.'):
+    h('div',{style:{overflowX:'auto',maxWidth:'100%',marginTop:12}},h('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+     h('thead',null,h('tr',null,['Revisado','Folio / Ahorrador','Previsto','Recibido','Estado'].map(t=>h('th',{key:t,scope:'col',style:{textAlign:'left',padding:8}},t)))),
+     h('tbody',null,visible.map(r=>h('tr',{key:r.id,style:{borderBottom:'1px solid var(--hairline)'}},
+      h('td',{style:{padding:8}},h('input',{type:'checkbox','aria-label':'Revisado '+r.folio,checked:!!selected[r.id],disabled:busy||!r.can_write,onChange:e=>{change();setSelected(s=>({...s,[r.id]:e.target.checked}));}})),
+      h('td',{style:{padding:8}},h('b',null,r.folio),h('div',null,r.name||'Sin nombre en el registro'),r.note&&h('small',null,r.note)),
+      h('td',{style:{padding:8,whiteSpace:'nowrap'}},M(r.expected)),
+      h('td',{style:{padding:8}},h('input',{type:'number',min:0,step:'.01',inputMode:'decimal','aria-label':'Recibido '+r.folio,value:amounts[r.id]??'',disabled:busy||!r.can_write,style:{width:110,maxWidth:'100%'},onChange:e=>{change();const v=e.target.value;setAmounts(a=>({...a,[r.id]:v}));setSelected(s=>({...s,[r.id]:true}));}})),
+      h('td',{style:{padding:8}},r.confirmed?'Confirmado':date>data.today?'Previsto':'Por revisar')))))),
+    h(Fila,{label:'Previsto de las filas seleccionadas',valor:M(chosen.reduce((n,r)=>n+(cents(r.expected)||0),0)/100)}),
+    h(Fila,{label:'Recibido de las filas seleccionadas',valor:valid?M(chosen.reduce((n,r)=>n+cents(amounts[r.id]),0)/100):'—'}),
+    h('label',{className:'svp-note',style:{display:'flex',gap:8,alignItems:'center'}},h('input',{type:'checkbox',checked:bank,disabled:busy||!valid,onChange:e=>setBank(e.target.checked)}),'Revisé en el banco los importes de las filas seleccionadas.'),
+    h('button',{type:'button',className:'svp-btn primary full',disabled:busy||loading||!valid||!bank,onClick:confirm},busy?'Guardando conciliación…':'Confirmar '+chosen.length+' filas revisadas')));
+ }
+ window.SavingsReconciliationAdmin=SavingsReconciliationAdmin;
 })();

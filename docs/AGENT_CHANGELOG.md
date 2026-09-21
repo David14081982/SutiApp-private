@@ -1,5 +1,13 @@
 # Bitácora de agentes
 
+## 2026-09-21 ? H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001 ? backend/removal applied, release prepared
+
+Date-based bank reconciliation list and private recovery for owner-authorized removal
+of never-savers. Isolated SQL/recovery and focal browser/build PASS. Owner explicitly authorized both new migrations, the removal and frontend release.
+Production migrations and 37 Savings-only removals applied/read back; Affiliates and
+ledger unchanged. New frontend awaits exact deployment readback. No P0 changes, Google writes, permanent QA files or QA production data.
+Aggregate evidence: [audit](audits/H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001.md).
+
 ## 2026-09-20 — H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 — preparado y validado localmente
 
 Lector completo de HISTORIAL P V2, guard de entrega con comprobación backend fresca,

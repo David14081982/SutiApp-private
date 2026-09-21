@@ -3316,3 +3316,22 @@ that visible outcome. Corrected three read/publication identity checks, preservi
 archived records and P0 guards. Isolated forward/recovery/ACL PASS; production
 ledger/affiliate/enrollment hashes unchanged. Published through existing admin RPC:
 334 accounts, pending=0, PUBLISHED/version 2. No frontend or financial amounts edited.
+
+
+## 2026-09-21 - Pending Savings JOIN presentation only
+
+Scope authorized: only the existing pending-entry block for SUBMITTED/UNDER_REVIEW.
+Use Savings card/pink/wine/amber styling, readable dates and amount, corrected accents,
+and preserve the expandable one-year projection. Existing reader, state, data,
+financial rules, other request statuses and established-saver screen unchanged.
+Files: savings-request-form.jsx, focal generated bundle/cache references, this log.
+No DB/Google access or writes. No architecture dependency change; no registry rebuild.
+Validation: focal build and isolated mobile/desktop browser, no permanent QA fixtures.
+Recovery: revert this UI commit. Status: PASS locally; release follows.
+Focal build: 129 modules, only savings-request-form.jsx changed from cd5eacb.
+Isolated browser PASS at 320/390/1440: accents, values, dates, expandable schedule,
+no horizontal overflow; APPROVED/APPLIED/REJECTED/CANCELLED/no-request markup
+exactly identical to prior implementation. No screenshots or permanent QA files.
+UI preservation: PASS within owner-authorized pending section. Security/legacy:
+unchanged; zero financial writes. Architect review: APPROVED for focal UI release.
+Registry unchanged structurally: text/styles/markup only, no new data dependency.

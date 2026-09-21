@@ -330,6 +330,20 @@
   React.useEffect(()=>{let alive=true;setContext(null);setError(false);Promise.resolve().then(()=>window.SavingsRepository.getJoinContext()).then(v=>{if(alive)setContext(v);}).catch(()=>{if(alive)setError(true);});return()=>{alive=false;};},[revision,retry]);
   if(existing&&(!context||!context.request&&!context.can_join))return error?h('p',{role:'alert'},'No se pudo consultar el registro de ingreso.',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')):null;
   const request=context&&context.request,states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisi?n',APPROVED:'Aprobada',REJECTED:'Rechazada',CANCELLED:'Cancelada',APPLIED:'Aplicada'};
+  if(request&&['SUBMITTED','UNDER_REVIEW'].includes(request.status))return h('section',{'data-savings-join-access':'','data-savings-join-pending':'','aria-label':'Tu solicitud de ingreso',style:{margin:existing?'12px 16px':undefined,padding:16,border:'1px solid #e4e4e8',borderRadius:17,background:'#fff',boxShadow:'0 3px 8px rgba(20,33,61,.05)',color:'var(--ink, #14213d)',fontFamily:'inherit',textAlign:'left',flexShrink:0,maxHeight:existing?'45vh':undefined,overflowY:'auto',boxSizing:'border-box'}},
+   h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
+    h('h3',{style:{margin:0,flex:'1 1 140px',fontSize:14,fontWeight:800}},'Tu solicitud de ingreso'),
+    h('span',{style:{padding:'5px 9px',borderRadius:999,background:'#fff1d5',color:'#9a6813',fontSize:10,fontWeight:750}},request.status==='SUBMITTED'?'Recibida':'En revisi\u00f3n')),
+   h('p',{style:{margin:'10px 0 14px',fontSize:12,lineHeight:1.5,color:'var(--muted, #85858d)'}},'Tu solicitud est\u00e1 pendiente de aprobaci\u00f3n.'),
+   h('div',{style:{padding:'12px 14px',borderRadius:12,background:'var(--pink, #f9edf2)'}},
+    h('span',{style:{display:'block',fontSize:11,color:'var(--muted, #85858d)',fontWeight:650}},'Monto por descuento'),
+    h('strong',{style:{display:'block',marginTop:3,fontSize:24,fontWeight:800,fontVariantNumeric:'tabular-nums',color:'var(--wine, #a00042)'}},new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(request.amount))),
+   h('dl',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,margin:'14px 0',fontSize:11}},
+    [['Registrada',joinDate(request.submitted_at)],['Primer descuento previsto',joinDate(request.effective_from)]].map(([label,value])=>h('div',{key:label},h('dt',{style:{color:'var(--muted, #85858d)',lineHeight:1.4}},label),h('dd',{style:{margin:'4px 0 0',fontWeight:750,lineHeight:1.4}},value)))),
+   h('details',{'data-savings-join-schedule':'',style:{borderTop:'1px solid var(--line, #e4e4e8)',paddingTop:12,fontSize:12}},
+    h('summary',{style:{cursor:'pointer',color:'var(--wine, #a00042)',fontWeight:750,lineHeight:1.5}},'Pr\u00f3ximos descuentos previstos'),
+    h('p',{style:{fontSize:11,lineHeight:1.5,color:'var(--muted, #85858d)'}},'Proyecci\u00f3n de un a\u00f1o. No es saldo recibido y no incluye rendimientos.'),
+    (context.upcoming||[]).map(r=>h('div',{className:'sav-row',key:r.contribution_date},h('span',null,joinDate(r.contribution_date)),h('b',null,new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.expected_amount))))));
   return h('div',{'data-savings-join-access':'',style:existing?{margin:'12px 16px'}:undefined},
    (!existing||context.can_join)&&h('button',{type:'button',className:'sav-primary',disabled:!context||!context.can_join,onClick:()=>onJoin(context)},'Ingresar al ahorro'),
    !context&&!error&&!existing&&h('p',{role:'status'},'Consultando disponibilidad?'),error&&h('p',{role:'alert'},'No se pudo consultar el ingreso al ahorro. ',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')),

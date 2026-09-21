@@ -122,3 +122,44 @@ references to v269/cache v212. No data, SQL, authority, architecture or P0 chang
 Recovery: revert the label-only release. Focal build PASS: 129 modules, only
 savings-panel-admin.jsx changed from d37923b; all other published modules preserved.
 No new QA files. Final live browser/readback follows the corrected deployment.
+
+## Final production closure
+
+Release commit: a68d5a760533a9a3300cad6311f0f525ef25b104.
+Pages run: https://github.com/David14081982/SutiApp-private/actions/runs/35623184040
+Result: SUCCESS, including Auth/request compatibility and post-deploy checks.
+sutiapp.com: HTTP 200; frontend v269; service-worker cache v212.
+Local and remote bundle SHA256:
+699df2cd7a2cc52ca2cce564d4bdaae51bc7f6d102e99b49f37be66a1a6be9f6.
+Authenticated live reconciliation: PASS, 290 rows for 2026-09-15, zero selected
+confirmation disabled, zero page errors, zero financial write requests, zero screenshots.
+The temporary smoke was corrected to select the accessible tab role after login;
+that selector correction required no product change.
+
+H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001 RESULT
+Status: PASS / PRODUCTION / CLOSED
+Files changed: declared Savings UI/repository/build, four migrations/recoveries,
+governance/evidence and derived Registry; final label-only fix in the same scope.
+Source-of-truth verdict: PASS; 328 historical totals equal owner-confirmed Q.
+Invariant verdict: PASS; pending identities/certifications zero; dates preserved.
+Build: PASS, focal 129-module build; unrelated published modules preserved.
+Tests: PASS, existing isolated forward/recovery/security/financial/UI evidence
+and final authenticated production read-only smoke.
+Security: PASS; restricted backend writers/private recovery, no new exposed secrets.
+Legacy impact: Google writes 0; P0 unchanged; financial publication remains PRIVATE.
+Unexpected files changed: 0.
+Known limitations: Savings report excluded by owner; no next task auto-started.
+Evidence: deployment run, exact bundle hash, live browser aggregate above.
+Permanent QA files added: 0. QA residual production data: 0.
+Production financial operations used for testing: 0.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-SAVINGS-P1-DATA-CERTIFICATION-CLOSURE-001
+Verdict: APPROVED
+Critical findings: none remaining in this scope.
+Source of truth / architecture / security / data / legacy: PASS as evidenced above.
+Owner decision: NO.
+Next action: stop; await owner instruction for the next Savings scope.
+Response generated for Codex: YES.
+RESPONSE TO CODEX: Close points 2/3 with this evidence. Do not reopen P0,
+start another H, or include the deferred Savings report.

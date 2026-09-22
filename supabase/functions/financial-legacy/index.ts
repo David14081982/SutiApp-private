@@ -195,6 +195,7 @@ const normalize = (value: unknown) => String(value ?? "").trim().normalize("NFD"
 const EXPORT_CONTRACT_VERSION = "FINAL_APPROVED_LOAN_EXPORT_V1";
 const LOAN_SESSION_TTL_MS = 15 * 60 * 1000;
 const LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V1";
+const ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V2";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function processForCategory(value: string) {
@@ -350,7 +351,17 @@ async function resolveQuote(
     }
     throw new Error("FINANCIAL_RESOLUTION_FAILED");
   }
-  return data as Record<string, unknown>;
+  const result = data as Record<string, unknown>;
+  const selected = rulesForProfile(rules, profile).filter((rule) => rule.status === "AVAILABLE" &&
+    (rule.id === String(body.program_id) || rule.program_id === String(body.program_id)));
+  if (selected.some((rule) => rule.program_id === "prestamo" && rule.payment_count === 1 &&
+      rule.available_on && rule.available_on >= "2026-01-01") &&
+      result.administrativeFeeVersion !== "ADVANCE_PAYROLL_PERIODS_V1") {
+    // Deploy Edge before SQL: an older database must not issue a $15 advance
+    // quote during the cutover window. No legacy calculation fallback.
+    throw new Error("FINANCIAL_RESOLUTION_FAILED");
+  }
+  return result;
 }
 
 async function readTermPolicy(userClient: SupabaseClientLike): Promise<TermPolicy> {
@@ -490,7 +501,7 @@ async function openPersonalizedLoanSession(
     eligible_rules: matched,
     criteria_source_fingerprint: criteriaFingerprint,
     term_policy_fingerprint: policyFingerprint,
-    calculation_contract_version: LOAN_CALCULATION_CONTRACT_VERSION,
+    calculation_contract_version: ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION,
     session_purpose: "LOAN",
     created_at: now.toISOString(), expires_at: expiresAt.toISOString(),
   }).select("id,expires_at,financial_profile_version").single();
@@ -514,7 +525,8 @@ async function loadPersonalizedLoanSession(
     snapshot.session_purpose !== "LOAN" ||
     snapshot.financial_profile_version !== Number(context.profile.financial_profile_version) ||
     snapshot.profile_fingerprint !== currentProfileFingerprint || snapshot.term_policy_fingerprint !== currentPolicyFingerprint ||
-    snapshot.calculation_contract_version !== LOAN_CALCULATION_CONTRACT_VERSION || !Array.isArray(snapshot.eligible_rules) ||
+    snapshot.calculation_contract_version !== ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION ||
+    businessDateISO(new Date(snapshot.created_at)) !== businessDateISO() || !Array.isArray(snapshot.eligible_rules) ||
     rulesForProfile(snapshot.eligible_rules, context.profile).length !== snapshot.eligible_rules.length;
   if (invalid) {
     if (!snapshot.invalidated_at) await invalidateLoanSession(privileged, snapshot.id,
@@ -814,7 +826,10 @@ async function confirmPersonalizedLoanSession(
     return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
   }
   let result: Record<string, unknown>;
-  try { result = await resolveQuote(privileged, currentRules, context.profile, body, policy); }
+  try {
+    result = await resolveQuote(privileged, currentRules, context.profile, body, policy);
+    assertAdvanceSubmissionDate(result, snapshot.created_at);
+  }
   catch {
     await invalidateLoanSession(privileged, snapshot.id, "AUTHORITATIVE_CONDITIONS_CHANGED");
     return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
@@ -831,7 +846,7 @@ async function confirmPersonalizedLoanSession(
     profile_fingerprint: snapshot.profile_fingerprint,
     criteria_source_fingerprint: currentSourceFingerprint,
     term_policy_fingerprint: snapshot.term_policy_fingerprint,
-    calculation_contract_version: LOAN_CALCULATION_CONTRACT_VERSION,
+    calculation_contract_version: ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION,
     criterion_identity: selectedRule.criterion_identity,
     financialResult: result,
     confirmed_at: new Date().toISOString(),
@@ -861,6 +876,38 @@ async function confirmPersonalizedLoanSession(
   return { status: 200, body: { data: { request_id: request.id, folio: request.folio, status: request.status,
     confirmed_amount: Number(request.requested_amount), correlation_id: correlationId,
     financialResult: result, googleResolutionCount: 0 } } };
+}
+
+function assertAdvanceSubmissionDate(result: Record<string, any>, sessionCreatedAt: string) {
+  if (result.administrativeFeeVersion === "ADVANCE_PAYROLL_PERIODS_V1" &&
+      result.administrativeFeeCalendar?.anchorDate !== businessDateISO(new Date(sessionCreatedAt))) {
+    throw new Error("CONDITIONS_CHANGED");
+  }
+}
+
+function capturedAdvanceApprovalResult(rule: CriteriaRule, request: Record<string, any>) {
+  const result = request.financial_submission_snapshot?.financialResult;
+  const hasFixedRequestDate = result?.administrativeFeeVersion === "ADVANCE_PAYROLL_PERIODS_V1";
+  if (!hasFixedRequestDate && (rule.program_id !== "prestamo" || rule.payment_count !== 1 ||
+      !rule.available_on || rule.available_on < "2026-01-01")) return null;
+  // Approval seals the submitted contract, including advances requested before
+  // this repair. Today's calendar must never reprice an existing request.
+  const fields = ["amount", "paymentCount", "interest", "administrativeFeePerPayment",
+    "administrativeFeeTotal", "total", "paymentPerPeriod", "rate", "maxAmount", "maxTerm"];
+  if (!result || fields.some((key) => typeof result[key] !== "number" || !Number.isFinite(result[key])) ||
+      result.paymentCount !== 1 || Number(request.requested_term) !== 1 ||
+      result.amount !== Number(request.requested_amount) || result.program !== "prestamo" ||
+      !result.fund || result.interest < 0 || result.administrativeFeeTotal < 0 ||
+      result.paymentPerPeriod !== result.total ||
+      Math.round((result.amount + result.interest + result.administrativeFeeTotal) * 100) !== Math.round(result.total * 100)) {
+    throw new Error("FINANCIAL_SUBMISSION_CONTRACT_MISMATCH");
+  }
+  if (hasFixedRequestDate && (!request.created_at || !Number.isFinite(Date.parse(request.created_at)) ||
+      result.administrativeFeeCalendar?.anchorBasis !== "REQUEST_DATE" ||
+      result.administrativeFeeCalendar?.anchorDate !== businessDateISO(new Date(request.created_at)))) {
+    throw new Error("FINANCIAL_SUBMISSION_CONTRACT_MISMATCH");
+  }
+  return result;
 }
 
 async function approveRequest(body: Record<string, unknown>, supabaseUrl: string, authHeader: string, approvedBy: string) {
@@ -909,7 +956,8 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     const criterionIdentity = request.financial_submission_snapshot?.criterion_identity;
     const selectedRules = rules.filter((rule) => rule.criterion_identity === criterionIdentity);
     if (!criterionIdentity || selectedRules.length !== 1) throw new Error("CONDITIONS_CHANGED");
-    result = await resolveQuote(privileged, rules, {
+    const capturedAdvance = capturedAdvanceApprovalResult(selectedRules[0], request);
+    result = capturedAdvance || await resolveQuote(privileged, rules, {
       numero_control: request.numero_control, financial_union: union,
       financial_employee_category: category, financial_profile_version: affiliate.financial_profile_version,
     }, { action: "quote", program_id: selectedRules[0].id, amount: Number(request.requested_amount), term: Number(request.requested_term) }, termPolicy);

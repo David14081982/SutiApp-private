@@ -1,5 +1,17 @@
 # Registro de decisiones arquitectónicas
 
+## Adelantos — fecha base confirmada por OWNER, 2026-09-22
+
+H-LOAN-ADVANCE-ADMIN-FEE-001: una liquidación única conserva los cargos
+administrativos de todos los periodos hasta el vencimiento (seis quincenas = $90).
+OWNER excluye 2025 y aclara: «el calculo de HOY corresponde a la fecha en que el
+usuario solicita el prestamo». La implementación cuenta fechas de nómina
+posteriores a la solicitud hasta el vencimiento inclusive, con 15/30, 28 en febrero
+y día 05 mensual según categoría. La aprobación conserva la captura original.
+OWNER autorizó «haz commit publicalo». Migración 20260922000300 y financial-legacy
+v51 aplicadas el 2026-09-22; registro únicamente de esta nueva migración.
+Google y solicitudes históricas intactos. [Auditoría](audits/H-LOAN-ADVANCE-ADMIN-FEE-001.md).
+
 ## ADR-113 — Tasas y enganches por producto de programa — 2026-09-22
 
 OWNER solicita tasas por artículo de `program_catalog_items`, opcionalmente por

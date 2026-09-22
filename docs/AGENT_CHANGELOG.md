@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-22 — H-LOAN-ADVANCE-ADMIN-FEE-001 — backend publicado
+
+Separa una liquidación final de los periodos administrativos para adelantos
+fechados desde 2026. Fecha base = solicitud confirmada, según OWNER; calendario
+15/30/28 o 05 mensual. Captura inmutable y validación de cambio de día; aprobación
+conserva los importes originales. Publicación autorizada: migración 20260922000300
+aplicada y financial-legacy v51 activo; recovery exacto disponible. Sin cambios de
+datos de negocio ni modificación Google. [Evidencia y límites](audits/H-LOAN-ADVANCE-ADMIN-FEE-001.md).
+
 
 ## 2026-09-22 - H-SAVINGS-SUMMARY-VISIBILITY-001 - PASS / production
 

@@ -1,5 +1,17 @@
 # Fuentes de verdad
 
+## Adelantos: fecha de solicitud — publicado
+
+H-LOAN-ADVANCE-ADMIN-FEE-001: OWNER confirma que HOY es el día en que el afiliado
+envía la solicitud. Para fondos fechados de 2026 en adelante con una liquidación,
+el resolver deriva $15 por fecha de nómina posterior a ese día y hasta el vencimiento:
+15/30 (28 en febrero) o día 05 mensual para jubilados/pensionados. Supabase conserva
+perfil, fondo y vencimiento; no se relee Google ni se crea un maestro paralelo.
+La cotización previa es provisional. El INSERT valida que la fecha base capturada
+coincide con created_at en America/Hermosillo. Aprobar conserva el resultado de la
+solicitud; los históricos no se recalculan ni reescriben.
+Estado: APPLIED, migración 20260922000300 y financial-legacy v51; publicación autorizada por OWNER. [Auditoría](audits/H-LOAN-ADVANCE-ADMIN-FEE-001.md).
+
 ## Condiciones por producto — H-PROGRAM-PRODUCT-FINANCING-001 — publicado
 
 APPLIED: migración 20260922000200 y financial-legacy v50, autorizadas por OWNER

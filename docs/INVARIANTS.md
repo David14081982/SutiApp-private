@@ -1,5 +1,15 @@
 # Invariantes
 
+## Adelantos — contrato autorizado, candidato local no desplegado
+
+H-LOAN-ADVANCE-ADMIN-FEE-001 exceptúa el gasto administrativo por número de
+liquidaciones para fondos fechados de 2026 en adelante con un pago. Los cargos
+parten de la fecha de solicitud y quedan capturados al enviarla. Aprobar, entregar
+o consultar después no cambia ese importe. INV-088 conserva un único cálculo
+server-side; el candidato usa sesiones de préstamo SUTI_LOAN_QUOTE_V2 y mantiene
+el motor V1 para capital, interés y otros productos. Cambiar de día exige renovar
+la cotización; el INSERT rechaza fechas discordantes. No hay cobros retroactivos.
+
 ## Condiciones de productos — ADR-113 — aplicado 2026-09-22
 
 La instrucción OWNER del 2026-09-22 exceptúa INV-059 exclusivamente para configurar

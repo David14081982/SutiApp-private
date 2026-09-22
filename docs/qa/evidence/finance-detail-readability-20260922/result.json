@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "docWidth": 1200,
+      "scrollWidth": 1250,
+      "imageWidth": 1168,
+      "imageHeight": 935,
+      "ratio": 1.25
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "overflow": false,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "docWidth": 850,
+      "scrollWidth": 884,
+      "imageWidth": 818,
+      "imageHeight": 654,
+      "ratio": 1.25
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "docWidth": 349,
+      "scrollWidth": 375,
+      "imageWidth": 321,
+      "imageHeight": 257,
+      "ratio": 1.25
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 667
+      },
+      "overflow": false,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "docWidth": 279,
+      "scrollWidth": 305,
+      "imageWidth": 251,
+      "imageHeight": 201,
+      "ratio": 1.25
+    }
+  ],
+  "accordion": "mouse and keyboard PASS",
+  "viewer": "PASS",
+  "writes": 0,
+  "errors": []
+}

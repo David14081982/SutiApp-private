@@ -42012,6 +42012,28 @@ Object.assign(window, {
       @media(max-width:600px){.finwb-modal > .finwb-detail-head{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;padding:12px;align-items:start}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal-heading{grid-column:2;grid-row:1}.finwb-modal-heading h2{font-size:18px}.finwb-modal > .finwb-detail-head > .finwb-badge{grid-column:2;grid-row:2;justify-self:start;max-width:100%}.finwb-modal-close{grid-column:3;grid-row:1}.finwb-modal > .finwb-detail-scroll{padding:12px;gap:12px}.finwb-modal .finwb-card{padding:14px}.finwb-modal .finwb-card-group{padding:0}.finwb-modal > .finwb-actionbar{padding:10px 12px max(10px,env(safe-area-inset-bottom))}.finwb-modal .finwb-action-fields{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-action-fields > .finwb-note{grid-column:1;grid-row:3;min-height:44px;height:44px;margin-top:4px}.finwb-modal > .finwb-actionbar .finwb-buttons,.finwb-modal > .finwb-actionbar .finwb-buttons:has(.finwb-delete){grid-template-columns:1fr 1fr;gap:6px}.finwb-modal > .finwb-actionbar .finwb-primary{grid-column:1;justify-self:stretch;min-width:0}.finwb-modal > .finwb-actionbar .finwb-delete{margin-left:0;padding-left:8px}.finwb-modal .finwb-doc{gap:8px}.finwb-modal .finwb-doc button,.finwb-modal .finwb-doc a{padding:8px}}
       @media(max-height:600px) and (min-width:601px){.finwb-modal > .finwb-detail-head{padding:8px 12px}.finwb-modal-heading h2{font-size:18px;margin:2px 0}.finwb-modal .finwb-profile-photo.finwb-detail-photo{width:44px;height:44px;font-size:16px}.finwb-modal > .finwb-actionbar{padding:8px 12px}.finwb-modal .finwb-action-fields{grid-template-columns:240px minmax(0,1fr)}.finwb-modal .finwb-action-fields > select{min-height:36px}.finwb-modal .finwb-action-fields > .finwb-note{min-height:52px}.finwb-modal > .finwb-actionbar .finwb-buttons button{min-height:36px}.finwb-modal > .finwb-actionbar .finwb-primary{min-width:0}}
       @media(max-height:450px) and (min-width:601px){.finwb-modal-heading h2{font-size:16px}.finwb-modal > .finwb-actionbar .finwb-buttons button{padding:6px 8px}.finwb-modal > .finwb-actionbar .finwb-buttons{margin-top:6px}.finwb-modal > .finwb-actionbar .finwb-action-grid .finwb-action-select{padding:6px 8px;min-height:32px}.finwb-modal > .finwb-actionbar .finwb-next-action{margin-top:4px;padding:4px 8px}}
+
+      /* Readable request detail; intentionally scoped away from the queue and shared viewer. */
+      .finwb-modal .finwb-detail-scroll{font-size:18px;line-height:1.55}
+      .finwb-modal .finwb-detail-scroll h3{font-size:21px;line-height:1.35}
+      .finwb-modal .finwb-detail-scroll h4{font-size:18px!important}
+      .finwb-modal .finwb-detail-scroll .finwb-kv{gap:20px 18px}
+      .finwb-modal .finwb-detail-scroll .finwb-kv strong,.finwb-modal .finwb-detail-scroll .finwb-person,.finwb-modal .finwb-detail-scroll .finwb-step strong,.finwb-modal .finwb-detail-scroll .finwb-event strong,.finwb-modal .finwb-detail-scroll .finwb-flow-current strong{font-size:18px;line-height:1.5}
+      .finwb-modal .finwb-detail-scroll .finwb-sub,.finwb-modal .finwb-detail-scroll .finwb-kv span,.finwb-modal .finwb-detail-scroll p,.finwb-modal .finwb-detail-scroll .finwb-snapshot-note,.finwb-modal .finwb-detail-scroll .finwb-responsible,.finwb-modal .finwb-detail-scroll .finwb-next-action,.finwb-modal .finwb-detail-scroll .finwb-badge{font-size:16px;line-height:1.5;white-space:normal}
+      .finwb-modal .finwb-detail-scroll p,.finwb-modal .finwb-detail-scroll details:not(.finwb-dossier) summary{font-size:16px!important}
+      .finwb-modal [data-financial-documents],.finwb-modal .finwb-dossier{grid-column:1/-1}
+      .finwb-modal [data-financial-documents] .finwb-doc{grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:24px 0}
+      .finwb-modal [data-financial-documents] .finwb-doc-main{grid-column:1;grid-row:1}
+      .finwb-modal [data-financial-documents] .finwb-doc>.finwb-doc-preview,.finwb-modal .finwb-request-pdf{grid-column:1/-1;grid-row:2;width:100%;height:auto;min-height:80px;padding:0;border:0;border-radius:10px}
+      .finwb-modal [data-financial-documents] .finwb-doc-preview img{width:100%;height:auto;object-fit:contain}
+      .finwb-modal .finwb-request-pdf{height:80vh;min-height:400px;background:var(--surface-2)}
+      .finwb-modal .finwb-detail-scroll .finwb-doc button,.finwb-modal .finwb-detail-scroll .finwb-doc a{font-size:16px}
+      .finwb-modal .finwb-dossier>summary{cursor:pointer;font-size:21px;font-weight:750;line-height:1.5;min-height:44px;overflow-wrap:anywhere}
+      .finwb-modal .finwb-dossier>summary:focus-visible{outline:3px solid var(--guinda);outline-offset:4px;border-radius:4px}
+      .finwb-modal .finwb-dossier>summary span{font-size:16px;font-weight:650;color:var(--guinda);margin-left:12px}
+      .finwb-dossier:not([open]) .finwb-dossier-hide,.finwb-dossier[open] .finwb-dossier-show{display:none}
+      .finwb-modal .finwb-dossier[open]>summary{margin-bottom:16px}
+      @media(max-width:600px){.finwb-modal .finwb-detail-scroll .finwb-kv{grid-template-columns:minmax(0,1fr)}.finwb-modal .finwb-dossier>summary span{display:block;margin-left:0}.finwb-modal .finwb-dossier:not([open]) .finwb-dossier-hide,.finwb-modal .finwb-dossier[open] .finwb-dossier-show{display:none}}
     `;
     document.head.appendChild(style);
   }
@@ -42420,7 +42442,7 @@ Object.assign(window, {
         }
         if (event.key === 'Tab') {
           const root = dialogRef.current.querySelector('[data-image-viewer],[data-document-viewer]') || dialogRef.current;
-          const controls = Array.from(root.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')).filter(node => node.getClientRects().length);
+          const controls = Array.from(root.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]')).filter(node => node.getClientRects().length);
           const first = controls[0],
             last = controls[controls.length - 1];
           if (first && (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last)) {
@@ -43149,7 +43171,12 @@ Object.assign(window, {
         failed = view.phase === 'error';
       const open = () => previews.open(viewKey),
         mediaError = () => previews.failed(viewKey, view.url);
-      const preview = ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
+      const preview = ready && scope === 'request' && mime === 'application/pdf' ? h('iframe', {
+        className: 'finwb-request-pdf',
+        src: view.url + '#navpanes=0',
+        title: 'Documento enviado: ' + title,
+        onError: mediaError
+      }) : ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
         type: 'button',
         className: 'finwb-doc-preview',
         onClick: open,
@@ -43242,36 +43269,7 @@ Object.assign(window, {
         className: 'finwb-detail-scroll'
       }, h('div', {
         className: 'finwb-detail-column finwb-detail-main'
-      }, renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow(), h('section', {
-        className: 'finwb-card',
-        'data-financial-documents': 'true'
-      }, h('h3', null, h(I, {
-        name: 'doc',
-        size: 17,
-        stroke: 2
-      }), 'Documentos enviados con esta solicitud'), !detail.documents_available ? h('div', {
-        className: 'finwb-snapshot-note'
-      }, 'No fue posible consultar la relación documental autorizada.') : !(detail.request_documents || []).length ? h('div', {
-        className: 'finwb-snapshot-note'
-      }, 'Esta solicitud no conserva documentos vinculados. No es posible reconstruir qué archivos fueron enviados usando el expediente actual.') : renderDocumentRows(detail.request_documents, 'request')), h('section', {
-        className: 'finwb-card',
-        'data-financial-current-documents': 'true'
-      }, h('h3', null, h(I, {
-        name: 'doc',
-        size: 17,
-        stroke: 2
-      }), 'Expediente actual del afiliado'), h('div', {
-        className: 'finwb-sub',
-        style: {
-          whiteSpace: 'normal',
-          lineHeight: 1.45,
-          marginBottom: 8
-        }
-      }, 'Referencia vigente · no demuestra qué documentos acompañaron esta solicitud.'), !detail.current_documents_available ? h('div', {
-        className: 'finwb-snapshot-note'
-      }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
-        className: 'finwb-sub'
-      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate'))), h('div', {
+      }, renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
         className: 'finwb-detail-column finwb-detail-context'
       }, h('div', {
         className: 'finwb-card finwb-card-group'
@@ -43334,7 +43332,37 @@ Object.assign(window, {
         key: event.title + eventIndex
       }, h('span', {
         className: 'finwb-event-dot'
-      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text)))))))), h('div', {
+      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text))))))), h('section', {
+        className: 'finwb-card',
+        'data-financial-documents': 'true'
+      }, h('h3', null, h(I, {
+        name: 'doc',
+        size: 17,
+        stroke: 2
+      }), 'Documentos enviados con esta solicitud'), !detail.documents_available ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'No fue posible consultar la relación documental autorizada.') : !(detail.request_documents || []).length ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'Esta solicitud no conserva documentos vinculados. No es posible reconstruir qué archivos fueron enviados usando el expediente actual.') : renderDocumentRows(detail.request_documents, 'request')), h('details', {
+        key: detail.id,
+        className: 'finwb-card finwb-dossier',
+        'data-financial-current-documents': 'true'
+      }, h('summary', null, 'Expediente actual del afiliado', h('span', {
+        className: 'finwb-dossier-show'
+      }, 'Mostrar expediente'), h('span', {
+        className: 'finwb-dossier-hide'
+      }, 'Ocultar expediente')), h('div', {
+        className: 'finwb-sub',
+        style: {
+          whiteSpace: 'normal',
+          lineHeight: 1.45,
+          marginBottom: 8
+        }
+      }, 'Referencia vigente · no demuestra qué documentos acompañaron esta solicitud.'), !detail.current_documents_available ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
+        className: 'finwb-sub'
+      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate'))), h('div', {
         className: 'finwb-actionbar',
         'data-financial-safe-action-bar': 'true'
       }, actionOptions.length ? h(React.Fragment, null, h('div', {

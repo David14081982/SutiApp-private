@@ -22,14 +22,18 @@ new vm.Script(repository);
   'data-financial-documents','data-financial-current-documents','data-financial-safe-action-bar',
   'ETAPA ACTUAL','Flujo completo','Siguiente acción','Aprobar etapa','Rechazar etapa',
   'Avanzar a siguiente etapa','Responsable siguiente','Documentos enviados con esta solicitud',
-  'Expediente actual del afiliado','Guardando…','Admin y afiliado ya muestran la etapa vigente'
+  'Expediente actual del afiliado','Guardando…','FINANCIAL_ACTION_READBACK_FAILED','setActionResult'
 ].forEach((contract)=>assert.ok(screen.includes(contract),contract));
 
 const workbench=screen.slice(screen.indexOf('function DesktopFinancialWorkbench'),screen.indexOf('function FinanzasModule'));
 assert.match(workbench,/ProgramRequestRepository\.listAdminFlowQueue\(\)/);
 assert.match(workbench,/ProgramRequestRepository\.adminFlowDetail\(selectedId\)/);
 assert.match(workbench,/ProgramRequestRepository\.transitionWorkflow/);
-assert.match(workbench,/detail\.request_type===['"]quote['"] && detail\.financial_processing_status==null/);
+assert.match(workbench,/detail\.request_type===['"]quote['"] && \(workflowOf\(detail\)\.can_quote===true\|\|detail\.financial_processing_status==null\)/);
+// Success must follow canonical readback, not an obsolete success sentence.
+assert.match(workbench,/verifiedDetail=await window\.ProgramRequestRepository\.adminFlowDetail\(currentId\)/);
+assert.match(workbench,/if \(!valid\) throw new Error\('FINANCIAL_ACTION_READBACK_FAILED'\)/);
+assert.ok(workbench.indexOf("throw new Error('FINANCIAL_ACTION_READBACK_FAILED')") < workbench.indexOf('setActionResult({'), 'Success feedback precedes verified readback');
 assert.match(workbench,/FinancialLegacyRepository\.approveRequest/);
 assert.match(workbench,/FinancialLegacyRepository\.handoffRequest/);
 assert.match(workbench,/workflowOf\(detail\)\.stages/);

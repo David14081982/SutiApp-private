@@ -3451,3 +3451,10 @@ sutiapp.com HTTP 200, v270/cache213, remote bundle equals tested local SHA256
 Owner requested configurable minimum Savings tenure (free integer month entry and enrollment/first actual deduction origin), one-request special authorizations for specific affiliates, and exclusion of ineligible Caja de Ahorro from Inicio/Finanzas/Loan availability. Implemented private policy/grants/immutable audit, backend quote/request gates and additive Admin controls. Preserve rates, financial calculation, ledger, historical data and Google. Stable fund code prevents display-name bypass; canonical status/actual receipts distinguish future plans, expired plans and future terminations. Used authorizations survive authorized request deletion without becoming available again.
 
 Isolated PostgreSQL security/behavior/recovery tests, Chrome 390/1440 browser tests, focal financial tests, scoped bundle and full global image regression (local localhost:8080 + GitHub Pages) PASS. Migration/Edge/frontend not deployed; no productive loan created. No initial month count or origin invented. See [audit](audits/H-SAVINGS-LOAN-ELIGIBILITY-001.md) and [sanitized receipts](qa/H-SAVINGS-LOAN-ELIGIBILITY-001.json).
+
+
+## H-FINANCE-DETAIL-READABILITY-001 ? 2026-09-22
+
+Owner-authorized request-detail typography, full-width submitted images and collapsed current dossier. Focal Chrome verification PASS; generated bundle restricted to finance module. Historical protected-contract guard fails on unchanged HEAD too; no production deployment. Full evidence and limitations: [report](qa/H-FINANCE-DETAIL-READABILITY-001.md).
+
+H-FINANCE-DETAIL-READABILITY-001 continuation: publication explicitly authorized; stale test assertions reconciled with current verified behavior. Protected suite, isolated browser, local real-data browser, Auth/request deployment contracts and Pages artifact build PASS. Preparing v277/cache v215; no business data changes. Prior BLOCKED status superseded.

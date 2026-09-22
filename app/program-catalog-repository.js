@@ -27,7 +27,7 @@
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db(),settings=options||{};
-    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at'+(admin?',financing_config':'')).order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
     if(settings.programKey)itemQuery=itemQuery.eq('program_key',settings.programKey);
     if(settings.itemId)itemQuery=itemQuery.eq('id',settings.itemId);
@@ -112,11 +112,14 @@
     const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
-    const out=bootstrap
+    const out=Object.prototype.hasOwnProperty.call(item,'financingDraft')
+      ?await db().rpc('save_program_catalog_item_financing',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links,p_config:item.financingDraft,p_expected_config:item.financing_config||null,p_bootstrap:bootstrap})
+      :bootstrap
       ?await db().rpc('create_first_cirugias_program_catalog_item',{p_payload:payload,p_asset_links:links})
       :await db().rpc('save_program_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links});
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  async function financingOptions(){assertAdminWrite();const out=await db().rpc('get_program_product_financing_options');if(out.error)throw out.error;return out.data;}
+  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems,financingOptions});
 })();

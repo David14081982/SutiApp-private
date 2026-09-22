@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "changed": [
+    "program-catalog-repository.js",
+    "screens-admin-program-products.jsx",
+    "screens-program-product-payment.jsx"
+  ],
+  "unchangedModules": 127,
+  "sha256": "7ef34c4ba981bee9cdd07a2e166f1ecc657135d1525b512d5b2ee78472abf358"
+}

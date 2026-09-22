@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "mode": "APPLIED",
+  "installed": [
+    {
+      "version": "20260922000200",
+      "name": "program_product_financing"
+    }
+  ],
+  "protectedDataPreserved": true,
+  "defaultConfigurations": 0
+}

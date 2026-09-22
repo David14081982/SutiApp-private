@@ -1,5 +1,29 @@
 # Fuentes de verdad
 
+## Condiciones por producto — H-PROGRAM-PRODUCT-FINANCING-001 — backend aplicado
+
+APPLIED: migración 20260922000200 y financial-legacy v50, autorizadas por OWNER
+con «Si hazlo y publicalo» el 2026-09-22.
+`program_catalog_items.financing_config` es la única autoridad de excepciones de
+tasa por artículo/perfil y de su enganche mínimo. NULL hereda Caja Chica para el
+afiliado; `financial_rules` conserva fondo, elegibilidad, máximo, plazos y tasa
+predeterminada. Sus filas no se copian ni editan. El resolver aplica el porcentaje
+explícito por la periodicidad actual al motor certificado.
+
+El nuevo escritor administrativo delega al writer de catálogo existente en la misma
+transacción, exige su permiso, compara configuración anterior y audita el cambio.
+El navegador mantiene sólo borradores/proyecciones descartables. Los selectores usan
+el catálogo de segmentación existente. Sin mocks, fallback, caché persistente ni
+escritor Google nuevo.
+
+La sesión financiera privada incorpora las condiciones a su evidencia de origen;
+un cambio invalida la cotización. La confirmación captura `financing_conditions`
+en `financial_submission_snapshot` y compara atómicamente el resultado aceptado.
+Admin, aprobación y registro Google consumen esa captura. El catálogo vigente nunca
+reinterpreta solicitudes anteriores. Herencia y permisos verificados en producción;
+publicación frontend en curso. No se configuraron tasas en productos reales.
+Evidencia: [auditoría](audits/H-PROGRAM-PRODUCT-FINANCING-001.md).
+
 ## Acceso a préstamos de Caja de Ahorro — publicado 2026-09-22
 
 H-SAVINGS-LOAN-ELIGIBILITY-001 agrega una política Supabase (`savings_loan_policy`)

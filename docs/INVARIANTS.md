@@ -1,5 +1,25 @@
 # Invariantes
 
+## Condiciones de productos — ADR-113 — aplicado 2026-09-22
+
+La instrucción OWNER del 2026-09-22 exceptúa INV-059 exclusivamente para configurar
+tasas opcionales por artículo/perfil y enganches mínimos. No convierte compradores,
+solicitudes, nómina, pagos, saldos o amortizaciones en atributos del producto.
+INV-150/151/152 conservan precio, calendario y captura inmutable.
+
+- **INV-239:** NULL en `program_catalog_items.financing_config` hereda Caja Chica;
+  cero explícito es 0%, nunca ausencia. Fondo, elegibilidad, límite, gastos y
+  periodicidad permanecen vigentes. Tasa significa porcentaje por periodo de descuento.
+- **INV-240:** sindicato+categoría precede a reglas individuales y tasa general del
+  artículo. Coincidencias individuales de tasas distintas requieren una regla de
+  intersección; ninguna capa decide silenciosamente una precedencia.
+- **INV-241:** el mínimo es el mayor entre requisito del artículo y precio menos
+  máximo financiable. Porcentaje usa precio autorizado y centavo superior; el aporte
+  puede ser mayor, siempre dejando monto financiado positivo.
+- **INV-242:** cambiar condiciones invalida sesiones. La confirmación compara resultado
+  y condiciones dentro de la transacción y sella su captura. Editar el artículo nunca
+  cambia solicitudes confirmadas ni su proyección Google posterior.
+
 ## Copy editorial de Suti Inversión — ADR-111
 
 - **INV-235:** la calculadora de Suti Inversión no es administrable. `RATE`, `MIN`, `MAX`,

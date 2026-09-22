@@ -1,0 +1,415 @@
+{
+  "definitions": [
+    {
+      "signature": "approve_program_product_payment_request(uuid,text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.approve_program_product_payment_request(p_request_id uuid, p_comment text, p_client_action_id uuid)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_row public.program_requests%rowtype;\n  v_existing public.program_request_admin_events%rowtype;\n  v_actor_label text;\n  v_comment text:=nullif(btrim(coalesce(p_comment,'')),'');\n  v_from_status text;\nbegin\n  if auth.uid() is null or not (public.has_admin_permission('program_requests.write') and public.admin_request_module_boundary(p_request_id)) then\n    raise exception 'PROGRAM_REQUEST_WRITE_DENIED' using errcode='42501';\n  end if;\n  if p_client_action_id is null then raise exception 'CLIENT_ACTION_ID_REQUIRED' using errcode='22023'; end if;\n  if v_comment is not null and length(v_comment) not between 3 and 2000 then\n    raise exception 'PROGRAM_REQUEST_COMMENT_INVALID' using errcode='22023';\n  end if;\n  select * into v_existing from public.program_request_admin_events where client_action_id=p_client_action_id;\n  if v_existing.id is not null then\n    if v_existing.request_id<>p_request_id or v_existing.actor_auth_user_id<>auth.uid() or v_existing.action<>'APPROVE' then\n      raise exception 'CLIENT_ACTION_ID_CONFLICT' using errcode='23505';\n    end if;\n    select * into v_row from public.program_requests where id=p_request_id;\n    return v_row;\n  end if;\n  select * into v_row from public.program_requests where id=p_request_id for update;\n  if v_row.id is null or v_row.financial_processing_status is null\n     or v_row.program_id='prestamo'\n     or v_row.financial_submission_snapshot->>'contract_version'<>'PROGRAM_PRODUCT_PAYMENT_V1' then\n    raise exception 'PROGRAM_PRODUCT_PAYMENT_REQUEST_NOT_FOUND' using errcode='P0001';\n  end if;\n  if v_row.financial_approval_snapshot is not null and v_row.status='approved' and v_row.financial_processing_status='completed' then\n    return v_row;\n  end if;\n  if v_row.status not in('requires_financial_processing','in_review') then\n    raise exception 'FINANCIAL_REQUEST_NOT_APPROVABLE' using errcode='P0001';\n  end if;\n  if not v_row.terms_accepted or nullif(btrim(coalesce(v_row.signature_data,'')),'') is null\n     or v_row.terms_version_id is null or jsonb_typeof(v_row.financial_submission_snapshot)<>'object'\n     or jsonb_typeof(v_row.financial_submission_snapshot->'financialResult')<>'object'\n     or jsonb_typeof(v_row.financial_submission_snapshot->'payment_schedule')<>'object' then\n    raise exception 'FINANCIAL_SUBMISSION_CONTRACT_MISMATCH' using errcode='22023';\n  end if;\n  v_from_status:=v_row.status;\n  update public.program_requests set\n    status='approved',financial_processing_status='completed',financial_approval_snapshot=\n      v_row.financial_submission_snapshot||jsonb_build_object(\n        'approval_contract_version','PROGRAM_PRODUCT_PAYMENT_APPROVAL_V1',\n        'approved_at',now(),'approved_by',auth.uid(),'comment',v_comment\n      ),\n    financial_approved_at=now(),financial_approved_by=auth.uid(),updated_at=now()\n  where id=v_row.id returning * into v_row;\n  select coalesce(nullif(btrim(raw_user_meta_data->>'display_name'),''),\n    nullif(btrim(raw_user_meta_data->>'full_name'),''),nullif(btrim(raw_user_meta_data->>'name'),''),\n    'Personal autorizado') into v_actor_label from auth.users where id=auth.uid();\n  insert into public.program_request_admin_events(\n    request_id,actor_auth_user_id,actor_label,action,from_status,to_status,comment,client_action_id\n  ) values(v_row.id,auth.uid(),left(v_actor_label,160),'APPROVE',v_from_status,'approved',v_comment,p_client_action_id);\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(auth.uid(),v_row.affiliate_id,'program_requests','PROGRAM_PRODUCT_PAYMENT_APPROVED',v_row.id,\n    jsonb_build_object('program_item_id',v_row.program_item_id,'processing_status','completed','google_handoff',false));\n  return v_row;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "signature": "create_first_cirugias_program_catalog_item(jsonb,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_first_cirugias_program_catalog_item(p_payload jsonb, p_asset_links jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid:=(select auth.uid());\n  v_after public.program_catalog_items%rowtype;\n  v_id uuid;\n  v_program text:=btrim(coalesce(p_payload->>'program_key',''));\n  v_name text:=btrim(coalesce(p_payload->>'name',''));\n  v_description text:=nullif(btrim(coalesce(p_payload->>'description','')),'');\n  v_category text:=nullif(btrim(coalesce(p_payload->>'category_raw','')),'');\n  v_price numeric;v_quote boolean;v_mode text;v_sold boolean;v_enabled boolean;v_sort integer;\n  v_link jsonb;v_link_id uuid;v_public_asset_id uuid;v_kept uuid[]:='{}'::uuid[];v_position integer:=0;\nbegin\n  if v_actor is null or not public.has_admin_permission('program_catalog.write') then\n    raise exception 'PROGRAM_CATALOG_WRITE_REQUIRED' using errcode='42501';\n  end if;\n  if p_payload is null or jsonb_typeof(p_payload)<>'object'\n     or p_asset_links is null or jsonb_typeof(p_asset_links)<>'array' then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if exists(\n    select 1 from jsonb_object_keys(p_payload) k\n    where k not in('program_key','name','description','category_raw','price_cash','requires_quote','commercial_mode','sold','enabled','sort_order')\n  ) then\n    raise exception 'PROGRAM_CATALOG_FIELD_NOT_EDITABLE' using errcode='22023';\n  end if;\n  begin\n    v_price:=nullif(p_payload->>'price_cash','')::numeric;\n    v_quote:=(p_payload->>'requires_quote')::boolean;\n    v_mode:=coalesce(nullif(btrim(coalesce(p_payload->>'commercial_mode','')),''),case when v_quote then 'PAYROLL_QUOTE' else 'PAYROLL_FIXED' end);\n    v_sold:=case when p_payload ? 'sold' then (p_payload->>'sold')::boolean else false end;\n    v_enabled:=(p_payload->>'enabled')::boolean;\n    v_sort:=(p_payload->>'sort_order')::integer;\n  exception when others then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end;\n  if v_quote is null or v_enabled is null or v_sold is null or v_sort is null then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if v_program<>'cirugias' then raise exception 'PROGRAM_CATALOG_PROGRAM_INVALID' using errcode='22023'; end if;\n  if length(v_name) not between 2 and 180 then raise exception 'PROGRAM_CATALOG_NAME_INVALID' using errcode='22023'; end if;\n  if length(coalesce(v_description,''))>12000 then raise exception 'PROGRAM_CATALOG_DESCRIPTION_TOO_LONG' using errcode='22023'; end if;\n  if length(coalesce(v_category,''))>240 then raise exception 'PROGRAM_CATALOG_CATEGORY_TOO_LONG' using errcode='22023'; end if;\n  if v_sort not between 1 and 10000 then raise exception 'PROGRAM_CATALOG_ORDER_INVALID' using errcode='22023'; end if;\n  if v_price<0 then raise exception 'PROGRAM_CATALOG_PRICE_INVALID' using errcode='22023'; end if;\n  if v_mode not in('PAYROLL_FIXED','PAYROLL_QUOTE','DIRECT_CONTACT') then raise exception 'PROGRAM_CATALOG_MODE_INVALID' using errcode='22023'; end if;\n  if (v_mode='PAYROLL_QUOTE')<>v_quote then raise exception 'PROGRAM_CATALOG_MODE_QUOTE_MISMATCH' using errcode='22023'; end if;\n  if v_mode='PAYROLL_FIXED' and (v_price is null or v_price<=0) then raise exception 'PROGRAM_CATALOG_PRICE_REQUIRED' using errcode='22023'; end if;\n  if jsonb_array_length(p_asset_links)>8 then raise exception 'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED' using errcode='22023'; end if;\n\n  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('program_catalog_items:cirugias',0));\n  if exists(select 1 from public.program_catalog_items where program_key='cirugias') then\n    raise exception 'CIRUGIAS_PROGRAM_ALREADY_BOOTSTRAPPED' using errcode='P0001';\n  end if;\n  insert into public.program_catalog_items(\n    program_key,name,description,category_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,sold_by,\n    request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,source_payload\n  ) values(\n    'cirugias',v_name,v_description,v_category,v_price,v_quote,v_mode,v_sold,\n    case when v_sold then now() else null end,case when v_sold then v_actor else null end,\n    'supabase',false,v_enabled,v_sort,'ADMIN_PROGRAM_CATALOG',null,null,null,'{}'::jsonb\n  ) returning * into v_after;\n  v_id:=v_after.id;\n  for v_link in select value from jsonb_array_elements(p_asset_links) loop\n    v_position:=v_position+1;\n    begin\n      v_link_id:=nullif(v_link->>'link_id','')::uuid;\n      v_public_asset_id:=nullif(v_link->>'public_asset_id','')::uuid;\n    exception when others then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end;\n    if v_link_id is not null or v_public_asset_id is null then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end if;\n    if not exists(\n      select 1 from public.app_assets\n      where id=v_public_asset_id and status='READY' and storage_bucket='app-assets'\n        and storage_path like 'program-products/%'\n    ) then\n      raise exception 'PROGRAM_CATALOG_PUBLIC_ASSET_INVALID' using errcode='22023';\n    end if;\n    v_link_id:=extensions.gen_random_uuid();\n    insert into public.program_catalog_item_assets(\n      id,item_id,public_asset_id,private_asset_id,role,sort_order,source_column,source_column_letter,enabled\n    ) values(\n      v_link_id,v_id,v_public_asset_id,null,case when v_position=1 then 'cover' else 'gallery' end,\n      v_position,'ADMIN_UPLOAD','ADMIN_'||replace(v_link_id::text,'-',''),true\n    );\n    if v_link_id=any(v_kept) then raise exception 'PROGRAM_CATALOG_ASSET_DUPLICATE' using errcode='22023'; end if;\n    v_kept:=array_append(v_kept,v_link_id);\n  end loop;\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\n  values(v_actor,'program_catalog_items','INSERT',v_id::text,'SUCCESS',jsonb_build_object(\n    'program_key','cirugias','before',null,\n    'after',jsonb_build_object(\n      'name',v_after.name,'price_cash',v_after.price_cash,'requires_quote',v_after.requires_quote,\n      'commercial_mode',v_after.commercial_mode,'sold',v_after.sold,'sold_at',v_after.sold_at,\n      'sold_by',v_after.sold_by,'enabled',v_after.enabled,'sort_order',v_after.sort_order\n    ),'asset_count',v_position,'asset_limit',8,'bootstrap',true,'delta_aware',true\n  ));\n  return (to_jsonb(v_after)-'source_payload'-'sold_by');\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "create_validated_program_product_payment_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,integer,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_validated_program_product_payment_request(p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_down_payment numeric, p_term integer, p_expected_profile_version integer, p_schedule_anchor_date date)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_item public.program_catalog_items%rowtype;\n  v_ctx public.impersonation_sessions%rowtype;\n  v_quote public.program_requests%rowtype;\n  v_row public.program_requests%rowtype;\n  v_policy public.loan_term_policy%rowtype;\n  v_rules jsonb;\n  v_rule jsonb;\n  v_rule_count integer;\n  v_price numeric(14,2);\n  v_amount numeric(14,2);\n  v_source text;\n  v_result jsonb;\n  v_schedule jsonb;\n  v_process text;\n  v_period text;\n  v_union_label text;\n  v_category_label text;\n  v_missing integer;\n  v_snapshot jsonb;\n  v_business_date date:=(now() at time zone 'America/Hermosillo')::date;\nbegin\n  if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;\n  if p_actor_real_auth_user_id is null or not exists(select 1 from auth.users where id=p_actor_real_auth_user_id) then\n    raise exception 'AUTH_ACTOR_REQUIRED' using errcode='42501';\n  end if;\n  select * into v_affiliate from public.affiliates where id=p_affiliate_id for update;\n  if v_affiliate.id is null or v_affiliate.financial_profile_version<>p_expected_profile_version then\n    raise exception 'CONDITIONS_CHANGED' using errcode='PT409';\n  end if;\n  if p_impersonation_session_id is null then\n    if v_affiliate.auth_user_id is distinct from p_actor_real_auth_user_id then raise exception 'AFFILIATE_CONTEXT_DENIED' using errcode='42501'; end if;\n  else\n    select * into v_ctx from public.impersonation_sessions where id=p_impersonation_session_id for share;\n    if v_ctx.id is null or v_ctx.actor_real_auth_user_id<>p_actor_real_auth_user_id\n       or v_ctx.usuario_contexto_affiliate_id<>p_affiliate_id or v_ctx.ended_at is not null or v_ctx.expires_at<=now()\n       or not exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n         where a.auth_user_id=p_actor_real_auth_user_id and a.enabled) then\n      raise exception 'IMPERSONATION_CONTEXT_INVALID' using errcode='42501';\n    end if;\n  end if;\n  select * into v_item from public.program_catalog_items where id=p_program_item_id and enabled and request_mode='supabase' for share;\n  if v_item.id is null or v_item.program_key='prestamo' then raise exception 'PROGRAM_PRODUCT_NOT_FINANCEABLE' using errcode='22023'; end if;\n  if v_item.requires_quote then\n    select * into v_quote from public.program_requests\n    where affiliate_id=p_affiliate_id and program_item_id=v_item.id and request_type='quote' and status='approved'\n      and quoted_amount>0 and (valid_until is null or valid_until>=v_business_date)\n    order by responded_at desc nulls last,created_at desc,id desc limit 1 for share;\n    if v_quote.id is null then raise exception 'AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE' using errcode='P0001'; end if;\n    v_price:=v_quote.quoted_amount;v_source:='APPROVED_QUOTE';\n  else\n    if v_item.price_cash is null or v_item.price_cash<=0 then raise exception 'AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE' using errcode='P0001'; end if;\n    v_price:=v_item.price_cash;v_source:='PRICE_CASH';\n  end if;\n  if p_down_payment is null or p_down_payment<0 or p_down_payment>=v_price then raise exception 'DOWN_PAYMENT_OUT_OF_RANGE' using errcode='22023'; end if;\n  v_amount:=round(v_price-p_down_payment,2);\n  select * into v_policy from public.loan_term_policy where id='primary' and enabled;\n  if v_policy.id is null then raise exception 'LOAN_TERM_POLICY_UNAVAILABLE' using errcode='P0001'; end if;\n  select u.label,c.label into v_union_label,v_category_label\n  from public.affiliates a\n  left join public.segmentation_catalog_entries u on u.catalog_type='union' and u.code=a.financial_union_code and u.enabled\n  left join public.segmentation_catalog_entries c on c.catalog_type='employment_category' and c.code=a.financial_employee_category_code and c.enabled\n  where a.id=v_affiliate.id;\n  if v_union_label is null or v_category_label is null then raise exception 'AFFILIATE_FINANCIAL_PROFILE_INCOMPLETE' using errcode='P0001'; end if;\n  v_rules:=public.get_financial_runtime_rules();\n  select count(*) into v_rule_count\n  from jsonb_array_elements(v_rules) candidate(value)\n  where value->>'program_id'='caja'\n    and public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(v_category_label)\n    and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(v_union_label)\n    and case upper(coalesce(value->>'visibility_mode','AUTO'))\n      when 'MOSTRAR' then true when 'OCULTAR' then false\n      else value->>'available_on' is null or (value->>'available_on')::date between v_business_date\n        and (date_trunc('month',v_business_date)+interval '5 months - 1 day')::date end;\n  if v_rule_count<>1 then raise exception 'CAJA_CHICA_RULE_NOT_ELIGIBLE' using errcode='P0001'; end if;\n  select value into v_rule\n  from jsonb_array_elements(v_rules) candidate(value)\n  where value->>'program_id'='caja'\n    and public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(v_category_label)\n    and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(v_union_label)\n    and case upper(coalesce(value->>'visibility_mode','AUTO'))\n      when 'MOSTRAR' then true when 'OCULTAR' then false\n      else value->>'available_on' is null or (value->>'available_on')::date between v_business_date\n        and (date_trunc('month',v_business_date)+interval '5 months - 1 day')::date end\n  limit 1;\n  v_rule:=v_rule||jsonb_build_object('status','AVAILABLE');\n  v_result:=public.resolve_suti_loan_quote_contract(\n    jsonb_build_array(v_rule),v_union_label,v_category_label,\n    v_rule->>'id',v_amount,p_term,jsonb_build_object(\n      'source','SUPABASE_LOAN_TERM_POLICY','standardTerms',v_policy.standard_terms,\n      'customMinTerm',v_policy.custom_min_term,'customStep',v_policy.custom_step,\n      'decisionReference',v_policy.decision_reference\n    )\n  );\n  v_process:=case v_affiliate.financial_employee_category_code\n    when 'SUPLENTES_VARIABLES' then '3' when 'JUBILADOS_PENSIONADOS' then 'JUB'\n    when 'SUPLENTES_FIJOS' then '1' when 'EVENTUALES' then '1' when 'BASE' then '1'\n    else null end;\n  if v_process is null then raise exception 'PAYROLL_PROCESS_UNRESOLVED' using errcode='P0001'; end if;\n  v_period:=case when v_process='JUB' then 'mensual' else 'quincenal' end;\n  v_result:=(v_result||jsonb_build_object('paymentPeriod',v_period,'ratePeriod',v_period,'source','SUPABASE_FINANCIAL_CRITERIA'));\n  if p_schedule_anchor_date is distinct from v_business_date then raise exception 'SCHEDULE_ANCHOR_CHANGED' using errcode='PT409'; end if;\n  v_schedule:=public.generate_program_product_payment_schedule(\n    p_schedule_anchor_date,v_process,(v_result->>'paymentCount')::integer,\n    (v_result->>'total')::numeric,(v_result->>'paymentPerPeriod')::numeric\n  );\n  if p_idempotency_key is null then raise exception 'IDEMPOTENCY_KEY_REQUIRED' using errcode='22023'; end if;\n  if nullif(btrim(coalesce(p_signature_data,'')),'') is null then raise exception 'SIGNATURE_AND_TERMS_REQUIRED' using errcode='22023'; end if;\n  if not exists(select 1 from public.program_terms_versions where id=p_terms_version_id and program_id='prestamo'\n    and membership_offering_id is null and published) then raise exception 'TERMS_VERSION_REQUIRED' using errcode='22023'; end if;\n  select count(*) into v_missing\n  from public.resolve_affiliate_document_requirements('PROGRAM','prestamo',p_affiliate_id) requirement\n  where requirement.required and not exists(\n    select 1 from public.affiliate_documents d\n    left join public.affiliate_files af on af.id=d.affiliate_file_id\n    join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id) and pa.status='READY'\n    join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n    where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n      and d.document_type_id=requirement.document_type_id and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n      and not exists(select 1 from public.affiliate_documents newer where newer.affiliate_id=d.affiliate_id\n        and newer.document_type_id=d.document_type_id and (newer.created_at,newer.id)>(d.created_at,d.id))\n  );\n  if v_missing>0 then raise exception 'REQUIRED_DOCUMENTS_MISSING' using errcode='22023'; end if;\n  v_snapshot:=jsonb_build_object(\n    'contract_version','PROGRAM_PRODUCT_PAYMENT_V1','calculation_contract_version','SUTI_LOAN_QUOTE_V1',\n    'calendar_contract_version','PROGRAM_PRODUCT_PAYROLL_CALENDAR_V1','affiliate_id',p_affiliate_id,\n    'actor_real_auth_user_id',p_actor_real_auth_user_id,'impersonation_session_id',p_impersonation_session_id,\n    'profile_version',v_affiliate.financial_profile_version,'product',jsonb_build_object(\n      'program_item_id',v_item.id,'program_key',v_item.program_key,'name',v_item.name\n    ),'authorized_price',v_price,'price_source',v_source,'quote_request_id',v_quote.id,\n    'down_payment',round(p_down_payment,2),'financed_amount',v_amount,'fund_program_id','caja',\n    'fund_rule_id',v_rule->>'rule_id','criterion_identity',v_rule->>'criterion_identity',\n    'financial_authority','SUPABASE','financial_rules_source_hash',v_rule->>'source_snapshot_hash',\n    'financialResult',v_result,'payment_schedule',v_schedule,'terms_version_id',p_terms_version_id,\n    'confirmed_at',now()\n  );\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_item_id<>p_program_item_id\n       or v_row.requested_amount<>v_amount or v_row.requested_term<>p_term\n       or (v_row.financial_submission_snapshot->>'down_payment')::numeric<>round(p_down_payment,2)\n       or v_row.financial_submission_snapshot->>'price_source'<>v_source\n       or coalesce(v_row.financial_submission_snapshot->>'quote_request_id','')<>coalesce(v_quote.id::text,'') then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n  insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,v_item.program_key,v_item.id,'benefit','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','flow','PROGRAM_PRODUCT_PAYMENT_V1','price_source',v_source,\n      'quote_request_id',v_quote.id,'fund_program_id','caja','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,v_amount,p_term,v_period,v_snapshot\n  ) returning * into v_row;\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select v_row.id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n  where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n    and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(p_actor_real_auth_user_id,p_affiliate_id,'program_requests','PROGRAM_PRODUCT_PAYMENT_CONFIRMED',v_row.id,\n    jsonb_build_object('program_item_id',v_item.id,'price_source',v_source,'quote_request_id',v_quote.id,\n      'payment_count',p_term,'payment_period',v_period,'assisted',v_ctx.id is not null));\n  return v_row;\nexception when unique_violation then\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null and v_row.program_item_id=p_program_item_id and v_row.requested_amount=v_amount\n     and v_row.requested_term=p_term and (v_row.financial_submission_snapshot->>'down_payment')::numeric=round(p_down_payment,2) then\n    return v_row;\n  end if;\n  raise;\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "generate_program_product_payment_schedule(date,text,integer,numeric,numeric)",
+      "definition": "CREATE OR REPLACE FUNCTION public.generate_program_product_payment_schedule(p_start_date date, p_process_code text, p_number_of_payments integer, p_total numeric, p_regular_payment numeric)\n RETURNS jsonb\n LANGUAGE plpgsql\n IMMUTABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_process text:=upper(btrim(coalesce(p_process_code,'')));\n  v_min_date date;\n  v_cursor date;\n  v_candidate date;\n  v_dates date[]:=array[]::date[];\n  v_rows jsonb:='[]'::jsonb;\n  v_index integer;\n  v_payment numeric(14,2);\n  v_paid numeric(14,2):=0;\n  v_remaining numeric(14,2);\nbegin\n  if p_start_date is null or v_process not in('1','3','JUB') or p_number_of_payments not between 1 and 240\n     or p_total is null or p_total<=0 or p_regular_payment is null or p_regular_payment<=0 then\n    raise exception 'PAYMENT_SCHEDULE_INPUT_INVALID' using errcode='22023';\n  end if;\n  v_min_date:=p_start_date+30;\n  v_cursor:=date_trunc('month',v_min_date)::date;\n  while cardinality(v_dates)<p_number_of_payments loop\n    if v_process='JUB' then\n      v_candidate:=make_date(extract(year from v_cursor)::integer,extract(month from v_cursor)::integer,5);\n      if v_candidate>=v_min_date then v_dates:=array_append(v_dates,v_candidate); end if;\n    else\n      v_candidate:=make_date(extract(year from v_cursor)::integer,extract(month from v_cursor)::integer,15);\n      if v_candidate>=v_min_date then v_dates:=array_append(v_dates,v_candidate); end if;\n      if cardinality(v_dates)<p_number_of_payments then\n        v_candidate:=make_date(extract(year from v_cursor)::integer,extract(month from v_cursor)::integer,\n          case when extract(month from v_cursor)::integer=2 then 28 else 30 end);\n        if v_candidate>=v_min_date then v_dates:=array_append(v_dates,v_candidate); end if;\n      end if;\n    end if;\n    v_cursor:=(v_cursor+interval '1 month')::date;\n    if v_cursor>p_start_date+interval '30 years' then raise exception 'PAYMENT_SCHEDULE_GENERATION_FAILED'; end if;\n  end loop;\n  for v_index in 1..p_number_of_payments loop\n    v_payment:=case when v_index=p_number_of_payments then round(p_total-v_paid,2) else round(p_regular_payment,2) end;\n    if v_payment<=0 then raise exception 'PAYMENT_SCHEDULE_TOTAL_INVALID' using errcode='22023'; end if;\n    v_paid:=round(v_paid+v_payment,2);\n    v_remaining:=greatest(0,round(p_total-v_paid,2));\n    v_rows:=v_rows||jsonb_build_array(jsonb_build_object(\n      'number',v_index,'date',v_dates[v_index],'payment',v_payment,'remaining_total',v_remaining,\n      'final_payment',v_index=p_number_of_payments\n    ));\n  end loop;\n  if v_paid<>round(p_total,2) then raise exception 'PAYMENT_SCHEDULE_RECONCILIATION_FAILED'; end if;\n  return jsonb_build_object(\n    'version','PROGRAM_PRODUCT_PAYROLL_CALENDAR_V1','process',v_process,\n    'frequency',case when v_process='JUB' then 'mensual' else 'quincenal' end,\n    'anchor_date',p_start_date,'minimum_first_payment_date',v_min_date,\n    'first_payment_date',v_dates[1],'last_payment_date',v_dates[p_number_of_payments],\n    'payment_count',p_number_of_payments,'rows',v_rows,'total',round(p_total,2)\n  );\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "get_financial_runtime_rules()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_financial_runtime_rules()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_authority public.financial_criteria_authority%rowtype; v_result jsonb;\nbegin\n  if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'FINANCIAL_RUNTIME_RULES_DENIED' using errcode='42501'; end if;\n  select * into v_authority from public.financial_criteria_authority where id='primary';\n  if v_authority.authority<>'SUPABASE' or v_authority.active_import_batch_id is null then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  v_result:=public.financial_runtime_rules_for_batch(v_authority.active_import_batch_id);\n  if jsonb_array_length(v_result)<>146 then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  return v_result;\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "normalize_suti_financial_key(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.normalize_suti_financial_key(p_value text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n  select upper(regexp_replace(\n    translate(btrim(coalesce(p_value,'')),'ÁÉÍÓÚÜÑáéíóúüñ','AEIOUUNAEIOUUN'),\n    '\\s+',' ','g'\n  ))\n$function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "resolve_suti_loan_quote_contract(jsonb,text,text,text,numeric,integer,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.resolve_suti_loan_quote_contract(p_eligible_rules jsonb, p_financial_union text, p_financial_employee_category text, p_program_id text, p_amount numeric, p_term integer, p_policy jsonb)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select public.resolve_suti_loan_quote_contract_v1_engine($1,$2,$3,$4,$5,$6,$7)||jsonb_build_object('source','SUPABASE_FINANCIAL_CRITERIA') $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "resolve_suti_loan_quote_contract_v1_engine(jsonb,text,text,text,numeric,integer,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.resolve_suti_loan_quote_contract_v1_engine(p_eligible_rules jsonb, p_financial_union text, p_financial_employee_category text, p_program_id text, p_amount numeric, p_term integer, p_policy jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_rule jsonb;\n  v_match_count integer;\n  v_max_amount numeric;\n  v_rate_factor numeric;\n  v_rate numeric;\n  v_payment_count integer;\n  v_payment_period text;\n  v_custom_min integer;\n  v_custom_step integer;\n  v_standard_terms integer[];\n  v_interest numeric;\n  v_fee_per_payment numeric := 15;\n  v_fee_total numeric;\n  v_total numeric;\n  v_payment numeric;\n  v_term_options jsonb;\nbegin\n  if jsonb_typeof(p_eligible_rules) <> 'array' or jsonb_array_length(p_eligible_rules) < 1 then\n    raise exception 'FINANCIAL_RULES_INVALID' using errcode='22023';\n  end if;\n  if nullif(btrim(p_financial_union),'') is null or nullif(btrim(p_financial_employee_category),'') is null then\n    raise exception 'AFFILIATE_FINANCIAL_PROFILE_INCOMPLETE' using errcode='P0001';\n  end if;\n  if nullif(btrim(p_program_id),'') is null or p_amount is null or p_amount::text='NaN' or p_term is null then\n    raise exception 'FINANCIAL_REQUEST_OUT_OF_RANGE' using errcode='22023';\n  end if;\n  if jsonb_typeof(p_policy) <> 'object'\n     or p_policy->>'source' <> 'SUPABASE_LOAN_TERM_POLICY'\n     or jsonb_typeof(p_policy->'standardTerms') <> 'array' then\n    raise exception 'LOAN_TERM_POLICY_UNAVAILABLE' using errcode='P0001';\n  end if;\n\n  begin\n    v_custom_min := (p_policy->>'customMinTerm')::integer;\n    v_custom_step := (p_policy->>'customStep')::integer;\n    select coalesce(array_agg(value::integer order by ordinal),array[]::integer[])\n      into v_standard_terms\n      from jsonb_array_elements_text(p_policy->'standardTerms') with ordinality as terms(value,ordinal);\n  exception when others then\n    raise exception 'LOAN_TERM_POLICY_UNAVAILABLE' using errcode='P0001';\n  end;\n  if v_custom_min <= 0 or v_custom_step <= 0 or cardinality(v_standard_terms) < 1 then\n    raise exception 'LOAN_TERM_POLICY_UNAVAILABLE' using errcode='P0001';\n  end if;\n\n  select count(*) into v_match_count\n  from jsonb_array_elements(p_eligible_rules) as candidate(value)\n  where public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(p_financial_employee_category)\n    and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(p_financial_union)\n    and value->>'status'='AVAILABLE'\n    and value->>'id'=p_program_id;\n\n  if v_match_count > 0 then\n    select value into v_rule\n    from jsonb_array_elements(p_eligible_rules) as candidate(value)\n    where public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(p_financial_employee_category)\n      and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(p_financial_union)\n      and value->>'status'='AVAILABLE'\n      and value->>'id'=p_program_id\n    limit 1;\n  else\n    select count(*) into v_match_count\n    from jsonb_array_elements(p_eligible_rules) as candidate(value)\n    where public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(p_financial_employee_category)\n      and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(p_financial_union)\n      and value->>'status'='AVAILABLE'\n      and value->>'program_id'=p_program_id;\n    if v_match_count = 1 then\n      select value into v_rule\n      from jsonb_array_elements(p_eligible_rules) as candidate(value)\n      where public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(p_financial_employee_category)\n        and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(p_financial_union)\n        and value->>'status'='AVAILABLE'\n        and value->>'program_id'=p_program_id\n      limit 1;\n    else\n      v_rule := null;\n    end if;\n  end if;\n\n  if v_rule is null then raise exception 'FINANCIAL_PROGRAM_NOT_ELIGIBLE' using errcode='P0001'; end if;\n  if jsonb_typeof(v_rule->'max_amount') <> 'number'\n     or jsonb_typeof(v_rule->'rate_factor') <> 'number'\n     or jsonb_typeof(v_rule->'rate') <> 'number'\n     or jsonb_typeof(v_rule->'payment_count') <> 'number'\n     or nullif(btrim(v_rule->>'fund'),'') is null\n     or nullif(btrim(v_rule->>'program_id'),'') is null\n     or nullif(btrim(v_rule->>'payment_period'),'') is null then\n    raise exception 'FINANCIAL_RULES_INVALID' using errcode='22023';\n  end if;\n\n  begin\n    v_max_amount := (v_rule->>'max_amount')::numeric;\n    v_rate_factor := (v_rule->>'rate_factor')::numeric;\n    v_rate := (v_rule->>'rate')::numeric;\n    v_payment_count := (v_rule->>'payment_count')::integer;\n    v_payment_period := v_rule->>'payment_period';\n  exception when others then\n    raise exception 'FINANCIAL_RULES_INVALID' using errcode='22023';\n  end;\n  if p_amount <= 0 or p_amount > v_max_amount or p_term < v_custom_min or p_term > v_payment_count\n     or mod(p_term-v_custom_min,v_custom_step) <> 0 then\n    raise exception 'FINANCIAL_REQUEST_OUT_OF_RANGE' using errcode='22023';\n  end if;\n\n  -- Exact current contract: positive currency values rounded half-up to cents.\n  v_interest := round(p_amount*v_rate_factor*p_term,2);\n  v_fee_total := round(v_fee_per_payment*p_term,2);\n  v_total := round(p_amount+v_interest+v_fee_total,2);\n  v_payment := round(v_total/p_term,2);\n\n  select coalesce(jsonb_agg(jsonb_build_object(\n    'term',candidate_term,\n    'paymentCount',candidate_term,\n    'interest',round(p_amount*v_rate_factor*candidate_term,2),\n    'administrativeFeePerPayment',v_fee_per_payment,\n    'administrativeFeeTotal',round(v_fee_per_payment*candidate_term,2),\n    'total',round(p_amount+round(p_amount*v_rate_factor*candidate_term,2)+round(v_fee_per_payment*candidate_term,2),2),\n    'paymentPerPeriod',round(round(p_amount+round(p_amount*v_rate_factor*candidate_term,2)+round(v_fee_per_payment*candidate_term,2),2)/candidate_term,2)\n  ) order by ordinal),'[]'::jsonb)\n  into v_term_options\n  from unnest(v_standard_terms) with ordinality as terms(candidate_term,ordinal)\n  where candidate_term >= v_custom_min and candidate_term <= v_payment_count;\n\n  return jsonb_build_object(\n    'source','GOOGLE_LEGACY','action','quote','amount',p_amount,\n    'paymentCount',p_term,'paymentPeriod',v_payment_period,\n    'rate',v_rate,'ratePeriod',v_payment_period,\n    'interest',v_interest,'administrativeFeePerPayment',v_fee_per_payment,\n    'administrativeFeeTotal',v_fee_total,'total',v_total,\n    'paymentPerPeriod',v_payment,'fund',v_rule->>'fund',\n    'program',v_rule->>'program_id','maxAmount',v_max_amount,'maxTerm',v_payment_count,\n    'termOptions',v_term_options,\n    'customTerm',jsonb_build_object('min',v_custom_min,'max',v_payment_count,'step',v_custom_step),\n    'eligibility',jsonb_build_object('status','AVAILABLE','eligible',true),\n    'administrativeFeeRule','$15 por pago',\n    'administrativeFeeVersion','LEGACY_EQUIVALENCE_2026-08-23',\n    'criteria',jsonb_build_object('termLabel',v_rule->>'term_label'),\n    'resolved_at',to_char(now() at time zone 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"')\n  );\nend $function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "signature": "save_program_catalog_item(uuid,jsonb,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_program_catalog_item(p_item_id uuid, p_payload jsonb, p_asset_links jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid:=(select auth.uid());\n  v_before public.program_catalog_items%rowtype;\n  v_after public.program_catalog_items%rowtype;\n  v_id uuid;\n  v_program text:=btrim(coalesce(p_payload->>'program_key',''));\n  v_name text:=btrim(coalesce(p_payload->>'name',''));\n  v_description text:=nullif(btrim(coalesce(p_payload->>'description','')),'');\n  v_category text:=nullif(btrim(coalesce(p_payload->>'category_raw','')),'');\n  v_price numeric;\n  v_quote boolean;\n  v_mode text;\n  v_sold boolean;\n  v_enabled boolean;\n  v_sort integer;\n  v_existing_asset_count integer:=0;\n  v_requested_asset_count integer:=0;\n  v_allowed_asset_count integer:=8;\n  v_link jsonb;\n  v_link_id uuid;\n  v_public_asset_id uuid;\n  v_kept uuid[]:='{}'::uuid[];\n  v_position integer:=0;\nbegin\n  if v_actor is null or not public.has_admin_permission('program_catalog.write') then\n    raise exception 'PROGRAM_CATALOG_WRITE_REQUIRED' using errcode='42501';\n  end if;\n  if p_payload is null or jsonb_typeof(p_payload)<>'object'\n     or p_asset_links is null or jsonb_typeof(p_asset_links)<>'array' then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if exists(\n    select 1 from jsonb_object_keys(p_payload) k\n    where k not in('program_key','name','description','category_raw','price_cash','requires_quote','commercial_mode','sold','enabled','sort_order')\n  ) then\n    raise exception 'PROGRAM_CATALOG_FIELD_NOT_EDITABLE' using errcode='22023';\n  end if;\n\n  if p_item_id is not null then\n    select * into v_before from public.program_catalog_items where id=p_item_id for update;\n    if v_before.id is null then raise exception 'PROGRAM_CATALOG_ITEM_NOT_FOUND' using errcode='P0001'; end if;\n    select count(*)::integer into v_existing_asset_count\n    from public.program_catalog_item_assets where item_id=p_item_id and enabled;\n    v_allowed_asset_count:=greatest(8,v_existing_asset_count);\n  end if;\n\n  begin\n    v_price:=nullif(p_payload->>'price_cash','')::numeric;\n    v_quote:=(p_payload->>'requires_quote')::boolean;\n    v_enabled:=(p_payload->>'enabled')::boolean;\n    v_sort:=(p_payload->>'sort_order')::integer;\n    v_mode:=nullif(btrim(coalesce(p_payload->>'commercial_mode','')),'');\n    v_sold:=case when p_payload ? 'sold' then (p_payload->>'sold')::boolean\n      when v_before.id is not null then v_before.sold else false end;\n    v_requested_asset_count:=jsonb_array_length(p_asset_links);\n  exception when others then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end;\n  if v_quote is null or v_enabled is null or v_sold is null or v_sort is null then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if v_mode is null then\n    v_mode:=case when v_before.id is not null then v_before.commercial_mode when v_quote then 'PAYROLL_QUOTE' else 'PAYROLL_FIXED' end;\n  end if;\n\n  if length(v_name) not between 2 and 180\n     and (v_before.id is null or v_name is distinct from v_before.name) then\n    raise exception 'PROGRAM_CATALOG_NAME_INVALID' using errcode='22023';\n  end if;\n  if length(coalesce(v_description,''))>12000\n     and (v_before.id is null or v_description is distinct from v_before.description) then\n    raise exception 'PROGRAM_CATALOG_DESCRIPTION_TOO_LONG' using errcode='22023';\n  end if;\n  if length(coalesce(v_category,''))>240\n     and (v_before.id is null or v_category is distinct from v_before.category_raw) then\n    raise exception 'PROGRAM_CATALOG_CATEGORY_TOO_LONG' using errcode='22023';\n  end if;\n  if v_sort not between 1 and 10000\n     and (v_before.id is null or v_sort is distinct from v_before.sort_order) then\n    raise exception 'PROGRAM_CATALOG_ORDER_INVALID' using errcode='22023';\n  end if;\n  if v_price<0 and (v_before.id is null or v_price is distinct from v_before.price_cash) then\n    raise exception 'PROGRAM_CATALOG_PRICE_INVALID' using errcode='22023';\n  end if;\n  if v_mode not in('PAYROLL_FIXED','PAYROLL_QUOTE','DIRECT_CONTACT') then\n    raise exception 'PROGRAM_CATALOG_MODE_INVALID' using errcode='22023';\n  end if;\n  if (v_mode='PAYROLL_QUOTE')<>v_quote then\n    raise exception 'PROGRAM_CATALOG_MODE_QUOTE_MISMATCH' using errcode='22023';\n  end if;\n  if v_mode='PAYROLL_FIXED' and (v_price is null or v_price<=0)\n     and (\n       v_before.id is null\n       or v_before.commercial_mode<>'PAYROLL_FIXED'\n       or (v_before.price_cash is not null and v_before.price_cash>0)\n       or v_price is distinct from v_before.price_cash\n     ) then\n    raise exception 'PROGRAM_CATALOG_PRICE_REQUIRED' using errcode='22023';\n  end if;\n  if not exists(select 1 from public.program_catalog_items where program_key=v_program)\n     and (v_before.id is null or v_program is distinct from v_before.program_key) then\n    raise exception 'PROGRAM_CATALOG_PROGRAM_INVALID' using errcode='22023';\n  end if;\n  if v_requested_asset_count>v_allowed_asset_count then\n    raise exception 'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED' using errcode='22023',\n      detail='allowed='||v_allowed_asset_count::text||',requested='||v_requested_asset_count::text;\n  end if;\n\n  if p_item_id is null then\n    insert into public.program_catalog_items(\n      program_key,name,description,category_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,sold_by,\n      request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,source_payload\n    ) values(\n      v_program,v_name,v_description,v_category,v_price,v_quote,v_mode,v_sold,\n      case when v_sold then now() else null end,case when v_sold then v_actor else null end,\n      'supabase',false,v_enabled,v_sort,'ADMIN_PROGRAM_CATALOG',null,null,null,'{}'::jsonb\n    ) returning * into v_after;\n    v_id:=v_after.id;\n  else\n    update public.program_catalog_items set\n      program_key=v_program,name=v_name,description=v_description,category_raw=v_category,\n      price_cash=v_price,requires_quote=v_quote,commercial_mode=v_mode,sold=v_sold,\n      sold_at=case when v_sold then coalesce(v_before.sold_at,now()) else null end,\n      sold_by=case when v_sold then coalesce(v_before.sold_by,v_actor) else null end,\n      enabled=v_enabled,sort_order=v_sort\n    where id=p_item_id returning * into v_after;\n    v_id:=v_after.id;\n  end if;\n\n  update public.program_catalog_item_assets set sort_order=sort_order+10000 where item_id=v_id and enabled;\n  for v_link in select value from jsonb_array_elements(p_asset_links) loop\n    v_position:=v_position+1;\n    begin\n      v_link_id:=nullif(v_link->>'link_id','')::uuid;\n      v_public_asset_id:=nullif(v_link->>'public_asset_id','')::uuid;\n    exception when others then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end;\n    if (v_link_id is null)=(v_public_asset_id is null) then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end if;\n    if v_link_id is not null then\n      if not exists(select 1 from public.program_catalog_item_assets where id=v_link_id and item_id=v_id) then\n        raise exception 'PROGRAM_CATALOG_ASSET_LINK_NOT_FOUND' using errcode='P0001';\n      end if;\n      update public.program_catalog_item_assets set\n        enabled=true,role=case when v_position=1 then 'cover' else 'gallery' end,sort_order=v_position\n      where id=v_link_id;\n    else\n      if not exists(\n        select 1 from public.app_assets\n        where id=v_public_asset_id and status='READY' and storage_bucket='app-assets'\n          and storage_path like 'program-products/%'\n      ) then\n        raise exception 'PROGRAM_CATALOG_PUBLIC_ASSET_INVALID' using errcode='22023';\n      end if;\n      select id into v_link_id from public.program_catalog_item_assets\n      where item_id=v_id and public_asset_id=v_public_asset_id order by enabled desc limit 1;\n      if v_link_id is null then\n        v_link_id:=extensions.gen_random_uuid();\n        insert into public.program_catalog_item_assets(\n          id,item_id,public_asset_id,private_asset_id,role,sort_order,source_column,source_column_letter,enabled\n        ) values(\n          v_link_id,v_id,v_public_asset_id,null,case when v_position=1 then 'cover' else 'gallery' end,\n          v_position,'ADMIN_UPLOAD','ADMIN_'||replace(v_link_id::text,'-',''),true\n        );\n      else\n        update public.program_catalog_item_assets set\n          enabled=true,role=case when v_position=1 then 'cover' else 'gallery' end,sort_order=v_position\n        where id=v_link_id;\n      end if;\n    end if;\n    if v_link_id=any(v_kept) then\n      raise exception 'PROGRAM_CATALOG_ASSET_DUPLICATE' using errcode='22023';\n    end if;\n    v_kept:=array_append(v_kept,v_link_id);\n  end loop;\n  update public.program_catalog_item_assets set enabled=false\n  where item_id=v_id and enabled and not(id=any(v_kept));\n\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\n  values(v_actor,'program_catalog_items',case when p_item_id is null then 'INSERT' else 'UPDATE' end,v_id::text,'SUCCESS',\n    jsonb_build_object(\n      'program_key',v_after.program_key,\n      'before',case when v_before.id is null then null else jsonb_build_object(\n        'name',v_before.name,'price_cash',v_before.price_cash,'requires_quote',v_before.requires_quote,\n        'commercial_mode',v_before.commercial_mode,'sold',v_before.sold,'sold_at',v_before.sold_at,\n        'sold_by',v_before.sold_by,'enabled',v_before.enabled,'sort_order',v_before.sort_order\n      ) end,\n      'after',jsonb_build_object(\n        'name',v_after.name,'price_cash',v_after.price_cash,'requires_quote',v_after.requires_quote,\n        'commercial_mode',v_after.commercial_mode,'sold',v_after.sold,'sold_at',v_after.sold_at,\n        'sold_by',v_after.sold_by,'enabled',v_after.enabled,'sort_order',v_after.sort_order\n      ),\n      'asset_count',v_position,'asset_limit',v_allowed_asset_count,'delta_aware',true\n    ));\n  return (to_jsonb(v_after)-'source_payload'-'sold_by');\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "migrations": [
+    {
+      "version": "20260922000100",
+      "name": "savings_loan_eligibility"
+    },
+    {
+      "version": "20260921000500",
+      "name": "savings_publication_active_identity"
+    },
+    {
+      "version": "20260921000400",
+      "name": "savings_receipt_identity_compatibility"
+    },
+    {
+      "version": "20260921000300",
+      "name": "savings_certification_compatibility"
+    },
+    {
+      "version": "20260921000200",
+      "name": "savings_unused_registration_archive"
+    },
+    {
+      "version": "20260921000100",
+      "name": "savings_reconciliation"
+    },
+    {
+      "version": "20260920000100",
+      "name": "savings_settlement_exceptions"
+    },
+    {
+      "version": "20260918120000",
+      "name": "savings_beneficiaries"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "program_key",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "description",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "category_raw",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "quantity_raw",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "presentation_raw",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "contact_url_raw",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "price_cash",
+      "data_type": "numeric"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "requires_quote",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "request_mode",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "legacy_boundary",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "enabled",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "sort_order",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "record_origin",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "source_sheet",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "source_row_ordinal",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "source_snapshot_hash",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "source_payload",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "commercial_mode",
+      "data_type": "text"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "sold",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "sold_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "program_catalog_items",
+      "column_name": "sold_by",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "catalog_type",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "code",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "label",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "enabled",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "sort_order",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "source_sheet",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "source_range",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "source_snapshot_hash",
+      "data_type": "text"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "grants": [
+    {
+      "grantee": "postgres",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    }
+  ],
+  "tables": [
+    {
+      "schema": "auth",
+      "name": "users",
+      "columns": "instance_id uuid,id uuid,aud character varying(255),role character varying(255),email character varying(255),encrypted_password character varying(255),email_confirmed_at timestamp with time zone,invited_at timestamp with time zone,confirmation_token character varying(255),confirmation_sent_at timestamp with time zone,recovery_token character varying(255),recovery_sent_at timestamp with time zone,email_change_token_new character varying(255),email_change character varying(255),email_change_sent_at timestamp with time zone,last_sign_in_at timestamp with time zone,raw_app_meta_data jsonb,raw_user_meta_data jsonb,is_super_admin boolean,created_at timestamp with time zone,updated_at timestamp with time zone,phone text,phone_confirmed_at timestamp with time zone,phone_change text,phone_change_token character varying(255),phone_change_sent_at timestamp with time zone,confirmed_at timestamp with time zone,email_change_token_current character varying(255),email_change_confirm_status smallint,banned_until timestamp with time zone,reauthentication_token character varying(255),reauthentication_sent_at timestamp with time zone,is_sso_user boolean,deleted_at timestamp with time zone,is_anonymous boolean"
+    },
+    {
+      "schema": "public",
+      "name": "admin_assignments",
+      "columns": "id uuid,auth_user_id uuid,role text,permissions text[],enabled boolean,created_at timestamp with time zone,updated_at timestamp with time zone,role_id uuid,assigned_at timestamp with time zone,assigned_by_auth_user_id uuid,revoked_at timestamp with time zone,revoked_by_auth_user_id uuid,protected_assignment boolean"
+    },
+    {
+      "schema": "public",
+      "name": "admin_audit_log",
+      "columns": "id bigint,actor_auth_user_id uuid,resource text,action text,target_id text,result text,details jsonb,created_at timestamp with time zone,usuario_contexto_affiliate_id uuid,impersonation_session_id uuid,reason text"
+    },
+    {
+      "schema": "public",
+      "name": "admin_roles",
+      "columns": "id uuid,code text,name text,description text,system_role boolean,enabled boolean,created_at timestamp with time zone,updated_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "affiliate_documents",
+      "columns": "id uuid,affiliate_id uuid,document_type_id uuid,affiliate_file_id uuid,private_asset_id uuid,status text,review_observation text,reviewed_by_auth_user_id uuid,reviewed_at timestamp with time zone,created_by_auth_user_id uuid,created_at timestamp with time zone,updated_at timestamp with time zone,replaces_document_id uuid"
+    },
+    {
+      "schema": "public",
+      "name": "affiliate_files",
+      "columns": "id uuid,affiliate_id uuid,numero_control text,public_asset_id uuid,private_asset_id uuid,classification text,file_key text,file_type text,source_column text,source_column_letter text,title text,storage_bucket text,storage_path text,mime_type text,sha256 text,file_size bigint,source_url text,source_row_ordinal integer,source_file_hash text,url_order integer,status text,sort_order integer,created_at timestamp with time zone,updated_at timestamp with time zone,expediente_classification text,is_current_profile_photo boolean"
+    },
+    {
+      "schema": "public",
+      "name": "affiliates",
+      "columns": "id uuid,numero_control text,full_name text,display_name text,historical_status_raw text,affiliate_status_raw text,historical_email_raw text,historical_email_normalized text,phone_raw text,address_raw text,birth_date_raw text,gender_raw text,marital_status_raw text,children_count_raw text,rfc_raw text,curp_raw text,unit_raw text,city_raw text,employment_position_raw text,employment_entry_date_raw text,occupation_raw text,institute_entry_date_raw text,employment_area_raw text,employment_level_raw text,pension_raw text,subdirectorate_raw text,union_enrollment_date_raw text,capture_date_raw text,affiliation_raw text,union_position_raw text,termination_date_raw text,auth_user_id uuid,auth_eligibility text,auth_ineligibility_reason text,source_row_ordinal integer,source_file_hash text,created_at timestamp with time zone,updated_at timestamp with time zone,financial_union_code text,financial_employee_category_code text,financial_employee_type text,financial_affiliation_status text,financial_employment_status text,financial_profile_version integer,financial_profile_updated_at timestamp with time zone,financial_profile_updated_by uuid,financial_profile_seed_source_hash text,financial_profile_seed_row_ordinal integer,financial_profile_seeded_at timestamp with time zone,record_origin text,notification_phone text,is_archived boolean,archived_at timestamp with time zone,archived_by_auth_user_id uuid,archive_reason text,archive_previous_status_raw text,restored_at timestamp with time zone,restored_by_auth_user_id uuid,restore_reason text"
+    },
+    {
+      "schema": "public",
+      "name": "impersonation_sessions",
+      "columns": "id uuid,actor_real_auth_user_id uuid,usuario_contexto_affiliate_id uuid,reason text,started_at timestamp with time zone,expires_at timestamp with time zone,ended_at timestamp with time zone,ended_by_auth_user_id uuid,actor_auth_session_id text"
+    },
+    {
+      "schema": "public",
+      "name": "loan_term_policy",
+      "columns": "id text,standard_terms integer[],custom_min_term integer,custom_step integer,enabled boolean,decision_reference text,updated_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "private_assets",
+      "columns": "id uuid,asset_key text,asset_type text,title text,storage_bucket text,storage_path text,mime_type text,file_size bigint,content_sha256 text,status text,created_at timestamp with time zone,updated_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "program_catalog_items",
+      "columns": "id uuid,program_key text,name text,description text,category_raw text,quantity_raw text,presentation_raw text,contact_url_raw text,price_cash numeric(14,2),requires_quote boolean,request_mode text,legacy_boundary boolean,enabled boolean,sort_order integer,record_origin text,source_sheet text,source_row_ordinal integer,source_snapshot_hash text,source_payload jsonb,created_at timestamp with time zone,updated_at timestamp with time zone,commercial_mode text,sold boolean,sold_at timestamp with time zone,sold_by uuid"
+    },
+    {
+      "schema": "public",
+      "name": "program_request_admin_events",
+      "columns": "id uuid,request_id uuid,actor_auth_user_id uuid,actor_label text,action text,from_status text,to_status text,comment text,client_action_id uuid,created_at timestamp with time zone,from_stage_id uuid,to_stage_id uuid"
+    },
+    {
+      "schema": "public",
+      "name": "program_requests",
+      "columns": "id uuid,folio text,actor_real_auth_user_id uuid,affiliate_id uuid,numero_control text,program_id text,program_item_id uuid,product_id uuid,company_id uuid,request_type text,status text,quantity integer,notes text,signature_data text,terms_accepted boolean,source_context jsonb,financial_processing_status text,legacy_reference text,idempotency_key uuid,quoted_amount numeric(14,2),quote_note text,valid_until date,responded_by_auth_user_id uuid,responded_at timestamp with time zone,created_at timestamp with time zone,updated_at timestamp with time zone,requested_amount numeric(14,2),requested_term numeric(10,2),requested_term_semantics text,financial_profile_snapshot jsonb,financial_approval_snapshot jsonb,financial_approved_at timestamp with time zone,financial_approved_by uuid,usuario_contexto_affiliate_id uuid,impersonation_session_id uuid,impersonation_reason text,membership_offering_id uuid,terms_version_id uuid,applicant_profile_snapshot jsonb,financial_submission_snapshot jsonb,document_requirements_snapshot jsonb,workflow_id uuid,workflow_version integer,workflow_snapshot jsonb,seen_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "program_terms_versions",
+      "columns": "id uuid,program_id text,membership_offering_id uuid,version integer,title text,body text,private_asset_id uuid,published boolean,published_at timestamp with time zone,created_by_auth_user_id uuid,created_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "request_documents",
+      "columns": "id uuid,request_id uuid,document_type_id uuid,affiliate_document_id uuid,private_asset_id uuid,asset_sha256 text,status_at_submission text,created_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "segmentation_catalog_entries",
+      "columns": "id uuid,catalog_type text,code text,label text,enabled boolean,sort_order integer,source_sheet text,source_range text,source_snapshot_hash text,created_at timestamp with time zone,updated_at timestamp with time zone"
+    },
+    {
+      "schema": "public",
+      "name": "sensitive_change_audit",
+      "columns": "id uuid,actor_auth_user_id uuid,affiliate_id uuid,resource text,action text,target_id uuid,metadata jsonb,created_at timestamp with time zone"
+    },
+    {
+      "schema": "storage",
+      "name": "objects",
+      "columns": "id uuid,bucket_id text,name text,owner uuid,created_at timestamp with time zone,updated_at timestamp with time zone,last_accessed_at timestamp with time zone,metadata jsonb,path_tokens text[],version text,owner_id text,user_metadata jsonb,archived_at timestamp with time zone,is_delete_marker boolean,is_versioned boolean"
+    }
+  ]
+}

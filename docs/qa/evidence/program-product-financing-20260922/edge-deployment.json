@@ -1,0 +1,23 @@
+{
+  "deployedAt": "2026-09-22",
+  "status": {
+    "status": "PASS",
+    "mode": "status",
+    "slug": "financial-legacy",
+    "deployed": true,
+    "version": 50,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "secretLogged": false
+  },
+  "verification": {
+    "status": "PASS",
+    "mode": "verify",
+    "slug": "financial-legacy",
+    "bytes": 669658,
+    "sha256": "ae660c2412eeb1c906d9b30655309ea8e81283782b4fd18d68e7d1338e7589b7",
+    "compiledBundle": true,
+    "requiredMarkers": 16,
+    "secretLogged": false
+  }
+}

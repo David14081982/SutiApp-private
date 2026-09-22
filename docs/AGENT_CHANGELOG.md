@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-09-22 — H-PROGRAM-PRODUCT-FINANCING-001 — backend deployed
+
+Owner requested surgical per-item interest overrides (including union/category),
+Caja Chica inheritance and optional mandatory amount/percentage down payments.
+Added the focal editor section and server resolver/atomic comparison; retained
+existing math, fees, eligibility, maximum, calendar, images and request workflow.
+Google row builder already consumes the sealed financial result and is unchanged.
+
+36 isolated PostgreSQL/actual-Edge cases and mobile/desktop browser checks PASS.
+Global asset regression PASS on local candidate and existing Pages, including
+legitimate PDF, galleries, refresh and with/without worker. No production business
+writes. Migration/recovery and same-transaction data-preservation apply tool ready;
+all 127 unrelated bundle modules preserved. ADR-113 / INV-239–242 document the focal
+owner exception. Owner then authorized production: "Si hazlo y publicalo".
+
+Migration 20260922000200 applied; Edge v50 ACTIVE with JWT verification. Protected
+data preserved, zero configured overrides, admin options and live permission denials
+PASS. Actual product simulation inherits 3% and equals the ordinary Caja quote.
+Only ephemeral sessions created; no confirmed request or Google write. Frontend
+publication in progress. Earlier automatic-review boundary resolved by owner approval.
+Full result, tests, recovery and architect review:
+[H-PROGRAM-PRODUCT-FINANCING-001](audits/H-PROGRAM-PRODUCT-FINANCING-001.md).
+
 ## 2026-09-22 — H-SAVINGS-LOAN-ELIGIBILITY-001 — production PASS
 
 Owner explicitly requested publication. Applied only 20260922000100 with bounded transaction and private exact function backup; financial-legacy v49 ACTIVE; Pages 44fd10a published (run 35706486877 SUCCESS). Real gateway permissions/filter, served bundle equality, mobile administrative panel and complete live image regression PASS. No business writes/tests, history changes or invented initial policy. Finance must configure months/date basis. Evidence: docs/qa/H-SAVINGS-LOAN-ELIGIBILITY-001.json productionRelease and corresponding audit.

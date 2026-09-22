@@ -1,5 +1,31 @@
 # Registro de decisiones arquitectónicas
 
+## ADR-113 — Tasas y enganches por producto de programa — 2026-09-22
+
+OWNER solicita tasas por artículo de `program_catalog_items`, opcionalmente por
+sindicato/categoría, heredando Caja Chica si no configura excepción; mismo fondo,
+simulador/solicitud/Google coherentes y enganche obligatorio de monto o porcentaje.
+Autoriza implementación con «hazlo de forma quirurgica» y despliegue/publicación
+con «Si hazlo y publicalo». Migración 20260922000200 y financial-legacy v50 aplicados
+el 2026-09-22: datos protegidos preservados, configuraciones iniciales NULL y
+herencia de Caja Chica verificada en producción. Publicación frontend en curso.
+
+Se agrega configuración al mismo artículo, sin maestro financiero duplicado.
+Excepción focal a INV-059/ADR-037 y a la herencia exclusiva de tasa de ADR-087;
+las demás fronteras permanecen intactas. JSONB NULL hereda; cero significa 0%.
+El motor, gastos, calendario, elegibilidad y máximos permanecen existentes.
+Una tasa sindicato+categoría prevalece; conflictos individuales se rechazan hasta
+configurar la combinación. No se elige una prioridad de negocio por inferencia.
+Enganche mínimo = max(requisito del artículo, precio autorizado menos máximo).
+
+Una sola resolución SQL alimenta el simulador y writer atómico. Condiciones/resultados
+quedan sellados; cambios posteriores no reescriben historia. El envío Google de
+ADR-106 ya lee el resultado de la solicitud y no necesita cambios. Sin edición de
+Apps Script, fórmulas, triggers Google, saldos, históricos ni tasas de préstamos ordinarios.
+Recovery verifica definición exacta y se niega ante configuración/historia posterior;
+en ese caso corresponde reparación hacia adelante, nunca pérdida de datos.
+Evidencia: [H-PROGRAM-PRODUCT-FINANCING-001](audits/H-PROGRAM-PRODUCT-FINANCING-001.md).
+
 ## H-SAVINGS-P0-WITHDRAWAL-SETTLEMENT-001 — Reglas OWNER, 2026-09-20
 
 HISTORIAL P V2 es autoridad de préstamos: D Folio exacto, C préstamo, G fondo,

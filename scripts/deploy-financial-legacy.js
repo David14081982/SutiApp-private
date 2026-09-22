@@ -43,7 +43,8 @@ function env() {
     if (!response.ok) throw new Error('SUPABASE_VERIFY_' + response.status);
     const remote = Buffer.from(await response.arrayBuffer());
     const markers = ['source/index.ts', 'deposit_selection', 'bank_account_id', 'notification_phone', 'create_validated_financial_program_request',
-      'programPaymentSessionOpen', 'generate_program_product_payment_schedule', 'create_validated_program_product_payment_request'];
+      'programPaymentSessionOpen', 'generate_program_product_payment_schedule', 'confirm_program_product_financing',
+      'resolve_program_product_financing', 'product_financing_conditions', 'financing_config'];
     markers.push('PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY', 'PROGRAM_PRODUCT_SOLD', 'commercial_mode');
     markers.push('filterSavingsLoanRules', 'savings_loan_eligibility');
     const magic = remote.subarray(0, 12).toString('ascii');

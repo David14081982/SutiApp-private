@@ -542,7 +542,7 @@ async function readProgramProductContext(
   privileged: SupabaseClientLike, context: LoanSessionContext, programItemId: string,
 ): Promise<ProgramProductContext> {
   const { data: item, error } = await privileged.from("program_catalog_items")
-    .select("id,program_key,name,price_cash,requires_quote,commercial_mode,sold,request_mode,enabled,updated_at")
+    .select("id,program_key,name,price_cash,requires_quote,commercial_mode,sold,request_mode,enabled,updated_at,financing_config")
     .eq("id", programItemId).maybeSingle();
   if (error) throw new Error("PROGRAM_PRODUCT_LOOKUP_FAILED");
   if (!item || item.enabled !== true || item.request_mode !== "supabase" || item.program_key === "prestamo") {
@@ -570,7 +570,7 @@ async function readProgramProductContext(
   } else throw new Error("AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE");
   const fingerprint = await sha256({
     item: { id: item.id, program_key: item.program_key, name: item.name, price_cash: item.price_cash,
-      requires_quote: item.requires_quote, commercial_mode: item.commercial_mode, sold: item.sold,
+      requires_quote: item.requires_quote, commercial_mode: item.commercial_mode, sold: item.sold, financing_config: item.financing_config,
       request_mode: item.request_mode, enabled: item.enabled, updated_at: item.updated_at },
     price_source: priceSource, authorized_price: authorizedPrice,
     quote: quote ? { id: quote.id, quoted_amount: quote.quoted_amount, valid_until: quote.valid_until,
@@ -586,6 +586,16 @@ function cajaRuleForProfile(rules: CriteriaRule[], profile: FinancialProfile) {
   return matched[0];
 }
 
+async function productFinancing(privileged: SupabaseClientLike, context: LoanSessionContext, itemId: string, rule: CriteriaRule, price: number) {
+  const { data, error } = await privileged.rpc("resolve_program_product_financing", {
+    p_item_id: itemId, p_affiliate_id: context.affiliateId, p_base_rule: rule, p_price: price,
+  });
+  if (error || !data?.rule || !data?.conditions || !Number.isFinite(Number(data.minimum_down_payment))) {
+    throw new Error(error?.message?.includes("PRODUCT_RATE_AUDIENCE_CONFLICT") ? "PRODUCT_RATE_AUDIENCE_CONFLICT" : "PRODUCT_FINANCING_UNAVAILABLE");
+  }
+  return data as { rule: CriteriaRule; minimum_down_payment: number; conditions: Record<string, unknown> };
+}
+
 async function openProgramPaymentSession(
   userClient: SupabaseClientLike, privileged: SupabaseClientLike, context: LoanSessionContext, programItemId: string,
 ) {
@@ -595,7 +605,9 @@ async function openProgramPaymentSession(
   const rule = cajaRuleForProfile(rules, context.profile);
   const process = processForCategory(String(context.profile.financial_employee_category || ""));
   const period = process === "JUB" ? "mensual" : "quincenal";
-  const publicRule = rule ? { ...publicProgram(rule, policy), payment_period: period, rate_period: period } : null;
+  const financing = rule && product.quoteGate === "READY"
+    ? await productFinancing(privileged, context, programItemId, rule, Number(product.authorizedPrice)) : null;
+  const publicRule = rule ? { ...publicProgram(financing?.rule || rule, policy), payment_period: period, rate_period: period } : null;
   const base = { status: product.quoteGate === "QUOTE_REQUIRED" ? "QUOTE_REQUIRED" : rule ? "READY" : "NOT_ELIGIBLE",
     quoteGate: product.quoteGate, product: product.item, authorizedPrice: product.authorizedPrice,
     priceSource: product.priceSource, quoteRequestId: product.quoteRequestId, loanSession: null,
@@ -614,15 +626,16 @@ async function openProgramPaymentSession(
     affiliate_id: context.affiliateId, actor_real_auth_user_id: context.actorId,
     impersonation_session_id: context.impersonationSessionId,
     financial_profile_version: Number(context.profile.financial_profile_version), profile_fingerprint: profileFingerprint,
-    eligible_rules: [rule], criteria_source_fingerprint: criteriaFingerprint,
+    criteria_source_fingerprint: criteriaFingerprint,
     term_policy_fingerprint: policyFingerprint, calculation_contract_version: LOAN_CALCULATION_CONTRACT_VERSION,
     session_purpose: "PROGRAM_PRODUCT_PAYMENT", program_item_id: programItemId,
+    eligible_rules: [{ ...rule, product_financing_conditions: financing!.conditions }],
     authorized_price: product.authorizedPrice, price_source: product.priceSource,
     quote_request_id: product.quoteRequestId, product_fingerprint: product.fingerprint,
     schedule_anchor_date: anchor, created_at: now.toISOString(), expires_at: expiresAt.toISOString(),
   }).select("id,expires_at,financial_profile_version,schedule_anchor_date").single();
   if (error || !saved) throw new Error("FINANCIAL_SESSION_SNAPSHOT_WRITE_FAILED");
-  return { ...base, minimumDownPayment: Math.max(0, Number(product.authorizedPrice) - rule.max_amount),
+  return { ...base, minimumDownPayment: Number(financing!.minimum_down_payment), financingConditions: financing!.conditions,
     loanSession: { id: saved.id, expires_at: saved.expires_at,
       financial_profile_version: saved.financial_profile_version, schedule_anchor_date: saved.schedule_anchor_date } };
 }
@@ -667,10 +680,16 @@ async function resolveProgramPaymentQuote(
     throw new Error("CONDITIONS_CHANGED");
   }
   const price = Number(snapshot.authorized_price), amount = Math.round((price - downPayment) * 100) / 100;
-  if (!Number.isFinite(downPayment) || downPayment < 0 || downPayment >= price || amount <= 0 || amount > rule.max_amount) {
+  const financing = await productFinancing(privileged, context, String(snapshot.program_item_id), rule, price);
+  const expectedConditions = (snapshot.eligible_rules[0] as CriteriaRule & { product_financing_conditions?: unknown }).product_financing_conditions;
+  if (!expectedConditions || await sha256(expectedConditions) !== await sha256(financing.conditions)) {
+    await invalidateLoanSession(privileged, snapshot.id, "PRODUCT_FINANCING_CHANGED");
+    throw new Error("CONDITIONS_CHANGED");
+  }
+  if (!Number.isFinite(downPayment) || Math.abs(downPayment * 100 - Math.round(downPayment * 100)) > 0.000001 || downPayment < Number(financing.minimum_down_payment) || downPayment >= price || amount <= 0 || amount > rule.max_amount) {
     throw new Error("DOWN_PAYMENT_OUT_OF_RANGE");
   }
-  const raw = await resolveQuote(privileged, [rule], context.profile,
+  const raw = await resolveQuote(privileged, [financing.rule], context.profile,
     { program_id: rule.id, amount, term }, policy);
   const process = processForCategory(String(context.profile.financial_employee_category || ""));
   if (!["1", "3", "JUB"].includes(process)) throw new Error("PAYROLL_PROCESS_UNRESOLVED");
@@ -685,7 +704,7 @@ async function resolveProgramPaymentQuote(
   return { financialResult, paymentSchedule: schedule, authorizedPrice: price,
     priceSource: snapshot.price_source, quoteRequestId: snapshot.quote_request_id || null,
     downPayment, financedAmount: amount, programItemId: snapshot.program_item_id,
-    minimumDownPayment: Math.max(0, price - rule.max_amount),
+    minimumDownPayment: Number(financing.minimum_down_payment), financingConditions: financing.conditions,
     loanSession: { id: snapshot.id, expires_at: snapshot.expires_at,
       financial_profile_version: snapshot.financial_profile_version, schedule_anchor_date: snapshot.schedule_anchor_date },
     googleResolutionCount: 0 };
@@ -715,12 +734,13 @@ async function confirmProgramPaymentSession(
   if (loaded.snapshot.program_item_id !== String(body.program_item_id)) {
     return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId } };
   }
-  try { await resolveProgramPaymentQuote(privileged, context, policy, loaded.snapshot, Number(body.down_payment), Number(body.term)); }
+  let confirmedQuote: Awaited<ReturnType<typeof resolveProgramPaymentQuote>>;
+  try { confirmedQuote = await resolveProgramPaymentQuote(privileged, context, policy, loaded.snapshot, Number(body.down_payment), Number(body.term)); }
   catch (error) {
     const code = error instanceof Error ? error.message : "CONDITIONS_CHANGED";
     return { status: 409, body: { error: code === "DOWN_PAYMENT_OUT_OF_RANGE" ? code : "CONDITIONS_CHANGED", correlation_id: correlationId } };
   }
-  const { data: request, error } = await privileged.rpc("create_validated_program_product_payment_request", {
+  const { data: request, error } = await privileged.rpc("confirm_program_product_financing", { p_submission: {
     p_actor_real_auth_user_id: context.actorId, p_affiliate_id: context.affiliateId,
     p_impersonation_session_id: context.impersonationSessionId, p_program_item_id: body.program_item_id,
     p_notes: body.notes, p_signature_data: body.signature_data, p_terms_version_id: body.terms_version_id,
@@ -728,7 +748,7 @@ async function confirmProgramPaymentSession(
     p_down_payment: body.down_payment, p_term: body.term,
     p_expected_profile_version: Number(context.profile.financial_profile_version),
     p_schedule_anchor_date: loaded.snapshot.schedule_anchor_date,
-  });
+  }, p_expected_result: confirmedQuote.financialResult, p_expected_conditions: confirmedQuote.financingConditions });
   if (error || !request) {
     const failure = logFinancialSubmissionFailure(correlationId, "program_product_request_writer", error || { message: "EMPTY_RESULT" });
     return { status: 409, body: { error: failure.publicCode, correlation_id: correlationId } };

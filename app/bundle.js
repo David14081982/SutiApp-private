@@ -10023,7 +10023,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db(),settings=options||{};
-    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at').order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at'+(admin?',financing_config':'')).order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
     if(settings.programKey)itemQuery=itemQuery.eq('program_key',settings.programKey);
     if(settings.itemId)itemQuery=itemQuery.eq('id',settings.itemId);
@@ -10108,13 +10108,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
-    const out=bootstrap
+    const out=Object.prototype.hasOwnProperty.call(item,'financingDraft')
+      ?await db().rpc('save_program_catalog_item_financing',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links,p_config:item.financingDraft,p_expected_config:item.financing_config||null,p_bootstrap:bootstrap})
+      :bootstrap
       ?await db().rpc('create_first_cirugias_program_catalog_item',{p_payload:payload,p_asset_links:links})
       :await db().rpc('save_program_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links});
     if(out.error)throw out.error;return Object.freeze(out.data||{});
   }
   async function reorderAdminItems(programKey,itemIds){assertAdminWrite();const out=await db().rpc('reorder_program_catalog_items',{p_program_key:programKey,p_item_ids:itemIds});if(out.error)throw out.error;return Boolean(out.data);}
-  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems});
+  async function financingOptions(){assertAdminWrite();const out=await db().rpc('get_program_product_financing_options');if(out.error)throw out.error;return out.data;}
+  window.ProgramCatalogRepository=Object.freeze({listItems,imageAssets,resolveImage,createRequest,getDirectContact,listFavorites,setFavorite,uploadAdminAsset,discardAdminAsset,saveAdminItem,reorderAdminItems,financingOptions});
 })();
 })();
 /* @@file popup-proposal-repository.js */
@@ -67225,6 +67228,9 @@ Object.assign(window, {
       value: money2(quote.financialResult.paymentPerPeriod),
       accent: true
     }), h(Field, {
+      label: 'Tasa de interés',
+      value: quote.financialResult.rate + '% ' + quote.financialResult.ratePeriod
+    }), h(Field, {
       label: 'Intereses',
       value: money2(quote.financialResult.interest)
     }), h(Field, {
@@ -67627,7 +67633,7 @@ Object.assign(window, {
         fontSize: 'var(--text-11, 11px)',
         color: 'var(--ink-3)'
       }
-    }, minDown > 0 ? 'Mínimo ' + money0(minDown) : 'Desde $0')), h('div', {
+    }, minDown > 0 ? 'Mínimo ' + money2(minDown) : 'Desde $0')), h('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -67669,7 +67675,7 @@ Object.assign(window, {
         color: '#B3261E',
         marginTop: 7
       }
-    }, 'El enganche mínimo para Caja Chica es ' + money0(minDown) + '.')), h('div', {
+    }, 'El enganche mínimo de este producto es ' + money2(minDown) + '.')), h('div', {
       style: {
         marginTop: 16
       }
@@ -67755,7 +67761,17 @@ Object.assign(window, {
         color: '#A32921',
         marginTop: 10
       }
-    }, quoteState.error === 'DOWN_PAYMENT_OUT_OF_RANGE' ? 'Ajusta el enganche al monto permitido por Caja Chica.' : 'No fue posible actualizar la simulación.'), h('div', {
+    }, quoteState.error === 'DOWN_PAYMENT_OUT_OF_RANGE' ? 'Ajusta el enganche al mínimo del producto y al límite financiable de Caja Chica.' : ['CONDITIONS_CHANGED', 'SNAPSHOT_INVALID'].includes(quoteState.error) ? 'Las condiciones cambiaron. Actualiza el plan antes de continuar.' : 'No fue posible actualizar la simulación.'), quoteState.phase === 'error' && h('button', {
+      type: 'button',
+      onClick: load,
+      style: {
+        border: 0,
+        background: 'transparent',
+        color: 'var(--guinda)',
+        fontWeight: 800,
+        marginTop: 8
+      }
+    }, 'Actualizar plan de pago'), h('div', {
       style: {
         display: 'flex',
         gap: 8,
@@ -69034,6 +69050,13 @@ Object.assign(window, {
   function iconButton(icon,onClick,disabled,labelText){return React.createElement('button',{onClick,disabled,'aria-label':labelText,style:{width:32,height:32,borderRadius:9,border:'none',background:'var(--surface-2)',color:'var(--ink-2)',display:'grid',placeItems:'center',cursor:disabled?'default':'pointer',opacity:disabled?.35:1}},React.createElement(I,{name:icon,size:16,stroke:2.2}));}
   function saveErrorMessage(error){
     const value=[error&&error.message,error&&error.code,error&&error.details,error&&error.hint].filter(Boolean).join(' ').toUpperCase();
+    if(value.includes('PRODUCT_FINANCING_CHANGED'))return 'Otra persona cambió las condiciones. Cierra y vuelve a abrir el producto antes de guardar.';
+    if(value.includes('PRODUCT_RATE_AUDIENCE_CONFLICT'))return 'Coinciden tasas distintas por sindicato y categoría. Agrega una regla con esa combinación para definir cuál aplica.';
+    if(value.includes('PRODUCT_RATE_RULE_DUPLICATE'))return 'Hay dos reglas para el mismo sindicato y categoría. Conserva una sola.';
+    if(value.includes('PRODUCT_RATE'))return 'Revisa las tasas: usa porcentajes no negativos, hasta seis decimales, y selecciona sindicato o categoría en cada regla.';
+    if(value.includes('PRODUCT_DOWN_PAYMENT_EXCEEDS_PRICE'))return 'El enganche debe ser menor al precio autorizado del producto.';
+    if(value.includes('PRODUCT_DOWN_PAYMENT'))return 'El enganche obligatorio debe ser positivo. Si es porcentaje, debe ser menor al 100%.';
+    if(value.includes('PRODUCT_FINANCING_CONFIG_INVALID'))return 'Revisa la configuración de tasa y enganche antes de guardar.';
     if(value.includes('PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED'))return 'La galería supera el límite permitido. Puedes conservar o reducir imágenes históricas, pero no aumentar su cantidad.';
     if(value.includes('PROGRAM_CATALOG_PRICE_REQUIRED'))return 'La modalidad Precio fijo requiere un importe mayor a cero. Un precio histórico vacío puede conservarse sólo si no lo modificas.';
     if(value.includes('PROGRAM_CATALOG_PRICE_INVALID'))return 'El precio no es válido. Usa cero o un importe positivo según la modalidad.';
@@ -69087,7 +69110,7 @@ Object.assign(window, {
   }
 
   function ProductEditor({item,programs,onClose,onSaved}){
-    const store=window.programCatalogAdminStore,[draft,setDraft]=useState(()=>Object.assign({},item)),[media,setMedia]=useState(()=>((item.imagenAssets||[]).map((asset)=>({kind:'existing',asset,url:asset.url})))),[busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState(null);
+    const store=window.programCatalogAdminStore,[draft,setDraft]=useState(()=>Object.assign({},item,{financingDraft:item.financing_config||null})),[media,setMedia]=useState(()=>((item.imagenAssets||[]).map((asset)=>({kind:'existing',asset,url:asset.url})))),[busy,setBusy]=useState(false),[error,setError]=useState(''),[preview,setPreview]=useState(null);
     const previewImage=React.useMemo(()=>function EditorPreviewImage({src,...props}){const entry=media.find(x=>(x.asset&&x.asset.link_id||x.url)===src);return entry&&entry.asset&&entry.asset.resource?React.createElement(window.ProgramCatalogImage,Object.assign({},props,{asset:entry.asset})):React.createElement('img',Object.assign({},props,{src:entry&&entry.url}));},[media]);
     const originalImageCount=(item.imagenAssets||[]).length,imageLimit=item.id?Math.max(8,originalImageCount):8;
     const set=(key,value)=>setDraft((old)=>Object.assign({},old,{[key]:value}));
@@ -69106,6 +69129,7 @@ Object.assign(window, {
         React.createElement('label',{style:label},'Descripción'),React.createElement('textarea',{'data-program-product-field':'description',value:draft.desc||'',rows:5,onChange:(e)=>set('desc',e.target.value),style:Object.assign({},field,{marginBottom:12,resize:'vertical',lineHeight:1.5})}),
         React.createElement('label',{style:label},'Modalidad'),React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8,marginBottom:12}},[['PAYROLL_FIXED','fixed','PRECIO FIJO','Precio visible en la app'],['PAYROLL_QUOTE','quote','REQUIERE COTIZACIÓN','La app muestra “Se cotiza”'],['DIRECT_CONTACT','direct','CONTACTO DIRECTO','Precio informativo · sin financiamiento SutiApp']].map(([value,mode,title,sub])=>{const on=draft.commercialMode===value;return React.createElement('button',{key:mode,'data-program-product-mode':mode,onClick:()=>setDraft((old)=>Object.assign({},old,{commercialMode:value,cotiza:value==='PAYROLL_QUOTE'})),style:{textAlign:'left',border:on?'2px solid var(--guinda)':'1px solid var(--hairline)',borderRadius:13,padding:10,background:on?'var(--guinda-50)':'var(--surface)',fontFamily:'inherit',cursor:'pointer',minWidth:0}},React.createElement('div',{style:{fontSize: 10.5,fontWeight:900,color:on?'var(--guinda)':'var(--ink)',overflowWrap:'anywhere'}},title),React.createElement('div',{style:{fontSize: 9.5,fontWeight:600,color:'var(--ink-3)',marginTop:3,lineHeight:1.35}},sub));})),
         React.createElement('label',{style:label},draft.commercialMode==='PAYROLL_FIXED'?'Precio fijo obligatorio':draft.commercialMode==='DIRECT_CONTACT'?'Precio informativo (opcional)':'Precio importado/referencial (opcional)'),React.createElement('input',{'data-program-product-field':'price',type:'number',min:0,step:'0.01',value:draft.precio==null?'':draft.precio,onChange:(e)=>set('precio',e.target.value===''?null:Number(e.target.value)),style:Object.assign({},field,{marginBottom:12})}),
+        React.createElement(ProductFinancingEditor,{value:Object.prototype.hasOwnProperty.call(draft,'financingDraft')?draft.financingDraft:draft.financing_config,onChange:(value)=>set('financingDraft',value),direct:draft.commercialMode==='DIRECT_CONTACT'}),
         React.createElement('label',{style:label},'Orden'),React.createElement('input',{'data-program-product-field':'order',type:'number',min:1,max:10000,value:draft.orden==null?'':draft.orden,onChange:(e)=>set('orden',Number(e.target.value)),style:Object.assign({},field,{marginBottom:12})}),
         React.createElement('div',{'data-program-product-active-control':'true',style:{display:'flex',alignItems:'center',gap:12,background:'var(--surface)',borderRadius:14,padding:'12px 15px',boxShadow:'var(--neo-sm)',marginBottom:14}},React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{fontSize: 14,fontWeight:850}},'Activo en la app'),React.createElement('div',{style:{fontSize: 11.5,fontWeight:600,color:'var(--ink-3)',marginTop:3}},'Desactivar conserva el producto y su historia.')),React.createElement(window.Toggle,{on:draft.activo!==false,size:'lg',onClick:()=>set('activo',draft.activo===false)})),
         React.createElement('div',{'data-program-product-sold-control':'true',style:{display:'flex',alignItems:'center',gap:12,background:'var(--surface)',borderRadius:14,padding:'12px 15px',boxShadow:'var(--neo-sm)',marginBottom:14}},React.createElement('div',{style:{flex:1}},React.createElement('div',{style:{fontSize: 14,fontWeight:850}},'Vendido'),React.createElement('div',{style:{fontSize: 11.5,fontWeight:600,color:'var(--ink-3)',marginTop:3}},'Marca el artículo como no disponible para nuevas solicitudes.')),React.createElement(window.Toggle,{on:draft.sold===true,size:'lg',onClick:()=>set('sold',draft.sold!==true)})),
@@ -69113,6 +69137,38 @@ Object.assign(window, {
         error&&React.createElement('div',{style:{color:'#C0341D',fontSize: 12.5,fontWeight:750,marginBottom:12}},error),React.createElement('div',{style:{display:'flex',gap:10}},React.createElement(window.Btn,{variant:'outline',style:{flex:1},onClick:onClose},'Cancelar'),React.createElement(window.Btn,{'data-program-product-save':'true',icon:'check',style:{flex:2},disabled:busy,onClick:save},busy?'Guardando…':'Guardar'))),
       preview!=null&&React.createElement(window.ImageViewer,{sources:media.map((x)=>x.asset&&x.asset.link_id||x.url),imageComponent:previewImage,startIndex:preview,alt:'Imagen del producto',onClose:()=>setPreview(null)}));
   }
+  function ProductFinancingEditor({value,onChange,direct}){
+    const h=React.createElement,[options,setOptions]=useState(null),[failed,setFailed]=useState(false);
+    const load=React.useCallback(()=>{setFailed(false);window.ProgramCatalogRepository.financingOptions().then(setOptions,()=>setFailed(true));},[]);
+    useEffect(()=>{load();},[load]);
+    const config=value||{default_rate:null,rules:[],down_payment:{required:false,type:'AMOUNT',value:0}};
+    const change=(patch)=>onChange(Object.assign({},config,patch));
+    const changeRule=(index,patch)=>change({rules:config.rules.map((row,i)=>i===index?Object.assign({},row,patch):row)});
+    const inputStyle=Object.assign({},field,{marginBottom:8});
+    const audience=(type,current,index,key,caption)=>h('label',{style:{display:'block',minWidth:0}},h('span',{style:label},caption),h('select',{'aria-label':caption+' regla '+(index+1),value:current||'',onChange:e=>changeRule(index,{[key]:e.target.value||null}),style:inputStyle},h('option',{value:''},'Todos'),(options||[]).filter(x=>x.type===type).map(x=>h('option',{key:x.code,value:x.code},x.label))));
+    return h('section',{'data-product-financing-editor':'true',style:{background:'var(--surface)',borderRadius:14,padding:15,marginBottom:14,boxShadow:'var(--neo-sm)'}},
+      h('div',{style:{fontSize:14,fontWeight:850,marginBottom:8}},'Tasa de interés y enganche'),
+      h('p',{style:{fontSize:12,color:'var(--ink-3)',lineHeight:1.5,margin:'0 0 12px'}},direct?'Contacto directo no utiliza financiamiento. Las condiciones se conservan para cuando actives una modalidad vía nómina.':'Fondo: Caja Chica. La tasa se aplica por periodo de descuento: quincenal o mensual, según el empleado. Sin tasa especial se usa la que corresponde al afiliado.'),
+      h('fieldset',{disabled:direct,style:{border:0,padding:0,margin:0,minWidth:0,opacity:direct?.6:1}},
+        h('label',{style:label},'Tasa general del producto (%)'),
+        h('input',{'data-product-default-rate':'true','aria-label':'Tasa general del producto (%)',type:'number',min:0,step:'0.000001',value:config.default_rate==null?'':config.default_rate,placeholder:'Usar tasa de Caja Chica',onChange:e=>change({default_rate:e.target.value===''?null:Number(e.target.value)}),style:inputStyle}),
+        h('div',{style:{fontSize:11.5,color:'var(--ink-3)',marginBottom:12}},'Vacío: hereda Caja Chica. 0: financiamiento sin intereses; conserva los gastos administrativos.'),
+        h('div',{style:label},'Tasas por sindicato y categoría'),
+        failed?h('div',{role:'alert'},'No se pudieron cargar sindicatos y categorías. ',h('button',{onClick:load,type:'button'},'Reintentar')):!options?h('div',{style:label},'Cargando sindicatos y categorías…'):null,
+        config.rules.map((row,index)=>h('div',{key:index,'data-product-rate-rule':index,style:{border:'1px solid var(--hairline)',borderRadius:12,padding:10,marginBottom:10}},
+          h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:8}},audience('union',row.union_code,index,'union_code','Sindicato'),audience('employment_category',row.category_code,index,'category_code','Categoría del empleado')),
+          h('label',{style:label},'Tasa por periodo (%)'),h('input',{'aria-label':'Tasa regla '+(index+1),type:'number',min:0,step:'0.000001',value:row.rate==null?'':row.rate,onChange:e=>changeRule(index,{rate:e.target.value===''?null:Number(e.target.value)}),style:inputStyle}),
+          h('button',{type:'button',onClick:()=>change({rules:config.rules.filter((_,i)=>i!==index)}),style:{border:0,background:'transparent',color:'var(--guinda)',fontWeight:800,cursor:'pointer'}},'Quitar regla'))),
+        h('button',{'data-product-rate-add':'true',type:'button',disabled:!options||failed,onClick:()=>change({rules:config.rules.concat({union_code:null,category_code:null,rate:null})}),style:{border:'1px solid var(--hairline)',borderRadius:10,padding:'9px 12px',background:'var(--surface)',color:'var(--guinda)',fontWeight:800,cursor:'pointer',marginBottom:12}},'Agregar tasa por perfil'),
+        h('div',{style:{fontSize:11.5,color:'var(--ink-3)',lineHeight:1.5,marginBottom:14}},'Una regla con sindicato y categoría tiene prioridad. Si dos reglas individuales coinciden con tasas distintas, agrega la regla de esa combinación.'),
+        h('label',{style:{display:'flex',alignItems:'center',gap:9,fontSize:13,fontWeight:800,marginBottom:12}},h('input',{'data-product-down-required':'true',type:'checkbox',checked:config.down_payment.required,onChange:e=>change({down_payment:Object.assign({},config.down_payment,{required:e.target.checked})})}),'Enganche obligatorio'),
+        config.down_payment.required&&h('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8}},
+          h('select',{'aria-label':'Tipo de enganche',value:config.down_payment.type,onChange:e=>change({down_payment:Object.assign({},config.down_payment,{type:e.target.value})}),style:inputStyle},h('option',{value:'AMOUNT'},'Monto fijo ($)'),h('option',{value:'PERCENT'},'Porcentaje (%)')),
+          h('input',{'aria-label':'Enganche mínimo',type:'number',min:.01,max:config.down_payment.type==='PERCENT'?99.99:undefined,step:.01,value:config.down_payment.value,onChange:e=>change({down_payment:Object.assign({},config.down_payment,{value:e.target.value===''?null:Number(e.target.value)})}),style:inputStyle})),
+        h('div',{style:{fontSize:11.5,color:'var(--ink-3)',lineHeight:1.5}},'El enganche es un mínimo. El afiliado puede aportar más. El límite financiable de Caja Chica puede exigir un enganche mayor.'),
+        value&&h('button',{type:'button',onClick:()=>onChange(null),style:{marginTop:12,border:0,background:'transparent',color:'var(--guinda)',fontWeight:800,cursor:'pointer'}},'Restablecer condiciones de Caja Chica')));
+  }
+  window.ProgramProductFinancingEditor=ProductFinancingEditor;
   window.ProgramProductsModule=ProgramProductsModule;
   window.ProgramProductSaveErrorMessage=saveErrorMessage;
 })();

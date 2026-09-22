@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "adminSaveReload": true,
+  "rateAudience": true,
+  "requiredDownPayment": true,
+  "inheritanceReset": true,
+  "directContactPreserved": true,
+  "simulatorMinimum": true,
+  "staleSessionRetry": true,
+  "calendar": true,
+  "viewports": [
+    390,
+    1280
+  ],
+  "browserErrors": [],
+  "productionWrites": 0
+}

@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-09-22T14:45:25.188Z",
+  "adminOptions": 11,
+  "denials": [
+    401,
+    403
+  ],
+  "inheritedRate": 3,
+  "rateSource": "CAJA_CHICA",
+  "sameCajaQuote": true,
+  "minimumPreserved": true,
+  "installed": {
+    "configured_items": 0,
+    "browser_confirm": false,
+    "browser_resolve": false,
+    "browser_update": false,
+    "exact_writer_backup": 1
+  },
+  "businessWrites": 0,
+  "ephemeralSimulationSessions": 2,
+  "googleWrites": 0,
+  "requestConfirmation": "NOT EXECUTED",
+  "customRates": "ISOLATED TESTS ONLY",
+  "sourceSha256": "1b55be996ef704c93347ea1857334b9b1de4bc12f756de11bdeddc1ce83f2ccf"
+}

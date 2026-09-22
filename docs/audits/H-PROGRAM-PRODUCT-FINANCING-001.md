@@ -112,18 +112,19 @@ documents and any transactional delivery/audit. No browser-supplied rate is acce
 
 ## Guardians
 
-SOURCE OF TRUTH: SAFE for candidate. Same product master, existing Caja rule for
+SOURCE OF TRUTH: PASS. Same product master, existing Caja rule for
 inheritance, per-item configuration for explicit exception, immutable request for
-accepted contract; Google remains derived. No production cutover has occurred.
-DATABASE: PASS isolated. Nullable additive column, no backfill; private RLS-forced
+accepted contract; Google remains derived. Additive backend installed with initial NULLs.
+DATABASE: PASS isolated and installed. Nullable additive column, no backfill; private RLS-forced
 definition backup; same writer OID/ACL; column read only for browser, helpers service
 only, admin RPCs explicitly granted. Recovery restores exact code only without
 configuration/history; otherwise refuses to discard it.
-SECURITY: PASS isolated. Anonymous/affiliate cannot configure or invoke service
+SECURITY: PASS. Anonymous/affiliate cannot configure or invoke service
 resolver/confirmation; original catalog permission checks and audit reused. No
 secret, identity master, Storage policy or global authorization changes. Actual
-installed grants/denials for the new RPCs await authorized installation.
-LEGACY: SAFE CHANGE candidate for owner-requested product conditions. Existing
+installed grants and anonymous/authenticated service denials verified; ordinary
+non-admin configuration denial covered in isolated SQL (no live credential available).
+LEGACY: SAFE CHANGE for owner-requested product conditions. Existing
 math/fee/calendar unchanged; new rate is the only intended financial difference.
 Google row builder reads the sealed result; no Apps Script/formula/trigger edits,
 no synthetic loans appended and no historical request changes.
@@ -149,8 +150,8 @@ are ephemeral; no confirmation, product edit or Google write is performed.
 Automatic approval review rejected `node scripts/deploy-financial-legacy.js bundle`
 because it POSTs to a Supabase deployment endpoint and could publish the Edge
 Function without explicit production authorization. The command did not execute.
-No alternate deployment path was attempted. Migration, Edge and frontend remain
-local. Local compilation and tests completed independently of that restriction.
+No alternate deployment path was attempted before authorization. At that historical
+boundary migration, Edge and frontend remained local. Local tests completed first.
 
 After explicit owner approval: verify unchanged migration number/function digest;
 run `node scripts/program-product-financing-admin.js --apply` (one protected-data
@@ -161,7 +162,7 @@ Google request; live custom-rate acceptance requires an owner-designated real ca
 
 ## H-PROGRAM-PRODUCT-FINANCING-001 RESULT
 
-Status: BLOCKED — backend installed and verified; frontend publication acceptance in progress.
+Status: PASS — backend installed, frontend published and production acceptance completed.
 Files changed: declared catalog repository/editor/simulator, product-only Edge branch,
 additive migration/recovery, focal tests/tooling, generated bundle/cachebusters,
 governance, registry and evidence. Full list available through git diff/status.
@@ -176,14 +177,17 @@ authenticated service resolver denied 403. Non-admin save denial covered isolate
 only the admin QA credential is available for live verification.
 Legacy impact: intended per-product rate only; no real product/rule/request changes.
 Unexpected files changed: none at scope review.
-Known limitations: frontend publication pending; no new production request or actual-rate save tested.
+Known limitations: actual-rate saves, submitted requests and Google row projection
+tested in isolation; no synthetic production request or Google write was performed.
 Evidence: this audit; test sources and sanitized schema fixture; browser.json and
-global-local.json plus synthetic screenshots in docs/qa/evidence/program-product-financing-20260922/.
+global-local.json, global-pages.json, backend-live.json, migration-apply.json,
+edge-deployment.json, bundle-preservation.json, pages-publication.json and synthetic
+screenshots in docs/qa/evidence/program-product-financing-20260922/.
 
 ## SUTIAPP ARCHITECT REVIEW
 
 Task: H-PROGRAM-PRODUCT-FINANCING-001.
-Verdict: BLOCKED for final Pages acceptance; backend installation and live checks PASS.
+Verdict: APPROVED — requested implementation, authorized publication and required checks complete.
 Critical findings: no uncorrected local defect found in the reviewed candidate;
 owner explicitly resolved the initial automatic-review authorization boundary.
 Source of truth: one item configuration + inherited Caja rule + immutable submission.
@@ -192,16 +196,16 @@ Security: permission checks, service-only helpers and atomic stale-contract reje
 Data: nullable initial configuration; existing products/rules/requests preserved.
 Legacy: Google projection tested without external writes; math/calendar preserved.
 Owner decision: NO — installation and publication explicitly authorized.
-Next action: publish the reviewed frontend and complete live verification.
+Next action: record this completed release and return the published admin entry point.
 WORK_QUEUE_HISTORY.md absent; task-orchestrator and
 h-gate-supervisor are not installed skills. No autonomous next H is authorized.
 Response generated for Codex: YES.
 
 ### RESPONSE TO CODEX
 
-Complete only this authorized release: publish the reviewed frontend and verify
-Pages v278/v216 with the mandatory global regression, then record the final result.
-No new H or production business-data edits are authorized by this review.
+Approve H-PROGRAM-PRODUCT-FINANCING-001. Record the final evidence in the repository
+and report the published admin configuration entry point. No new H or production
+business-data edits are authorized by this review; no task-orchestrator continuation.
 
 ### Installed backend evidence — 2026-09-22
 
@@ -213,3 +217,32 @@ writes. Two ordinary ephemeral simulation sessions; no request confirmation.
 Edge deployment returned HTTP 201, version 50 ACTIVE, verify_jwt true. Remote compiled
 body SHA256 ae660c2412eeb1c906d9b30655309ea8e81283782b4fd18d68e7d1338e7589b7;
 all 16 expected markers verified after updating the obsolete writer-name check.
+
+### Published acceptance — 2026-09-22
+
+Release commit `7663c97b487c4b0fdfbb302e6b06415b814b3e43` deployed successfully:
+https://github.com/David14081982/SutiApp-private/actions/runs/35743144898
+Workflow Auth compatibility, critical request compatibility, public artifact build,
+Pages deployment and post-deployment request checks all SUCCESS.
+
+`pages-publication.json` independently compares public HTML, bundle and worker
+against local reviewed bytes (LF normalized). Bundle v278 SHA256
+7ef34c4ba981bee9cdd07a2e166f1ecc657135d1525b512d5b2ee78472abf358;
+worker v216 SHA256 320da5b9e699e8950f74f991fca3905667dd0edee470f674868a96acffbd39ca.
+
+`node scripts/test-program-product-financing-live.js --pages`: PASS on the new
+published release. 190 public assets, 226 catalog assets / 118 products, 29 historical
+images, Login seal, profile, Admin Afiliados, membership/loan documents, Marketplace,
+gallery/fullscreen/refresh, legitimate PDF HTTP 200, worker v216 and worker disabled
+all verified. Zero browser errors and business-data mutations. Full global matrix
+also passed locally against the deployed backend. No shared-image regression.
+
+Final architect cross-check: actual frontend/repository/Edge/SQL diff agrees with
+the request; only three bundle modules changed and 127 remain byte-identical. NULL
+inherits the original rule; overrides are resolved in SQL and sealed at submit;
+existing Google builder consumes that sealed rate. No Google builder, Apps Script,
+ordinary loan engine, Auth or image-source code changed. Configuration permissions,
+atomic stale comparison, forced-RLS function backup and history-preserving recovery
+are evidenced by migration, live ACLs and the 36-case isolated test. Browser evidence
+covers mobile/desktop, selectors, save/reload/reset and simulator/calendar. No
+unresolved defect, owner decision or unexpected file remains in the release scope.

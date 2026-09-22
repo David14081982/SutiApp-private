@@ -8,7 +8,7 @@ simulador/solicitud/Google coherentes y enganche obligatorio de monto o porcenta
 Autoriza implementación con «hazlo de forma quirurgica» y despliegue/publicación
 con «Si hazlo y publicalo». Migración 20260922000200 y financial-legacy v50 aplicados
 el 2026-09-22: datos protegidos preservados, configuraciones iniciales NULL y
-herencia de Caja Chica verificada en producción. Publicación frontend en curso.
+herencia de Caja Chica verificada en producción. Frontend v278 publicado en Pages.
 
 Se agrega configuración al mismo artículo, sin maestro financiero duplicado.
 Excepción focal a INV-059/ADR-037 y a la herencia exclusiva de tasa de ADR-087;

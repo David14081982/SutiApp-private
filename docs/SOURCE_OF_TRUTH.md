@@ -1,6 +1,6 @@
 # Fuentes de verdad
 
-## Condiciones por producto — H-PROGRAM-PRODUCT-FINANCING-001 — backend aplicado
+## Condiciones por producto — H-PROGRAM-PRODUCT-FINANCING-001 — publicado
 
 APPLIED: migración 20260922000200 y financial-legacy v50, autorizadas por OWNER
 con «Si hazlo y publicalo» el 2026-09-22.
@@ -21,7 +21,7 @@ un cambio invalida la cotización. La confirmación captura `financing_condition
 en `financial_submission_snapshot` y compara atómicamente el resultado aceptado.
 Admin, aprobación y registro Google consumen esa captura. El catálogo vigente nunca
 reinterpreta solicitudes anteriores. Herencia y permisos verificados en producción;
-publicación frontend en curso. No se configuraron tasas en productos reales.
+frontend v278 publicado en GitHub Pages. No se configuraron tasas en productos reales.
 Evidencia: [auditoría](audits/H-PROGRAM-PRODUCT-FINANCING-001.md).
 
 ## Acceso a préstamos de Caja de Ahorro — publicado 2026-09-22

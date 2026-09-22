@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## 2026-09-22 — H-PROGRAM-PRODUCT-FINANCING-001 — backend deployed
+## 2026-09-22 — H-PROGRAM-PRODUCT-FINANCING-001 — published
 
 Owner requested surgical per-item interest overrides (including union/category),
 Caja Chica inheritance and optional mandatory amount/percentage down payments.
@@ -19,7 +19,11 @@ Migration 20260922000200 applied; Edge v50 ACTIVE with JWT verification. Protect
 data preserved, zero configured overrides, admin options and live permission denials
 PASS. Actual product simulation inherits 3% and equals the ordinary Caja quote.
 Only ephemeral sessions created; no confirmed request or Google write. Frontend
-publication in progress. Earlier automatic-review boundary resolved by owner approval.
+v278/cache v216 published by commit 7663c97, workflow 35743144898 SUCCESS; remote
+bundle/HTML/worker hashes match exactly. Earlier approval boundary resolved by owner.
+Final result PASS / architect APPROVED. New Pages global regression PASS, including
+legitimate PDF, images, galleries, refresh and worker v216 versus no worker. Zero
+browser errors or business-data mutations. New live acceptance receipts committed.
 Full result, tests, recovery and architect review:
 [H-PROGRAM-PRODUCT-FINANCING-001](audits/H-PROGRAM-PRODUCT-FINANCING-001.md).
 

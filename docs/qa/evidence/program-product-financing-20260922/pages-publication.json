@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-09-22T14:52:15.711Z",
+  "site": "https://david14081982.github.io/SutiApp-private/",
+  "releaseCommit": "7663c97b487c4b0fdfbb302e6b06415b814b3e43",
+  "assets": {
+    "app/bundle.js": "7ef34c4ba981bee9cdd07a2e166f1ecc657135d1525b512d5b2ee78472abf358",
+    "sw.js": "320da5b9e699e8950f74f991fca3905667dd0edee470f674868a96acffbd39ca",
+    "SutiApp.html": "1dbf1c403477cabfe74d976ba5a5af83aefd5e8609693b1024f04bf8c9f7967c"
+  },
+  "workflow": {
+    "conclusion": "success",
+    "headSha": "7663c97b487c4b0fdfbb302e6b06415b814b3e43",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/35743144898"
+  }
+}

@@ -1,7 +1,7 @@
 # Bitácora de agentes
 
 
-## 2026-09-22 - H-AUTH-QUIET-REVALIDATION-001 - PASS / local (not published)
+## 2026-09-22 - H-AUTH-QUIET-REVALIDATION-001 - PASS / production
 
 Owner-reported "returns to Inicio". Root cause 3: every token rotation (≈hourly and
 on resume) re-resolved the whole identity and ANY failure published `error`, which
@@ -19,8 +19,11 @@ pre-existing version pins. Chrome E2E with a real token refresh and identity RPC
 down: before → `error` screen that persists after recovery; after → stays in Admin,
 authenticated throughout, rotated token applied. Global image regression PASS on
 local build (allowed origin localhost:8080, with this and the previous H) and on Pages.
+Published 4a5a4f8 + a63bdc8 / v275; Pages run 35695932056 SUCCESS; public HTML and
+bundle match the commit byte-for-byte; token-refresh and admin-refresh Chrome E2E on
+production PASS; global image regression on Pages after deploy PASS (0 mutations).
 
-## 2026-09-22 - H-APP-UPDATE-NO-FORCED-RELOAD-001 - PASS / local (not published)
+## 2026-09-22 - H-APP-UPDATE-NO-FORCED-RELOAD-001 - PASS / production
 
 Owner-reported "returns to Inicio". Root cause 2: every service-worker takeover
 (`controllerchange`) reloaded the page. On the first open after a deploy the page

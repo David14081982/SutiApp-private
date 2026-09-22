@@ -3441,3 +3441,9 @@ Registry unchanged structurally: text/styles/markup only, no new data dependency
 Pending JOIN UI release: ca3cc79; Pages run 35627950811 SUCCESS.
 sutiapp.com HTTP 200, v270/cache213, remote bundle equals tested local SHA256
 2b45aefc6d55edb2715de2e5fa87faf375483cd0996a77ebf268c0017c065983.
+
+## 2026-09-22 — H-SAVINGS-LOAN-ELIGIBILITY-001 — LOCAL PREPARED
+
+Owner requested configurable minimum Savings tenure (free integer month entry and enrollment/first actual deduction origin), one-request special authorizations for specific affiliates, and exclusion of ineligible Caja de Ahorro from Inicio/Finanzas/Loan availability. Implemented private policy/grants/immutable audit, backend quote/request gates and additive Admin controls. Preserve rates, financial calculation, ledger, historical data and Google. Stable fund code prevents display-name bypass; canonical status/actual receipts distinguish future plans, expired plans and future terminations. Used authorizations survive authorized request deletion without becoming available again.
+
+Isolated PostgreSQL security/behavior/recovery tests, Chrome 390/1440 browser tests, focal financial tests, scoped bundle and full global image regression (local localhost:8080 + GitHub Pages) PASS. Migration/Edge/frontend not deployed; no productive loan created. No initial month count or origin invented. See [audit](audits/H-SAVINGS-LOAN-ELIGIBILITY-001.md) and [sanitized receipts](qa/H-SAVINGS-LOAN-ELIGIBILITY-001.json).

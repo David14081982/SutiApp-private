@@ -25,6 +25,8 @@ function env() {
   const values = env();
   const source = fs.readFileSync(sourcePath, 'utf8');
   const policy = fs.readFileSync(policyPath, 'utf8');
+  const dependencies = ['request-google-sync.js', 'savings-eligibility.ts'].map(name => ({ name,
+    source: fs.readFileSync(path.join(path.dirname(sourcePath), name), 'utf8') }));
   const ref = new URL(values.SUPABASE_URL).hostname.split('.')[0];
   const slug = 'financial-legacy';
   const base = 'https://api.supabase.com/v1/projects/' + ref + '/functions/';
@@ -43,6 +45,7 @@ function env() {
     const markers = ['source/index.ts', 'deposit_selection', 'bank_account_id', 'notification_phone', 'create_validated_financial_program_request',
       'programPaymentSessionOpen', 'generate_program_product_payment_schedule', 'create_validated_program_product_payment_request'];
     markers.push('PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY', 'PROGRAM_PRODUCT_SOLD', 'commercial_mode');
+    markers.push('filterSavingsLoanRules', 'savings_loan_eligibility');
     const magic = remote.subarray(0, 12).toString('ascii');
     const compiled = magic.startsWith('ESZIP') || remote.includes(Buffer.from('source/index.ts'));
     if (compiled) {
@@ -57,6 +60,9 @@ function env() {
   form.append('metadata', JSON.stringify({ name: slug, slug, entrypoint_path: 'index.ts', verify_jwt: true }));
   form.append('file', new Blob([source], { type: 'application/typescript' }), 'index.ts');
   form.append('file', new Blob([policy], { type: 'application/javascript' }), 'visibility-policy.js');
+  for (const dependency of dependencies) form.append('file', new Blob([dependency.source], {
+    type: dependency.name.endsWith('.ts') ? 'application/typescript' : 'application/javascript',
+  }), dependency.name);
   const suffix = mode === 'bundle' ? '&bundleOnly=true' : '';
   const response = await fetch(base + 'deploy?slug=' + slug + suffix, { method: 'POST', headers, body: form });
   const body = await response.json().catch(() => ({}));

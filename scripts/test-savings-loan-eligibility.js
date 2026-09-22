@@ -1,0 +1,53 @@
+'use strict';
+// Isolated PostgreSQL/WASM. No production transport, credentials or live writes.
+const fs = require('fs'), path = require('path'), assert = require('assert/strict'), vm = require('vm');
+const { stripTypeScriptTypes } = require('module');
+const root = path.resolve(__dirname, '..'), read = p => fs.readFileSync(path.join(root, p), 'utf8');
+async function main() {
+  const { PGlite } = require(process.env.SUTIAPP_PGLITE_PATH || path.join(root, '.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
+  const db = new PGlite();
+  const [bootstrap, tests] = read('scripts/test-savings-loan-eligibility.sql').split('-- TESTS: migration and actual quote definition are installed by the JS harness.');
+  const migration = read('supabase/migrations/20260922000100_savings_loan_eligibility.sql');
+  const recovery = read('supabase/recovery/20260922000100_savings_loan_eligibility.sql');
+  try {
+    await db.exec(bootstrap);
+    // Compile the existing full quote implementation, not a replacement quote engine.
+    const source = read('supabase/migrations/20260915000100_admin_assisted_context.sql');
+    const start = source.indexOf('CREATE OR REPLACE FUNCTION public.resolve_current_loan_snapshot_quote(');
+    assert(start >= 0);
+    const end = source.indexOf('$function$;', source.indexOf('AS $function$', start) + 14);
+    assert(end > start);
+    await db.exec(source.slice(start, end + 11));
+    const before = (await db.query("select pg_get_functiondef('public.resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)'::regprocedure) def")).rows[0].def;
+    await db.exec(migration);
+    await db.exec(recovery);
+    const restored = (await db.query("select pg_get_functiondef('public.resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)'::regprocedure) def")).rows[0].def;
+    assert.equal(restored, before, 'exact function recovery');
+    await db.exec(migration);
+    await db.exec(tests);
+    await assert.rejects(db.exec(recovery), /RECOVERY_BLOCKED_SAVINGS_LOAN_HISTORY_EXISTS/);
+    await db.exec('rollback;');
+    console.log('PASS SQL: policy, date boundaries, no saver, no deduction, revocation, one-use request guard, history, ACL/RLS, exact recovery and post-use refusal');
+  } finally { await db.close(); }
+  const code = stripTypeScriptTypes(read('supabase/functions/financial-legacy/savings-eligibility.ts'));
+  const { filterSavingsLoanRules } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+  const rules = [{ id: 'prestamo--caja-de-ahorro--r1', fund: 'Caja de Ahorro', status: 'AVAILABLE', max_amount: 20000 }, { id: 'caja--caja-chica--r2', fund: 'Caja Chica', status: 'AVAILABLE', max_amount: 40000 }, { id: 'prestamo--aguinaldos--r3', fund: 'Aguinaldos', status: 'AVAILABLE', max_amount: 40000 }];
+  const client = eligible => ({ rpc: async (name, args) => { assert.equal(name, 'savings_loan_eligibility'); assert.equal(args.p_affiliate_id, 'affiliate'); return { data: { eligible }, error: null }; } });
+  const restricted = await filterSavingsLoanRules(client(false), rules, 'affiliate');
+  assert.equal(restricted.length, 2); assert.equal(restricted[0], rules[1]);
+  assert.equal((await filterSavingsLoanRules(client(false), [{ ...rules[0], fund: 'Nombre nuevo' }], 'affiliate')).length, 0, 'fund rename cannot bypass policy');
+  assert.equal(await filterSavingsLoanRules(client(true), rules, 'affiliate'), rules);
+  await assert.rejects(filterSavingsLoanRules({ rpc: async () => ({ error: true, data: null }) }, rules, 'affiliate'), /UNAVAILABLE/);
+  await assert.rejects(filterSavingsLoanRules({ rpc: async () => ({ error: null, data: {} }) }, rules, 'affiliate'), /UNAVAILABLE/);
+  const sandbox = { window: {}, React: {}, Set, Event: class {}, console };
+  vm.runInNewContext(read('app/financial-legacy-repository.js'), sandbox);
+  const sum = sandbox.window.FinancialLegacyRepository.availableCreditTotal;
+  assert.equal(sum({ programs: rules }), 100000); assert.equal(sum({ programs: restricted }), 80000);
+  const edge = read('supabase/functions/financial-legacy/index.ts');
+  assert.match(edge, /filterSavingsLoanRules\(privileged, rawRules, context.affiliateId\)/);
+  assert.match(edge, /filterSavingsLoanRules\(privileged, await readCriteriaRules\(privileged\), context.affiliateId\)/);
+  assert.match(edge, /currentRules = await filterSavingsLoanRules/);
+  assert.match(edge, /filterSavingsLoanRules\(privilegedClient\(supabaseUrl\), rules/);
+  console.log('PASS Edge and existing credit total: 100000 -> 80000; other funds unchanged; failures closed; all loan paths guarded');
+}
+main().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });

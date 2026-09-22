@@ -249,6 +249,7 @@
       header({ title: desktop ? 'Configuración financiera' : 'Fondos y reglas', sub: store.all().length + (desktop ? ' reglas · autoridad Supabase' : ' criterios · visibilidad SutiApp'), onBack }),
       window.ActingBanner && React.createElement(window.ActingBanner, {}),
       React.createElement('div', { className: 'su-app-scroll', style: { padding: 16, paddingBottom: 28 } },
+        React.createElement(window.SavingsLoanAccessAdmin, { app }),
         desktop ? React.createElement(React.Fragment, null, nav, React.createElement('div', { style: { height: 12 } }), store.status() === 'loading' ? React.createElement('div', { className: 'pcmx-panel', 'data-criteria-loading': 'true', style: { padding: 8 } }, Array.from({ length: 10 }, (_, index) => React.createElement('div', { key: index, className: 'pcmx-skeleton' }))) :
           store.status() === 'error' ? React.createElement('div', { className: 'pcmx-empty', 'data-criteria-error': 'true' }, React.createElement('strong', null, 'No pudimos consultar la configuración financiera'), React.createElement('span', null, 'Supabase no respondió. No se usó caché, mock ni fuente alternativa.'), React.createElement('button', { type: 'button', onClick: () => store.load(true) }, 'Reintentar')) : desktopContent) : React.createElement(React.Fragment, null,
         React.createElement('div', { style: { background: '#EEF3FF', border: '1px solid #D6E2FB', borderRadius: 14, padding: '11px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 } },

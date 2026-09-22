@@ -1,5 +1,32 @@
 # Fuentes de verdad
 
+## Acceso a préstamos de Caja de Ahorro — candidato local 2026-09-22
+
+H-SAVINGS-LOAN-ELIGIBILITY-001 agrega una política Supabase (`savings_loan_policy`)
+de meses calendario y fecha base configurable por Finanzas/administrador. No hay un
+periodo inicial inventado: sin configurar, sólo una excepción explícita permite el acceso.
+`savings_participants` y la última `savings_enrollments` canónica/certificada conservan
+la autoridad de inscripción activa y `first_actual_contribution_date`, mantenida por
+certificación/recibos reales. Saldo, calendario previsto, Google y navegador no prueban descuentos.
+La actividad efectiva reutiliza `savings_enrollment_effective_status` y el plan canónico
+vigente, respetando bajas futuras y excluyendo planes pausados o vencidos. La política
+se vincula al código estable del fondo `caja-de-ahorro`, no a su nombre editable.
+Una fecha prevista en una apertura cero no se convierte en primer descuento al
+transcurrir el tiempo: ese caso requiere recibos confirmados positivos vigentes.
+
+`savings_loan_authorizations` es la autoridad focal de una excepción para una solicitud;
+`savings_loan_access_events` conserva configuración, concesión, revocación y consumo
+con actor real, beneficiario, motivo, fecha y solicitud. RPCs con permisos backend son
+los únicos escritores. El guard consume la excepción en la transacción de creación.
+No se concede ahorro, no se modifica el ledger y Caja Chica permanece independiente.
+
+Inicio/Finanzas mantienen el total derivado de fondos disponibles; la Edge excluye
+Caja de Ahorro cuando no es elegible y SQL revalida cotización/solicitud. Snapshots se
+invalidan por cambios administrativos y se revalidan contra condiciones actuales.
+Sin fallback ni almacenamiento persistente nuevo del navegador. Estado: preparado y
+probado localmente; no aplicado ni publicado. Evidencia en
+[auditoría](audits/H-SAVINGS-LOAN-ELIGIBILITY-001.md).
+
 ## Transporte Google de solicitudes y lectura de préstamos — 2026-09-21
 
 `HISTORIAL P V2` (sheetId 1245291756) sigue siendo la autoridad del guard de

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { BUSINESS_TIME_ZONE, evaluateVisibility } from "./visibility-policy.js";
 import { deliverRequestRegister, capturedDocumentReferences } from "./request-google-sync.js";
+import { filterSavingsLoanRules } from "./savings-eligibility.ts";
 
 // Supabase is intentionally schema-untyped in this standalone Edge bundle; database
 // contracts are enforced by migrations/RLS/RPCs and validated again at this boundary.
@@ -465,7 +466,8 @@ async function invalidateLoanSession(privileged: SupabaseClientLike, id: string,
 async function openPersonalizedLoanSession(
   userClient: SupabaseClientLike, privileged: SupabaseClientLike, context: LoanSessionContext,
 ) {
-  const [rules, policy] = await Promise.all([readCriteriaRules(privileged), readTermPolicy(userClient)]);
+  const [rawRules, policy] = await Promise.all([readCriteriaRules(privileged), readTermPolicy(userClient)]);
+  const rules = await filterSavingsLoanRules(privileged, rawRules, context.affiliateId);
   const matched = rulesForProfile(rules, context.profile)
     .filter((rule) => rule.payment_count >= policy.customMinTerm);
   const overview = resolveOverview(rules, context.profile, policy);
@@ -517,6 +519,13 @@ async function loadPersonalizedLoanSession(
   if (invalid) {
     if (!snapshot.invalidated_at) await invalidateLoanSession(privileged, snapshot.id,
       new Date(snapshot.expires_at).getTime() <= Date.now() ? "SESSION_EXPIRED" : "SESSION_CONTEXT_CHANGED");
+    throw new Error("SNAPSHOT_INVALID");
+  }
+  const currentlyEligible = rulesForProfile(
+    await filterSavingsLoanRules(privileged, await readCriteriaRules(privileged), context.affiliateId), context.profile,
+  ).filter((rule) => rule.payment_count >= policy.customMinTerm);
+  if (await sha256(criteriaFingerprintPayload(currentlyEligible)) !== snapshot.criteria_source_fingerprint) {
+    await invalidateLoanSession(privileged, snapshot.id, "SAVINGS_LOAN_ELIGIBILITY_CHANGED");
     throw new Error("SNAPSHOT_INVALID");
   }
   return snapshot;
@@ -773,7 +782,7 @@ async function confirmPersonalizedLoanSession(
   try { snapshot = await loadPersonalizedLoanSession(privileged, context, policy, String(body.snapshot_id)); }
   catch { return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId } }; }
   let currentRules: CriteriaRule[];
-  try { currentRules = await readCriteriaRules(privileged); }
+  try { currentRules = await filterSavingsLoanRules(privileged, await readCriteriaRules(privileged), context.affiliateId); }
   catch (error) {
     logFinancialSubmissionFailure(correlationId, "criteria_read", error);
     return { status: 502, body: { error: "FINANCIAL_CRITERIA_UNAVAILABLE", correlation_id: correlationId } };
@@ -1244,6 +1253,8 @@ Deno.serve(async (req) => {
     return reply(409, { error: "NUMERO_CONTROL_UNAVAILABLE" }, origin || null);
   }
   const profile = affiliate as FinancialProfile;
+  try { rules = await filterSavingsLoanRules(privilegedClient(supabaseUrl), rules, String(profile.affiliate_id || "")); }
+  catch { return reply(503, { error: "SAVINGS_LOAN_ELIGIBILITY_UNAVAILABLE" }, origin || null); }
   let termPolicy: TermPolicy;
   try { termPolicy = await readTermPolicy(supabase); }
   catch { return reply(503, { error: "LOAN_TERM_POLICY_UNAVAILABLE" }, origin || null); }

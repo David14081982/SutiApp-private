@@ -533,9 +533,17 @@
       const onVisibility=()=>{if(document.visibilityState==='visible')refresh();};
       window.addEventListener('focus',refresh);
       document.addEventListener('visibilitychange',onVisibility);
-      const timer=window.setInterval(refresh,30000);
+      // Cada 3 min además de foco/visibilidad/intento de entrar al Panel. La
+      // revocación real la aplica el backend (RPC/RLS y cierre de sesión).
+      const timer=window.setInterval(refresh,180000);
       return()=>{disposed=true;window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',onVisibility);};
     },[auth.session&&auth.session.user&&auth.session.user.id]);
+
+    // Una revalidación fallida no saca del Panel (no es una revocación), pero
+    // tampoco se oculta: se avisa una vez por cada racha de fallos.
+    useEffect(()=>{
+      if(tab==='admin'&&adminAuthorized&&admin.refreshErrorCode)showToast('Sin conexión: no pudimos verificar tu acceso. Lo intentaremos de nuevo.');
+    },[admin.refreshErrorCode,adminAuthorized,tab==='admin',showToast]);
 
     // ---- Botón Atrás del dispositivo (Android/PWA) ----
     // Modelo: se mantiene siempre una entrada "trampa" en el historial. Al presionar

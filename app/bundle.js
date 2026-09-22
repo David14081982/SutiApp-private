@@ -9124,7 +9124,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       const result=await client().rpc('get_admin_refresh_context');
       if(result.error) throw result.error;
       if(version===loadVersion&&subject===accessSubject())applyAccessContext(result.data||{});
-    } catch(_){ if(version===loadVersion&&subject===accessSubject())publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
+    } catch(_){
+      if(version!==loadVersion||subject!==accessSubject())return state;
+      // A failed read is not a revocation. The same identity keeps its last
+      // authorized context (backend/RLS stays the real barrier) and the failure
+      // is flagged for the shell. Only a denied response, logout or an identity
+      // change clears it; without a prior authorization it still fails closed.
+      const sameSubject=state.subjectKey===subject||String(state.subjectKey||'').startsWith(subject+':support:');
+      if(state.phase==='authorized'&&sameSubject){if(!state.refreshErrorCode)publish(Object.assign({},state,{refreshErrorCode:'ADMIN_AUTHORITY_ERROR'}));}
+      else publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'});
+    }
     return state;
   }
   function bootstrap(){if(!promise)promise=load();return promise;}
@@ -78453,7 +78462,9 @@ Object.assign(window, {
       };
       window.addEventListener('focus', refresh);
       document.addEventListener('visibilitychange', onVisibility);
-      const timer = window.setInterval(refresh, 30000);
+      // Cada 3 min además de foco/visibilidad/intento de entrar al Panel. La
+      // revocación real la aplica el backend (RPC/RLS y cierre de sesión).
+      const timer = window.setInterval(refresh, 180000);
       return () => {
         disposed = true;
         window.clearInterval(timer);
@@ -78461,6 +78472,12 @@ Object.assign(window, {
         document.removeEventListener('visibilitychange', onVisibility);
       };
     }, [auth.session && auth.session.user && auth.session.user.id]);
+
+    // Una revalidación fallida no saca del Panel (no es una revocación), pero
+    // tampoco se oculta: se avisa una vez por cada racha de fallos.
+    useEffect(() => {
+      if (tab === 'admin' && adminAuthorized && admin.refreshErrorCode) showToast('Sin conexión: no pudimos verificar tu acceso. Lo intentaremos de nuevo.');
+    }, [admin.refreshErrorCode, adminAuthorized, tab === 'admin', showToast]);
 
     // ---- Botón Atrás del dispositivo (Android/PWA) ----
     // Modelo: se mantiene siempre una entrada "trampa" en el historial. Al presionar

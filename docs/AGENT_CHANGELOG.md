@@ -1,6 +1,22 @@
 # Bitácora de agentes
 
 
+## 2026-09-21 - H-ADMIN-REFRESH-RESILIENCE-001 - PASS / local (not published)
+
+Owner-reported: Admin randomly returned to Inicio. Root cause: one failed
+`get_admin_refresh_context` read (network, timeout, token resume) published phase
+`error`, the shell treated it as a revocation and forced `home`; admin catalogs were
+also cleared and fully re-read. Now a failed read keeps the same identity's last
+authorized context and sets `refreshErrorCode` (visible toast in Admin); a denied
+response, logout or identity change still clears; bootstrap failure still fails closed.
+Revalidation 30 s → 3 min plus focus/visibility/Admin entry; revocation remains
+backend-enforced (RPC/RLS, session termination). Bundle: 2 spliced chunks
+(`admin-repository.js`, `app.jsx`), v273. `test-admin-refresh.js` PASS (18 cases;
+contract case updated, stale mocks repaired: `neq`, `list_paid_company_ids`,
+`marketplace` placement). Gate test passes through the changed assertion and stops
+at its pre-existing `v=200` cachebuster pin (same on HEAD). Chrome E2E with aborted
+refresh: before → `home`/`error`; after → `admin`/`authorized` + toast, clears on recovery.
+
 ## 2026-09-21 - H-SAVINGS-JOIN-STATUS-VISUAL-001 - PASS / production
 
 Approved/applied affiliate JOIN requests reuse the existing pending card with their

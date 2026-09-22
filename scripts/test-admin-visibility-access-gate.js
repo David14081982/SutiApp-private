@@ -40,7 +40,7 @@ contains(shell,"t.id === 'admin' ? showAdmin",'Admin bottom-nav visibility must 
 contains(shell,"if(!adminAuthorized)return false",'internal Admin navigation must fail closed');
 contains(shell,"refreshAccessContext().then",'Admin navigation must revalidate backend context');
 contains(shell,"tab === 'admin' ? adminAuthorized",'direct Admin rendering must be denied');
-contains(shell,"window.setInterval(refresh,30000)",'revocation revalidation missing');
+contains(shell,"window.setInterval(refresh,180000)",'revocation revalidation missing');
 contains(shell,"adminAuthorized && React.createElement(window.TweakButton",'internal Tweaks entry must be hidden');
 contains(admin,"activeModule&&!access.stateFor(activeModule).canView",'Admin internal module guard missing');
 contains(admin,"candidates.filter((m)=>stateFor(m).canView)",'Admin module visibility filter missing');

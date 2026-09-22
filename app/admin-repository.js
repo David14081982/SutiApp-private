@@ -73,7 +73,16 @@
       const result=await client().rpc('get_admin_refresh_context');
       if(result.error) throw result.error;
       if(version===loadVersion&&subject===accessSubject())applyAccessContext(result.data||{});
-    } catch(_){ if(version===loadVersion&&subject===accessSubject())publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'}); }
+    } catch(_){
+      if(version!==loadVersion||subject!==accessSubject())return state;
+      // A failed read is not a revocation. The same identity keeps its last
+      // authorized context (backend/RLS stays the real barrier) and the failure
+      // is flagged for the shell. Only a denied response, logout or an identity
+      // change clears it; without a prior authorization it still fails closed.
+      const sameSubject=state.subjectKey===subject||String(state.subjectKey||'').startsWith(subject+':support:');
+      if(state.phase==='authorized'&&sameSubject){if(!state.refreshErrorCode)publish(Object.assign({},state,{refreshErrorCode:'ADMIN_AUTHORITY_ERROR'}));}
+      else publish({phase:'error',errorCode:'ADMIN_AUTHORITY_ERROR'});
+    }
     return state;
   }
   function bootstrap(){if(!promise)promise=load();return promise;}

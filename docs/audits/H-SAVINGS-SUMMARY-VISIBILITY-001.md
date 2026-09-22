@@ -27,7 +27,7 @@ CLAUDE UI PRESERVATION REVIEW
 Original/current: total hero, next-discount tile, last-period tile, monthly entry/exit counters. No missing or duplicated section. Existing links and primary navigation retained. Unauthorized redesign: NO. Verdict: PASS.
 
 H-SAVINGS-SUMMARY-VISIBILITY-001 RESULT
-Status: PASS (local; publication below)
+Status: PASS / PRODUCTION / CLOSED
 Files changed: six scoped files; one UI module, generated bundle/cachebuster, existing test, audit/changelog.
 Source-of-truth / Invariants / Security: PASS, unchanged.
 Build: PASS. Tests: focal source/bundle PASS.
@@ -46,3 +46,12 @@ Response generated for Codex: YES
 
 ### RESPONSE TO CODEX
 Approve this restoration. Publish under the existing owner instruction, verify public artifact, record closure and stop.
+
+
+## Publication
+
+Product commit 6a7ea74d303587e31c5e839ebfdfb388e06be8f3 pushed successfully.
+[Pages run 35750930921](https://github.com/David14081982/SutiApp-private/actions/runs/35750930921): SUCCESS, including backend and production gates.
+Public https://sutiapp.com v279 verified against tested bundle; normalized SHA256
+`c36ddf019c524e8f3fa0c1ba6e0cef5076ed6535657b5e679135846f3d4a62a3`.
+Layout matrix PASS: framed 320/375/390/430 and viewport 320/375/390/430/900/1440, including resize and modal width. No real financial writes. Final review APPROVED; stop.

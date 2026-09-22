@@ -1,11 +1,11 @@
 # Bitácora de agentes
 
 
-## 2026-09-22 - H-SAVINGS-SUMMARY-VISIBILITY-001 - PASS
+## 2026-09-22 - H-SAVINGS-SUMMARY-VISIBILITY-001 - PASS / production
 
 Restored original Admin Savings summary above primary tabs, including monthly
 entries/exits. Same KPIs and backend figures; no duplicate or financial changes.
-Source/bundle focal regression PASS. [Audit](audits/H-SAVINGS-SUMMARY-VISIBILITY-001.md).
+Source/bundle focal regression PASS. Published 6a7ea74 / v279, Pages 35750930921 SUCCESS; public artifact hash matches. [Audit](audits/H-SAVINGS-SUMMARY-VISIBILITY-001.md).
 
 ## 2026-09-22 — H-PROGRAM-PRODUCT-FINANCING-001 — published
 

@@ -76156,6 +76156,14 @@ Object.assign(window, {
   let resolutionVersion = 0;
   let resolutionPromise = null;
   let resolutionUserId = null;
+  let resolutionQuiet = false;
+  // Event-driven re-validation (token rotation, focus) of the SAME mounted
+  // identity: a failure keeps the app mounted for a few spaced retries instead
+  // of unmounting it at once (which dropped the route back to Inicio). A
+  // persistent failure still fails closed; explicit resolutions never retry.
+  const QUIET_RETRY_DELAYS_MS = [2000, 6000, 15000];
+  let quietFailures = 0;
+  let quietRetryTimer = null;
   let blockedPhase = null;
   let recoveryActive = false;
   // Capture legacy implicit callbacks before Supabase consumes their hash.
@@ -76267,7 +76275,7 @@ Object.assign(window, {
     publish({ phase, errorCode });
   }
 
-  async function resolveSessionOnce(session) {
+  async function resolveSessionOnce(session, quiet) {
     const version = ++resolutionVersion;
     if ((recoveryActive || recoveryRequested()) && session && session.user) {
       holdPasswordRecovery(session);
@@ -76295,6 +76303,7 @@ Object.assign(window, {
         if (result.error) throw result.error;
         if (!Array.isArray(result.data) || !result.data.length) return false;
         if (version !== resolutionVersion || recoveryActive) return true;
+        quietFailures = 0;
         publish({ phase: 'authenticated', session, companyOnly: true });
         return true;
       };
@@ -76342,6 +76351,7 @@ Object.assign(window, {
       blockedPhase = null;
       if (version !== resolutionVersion) return;
       const affiliateView = affiliate ? window.createAffiliateViewModel(affiliate, null) : null;
+      quietFailures = 0;
       publish({ phase: 'authenticated', session, affiliate, affiliateView, impersonation: affiliate && affiliate._impersonation || null, adminOnly: !affiliate && isAdmin });
       if (affiliate) window.AffiliateRepository.getProfilePhoto(affiliate.id, session.user).then((profilePhoto) => {
         if (version !== resolutionVersion || state.phase !== 'authenticated' || !state.session || state.session.user.id !== session.user.id) return;
@@ -76357,21 +76367,48 @@ Object.assign(window, {
         await rejectUnusableSession('identity_error', error.code);
         return;
       }
+      if (quiet && preservesAuthenticatedApp && quietFailures < QUIET_RETRY_DELAYS_MS.length) {
+        scheduleQuietRetry(session.user.id, QUIET_RETRY_DELAYS_MS[quietFailures++]);
+        return;
+      }
+      quietFailures = 0;
       publish({ phase: 'error', session, errorCode: controlledErrorCode(error) });
     }
   }
 
-  function resolveSession(session) {
+  function scheduleQuietRetry(userId, delay) {
+    const scheduledVersion = resolutionVersion;
+    clearTimeout(quietRetryTimer);
+    quietRetryTimer = setTimeout(async () => {
+      quietRetryTimer = null;
+      // Any newer resolution, logout or identity change supersedes this retry.
+      const stillMounted = () => scheduledVersion === resolutionVersion && state.phase === 'authenticated' &&
+        state.session && state.session.user && state.session.user.id === userId;
+      if (!stillMounted()) return;
+      let session = state.session;
+      try {
+        const result = await provideClient().auth.getSession();
+        const current = result && result.data && result.data.session;
+        if (current && current.user && current.user.id === userId) session = current;
+      } catch (_) {}
+      if (stillMounted()) resolveSession(session, true);
+    }, delay);
+  }
+
+  function resolveSession(session, quiet) {
     if ((recoveryActive || recoveryRequested()) && session && session.user) {
       holdPasswordRecovery(session);
       return Promise.resolve();
     }
     const userId = session && session.user && session.user.id || null;
-    if (userId && resolutionPromise && resolutionUserId === userId) return resolutionPromise;
-    const current = resolveSessionOnce(session);
+    // A quiet resolution may keep the app mounted on failure; an explicit one
+    // (login, refreshContext for impersonation/expiry) must never inherit that.
+    if (userId && resolutionPromise && resolutionUserId === userId && (quiet || !resolutionQuiet)) return resolutionPromise;
+    const current = resolveSessionOnce(session, Boolean(quiet));
     resolutionPromise = current;
     resolutionUserId = userId;
-    current.finally(() => { if (resolutionPromise === current) { resolutionPromise = null; resolutionUserId = null; } });
+    resolutionQuiet = Boolean(quiet);
+    current.finally(() => { if (resolutionPromise === current) { resolutionPromise = null; resolutionUserId = null; resolutionQuiet = false; } });
     return current;
   }
 
@@ -76427,7 +76464,7 @@ Object.assign(window, {
               session && session.access_token && state.session &&
               session.access_token === state.session.access_token &&
               session.user && state.session.user && session.user.id === state.session.user.id) return;
-          resolveSession(session);
+          resolveSession(session, true);
         }
       }, 0);
     });

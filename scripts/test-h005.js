@@ -15,7 +15,9 @@ function createHarness(options = {}) {
   let authStateListener = null;
   let repositoryCalls = 0;
   let releaseRepository = null;
-  const repositoryGate = options.delayRepository ? new Promise((resolve) => { releaseRepository = resolve; }) : null;
+  let repositoryGate = options.delayRepository ? new Promise((resolve) => { releaseRepository = resolve; }) : null;
+  let failRemaining = 0;
+  let failError = null;
   const auth = {
     onAuthStateChange: (listener) => {
       authStateListener = listener;
@@ -51,6 +53,7 @@ function createHarness(options = {}) {
     getCurrentAffiliate: async () => {
       repositoryCalls += 1;
       if (repositoryGate) await repositoryGate;
+      if (failRemaining > 0) { failRemaining -= 1; throw failError || Object.assign(new Error('network down'), { code: 'NETWORK_FAILURE' }); }
       if (options.repositoryError) throw options.repositoryError;
       if (options.unlinked) {
         const error = new Error('unlinked');
@@ -78,11 +81,12 @@ function createHarness(options = {}) {
   const context = {
     console,
     URL,
-    setTimeout,
+    setTimeout: options.fastTimers ? (fn, ms) => setTimeout(fn, Math.min(ms || 0, 10)) : setTimeout,
     clearTimeout,
       window: {
       SutiSupabase: { getClient: () => ({ auth, rpc: async (name) => {
         if (name === 'get_affiliate_activation_status') return { data: { status: options.activationStatus || 'ELIGIBLE' }, error: options.preflightError || null };
+        if (name === 'get_current_company_access') return { data: [], error: null };
         assert.equal(name, 'get_admin_access_context');
         return { data: { technical_permissions: [], section_actions: [] }, error: null };
       }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) },
@@ -116,6 +120,8 @@ function createHarness(options = {}) {
       authStateListener(event, nextSession);
     },
     releaseRepository: () => { if (releaseRepository) releaseRepository(); },
+    failNext: (count, error) => { failRemaining = count; failError = error || null; },
+    holdRepository: () => { repositoryGate = new Promise((resolve) => { releaseRepository = resolve; }); },
   };
 }
 
@@ -294,6 +300,62 @@ const flushAuthEvents = () => new Promise((resolve) => setTimeout(resolve, 5));
   await racingBootstrap;
   await flushAuthEvents();
   assert.equal(racingRecovery.controller.getState().phase, 'password_recovery', 'in-flight session resolution bypassed recovery');
+
+  // Token rotation re-validation of the SAME mounted identity: a transient
+  // failure keeps the app mounted and retries; it never publishes 'error'.
+  const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const mountedSession = { access_token: 'token-1', user: { id: 'auth-1' } };
+  const rotatedSession = { access_token: 'token-2', user: { id: 'auth-1' } };
+  const transient = createHarness({ session: mountedSession, fastTimers: true });
+  await transient.controller.bootstrap();
+  const transientPhases = [];
+  transient.controller.subscribe(state => transientPhases.push(state.phase));
+  const transientBase = transient.getRepositoryCalls();
+  transient.failNext(2);
+  transient.emitAuthState('TOKEN_REFRESHED', rotatedSession);
+  await settle(300);
+  assert(transientPhases.every(phase => phase === 'authenticated'), 'A transient re-validation failure must not unmount the app');
+  assert.equal(transient.getRepositoryCalls() - transientBase, 3, 'Two failed attempts, then one successful retry');
+  assert.equal(transient.controller.getState().session.access_token, 'token-2');
+
+  // A persistent failure still fails closed after the bounded retries.
+  const persistent = createHarness({ session: mountedSession, fastTimers: true });
+  await persistent.controller.bootstrap();
+  const persistentBase = persistent.getRepositoryCalls();
+  persistent.failNext(99);
+  persistent.emitAuthState('TOKEN_REFRESHED', rotatedSession);
+  await settle(400);
+  assert.equal(persistent.controller.getState().phase, 'error');
+  assert.equal(persistent.getRepositoryCalls() - persistentBase, 4, 'One attempt plus three bounded retries');
+
+  // Explicit refreshContext (impersonation start/stop, expiry) never tolerates failure.
+  const explicit = createHarness({ session: mountedSession, fastTimers: true });
+  await explicit.controller.bootstrap();
+  explicit.failNext(1);
+  await explicit.controller.refreshContext();
+  assert.equal(explicit.controller.getState().phase, 'error', 'Explicit context refresh must fail closed');
+
+  // An explicit refresh must not join an in-flight quiet re-validation.
+  const joined = createHarness({ session: mountedSession, fastTimers: true });
+  await joined.controller.bootstrap();
+  joined.holdRepository();
+  joined.failNext(2);
+  joined.emitAuthState('TOKEN_REFRESHED', rotatedSession);
+  await flushAuthEvents();
+  const explicitRefresh = joined.controller.refreshContext();
+  await flushAuthEvents();
+  joined.releaseRepository();
+  await explicitRefresh;
+  assert.equal(joined.controller.getState().phase, 'error', 'Explicit refresh inherited quiet tolerance');
+
+  // Authoritative rejections during quiet re-validation still apply at once.
+  const rejected = createHarness({ session: mountedSession, fastTimers: true });
+  await rejected.controller.bootstrap();
+  rejected.failNext(1, Object.assign(new Error('identity mismatch'), { code: 'AUTH_IDENTITY_MISMATCH' }));
+  rejected.emitAuthState('TOKEN_REFRESHED', rotatedSession);
+  await settle(100);
+  assert.equal(rejected.controller.getState().phase, 'identity_error');
+  assert.equal(rejected.getSignOutCalls(), 1);
 
   console.log('H-005 local Auth tests: PASS');
 })().catch((error) => {

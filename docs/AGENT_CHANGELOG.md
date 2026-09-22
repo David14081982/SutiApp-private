@@ -1,6 +1,25 @@
 # Bitácora de agentes
 
 
+## 2026-09-22 - H-AUTH-QUIET-REVALIDATION-001 - PASS / local (not published)
+
+Owner-reported "returns to Inicio". Root cause 3: every token rotation (≈hourly and
+on resume) re-resolved the whole identity and ANY failure published `error`, which
+unmounted App ("No pudimos conectar"); it stayed there after the network returned and
+Retry restarted on Inicio. Now only event-driven re-validation (TOKEN_REFRESHED /
+SIGNED_IN / USER_UPDATED) of the SAME mounted identity keeps the app mounted for 3
+spaced retries (2 s / 6 s / 15 s); a persistent failure still fails closed. Explicit
+resolutions (login, refreshContext for impersonation start/stop/expiry) never retry
+and never join a quiet in-flight resolution. Authoritative rejections (mismatch,
+unlinked, archived, ineligible) apply at once. Bundle: 1 spliced chunk
+(`affiliate-auth.js`), v275. H-005 PASS with 5 new cases (fail on the previous code;
+stale `get_current_company_access` mock repaired so the suite runs to the end);
+session regression PASS; cross-user guard behavioral checks PASS, stops at its
+pre-existing version pins. Chrome E2E with a real token refresh and identity RPC
+down: before → `error` screen that persists after recovery; after → stays in Admin,
+authenticated throughout, rotated token applied. Global image regression PASS on
+local build (allowed origin localhost:8080, with this and the previous H) and on Pages.
+
 ## 2026-09-22 - H-APP-UPDATE-NO-FORCED-RELOAD-001 - PASS / local (not published)
 
 Owner-reported "returns to Inicio". Root cause 2: every service-worker takeover

@@ -55494,7 +55494,16 @@ Object.assign(window, {
       style: {
         minWidth: 0
       }
-    }, h('nav', {
+    }, h('section', {
+      'aria-label': 'Resumen general del ahorro',
+      className: 'svp-kpis',
+      style: {
+        marginBottom: 20
+      }
+    }, h(KPIs, {
+      k: d.kpis,
+      onGo: changeTab
+    })), h('nav', {
       className: 'svp-tabs',
       role: 'tablist',
       'aria-label': 'Secciones de Ahorro'
@@ -55522,12 +55531,7 @@ Object.assign(window, {
     }, programViews.map(([id, label]) => h('option', {
       key: id,
       value: id
-    }, label)))), h('details', {
-      className: 'svp-program-summary'
-    }, h('summary', null, 'Resumen general del programa'), h(KPIs, {
-      k: d.kpis,
-      onGo: changeTab
-    })), h(Btn, {
+    }, label)))), h(Btn, {
       onClick: () => setToolsOpen(true)
     }, 'Accesos y archivo')), tab === 'pendientes' && h(window.SavingsRuntimeAdmin, {
       tab,
@@ -55545,9 +55549,9 @@ Object.assign(window, {
       onSaved: refresh
     })), navBusy && h('p', {
       role: 'status'
-    }, 'Abriendo expediente…'), group === 'programa' && d.kpis.uncertified > 0 && h('p', {
+    }, 'Abriendo expediente…'), d.kpis.uncertified > 0 && h('p', {
       className: 'svp-note warn'
-    }, d.kpis.uncertified + ' saldos siguen en revisión. El total incluye sus correcciones pendientes de confirmar.'), group === 'programa' && d.kpis.projection_pending > 0 && h('p', {
+    }, d.kpis.uncertified + ' saldos siguen en revisión. El total incluye sus correcciones pendientes de confirmar.'), d.kpis.projection_pending > 0 && h('p', {
       className: 'svp-note'
     }, d.kpis.projection_pending + ' calendarios siguen pendientes de confirmar; sus importes previstos conservan la referencia del archivo.'), ['pendientes', 'reportes', 'publicacion', 'configuracion'].includes(tab) ? null : tab === 'conciliacion' ? h(window.SavingsReconciliationAdmin, {
       asOf: d.kpis.as_of,

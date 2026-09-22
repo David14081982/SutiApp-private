@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+
+## 2026-09-22 - H-SAVINGS-SUMMARY-VISIBILITY-001 - PASS
+
+Restored original Admin Savings summary above primary tabs, including monthly
+entries/exits. Same KPIs and backend figures; no duplicate or financial changes.
+Source/bundle focal regression PASS. [Audit](audits/H-SAVINGS-SUMMARY-VISIBILITY-001.md).
+
 ## 2026-09-22 — H-PROGRAM-PRODUCT-FINANCING-001 — published
 
 Owner requested surgical per-item interest overrides (including union/category),

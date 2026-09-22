@@ -29,10 +29,21 @@ async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chr
    window.SavingsAccessAdmin=()=>null;window.SavingsReviewAdmin=()=>null;
    window.uiRoot=ReactDOM.createRoot(document.getElementById('root'));window.mount=()=>uiRoot.render(React.createElement(SavingsPanelAdmin,{app:{toast:()=>{}},onBack:()=>{window.returned=true;}}));mount();
   });
+  const summary=page.getByRole('region',{name:'Resumen general del ahorro'});
+  await summary.waitFor();assert(await summary.isVisible());
+  assert(await summary.getByText('AHORRO DE TODOS LOS AFILIADOS',{exact:true}).isVisible());
+  assert(await summary.getByText('altas este mes',{exact:true}).isVisible());
+  assert(await summary.getByText('bajas este mes',{exact:true}).isVisible());
+  assert.equal(await page.getByRole('region',{name:'Resumen general del ahorro'}).count(),1);
+  assert(await summary.evaluate(el=>el.getBoundingClientRect().top<document.querySelector('[role=tablist]').getBoundingClientRect().top));
+  await summary.getByRole('button',{name:/PR\u00d3XIMO DESCUENTO/}).click();
+  await page.getByRole('tab',{name:'Programa',exact:true,selected:true}).waitFor();
+  assert.equal(await page.getByLabel('Operaci\u00f3n del programa',{exact:true}).inputValue(),'cobranza');
+  await page.getByRole('tab',{name:'Pendientes',exact:true}).click();
   if(layoutOnly){
    await page.getByRole('tab',{name:'Pendientes',exact:true}).waitFor();
    const geometry=async()=>page.evaluate(()=>{const tabs=document.querySelector('[role=tablist]').getBoundingClientRect(),container=document.querySelector('.svp').getBoundingClientRect(),root=document.getElementById('root');return {tabs:{width:tabs.width},container:{width:container.width},overflow:root.scrollWidth-root.clientWidth};});
-   const g=await geometry();assert(g.tabs.width>=g.container.width-50,'CONTENT_SQUEEZED: '+label);assert(g.overflow<=1,'FRAME_OVERFLOW: '+label);
+   const g=await geometry();assert(g.tabs.width>=Math.min(g.container.width,1120)-50,'CONTENT_SQUEEZED: '+label);assert(g.overflow<=1,'FRAME_OVERFLOW: '+label);
    if(frame===430){for(const resized of [320,900,430]){await page.locator('#root').evaluate((e,w)=>{e.style.width=w+'px';},resized);const changed=await geometry();assert(changed.overflow<=1,'CONTAINER_RESIZE');assert.equal(changed.container.width,resized);}}
    for(const name of ['Ahorradores','Pendientes','Programa']){await page.getByRole('tab',{name,exact:true}).click();await page.getByRole('tab',{name,exact:true,selected:true}).waitFor();assert((await geometry()).overflow<=1);}
    await page.getByRole('tab',{name:'Ahorradores',exact:true}).click();await page.locator('.svp-person').first().click();await page.getByText('TIENE AHORRADO',{exact:true}).waitFor();

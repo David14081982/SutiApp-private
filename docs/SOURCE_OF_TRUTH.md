@@ -1,6 +1,6 @@
 # Fuentes de verdad
 
-## Acceso a préstamos de Caja de Ahorro — candidato local 2026-09-22
+## Acceso a préstamos de Caja de Ahorro — publicado 2026-09-22
 
 H-SAVINGS-LOAN-ELIGIBILITY-001 agrega una política Supabase (`savings_loan_policy`)
 de meses calendario y fecha base configurable por Finanzas/administrador. No hay un
@@ -23,8 +23,9 @@ No se concede ahorro, no se modifica el ledger y Caja Chica permanece independie
 Inicio/Finanzas mantienen el total derivado de fondos disponibles; la Edge excluye
 Caja de Ahorro cuando no es elegible y SQL revalida cotización/solicitud. Snapshots se
 invalidan por cambios administrativos y se revalidan contra condiciones actuales.
-Sin fallback ni almacenamiento persistente nuevo del navegador. Estado: preparado y
-probado localmente; no aplicado ni publicado. Evidencia en
+Sin fallback ni almacenamiento persistente nuevo del navegador. Estado: migración
+20260922000100 aplicada, Edge v49 y frontend 44fd10a publicados y verificados.
+La regla inicial permanece sin configurar hasta la decisión administrativa. Evidencia en
 [auditoría](audits/H-SAVINGS-LOAN-ELIGIBILITY-001.md).
 
 ## Transporte Google de solicitudes y lectura de préstamos — 2026-09-21

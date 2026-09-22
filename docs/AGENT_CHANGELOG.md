@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## 2026-09-22 — H-SAVINGS-LOAN-ELIGIBILITY-001 — production PASS
+
+Owner explicitly requested publication. Applied only 20260922000100 with bounded transaction and private exact function backup; financial-legacy v49 ACTIVE; Pages 44fd10a published (run 35706486877 SUCCESS). Real gateway permissions/filter, served bundle equality, mobile administrative panel and complete live image regression PASS. No business writes/tests, history changes or invented initial policy. Finance must configure months/date basis. Evidence: docs/qa/H-SAVINGS-LOAN-ELIGIBILITY-001.json productionRelease and corresponding audit.
+
 
 ## 2026-09-22 - H-AUTH-QUIET-REVALIDATION-001 - PASS / production
 

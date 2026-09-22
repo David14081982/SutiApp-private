@@ -83,3 +83,21 @@ Approve the local feature only. Preserve evidence and all existing data. On auth
 OWNER instruction: “publicar los cambios.” Scope extends the approved local release to production: only migration 20260922000100, financial-legacy and the prepared GitHub Pages artifact; commit/push of the declared files and release evidence. No additional migrations, business settings, authorizations or financial transactions are authorized or required for verification.
 
 Preflight: origin/main equals local HEAD 6be567c; Registry FRESH; Edge bundle compilation PASS. Production migration version and tables absent; exact current quote definition accepts the reviewed insertion and is backed up in .tmp/savings-loan-eligibility/release-before.json. Previous Edge bundle retained in edge-before.eszip. Forward transaction uses 2s lock/60s statement timeout and records only this version in schema_migrations atomically; function backup also persists in a private forced-RLS table. Recovery was tested locally and refuses deletion after audited use. Pre-change release verdict: PASS. Post-release checks pending below.
+
+### Production release RESULT
+
+Status: PASS — migration applied, Edge v49 ACTIVE with JWT verification, frontend commit 44fd10a50bfb5a1a4aaaea6ca2535c60f60a0131 published.
+Files changed: declared implementation plus release updates to this audit, SOURCE_OF_TRUTH, AGENT_CHANGELOG, existing QA receipt and derived Registry hashes.
+Source-of-truth / invariants: PASS; initial rule still unconfigured; zero exceptional grants/events created by deployment. Existing financial data untouched.
+Build / tests: GitHub Pages run 35706486877 SUCCESS, including Auth, request compatibility, public build and post-deploy request checks; Membership contract run 35706487004 SUCCESS. Focal finance/static contracts PASS again before publication.
+Security: four new tables have forced RLS; exact installed quote backup matches; anon admin read and private eligibility return 401; authenticated admin read 200 with both capabilities. Published Edge overview 200 excludes ineligible Savings fund. No real request submitted.
+UI: served bundle v276 exactly matches reviewed local source after line-ending normalization. Published mobile Finance panel loads the month field and both date bases without errors. Navigation uses the existing regression's DOM click because the mobile menu overlay intercepted the initial pointer-click attempt; no assertion of general menu pointer behavior is made. The new panel's own click works normally.
+Images: complete production live regression PASS, zero browser errors and zero business mutations, including legitimate PDF, fullscreen, refresh and service-worker variants.
+Legacy impact: access only; no Google, rates, ledger or historical changes.
+Unexpected files changed: none.
+Known limitations: responsible administrator must save the initial month count and date basis; until then ordinary Savings loan access is disabled and explicit one-request exceptions remain possible. No production write tests were performed.
+Evidence: docs/qa/H-SAVINGS-LOAN-ELIGIBILITY-001.json productionRelease; GitHub Actions runs above; local private recovery captures under .tmp/savings-loan-eligibility.
+
+### Post-publication architect review
+
+Verdict: APPROVED. Compared production DB ACL/RLS/backup readback, gateway responses, active Edge markers, exact served frontend, CI results and live browser receipts against the authorized release. All requested code is deployed; business configuration is intentionally left to Finance. No additional implementation or production test loan is authorized by this review. Next instruction: close this release and have the responsible administrator choose and save the real minimum period and date basis through the published panel.

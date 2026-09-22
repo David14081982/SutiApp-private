@@ -326,5 +326,194 @@
     "scripts/test-savings-loan-eligibility.js": "d17779a70071e487f510505f858e8767d37e085aa95c6080d5b60cb087ef7d14",
     "scripts/test-savings-loan-eligibility.sql": "8966a5b20bdddb1875b3f89a54eb979c9a8c3405c628d4d8b39cf40c6f46a177",
     "scripts/test-savings-loan-eligibility-browser.js": "2425f8d22791af7cd5afedc58e4d9e2cdacee3280777edb3b4141888cb63bea9"
+  },
+  "productionRelease": {
+    "status": "PASS",
+    "commit": "44fd10a50bfb5a1a4aaaea6ca2535c60f60a0131",
+    "pagesRun": "https://github.com/David14081982/SutiApp-private/actions/runs/35706486877",
+    "membershipRun": "https://github.com/David14081982/SutiApp-private/actions/runs/35706487004",
+    "edgeVersion": 49,
+    "database": {
+      "status": "PASS",
+      "mode": "verify",
+      "installed": 1,
+      "exact_backup": 1,
+      "policy": {
+        "basis": null,
+        "months": null,
+        "version": 0
+      },
+      "events": 0,
+      "authorizations": 0,
+      "forced_rls": 4,
+      "anon_read": false,
+      "member_private": false,
+      "service_read": true
+    },
+    "gateway": {
+      "status": "PASS",
+      "anonymousAdminRead": 401,
+      "anonymousPrivateEligibility": 401,
+      "authenticatedAdminRead": 200,
+      "canConfigure": true,
+      "canAuthorize": true,
+      "policy": {
+        "version": 0,
+        "updated_at": "2026-09-22T08:41:48.454138+00:00",
+        "updated_by": null,
+        "starts_from": null,
+        "minimum_months": null
+      },
+      "financialOverview": 200,
+      "ineligibleSavingsExcluded": true,
+      "businessWrites": 0
+    },
+    "panel": {
+      "status": "PASS",
+      "url": "https://david14081982.github.io/SutiApp-private/",
+      "bundle": "276",
+      "bundleMatchesSource": true,
+      "adminPanel": "PASS",
+      "monthsInput": "UNCONFIGURED",
+      "basisOptions": 3,
+      "browserErrors": 0,
+      "businessWrites": 0
+    },
+    "images": {
+      "status": "PASS",
+      "target": "GITHUB_PAGES_PRODUCTION",
+      "initial": {
+        "families": {
+          "appAssets": {
+            "status": "PASS",
+            "checked": 190,
+            "passed": 190
+          },
+          "profilePhotos": {
+            "status": "PASS",
+            "checked": 1
+          },
+          "legacyAffiliateFiles": {
+            "status": "PASS",
+            "checked": 29,
+            "passed": 29,
+            "images": 29,
+            "pdfs": 0
+          },
+          "affiliateDocuments": {
+            "status": "PASS",
+            "purposes": [
+              {
+                "purpose": "SELF_SERVICE_EXPEDIENTE",
+                "status": "PASS",
+                "mime": "IMAGE"
+              },
+              {
+                "purpose": "SELF_SERVICE_LOAN",
+                "status": "PASS",
+                "mime": "IMAGE"
+              },
+              {
+                "purpose": "SELF_SERVICE_MEMBERSHIP",
+                "status": "PASS",
+                "mime": "IMAGE"
+              }
+            ]
+          },
+          "privateAssetsAdmin": {
+            "status": "PASS",
+            "checked": 1
+          },
+          "programCatalogAssets": {
+            "status": "PASS",
+            "checked": 226,
+            "passed": 226,
+            "items": 118
+          },
+          "staticBundle": {
+            "status": "PASS",
+            "checked": 11
+          }
+        },
+        "surfaces": {
+          "loginSeal": "PASS",
+          "publicBranding": {
+            "status": "PASS",
+            "checked": 7,
+            "passed": 7
+          },
+          "headerProfileCredential": "PASS",
+          "expediente": "PASS",
+          "membershipDocuments": "PASS",
+          "loanDocuments": "PASS",
+          "programCatalog": "PASS",
+          "marketplace": {
+            "status": "PASS",
+            "checked": 3,
+            "passed": 3
+          },
+          "membershipLogos": {
+            "status": "PASS",
+            "checked": 6,
+            "passed": 6
+          },
+          "fullscreenViewer": "PASS",
+          "affiliateDocumentPdf": "NOT_APPLICABLE_CURRENT_ACCOUNT",
+          "programProductGallery": "PASS"
+        },
+        "failures": [],
+        "cache": {
+          "serviceWorkerControlled": true,
+          "serviceWorkerScript": "sw.js",
+          "cacheNames": [
+            "sutiapp-v214"
+          ]
+        },
+        "status": "PASS"
+      },
+      "loginSeal": {
+        "status": "PASS",
+        "naturalWidth": 240,
+        "naturalHeight": 240
+      },
+      "admin": {
+        "status": "PASS",
+        "photos": {
+          "checked": 1,
+          "passed": 1
+        },
+        "documentThumbnails": {
+          "checked": 6,
+          "passed": 6,
+          "failed": []
+        }
+      },
+      "refresh": {
+        "profile": true,
+        "seal": true
+      },
+      "cacheComparison": {
+        "freshProfile": true,
+        "serviceWorkerUnregistered": true,
+        "withoutServiceWorker": {
+          "status": "PASS",
+          "seal": "PASS",
+          "controlled": false,
+          "profile": true,
+          "programImage": true
+        }
+      },
+      "legitimatePdf": {
+        "status": "PASS",
+        "account": "H005_TEST",
+        "found": true,
+        "http": 200,
+        "mime": "application/pdf",
+        "opened": true
+      },
+      "browserErrors": 0,
+      "productionDataMutations": 0,
+      "rawUrlsLogged": 0
+    }
   }
 }

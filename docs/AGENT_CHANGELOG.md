@@ -1,6 +1,23 @@
 # Bitácora de agentes
 
 
+## 2026-09-22 - H-APP-UPDATE-NO-FORCED-RELOAD-001 - PASS / local (not published)
+
+Owner-reported "returns to Inicio". Root cause 2: every service-worker takeover
+(`controllerchange`) reloaded the page. On the first open after a deploy the page
+was already current, so the app booted twice; with the app open it dropped the route
+(Admin → Inicio) and any half-filled form (forms keep no drafts). Now the page never
+reloads itself: it compares its loaded `bundle.js?v=` with the published HTML and,
+only if stale, shows "Hay una versión nueva" (Actualizar / Más tarde). Actualizar
+reloads and resumes the same tab (one-shot sessionStorage, navigation only; hash
+routes keep precedence). `sw.js` untouched (its `?v=209` URL no longer tracks
+CACHE v213, so staleness uses the bundle version). Bundle: 1 spliced chunk
+(`app.jsx`), v274. Chrome E2E with a real worker and simulated deploys: before →
+reload to `home`, first open loads twice, other tab reloads; after → stays in Admin
+with notice, Actualizar resumes Admin on the new version, first open loads once
+without notice, stale tab shows notice. Focal tests unchanged (admin refresh PASS,
+H-005 PASS, gate stops at its pre-existing `v=200` pin).
+
 ## 2026-09-21 - H-ADMIN-REFRESH-RESILIENCE-001 - PASS / production
 
 Owner-reported: Admin randomly returned to Inicio. Root cause: one failed

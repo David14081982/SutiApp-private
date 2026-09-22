@@ -623,15 +623,31 @@
       // conserva su propio contexto, así que evitamos reutilizar el HTTP cache de sw.js.
       (function () {
         if (!("serviceWorker" in navigator)) return;
-        var reloadingForWorker = false;
+        var checkingForUpdate = false;
         var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
         // Keep this version aligned with sw.js CACHE. CDN caches can outlive
         // the browser cache even when updateViaCache is disabled.
         var serviceWorkerUrl = "./sw.js?v=209";
+        // Un worker nuevo tomó control. Antes se recargaba aquí: en la primera
+        // apertura tras publicar la página ya era la nueva y la recarga sólo
+        // devolvía a Inicio; con la app abierta además borraba formularios.
+        // Ahora sólo se avisa si ESTA página quedó atrás (su bundle difiere del
+        // publicado) y la persona decide cuándo actualizar.
         navigator.serviceWorker.addEventListener("controllerchange", function () {
-          if (!hadControllerAtBoot || reloadingForWorker) return;
-          reloadingForWorker = true;
-          window.location.reload();
+          if (!hadControllerAtBoot || checkingForUpdate || window.__sutiUpdateReady || !window.fetch) return;
+          var loaded = document.querySelector('script[src*="app/bundle.js?v="]');
+          if (!loaded) return;
+          checkingForUpdate = true;
+          fetch(window.location.pathname, { cache: "no-store", credentials: "same-origin" })
+            .then(function (response) { return response.ok ? response.text() : ""; })
+            .then(function (html) {
+              var published = /src="(app\/bundle\.js\?v=[^"]+)"/.exec(html);
+              if (!published || published[1] === loaded.getAttribute("src")) return;
+              window.__sutiUpdateReady = true;
+              window.dispatchEvent(new Event("sutiupdateready"));
+            })
+            .catch(function () {})
+            .then(function () { checkingForUpdate = false; });
         });
 
         function registerWorker() {
@@ -686,7 +702,7 @@
     <script src="app/supabase-client.js" onerror="window.__sutiStartupFail('SUPABASE_CLIENT_LOAD_FAILED')"></script>
     <script src="app/affiliate-repository.js?v=profile-photo-20260916" onerror="window.__sutiStartupFail('AFFILIATE_REPOSITORY_LOAD_FAILED')"></script>
     <script src="app/financial-legacy-repository.js?v=11" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
-  <script src="app/bundle.js?v=273" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
+  <script src="app/bundle.js?v=274" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
   </body>
 </html>

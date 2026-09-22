@@ -78283,6 +78283,91 @@ Object.assign(window, {
       }
     }, error));
   }
+
+  // ---- Versión nueva publicada (aviso del registro del worker en SutiApp.html) ----
+  // La app nunca se recarga sola: la persona decide y vuelve a la misma pestaña.
+  // La pestaña viaja en sessionStorage de un solo uso; es navegación, no un dato:
+  // si falta o no es válida, la app arranca como siempre.
+  const RESUME_TAB_KEY = 'suti.resumeTab';
+  function takeResumeTab() {
+    try {
+      const id = window.sessionStorage.getItem(RESUME_TAB_KEY);
+      window.sessionStorage.removeItem(RESUME_TAB_KEY);
+      return TABS.some(t => t.id === id) ? id : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  function UpdateBanner({
+    tab
+  }) {
+    const [ready, setReady] = useState(() => Boolean(window.__sutiUpdateReady));
+    const [later, setLater] = useState(false);
+    useEffect(() => {
+      const onReady = () => setReady(true);
+      window.addEventListener('sutiupdateready', onReady);
+      if (window.__sutiUpdateReady) setReady(true);
+      return () => window.removeEventListener('sutiupdateready', onReady);
+    }, []);
+    if (!ready || later) return null;
+    const update = () => {
+      try {
+        window.sessionStorage.setItem(RESUME_TAB_KEY, tab);
+      } catch (_) {}
+      window.location.reload();
+    };
+    const btn = {
+      border: 'none',
+      borderRadius: 9,
+      padding: '10px',
+      minHeight: 40,
+      fontFamily: 'inherit',
+      fontSize: 'var(--text-11, 11px)',
+      fontWeight: 850,
+      cursor: 'pointer'
+    };
+    return React.createElement('div', {
+      'data-app-update': 'ready',
+      'data-notext': '',
+      role: 'status',
+      style: {
+        display: 'flex',
+        flexShrink: 0,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        padding: '8px 13px',
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        borderBottom: '1px solid var(--hairline)',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        zIndex: 60
+      }
+    }, React.createElement('span', null, 'Hay una versión nueva de SutiApp.'), React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 6,
+        alignItems: 'center'
+      }
+    }, React.createElement('button', {
+      type: 'button',
+      onClick: () => setLater(true),
+      style: Object.assign({}, btn, {
+        background: 'transparent',
+        color: 'var(--guinda)'
+      })
+    }, 'Más tarde'), React.createElement('button', {
+      type: 'button',
+      onClick: update,
+      style: Object.assign({}, btn, {
+        background: 'var(--guinda)',
+        color: '#fff'
+      })
+    }, 'Actualizar')));
+  }
   function App({
     auth,
     initialTab
@@ -78302,7 +78387,10 @@ Object.assign(window, {
     });
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore(); // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash) ? 'admin' : auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home' : 'admin'));
+    const [tab, setTabState] = useState(() => {
+      const resumeTab = takeResumeTab();
+      return initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash) ? 'admin' : auth.affiliateView ? !auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : resumeTab || 'home' : 'admin');
+    });
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{
       name: 'savings',
       params: {}
@@ -78667,6 +78755,8 @@ Object.assign(window, {
         setPopupItems(null);
         commitTab('admin');
       }
+    }), React.createElement(UpdateBanner, {
+      tab
     }), React.createElement('div', {
       style: {
         position: 'relative',

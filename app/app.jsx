@@ -422,6 +422,37 @@
       error&&React.createElement('span',{role:'alert',style:{width:'100%'}},error));
   }
 
+  // ---- Versión nueva publicada (aviso del registro del worker en SutiApp.html) ----
+  // La app nunca se recarga sola: la persona decide y vuelve a la misma pestaña.
+  // La pestaña viaja en sessionStorage de un solo uso; es navegación, no un dato:
+  // si falta o no es válida, la app arranca como siempre.
+  const RESUME_TAB_KEY = 'suti.resumeTab';
+  function takeResumeTab() {
+    try {
+      const id = window.sessionStorage.getItem(RESUME_TAB_KEY);
+      window.sessionStorage.removeItem(RESUME_TAB_KEY);
+      return TABS.some((t) => t.id === id) ? id : null;
+    } catch (_) { return null; }
+  }
+  function UpdateBanner({ tab }) {
+    const [ready, setReady] = useState(() => Boolean(window.__sutiUpdateReady));
+    const [later, setLater] = useState(false);
+    useEffect(() => {
+      const onReady = () => setReady(true);
+      window.addEventListener('sutiupdateready', onReady);
+      if (window.__sutiUpdateReady) setReady(true);
+      return () => window.removeEventListener('sutiupdateready', onReady);
+    }, []);
+    if (!ready || later) return null;
+    const update = () => { try { window.sessionStorage.setItem(RESUME_TAB_KEY, tab); } catch (_) {} window.location.reload(); };
+    const btn = { border: 'none', borderRadius: 9, padding: '10px', minHeight: 40, fontFamily: 'inherit', fontSize: 'var(--text-11, 11px)', fontWeight: 850, cursor: 'pointer' };
+    return React.createElement('div', { 'data-app-update': 'ready', 'data-notext': '', role: 'status', style: { display: 'flex', flexShrink: 0, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 13px', background: 'var(--guinda-50)', color: 'var(--guinda)', borderBottom: '1px solid var(--hairline)', fontSize: 'var(--text-12, 12px)', fontWeight: 800, zIndex: 60 } },
+      React.createElement('span', null, 'Hay una versión nueva de SutiApp.'),
+      React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' } },
+        React.createElement('button', { type: 'button', onClick: () => setLater(true), style: Object.assign({}, btn, { background: 'transparent', color: 'var(--guinda)' }) }, 'Más tarde'),
+        React.createElement('button', { type: 'button', onClick: update, style: Object.assign({}, btn, { background: 'var(--guinda)', color: '#fff' }) }, 'Actualizar')));
+  }
+
   function App({ auth, initialTab }) {
     const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
     const textPreference = window.useTextSizePreference(auth.session.user.id);
@@ -434,7 +465,7 @@
     const admin = supportMatches?adminState:Object.assign({},adminState,{phase:'denied',assignment:null,has:()=>false});
     const adminAuthorized = admin.phase === 'authorized';
     if (window.useAdminStore) window.useAdminStore();   // re-render al cambiar accesos de pantalla
-    const [tab, setTabState] = useState(initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash)?'admin':auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : 'home') : 'admin'));
+    const [tab, setTabState] = useState(() => { const resumeTab = takeResumeTab(); return initialTab || (/^#\/admin\/[a-z_]+$/.test(window.location.hash)?'admin':auth.affiliateView ? (!auth.impersonation && window.location.hash === '#/savings' ? 'financiera' : (resumeTab || 'home')) : 'admin'); });
     const [stack, setStack] = useState(() => !initialTab && !auth.impersonation && window.location.hash === '#/savings' && auth.affiliateView ? [{ name: 'savings', params: {} }] : []); // [{name, params}]
     const [toast, setToast] = useState(null);
     const [popupItems, setPopupItems] = useState(null);   // pop-ups administrables mostrándose
@@ -652,6 +683,7 @@
       React.createElement('div', { 'data-text-size': tab === 'admin' ? undefined : textPreference.value, style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--header-bg, var(--grad-guinda))', overflow: 'hidden', fontSize: 'var(--text-control, 16px)', paddingTop: 'env(safe-area-inset-top)' } },
       textPreference.error && tab !== 'admin' && React.createElement('div', { role: 'alert', className: 'su-text-preference-error' }, textPreference.error, React.createElement('button', { onClick: () => push('settings') }, 'Tamaño de texto')),
       React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);commitTab('admin');}}),
+      React.createElement(UpdateBanner, { tab }),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
         React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },

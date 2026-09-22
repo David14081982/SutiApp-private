@@ -53527,13 +53527,32 @@ Object.assign(window, {
     }));
   }
   function Requests({
-    onSaved
+    onSaved,
+    expanded = false,
+    folio = null,
+    requestId = null,
+    onOpenPerson,
+    initialNavigation,
+    onNavigationChange
   }) {
-    const [filter, setFilter] = useState(''),
-      [query, setQuery] = useState(''),
-      [limit, setLimit] = useState(8),
+    const [filter, setFilter] = useState(folio || initialNavigation?.filter || ''),
+      [query, setQuery] = useState(folio || initialNavigation?.query || ''),
+      [limit, setLimit] = useState(initialNavigation?.limit || 8),
       [draft, setDraft] = useState(null),
       [action, setAction] = useState(null);
+    const [category, setCategory] = useState(initialNavigation?.category || 'ALL'),
+      [statusFilter, setStatusFilter] = useState(initialNavigation?.statusFilter || (expanded && !folio ? 'pending' : 'all'));
+    const [focusedRequest, setFocusedRequest] = useState(requestId);
+    const focus = useRef(null);
+    useEffect(() => {
+      if (onNavigationChange) onNavigationChange({
+        filter,
+        query,
+        limit,
+        category,
+        statusFilter
+      });
+    }, [filter, query, limit, category, statusFilter, onNavigationChange]);
     const [state, reload] = useRemote(() => window.SavingsPanelRepository.runtimeRequests(query || undefined), [query]);
     const command = useCommand(async () => {
       setDraft(null);
@@ -53542,7 +53561,7 @@ Object.assign(window, {
       if (onSaved) await onSaved();
     });
     const data = state.data,
-      rows = (data && data.requests || []).map(row => ({
+      allRows = (data && data.requests || []).map(row => ({
         ...row,
         request_code: row.folio,
         folio: row.saver_folio,
@@ -53552,6 +53571,13 @@ Object.assign(window, {
         effective_date: row.effective_from
       })),
       blocked = command.busy || state.loading || !!state.error;
+    const needsAttention = row => ['SUBMITTED', 'UNDER_REVIEW'].includes(row.status) || row.status === 'APPROVED' && ['WITHDRAW', 'EXTRAORDINARY_WITHDRAWAL'].includes(row.type);
+    const rows = allRows.filter(row => (category === 'ALL' || row.type === category) && (statusFilter === 'all' || needsAttention(row)));
+    // A request deep link always reveals its current state after readback, even after approval.
+    const visibleRows = focusedRequest ? allRows.filter(row => row.id === focusedRequest) : rows.slice(0, limit);
+    useEffect(() => {
+      if (requestId && focus.current) focus.current.focus();
+    }, [requestId, !!data]);
     const changeDraft = update => {
       setDraft(update);
       command.clear();
@@ -53601,13 +53627,17 @@ Object.assign(window, {
     }
     const valid = draft && draft.folio !== '' && (draft.type === 'TERMINATE' || (['JOIN', 'CHANGE_AMOUNT'].includes(draft.type) ? validMoney(draft.new_amount) : validMoney(draft.amount))) && (draft.type !== 'JOIN' || !!draft.process);
     return h(Tarjeta, {
-      title: 'Operaciones de Ahorro',
+      title: folio ? 'Solicitudes de esta persona' : 'Solicitudes de ahorro',
       icon: 'receipt'
-    }, h('details', null, h('summary', {
+    }, h(expanded ? 'div' : 'details', null, !expanded && h('summary', {
       className: 'svp-note'
     }, 'Abrir solicitudes nuevas y su seguimiento'), h('p', {
       className: 'svp-note'
-    }, 'Aquí se tramitan las operaciones del nuevo sistema. El historial importado se conserva en su lista de revisión.'), h(Field, {
+    }, folio ? 'Revisa y resuelve las solicitudes sin salir del expediente.' : 'Los nuevos ingresos requieren autorización. Abre una solicitud para revisar a la persona y tomar una decisión.'), !folio && h(expanded ? 'details' : React.Fragment, expanded ? {
+      className: 'svp-request-search'
+    } : null, expanded && h('summary', {
+      className: 'svp-note'
+    }, 'Buscar solicitudes por Folio'), h(Field, {
       label: 'Buscar operaciones por Folio exacto',
       value: filter,
       disabled: blocked,
@@ -53620,13 +53650,39 @@ Object.assign(window, {
         setLimit(8);
         command.clear();
       }
-    }, 'Buscar operaciones'), h(Btn, {
+    }, 'Buscar operaciones')), h(Btn, {
       disabled: blocked,
       onClick: reload
     }, 'Actualizar operaciones'), h(Feedback, {
       state,
       reload
-    }), data && data.can_create && !draft && !action && h('div', {
+    }), expanded && !focusedRequest && h('div', {
+      className: 'svp-request-filters'
+    }, h(Select, {
+      label: 'Tipo de solicitud',
+      value: category,
+      disabled: blocked || !!draft || !!action,
+      onChange: v => {
+        setCategory(v);
+        setLimit(8);
+      },
+      options: [['ALL', 'Todas las solicitudes'], ...Object.entries(types)]
+    }), h(Select, {
+      label: 'Estado de las solicitudes',
+      value: statusFilter,
+      disabled: blocked || !!draft || !!action,
+      onChange: v => {
+        setStatusFilter(v);
+        setLimit(8);
+      },
+      options: [['pending', 'Pendientes de atención'], ['all', 'Todos los estados']]
+    })), expanded && !folio && data && !state.loading && !state.error && h('p', {
+      className: 'svp-note'
+    }, allRows.filter(r => r.type === 'JOIN' && needsAttention(r)).length + ' solicitudes de nuevo ingreso pendientes en esta consulta.'), focusedRequest && folio && !draft && !action && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => setFocusedRequest(null)
+    }, 'Ver todas las solicitudes de esta persona'), data && data.can_create && !draft && !action && h('div', {
       className: 'svp-actions'
     }, h(Btn, {
       tone: 'primary',
@@ -53659,11 +53715,14 @@ Object.assign(window, {
       tone: 'primary',
       disabled: blocked || !valid,
       onClick: submit
-    }, 'Guardar solicitud'))), data && !rows.length && h('p', {
+    }, 'Guardar solicitud'))), data && !state.loading && !state.error && !visibleRows.length && h('p', {
       className: 'svp-note'
-    }, 'No hay operaciones registradas para esta consulta.'), rows.slice(0, limit).map(row => h('article', {
+    }, requestId ? 'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.' : statusFilter === 'pending' ? 'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.' : 'No hay operaciones registradas para esta consulta.'), visibleRows.map(row => h('article', {
       key: row.id,
-      className: 'svp-audit'
+      className: 'svp-audit',
+      ref: requestId === row.id ? focus : null,
+      tabIndex: requestId === row.id ? -1 : undefined,
+      'data-request-id': row.id
     }, h('b', null, row.name || 'Folio ' + row.folio), h('p', {
       className: 'svp-note'
     }, 'Folio ' + row.folio + ' · ' + (types[row.type] || 'Operación de ahorro') + ' · ' + (states[row.status] || 'Por revisar')), row.request_code && h(Fila, {
@@ -53683,7 +53742,11 @@ Object.assign(window, {
       valor: fmt(row.effective_date)
     }), row.settlement_block_reason && h('p', {
       className: 'svp-note warn'
-    }, row.settlement_block_reason), !draft && !action && h('div', {
+    }, row.settlement_block_reason), !draft && !action && onOpenPerson && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => onOpenPerson(row)
+    }, 'Abrir expediente y revisar'), !onOpenPerson && !draft && !action && h('div', {
       className: 'svp-actions'
     }, row.can_review === true && h(Btn, {
       tone: 'outline',
@@ -53697,7 +53760,7 @@ Object.assign(window, {
       tone: 'outline',
       disabled: blocked,
       onClick: () => select(row, 'CANCEL')
-    }, 'Cancelar solicitud')), !draft && !action && row.requires_loan_verification === true && h(WithdrawalCheck, {
+    }, 'Cancelar solicitud')), !onOpenPerson && !draft && !action && row.requires_loan_verification === true && h(WithdrawalCheck, {
       key: row.id + ':' + row.status,
       row,
       disabled: blocked,
@@ -53793,7 +53856,7 @@ Object.assign(window, {
           observation: action.observation
         }
       }, action.kind === 'SETTLE' ? 'Entrega registrada. Se actualizó el saldo y el historial.' : action.kind === 'CANCEL' ? 'Solicitud cancelada. Su historial se conserva.' : 'Decisión guardada. Se actualizó la solicitud.')
-    }, action.kind === 'SETTLE' ? 'Confirmar entrega' : action.kind === 'CANCEL' ? 'Confirmar cancelación' : 'Guardar decisión'))))), rows.length > limit && h(Btn, {
+    }, action.kind === 'SETTLE' ? 'Confirmar entrega' : action.kind === 'CANCEL' ? 'Confirmar cancelación' : 'Guardar decisión'))))), !focusedRequest && rows.length > limit && h(Btn, {
       tone: 'full',
       disabled: blocked,
       onClick: () => setLimit(x => x + 16)
@@ -54030,13 +54093,24 @@ Object.assign(window, {
   function SavingsRuntimeAdmin({
     tab,
     onSaved,
-    app
+    app,
+    onOpenPerson,
+    initialNavigation,
+    onNavigationChange
   }) {
     return tab === 'configuracion' ? h(Settings, {
       app,
       onSaved,
       defaultOpen: true
-    }) : tab === 'cobranza' ? h(Reports) : tab === 'solicitudes' ? h(Requests, {
+    }) : tab === 'reportes' || tab === 'cobranza' ? h(Reports) : tab === 'pendientes' ? h(Requests, {
+      onSaved,
+      expanded: true,
+      onOpenPerson,
+      initialNavigation,
+      onNavigationChange
+    }) : tab === 'solicitudes' ? h(Requests, {
+      onSaved
+    }) : tab === 'publicacion' ? h(Publication, {
       onSaved
     }) : tab === 'revision' ? h(React.Fragment, null, h(Publication, {
       onSaved
@@ -54045,6 +54119,7 @@ Object.assign(window, {
       onSaved
     })) : null;
   }
+  window.SavingsRequestsAdmin = Requests;
   window.SavingsRuntimeAdmin = SavingsRuntimeAdmin;
 })();
 })();
@@ -54071,8 +54146,11 @@ Object.assign(window, {
     fmt,
     estados
   } = V;
-  const tabs = [['cobranza', 'Cobranza'], ['padron', 'Ahorradores'], ['conciliacion', 'Conciliaci\u00f3n'], ['masivo', 'Confirmar saldos'], ['solicitudes', 'Retiros y cambios'], ['revision', 'Revisión']];
-  const css = `.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
+  const tabs = [['padron', 'Ahorradores'], ['pendientes', 'Pendientes'], ['programa', 'Programa']];
+  const programViews = [['cobranza', 'Descuentos del periodo'], ['conciliacion', 'Conciliar por fecha'], ['masivo', 'Confirmación por lote'], ['reportes', 'Reportes'], ['publicacion', 'Publicación'], ['configuracion', 'Configuración']];
+  const css = `.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.svp-work-heading{margin:24px 0 16px}.svp-work-heading h2{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.025em}.svp-context-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.svp-record-section{grid-column:1/-1;border:1px solid var(--hairline);border-radius:16px;background:#fff;min-width:0;overflow:hidden}.svp-record-section>summary{padding:18px 20px;font-size:16px;font-weight:850;cursor:pointer;min-height:52px;color:var(--ink)}.svp-record-section[open]>summary{border-bottom:1px solid var(--hairline);color:var(--guinda)}.svp-section-content{padding:16px;min-width:0}.svp-program-summary{margin:16px 0}.svp-program-summary>summary{padding:14px 0;font-weight:800;cursor:pointer}.svp-program-summary .svp-kpis{margin-top:14px}.svp-request-filters{display:grid;grid-template-columns:1fr 1fr;gap:16px}.svp .svp-note,.svp .svp-audit,.svp .svp-field{font-size:calc(14px * var(--text-scale,1))}.svp .svp-btn{font-size:calc(14px * var(--text-scale,1))!important;min-height:44px}.svp .svp-tabs button{font-size:calc(14px * var(--text-scale,1));min-height:46px}.svp .svp-tabs[role=tablist]{border-bottom:1px solid var(--hairline);padding-bottom:12px;gap:10px;margin-top:18px}.svp .svp-tabs[role=tablist] button{flex:1;border-radius:12px}.svp .svp-search{margin-bottom:20px;min-height:54px;border:1px solid var(--hairline-strong)}.svp-search .svp-btn{flex:none}.svp .svp-detail-grid{align-items:start}.svp .svp-notice{font-size:13px;flex-wrap:wrap}.svp .svp-record{padding:20px}.svp .svp-audit{padding:18px 0}.svp summary:focus-visible{outline:3px solid #456bc0;outline-offset:-3px}@container savings-panel (max-width:600px){.svp-request-filters{grid-template-columns:1fr;gap:0}.svp-section-content{padding:12px}.svp-context-nav>*{flex:1}.svp-work-heading h2{font-size:22px}.svp .svp-tabs[role=tablist]{gap:4px}.svp .svp-tabs[role=tablist] button{padding:10px 8px;white-space:normal}}
+`;
   function Btn({
     children,
     onClick,
@@ -54515,6 +54593,24 @@ Object.assign(window, {
       disabled: busy || r.identity_pending || !Object.keys(changes).length && (!reviewStatus || reviewStatus === r.status) && !obs.trim()
     }, busy ? 'Guardando…' : 'Guardar revisión')));
   }
+  function RecordSection({
+    title,
+    children,
+    initialOpen = false
+  }) {
+    const [opened, setOpened] = useState(initialOpen),
+      [visited, setVisited] = useState(initialOpen);
+    return h('details', {
+      className: 'svp-record-section',
+      open: opened,
+      onToggle: e => {
+        setOpened(e.currentTarget.open);
+        if (e.currentTarget.open) setVisited(true);
+      }
+    }, h('summary', null, title), visited && h('div', {
+      className: 'svp-section-content'
+    }, children));
+  }
   function Detail({
     id,
     onBack,
@@ -54523,6 +54619,8 @@ Object.assign(window, {
     header,
     onChange,
     initialPeriod,
+    initialSection,
+    requestId,
     disabled = false,
     app
   }) {
@@ -54550,7 +54648,7 @@ Object.assign(window, {
       setExtra([]);
       reload();
       onChange();
-      setNote('Corrección guardada. Puedes volver a abrir el expediente para consultarla.');
+      setNote('Cambio guardado. El expediente se actualizó.');
     }
     async function more() {
       if (loadingMore) return;
@@ -54565,6 +54663,11 @@ Object.assign(window, {
       } finally {
         if (generation.current === seq) setLoadingMore(false);
       }
+    }
+    const [requestRevision, setRequestRevision] = useState(0);
+    async function requestSaved() {
+      setRequestRevision(v => v + 1);
+      await saved();
     }
     const d = state.data,
       a = d && d.person,
@@ -54661,12 +54764,26 @@ Object.assign(window, {
       valor: fmt(a.estado === 'baja' ? a.bajaAt : a.prox)
     }), h('p', {
       className: 'svp-note'
-    }, 'Inicio del plan: ' + fmt(a.plan_inicio))), h(window.SavingsCertificationAdmin, {
+    }, 'Inicio del plan: ' + fmt(a.plan_inicio))), h(RecordSection, {
+      title: 'Saldo, descuentos y conciliación',
+      initialOpen: !!initialPeriod
+    }, h(window.SavingsCertificationAdmin, {
       recordId: id,
-      version: r.version,
+      version: r.version + ':' + requestRevision,
       onSaved: saved,
       app
-    }), h(Tarjeta, {
+    })), h(RecordSection, {
+      title: 'Solicitudes, retiros y cambios',
+      initialOpen: initialSection === 'requests'
+    }, h(window.SavingsRequestsAdmin, {
+      key: a.folio,
+      folio: a.folio,
+      requestId,
+      expanded: true,
+      onSaved: requestSaved
+    })), h(RecordSection, {
+      title: 'Descuentos del archivo'
+    }, h(Tarjeta, {
       title: 'Descuentos por fecha',
       icon: 'receipt',
       right: h('span', {
@@ -54699,7 +54816,9 @@ Object.assign(window, {
       className: 'svp-error'
     }, extraError), h('p', {
       className: 'svp-note'
-    }, 'Un importe en cero requiere revisión; no demuestra por sí solo que faltó el descuento.')), h('div', {
+    }, 'Un importe en cero requiere revisión; no demuestra por sí solo que faltó el descuento.'))), h(RecordSection, {
+      title: 'Retiros registrados'
+    }, h('div', {
       className: 'svp-wide'
     }, h(Tarjeta, {
       title: 'Retiros',
@@ -54710,7 +54829,9 @@ Object.assign(window, {
       onRefresh: reload,
       disabled: state.loading,
       onOpen: setWithdrawal
-    }))), h(Tarjeta, {
+    })))), h(RecordSection, {
+      title: 'Historial de revisión'
+    }, h(Tarjeta, {
       title: 'Movimientos del expediente',
       icon: 'clock'
     }, (r.history || []).length ? r.history.map(e => h('div', {
@@ -54730,7 +54851,7 @@ Object.assign(window, {
       label: k
     }).label + ': ' + String(Object.prototype.hasOwnProperty.call(e.before.proposed_data || {}, k) ? e.before.proposed_data[k] : r.source_data[k]) + ' → ' + String(Object.prototype.hasOwnProperty.call(e.after.proposed_data || {}, k) ? e.after.proposed_data[k] : r.source_data[k])))))) : h('p', {
       className: 'svp-note'
-    }, 'Todavía no se han realizado correcciones.')), h(Tarjeta, {
+    }, 'Todavía no se han realizado correcciones.'))), h(Tarjeta, {
       title: 'Revisión del expediente',
       icon: 'checkCircle'
     }, h('p', {
@@ -54790,9 +54911,16 @@ Object.assign(window, {
     onNext,
     header,
     onChange,
+    initialSection,
+    requestId,
     disabled = false,
     app
   }) {
+    const [requestRevision, setRequestRevision] = useState(0);
+    async function requestSaved() {
+      setRequestRevision(v => v + 1);
+      await onChange();
+    }
     return h('div', null, header({
       title: row.nombre || 'Expediente de ahorro',
       sub: 'Folio ' + row.folio,
@@ -54815,12 +54943,25 @@ Object.assign(window, {
       disabled: !onNext
     }, 'Siguiente \u203a')), h('div', {
       className: 'svp-detail-grid'
+    }, h(RecordSection, {
+      title: 'Saldo, descuentos y conciliación',
+      initialOpen: initialSection !== 'requests'
     }, h(window.SavingsCertificationAdmin, {
       key: row.id,
       participantId: row.id,
+      version: requestRevision,
       app,
       onSaved: onChange
-    }))));
+    })), h(RecordSection, {
+      title: 'Solicitudes, retiros y cambios',
+      initialOpen: initialSection === 'requests'
+    }, h(window.SavingsRequestsAdmin, {
+      key: row.folio,
+      folio: row.folio,
+      requestId,
+      expanded: true,
+      onSaved: requestSaved
+    })))));
   }
   function SavingsPanelAdmin({
     app,
@@ -54828,7 +54969,7 @@ Object.assign(window, {
     header,
     initialAffiliateId
   }) {
-    const [tab, setTab] = useState('cobranza'),
+    const [tab, setTab] = useState('pendientes'),
       [search, setSearch] = useState(''),
       [query, setQuery] = useState(''),
       [filter, setFilter] = useState('todos'),
@@ -54836,9 +54977,9 @@ Object.assign(window, {
       [open, setOpen] = useState(null),
       [request, setRequest] = useState(null),
       [toolsOpen, setToolsOpen] = useState(false),
-      [settingsOpen, setSettingsOpen] = useState(false),
       [revision, setRevision] = useState(0),
       [nativeOffset, setNativeOffset] = useState(0);
+    const [requestNavigation, setRequestNavigation] = useState(null);
     const root = useRef(),
       origin = useRef(),
       scroll = useRef([]),
@@ -54850,7 +54991,8 @@ Object.assign(window, {
       navGeneration.current++;
     }, []);
     // The server only knows padron/cobranza/solicitudes/revision; the list tab reads as padron.
-    const serverTab = tab === 'masivo' || tab === 'conciliacion' ? 'padron' : tab;
+    const group = tab === 'padron' ? 'padron' : ['pendientes', 'solicitudes', 'revision'].includes(tab) ? 'pendientes' : 'programa';
+    const serverTab = ['padron', 'cobranza', 'solicitudes', 'revision'].includes(tab) ? tab : 'padron';
     const [state, reload] = useQuery(() => window.SavingsPanelRepository.list({
       tab: serverTab,
       search: query,
@@ -54863,13 +55005,14 @@ Object.assign(window, {
       filter
     }) : Promise.resolve(null), [tab, query, filter, nativeOffset, revision]);
     useEffect(() => {
+      if (search === query) return;
       const t = setTimeout(() => {
         setQuery(search);
         setOffset(0);
         setNativeOffset(0);
       }, 250);
       return () => clearTimeout(t);
-    }, [search]);
+    }, [search, query]);
     useEffect(() => {
       if (!initialAffiliateId) return;
       let alive = true;
@@ -54914,7 +55057,7 @@ Object.assign(window, {
       };
     }, [initialAffiliateId]);
     function changeTab(t) {
-      setTab(t);
+      setTab(t === 'programa' ? 'cobranza' : t);
       setOffset(0);
       setNativeOffset(0);
       setFilter('todos');
@@ -55030,6 +55173,57 @@ Object.assign(window, {
         }
       }
     }
+    async function openRequest(row) {
+      if (navLock.current) return;
+      navLock.current = true;
+      const generation = ++navGeneration.current;
+      setNavBusy(true);
+      setNavError('');
+      try {
+        if (typeof row.folio !== 'string' || !row.folio) throw Error('IDENTITY');
+        const [historical, native] = await Promise.all([window.SavingsPanelRepository.list({
+          tab: 'padron',
+          search: row.folio,
+          filter: 'todos',
+          offset: 0
+        }), window.SavingsPanelRepository.nativeList({
+          search: row.folio,
+          filter: 'todos',
+          offset: 0
+        })]);
+        if (generation !== navGeneration.current) return;
+        const matches = (historical.rows || []).filter(a => a.folio === row.folio),
+          accounts = (native.items || []).filter(a => a.folio === row.folio).map(nativePerson);
+        if (matches.length + accounts.length > 1 || historical.total > 20 || native.total > 20) throw Error('IDENTITY');
+        const person = matches[0] || accounts[0];
+        origin.current = null;
+        scroll.current = [];
+        let el = root.current;
+        while (el) {
+          if (el.scrollHeight > el.clientHeight) scroll.current.push([el, el.scrollTop]);
+          el = el.parentElement;
+        }
+        setOpen(person ? {
+          id: person.id,
+          row: person,
+          native: !matches.length,
+          requestId: row.id,
+          section: 'requests'
+        } : {
+          requestOnly: true,
+          row,
+          requestId: row.id
+        });
+        scroll.current.forEach(([el]) => el.scrollTop = 0);
+      } catch (e) {
+        if (generation === navGeneration.current) setNavError(explain(e));
+      } finally {
+        if (generation === navGeneration.current) {
+          navLock.current = false;
+          setNavBusy(false);
+        }
+      }
+    }
     const heading = header || (({
       title,
       sub,
@@ -55054,7 +55248,23 @@ Object.assign(window, {
     }, navError), navBusy && h('p', {
       role: 'status',
       className: 'svp-note'
-    }, 'Abriendo expediente…'), h(open.native ? NativeDetail : Detail, {
+    }, 'Abriendo expediente…'), open.requestOnly ? h('div', null, heading({
+      title: open.row.name || 'Solicitud de ingreso',
+      sub: 'Folio ' + open.row.folio,
+      onBack: back
+    }), h('div', {
+      className: 'svp-body'
+    }, h('p', {
+      className: 'svp-note'
+    }, 'Esta persona todavía no tiene un expediente en las listas de cuentas. Su solicitud conserva su identidad y autorización existentes.'), h(window.SavingsRequestsAdmin, {
+      key: open.row.folio,
+      folio: open.row.folio,
+      requestId: open.requestId,
+      expanded: true,
+      onSaved: refresh
+    }))) : h(open.native ? NativeDetail : Detail, {
+      requestId: open.requestId,
+      initialSection: open.section,
       disabled: navBusy,
       key: (open.native ? 'native:' : '') + open.id,
       id: open.id,
@@ -55080,15 +55290,36 @@ Object.assign(window, {
         gap: 8,
         flexWrap: 'wrap'
       }
-    }, h(Btn, {
-      tone: 'primary',
-      onClick: () => setSettingsOpen(true)
-    }, 'Retiros y rendimientos'), h(Btn, {
-      onClick: () => setToolsOpen(true)
-    }, 'Accesos y datos anteriores'))), navError && h('p', {
+    }, h('span', null, 'Personas · Solicitudes · Programa'))), navError && h('p', {
       role: 'alert',
       className: 'svp-note warn'
-    }, navError), !d && state.loading ? h(Loading) : state.error ? h('div', {
+    }, navError), group !== 'padron' && h('form', {
+      className: 'svp-search',
+      onSubmit: e => {
+        e.preventDefault();
+        setTab('padron');
+        setFilter('todos');
+        setOffset(0);
+        setNativeOffset(0);
+        setQuery(search);
+      }
+    }, h(window.Icon, {
+      name: 'search',
+      size: 20
+    }), h('input', {
+      'aria-label': 'Buscar ahorrador por nombre o Folio',
+      placeholder: 'Buscar ahorrador por nombre o Folio',
+      value: search,
+      onChange: e => setSearch(e.target.value)
+    }), h(Btn, {
+      onClick: () => {
+        setTab('padron');
+        setFilter('todos');
+        setOffset(0);
+        setNativeOffset(0);
+        setQuery(search);
+      }
+    }, 'Buscar')), !d && state.loading ? h(Loading) : state.error ? h('div', {
       role: 'alert',
       className: 'svp-error'
     }, state.error, h(Btn, {
@@ -55096,11 +55327,6 @@ Object.assign(window, {
     }, 'Reintentar')) : d && h('div', {
       className: 'svp-layout'
     }, h('div', {
-      className: 'svp-kpis'
-    }, h(KPIs, {
-      k: d.kpis,
-      onGo: changeTab
-    })), h('div', {
       style: {
         minWidth: 0
       }
@@ -55111,17 +55337,55 @@ Object.assign(window, {
     }, tabs.map(([id, label]) => h('button', {
       key: id,
       role: 'tab',
-      'aria-selected': tab === id,
+      'aria-selected': group === id,
       onClick: () => changeTab(id)
-    }, label + (id === 'revision' && d.kpis.incidencias ? ' · ' + d.kpis.incidencias : id === 'solicitudes' && d.kpis.pendientes ? ' · ' + d.kpis.pendientes : '')))), h(window.SavingsRuntimeAdmin, {
+    }, label))), h('div', {
+      className: 'svp-work-heading'
+    }, h('h2', null, group === 'padron' ? 'Encuentra a un ahorrador' : group === 'pendientes' ? '¿Qué necesita atención?' : 'Control del programa'), h('p', {
+      className: 'svp-note'
+    }, group === 'padron' ? 'Busca por nombre o Folio y continúa en su expediente.' : group === 'pendientes' ? 'Nuevos ingresos, retiros y cambios que requieren una decisión.' : 'Descuentos colectivos, reportes y configuración de Ahorro.')), group === 'pendientes' && h('div', {
+      className: 'svp-context-nav'
+    }, [['pendientes', 'Solicitudes nuevas'], ['revision', 'Expedientes por revisar'], ['solicitudes', 'Archivo de solicitudes']].map(([id, label]) => h(Btn, {
+      key: id,
+      tone: tab === id ? 'primary' : '',
+      onClick: () => changeTab(id)
+    }, label))), group === 'programa' && h(React.Fragment, null, h('label', {
+      className: 'svp-field'
+    }, 'Operación del programa', h('select', {
+      'aria-label': 'Operación del programa',
+      value: tab,
+      onChange: e => changeTab(e.target.value)
+    }, programViews.map(([id, label]) => h('option', {
+      key: id,
+      value: id
+    }, label)))), h('details', {
+      className: 'svp-program-summary'
+    }, h('summary', null, 'Resumen general del programa'), h(KPIs, {
+      k: d.kpis,
+      onGo: changeTab
+    })), h(Btn, {
+      onClick: () => setToolsOpen(true)
+    }, 'Accesos y archivo')), tab === 'pendientes' && h(window.SavingsRuntimeAdmin, {
+      tab,
+      app,
+      onSaved: refresh,
+      onOpenPerson: openRequest,
+      initialNavigation: requestNavigation,
+      onNavigationChange: setRequestNavigation
+    }), ['reportes', 'publicacion', 'configuracion'].includes(tab) && h('div', {
+      className: 'svp-settings'
+    }, h(window.SavingsRuntimeAdmin, {
+      key: tab,
       tab,
       app,
       onSaved: refresh
-    }), d.kpis.uncertified > 0 && h('p', {
+    })), navBusy && h('p', {
+      role: 'status'
+    }, 'Abriendo expediente…'), group === 'programa' && d.kpis.uncertified > 0 && h('p', {
       className: 'svp-note warn'
-    }, d.kpis.uncertified + ' saldos siguen en revisión. El total incluye sus correcciones pendientes de confirmar.'), d.kpis.projection_pending > 0 && h('p', {
+    }, d.kpis.uncertified + ' saldos siguen en revisión. El total incluye sus correcciones pendientes de confirmar.'), group === 'programa' && d.kpis.projection_pending > 0 && h('p', {
       className: 'svp-note'
-    }, d.kpis.projection_pending + ' calendarios siguen pendientes de confirmar; sus importes previstos conservan la referencia del archivo.'), tab === 'conciliacion' ? h(window.SavingsReconciliationAdmin, {
+    }, d.kpis.projection_pending + ' calendarios siguen pendientes de confirmar; sus importes previstos conservan la referencia del archivo.'), ['pendientes', 'reportes', 'publicacion', 'configuracion'].includes(tab) ? null : tab === 'conciliacion' ? h(window.SavingsReconciliationAdmin, {
       asOf: d.kpis.as_of,
       onSaved: refresh
     }) : tab === 'masivo' ? h(window.SavingsBulkAdmin, {
@@ -55253,16 +55517,7 @@ Object.assign(window, {
       canWrite: d && d.can_write,
       onClose: () => setRequest(null),
       onSaved: refresh
-    }), settingsOpen && h(Modal, {
-      title: 'Retiros y rendimientos',
-      onClose: () => setSettingsOpen(false)
-    }, h('div', {
-      className: 'svp-settings'
-    }, h(window.SavingsRuntimeAdmin, {
-      tab: 'configuracion',
-      app,
-      onSaved: refresh
-    }))), toolsOpen && h(Modal, {
+    }), toolsOpen && h(Modal, {
       title: 'Accesos y datos anteriores',
       onClose: () => setToolsOpen(false)
     }, h(window.SavingsAccessAdmin), h('p', {

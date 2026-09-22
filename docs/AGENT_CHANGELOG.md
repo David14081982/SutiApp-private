@@ -1,5 +1,13 @@
 # Bitácora de agentes
 
+
+## 2026-09-21 - H-SAVINGS-JOIN-STATUS-VISUAL-001 - PASS
+
+Approved/applied affiliate JOIN requests reuse the existing pending card with their
+actual status, amount, dates and schedule. One focal UI branch; no financial or
+backend changes. Source/bundle JOIN matrix and current dependent flows PASS.
+[Audit](audits/H-SAVINGS-JOIN-STATUS-VISUAL-001.md).
+
 ## 2026-09-21 — H-SAVINGS-ADMIN-UX-REDESIGN-001 — PASS / production
 
 Admin Ahorro reorganized into Ahorradores / Pendientes / Programa. New JOIN requests

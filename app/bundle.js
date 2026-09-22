@@ -14956,9 +14956,11 @@ Object.assign(window, {
         CANCELLED: 'Cancelada',
         APPLIED: 'Aplicada'
       };
-    if (request && ['SUBMITTED', 'UNDER_REVIEW'].includes(request.status)) return h('section', {
+    const pending = request && ['SUBMITTED', 'UNDER_REVIEW'].includes(request.status);
+    if (request && ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'APPLIED'].includes(request.status)) return h('section', {
       'data-savings-join-access': '',
-      'data-savings-join-pending': '',
+      'data-savings-join-pending': pending ? '' : undefined,
+      'data-savings-join-status': request.status,
       'aria-label': 'Tu solicitud de ingreso',
       style: {
         margin: existing ? '12px 16px' : undefined,
@@ -14993,19 +14995,19 @@ Object.assign(window, {
       style: {
         padding: '5px 9px',
         borderRadius: 999,
-        background: '#fff1d5',
-        color: '#9a6813',
+        background: pending ? '#fff1d5' : '#edf8f1',
+        color: pending ? '#9a6813' : '#157f4a',
         fontSize: 10,
         fontWeight: 750
       }
-    }, request.status === 'SUBMITTED' ? 'Recibida' : 'En revisi\u00f3n')), h('p', {
+    }, pending ? request.status === 'SUBMITTED' ? 'Recibida' : 'En revisi\u00f3n' : states[request.status])), h('p', {
       style: {
         margin: '10px 0 14px',
         fontSize: 12,
         lineHeight: 1.5,
         color: 'var(--muted, #85858d)'
       }
-    }, 'Tu solicitud est\u00e1 pendiente de aprobaci\u00f3n.'), h('div', {
+    }, pending ? 'Tu solicitud est\u00e1 pendiente de aprobaci\u00f3n.' : request.status === 'APPROVED' ? 'Tu solicitud de ingreso fue aprobada.' : 'Tu solicitud de ingreso fue aplicada.'), h('div', {
       style: {
         padding: '12px 14px',
         borderRadius: 12,

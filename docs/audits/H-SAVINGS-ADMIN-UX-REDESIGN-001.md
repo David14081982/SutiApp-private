@@ -59,7 +59,7 @@ Reuse runtime, certification, access, reference-panel and self-service browser t
 
 ## Result
 
-Candidate implementation / focal verification: PASS. Production deployment remains pending at this checkpoint.
+Final result: PASS / PRODUCTION / CLOSED. Published product commit: 3a1dc59fcf957d4f7150ea734b5c43ba19a762ad (v271).
 
 - Reference-panel browser regression: PASS at 390/768/1440, preserving paginated search, keyboard entry, previous/next, corrections/reset, review/reopen, imported requests, error/retry and return context.
 - Certification browser regression: PASS at 320/430/1440: exact participant/enrollment, source conflict, invalidated preview, confirmed zero vs blank, future receipts blocked, projection/readback, idempotency, native accounts and read-only capabilities.
@@ -92,3 +92,49 @@ File classifications: PRODUCT_CODE = two savings UI modules; GENERATED_REQUIRED 
 Scope update: existing scripts/test-savings-control-access-browser.js and scripts/test-savings-certification-browser.js require navigation assertions to follow Programa and contextual sections. Financial assertions stay intact. No new permanent test.
 
 Scope update before edit: scripts/test-savings-reference-panel-browser.js also follows the three primary destinations and disclosed record sections; its isolated fixtures are reused, with no new permanent QA file.
+
+
+## Production closure (2026-09-21)
+
+Push to origin/main: PASS. GitHub Pages deployment: PASS, [run 35689436398](https://github.com/David14081982/SutiApp-private/actions/runs/35689436398).
+https://sutiapp.com serves v271; downloaded bundle normalized-LF SHA256 equals the reviewed artifact: `e7e2dfeb870cf69123a1eed4c9dee1317d549f15d61048e00a8b3c13400739df`.
+Authenticated production browser (service worker blocked and enabled): PASS for three destinations, new-saver request context, exact-Folio search, dossier/account/request readers, no browser errors and zero financial writes. Existing seven pending JOIN requests were not approved or altered.
+
+```text
+H-SAVINGS-ADMIN-UX-REDESIGN-001 RESULT
+Status: PASS / PRODUCTION / CLOSED
+Files changed: 13 (1 created, 12 modified), all classified above
+Source-of-truth verdict: PASS, unchanged
+Invariant verdict: PASS
+Build: PASS, deployed artifact hash matches
+Tests: focal PASS; pre-existing affiliate test assertion limitation documented above
+Security: PASS for scoped UI diff; backend authorization unchanged
+Legacy impact: no financial/Google/legacy writer changes
+Unexpected files changed: 0
+Known limitations: existing 500-row reader cap; no physical-device testing
+Evidence: this audit, existing updated tests, deployment run and exact production hash
+UI / functionality / responsive / P0 / permissions: PASS for tested scope
+Functionality lost / unmapped / duplicated primary workflows: 0 / 0 / 0
+Permanent QA files added / residual QA data / temporary tests in repo: 0 / 0 / 0
+Global regression: NOT APPLICABLE (focal modules and generated artifacts)
+```
+
+Final documentation updates only record release evidence; no architectural dependency or authority changes. Registry was FRESH for product release; evidence prose may make its content fingerprint stale and does not warrant structural regeneration.
+
+SUTIAPP ARCHITECT REVIEW
+
+Task: H-SAVINGS-ADMIN-UX-REDESIGN-001
+Verdict: APPROVED
+Critical findings: none blocking; disclosed test/device/reader limits remain.
+Source of truth: unchanged and verified against scoped diff.
+Architecture: two focal UI modules, existing readers/writers reused.
+Security: no authorization or backend changes; production checks read-only.
+Data: no production financial mutations or QA records.
+Legacy: unchanged.
+Owner decision: NO
+Next action: close this H; do not begin another H.
+Response generated for Codex: YES
+
+### RESPONSE TO CODEX
+
+Approve and close this H after recording the verified publication. Preserve the scoped changes and existing financial authorities. Do not advance to another H.

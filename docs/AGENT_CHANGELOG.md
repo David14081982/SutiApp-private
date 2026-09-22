@@ -1,13 +1,14 @@
 # Bitácora de agentes
 
-## 2026-09-21 — H-SAVINGS-ADMIN-UX-REDESIGN-001 — candidate PASS
+## 2026-09-21 — H-SAVINGS-ADMIN-UX-REDESIGN-001 — PASS / production
 
 Admin Ahorro reorganized into Ahorradores / Pendientes / Programa. New JOIN requests
 are visible on entry; inbox links to the same exact-Folio dossier/request form.
 Existing collective tools and exceptional controls remain available. Two UI modules,
 127 unrelated bundle chunks unchanged; no financial/backend/permission changes.
-Focal isolated tests and authenticated read-only local artifact PASS. Production
-baseline contains seven pending JOIN requests, none modified. No permanent QA files
+Focal isolated tests and authenticated read-only local/production checks PASS.
+Published 3a1dc59 / v271, deployment 35689436398 successful; public bundle hash
+matches the reviewed build. Seven pending JOIN requests, none modified. No permanent QA files
 added or productive QA data. [Audit and complete map](audits/H-SAVINGS-ADMIN-UX-REDESIGN-001.md).
 
 

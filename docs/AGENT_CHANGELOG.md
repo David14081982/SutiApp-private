@@ -1,7 +1,7 @@
 # Bitácora de agentes
 
 
-## 2026-09-21 - H-ADMIN-REFRESH-RESILIENCE-001 - PASS / local (not published)
+## 2026-09-21 - H-ADMIN-REFRESH-RESILIENCE-001 - PASS / production
 
 Owner-reported: Admin randomly returned to Inicio. Root cause: one failed
 `get_admin_refresh_context` read (network, timeout, token resume) published phase
@@ -16,6 +16,8 @@ contract case updated, stale mocks repaired: `neq`, `list_paid_company_ids`,
 `marketplace` placement). Gate test passes through the changed assertion and stops
 at its pre-existing `v=200` cachebuster pin (same on HEAD). Chrome E2E with aborted
 refresh: before → `home`/`error`; after → `admin`/`authorized` + toast, clears on recovery.
+Published 1e2e721 / v273; Pages run 35692907766 SUCCESS; public bundle SHA-256
+`e433dac6…` matches the commit; same Chrome E2E on production PASS, no page errors.
 
 ## 2026-09-21 - H-SAVINGS-JOIN-STATUS-VISUAL-001 - PASS / production
 

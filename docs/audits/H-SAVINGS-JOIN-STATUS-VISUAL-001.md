@@ -31,7 +31,7 @@ Interactions/navigation: preserved. Visual structure: preserved from pending ref
 Unauthorized redesign: NO. Verdict: PASS.
 
 H-SAVINGS-JOIN-STATUS-VISUAL-001 RESULT
-Status: PASS (local verification; publication recorded below)
+Status: PASS / PRODUCTION / CLOSED
 Files changed: six scoped files (one UI module, bundle, cachebuster, existing test, audit, changelog).
 Source-of-truth verdict: PASS, unchanged self-only backend projection.
 Invariant verdict: PASS, expected discounts remain projections, no balance/writer changes.
@@ -53,3 +53,13 @@ Response generated for Codex: YES
 
 ### RESPONSE TO CODEX
 Approve this presentation correction. Publish the tested bundle under the existing owner publication instruction, verify public artifact equivalence, and stop.
+
+
+## Publication verified
+
+Product commit: `1456b615d57d25b3f5d1eff41f29113772a2596f`. Push: PASS.
+[GitHub Pages run 35690507644](https://github.com/David14081982/SutiApp-private/actions/runs/35690507644): SUCCESS, including backend compatibility and production deployment gates.
+https://sutiapp.com serves v272. Downloaded normalized-LF bundle SHA256:
+`8992816170087f1e46892fb9fbfbcf3dbcc85de9b75f9aa9566a850e39cea445`, identical to the tested artifact.
+The user's authenticated account was not accessed; visual and interaction tests used isolated fixtures, and public production artifact equivalence was verified. No real request was altered.
+Final architect verdict: APPROVED; stop, no next H.

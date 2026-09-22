@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "businessWrites": 0,
+  "errors": [],
+  "measurements": [
+    {
+      "width": 1395,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "overflow": false,
+      "wide": true,
+      "images": [
+        {
+          "loaded": true,
+          "proportional": true
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "value": "18px",
+      "label": "16px",
+      "title": "21px",
+      "overflow": false,
+      "wide": true,
+      "images": [
+        {
+          "loaded": true,
+          "proportional": true
+        }
+      ]
+    }
+  ],
+  "documents": [],
+  "documentAccessResponses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+  ],
+  "bundle": "app/bundle.js?v=277",
+  "accordion": "PASS",
+  "viewer": "PASS",
+  "target": "PRODUCTION"
+}

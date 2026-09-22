@@ -88,3 +88,31 @@ Audit extension: scripts/test-request-workflow-timeline-cutover.js also hardcode
 
 H-FINANCE-DETAIL-READABILITY-001 RESULT: PASS for pre-publication checks; deployment/post-publication verification pending.
 Architect review: APPROVED to publish within explicit owner authorization, based on actual diff and receipts. No new owner decision. RESPONSE TO CODEX: publish inspected commit normally to main, wait for Pages and compatibility checks, compare deployed bundle and verify the detail read-only; record results. Do not alter backend or financial records.
+
+
+## Final published result ? supersedes all pending/blocked statuses above
+
+H-FINANCE-DETAIL-READABILITY-001 RESULT
+Status: PASS.
+Files changed: audited screen/generated artifacts, two historical tests, two focal browser scripts, H evidence and changelog.
+Source-of-truth verdict: SAFE, unchanged.
+Invariant verdict: PASS; protected-contract regression suite and readback assertions passed.
+Build: PASS, local artifact and GitHub Pages workflow.
+Tests: protected suite, isolated browser, local/live real-data browser and deployed real-data browser PASS; backend deployment gates PASS.
+Security: existing private document access; no policy/auth/secret changes. Production browser reports zero business writes and zero page errors.
+Legacy impact: none.
+Unexpected files changed: none.
+Known limitations: native inline PDF page navigation not independently exercised; images and their viewer verified on real records. Registry freshness reflects presentation/evidence changes, no architecture change.
+Evidence: production-live.json and local-live.json; deploy https://github.com/David14081982/SutiApp-private/actions/runs/35729960951 completed successfully, including production request verification.
+Published: https://sutiapp.com/ ; commit 43f2760ba859eb5d8c5485afbdc092b40f56ad96 ; bundle v277 ; worker cache v215. Published bundle bytes matched local artifact before browser checks.
+Production checks: 1395px and 390px; 18px values, 16px labels, 21px titles; no overflow; full-width proportional loaded images; collapsed dossier with mouse/keyboard; image viewer preserved.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-FINANCE-DETAIL-READABILITY-001 publication.
+Verdict: APPROVED.
+Critical findings: historical test staleness resolved; current production evidence PASS.
+Source of truth / Architecture / Security / Data / Legacy: unchanged.
+Owner decision: NO.
+Next action: task complete; no additional work automatically authorized.
+Response generated for Codex: YES.
+RESPONSE TO CODEX: Close this H with PASS and tell the owner the three requested changes are published. Preserve the documented PDF verification limit; do not claim financial/backend modifications.

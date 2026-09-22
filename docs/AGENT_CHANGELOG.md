@@ -3458,3 +3458,5 @@ Isolated PostgreSQL security/behavior/recovery tests, Chrome 390/1440 browser te
 Owner-authorized request-detail typography, full-width submitted images and collapsed current dossier. Focal Chrome verification PASS; generated bundle restricted to finance module. Historical protected-contract guard fails on unchanged HEAD too; no production deployment. Full evidence and limitations: [report](qa/H-FINANCE-DETAIL-READABILITY-001.md).
 
 H-FINANCE-DETAIL-READABILITY-001 continuation: publication explicitly authorized; stale test assertions reconciled with current verified behavior. Protected suite, isolated browser, local real-data browser, Auth/request deployment contracts and Pages artifact build PASS. Preparing v277/cache v215; no business data changes. Prior BLOCKED status superseded.
+
+H-FINANCE-DETAIL-READABILITY-001 published: v277/cache v215, commit 43f2760, Pages run 35729960951 success. Deployed bundle hash matched; real-record desktop/mobile typography/images/accordion/viewer PASS, zero business writes/errors. Final status PASS; earlier blocked/pending statuses superseded.

@@ -24,7 +24,7 @@ Build:132 current source modules; only screens-loan.jsx changed; 131 unrelated c
 UI preservation: same cards/data/controls/carousel; only requested ordering. No selection/default/rate/eligibility modifications.
 
 H-LOAN-FUND-DISPLAY-ORDER-001 RESULT
-Status: PASS local; publication recorded below.
+Status: PASS / PRODUCTION / CLOSED.
 Files: screens-loan.jsx, bundle, HTML, worker cache version/query, audit and own changelog entry.
 Source-of-truth / invariants / security: PASS, unchanged backend and financial authorities.
 Build/tests: PASS source/bundle browser and existing static contract.
@@ -43,3 +43,12 @@ Response generated for Codex: YES
 
 ### RESPONSE TO CODEX
 Approve focal restoration of requested order. Publish and verify HTML/worker/bundle version and hash; preserve unrelated work.
+
+
+## Publication verified
+
+Product commit 4ebb3348d1b4891312d2ad11489777b10df1f2cf pushed.
+[Pages 35920789244](https://github.com/David14081982/SutiApp-private/actions/runs/35920789244): SUCCESS including backend/build/production gates.
+sutiapp.com HTML and sw.js both serve bundle v283; worker cache v217.
+Normalized public bundle SHA256 `f3879faaa836b3dd20a780a96382be0a32fa210bace3d47cbe2e525c02021987` exactly equals tested build.
+Final review APPROVED; no next H. Unrelated preexisting audit/changelog edits remain untouched and unstaged.

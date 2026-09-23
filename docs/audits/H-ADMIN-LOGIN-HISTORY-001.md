@@ -1,5 +1,37 @@
 # H-ADMIN-LOGIN-HISTORY-001
 
+## Published release — 2026-09-23
+
+Frontend v280, commit `7e9033437bea0d2310ab7ea97febbb377afd5ae8`.
+Pages run https://github.com/David14081982/SutiApp-private/actions/runs/35898491035
+completed successfully. Published HTML/cachebuster and bundle SHA-256 match the
+reviewed candidate (`deployment.json`). Production browser PASS: administrative
+sidebar, recorded real login rows, deep-link refresh and mobile layout. Native audit
+is enabled and capturing; previous BLOCKED sections below are historical evidence.
+Owner's unrelated savings audit and changelog changes remain uncommitted/intact.
+
+### H-ADMIN-LOGIN-HISTORY-001 FINAL RESULT
+
+Status: PASS
+Files changed: declared feature, additive migration/recovery, tests, release docs/index.
+Source-of-truth verdict: SAFE; native Auth history, linked affiliate confirmed/historical phone.
+Invariant verdict: PASS; no identity, historical record or permission assignment rewritten.
+Build: PASS; v280 published, exact reviewed SHA-256.
+Tests: PASS isolated PostgreSQL, fixtures, local/live browser, new native event,
+production browser and global regression repeated after deployment.
+Security: admin-only backend checks; anon REST and real non-admin DB role denied.
+Legacy impact: NONE.
+Unexpected files changed: NONE; owner's prior changes preserved outside both commits.
+Known limitations: detailed history starts at activation; no reconstruction of earlier
+events; current contact data, not a historical phone snapshot; module reserved to
+administrators with authorization.read, not automatically granted to limited admins.
+Evidence: live.json, browser-production.json, deployment.json,
+global-production-after-release.json and preceding isolated/local evidence.
+
+Final architect verdict: APPROVED. Production verification resolves the candidate's
+remaining release step. Next action: owner may use Admin → Acceso y control →
+Historial de accesos. No new H or additional production change is authorized here.
+
 ## Resumption — owner enabled native auditing
 
 2026-09-23: `node scripts/admin-login-history-release.js verify` PASS: native audit

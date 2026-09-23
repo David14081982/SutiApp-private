@@ -16,6 +16,7 @@ El propietario activó «Write audit logs to the database» en Dashboard el 2026
 Verificación posterior PASS: auditoría habilitada y nuevo inicio real capturado.
 318 cuentas conservan su último acceso; el historial detallado inicia con la activación,
 sin reconstruir eventos anteriores. Evidencia: `admin-login-history-20260923/live.json`.
+Frontend v280 publicado; prueba de la pantalla real y hash del bundle PASS.
 
 ## Adelantos: fecha de solicitud — publicado
 

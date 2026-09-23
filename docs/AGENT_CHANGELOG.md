@@ -9,9 +9,9 @@ RPC y módulo instalados sin alterar afiliados ni asignaciones. PostgreSQL aisla
 backend real PASS. Endpoint anónimo y rol real no-administrador denegados;
 administrador consulta 318 cuentas. Sin PII en evidencia, sin Google/finanzas/Storage.
 El propietario activó auditoría Postgres en Dashboard; captura de nuevo acceso real
-y matriz de permisos PASS. Publicación en curso. Evidencia y estado de cierre en
+y matriz de permisos PASS. Publicado v280 (7e90334), pantalla productiva verificada.
+Evidencia y estado de cierre en
 [auditoría](audits/H-ADMIN-LOGIN-HISTORY-001.md).
-
 
 ## 2026-09-22 — H-LOAN-ADVANCE-ADMIN-FEE-001 — backend publicado
 

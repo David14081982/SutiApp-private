@@ -25,7 +25,7 @@ Source/legacy/security/migration verdict: PASS for implementation; production ap
 - Readback: policy remains 0/ENROLLMENT/version 3; anonymous/direct authenticated private RPC execution remain denied. Aggregated live decisions: 5 ordinary eligible new savers without a past actual receipt; 33 inactive cases still denied. No names/Folios returned, no financial writes for QA.
 
 H-SAVINGS-ZERO-MONTH-ACCESS-001 RESULT
-Status: PASS backend applied; frontend publication follows below.
+Status: PASS / PRODUCTION / CLOSED.
 Source-of-truth / invariant / security: PASS for scoped change.
 Build / focal SQL / browser / recovery: PASS.
 Legacy impact: authorized access criterion only; Google, balances, formulas/rates, other funds unchanged.
@@ -45,3 +45,13 @@ Response generated for Codex: YES
 
 ### RESPONSE TO CODEX
 Approve this surgical correction. Finish authorized frontend publication and verify deployed hash. Preserve unrelated work and stop.
+
+
+## Publication verified
+
+Commit 144b6d93d31e2525010758ce45b49984a61bf6fd pushed. Migration installed and private readback verified.
+[GitHub Pages 35915049106](https://github.com/David14081982/SutiApp-private/actions/runs/35915049106): SUCCESS including backend compatibility and production gates.
+sutiapp.com v281 matches tested bundle, normalized SHA256 `94cd5850b9785b2872ed2cd577df858ebfa773528fba944955396f413f9e8b2d`.
+Existing financial Supabase cutover and personalized snapshot static tests PASS.
+No user-specific UI assertion is made: production eligibility was verified as aggregates, and deployed code uses the unchanged common Edge/quote/request decision. No real loan submitted.
+Final architect review APPROVED. Unrelated preexisting audit/changelog work remains unstaged and intact. No further task started.

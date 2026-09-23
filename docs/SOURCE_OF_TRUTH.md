@@ -1,6 +1,24 @@
 # Fuentes de verdad
 
 
+## Caja de Ahorro: solicitudes de ingreso con cero meses - 2026-09-23
+
+OWNER explicitly extends 0/ENROLLMENT loan access to canonical JOIN requests in
+SUBMITTED or UNDER_REVIEW, before approval or actual deductions. Latest request,
+exact participant/effective affiliate, resolved certified canonical identity,
+positive contribution and nonfuture submission are required. Rejected/cancelled
+requests do not qualify; an old approved request cannot reopen terminated savings.
+Approved ACTIVE enrollment can qualify from its actual approved_at even when
+its enrollment_started_at equals a future first planned deduction. Dates are not
+rewritten. FIRST_DEDUCTION and positive-month rules retain their prior conditions.
+Applied 20260923000400 and 20260923000500 extend the existing private eligibility
+function only. UI list, quote and final request continue to share that decision;
+all other financial/profile/visibility/document rules and Caja Chica are unchanged.
+No JOIN approval, enrollment, payment or financial loan was created by this change.
+Private function backups and exact recovery retained; derived LOAN sessions invalidated.
+[Evidence](audits/H-SAVINGS-APPROVED-START-ACCESS-001.md).
+
+
 ## Caja de Ahorro: ingreso aprobado con cero meses - 2026-09-23
 
 OWNER authorizes immediate loan eligibility for canonical active savers when

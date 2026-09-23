@@ -183,3 +183,80 @@ begin
  perform test_assert(not has_function_privilege('authenticated','public.savings_loan_eligibility(uuid)','execute'),'private reader ACL retained');
  perform test_assert(not has_function_privilege('anon','public.savings_loan_eligibility(uuid)','execute'),'anonymous denied');
 end $$;
+
+
+-- APPROVED_START_TESTS
+do $$
+declare af uuid:='20000000-0000-0000-0000-000000000002'; en uuid; today date:=(now() at time zone 'America/Hermosillo')::date;
+begin
+ select id into en from savings_enrollments limit 1;
+ update savings_participants set certification_status='CERTIFIED' where affiliate_id=af;
+ update savings_loan_policy set minimum_months=0,starts_from='ENROLLMENT';
+ update savings_enrollments set enrollment_started_at=(today+37)::timestamp at time zone 'America/Hermosillo',approved_at=now()-interval '1 day',first_actual_contribution_date=null,status='ACTIVE',continue_saving=true,terminated_at=null where id=en;
+ update savings_contribution_plans set amount=500,effective_from=today+37,effective_to=null where enrollment_id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'ordinary_eligible'='true','reported case: approved but first discount and enrollment are future');
+ perform test_assert((savings_loan_eligibility(af)->>'enrollment_date')::date=today+37,'planned enrollment date not falsified');
+ perform test_assert(savings_loan_eligibility(af)->>'first_deduction_date' is null,'no actual receipt invented');
+ perform assert_savings_loan_quote_access(af,'prestamo--caja-de-ahorro--r1','[{"id":"prestamo--caja-de-ahorro--r1","status":"AVAILABLE"}]');
+ insert into program_requests values(gen_random_uuid(),'prestamo',af,'10000000-0000-0000-0000-000000000001',null,'{"criterion_identity":"SUPABASE_RULE:30000000-0000-0000-0000-000000000001"}');
+ update savings_enrollments set approved_at=null where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','unapproved future enrollment denied');
+ update savings_enrollments set approved_at=now()+interval '1 day' where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','future approval denied');
+ update savings_enrollments set approved_at=now()-interval '1 day' where id=en;
+ update savings_loan_policy set minimum_months=1;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','positive months unchanged');
+ update savings_loan_policy set minimum_months=0,starts_from='FIRST_DEDUCTION';
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','first deduction basis unchanged');
+ update savings_loan_policy set starts_from='ENROLLMENT';
+ update savings_enrollments set status='REQUESTED' where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','pending request not active');
+ update savings_enrollments set status='TERMINATED',continue_saving=false,terminated_at=now() where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','approval cannot override termination');
+ update savings_enrollments set status='ACTIVE',continue_saving=true,terminated_at=null where id=en;
+ update savings_contribution_plans set effective_to=today-1 where enrollment_id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','approval cannot override expired plan');
+ update savings_contribution_plans set effective_to=null where enrollment_id=en;
+ update savings_participants set certification_status='PENDING' where affiliate_id=af;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','approval cannot override certification');
+end $$;
+
+
+-- PENDING_JOIN_TESTS
+do $$
+declare af uuid:='20000000-0000-0000-0000-000000000001'; participant uuid:=gen_random_uuid(); req uuid:=gen_random_uuid();
+begin
+ insert into savings_participants values(participant,af,'RESOLVED','CERTIFIED','CANONICAL');
+ update savings_loan_policy set minimum_months=0,starts_from='ENROLLMENT';
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','no request no enrollment denied');
+ insert into savings_requests values(req,participant,af,'JOIN','CANONICAL','SUBMITTED',now()-interval '1 hour',500);
+ perform test_assert(savings_loan_eligibility(af)->>'ordinary_eligible'='true','submitted JOIN qualifies without enrollment or plan');
+ perform test_assert(savings_loan_eligibility(af)->>'enrollment_id' is null,'no enrollment fabricated');
+ perform assert_savings_loan_quote_access(af,'prestamo--caja-de-ahorro--r1','[{"id":"prestamo--caja-de-ahorro--r1","status":"AVAILABLE"}]');
+ insert into program_requests values(gen_random_uuid(),'prestamo',af,'10000000-0000-0000-0000-000000000001',null,'{"criterion_identity":"SUPABASE_RULE:30000000-0000-0000-0000-000000000001"}');
+ update savings_requests set status='UNDER_REVIEW' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='true','under review qualifies');
+ update savings_requests set status='REJECTED' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','rejected no longer qualifies');
+ begin insert into program_requests values(gen_random_uuid(),'prestamo',af,'10000000-0000-0000-0000-000000000001',null,'{"criterion_identity":"SUPABASE_RULE:30000000-0000-0000-0000-000000000001"}');raise exception 'FAIL_REJECTED_JOIN_SUBMIT';exception when raise_exception then if sqlerrm<>'FINANCIAL_PROGRAM_NOT_ELIGIBLE' then raise;end if;end;
+ update savings_requests set status='CANCELLED' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','cancelled denied');
+ update savings_requests set status='APPROVED' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','approved request cannot resurrect absent or closed enrollment');
+ update savings_requests set status='SUBMITTED',submitted_at=now()+interval '1 day' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','future request denied');
+ update savings_requests set submitted_at=now()-interval '1 hour',new_contribution_amount=0 where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','invalid amount denied');
+ update savings_requests set new_contribution_amount=500,usuario_contexto_affiliate_id='20000000-0000-0000-0000-000000000002' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','cross identity denied');
+ update savings_requests set usuario_contexto_affiliate_id=af,data_classification='LEGACY' where id=req;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','legacy request cannot grant access');
+ update savings_requests set data_classification='CANONICAL' where id=req;
+ update savings_loan_policy set minimum_months=1;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','positive month rule not bypassed');
+ update savings_loan_policy set minimum_months=0,starts_from='FIRST_DEDUCTION';
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','first deduction basis not bypassed');
+ update savings_loan_policy set starts_from='ENROLLMENT';
+ insert into savings_requests values(gen_random_uuid(),participant,af,'JOIN','CANONICAL','CANCELLED',now(),500);
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','latest cancelled supersedes old pending');
+end $$;

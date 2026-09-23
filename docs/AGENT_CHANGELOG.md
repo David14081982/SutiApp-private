@@ -1,6 +1,16 @@
 # Bitácora de agentes
 
 
+## 2026-09-23 - H-SAVINGS-APPROVED-START-ACCESS-001 - PASS
+
+Applied 004/005: zero enrollment months accepts approved future-start accounts and,
+by explicit owner extension, submitted/under-review JOIN requests. Latest rejected
+or cancelled requests do not qualify. Other loan conditions remain intact.
+Targeted live account now eligible with a matching available Savings fund; pending
+JOIN access also verified. SQL/recovery/browser PASS; no business records changed.
+[Audit](audits/H-SAVINGS-APPROVED-START-ACCESS-001.md).
+
+
 ## 2026-09-23 - H-SAVINGS-ZERO-MONTH-ACCESS-001 - PASS
 
 Applied 20260923000300: zero months from enrollment permits approved active savers

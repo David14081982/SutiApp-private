@@ -31112,6 +31112,7 @@ Object.assign(window, {
     POLICY_NOT_CONFIGURED: 'Falta configurar la antigüedad mínima.',
     MINIMUM_TENURE: 'Todavía no cumple la antigüedad mínima.',
     ELIGIBLE: 'Cumple la regla general de ahorro.',
+    JOIN_REQUEST_PENDING: 'Cumple por su solicitud de ingreso al ahorro, pendiente de aprobaci\u00f3n.',
   };
   function errorLabel(error) {
     const code = String(error && error.message || '');
@@ -31173,7 +31174,7 @@ Object.assign(window, {
           h('form', { onSubmit: (e) => { e.preventDefault(); if (validMonths && basis && policyReason.trim().length >= 8) save('policy', { months: Number(months), basis, version: data.policy.version, reason: policyReason.trim() }); } },
             label('Meses mínimos ahorrando', h('input', { type: 'number', min: 0, step: 1, required: true, value: months, disabled: busy || !data.can_configure, onChange: (e) => setMonths(e.target.value), style: field })),
             label('Contar desde', h('select', { required: true, value: basis, disabled: busy || !data.can_configure, onChange: (e) => setBasis(e.target.value), style: field }, h('option', { value: '', disabled: true }, 'Selecciona el inicio'), h('option', { value: 'ENROLLMENT' }, 'Fecha de inscripción al ahorro'), h('option', { value: 'FIRST_DEDUCTION' }, 'Primer descuento registrado'))),
-            h('p', { style: { fontSize: 12 } }, 'Meses calendario completos. Con cero meses desde la inscripción, basta tener el ingreso aprobado y el ahorro activo; no se exige un primer descuento. Si cuentas desde el primer descuento, debe estar registrado.'),
+            h('p', { style: { fontSize: 12 } }, 'Meses calendario completos. Con cero meses desde la inscripción, puedes solicitar desde que env\u00edas tu solicitud de ingreso al ahorro, incluso pendiente de aprobaci\u00f3n; no se exige un primer descuento. Una solicitud rechazada o cancelada no habilita el fondo. Si cuentas desde el primer descuento, debe estar registrado.'),
             data.can_configure && h(React.Fragment, null, label('Motivo del cambio de regla', h('textarea', { value: policyReason, minLength: 8, maxLength: 1000, required: true, disabled: busy, onChange: (e) => setPolicyReason(e.target.value), style: field })), h('button', { type: 'submit', disabled: busy || !validMonths || !basis || policyReason.trim().length < 8, style: button }, 'Guardar regla'))),
           h('h3', { style: { fontSize: 15, marginTop: 22 } }, 'Autorización especial para una persona'),
           h('form', { onSubmit: (e) => { e.preventDefault(); setNotice(''); setReason(''); load(control.trim()); } },

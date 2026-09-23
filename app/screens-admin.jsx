@@ -28,6 +28,7 @@
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [
+    { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
     { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
     { id: 'votaciones_nominal', label: 'Votos identificados', icon: 'doc', desc: 'Exportación nominal autorizada', ready: true },
     { id: 'administrators', label: 'Administradores', icon: 'shield', desc: 'Altas, asignaciones y revocación', ready: true },
@@ -69,13 +70,14 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    login_history:'authorization.read',
     votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
     administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
     affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',inversion:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
   });
   const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
-    { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation'] },
+    { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos','inversion'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','program_products','fincat','membresias'] },
@@ -510,6 +512,7 @@
     const backFromEditor = () => setView(viewContext ? 'sindicato' : 'menu');
     let body;
     if (view === 'votaciones' || view === 'votaciones_nominal') body = React.createElement(window.VotingAdmin, { app, onBack: () => openView('menu') });
+    else if (view === 'login_history') body = React.createElement(window.LoginHistoryModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'administrators') body = React.createElement(window.AdministratorsModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'screen_permissions') body = React.createElement(window.ScreenPermissionsModule, { app, onBack: () => openView('menu'), header: headerFn });
     else if (view === 'impersonation') body = React.createElement(window.ImpersonationModule, { app, onBack: () => openView('menu'), header: headerFn });

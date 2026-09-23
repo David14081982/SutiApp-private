@@ -1,3 +1,275 @@
+/* @@file login-history-repository.js */
+(function(){
+/* Dedicated read-only Admin boundary; Auth remains the event authority. */
+(function(){
+  'use strict';
+  async function list(filters){
+    if(!window.AdminRepository?.has('authorization.read'))throw new Error('ADMIN_LOGIN_HISTORY_DENIED');
+    const f=filters||{};
+    const result=await window.SutiSupabase.getClient().rpc('list_admin_login_history',{
+      p_mode:f.mode||'users',p_query:f.query?.trim()||null,p_from:f.from||null,p_to:f.to||null,
+      p_page:f.page||1,p_page_size:25
+    });
+    if(result.error)throw result.error;
+    if(!result.data||!Array.isArray(result.data.items)||!Number.isFinite(result.data.total))throw new Error('LOGIN_HISTORY_INVALID_RESPONSE');
+    return result.data;
+  }
+  window.LoginHistoryRepository=Object.freeze({list});
+})();
+})();
+/* @@file screens-admin-login-history.jsx */
+(function(){
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  const input = {
+    minHeight: 42,
+    padding: '9px 11px',
+    border: '1px solid var(--line)',
+    borderRadius: 10,
+    background: 'var(--surface)',
+    color: 'var(--ink)',
+    font: 'inherit',
+    boxSizing: 'border-box',
+    maxWidth: '100%'
+  };
+  const date = value => value ? new Intl.DateTimeFormat('es-MX', {
+    timeZone: 'America/Hermosillo',
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(value)) : '—';
+  function LoginHistoryModule({
+    app,
+    header,
+    onBack
+  }) {
+    const [draft, setDraft] = React.useState({
+      query: '',
+      from: '',
+      to: ''
+    });
+    const [filter, setFilter] = React.useState({
+      mode: 'users',
+      query: '',
+      from: '',
+      to: '',
+      page: 1
+    });
+    const [refresh, setRefresh] = React.useState(0),
+      [data, setData] = React.useState(null),
+      [loading, setLoading] = React.useState(true),
+      [error, setError] = React.useState('');
+    const allowed = app.admin.has('authorization.read');
+    React.useEffect(() => {
+      let active = true;
+      setData(null);
+      setError('');
+      setLoading(true);
+      if (!allowed) {
+        setLoading(false);
+        setError('No tienes permiso para consultar estos accesos.');
+        return () => {
+          active = false;
+        };
+      }
+      window.LoginHistoryRepository.list(filter).then(value => {
+        if (active) setData(value);
+      }).catch(() => {
+        if (active) setError('No fue posible consultar los accesos. Reintenta; si el problema continúa, verifica tus permisos.');
+      }).finally(() => {
+        if (active) setLoading(false);
+      });
+      return () => {
+        active = false;
+      };
+    }, [filter, refresh, allowed, app.admin.subjectKey]);
+    const apply = e => {
+      e.preventDefault();
+      if (draft.from && draft.to && draft.from > draft.to) {
+        setError('La fecha inicial debe ser anterior o igual a la final.');
+        return;
+      }
+      setFilter({
+        ...draft,
+        mode: filter.mode,
+        page: 1
+      });
+    };
+    const field = (key, label, type) => h('label', {
+      style: {
+        display: 'grid',
+        gap: 5,
+        fontSize: 12,
+        fontWeight: 700,
+        flex: key === 'query' ? '2 1 230px' : '1 1 150px'
+      }
+    }, label, h('input', {
+      type: type || 'text',
+      value: draft[key],
+      maxLength: key === 'query' ? 200 : undefined,
+      onChange: e => setDraft({
+        ...draft,
+        [key]: e.target.value
+      }),
+      style: input
+    }));
+    const pages = Math.max(1, Math.ceil((data?.total || 0) / 25));
+    const button = (label, props) => h('button', {
+      type: 'button',
+      style: {
+        ...input,
+        cursor: 'pointer',
+        fontWeight: 750
+      },
+      ...props
+    }, label);
+    return h('div', {
+      'data-admin-login-history': true
+    }, header({
+      title: 'Historial de accesos',
+      sub: 'Usuarios y accesos registrados · horario de Sonora',
+      onBack
+    }), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 18
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginBottom: 16
+      }
+    }, ...[['users', 'Usuarios que ya ingresaron'], ['history', 'Historial']].map(([mode, label]) => button(label, {
+      key: mode,
+      'aria-pressed': filter.mode === mode,
+      onClick: () => setFilter({
+        ...filter,
+        mode,
+        page: 1
+      })
+    })), button('Actualizar', {
+      onClick: () => setRefresh(x => x + 1),
+      disabled: loading
+    })), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        lineHeight: 1.6
+      }
+    }, filter.mode === 'users' ? 'Una fila por cuenta con su último inicio de sesión. No indica quién está conectado ahora.' : 'Cada fila corresponde a un inicio de sesión registrado. Los accesos anteriores a la activación del historial no se pueden reconstruir.', data?.history_available_from ? ' Primer evento conservado: ' + date(data.history_available_from) + '.' : ''), h('form', {
+      onSubmit: apply,
+      style: {
+        display: 'flex',
+        gap: 10,
+        alignItems: 'end',
+        flexWrap: 'wrap',
+        marginBottom: 16
+      }
+    }, field('query', 'Buscar nombre, control, correo o teléfono'), field('from', 'Desde', 'date'), field('to', 'Hasta', 'date'), h('button', {
+      type: 'submit',
+      style: input
+    }, 'Buscar'), button('Limpiar', {
+      onClick: () => {
+        setDraft({
+          query: '',
+          from: '',
+          to: ''
+        });
+        setFilter({
+          mode: filter.mode,
+          query: '',
+          from: '',
+          to: '',
+          page: 1
+        });
+      }
+    })), error && h('div', {
+      role: 'alert',
+      style: {
+        padding: 12,
+        color: '#A32921'
+      }
+    }, error, button('Reintentar', {
+      onClick: () => setRefresh(x => x + 1)
+    })), loading && h('p', {
+      role: 'status'
+    }, 'Consultando accesos…'), data && !loading && h(React.Fragment, null, h('p', {
+      role: 'status',
+      style: {
+        fontWeight: 750,
+        fontSize: 13
+      }
+    }, data.total_users_signed_in + ' cuentas han ingresado · ' + data.total + ' resultados' + (filter.mode === 'history' ? ' · ' + data.users_in_filter + ' usuarios en el filtro' : '')), !data.items.length ? h('p', null, 'No hay accesos registrados para estos filtros.') : h('div', {
+      role: 'region',
+      'aria-label': 'Resultados de accesos',
+      tabIndex: 0,
+      style: {
+        overflowX: 'auto',
+        background: 'var(--surface)',
+        borderRadius: 14,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, h('table', {
+      style: {
+        width: '100%',
+        borderCollapse: 'collapse',
+        fontSize: 12,
+        textAlign: 'left'
+      }
+    }, h('thead', null, h('tr', null, ...['Usuario', 'N.º de control', 'Correo', 'Teléfono', 'Fecha y hora'].map(label => h('th', {
+      key: label,
+      scope: 'col',
+      style: {
+        padding: 12,
+        whiteSpace: 'nowrap',
+        borderBottom: '1px solid var(--line)'
+      }
+    }, label)))), h('tbody', null, ...data.items.map(row => h('tr', {
+      key: row.id
+    }, ...[row.full_name || 'Cuenta sin afiliado vinculado', row.numero_control || '—', row.email || 'Sin correo disponible', h('div', null, h('span', null, row.phone || 'Sin teléfono confirmado'), row.historical_phone && h('small', {
+      style: {
+        display: 'block',
+        color: 'var(--ink-3)',
+        marginTop: 4
+      }
+    }, 'Histórico: ' + row.historical_phone)), date(row.occurred_at)].map((value, i) => h('td', {
+      key: i,
+      style: {
+        padding: 12,
+        borderBottom: '1px solid var(--line)',
+        whiteSpace: i === 4 ? 'nowrap' : 'normal',
+        minWidth: i === 3 ? 170 : 110,
+        overflowWrap: 'anywhere'
+      }
+    }, value))))))), h('nav', {
+      'aria-label': 'Paginación de accesos',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        marginTop: 16
+      }
+    }, button('Anterior', {
+      disabled: filter.page <= 1,
+      onClick: () => setFilter({
+        ...filter,
+        page: filter.page - 1
+      })
+    }), h('span', null, 'Página ' + filter.page + ' de ' + pages), button('Siguiente', {
+      disabled: filter.page >= pages,
+      onClick: () => setFilter({
+        ...filter,
+        page: filter.page + 1
+      })
+    })))));
+  }
+  window.LoginHistoryModule = LoginHistoryModule;
+})();
+})();
 /* @@file voting-design.js */
 (function(){
 /* Owner HTML contract: scoped CSS and original SVG paths. Generated by voting-prepare-design.py. */
@@ -63460,6 +63732,12 @@ Object.assign(window, {
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [{
+    id: 'login_history',
+    label: 'Historial de accesos',
+    icon: 'clock',
+    desc: 'Inicios de sesión y teléfonos',
+    ready: true
+  }, {
     id: 'votaciones',
     label: 'Votaciones',
     icon: 'checkCircle',
@@ -63679,6 +63957,7 @@ Object.assign(window, {
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    login_history: 'authorization.read',
     votaciones: 'votaciones.read',
     votaciones_nominal: 'votaciones.export_identified_votes',
     administrators: 'authorization.read',
@@ -63734,7 +64013,7 @@ Object.assign(window, {
     id: 'access_control',
     label: 'Acceso y control',
     icon: 'shield',
-    modules: ['administrators', 'screen_permissions', 'impersonation']
+    modules: ['administrators', 'screen_permissions', 'impersonation', 'login_history']
   }, {
     id: 'people',
     label: 'Personas y operación',
@@ -65733,6 +66012,10 @@ Object.assign(window, {
     if (view === 'votaciones' || view === 'votaciones_nominal') body = React.createElement(window.VotingAdmin, {
       app,
       onBack: () => openView('menu')
+    });else if (view === 'login_history') body = React.createElement(window.LoginHistoryModule, {
+      app,
+      onBack: () => openView('menu'),
+      header: headerFn
     });else if (view === 'administrators') body = React.createElement(window.AdministratorsModule, {
       app,
       onBack: () => openView('menu'),

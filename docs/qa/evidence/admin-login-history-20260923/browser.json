@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "mode": "isolated fixtures",
+  "checks": [
+    "pagination beyond 100",
+    "search/date filter resets page",
+    "history and latest access semantics",
+    "error hides prior personal data",
+    "empty state",
+    "loading and stale request cancellation",
+    "confirmed and historical phone explicitly separated",
+    "mobile overflow contained in results table"
+  ],
+  "personalDataStored": false
+}

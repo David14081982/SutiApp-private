@@ -1,5 +1,22 @@
 # Fuentes de verdad
 
+## Historial de accesos administrativos — H-ADMIN-LOGIN-HISTORY-001
+
+`auth.users.last_sign_in_at` conserva el último acceso por cuenta; `auth.audit_log_entries`
+conserva los eventos nativos de Auth. Son vistas distintas, no hay reconstrucción ni
+copia de eventos. `list_admin_login_history` proyecta ambas fuentes por separado para
+administradores con `authorization.read` y frontera del módulo `login_history`.
+El lector no expone payloads, IP, sesiones ni tokens y no concede acceso directo a Auth.
+`public.affiliates.auth_user_id` vincula identidad actual; `numero_control` sigue siendo texto.
+`notification_phone` es teléfono confirmado; `phone_raw` se muestra separado como
+«Histórico», nunca como sustituto silencioso del teléfono vigente.
+
+Migración `20260923000100` instalada; consulta real y denegaciones verificadas.
+El propietario activó «Write audit logs to the database» en Dashboard el 2026-09-23.
+Verificación posterior PASS: auditoría habilitada y nuevo inicio real capturado.
+318 cuentas conservan su último acceso; el historial detallado inicia con la activación,
+sin reconstruir eventos anteriores. Evidencia: `admin-login-history-20260923/live.json`.
+
 ## Adelantos: fecha de solicitud — publicado
 
 H-LOAN-ADVANCE-ADMIN-FEE-001: OWNER confirma que HOY es el día en que el afiliado

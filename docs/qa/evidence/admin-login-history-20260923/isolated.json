@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "migrationSha256": "ca4612125df92b88357e30b8b5d1a846c88b65ba519c7c3ba29bdfbe446d1ec5",
+  "environment": "isolated PostgreSQL (PGlite), synthetic fixtures only",
+  "checks": [
+    "anon/non-admin/revoked/module-limited denied",
+    "no direct Auth reads",
+    "131 accounts paginated once without 100-row ceiling",
+    "literal search/text control/confirmed vs historical phone",
+    "native login-only events/malformed actor safe/Sonora inclusive dates/empty page",
+    "invalid filters rejected",
+    "recovery preserves every Auth event and reapply succeeds",
+    "repository fail-closed, no mock/cache"
+  ],
+  "productionMutations": 0
+}

@@ -1,5 +1,18 @@
 # Bitácora de agentes
 
+## 2026-09-23 — H-ADMIN-LOGIN-HISTORY-001 — implementación y verificación
+
+Pantalla Admin aditiva de accesos con teléfono confirmado/histórico diferenciados,
+búsqueda, fechas Sonora y paginación; último acceso separado del historial nativo.
+RPC y módulo instalados sin alterar afiliados ni asignaciones. PostgreSQL aislado
+(131 cuentas), recuperación, pruebas de navegador con fixtures y build local con
+backend real PASS. Endpoint anónimo y rol real no-administrador denegados;
+administrador consulta 318 cuentas. Sin PII en evidencia, sin Google/finanzas/Storage.
+El propietario activó auditoría Postgres en Dashboard; captura de nuevo acceso real
+y matriz de permisos PASS. Publicación en curso. Evidencia y estado de cierre en
+[auditoría](audits/H-ADMIN-LOGIN-HISTORY-001.md).
+
+
 ## 2026-09-22 — H-LOAN-ADVANCE-ADMIN-FEE-001 — backend publicado
 
 Separa una liquidación final de los periodos administrativos para adelantos

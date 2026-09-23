@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "command": "node scripts/test-global-image-regression-production-live.js",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "recordedFrom": "successful command output in implementation session 2026-09-23",
+  "appAssets": {"checked":192,"passed":192},
+  "programCatalogAssets": {"checked":226,"passed":226},
+  "loginSeal": "PASS",
+  "profilePhoto": "PASS",
+  "adminAffiliates": "PASS",
+  "affiliateImages": "PASS",
+  "legitimatePdf": "PASS",
+  "membership": "PASS",
+  "loanDocuments": "PASS",
+  "marketplace": "PASS",
+  "programGallery": "PASS",
+  "fullscreen": "PASS",
+  "refresh": "PASS",
+  "withWithoutServiceWorker": "PASS",
+  "browserErrors": 0,
+  "productionBusinessDataMutations": 0,
+  "limitation": "Existing published build; new access-history screen remains local. Auth logins create normal sessions."
+}

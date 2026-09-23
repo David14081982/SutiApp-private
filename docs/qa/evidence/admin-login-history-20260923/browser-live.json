@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "mode": "live-local",
+  "checks": [
+    "actual bundle/router/Admin sidebar/production RPC",
+    "native history contains real login events",
+    "deep-link refresh",
+    "mobile overflow contained in results table"
+  ],
+  "personalDataStored": false
+}

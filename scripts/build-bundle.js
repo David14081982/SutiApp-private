@@ -15,6 +15,7 @@ if (babelPath) {
 }
 
 const files = [
+  'login-history-repository.js', 'screens-admin-login-history.jsx',
   'voting-design.js', 'voting-repository.js', 'screens-voting.jsx',
   'vendor-qrcode-generator.js',
   'assets-registry.jsx', 'assets-store.jsx', 'assets-resolver.jsx', 'motion.jsx',

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "anonRestDenied": true,
+  "nonAdminDatabaseRoleDenied": true,
+  "adminRestRead": true,
+  "nativeLoginCapture": true,
+  "totalUsers": 318,
+  "historyEvents": 1,
+  "personalDataStored": false
+}

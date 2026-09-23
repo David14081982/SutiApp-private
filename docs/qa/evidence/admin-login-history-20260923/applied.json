@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "migration": "20260923000100",
+  "sha256": "ca4612125df92b88357e30b8b5d1a846c88b65ba519c7c3ba29bdfbe446d1ec5",
+  "businessAndAssignmentsUnchanged": true,
+  "result": [
+    {
+      "status": "PASS"
+    }
+  ]
+}

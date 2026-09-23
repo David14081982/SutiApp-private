@@ -26,7 +26,7 @@ Production 004 and 005 applied separately with exact-definition drift guard, mig
 Targeted readback for the owner-provided Folio: eligible=true, ordinary_eligible=true; approved and enrollment dates unchanged. Exactly one matching Caja de Ahorro runtime rule matches the financial profile and term minimum; AUTO visibility with no scheduled date means AVAILABLE. One current pending JOIN also qualifies. No names or Folios stored here, no real loan submitted.
 
 H-SAVINGS-APPROVED-START-ACCESS-001 RESULT
-Status: PASS backend applied; frontend publication follows.
+Status: PASS / PRODUCTION / CLOSED.
 Source-of-truth: PASS; original policy/requests/enrollments only.
 Invariants/security: PASS; no fabricated dates/payments, exact identity/ACL retained.
 Build/tests/recovery: PASS focal SQL, existing browser, common Edge paths and session contract.
@@ -47,3 +47,14 @@ Response generated for Codex: YES
 
 ### RESPONSE TO CODEX
 Approve the full owner-authorized scope. Preserve pending/approved distinctions and existing financial guards. Publish, record evidence, do not start another H.
+
+
+## Verified publication
+
+Product commit `f649b391f197bad1188ac255d04c43279987d8f2` pushed.
+[Pages run 35919127361](https://github.com/David14081982/SutiApp-private/actions/runs/35919127361): SUCCESS, including backend compatibility, build and production gates.
+Public sutiapp.com serves v282; normalized SHA256 `edcdf58534804e9fd38ff0cbd3de7905df529de0d7e923a36ab8272e06db235b` equals tested bundle.
+Compiled-bundle Admin browser PASS at 390/1440. Financial Supabase cutover and personalized snapshot static contracts PASS.
+The user's exact eligibility and available matched rule were checked at production authority; no real loan or authenticated user-password session was created for QA. Close/reopen of Suti Prestamo invokes existing session validation; prior snapshots were invalidated by both migrations.
+Registry refresh uses generator analysis/build functions for changed task files while excluding the unrelated preexisting audit and changelog. It deliberately retains stale fingerprints for those unrelated edits rather than indexing/staging their contents. Final publication prose is nonstructural.
+Final reviewer verdict APPROVED; no next H.

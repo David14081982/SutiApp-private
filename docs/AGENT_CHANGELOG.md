@@ -1,6 +1,14 @@
 # Bitácora de agentes
 
 
+## 2026-09-23 - H-LOAN-FUND-DISPLAY-ORDER-001 - PASS
+
+Available loan cards now show Caja Chica then Caja de Ahorro; others retain order.
+Display-only copy of the array; no selection, eligibility or financial changes.
+Source/bundle browser and existing UI contract PASS; HTML/worker aligned to v283.
+[Audit](audits/H-LOAN-FUND-DISPLAY-ORDER-001.md).
+
+
 ## 2026-09-23 - H-SAVINGS-APPROVED-START-ACCESS-001 - PASS
 
 Applied 004/005: zero enrollment months accepts approved future-start accounts and,

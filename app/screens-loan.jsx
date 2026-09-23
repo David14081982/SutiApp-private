@@ -160,12 +160,15 @@
 
   function FundPicker({ programs, selected, setSelected, disabled, onSelect }) {
     if (!programs.length) return null;
+    // Display priority only; keep server objects, eligibility and selection intact.
+    const priority = (item) => ({ 'caja-chica': 0, 'caja-de-ahorro': 1 }[String(item.id || '').split('--')[1]] ?? 2);
+    const orderedPrograms = programs.slice().sort((a, b) => priority(a) - priority(b));
     return React.createElement('div', { 'data-loan-funds': '' },
       React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 9 } },
         React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'),
         programs.length > 1 && React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length + ' opciones')),
       React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', padding: '2px 20px 6px', margin: '0 -20px', scrollbarWidth: 'none' } },
-        programs.map((item) => {
+        orderedPrograms.map((item) => {
           const rate = Number(item.rate);
           const ratePeriod = textOrDash(item.rate_period);
           const rateLabel = Number.isFinite(rate) && ratePeriod !== dash

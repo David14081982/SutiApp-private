@@ -16882,6 +16882,12 @@ Object.assign(window, {
     onSelect
   }) {
     if (!programs.length) return null;
+    // Display priority only; keep server objects, eligibility and selection intact.
+    const priority = item => ({
+      'caja-chica': 0,
+      'caja-de-ahorro': 1
+    })[String(item.id || '').split('--')[1]] ?? 2;
+    const orderedPrograms = programs.slice().sort((a, b) => priority(a) - priority(b));
     return React.createElement('div', {
       'data-loan-funds': ''
     }, React.createElement('div', {
@@ -16912,7 +16918,7 @@ Object.assign(window, {
         margin: '0 -20px',
         scrollbarWidth: 'none'
       }
-    }, programs.map(item => {
+    }, orderedPrograms.map(item => {
       const rate = Number(item.rate);
       const ratePeriod = textOrDash(item.rate_period);
       const rateLabel = Number.isFinite(rate) && ratePeriod !== dash ? rate.toLocaleString('es-MX', {

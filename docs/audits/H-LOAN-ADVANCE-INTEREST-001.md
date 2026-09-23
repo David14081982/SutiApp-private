@@ -308,3 +308,16 @@ legacy evidence, not the request-date runtime calculator. No workbook changes.
   "notImported": "legacy computed periods, show flags or formula-only blank rows"
 }
 ```
+
+
+Post-deployment global regression: PASS local build and GitHub Pages, 194 app
+assets and 226 catalog assets; real PDF, all required surfaces, refresh and
+service-worker comparison, zero browser errors/business writes. First concurrent
+Pages attempt timed out on eight catalog images; isolated repeat passed with no
+code or asset changes. Implementation commit 720c2e1 pushed to main.
+
+Pages run 35908731309: SUCCESS (Auth/request compatibility, artifact build,
+post-deployment request verification). https://sutiapp.com/ bundle matches source,
+SHA256 2a0d8286bd0e86db70c40a4b79f2defdc81dd8bb52c6dd09f78c1543b1a234b5.
+Final release status: PASS for calculation and existing 22 funds. The 11 absent
+funds remain pending owner scope/conditions after workbook comparison.

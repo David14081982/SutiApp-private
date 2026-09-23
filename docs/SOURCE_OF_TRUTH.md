@@ -9,8 +9,8 @@ El calendario privado existente y la fecha de solicitud conservan su autoridad;
 no hay copia de tasas, lectura Google ni cálculo frontend. La captura histórica
 se conserva al aprobar, incluso si el catálogo cambia después.
 Aplicado: migración 20260923000200, financial-legacy v52 y sesiones SUTI_LOAN_QUOTE_V3.
-Cobertura: 22 fondos configurados de los 33 solicitados; 11 pendientes del Excel
-del propietario para definir sus condiciones. No se inventaron fondos ni reglas.
+Cobertura: 22 fondos configurados de los 33 solicitados; 11 ausentes
+tambien del Excel recibido y pendientes de definir sus condiciones. No se inventaron fondos ni reglas.
 [Auditoría](audits/H-LOAN-ADVANCE-INTEREST-001.md).
 
 ## Historial de accesos administrativos — H-ADMIN-LOGIN-HISTORY-001

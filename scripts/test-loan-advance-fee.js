@@ -121,7 +121,10 @@ async function main(){
   vm.runInContext(stripTypeScriptTypes(extract('async function resolveQuote(', 'async function readTermPolicy('))+';this.resolve=resolveQuote;',sandbox);
   const profile={financial_union:base.union,financial_employee_category:base.category},body={program_id:base.id,amount:5000,term:1};
   await assert.rejects(sandbox.resolve({rpc:async()=>({data:historical,error:null})},[rule],profile,body,policy),/FINANCIAL_RESOLUTION_FAILED/);cases++;
-  check(await sandbox.resolve({rpc:async()=>({data:captured,error:null})},[rule],profile,body,policy),captured,'new backend accepted');
+  await assert.rejects(sandbox.resolve({rpc:async()=>({data:captured,error:null})},[rule],profile,body,policy),/FINANCIAL_RESOLUTION_FAILED/);cases++;
+  await db.exec(read('supabase/migrations/20260923000200_loan_advance_interest.sql'));
+  const interestQuote=await quote(rule);
+  check(await sandbox.resolve({rpc:async()=>({data:interestQuote,error:null})},[rule],profile,body,policy),interestQuote,'current backend accepted');
   check(await sandbox.resolve({rpc:async()=>({data:historical,error:null})},[{...base,program_id:'caja'}],profile,body,policy),historical,'ordinary contract compatible during release');
   console.log(JSON.stringify({status:'PASS',cases,oldFee:15,threeMonthFortnightlyFee:90,threeMonthMonthlyFee:45,oneFinalPayment:true,historyPreserved:true,exactRecovery:true,productionWrites:0}));
  }finally{await db.close();}

@@ -1,5 +1,18 @@
 # Fuentes de verdad
 
+## Adelantos: interés por periodos — publicado 2026-09-23
+
+H-LOAN-ADVANCE-INTEREST-001 extiende el contrato autorizado: interés simple =
+capital × `financial_rules.rate_factor` × las mismas fechas de nómina que el
+gasto administrativo, redondeado a centavos al final. Una sola liquidación.
+El calendario privado existente y la fecha de solicitud conservan su autoridad;
+no hay copia de tasas, lectura Google ni cálculo frontend. La captura histórica
+se conserva al aprobar, incluso si el catálogo cambia después.
+Aplicado: migración 20260923000200, financial-legacy v52 y sesiones SUTI_LOAN_QUOTE_V3.
+Cobertura: 22 fondos configurados de los 33 solicitados; 11 pendientes del Excel
+del propietario para definir sus condiciones. No se inventaron fondos ni reglas.
+[Auditoría](audits/H-LOAN-ADVANCE-INTEREST-001.md).
+
 ## Historial de accesos administrativos — H-ADMIN-LOGIN-HISTORY-001
 
 `auth.users.last_sign_in_at` conserva el último acceso por cuenta; `auth.audit_log_entries`

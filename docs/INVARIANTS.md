@@ -1,5 +1,19 @@
 # Invariantes
 
+## Adelantos: interés simple — excepción autorizada 2026-09-23
+
+H-LOAN-ADVANCE-INTEREST-001 sustituye, para nuevos adelantos fechados desde 2026,
+la conservación del interés por un solo periodo de la H anterior. `paymentCount`
+sigue en 1; interés y gasto administrativo usan el mismo número de fechas de
+nómina posteriores a la solicitud y hasta el vencimiento inclusive. Interés =
+round(capital × tasa del fondo × periodos, 2), sin capitalización ni redondeo
+intermedio. Ejemplo: $10,000 al 6% por 6 periodos → $3,600 + $90; total $13,690.
+Mismos valores en resultado y opción de plazo. Sesiones anteriores a V3 se
+renuevan; solicitudes ya enviadas conservan íntegra su captura al aprobar.
+2025, otros productos, elegibilidad, tasas configuradas y calendario no cambian.
+Estado: aplicado, migración 20260923000200 y Edge v52; sustituye únicamente el
+interés de nuevos adelantos. Los fondos faltantes requieren condiciones del propietario.
+
 ## Adelantos — contrato autorizado, candidato local no desplegado
 
 H-LOAN-ADVANCE-ADMIN-FEE-001 exceptúa el gasto administrativo por número de

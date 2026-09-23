@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-23 — H-LOAN-ADVANCE-INTEREST-001 — backend publicado
+
+Corrección autorizada del interés simple de adelantos: capital × tasa × periodos
+del calendario administrativo, una sola liquidación y captura histórica intacta.
+Migración 20260923000200 aplicada y Edge v52 activo; V3 invalida sesiones anteriores.
+Cotización real Edge/RPC: $10,000 + $3,600 + $90 = $13,690; 136 solicitudes intactas.
+22 fondos configurados cubiertos; otros 11 esperan el Excel del propietario.
+Sin cambios frontend ni Google. [Evidencia](audits/H-LOAN-ADVANCE-INTEREST-001.md).
+
 ## 2026-09-23 — H-ADMIN-LOGIN-HISTORY-001 — implementación y verificación
 
 Pantalla Admin aditiva de accesos con teléfono confirmado/histórico diferenciados,

@@ -195,7 +195,7 @@ const normalize = (value: unknown) => String(value ?? "").trim().normalize("NFD"
 const EXPORT_CONTRACT_VERSION = "FINAL_APPROVED_LOAN_EXPORT_V1";
 const LOAN_SESSION_TTL_MS = 15 * 60 * 1000;
 const LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V1";
-const ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V2";
+const ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION = "SUTI_LOAN_QUOTE_V3";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function processForCategory(value: string) {
@@ -356,9 +356,10 @@ async function resolveQuote(
     (rule.id === String(body.program_id) || rule.program_id === String(body.program_id)));
   if (selected.some((rule) => rule.program_id === "prestamo" && rule.payment_count === 1 &&
       rule.available_on && rule.available_on >= "2026-01-01") &&
-      result.administrativeFeeVersion !== "ADVANCE_PAYROLL_PERIODS_V1") {
-    // Deploy Edge before SQL: an older database must not issue a $15 advance
-    // quote during the cutover window. No legacy calculation fallback.
+      (result.administrativeFeeVersion !== "ADVANCE_PAYROLL_PERIODS_V1" ||
+       result.interestCalculationVersion !== "ADVANCE_PAYROLL_INTEREST_V1")) {
+    // Deploy Edge before SQL: an older database must not issue an advance
+    // quote with single-period interest. No legacy calculation fallback.
     throw new Error("FINANCIAL_RESOLUTION_FAILED");
   }
   return result;

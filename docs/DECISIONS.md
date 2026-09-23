@@ -1,5 +1,19 @@
 # Registro de decisiones arquitectónicas
 
+## Adelantos: interés y gasto por el mismo calendario — 2026-09-23
+
+OWNER confirma explícitamente $10,000 × 6% × 6 quincenas = $3,600 de interés,
+más $90 administrativos y capital: $13,690 en un solo pago. Autoriza implementación
+quirúrgica con «ASÍ ES, HAZLO DE FORMA QUIRURGICA». Mantiene fecha de solicitud,
+exclusión 2025 e históricos intactos. Se cambia sólo el interés de nuevos adelantos
+fechados de 2026 en adelante; no el motor general, tasas ni gasto administrativo.
+Versión V3 de sesión evita confirmar una cotización anterior; aprobación conserva
+el resultado capturado. OWNER autoriza «PUBLICALO» para la lista 2026–2028;
+migración 20260923000200 y Edge v52 aplicados, con historial intacto. Se identifican
+22 fondos configurados y 11 ausentes. OWNER enviará Excel con las condiciones
+faltantes; no se crean reglas por inferencia ni se reabren fechas vencidas.
+[Auditoría](audits/H-LOAN-ADVANCE-INTEREST-001.md).
+
 ## Adelantos — fecha base confirmada por OWNER, 2026-09-22
 
 H-LOAN-ADVANCE-ADMIN-FEE-001: una liquidación única conserva los cargos

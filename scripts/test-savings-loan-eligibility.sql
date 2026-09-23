@@ -142,3 +142,44 @@ do $$begin
 end$$;
 reset role;
 select public.test_assert((select bool_and(relrowsecurity and relforcerowsecurity) from pg_class where relname in ('savings_loan_policy','savings_loan_authorizations','savings_loan_access_events','savings_loan_function_backup')),'forced RLS');
+
+
+-- ZERO_MONTH_TESTS
+-- Only synthetic data in isolated PostgreSQL. Receipt evidence is never fabricated.
+do $$
+declare af uuid:='20000000-0000-0000-0000-000000000002'; en uuid; today date:=(now() at time zone 'America/Hermosillo')::date; d jsonb;
+begin
+ select id into en from savings_enrollments limit 1;
+ update savings_loan_policy set minimum_months=0,starts_from='ENROLLMENT';
+ update savings_enrollments set status='ACTIVE',continue_saving=true,terminated_at=null,enrollment_started_at=today::timestamp at time zone 'America/Hermosillo',first_actual_contribution_date=null where id=en;
+ update savings_contribution_plans set amount=100,effective_from=today+30,effective_to=null where enrollment_id=en;
+ d:=savings_loan_eligibility(af);
+ perform test_assert(d->>'ordinary_eligible'='true','zero months enrollment allows approved new saver without receipt');
+ perform test_assert(d->>'first_deduction_date' is null,'no receipt invented');
+ perform test_assert(savings_loan_eligibility('20000000-0000-0000-0000-000000000001')->>'eligible'='false','no enrollment remains denied');
+ perform assert_savings_loan_quote_access(af,'prestamo--caja-de-ahorro--r1','[{"id":"prestamo--caja-de-ahorro--r1","status":"AVAILABLE"}]');
+ insert into program_requests values(gen_random_uuid(),'prestamo',af,'10000000-0000-0000-0000-000000000001',null,'{"criterion_identity":"SUPABASE_RULE:30000000-0000-0000-0000-000000000001"}');
+ update savings_enrollments set first_actual_contribution_date=today+30 where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'ordinary_eligible'='true','future planned first date does not block zero enrollment');
+ update savings_loan_policy set starts_from='FIRST_DEDUCTION';
+ perform test_assert(savings_loan_eligibility(af)->>'reason'='NO_ACTUAL_DEDUCTION','zero months first deduction still requires actual receipt');
+ update savings_loan_policy set starts_from='ENROLLMENT',minimum_months=1;
+ perform test_assert(savings_loan_eligibility(af)->>'reason'='NO_ACTUAL_DEDUCTION','positive months keeps actual deduction rule');
+ update savings_loan_policy set minimum_months=null,starts_from=null,version=0;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','null policy never bypasses');
+ update savings_loan_policy set minimum_months=0,starts_from='ENROLLMENT',version=5;
+ update savings_enrollments set enrollment_started_at=(today+1)::timestamp at time zone 'America/Hermosillo' where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','future enrollment denied');
+ update savings_enrollments set enrollment_started_at=today::timestamp at time zone 'America/Hermosillo',status='TERMINATED',continue_saving=false,terminated_at=today::timestamp at time zone 'America/Hermosillo' where id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','terminated remains denied');
+ update savings_enrollments set status='ACTIVE',continue_saving=true,terminated_at=null where id=en;
+ update savings_contribution_plans set effective_to=today-1 where enrollment_id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','expired plan denied');
+ update savings_contribution_plans set effective_to=null,amount=0 where enrollment_id=en;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','zero plan denied');
+ update savings_contribution_plans set amount=100 where enrollment_id=en;
+ update savings_participants set certification_status='PENDING' where affiliate_id=af;
+ perform test_assert(savings_loan_eligibility(af)->>'eligible'='false','uncertified enrollment denied');
+ perform test_assert(not has_function_privilege('authenticated','public.savings_loan_eligibility(uuid)','execute'),'private reader ACL retained');
+ perform test_assert(not has_function_privilege('anon','public.savings_loan_eligibility(uuid)','execute'),'anonymous denied');
+end $$;

@@ -24,9 +24,17 @@ async function main() {
     const restored = (await db.query("select pg_get_functiondef('public.resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)'::regprocedure) def")).rows[0].def;
     assert.equal(restored, before, 'exact function recovery');
     await db.exec(migration);
-    await db.exec(tests);
+    await db.exec(tests.split('-- ZERO_MONTH_TESTS')[0]);
     await assert.rejects(db.exec(recovery), /RECOVERY_BLOCKED_SAVINGS_LOAN_HISTORY_EXISTS/);
     await db.exec('rollback;');
+    const zeroMigration=read('supabase/migrations/20260923000300_savings_zero_month_access.sql');
+    const zeroRecovery=read('supabase/recovery/20260923000300_savings_zero_month_access.sql');
+    const prior=(await db.query("select pg_get_functiondef('public.savings_loan_eligibility(uuid)'::regprocedure) def")).rows[0].def;
+    await db.exec(zeroMigration);
+    await db.exec(tests.split('-- ZERO_MONTH_TESTS')[1]);
+    await db.exec(zeroRecovery);
+    assert.equal((await db.query("select pg_get_functiondef('public.savings_loan_eligibility(uuid)'::regprocedure) def")).rows[0].def,prior,'zero month exact recovery');
+    console.log('PASS zero-month enrollment: no receipt required; active/canonical/plan guards, other bases/months, quote and request gates, ACL and exact recovery');
     console.log('PASS SQL: policy, date boundaries, no saver, no deduction, revocation, one-use request guard, history, ACL/RLS, exact recovery and post-use refusal');
   } finally { await db.close(); }
   const code = stripTypeScriptTypes(read('supabase/functions/financial-legacy/savings-eligibility.ts'));

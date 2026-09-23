@@ -1,5 +1,20 @@
 # Fuentes de verdad
 
+
+## Caja de Ahorro: ingreso aprobado con cero meses - 2026-09-23
+
+OWNER authorizes immediate loan eligibility for canonical active savers when
+savings_loan_policy is exactly minimum_months=0 and starts_from=ENROLLMENT.
+Migration 20260923000300 is APPLIED: the existing private eligibility function
+waives only the actual first deduction for that combination. Approved active
+registration and a positive nonexpired canonical plan remain required. Pending
+JOIN alone is not enrollment. FIRST_DEDUCTION and positive-month policies retain
+their receipt/tenure requirements. Caja Chica and all other loan criteria remain
+unchanged. Edge filtering, quote and atomic submission reuse the same decision.
+Derived LOAN snapshots were invalidated; no enrollment, balance, financial request,
+receipt or policy value was changed. Private exact function backup/recovery retained.
+[Evidence](audits/H-SAVINGS-ZERO-MONTH-ACCESS-001.md).
+
 ## Adelantos: interés por periodos — publicado 2026-09-23
 
 H-LOAN-ADVANCE-INTEREST-001 extiende el contrato autorizado: interés simple =

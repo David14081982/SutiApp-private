@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+
+## 2026-09-23 - H-SAVINGS-ZERO-MONTH-ACCESS-001 - PASS
+
+Applied 20260923000300: zero months from enrollment permits approved active savers
+without a first receipt. Other bases/months and all financial controls preserved.
+SQL/recovery/browser/Edge tests PASS; protected business hashes unchanged. Five
+new savers qualify without receipt; 33 inactive remain denied.
+[Audit](audits/H-SAVINGS-ZERO-MONTH-ACCESS-001.md).
+
 ## 2026-09-23 — H-LOAN-ADVANCE-INTEREST-001 — backend publicado
 
 Corrección autorizada del interés simple de adelantos: capital × tasa × periodos

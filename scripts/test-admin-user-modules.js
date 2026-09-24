@@ -5,7 +5,9 @@ const window={SutiSupabase:{getClient:()=>({})}},context={window,React:{useState
 vm.runInContext(read('app/admin-repository.js'),context);
 const source=read('app/screens-admin.jsx');vm.runInContext(source.slice(source.indexOf('  const MODULES ='),source.indexOf('  function AdminMenu('))+'\nthis.access=adminModuleAccess;this.modules=MODULES;',context);
 function visible(value){window.AdminRepository.primeAccessContext(value);const access=context.access({admin:{...window.AdminRepository.getState(),has:window.AdminRepository.has}});assert.deepEqual(Array.from(access.desktopModules,x=>x.id),Array.from(access.mobileModules,x=>x.id));return Array.from(access.desktopModules,x=>x.id);}
-assert.equal(visible({role_code:'principal_admin',full_access:true}).length,33);
+const expectedTotal=Array.from(context.modules,m=>m.id);
+assert.equal(new Set(expectedTotal).size,expectedTotal.length,'module IDs must be unique');
+assert.deepEqual(visible({role_code:'principal_admin',full_access:true}),expectedTotal,'total administrator sees every current module');
 const keys=['affiliates','requests','program_products','membresias'];
 assert.deepEqual(visible({role_code:'module_admin',module_keys:keys,technical_permissions:['affiliates.read','program_requests.read','program_catalog.read','memberships.read','assets.write'],section_actions:[]}),keys);
 assert.deepEqual(visible({role_code:'module_admin',technical_permissions:['authorization.read'],section_actions:[]}),[],'missing module context fails closed');
@@ -16,5 +18,6 @@ const screens=read('app/screens-admin-access.jsx');assert(screens.includes('p_ex
 for(const value of ['data-admin-assignment-form','Revocar','Asignado','data-admin-user-modules','Guardar pantallas'])assert(screens.includes(value));
 assert(!/localStorage|sessionStorage|service_role|SUPABASE_ACCESS_TOKEN/.test(screens));
 new vm.Script(read('app/bundle.js'));
-const result={status:'PASS',cases:['total33','exact4','sameCardsAndSidebar','missingContextDenied','legacyRolePreserved','legacySectionPreserved','revokedEmpty','UIControlsPreserved','bundleSyntax'],network:false};
-fs.writeFileSync(path.join(workspace,'docs/qa/evidence/admin-user-modules-20260914/frontend.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
+const result={status:'PASS',cases:['total'+expectedTotal.length,'exact4','sameCardsAndSidebar','missingContextDenied','legacyRolePreserved','legacySectionPreserved','revokedEmpty','UIControlsPreserved','bundleSyntax'],network:false};
+const output=path.join(workspace,'docs/qa/evidence/screen-permission-fix-20260924');fs.mkdirSync(output,{recursive:true});
+fs.writeFileSync(path.join(output,'admin-user-modules-frontend.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));

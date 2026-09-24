@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "at": "2026-09-24T15:15:23.079Z",
+  "version": "20260924000100",
+  "migrationSha256": "14b95208f648e178b3ba1fe2209a31b85901d631133dcfd679b88c98deb8a64d",
+  "expected": {
+    "rpc": "5f2df81496993a2885ecc26c3e1eba75",
+    "constraint": "84bd913504580b5c06407738655e3c9a"
+  },
+  "functionsCompared": 46,
+  "functionOidOwnerAclPreserved": true,
+  "otherFunctionDefinitionsPreserved": true,
+  "trackingExact": true,
+  "recoveryState": [
+    {
+      "count": 1,
+      "constraint_hash": "84bd913504580b5c06407738655e3c9a",
+      "rpc_hash": "5f2df81496993a2885ecc26c3e1eba75"
+    }
+  ],
+  "security": [
+    {
+      "rls": true,
+      "force_rls": true
+    }
+  ],
+  "denied": [
+    {
+      "r": "anon",
+      "can_read": false,
+      "can_write": false
+    },
+    {
+      "r": "authenticated",
+      "can_read": false,
+      "can_write": false
+    },
+    {
+      "r": "service_role",
+      "can_read": false,
+      "can_write": false
+    }
+  ],
+  "rolePermissionsOutsideCheck": 0,
+  "realAccountRevocations": 0
+}

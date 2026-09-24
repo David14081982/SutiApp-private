@@ -17,23 +17,36 @@
     const [screen, setScreen] = useState('home');
     const [editing, setEditing] = useState(null);
     const [vOpen, setVOpen] = useState(false);
+    const E = window.AppScreenLayout;
+    const live = E.useEditorial(screen, true);
+    const [operationError, setOperationError] = useState('');
+    const [catalog, setCatalog] = useState(A().SCREENS);
+    useEffect(() => { E.loadCatalog().then(setCatalog).catch(e => setOperationError(E.message(e))); }, []);
+    const allowedTypes = resourceId === 'menus' ? ['menu','button'] : resourceId === 'formularios' ? ['form'] : ['section','container','component','banner'];
+    const run = fn => Promise.resolve().then(fn).catch(e => setOperationError(E.message(e)));
+    const actions = Object.create(store);
+    actions.allowedTypes = allowedTypes;
+    ['toggleNode','duplicateNode','reorderContent'].forEach(k => { actions[k] = (...args) => run(() => store[k](...args)); });
     const viewer = store.viewer();
     const P = { crear: store.can('crear', resourceId), editar: store.can('editar', resourceId), eliminar: store.can('eliminar', resourceId), reordenar: store.can('reordenar', resourceId) };
 
-    const tops = store.contentChildren(screen, null).filter((n) => !typeFilter || n.type === typeFilter);
+    const tops = (typeFilter ? store.contentAll().filter(n=>n.screen===screen) : store.contentChildren(screen, null)).filter((n) => !typeFilter || allowedTypes.includes(n.type));
 
-    return React.createElement('div', null,
-      header({ title: title || 'Secciones y componentes', sub: A().SCREEN(screen).label, onBack }),
+    return React.createElement('div', {'data-editorial-panel':resourceId},
+      header({ title: title || 'Secciones y componentes', sub: (catalog.find(s=>s.id===screen)||A().SCREEN(screen)).label, onBack }),
       React.createElement(window.ActingBanner, {}),
       React.createElement('div', { className: 'su-app-scroll', style: { padding: '16px 16px 26px' } },
         React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 12 } },
           React.createElement('div', { style: { flex: 1, position: 'relative' } },
             React.createElement('select', { value: screen, onChange: (e) => setScreen(e.target.value), style: { width: '100%', appearance: 'none', WebkitAppearance: 'none', border: 'none', outline: 'none', background: 'var(--surface)', boxShadow: 'var(--neo-sm)', borderRadius: 14, padding: '13px 40px 13px 14px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', color: 'var(--ink)', cursor: 'pointer' } },
-              A().SCREENS.map((s) => React.createElement('option', { key: s.id, value: s.id }, s.label))),
+              catalog.map((s) => React.createElement('option', { key: s.id, value: s.id }, s.label))),
             React.createElement(I, { name: 'chevD', size: 18, stroke: 2.2, style: { position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' } })),
           P.crear && React.createElement('button', { onClick: () => setEditing(store.blankNode(screen, null, typeFilter || 'section')), style: { display: 'inline-flex', alignItems: 'center', gap: 6, height: 48, padding: '0 16px', borderRadius: 14, border: 'none', background: 'var(--grad-guinda-soft)', color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: 'var(--glow-guinda)', flexShrink: 0 } },
             React.createElement(I, { name: 'plus', size: 19, stroke: 2.6 }), 'Nuevo')),
 
+        live.phase !== 'ready' && React.createElement(E.Status, {state: live, screen, admin: true}),
+        operationError && React.createElement('div', {role:'alert',style:{padding:12,color:'#C0341D'}}, operationError,
+          React.createElement('button', {onClick:()=>{setOperationError('');window.EditorialRepository.load(screen,true,true).catch(e=>setOperationError(E.message(e)));}}, 'Recargar')),
         React.createElement(ViewerBarMini, { open: vOpen, setOpen: setVOpen, viewer, store }),
 
         screen === 'home' && !typeFilter && React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, background: '#E7F6ED', color: '#13794A', borderRadius: 12, padding: '9px 13px', margin: '14px 0 4px', fontSize: 11.5, fontWeight: 700, lineHeight: 1.4 } },
@@ -43,12 +56,12 @@
           tops.length === 0
             ? React.createElement(window.EmptyState, { icon: 'grid', title: 'Sin elementos', sub: 'Agrega el primero con “Nuevo”.' })
             : React.createElement(ContentDragList, {
-              nodes: tops, canReorder: P.reordenar && !typeFilter,
-              onReorder: (ids) => store.reorderContent(screen, null, ids),
-              renderRow: (n, onGrab, dragging) => React.createElement(NodeBlock, { key: n.id, node: n, screen, store, viewer, P, depth: 0, onEdit: setEditing, allowChildren: !typeFilter, onGrab, dragging }),
+              nodes: tops, canReorder: P.reordenar && (!typeFilter || tops.every(n=>!n.parentId)),
+              onReorder: (ids) => actions.reorderContent(screen, null, ids),
+              renderRow: (n, onGrab, dragging) => React.createElement(NodeBlock, { key: n.id, node: n, screen, store: actions, viewer, P, depth: 0, onEdit: setEditing, allowChildren: !typeFilter, onGrab, dragging }),
             }))),
 
-      editing && React.createElement(NodeEditor, { node: editing, store, P, onClose: () => setEditing(null) }));
+      editing && React.createElement(NodeEditor, { node: editing, store, P, allowedTypes, catalog, onClose: () => setEditing(null) }));
   }
 
   // Bloque de nodo: fila + (si es sección/contenedor) lista anidada de hijos
@@ -63,12 +76,15 @@
           onReorder: (ids) => store.reorderContent(screen, node.id, ids),
           renderRow: (k, onGrab, dragging) => React.createElement(NodeRow, { key: k.id, node: k, store, viewer, P, depth: 1, onEdit, onGrab, dragging }),
         }),
-        P.crear && React.createElement('button', { onClick: () => onEdit(store.blankNode(screen, node.id, 'button')), style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: kids.length ? 8 : 0, height: 34, padding: '0 12px', borderRadius: 10, border: '1.5px dashed var(--hairline-strong)', background: 'transparent', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' } },
+        P.crear && React.createElement('button', { onClick: () => onEdit(store.blankNode(screen, node.id, 'component')), style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: kids.length ? 8 : 0, height: 34, padding: '0 12px', borderRadius: 10, border: '1.5px dashed var(--hairline-strong)', background: 'transparent', color: 'var(--ink-3)', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' } },
           React.createElement(I, { name: 'plus', size: 15, stroke: 2.4 }), 'Elemento en “' + node.label + '”')));
   }
 
   function NodeRow({ node, store, viewer, P, depth, onEdit, onGrab, dragging }) {
+    const permitted = !store.allowedTypes || store.allowedTypes.includes(node.type);
+    P = {...P, crear:P.crear && permitted, editar:P.editar && permitted};
     const t = A().CTYPE(node.type);
+    if (!permitted) onGrab = null;
     const hiddenManual = node.visible === false;
     const hiddenSeg = !hiddenManual && !store.nodeVisible(node, viewer);
     const aud = node.audience || { mode: 'all' };
@@ -89,7 +105,7 @@
           hiddenManual && chip('Oculto', 'ban', true),
           hiddenSeg && chip('Oculto en vista', 'eye', true))),
       React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px' } },
-        P.crear && iconBtn('copy', () => store.duplicateNode(node.id)),
+        P.crear && !node.builtin && iconBtn('copy', () => store.duplicateNode(node.id)),
         React.createElement(window.Toggle, { on: !hiddenManual, size: 'md', onClick: (e) => { e.stopPropagation(); if (P.editar) store.toggleNode(node.id); }, disabled: !P.editar, 'aria-label': 'Visible', })));
   }
   function chip(label, icon, warn) {
@@ -149,22 +165,24 @@
           React.createElement('div', { style: { fontSize: 11, fontWeight: 600, color: 'var(--ink-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, viewer.cargo + ' · ' + viewer.sindicato + ' · ' + viewer.nivel)),
         React.createElement(I, { name: open ? 'chevD' : 'chevR', size: 18, stroke: 2.2, style: { color: 'var(--ink-3)' } })),
       open && React.createElement('div', { style: { padding: '10px 15px 14px', borderTop: '1px solid var(--hairline)' } },
-        seg('Cargo', viewer.cargo, A().CARGOS, 'cargo'),
-        seg('Tipo de sindicato', viewer.sindicato, A().SINDICATOS, 'sindicato'),
-        seg('Nivel', viewer.nivel, A().NIVELES, 'nivel'),
+        seg('Cargo', viewer.cargo, window.AppScreenLayout.segmentOptions('tag'), 'cargo'),
+        seg('Tipo de sindicato', viewer.sindicato, window.AppScreenLayout.segmentOptions('union'), 'sindicato'),
+        seg('Nivel', viewer.nivel, window.AppScreenLayout.segmentOptions('employment_category'), 'nivel'),
         React.createElement('button', { onClick: () => store.setViewer({ registrado: !viewer.registrado }), style: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)', border: 'none', borderRadius: 11, padding: '9px 12px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--neo-inset)' } },
           React.createElement(window.Toggle, { on: viewer.registrado, size: 'sm', glow: false, }),
           React.createElement('span', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink)' } }, viewer.registrado ? 'Con sesión iniciada' : 'Sin sesión'))));
   }
 
   // ── Editor de nodo ──
-  function NodeEditor({ node, store, P, onClose }) {
+  function NodeEditor({ node, store, P, allowedTypes, catalog, onClose }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(node)));
     const isNew = !store.getNode(node.id);
     const set = (patch) => setD((p) => ({ ...p, ...patch }));
     const setAud = (patch) => setD((p) => ({ ...p, audience: { ...p.audience, ...patch } }));
-    const save = () => { store.saveNode(d); onClose(); };
-    const del = () => { store.removeNode(d.id); onClose(); };
+    const [busy,setBusy]=useState(false),[error,setError]=useState(''),[responses,setResponses]=useState(null);
+    const run=async fn=>{if(busy)return;setBusy(true);setError('');try{await fn();onClose();}catch(e){setError(window.AppScreenLayout.message(e));}finally{setBusy(false);}};
+    const save = () => run(()=>store.saveNode(d));
+    const del = () => run(()=>store.removeNode(d.id));
     const lbl = { fontSize: 12.5, fontWeight: 800, color: 'var(--ink-2)', display: 'block', marginBottom: 7 };
 
     return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 72, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
@@ -179,10 +197,17 @@
         React.createElement('div', { style: { marginBottom: 16 } },
           React.createElement('label', { style: lbl }, 'Tipo de elemento'),
           React.createElement('div', { style: { position: 'relative' } },
-            React.createElement('select', { value: d.type, onChange: (e) => set({ type: e.target.value }), style: { ...inputBase, appearance: 'none', WebkitAppearance: 'none', paddingRight: 40, cursor: 'pointer' } },
-              A().CONTENT_TYPES.map((c) => React.createElement('option', { key: c.id, value: c.id }, c.label))),
+            React.createElement('select', { value: d.type, disabled: !!d.builtin, onChange: (e) => set({ type: e.target.value }), style: { ...inputBase, appearance: 'none', WebkitAppearance: 'none', paddingRight: 40, cursor: 'pointer' } },
+              A().CONTENT_TYPES.filter(c=>allowedTypes.includes(c.id)).map((c) => React.createElement('option', { key: c.id, value: c.id }, c.label))),
             React.createElement(I, { name: 'chevD', size: 18, stroke: 2.2, style: { position: 'absolute', right: 13, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' } }))),
 
+        error && React.createElement('p',{role:'alert',style:{color:'#C0341D'}},error),
+        !d.builtin && !['menu','button','form'].includes(d.type) && React.createElement('label',{style:lbl},'Contenido',React.createElement('textarea',{value:d.text||'',maxLength:10000,onChange:e=>set({text:e.target.value}),style:inputBase})),
+        ['menu','button'].includes(d.type) && React.createElement('label',{style:lbl},'Abrir pantalla',React.createElement('select',{'aria-label':'Abrir pantalla',value:d.target||'home',onChange:e=>set({target:e.target.value}),style:inputBase},catalog.filter(c=>c.navigable).map(c=>React.createElement('option',{key:c.id,value:c.id},c.label)))),
+        d.type==='form' && React.createElement(FormFieldsEditor,{fields:d.fields||[],onChange:fields=>set({fields})}),
+        d.type==='form' && !isNew && React.createElement('div',null,
+          React.createElement('button',{onClick:async()=>{try{setResponses(await window.EditorialRepository.responses(d.screen,d.id));}catch(e){setError(window.AppScreenLayout.message(e));}},style:{...inputBase,cursor:'pointer'}},'Ver últimas 100 respuestas'),
+          responses && React.createElement('div',{style:{margin:'12px 0'}},responses.length===0?'Sin respuestas':responses.map(r=>React.createElement('article',{key:r.id,style:{borderBottom:'1px solid var(--hairline)',padding:10}},React.createElement('strong',null,new Date(r.created_at).toLocaleString()+' · Versión '+r.version),Object.entries(r.answers).map(([k,v])=>React.createElement('p',{key:k},k+': '+String(v))))))),
         React.createElement('button', { onClick: () => set({ visible: d.visible === false }), style: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'var(--surface)', border: 'none', boxShadow: 'var(--neo-sm)', borderRadius: 15, padding: '13px 15px', cursor: 'pointer', marginBottom: 18 } },
           React.createElement('div', { style: { flex: 1 } },
             React.createElement('div', { style: { fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' } }, d.visible === false ? 'Oculto' : 'Visible'),
@@ -203,17 +228,32 @@
           })),
         d.audience.mode === 'segment' && React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: '16px 15px 4px', boxShadow: 'var(--neo-sm)', marginBottom: 18 } },
           React.createElement('div', { style: { fontSize: 11.5, fontWeight: 700, color: 'var(--ink-3)', marginBottom: 12, lineHeight: 1.4 } }, 'Deja un grupo vacío para no filtrar por ese criterio.'),
-          Chips('Cargo en la aplicación', A().CARGOS, d.audience.cargos, (v) => setAud({ cargos: v })),
-          Chips('Tipo de sindicato', A().SINDICATOS, d.audience.sindicatos, (v) => setAud({ sindicatos: v })),
-          Chips('Nivel de usuario', A().NIVELES, d.audience.niveles, (v) => setAud({ niveles: v }))),
+          Chips('Cargo en la aplicación', window.AppScreenLayout.segmentOptions('tag'), d.audience.cargos, (v) => setAud({ cargos: v })),
+          Chips('Tipo de sindicato', window.AppScreenLayout.segmentOptions('union'), d.audience.sindicatos, (v) => setAud({ sindicatos: v })),
+          Chips('Nivel de usuario', window.AppScreenLayout.segmentOptions('employment_category'), d.audience.niveles, (v) => setAud({ niveles: v }))),
 
-        !isNew && P.eliminar && React.createElement('button', { onClick: del, style: { display: 'inline-flex', alignItems: 'center', gap: 8, height: 46, padding: '0 18px', borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 800, cursor: 'pointer', marginTop: 4 } },
+        !isNew && !d.builtin && P.eliminar && React.createElement('button', { onClick: del, style: { display: 'inline-flex', alignItems: 'center', gap: 8, height: 46, padding: '0 18px', borderRadius: 13, border: 'none', background: '#FDEAEA', color: '#C0341D', fontFamily: 'inherit', fontSize: 14.5, fontWeight: 800, cursor: 'pointer', marginTop: 4 } },
           React.createElement(I, { name: 'trash', size: 18, stroke: 2 }), 'Eliminar elemento'),
         React.createElement('div', { style: { height: 18 } })),
 
       React.createElement('div', { style: { display: 'flex', gap: 12, padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'var(--surface)', borderTop: '1px solid var(--hairline)', flexShrink: 0 } },
         React.createElement(window.Btn, { variant: 'outline', style: { flex: 1 }, onClick: onClose }, 'Cancelar'),
-        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: !d.label.trim(), onClick: save }, 'Guardar')));
+        React.createElement(window.Btn, { variant: 'primary', icon: 'check', style: { flex: 2 }, disabled: busy || !d.label.trim(), onClick: save }, busy ? 'Guardando…' : 'Guardar')));
+  }
+
+  function FormFieldsEditor({fields,onChange}) {
+    const patch=(i,p)=>onChange(fields.map((f,j)=>j===i?{...f,...p}:f));
+    return React.createElement('div',{style:{marginBottom:18}},React.createElement('h3',null,'Campos del formulario'),
+      fields.map((f,i)=>React.createElement('fieldset',{key:i,style:{border:'1px solid var(--hairline)',borderRadius:14,padding:12,marginBottom:12}},
+        React.createElement('legend',null,'Campo '+(i+1)),
+        React.createElement('label',null,'Identificador',React.createElement('input',{value:f.id,maxLength:50,onChange:e=>patch(i,{id:e.target.value}),style:inputBase})),
+        React.createElement('label',null,'Etiqueta',React.createElement('input',{value:f.label,maxLength:120,onChange:e=>patch(i,{label:e.target.value}),style:inputBase})),
+        React.createElement('label',null,'Tipo',React.createElement('select',{value:f.type,onChange:e=>patch(i,{type:e.target.value,...(e.target.value==='select'?{options:['Opción 1']}: {})}),style:inputBase},[['text','Texto'],['textarea','Texto largo'],['email','Correo'],['tel','Teléfono'],['date','Fecha'],['select','Opciones'],['checkbox','Casilla']].map(([id,label])=>React.createElement('option',{key:id,value:id},label)))),
+        f.type==='select' && React.createElement('label',null,'Una opción por línea',React.createElement('textarea',{value:(f.options||[]).join('\n'),onChange:e=>patch(i,{options:e.target.value.split('\n')}),style:inputBase})),
+        React.createElement('label',null,React.createElement('input',{type:'checkbox',checked:!!f.required,onChange:e=>patch(i,{required:e.target.checked})}),' Obligatorio'),
+        React.createElement('button',{onClick:()=>onChange(fields.filter((_,j)=>j!==i)),style:{marginLeft:12}},'Quitar campo'),
+        i>0&&React.createElement('button',{onClick:()=>{const next=fields.slice();[next[i-1],next[i]]=[next[i],next[i-1]];onChange(next);}},'Subir'))),
+      React.createElement('button',{disabled:fields.length>=25,onClick:()=>onChange([...fields,{id:'campo_'+crypto.randomUUID().slice(0,8),label:'Nuevo campo',type:'text',required:false}]),style:inputBase},'Agregar campo'));
   }
 
   function Chips(label, options, values, onChange) {

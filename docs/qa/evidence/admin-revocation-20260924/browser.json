@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "productionWrites": 0,
+  "network": "all browser network blocked",
+  "source": "actual screen, UI primitives and repository",
+  "database": "actual installed SQL functions plus candidate, synthetic PostgreSQL fixtures",
+  "checks": [
+    "protected owner has no revoke button",
+    "actual Add and Revoke controls work",
+    "revoked row and Pantallas retained",
+    "already-open stale admin page cannot add an administrator",
+    "same session receives empty admin capabilities",
+    "desktop/mobile structure preserved"
+  ],
+  "requests": [
+    {
+      "who": "owner",
+      "name": "list_admin_module_catalog",
+      "status": "success"
+    },
+    {
+      "who": "owner",
+      "name": "list_admin_assignments",
+      "status": "success"
+    },
+    {
+      "who": "owner",
+      "name": "set_total_admin_by_email",
+      "status": "success"
+    },
+    {
+      "who": "owner",
+      "name": "list_admin_assignments",
+      "status": "success"
+    },
+    {
+      "who": "total",
+      "name": "list_admin_module_catalog",
+      "status": "success"
+    },
+    {
+      "who": "total",
+      "name": "list_admin_assignments",
+      "status": "success"
+    },
+    {
+      "who": "owner",
+      "name": "revoke_admin_assignment",
+      "status": "success"
+    },
+    {
+      "who": "owner",
+      "name": "list_admin_assignments",
+      "status": "success"
+    },
+    {
+      "who": "total",
+      "name": "set_total_admin_by_email",
+      "status": "denied",
+      "code": "42501"
+    },
+    {
+      "who": "total",
+      "name": "get_admin_access_context",
+      "status": "success"
+    }
+  ],
+  "pageErrors": []
+}

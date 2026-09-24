@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "productionWrites": 0,
+  "checks": [
+    "every current menu, route, union editor and company view has an explicit classification",
+    "new affiliate and company routes block publication until classified",
+    "unregistered menu and sidebar omissions block publication",
+    "registered future module also requires assisted visibility, not just its catalog row",
+    "generator refuses missing security metadata and unknown technical permissions",
+    "build automatically prepares a declared future screen and blocks release until registered",
+    "production assisted visibility defect reproduced for four registered modules",
+    "current visibility-only candidate restores all 37 modules and recovers without data changes",
+    "generated SQL refuses technical permission removed after metadata capture",
+    "generated registration applies atomically and preserves function ACL",
+    "all current modules plus a future module visible to total admin, unknown still denied",
+    "no-use recovery restores exact function and removes only the added module",
+    "catalog RPC automatically includes new screen without frontend catalog edits",
+    "future module can be individually assigned and grants no other module",
+    "used registration recovery refuses to erase grants/history",
+    "revocation immediately removes new module on an already-open session",
+    "protected owner remains protected",
+    "every delegable catalog module can be assigned alone; total-only modules refuse limited assignment",
+    "company administration is selectable but Convenios shares companies.write capability",
+    "company member helper isolates organizations and quote-only role"
+  ],
+  "coverage": {
+    "status": "PASS",
+    "meaning": "Structural coverage only, not certification of independent backend authorization",
+    "errors": [],
+    "counts": {
+      "adminMenu": 37,
+      "backendCatalog": 39,
+      "affiliateRoutes": 21,
+      "unionScreens": 9,
+      "companyViews": 9
+    },
+    "assistedVisibilityMissing": [
+      "login_history",
+      "votaciones",
+      "votaciones_nominal",
+      "inversion"
+    ],
+    "audienceSelectorMissing": [
+      "admin",
+      "modulo",
+      "articulo",
+      "catitem",
+      "membership",
+      "settings",
+      "investment"
+    ],
+    "companyIndividualScreenDelegation": false
+  },
+  "generated": {
+    "forwardSha256": "4dcb36bd39fd39a657977fb70ea0392274e0099e8687f999b7f55f2362ec9965",
+    "recoverySha256": "78278e3be2a8aa3bab54128fccf2866d8e32dca286387ae3fd4f69bd1492b0d2"
+  },
+  "limits": [
+    "Company test exercises installed membership helper, not every business RPC or Storage policy.",
+    "Synthetic new module has no real business writer; boundary denial tested directly.",
+    "Recovery refuses any subsequent authorization/audit changes; read-only function usage is not observable.",
+    "Current production visibility defect is reproduced; generated correction is not deployed."
+  ],
+  "currentCorrection": {
+    "forwardSha256": "40022d26bb2e33e12b0de3ba8576533f0b46e80555c8a7efa8beec9934265c92",
+    "recoverySha256": "73b9788e8b100283d6ae50ae462ef6f61ee0e147694ca4c4ef232cb4940853f8",
+    "status": "ISOLATED_PASS_NOT_APPLIED"
+  }
+}

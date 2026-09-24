@@ -13207,8 +13207,6 @@ Object.assign(window, {
         app
       })
     };
-    const defOrder = ['banner_convenio', 'ecosistema', 'comite', 'noticias'];
-    const orderIds = defOrder;
     // M2.1 · coreografía real: cada bloque entra al entrar en viewport, una sola
     // vez por sesión (los re-render del panel admin no la repiten).
     const revealRef = React.useRef(null);
@@ -13235,7 +13233,12 @@ Object.assign(window, {
         gap: 22,
         marginTop: 8
       }
-    }, orderIds.map(id => wrap(id, blocks[id]())), wrap('footer', React.createElement(FooterInst, {
+    }, React.createElement(window.AppScreenLayout.Region, {
+      screen: 'home',
+      app,
+      builtins: blocks,
+      wrap
+    }), wrap('footer', React.createElement(FooterInst, {
       app
     }))));
   }
@@ -27728,111 +27731,14 @@ Object.assign(window, {
   ADMIN.CONTENT_TYPES = CONTENT_TYPES;
   const CTYPE = id => CONTENT_TYPES.find(c => c.id === id) || CONTENT_TYPES[0];
   ADMIN.CTYPE = CTYPE;
-  const CKEY = 'suti_admin_content_v1';
   const openAud = () => ({
     mode: 'all',
     cargos: [],
     sindicatos: [],
     niveles: []
   });
-  function seedContent() {
-    const N = (screen, id, parentId, type, label, order, locked) => ({
-      id,
-      screen,
-      parentId,
-      type,
-      label,
-      visible: true,
-      locked: !!locked,
-      order,
-      audience: openAud()
-    });
-    return [
-    // ── Inicio (conectado en vivo) ──
-    N('home', 'quick_actions', null, 'section', 'Accesos rápidos', 1), N('home', 'qa_prestamo', 'quick_actions', 'button', 'Préstamo', 1), N('home', 'qa_credencial', 'quick_actions', 'button', 'Credencial', 2), N('home', 'qa_convenios', 'quick_actions', 'button', 'Convenios', 3), N('home', 'qa_documentos', 'quick_actions', 'button', 'Documentos', 4), N('home', 'banner_convenio', null, 'banner', 'Banner: Convenio Unilíder', 2), N('home', 'noticias', null, 'section', 'Noticias del sindicato', 3), N('home', 'ecosistema', null, 'section', 'Tu sindicato (módulos)', 4), N('home', 'comite', null, 'section', 'Comité Ejecutivo', 5),
-    // ── Mi Financiera ──
-    N('financiera', 'fin_saldo', null, 'component', 'Resumen de saldo', 1), N('financiera', 'fin_productos', null, 'section', 'Productos financieros', 2), N('financiera', 'fin_recomendados', null, 'section', 'Recomendados para ti', 3),
-    // ── Convenios ──
-    N('convenios', 'conv_buscador', null, 'component', 'Buscador de convenios', 1), N('convenios', 'conv_categorias', null, 'section', 'Categorías', 2), N('convenios', 'conv_anuncios', null, 'banner', 'Anuncios patrocinados', 3),
-    // ── Mi Credencial ──
-    N('credencial', 'cred_tarjeta', null, 'component', 'Tarjeta de credencial', 1), N('credencial', 'cred_qr', null, 'button', 'Botón mostrar QR', 2)];
-  }
-  // Approved owner decision: frontend structure is versioned code, never browser storage.
-  let content = seedContent();
-  const persistContent = () => {
-    listeners.forEach(l => l());
-  };
-  const cuid = () => 'node_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const norm = v => v || null;
-  adminStore.contentAll = () => content;
-  adminStore.contentChildren = (screen, parentId) => content.filter(n => n.screen === screen && norm(n.parentId) === norm(parentId)).sort((a, b) => (a.order || 0) - (b.order || 0));
-  adminStore.getNode = id => content.find(n => n.id === id);
   adminStore.nodeVisible = (node, v) => node.visible !== false && audienceMatch(node, v || viewer);
-  // Nodos visibles para el frontend en vivo. null = no hay nodos definidos (usar orden por defecto)
-  adminStore.liveNodes = (screen, parentId, v) => {
-    const all = content.filter(n => n.screen === screen && norm(n.parentId) === norm(parentId));
-    if (!all.length) return null;
-    return all.filter(n => adminStore.nodeVisible(n, v)).sort((a, b) => (a.order || 0) - (b.order || 0));
-  };
-  adminStore.blankNode = (screen, parentId, type) => ({
-    id: cuid(),
-    screen,
-    parentId: norm(parentId),
-    type: type || 'component',
-    label: '',
-    visible: true,
-    locked: false,
-    order: (adminStore.contentChildren(screen, parentId).slice(-1)[0] || {
-      order: 0
-    }).order + 1,
-    audience: openAud()
-  });
-  adminStore.saveNode = node => {
-    const i = content.findIndex(n => n.id === node.id);
-    if (i >= 0) content = content.map(n => n.id === node.id ? node : n);else content = [...content, node];
-    persistContent();
-  };
-  adminStore.toggleNode = id => {
-    content = content.map(n => n.id === id ? {
-      ...n,
-      visible: n.visible === false
-    } : n);
-    persistContent();
-  };
-  adminStore.removeNode = id => {
-    content = content.filter(n => n.id !== id && n.parentId !== id);
-    persistContent();
-  };
-  adminStore.duplicateNode = id => {
-    const s = content.find(n => n.id === id);
-    if (!s) return;
-    content = [...content, {
-      ...s,
-      id: cuid(),
-      label: s.label + ' (copia)',
-      visible: false,
-      locked: false,
-      order: (adminStore.contentChildren(s.screen, s.parentId).slice(-1)[0] || {
-        order: 0
-      }).order + 1
-    }];
-    persistContent();
-  };
-  adminStore.reorderContent = (screen, parentId, orderedIds) => {
-    const rank = {};
-    orderedIds.forEach((id, i) => {
-      rank[id] = i + 1;
-    });
-    content = content.map(n => n.screen === screen && norm(n.parentId) === norm(parentId) && rank[n.id] != null ? {
-      ...n,
-      order: rank[n.id]
-    } : n);
-    persistContent();
-  };
-  adminStore.resetContent = () => {
-    content = seedContent();
-    persistContent();
-  };
+  // Editorial reads/writes are installed by editorial-content.jsx from Supabase.
 
   // ─────────────────────────────────────────────────────────────
   // Noticias del sindicato (contenido + orden + visibilidad + responsable)
@@ -29385,15 +29291,7 @@ Object.assign(window, {
     })).catch(fail);
   };
   store.reorderAnuncios = ids => window.AdminRepository.reorderManaged('banners', ids).then(load).catch(fail);
-  const structural = () => {
-    if (window.__sutiToast) window.__sutiToast('La estructura se administra mediante versión de la aplicación');
-  };
-  store.saveNode = structural;
-  store.toggleNode = structural;
-  store.removeNode = structural;
-  store.duplicateNode = structural;
-  store.reorderContent = structural;
-  store.resetContent = structural;
+  // Editorial adapter is installed after this store and uses its segment mappings.
   window.AdminCutoverStore = Object.freeze({
     load,
     toCodes,
@@ -29406,6 +29304,446 @@ Object.assign(window, {
     }
   });
   if (window.AdminRepository && window.AdminRepository.subscribe) window.AdminRepository.subscribe(receiveContext);
+})();
+})();
+/* @@file editorial-repository.js */
+(function(){
+/* Editorial authority: Supabase RPCs. Memory only, cleared at every identity change. */
+(function(){
+ 'use strict';
+ const listeners=new Set(),states=new Map(),pending=new Map();let epoch=0,catalog=null;
+ const key=(screen,admin)=>screen+':'+(admin?'admin':'live');
+ const emit=()=>listeners.forEach(fn=>fn());
+ async function rpc(name,args){const out=await window.SutiSupabase.getClient().rpc(name,args);if(out.error)throw out.error;return out.data;}
+ const snapshot=(screen,admin)=>states.get(key(screen,admin))||{phase:'idle',nodes:[],version:null,editableTypes:[]};
+ async function load(screen,admin=false,force=false){
+  const k=key(screen,admin);if(pending.has(k))return pending.get(k);
+  if(!force&&snapshot(screen,admin).phase==='ready')return snapshot(screen,admin);
+  const e=epoch;states.set(k,{...snapshot(screen,admin),phase:'loading',error:null});emit();
+  const request=(async()=>{
+   try{const data=await rpc('get_app_editorial',{p_screen:screen,p_admin:admin});if(e!==epoch)return;const next={...data,phase:'ready',error:null};states.set(k,next);emit();return next;}
+   catch(error){if(e===epoch){states.set(k,{phase:'error',nodes:[],version:null,editableTypes:[],error});emit();}throw error;}
+   finally{if(e===epoch)pending.delete(k);}
+  })();pending.set(k,request);return request;
+ }
+ async function save(screen,version,nodes){
+  const e=epoch;const data=await rpc('save_app_editorial',{p_screen:screen,p_expected_version:version,p_nodes:nodes});
+  if(e!==epoch)throw new Error('EDITORIAL_IDENTITY_CHANGED');
+  states.set(key(screen,true),{...data,phase:'ready',error:null});states.delete(key(screen,false));emit();return data;
+ }
+ function clear(){epoch++;states.clear();pending.clear();catalog=null;emit();}
+ let identity='';
+ function refreshIdentity(){
+  const auth=window.AffiliateAuth&&window.AffiliateAuth.getState()||{},admin=window.AdminRepository&&window.AdminRepository.getState()||{};
+  const next=JSON.stringify([auth.session&&auth.session.user&&auth.session.user.id,auth.impersonation&&auth.impersonation.id,admin.subjectKey,admin.assignment]);
+  if(next!==identity){identity=next;clear();}
+ }
+ // AffiliateAuth is defined later in the same bundle. Subscribe after bundle setup.
+ queueMicrotask(()=>{if(window.AffiliateAuth&&window.AffiliateAuth.subscribe)window.AffiliateAuth.subscribe(refreshIdentity);});
+ if(window.AdminRepository&&window.AdminRepository.subscribe)window.AdminRepository.subscribe(refreshIdentity);
+ window.addEventListener('focus',()=>{for(const [k,s] of states)if(s.phase==='ready')states.set(k,{...s,phase:'idle'});emit();});
+ window.EditorialRepository=Object.freeze({snapshot,load,save,clear,subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},
+  async catalog(){if(!catalog)catalog=await rpc('list_app_editorial_screens',{});return catalog;},
+  segments:()=>rpc('list_app_editorial_segments',{}),
+  submit:(screen,version,nodeId,answers,id)=>rpc('submit_app_editorial_form',{p_id:id,p_screen:screen,p_version:version,p_node_id:nodeId,p_answers:answers}),
+  async responses(screen,nodeId){const out=await window.SutiSupabase.getClient().from('app_editorial_submissions').select('id,screen_id,version,node_id,answers,created_at').eq('screen_id',screen).eq('node_id',nodeId).order('created_at',{ascending:false}).limit(100);if(out.error)throw out.error;return out.data;}
+ });
+})();
+})();
+/* @@file editorial-content.jsx */
+(function(){
+/* Safe renderer + approved ContentModule adapter. No HTML/JS from editorial data. */
+(function () {
+  'use strict';
+
+  const R = window.EditorialRepository,
+    store = window.adminStore,
+    {
+      useState,
+      useEffect
+    } = React;
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const message = e => String(e && e.message || e).includes('VERSION_CONFLICT') ? 'Otra persona modificó esta pantalla. Recarga para revisar sus cambios.' : String(e && e.message || e).includes('FORM_CHANGED') ? 'El formulario cambió. Recarga antes de enviarlo.' : String(e && e.message || e).includes('DURING_IMPERSONATION') ? 'Finaliza la sesión de asistencia para enviar una respuesta propia.' : 'No se pudo completar la operación. Intenta de nuevo.';
+  function useEditorial(screen, admin = false) {
+    const [state, setState] = useState(() => R.snapshot(screen, admin));
+    useEffect(() => {
+      const update = () => {
+        const s = R.snapshot(screen, admin);
+        setState(s);
+        if (s.phase === 'idle') R.load(screen, admin).catch(() => {});
+      };
+      const off = R.subscribe(update);
+      update();
+      return off;
+    }, [screen, admin]);
+    return state;
+  }
+  function Status({
+    state,
+    screen,
+    admin
+  }) {
+    return React.createElement('div', {
+      role: state.phase === 'error' ? 'alert' : 'status',
+      style: {
+        padding: 16,
+        color: 'var(--ink-2)'
+      }
+    }, state.phase === 'error' ? 'No se pudo cargar el contenido de esta pantalla.' : 'Cargando contenido…', state.phase === 'error' && React.createElement('button', {
+      onClick: () => R.load(screen, admin, true).catch(() => {}),
+      style: {
+        marginLeft: 10
+      }
+    }, 'Reintentar'));
+  }
+  const fieldStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: 12,
+    border: '1px solid var(--hairline)',
+    borderRadius: 12,
+    background: 'var(--surface-2)',
+    color: 'var(--ink)',
+    font: 'inherit'
+  };
+  function EditorialForm({
+    node,
+    screen,
+    version
+  }) {
+    const [answers, setAnswers] = useState({}),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [sent, setSent] = useState(false);
+    const id = React.useRef(crypto.randomUUID());
+    const submit = async e => {
+      e.preventDefault();
+      if (busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        await R.submit(screen, version, node.id, answers, id.current);
+        setSent(true);
+      } catch (e) {
+        setError(message(e));
+      } finally {
+        setBusy(false);
+      }
+    };
+    if (sent) return React.createElement('div', {
+      role: 'status'
+    }, 'Respuesta enviada. Gracias.');
+    return React.createElement('form', {
+      onSubmit: submit
+    }, node.fields.map(f => React.createElement('label', {
+      key: f.id,
+      style: {
+        display: 'block',
+        marginBottom: 14
+      }
+    }, f.label + (f.required ? ' *' : ''), f.type === 'select' ? React.createElement('select', {
+      required: f.required,
+      value: answers[f.id] || '',
+      onChange: e => setAnswers({
+        ...answers,
+        [f.id]: e.target.value
+      }),
+      style: fieldStyle
+    }, React.createElement('option', {
+      value: ''
+    }, 'Selecciona'), f.options.map(o => React.createElement('option', {
+      key: o,
+      value: o
+    }, o))) : React.createElement(f.type === 'textarea' ? 'textarea' : 'input', {
+      type: f.type === 'textarea' ? undefined : f.type,
+      required: f.required,
+      maxLength: 4000,
+      value: f.type === 'checkbox' ? undefined : answers[f.id] || '',
+      checked: f.type === 'checkbox' ? !!answers[f.id] : undefined,
+      onChange: e => setAnswers({
+        ...answers,
+        [f.id]: f.type === 'checkbox' ? e.target.checked : e.target.value
+      }),
+      style: f.type === 'checkbox' ? {
+        marginLeft: 10
+      } : fieldStyle
+    }))), error && React.createElement('p', {
+      role: 'alert'
+    }, error), React.createElement(window.Btn, {
+      variant: 'primary',
+      type: 'submit',
+      disabled: busy
+    }, busy ? 'Enviando…' : node.submitLabel || 'Enviar'));
+  }
+  function EditorialNode({
+    node,
+    nodes,
+    screen,
+    version,
+    app
+  }) {
+    const children = nodes.filter(n => n.parentId === node.id).sort((a, b) => a.order - b.order);
+    const navigate = () => {
+      const target = node.target;
+      if (['home', 'financiera', 'convenios', 'historial', 'credencial'].includes(target)) app.setTab(target);else app.push(target);
+    };
+    const body = node.type === 'form' ? React.createElement(EditorialForm, {
+      key: node.id + ':' + version,
+      node,
+      screen,
+      version
+    }) : node.type === 'menu' || node.type === 'button' ? React.createElement(window.Btn, {
+      variant: 'primary',
+      onClick: navigate
+    }, node.label) : React.createElement(React.Fragment, null, React.createElement('h3', {
+      style: {
+        margin: '0 0 10px'
+      }
+    }, node.label), node.text && React.createElement('p', {
+      style: {
+        whiteSpace: 'pre-wrap',
+        margin: 0
+      }
+    }, node.text));
+    return React.createElement('section', {
+      'data-editorial-node': node.id,
+      style: {
+        margin: '12px 16px',
+        padding: 16,
+        borderRadius: 16,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, node.type === 'form' && React.createElement('h3', {
+      style: {
+        margin: '0 0 12px'
+      }
+    }, node.label), body, children.map(n => React.createElement(EditorialNode, {
+      key: n.id,
+      node: n,
+      nodes,
+      screen,
+      version,
+      app
+    })));
+  }
+  function EditorialRegion({
+    screen,
+    app,
+    builtins,
+    wrap
+  }) {
+    const state = useEditorial(screen);
+    if (state.phase !== 'ready') return React.createElement(Status, {
+      state,
+      screen
+    });
+    return React.createElement(React.Fragment, null, state.nodes.filter(n => !n.parentId).sort((a, b) => a.order - b.order).map(n => {
+      if (n.builtin && builtins && builtins[n.builtin]) return wrap(n.id, builtins[n.builtin]());
+      return React.createElement(EditorialNode, {
+        key: n.id,
+        node: n,
+        nodes: state.nodes,
+        screen,
+        version: state.version,
+        app
+      });
+    }));
+  }
+  // Pushed routes own their scroll container; attach the additive region inside it.
+  // No existing node is moved or recreated. Empty configuration adds no visible UI.
+  function EditorialRouteSlot({
+    screen,
+    app,
+    container
+  }) {
+    const [host, setHost] = useState(null);
+    useEffect(() => {
+      const root = container.current;
+      if (!root) return;
+      let el = null;
+      const attach = () => {
+        if (el && root.contains(el)) return;
+        const scroll = root.querySelector('.su-app-scroll') || Array.from(root.querySelectorAll('*')).find(n => ['auto', 'scroll'].includes(getComputedStyle(n).overflowY));
+        if (!scroll) return;
+        el = document.createElement('div');
+        el.dataset.editorialSlot = screen;
+        scroll.appendChild(el);
+        setHost(el);
+      };
+      attach();
+      const observer = new MutationObserver(attach);
+      observer.observe(root, {
+        childList: true,
+        subtree: true
+      });
+      return () => {
+        observer.disconnect();
+        if (el) el.remove();
+      };
+    }, [screen, container]);
+    return host ? ReactDOM.createPortal(React.createElement(EditorialRegion, {
+      screen,
+      app
+    }), host) : null;
+  }
+  let segments = [];
+  const labels = (type, values) => (values || []).map(v => (segments.find(s => s.type === type && s.code === v) || {
+    label: v
+  }).label);
+  const codes = (type, values) => (values || []).map(v => (segments.find(s => s.type === type && (s.label === v || s.code === v)) || {
+    code: v
+  }).code);
+  const fromNode = (n, screen, version) => {
+    const a = n.audience || {};
+    return {
+      ...clone(n),
+      screen,
+      _version: version,
+      audience: {
+        mode: a.mode || 'all',
+        sindicatos: labels('union', a.union_codes),
+        niveles: labels('employment_category', a.employment_category_codes),
+        cargos: labels('tag', a.tag_codes),
+        generos: labels('gender', a.gender_codes)
+      }
+    };
+  };
+  const toNode = n => {
+    const d = clone(n),
+      a = n.audience || {};
+    delete d.screen;
+    delete d._version;
+    delete d.locked;
+    d.audience = {
+      mode: a.mode || 'all',
+      union_codes: codes('union', a.sindicatos),
+      employment_category_codes: codes('employment_category', a.niveles),
+      gender_codes: codes('gender', a.generos),
+      tag_codes: codes('tag', a.cargos)
+    };
+    return d;
+  };
+  let editorScreens = window.ADMIN.SCREENS;
+  const states = () => editorScreens.map(s => R.snapshot(s.id, true)).filter(s => s.phase === 'ready');
+  store.contentAll = () => states().flatMap(s => s.nodes.map(n => fromNode(n, s.screen, s.version)));
+  store.getNode = id => store.contentAll().find(n => n.id === id);
+  store.contentChildren = (screen, parentId) => {
+    const s = R.snapshot(screen, true);
+    return s.nodes.filter(n => (n.parentId || null) === (parentId || null)).map(n => fromNode(n, screen, s.version)).sort((a, b) => a.order - b.order);
+  };
+  store.blankNode = (screen, parentId, type) => ({
+    id: crypto.randomUUID(),
+    screen,
+    _version: R.snapshot(screen, true).version,
+    parentId: parentId || null,
+    type: type || 'section',
+    label: '',
+    visible: true,
+    order: Math.max(0, ...R.snapshot(screen, true).nodes.filter(n => (n.parentId || null) === (parentId || null)).map(n => n.order)) + 1,
+    audience: {
+      mode: 'all'
+    },
+    text: '',
+    ...(type === 'menu' || type === 'button' ? {
+      target: 'home'
+    } : {}),
+    ...(type === 'form' ? {
+      fields: [{
+        id: 'respuesta',
+        label: 'Respuesta',
+        type: 'text',
+        required: true
+      }]
+    } : {})
+  });
+  store.saveNode = async node => {
+    const s = R.snapshot(node.screen, true);
+    if (s.phase !== 'ready' || s.version !== node._version) throw new Error('EDITORIAL_VERSION_CONFLICT');
+    const n = toNode(node);
+    return R.save(node.screen, node._version, s.nodes.some(x => x.id === n.id) ? s.nodes.map(x => x.id === n.id ? n : x) : [...s.nodes, n]);
+  };
+  store.removeNode = async id => {
+    const n = store.getNode(id);
+    if (!n) throw new Error('EDITORIAL_NODE_MISSING');
+    const s = R.snapshot(n.screen, true),
+      ids = new Set([id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      s.nodes.forEach(x => {
+        if (ids.has(x.parentId) && !ids.has(x.id)) {
+          ids.add(x.id);
+          changed = true;
+        }
+      });
+    }
+    return R.save(n.screen, n._version, s.nodes.filter(x => !ids.has(x.id)));
+  };
+  store.toggleNode = id => {
+    const n = store.getNode(id);
+    return store.saveNode({
+      ...n,
+      visible: !n.visible
+    });
+  };
+  store.duplicateNode = id => {
+    const n = store.getNode(id);
+    if (n.builtin) throw new Error('EDITORIAL_BUILTIN_CREATE_DENIED');
+    return store.saveNode({
+      ...n,
+      id: crypto.randomUUID(),
+      label: n.label + ' (copia)',
+      visible: false
+    });
+  };
+  store.reorderContent = (screen, parentId, ids) => {
+    const s = R.snapshot(screen, true),
+      ordered = ids.map(id => s.nodes.find(n => n.id === id));
+    if (ordered.some(n => !n || (n.parentId || null) !== (parentId || null))) throw new Error('EDITORIAL_ORDER_INVALID');
+    const ranks = new Map();
+    let lower = 0,
+      run = [];
+    const flush = upper => {
+      run.forEach((n, i) => ranks.set(n.id, lower + (upper - lower) * (i + 1) / (run.length + 1)));
+      run = [];
+    };
+    ordered.forEach(n => {
+      if (s.editableTypes.includes(n.type)) run.push(n);else {
+        flush(n.order);
+        lower = n.order;
+      }
+    });
+    flush(lower + run.length + 1);
+    return R.save(screen, s.version, s.nodes.map(n => ranks.has(n.id) ? {
+      ...n,
+      order: ranks.get(n.id)
+    } : n));
+  };
+  const originalCan = store.can;
+  store.can = (action, resource) => {
+    if (!['secciones', 'menus', 'formularios'].includes(resource)) return originalCan(action, resource);
+    const types = {
+      secciones: 'section',
+      menus: 'menu',
+      formularios: 'form'
+    };
+    return action === 'ver' ? states().length > 0 : states().some(s => s.editableTypes.includes(types[resource]));
+  };
+  window.AppScreenLayout = Object.freeze({
+    useEditorial,
+    Status,
+    Region: EditorialRegion,
+    RouteSlot: EditorialRouteSlot,
+    message,
+    segmentOptions: type => segments.filter(s => s.type === type).map(s => s.label),
+    async loadCatalog() {
+      const result = await Promise.all([R.catalog(), R.segments()]);
+      editorScreens = result[0];
+      segments = result[1];
+      return editorScreens;
+    }
+  });
 })();
 })();
 /* @@file custom-screen.jsx */
@@ -35701,6 +36039,20 @@ Object.assign(window, {
     const [screen, setScreen] = useState('home');
     const [editing, setEditing] = useState(null);
     const [vOpen, setVOpen] = useState(false);
+    const E = window.AppScreenLayout;
+    const live = E.useEditorial(screen, true);
+    const [operationError, setOperationError] = useState('');
+    const [catalog, setCatalog] = useState(A().SCREENS);
+    useEffect(() => {
+      E.loadCatalog().then(setCatalog).catch(e => setOperationError(E.message(e)));
+    }, []);
+    const allowedTypes = resourceId === 'menus' ? ['menu', 'button'] : resourceId === 'formularios' ? ['form'] : ['section', 'container', 'component', 'banner'];
+    const run = fn => Promise.resolve().then(fn).catch(e => setOperationError(E.message(e)));
+    const actions = Object.create(store);
+    actions.allowedTypes = allowedTypes;
+    ['toggleNode', 'duplicateNode', 'reorderContent'].forEach(k => {
+      actions[k] = (...args) => run(() => store[k](...args));
+    });
     const viewer = store.viewer();
     const P = {
       crear: store.can('crear', resourceId),
@@ -35708,10 +36060,12 @@ Object.assign(window, {
       eliminar: store.can('eliminar', resourceId),
       reordenar: store.can('reordenar', resourceId)
     };
-    const tops = store.contentChildren(screen, null).filter(n => !typeFilter || n.type === typeFilter);
-    return React.createElement('div', null, header({
+    const tops = (typeFilter ? store.contentAll().filter(n => n.screen === screen) : store.contentChildren(screen, null)).filter(n => !typeFilter || allowedTypes.includes(n.type));
+    return React.createElement('div', {
+      'data-editorial-panel': resourceId
+    }, header({
       title: title || 'Secciones y componentes',
-      sub: A().SCREEN(screen).label,
+      sub: (catalog.find(s => s.id === screen) || A().SCREEN(screen)).label,
       onBack
     }), React.createElement(window.ActingBanner, {}), React.createElement('div', {
       className: 'su-app-scroll',
@@ -35748,7 +36102,7 @@ Object.assign(window, {
         color: 'var(--ink)',
         cursor: 'pointer'
       }
-    }, A().SCREENS.map(s => React.createElement('option', {
+    }, catalog.map(s => React.createElement('option', {
       key: s.id,
       value: s.id
     }, s.label))), React.createElement(I, {
@@ -35786,7 +36140,22 @@ Object.assign(window, {
       name: 'plus',
       size: 19,
       stroke: 2.6
-    }), 'Nuevo')), React.createElement(ViewerBarMini, {
+    }), 'Nuevo')), live.phase !== 'ready' && React.createElement(E.Status, {
+      state: live,
+      screen,
+      admin: true
+    }), operationError && React.createElement('div', {
+      role: 'alert',
+      style: {
+        padding: 12,
+        color: '#C0341D'
+      }
+    }, operationError, React.createElement('button', {
+      onClick: () => {
+        setOperationError('');
+        window.EditorialRepository.load(screen, true, true).catch(e => setOperationError(E.message(e)));
+      }
+    }, 'Recargar')), React.createElement(ViewerBarMini, {
       open: vOpen,
       setOpen: setVOpen,
       viewer,
@@ -35822,13 +36191,13 @@ Object.assign(window, {
       sub: 'Agrega el primero con “Nuevo”.'
     }) : React.createElement(ContentDragList, {
       nodes: tops,
-      canReorder: P.reordenar && !typeFilter,
-      onReorder: ids => store.reorderContent(screen, null, ids),
+      canReorder: P.reordenar && (!typeFilter || tops.every(n => !n.parentId)),
+      onReorder: ids => actions.reorderContent(screen, null, ids),
       renderRow: (n, onGrab, dragging) => React.createElement(NodeBlock, {
         key: n.id,
         node: n,
         screen,
-        store,
+        store: actions,
         viewer,
         P,
         depth: 0,
@@ -35841,6 +36210,8 @@ Object.assign(window, {
       node: editing,
       store,
       P,
+      allowedTypes,
+      catalog,
       onClose: () => setEditing(null)
     }));
   }
@@ -35892,7 +36263,7 @@ Object.assign(window, {
         dragging
       })
     }), P.crear && React.createElement('button', {
-      onClick: () => onEdit(store.blankNode(screen, node.id, 'button')),
+      onClick: () => onEdit(store.blankNode(screen, node.id, 'component')),
       style: {
         display: 'inline-flex',
         alignItems: 'center',
@@ -35925,7 +36296,14 @@ Object.assign(window, {
     onGrab,
     dragging
   }) {
+    const permitted = !store.allowedTypes || store.allowedTypes.includes(node.type);
+    P = {
+      ...P,
+      crear: P.crear && permitted,
+      editar: P.editar && permitted
+    };
     const t = A().CTYPE(node.type);
+    if (!permitted) onGrab = null;
     const hiddenManual = node.visible === false;
     const hiddenSeg = !hiddenManual && !store.nodeVisible(node, viewer);
     const aud = node.audience || {
@@ -36048,7 +36426,7 @@ Object.assign(window, {
         gap: 6,
         padding: '0 8px'
       }
-    }, P.crear && iconBtn('copy', () => store.duplicateNode(node.id)), React.createElement(window.Toggle, {
+    }, P.crear && !node.builtin && iconBtn('copy', () => store.duplicateNode(node.id)), React.createElement(window.Toggle, {
       on: !hiddenManual,
       size: 'md',
       onClick: e => {
@@ -36277,7 +36655,7 @@ Object.assign(window, {
         padding: '10px 15px 14px',
         borderTop: '1px solid var(--hairline)'
       }
-    }, seg('Cargo', viewer.cargo, A().CARGOS, 'cargo'), seg('Tipo de sindicato', viewer.sindicato, A().SINDICATOS, 'sindicato'), seg('Nivel', viewer.nivel, A().NIVELES, 'nivel'), React.createElement('button', {
+    }, seg('Cargo', viewer.cargo, window.AppScreenLayout.segmentOptions('tag'), 'cargo'), seg('Tipo de sindicato', viewer.sindicato, window.AppScreenLayout.segmentOptions('union'), 'sindicato'), seg('Nivel', viewer.nivel, window.AppScreenLayout.segmentOptions('employment_category'), 'nivel'), React.createElement('button', {
       onClick: () => store.setViewer({
         registrado: !viewer.registrado
       }),
@@ -36311,6 +36689,8 @@ Object.assign(window, {
     node,
     store,
     P,
+    allowedTypes,
+    catalog,
     onClose
   }) {
     const [d, setD] = useState(() => JSON.parse(JSON.stringify(node)));
@@ -36326,14 +36706,24 @@ Object.assign(window, {
         ...patch
       }
     }));
-    const save = () => {
-      store.saveNode(d);
-      onClose();
+    const [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [responses, setResponses] = useState(null);
+    const run = async fn => {
+      if (busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        await fn();
+        onClose();
+      } catch (e) {
+        setError(window.AppScreenLayout.message(e));
+      } finally {
+        setBusy(false);
+      }
     };
-    const del = () => {
-      store.removeNode(d.id);
-      onClose();
-    };
+    const save = () => run(() => store.saveNode(d));
+    const del = () => run(() => store.removeNode(d.id));
     const lbl = {
       fontSize: 12.5,
       fontWeight: 800,
@@ -36415,6 +36805,7 @@ Object.assign(window, {
       }
     }, React.createElement('select', {
       value: d.type,
+      disabled: !!d.builtin,
       onChange: e => set({
         type: e.target.value
       }),
@@ -36425,7 +36816,7 @@ Object.assign(window, {
         paddingRight: 40,
         cursor: 'pointer'
       }
-    }, A().CONTENT_TYPES.map(c => React.createElement('option', {
+    }, A().CONTENT_TYPES.filter(c => allowedTypes.includes(c.id)).map(c => React.createElement('option', {
       key: c.id,
       value: c.id
     }, c.label))), React.createElement(I, {
@@ -36440,7 +36831,62 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         pointerEvents: 'none'
       }
-    }))), React.createElement('button', {
+    }))), error && React.createElement('p', {
+      role: 'alert',
+      style: {
+        color: '#C0341D'
+      }
+    }, error), !d.builtin && !['menu', 'button', 'form'].includes(d.type) && React.createElement('label', {
+      style: lbl
+    }, 'Contenido', React.createElement('textarea', {
+      value: d.text || '',
+      maxLength: 10000,
+      onChange: e => set({
+        text: e.target.value
+      }),
+      style: inputBase
+    })), ['menu', 'button'].includes(d.type) && React.createElement('label', {
+      style: lbl
+    }, 'Abrir pantalla', React.createElement('select', {
+      'aria-label': 'Abrir pantalla',
+      value: d.target || 'home',
+      onChange: e => set({
+        target: e.target.value
+      }),
+      style: inputBase
+    }, catalog.filter(c => c.navigable).map(c => React.createElement('option', {
+      key: c.id,
+      value: c.id
+    }, c.label)))), d.type === 'form' && React.createElement(FormFieldsEditor, {
+      fields: d.fields || [],
+      onChange: fields => set({
+        fields
+      })
+    }), d.type === 'form' && !isNew && React.createElement('div', null, React.createElement('button', {
+      onClick: async () => {
+        try {
+          setResponses(await window.EditorialRepository.responses(d.screen, d.id));
+        } catch (e) {
+          setError(window.AppScreenLayout.message(e));
+        }
+      },
+      style: {
+        ...inputBase,
+        cursor: 'pointer'
+      }
+    }, 'Ver últimas 100 respuestas'), responses && React.createElement('div', {
+      style: {
+        margin: '12px 0'
+      }
+    }, responses.length === 0 ? 'Sin respuestas' : responses.map(r => React.createElement('article', {
+      key: r.id,
+      style: {
+        borderBottom: '1px solid var(--hairline)',
+        padding: 10
+      }
+    }, React.createElement('strong', null, new Date(r.created_at).toLocaleString() + ' · Versión ' + r.version), Object.entries(r.answers).map(([k, v]) => React.createElement('p', {
+      key: k
+    }, k + ': ' + String(v))))))), React.createElement('button', {
       onClick: () => set({
         visible: d.visible === false
       }),
@@ -36573,13 +37019,13 @@ Object.assign(window, {
         marginBottom: 12,
         lineHeight: 1.4
       }
-    }, 'Deja un grupo vacío para no filtrar por ese criterio.'), Chips('Cargo en la aplicación', A().CARGOS, d.audience.cargos, v => setAud({
+    }, 'Deja un grupo vacío para no filtrar por ese criterio.'), Chips('Cargo en la aplicación', window.AppScreenLayout.segmentOptions('tag'), d.audience.cargos, v => setAud({
       cargos: v
-    })), Chips('Tipo de sindicato', A().SINDICATOS, d.audience.sindicatos, v => setAud({
+    })), Chips('Tipo de sindicato', window.AppScreenLayout.segmentOptions('union'), d.audience.sindicatos, v => setAud({
       sindicatos: v
-    })), Chips('Nivel de usuario', A().NIVELES, d.audience.niveles, v => setAud({
+    })), Chips('Nivel de usuario', window.AppScreenLayout.segmentOptions('employment_category'), d.audience.niveles, v => setAud({
       niveles: v
-    }))), !isNew && P.eliminar && React.createElement('button', {
+    }))), !isNew && !d.builtin && P.eliminar && React.createElement('button', {
       onClick: del,
       style: {
         display: 'inline-flex',
@@ -36626,9 +37072,89 @@ Object.assign(window, {
       style: {
         flex: 2
       },
-      disabled: !d.label.trim(),
+      disabled: busy || !d.label.trim(),
       onClick: save
-    }, 'Guardar')));
+    }, busy ? 'Guardando…' : 'Guardar')));
+  }
+  function FormFieldsEditor({
+    fields,
+    onChange
+  }) {
+    const patch = (i, p) => onChange(fields.map((f, j) => j === i ? {
+      ...f,
+      ...p
+    } : f));
+    return React.createElement('div', {
+      style: {
+        marginBottom: 18
+      }
+    }, React.createElement('h3', null, 'Campos del formulario'), fields.map((f, i) => React.createElement('fieldset', {
+      key: i,
+      style: {
+        border: '1px solid var(--hairline)',
+        borderRadius: 14,
+        padding: 12,
+        marginBottom: 12
+      }
+    }, React.createElement('legend', null, 'Campo ' + (i + 1)), React.createElement('label', null, 'Identificador', React.createElement('input', {
+      value: f.id,
+      maxLength: 50,
+      onChange: e => patch(i, {
+        id: e.target.value
+      }),
+      style: inputBase
+    })), React.createElement('label', null, 'Etiqueta', React.createElement('input', {
+      value: f.label,
+      maxLength: 120,
+      onChange: e => patch(i, {
+        label: e.target.value
+      }),
+      style: inputBase
+    })), React.createElement('label', null, 'Tipo', React.createElement('select', {
+      value: f.type,
+      onChange: e => patch(i, {
+        type: e.target.value,
+        ...(e.target.value === 'select' ? {
+          options: ['Opción 1']
+        } : {})
+      }),
+      style: inputBase
+    }, [['text', 'Texto'], ['textarea', 'Texto largo'], ['email', 'Correo'], ['tel', 'Teléfono'], ['date', 'Fecha'], ['select', 'Opciones'], ['checkbox', 'Casilla']].map(([id, label]) => React.createElement('option', {
+      key: id,
+      value: id
+    }, label)))), f.type === 'select' && React.createElement('label', null, 'Una opción por línea', React.createElement('textarea', {
+      value: (f.options || []).join('\n'),
+      onChange: e => patch(i, {
+        options: e.target.value.split('\n')
+      }),
+      style: inputBase
+    })), React.createElement('label', null, React.createElement('input', {
+      type: 'checkbox',
+      checked: !!f.required,
+      onChange: e => patch(i, {
+        required: e.target.checked
+      })
+    }), ' Obligatorio'), React.createElement('button', {
+      onClick: () => onChange(fields.filter((_, j) => j !== i)),
+      style: {
+        marginLeft: 12
+      }
+    }, 'Quitar campo'), i > 0 && React.createElement('button', {
+      onClick: () => {
+        const next = fields.slice();
+        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+        onChange(next);
+      }
+    }, 'Subir'))), React.createElement('button', {
+      disabled: fields.length >= 25,
+      onClick: () => onChange([...fields, {
+        id: 'campo_' + crypto.randomUUID().slice(0, 8),
+        label: 'Nuevo campo',
+        type: 'text',
+        required: false
+      }]),
+      style: inputBase
+    }, 'Agregar campo'));
   }
   function Chips(label, options, values, onChange) {
     const list = values || [];
@@ -63361,7 +63887,7 @@ Object.assign(window, {
         await load();
       } catch (e) {
         const t = String(e && e.message || e);
-        setError(t.includes('PROTECTED') ? 'La cuenta principal protegida no se puede revocar.' : t.includes('SELF_ASSIGNMENT') ? 'No puedes revocar tu propia cuenta.' : 'No fue posible revocar el acceso.');
+        setError(t.includes('PROTECTED') ? 'La cuenta principal protegida no se puede revocar.' : t.includes('SELF_ASSIGNMENT') ? 'No puedes revocar tu propia cuenta (ni la cuenta que tienes bajo «Tomar control»).' : t.includes('AUTHORIZATION_DENIED')?'Tu sesión no tiene permiso para revocar. Si tienes activo «Tomar control», termínalo e inténtalo de nuevo.':t.includes('LAST_PRINCIPAL_ADMIN')?'Debe quedar al menos un Administrador principal activo.':t.includes('NOT_FOUND')?'La asignación ya no existe; recarga la lista.':'No fue posible revocar el acceso. ('+t+')');
       } finally {
         setBusy(false);
       }
@@ -79315,10 +79841,13 @@ Object.assign(window, {
         overflowY: 'auto',
         overflowX: 'hidden'
       }
-    }, tabAllowed || !window.ScreenLocked ? React.createElement(tabScreen, {
+    }, tabAllowed || !window.ScreenLocked ? React.createElement(React.Fragment, null, React.createElement(tabScreen, {
       app,
       t
-    }) : React.createElement(window.ScreenLocked, {
+    }), tab !== 'admin' && tab !== 'home' && React.createElement(window.AppScreenLayout.Region, {
+      screen: tab,
+      app
+    })) : React.createElement(window.ScreenLocked, {
       screen: tab
     })),
     // bottom nav
@@ -79357,10 +79886,14 @@ Object.assign(window, {
         pointerEvents: l.out ? 'none' : 'auto',
         willChange: l.out ? 'opacity' : undefined
       }
-    }, (l.out ? true : pushAllowed) || !window.ScreenLocked ? React.createElement(l.Comp, {
+    }, (l.out ? true : pushAllowed) || !window.ScreenLocked ? React.createElement(React.Fragment, null, React.createElement(l.Comp, {
       app,
       params: l.params
-    }) : React.createElement(window.ScreenLocked, {
+    }), React.createElement(window.AppScreenLayout.RouteSlot, {
+      screen: l.name,
+      app,
+      container: l.out ? outNode : inNode
+    })) : React.createElement(window.ScreenLocked, {
       screen: l.name,
       onBack: back
     })))),

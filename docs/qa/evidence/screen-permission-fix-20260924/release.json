@@ -1,0 +1,25 @@
+{
+  "status": "PREPARED_NOT_DEPLOYED",
+  "bundleVersion": 285,
+  "cacheVersion": 219,
+  "bundleSha256": "8b77420b8fbfb614c8f7ea7028f29736c2634a535f4d036243bdee72dca7173e",
+  "testedCanonicalSha256": "558e407b916a25bd44a11acf5946725f081dc16d2b5b471cc551834405ace720",
+  "canonicalSemanticParity": true,
+  "unchangedChunks": 127,
+  "changedChunks": [
+    "admin-store.jsx",
+    "admin-cutover-store.jsx",
+    "screens-admin-content.jsx",
+    "screens-home-r2.jsx",
+    "app.jsx",
+    "editorial-repository.js",
+    "editorial-content.jsx"
+  ],
+  "workerLogicUnchanged": true,
+  "sql": {
+    "supabase/migrations/20260924000200_admin_screen_permission_boundaries.sql": "5a6f1ed0c88aa63e9f19a1a56f26a3819beccc1ed9d7814ae3cfc15dbcc6853f",
+    "supabase/recovery/20260924000200_admin_screen_permission_boundaries_recovery.sql": "fc9dbbe6831cfa38d56b455ef8d04c14c4b7f4120be2ec8cc0874fc43e6bf988",
+    "supabase/migrations/20260924000300_app_editorial_panels.sql": "b623985451f97d26cdd8f9a0639a4e00a3c71abb4ef33314b9e68043d90a12cf",
+    "supabase/recovery/20260924000300_app_editorial_panels_recovery.sql": "7ce70f5fd3ce8243f977e26524844ca38a99f3b38c92621baf62c97a77a68819"
+  }
+}

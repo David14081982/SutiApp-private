@@ -1,0 +1,317 @@
+{
+  "status": "PASS",
+  "at": "2026-09-24T18:16:06.884Z",
+  "productionWrites": 0,
+  "functions": [
+    {
+      "signature": "accredit_company_plan(uuid,uuid,text,text,boolean,text)",
+      "hash": "80e41193f7857615d538b29b33c74537",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_module_boundary(text[],text)",
+      "hash": "ff60b8b05a6d990574e3a34c903419c1",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_support_private.get_admin_access_context(uuid)",
+      "hash": "b0c568bbca5c698955c8a23959a27bf5",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_support_private.has_admin_module(uuid,text,text)",
+      "hash": "e24cb11f24ba22888f15426920ec74ea",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "hash": "a1a563930a2d9bd5e6fafbcd3c4d63a9",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_support_private.has_section_action(uuid,text,text)",
+      "hash": "0f3eec92e5989e922b056a3cfff03546",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "admin_support_private.module_visible(uuid,text)",
+      "hash": "5386a38facd028135d1211ccbfe9670f",
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "attach_company_ficha_image(uuid,uuid,text)",
+      "hash": "28c03f246221f915e32cea4aae7c61df",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "audit_section_row_action()",
+      "hash": "d47ce9ae1cd9e7e661ddbe72c16d26ca",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "can_access_app_screen(text)",
+      "hash": "ec3e47584fc7918159deb60bdf75a898",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "can_manage_agreement_product(uuid,text)",
+      "hash": "980492f828ee9449752217af14b68291",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "can_manage_company_ficha(uuid,text)",
+      "hash": "c1e8ff67356f9186057afd9ec1cb363e",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "can_upload_company_ficha(text)",
+      "hash": "c3d274f6029962dac30b43aac341219c",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "can_view_company(uuid)",
+      "hash": "26860bc602e15e0309e6fd672c701943",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "company_has_active_plan(uuid)",
+      "hash": "7ec4fddec1f70e7550b030fa5be00106",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,anon=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "company_is_paid(uuid)",
+      "hash": "ae59f90f3a0686602524589e976e5da0",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,anon=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_agreement_product_action()",
+      "hash": "34080e15356e2f1ac7bd8852ddf58eaa",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_company_ficha_action()",
+      "hash": "4b587df7f29296066c754d9061d9d6b2",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_company_ficha_asset_action()",
+      "hash": "592c4931ffc8ebbe38d70c427aa91bba",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_company_plan_limits()",
+      "hash": "582f12a6c0ca67372d677bef44deab0a",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_company_popup_author()",
+      "hash": "4c1c432e066b835bddebc88494b87d34",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_company_promotion_publication()",
+      "hash": "c71d4ad92bfacf2788aea8250af33581",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "enforce_section_row_action()",
+      "hash": "716a7fab63e4b9c8099def20726093d4",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "get_admin_access_context()",
+      "hash": "b372ea54dfe4d6c5f2dd897ce9e6b95d",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "get_company_activity(uuid)",
+      "hash": "20633f38c3b68766c8b97c5a4749e4e5",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "get_current_company_access()",
+      "hash": "a260cc34e804159748025c9a587b7607",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "has_admin_module(text,text)",
+      "hash": "0e9350c0440fae98d1b735ed252fb06d",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "has_admin_permission(text)",
+      "hash": "ede6d35b74b6163f3765b518adead8ce",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "has_section_action(text,text)",
+      "hash": "75b86987478108afdfb3a1c3ce05d644",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "is_marketplace_company_member(uuid,text)",
+      "hash": "cd60aeb1e4190ddc43e2e2124cd04f06",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "list_company_commercial_requests()",
+      "hash": "acc782c7ac52b0915d55e8b687f92b51",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "list_paid_company_ids()",
+      "hash": "01db471ecfc883b8b0174d0a0119000a",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "matches_current_affiliate_audience(text,text[],text[],text[],text[])",
+      "hash": "2ea77e2fe87d8ebab261ca2dd938bb01",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "register_company_ficha_image(uuid,text,text,text,bigint)",
+      "hash": "406cc53a469519c5f37044fbb663b763",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "replace_company_asset(uuid,uuid,text)",
+      "hash": "2d0915390bf9fe3fadcad9ee6f482a68",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "review_company_popup_proposal(uuid,boolean,text)",
+      "hash": "69731a61b085b624e945fe8df189ce45",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "save_agreement_ficha(jsonb)",
+      "hash": "3a08a4469e530942bdf7a81da7f41e76",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "save_company_ficha(uuid,jsonb)",
+      "hash": "239350f0445db567929ed5477d0b7855",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "section_row_required_actions(jsonb,jsonb,text,text,text,text[])",
+      "hash": "3c64e26218b72ef7cc031534e3c46448",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "update_marketplace_company_profile(uuid,text,text,text,text,text,text,jsonb)",
+      "hash": "adb08c0fb9aabf2d910f0bdc4422f34d",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "fingerprints": {
+    "auth.users": {
+      "hash": "8590839c6e8f1b05b4d8d4a4e80afa5f",
+      "count": 343
+    },
+    "public.companies": {
+      "hash": "1eb3da8538341cb55c40274596d85d28",
+      "count": 33
+    },
+    "public.affiliates": {
+      "hash": "88d8431e8b214111ee5f2902cc058971",
+      "count": 978
+    },
+    "public.admin_roles": {
+      "hash": "3781956d156435ffbc8d08e171776569",
+      "count": 3
+    },
+    "public.company_assets": {
+      "hash": "742c53c76ae0790adbb8b0da4e237b65",
+      "count": 35
+    },
+    "public.admin_audit_log": {
+      "hash": "56a3ebe92a60b7873ce9f5095fd1fee1",
+      "count": 5846
+    },
+    "public.company_benefits": {
+      "hash": "ea9caa4d75c56b9b8d4c7173fa0d1e29",
+      "count": 2
+    },
+    "public.admin_assignments": {
+      "hash": "08a7b823c9b4a8b293bc5d16c7aa20c0",
+      "count": 9
+    },
+    "public.request_documents": {
+      "hash": "8122cd3bba5477d25757b46f06ee2a10",
+      "count": 886
+    },
+    "public.affiliate_documents": {
+      "hash": "840baa1cdeaae96250bf2206443eb9ea",
+      "count": 3938
+    },
+    "public.company_portal_plans": {
+      "hash": "431d6e0942834bfd9a797016a3638381",
+      "count": 3
+    },
+    "public.admin_role_permissions": {
+      "hash": "26e1fe04912baf65354f3c9381b88899",
+      "count": 66
+    },
+    "public.company_audience_rules": {
+      "hash": "269177a56abc18aa94d0e69d179e20b1",
+      "count": 33
+    },
+    "public.company_benefit_profiles": {
+      "hash": "2935a898922bbd208e12c2f9f7b59938",
+      "count": 33
+    },
+    "public.company_portal_subscriptions": {
+      "hash": "d751713988987e9331980363e24189ce",
+      "count": 0
+    },
+    "public.admin_section_responsibilities": {
+      "hash": "1f27fa25ff149a9ae50700f7c184d448",
+      "count": 105
+    },
+    "public.marketplace_company_memberships": {
+      "hash": "d751713988987e9331980363e24189ce",
+      "count": 0
+    }
+  }
+}

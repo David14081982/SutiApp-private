@@ -1,0 +1,10 @@
+{
+  "status": "FAIL",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "productionCodeChanged": false,
+  "businessDataMutations": 0,
+  "parallelAssetChecks": 4,
+  "failures": [{"family":"A_APP_ASSETS_PUBLIC","code":"BROKEN_IMAGE","detail":"ASSET_3bcd4aa5-67b5-588a-a236-619f5163c0b6_app-assets_IMAGE_TIMEOUT"}],
+  "concurrentLocalWork": "PGlite tests, bundle compilation and isolated Chrome test",
+  "nextCheck": "Run the full suite alone, with unchanged coverage and timeouts. Saturation is a hypothesis, not a proven cause."
+}

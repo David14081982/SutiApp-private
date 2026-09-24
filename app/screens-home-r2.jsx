@@ -314,8 +314,6 @@
       ecosistema: () => React.createElement(React.Fragment, null, React.createElement(window.VotingHome, { app }), React.createElement(Ecosistema, { app })),
       comite: () => React.createElement(Comite, { app }),
     };
-    const defOrder = ['banner_convenio', 'ecosistema', 'comite', 'noticias'];
-    const orderIds = defOrder;
     // M2.1 · coreografía real: cada bloque entra al entrar en viewport, una sola
     // vez por sesión (los re-render del panel admin no la repiten).
     const revealRef = React.useRef(null);
@@ -324,7 +322,7 @@
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'home' }),
       React.createElement('div', { ref: revealRef, style: { display: 'flex', flexDirection: 'column', gap: 22, marginTop: 8 } },
-        orderIds.map((id) => wrap(id, blocks[id]())),
+        React.createElement(window.AppScreenLayout.Region, { screen: 'home', app, builtins: blocks, wrap }),
         wrap('footer', React.createElement(FooterInst, { app })),
       ),
     );

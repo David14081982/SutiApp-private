@@ -1226,3 +1226,31 @@ Owner explicitly authorizes seeing and executing the attended account's authoriz
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 Owner authorized local source-only reintegration onto origin/main 4b53d145bd4b408f232ad4660a65c94d84c6bd0e, the narrow installed Aval Edge delta, selected reusable support, semantic documentation additions and portable script paths. No commit/push/deploy/database or tracking writes. Existing later decisions remain intact. Frontend beneficiaries is PENDING_FRONTEND_DELIVERY; private history is PRIVATE_BACKUP_REQUIRED. Counterpart recompute and savings identity protection are HISTORICAL_NOT_APPLIED and excluded. Tracking reconciliation needs independent owner approval, documented as a plan only.
+
+## H-SCREEN-PERMISSION-FIX-001 — explicit owner clarification, 2026-09-24
+
+Owner: “Implementar edición desde los tres paneles”. This supersedes version-only
+configuration specifically for Secciones, Menús and Formularios. Add a versioned
+Supabase editorial configuration and safe renderer; preserve original business
+components and financial/identity logic. Reuse existing screen assignments to
+authorize new module-specific writers; do not add broad `content.write` grants.
+Navigation targets must be registered routes. No arbitrary HTML or executable code.
+Form replies require Auth, current visible schema and idempotency; retain their
+versioned schema and answers when the published node is removed.
+
+Owner: companies keep their own login and portal. Global administration of company
+records requires the corresponding administrative screen, while active company
+members retain their own tenant operations. Convenios keeps its existing unpaid
+company scope. Existing grants and independent responsibilities are preserved.
+
+Automatic registration means a future screen becomes available in the permission
+catalog after explicit backend registration and verification; it does not silently
+grant that screen to limited accounts. The build gate refuses unclassified routes
+and unregistered administrative screens. Aggregate modules retain their existing
+operations; this change does not create new financial roles or split their writers.
+
+Recovery is automatic only before use and without schema/security drift. Once
+editorial edits/responses or authorization/company history exist after installation,
+retain them and repair forward. No restoration may erase subsequent work. Local
+implementation and isolated tests are authorized; this entry is not an assertion
+that either new migration or frontend has been deployed.

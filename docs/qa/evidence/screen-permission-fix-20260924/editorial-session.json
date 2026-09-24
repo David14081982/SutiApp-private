@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "network": false,
+  "checks": [
+    "Auth defined after repository still subscribed",
+    "account switch clears data",
+    "late response cannot resurrect previous account",
+    "revocation clears in-flight and cached data",
+    "authority error visible without fallback",
+    "public/admin cache separation"
+  ]
+}

@@ -1,0 +1,2543 @@
+{
+  "capturedAt": "2026-09-24T16:01:03.753Z",
+  "productionWrites": 0,
+  "permissionConstraint": [
+    {
+      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'votaciones.read'::text, 'votaciones.create'::text, 'votaciones.update'::text, 'votaciones.delete'::text, 'votaciones.publish'::text, 'votaciones.results'::text, 'votaciones.export_identified_votes'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))"
+    }
+  ],
+  "rolePermissions": [
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.impersonate"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "assets.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "assets.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "authorization.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "authorization.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "bank_accounts.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "banners.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "banners.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "companies.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "companies.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "company_portal.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "company_portal.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "content.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "content.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "data_exports.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "documents.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "documents.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_criteria.visibility.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_criteria.visibility.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_programs.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_programs.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rates.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.publish"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.quotes.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.quotes.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "memberships.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "memberships.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "news.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "news.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "popups.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "popups.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_catalog.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_catalog.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_requests.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_requests.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.approve"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.config"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.identity_review"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.reports"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.withdrawal.override"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.yield.override"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "segmentation.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "segmentation.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "union_content.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "union_content.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.create"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.delete"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.export_identified_votes"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.publish"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.results"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.update"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "workflow.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "workflow.write"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "banners.read"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "banners.write"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "news.read"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "news.write"
+    }
+  ],
+  "audienceScreens": [],
+  "sections": [
+    {
+      "section_key": "admin_administrators",
+      "display_name": "Administradores",
+      "data_boundary": "Administrative module: administrators",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "administrators",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 0
+    },
+    {
+      "section_key": "admin_screen_permissions",
+      "display_name": "Permisos por pantalla",
+      "data_boundary": "Administrative module: screen_permissions",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "screen_permissions",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 1
+    },
+    {
+      "section_key": "admin_impersonation",
+      "display_name": "Tomar control",
+      "data_boundary": "Administrative module: impersonation",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "impersonation",
+      "module_read_permissions": [
+        "affiliates.impersonate"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 2
+    },
+    {
+      "section_key": "admin_affiliates",
+      "display_name": "Afiliados",
+      "data_boundary": "Administrative module: affiliates",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "affiliates",
+      "module_read_permissions": [
+        "affiliates.read",
+        "documents.read",
+        "assets.read",
+        "bank_accounts.read"
+      ],
+      "module_write_permissions": [
+        "affiliates.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 3
+    },
+    {
+      "section_key": "admin_data_exports",
+      "display_name": "Datos y respaldos",
+      "data_boundary": "Administrative module: data_exports",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "data_exports",
+      "module_read_permissions": [
+        "data_exports.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 4
+    },
+    {
+      "section_key": "admin_popups",
+      "display_name": "Pop-ups por pantalla",
+      "data_boundary": "Administrative module: popups",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "popups",
+      "module_read_permissions": [
+        "popups.read"
+      ],
+      "module_write_permissions": [
+        "popups.write"
+      ],
+      "module_sections": [
+        "popups"
+      ],
+      "module_total_only": false,
+      "module_order": 5
+    },
+    {
+      "section_key": "admin_sindicato",
+      "display_name": "Tu Sindicato",
+      "data_boundary": "Administrative module: sindicato",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "sindicato",
+      "module_read_permissions": [
+        "union_content.read",
+        "companies.read",
+        "segmentation.read",
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "union_content.write",
+        "companies.write"
+      ],
+      "module_sections": [
+        "documents",
+        "minutes",
+        "programs",
+        "agreements"
+      ],
+      "module_total_only": false,
+      "module_order": 6
+    },
+    {
+      "section_key": "admin_requests",
+      "display_name": "Solicitudes",
+      "data_boundary": "Administrative module: requests",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "requests",
+      "module_read_permissions": [
+        "program_requests.read",
+        "documents.read",
+        "bank_accounts.read"
+      ],
+      "module_write_permissions": [
+        "program_requests.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 7
+    },
+    {
+      "section_key": "admin_finanzas",
+      "display_name": "Finanzas · Solicitudes",
+      "data_boundary": "Administrative module: finanzas",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "finanzas",
+      "module_read_permissions": [
+        "program_requests.read",
+        "documents.read",
+        "bank_accounts.read",
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "program_requests.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 8
+    },
+    {
+      "section_key": "admin_savings",
+      "display_name": "Ahorro",
+      "data_boundary": "Administrative module: savings",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.write",
+        "savings.approve",
+        "savings.config",
+        "savings.identity_review",
+        "savings.reports"
+      ],
+      "module_sections": [
+        "savings"
+      ],
+      "module_total_only": false,
+      "module_order": 9
+    },
+    {
+      "section_key": "admin_fondos",
+      "display_name": "Fondos y reglas",
+      "data_boundary": "Administrative module: fondos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "fondos",
+      "module_read_permissions": [
+        "financial_criteria.visibility.read"
+      ],
+      "module_write_permissions": [
+        "financial_criteria.visibility.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 10
+    },
+    {
+      "section_key": "admin_fincat",
+      "display_name": "Catálogo de Finanzas",
+      "data_boundary": "Administrative module: fincat",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "fincat",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 11
+    },
+    {
+      "section_key": "admin_program_products",
+      "display_name": "Programas · Productos",
+      "data_boundary": "Administrative module: program_products",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "program_products",
+      "module_read_permissions": [
+        "program_catalog.read"
+      ],
+      "module_write_permissions": [
+        "program_catalog.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 12
+    },
+    {
+      "section_key": "admin_flujos",
+      "display_name": "Etapas y seguimiento",
+      "data_boundary": "Administrative module: flujos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "flujos",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 13
+    },
+    {
+      "section_key": "admin_marketplace",
+      "display_name": "Marketplace",
+      "data_boundary": "Administrative module: marketplace",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "marketplace",
+      "module_read_permissions": [
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "marketplace.write"
+      ],
+      "module_sections": [
+        "marketplace"
+      ],
+      "module_total_only": false,
+      "module_order": 14
+    },
+    {
+      "section_key": "admin_aprobaciones",
+      "display_name": "Aprobación de Pop-ups",
+      "data_boundary": "Administrative module: aprobaciones",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "aprobaciones",
+      "module_read_permissions": [
+        "popups.read"
+      ],
+      "module_write_permissions": [
+        "popups.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 15
+    },
+    {
+      "section_key": "admin_planes",
+      "display_name": "Planes de empresas",
+      "data_boundary": "Administrative module: planes",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "planes",
+      "module_read_permissions": [
+        "company_portal.read"
+      ],
+      "module_write_permissions": [
+        "company_portal.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 16
+    },
+    {
+      "section_key": "admin_membresias",
+      "display_name": "Membresías",
+      "data_boundary": "Administrative module: membresias",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "membresias",
+      "module_read_permissions": [
+        "memberships.read"
+      ],
+      "module_write_permissions": [
+        "memberships.write",
+        "assets.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 17
+    },
+    {
+      "section_key": "admin_noticias",
+      "display_name": "Noticias del sindicato",
+      "data_boundary": "Administrative module: noticias",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "noticias",
+      "module_read_permissions": [
+        "news.read"
+      ],
+      "module_write_permissions": [
+        "news.write"
+      ],
+      "module_sections": [
+        "news"
+      ],
+      "module_total_only": false,
+      "module_order": 18
+    },
+    {
+      "section_key": "admin_education",
+      "display_name": "Educación",
+      "data_boundary": "Administrative module: education",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "education",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [
+        "content.write"
+      ],
+      "module_sections": [
+        "education",
+        "tutorials"
+      ],
+      "module_total_only": false,
+      "module_order": 19
+    },
+    {
+      "section_key": "admin_convenios",
+      "display_name": "Convenios y beneficios",
+      "data_boundary": "Administrative module: convenios",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "convenios",
+      "module_read_permissions": [
+        "companies.read",
+        "segmentation.read",
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "companies.write"
+      ],
+      "module_sections": [
+        "agreements"
+      ],
+      "module_total_only": false,
+      "module_order": 20
+    },
+    {
+      "section_key": "admin_catalogos",
+      "display_name": "Catálogos de segmentación",
+      "data_boundary": "Administrative module: catalogos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "catalogos",
+      "module_read_permissions": [
+        "segmentation.read"
+      ],
+      "module_write_permissions": [
+        "segmentation.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 21
+    },
+    {
+      "section_key": "admin_roles",
+      "display_name": "Roles y permisos",
+      "data_boundary": "Administrative module: roles",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "roles",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 22
+    },
+    {
+      "section_key": "admin_pantallas",
+      "display_name": "Acceso a pantallas",
+      "data_boundary": "Administrative module: pantallas",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "pantallas",
+      "module_read_permissions": [
+        "segmentation.read"
+      ],
+      "module_write_permissions": [
+        "segmentation.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 23
+    },
+    {
+      "section_key": "admin_secciones",
+      "display_name": "Secciones y componentes",
+      "data_boundary": "Administrative module: secciones",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "secciones",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 24
+    },
+    {
+      "section_key": "admin_banners",
+      "display_name": "Banners",
+      "data_boundary": "Administrative module: banners",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "banners",
+      "module_read_permissions": [
+        "banners.read"
+      ],
+      "module_write_permissions": [
+        "banners.write"
+      ],
+      "module_sections": [
+        "banners"
+      ],
+      "module_total_only": false,
+      "module_order": 25
+    },
+    {
+      "section_key": "admin_companies_admin",
+      "display_name": "Empresas",
+      "data_boundary": "Administrative module: companies_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "companies_admin",
+      "module_read_permissions": [
+        "companies.read"
+      ],
+      "module_write_permissions": [
+        "companies.write"
+      ],
+      "module_sections": [
+        "companies"
+      ],
+      "module_total_only": false,
+      "module_order": 26
+    },
+    {
+      "section_key": "admin_documents_admin",
+      "display_name": "Documentos y PDF",
+      "data_boundary": "Administrative module: documents_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "documents_admin",
+      "module_read_permissions": [
+        "documents.read",
+        "assets.read"
+      ],
+      "module_write_permissions": [
+        "documents.write"
+      ],
+      "module_sections": [
+        "documents"
+      ],
+      "module_total_only": false,
+      "module_order": 27
+    },
+    {
+      "section_key": "admin_minutes_admin",
+      "display_name": "Minutas",
+      "data_boundary": "Administrative module: minutes_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "minutes_admin",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [
+        "minutes"
+      ],
+      "module_total_only": false,
+      "module_order": 28
+    },
+    {
+      "section_key": "admin_programs_admin",
+      "display_name": "Programas institucionales",
+      "data_boundary": "Administrative module: programs_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "programs_admin",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [
+        "programs"
+      ],
+      "module_total_only": false,
+      "module_order": 29
+    },
+    {
+      "section_key": "admin_menus",
+      "display_name": "Menús y botones",
+      "data_boundary": "Administrative module: menus",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "menus",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 30
+    },
+    {
+      "section_key": "admin_formularios",
+      "display_name": "Formularios",
+      "data_boundary": "Administrative module: formularios",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "formularios",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 31
+    },
+    {
+      "section_key": "admin_branding",
+      "display_name": "Ícono e instalación",
+      "data_boundary": "Administrative module: branding",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "branding",
+      "module_read_permissions": [
+        "assets.read"
+      ],
+      "module_write_permissions": [
+        "assets.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 32
+    },
+    {
+      "section_key": "admin_votaciones",
+      "display_name": "Votaciones",
+      "data_boundary": "Consultas, preguntas y resultados agregados",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "votaciones",
+      "module_read_permissions": [
+        "votaciones.read",
+        "votaciones.results"
+      ],
+      "module_write_permissions": [
+        "votaciones.create",
+        "votaciones.update",
+        "votaciones.delete",
+        "votaciones.publish"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 34
+    },
+    {
+      "section_key": "admin_votaciones_nominal",
+      "display_name": "Votaciones · votos identificados",
+      "data_boundary": "Permiso independiente para conocer y exportar votos nominales",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "votaciones_nominal",
+      "module_read_permissions": [
+        "votaciones.read"
+      ],
+      "module_write_permissions": [
+        "votaciones.export_identified_votes"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 35
+    },
+    {
+      "section_key": "admin_inversion",
+      "display_name": "Suti Inversión · Textos",
+      "data_boundary": "Administrative module: inversion",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "inversion",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 36
+    },
+    {
+      "section_key": "admin_login_history",
+      "display_name": "Historial de accesos",
+      "data_boundary": "Read-only Auth sign-ins and affiliate contact",
+      "allowed_actions": [
+        "read"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "login_history",
+      "module_read_permissions": [
+        "authorization.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 90
+    },
+    {
+      "section_key": "admin_savings_withdrawal_override",
+      "display_name": "Ahorro · Autorizar retiro excepcional",
+      "data_boundary": "Specific withdrawal exception",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings_withdrawal_override",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.withdrawal.override"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 90
+    },
+    {
+      "section_key": "admin_savings_yield_override",
+      "display_name": "Ahorro · Excepción de permanencia",
+      "data_boundary": "Specific period tenure exception",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings_yield_override",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.yield.override"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 91
+    },
+    {
+      "section_key": "agreements",
+      "display_name": "Convenios y beneficios",
+      "data_boundary": "company_benefit_profiles + company_benefits + company_audience_rules; companies is read-only",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "banners",
+      "display_name": "Banners",
+      "data_boundary": "banners",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "companies",
+      "display_name": "Empresas",
+      "data_boundary": "companies + company_assets; excludes benefit/audience configuration",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "documents",
+      "display_name": "Documentos",
+      "data_boundary": "institutional_documents + directory_members",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "education",
+      "display_name": "Educación",
+      "data_boundary": "educational_resources where resource_kind=education",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "marketplace",
+      "display_name": "Marketplace",
+      "data_boundary": "marketplace catalog; excludes quote/request adjudication",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "minutes",
+      "display_name": "Minutas",
+      "data_boundary": "minutes; distinct from institutional_documents",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "news",
+      "display_name": "Noticias",
+      "data_boundary": "news_articles + news_settings",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "popups",
+      "display_name": "Pop-ups",
+      "data_boundary": "popups",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "programs",
+      "display_name": "Programas institucionales",
+      "data_boundary": "institutional_programs and non-financial presentation only",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "savings",
+      "display_name": "Ahorro · Revisión privada",
+      "data_boundary": "Private savings review; no financial posting or publication",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "tutorials",
+      "display_name": "Tutoriales",
+      "data_boundary": "educational_resources where resource_kind=tutorial",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones",
+      "display_name": "Votaciones · acciones",
+      "data_boundary": "Consultas y preguntas",
+      "allowed_actions": [
+        "read",
+        "create",
+        "update",
+        "delete",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones_identified",
+      "display_name": "Votaciones · exportación nominal",
+      "data_boundary": "Votos identificados, permiso separado",
+      "allowed_actions": [
+        "export"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones_results",
+      "display_name": "Votaciones · resultados",
+      "data_boundary": "Conteos agregados",
+      "allowed_actions": [
+        "read",
+        "export"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    }
+  ],
+  "functions": [
+    {
+      "schema": "admin_support_private",
+      "name": "get_admin_access_context",
+      "signature": "admin_support_private.get_admin_access_context(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.get_admin_access_context(p_subject uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select original || case when admin_support_private.is_module_admin(p_subject) then jsonb_build_object(\r\r\n  'module_access_version',1,\r\r\n  'module_keys',coalesce((select jsonb_agg(d.module_key order by d.module_order) from public.admin_section_definitions d\r\r\n    where d.module_key is not null and admin_support_private.has_admin_module(p_subject,d.module_key)),'[]'::jsonb),\r\r\n  'technical_permissions',to_jsonb(admin_support_private.module_effective_permissions(p_subject)),\r\r\n  'section_actions',coalesce((select jsonb_agg(jsonb_build_object('section_key',d.section_key,'action',a))\r\r\n    from public.admin_section_definitions d cross join lateral unnest(d.allowed_actions) a\r\r\n    where d.module_key is null and admin_support_private.has_section_action(p_subject,d.section_key,a)),'[]'::jsonb)\r\r\n ) else jsonb_build_object('module_access_version',1,'module_keys',null,'section_actions',coalesce((\r\r\n  select jsonb_agg(entry) from jsonb_array_elements(original->'section_actions') entry\r\r\n  where not exists(select 1 from public.admin_section_definitions d where d.section_key=entry->>'section_key' and d.module_key is not null)\r\r\n ),'[]'::jsonb)) end\r\r\n from (select admin_support_private.module_prior_get_admin_access_context(p_subject) original) context;\r\r\n$function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_admin_module",
+      "signature": "admin_support_private.has_admin_module(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_admin_module(p_subject uuid, p_module text, p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select exists(select 1 from public.admin_assignments a join public.admin_roles role on role.id=a.role_id and role.enabled\r\r\n  join public.admin_section_responsibilities grant_row on grant_row.auth_user_id=a.auth_user_id and grant_row.enabled\r\r\n  join public.admin_section_definitions d on d.section_key=grant_row.section_key and d.enforcement_status='ENFORCED'\r\r\n  where a.auth_user_id=p_subject and a.enabled and role.code='module_admin'\r\r\n   and d.module_key=p_module and not d.module_total_only and grant_row.action=p_action);\r\r\n$function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_admin_permission",
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_admin_permission(p_subject uuid, required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select case when admin_support_private.is_module_admin(p_subject) then required_permission=any(admin_support_private.module_effective_permissions(p_subject))\r\r\n else admin_support_private.module_prior_has_admin_permission(p_subject,required_permission) end;\r\r\n$function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_section_action",
+      "signature": "admin_support_private.has_section_action(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_section_action(p_subject uuid, p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select case when admin_support_private.is_module_admin(p_subject) then exists(\r\r\n  select 1 from public.admin_section_definitions d\r\r\n  where p_section_key=any(d.module_sections) and admin_support_private.has_admin_module(p_subject,d.module_key,case when p_action='read' then 'read' else 'update' end)\r\r\n   and exists(select 1 from public.admin_section_definitions original where original.section_key=p_section_key\r\r\n    and original.enforcement_status='ENFORCED' and p_action=any(original.allowed_actions))\r\r\n ) else not exists(select 1 from public.admin_section_definitions where section_key=p_section_key and module_key is not null)\r\r\n and admin_support_private.module_prior_has_section_action(p_subject,p_section_key,p_action) end;\r\r\n$function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_visible",
+      "signature": "admin_support_private.module_visible(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('branding','assets.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('popups','popups.read',array['popups']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('program_products','program_catalog.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('aprobaciones','popups.read',array[]::text[]),('sindicato','union_content.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "accredit_company_plan",
+      "signature": "accredit_company_plan(uuid,uuid,text,text,boolean,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.accredit_company_plan(p_company_id uuid, p_plan_id uuid, p_cycle text, p_payment_reference text, p_received boolean, p_member_email text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare p public.company_portal_plans;v_user uuid;v_end date;\r\nbegin\r\n if auth.uid() is null or not public.has_admin_permission('company_portal.write') then raise exception 'PLAN_ADMIN_REQUIRED';end if;\r\n if p_received is distinct from true or length(btrim(coalesce(p_payment_reference,''))) not between 3 and 200 then raise exception 'PRESENTIAL_PAYMENT_CONFIRMATION_REQUIRED';end if;\r\n if p_cycle not in('monthly','annual') then raise exception 'INVALID_BILLING_CYCLE';end if;\r\n select * into p from public.company_portal_plans where id=p_plan_id and enabled for share;\r\n if not found then raise exception 'ACTIVE_PLAN_REQUIRED';end if;\r\n perform 1 from public.companies where id=p_company_id and enabled for update;\r\n if not found then raise exception 'ACTIVE_COMPANY_REQUIRED';end if;\r\n if nullif(btrim(p_member_email),'') is not null then\r\n  select id into v_user from auth.users where lower(email)=lower(btrim(p_member_email)) and email_confirmed_at is not null;\r\n  if v_user is null then raise exception 'CONFIRMED_COMPANY_ACCOUNT_REQUIRED';end if;\r\n end if;\r\n v_end:=(current_date+case when p_cycle='monthly' then interval '1 month' else interval '1 year' end)::date-1;\r\n insert into public.company_portal_subscriptions(company_id,plan_id,billing_cycle,status,starts_on,ends_on,payment_reference,payment_amount,accredited_by,accredited_at)\r\n values(p_company_id,p.id,p_cycle,'active',current_date,v_end,btrim(p_payment_reference),case when p_cycle='monthly' then p.monthly_price else p.annual_price end,auth.uid(),now())\r\n on conflict(company_id) do update set plan_id=excluded.plan_id,billing_cycle=excluded.billing_cycle,status=excluded.status,starts_on=excluded.starts_on,ends_on=excluded.ends_on,payment_reference=excluded.payment_reference,payment_amount=excluded.payment_amount,accredited_by=excluded.accredited_by,accredited_at=excluded.accredited_at;\r\n if v_user is not null then\r\n  insert into public.marketplace_company_memberships(company_id,auth_user_id,role,enabled) values(p_company_id,v_user,'owner',true)\r\n  on conflict(company_id,auth_user_id) do update set role='owner',enabled=true;\r\n end if;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "admin_module_boundary",
+      "signature": "admin_module_boundary(text[],text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_module_boundary(p_modules text[], p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select not public.is_module_admin() or exists(select 1 from unnest(p_modules) m where public.has_admin_module(m,p_action));\r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "attach_company_ficha_image",
+      "signature": "attach_company_ficha_image(uuid,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.attach_company_ficha_image(p_company_id uuid, p_asset_id uuid, p_role text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if not(public.can_manage_company_ficha(p_company_id,'assets') or (not public.company_is_paid(p_company_id) and public.has_section_action('agreements','update'))) then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if p_role not in('logo','cover','gallery') then raise exception 'INVALID_IMAGE_ROLE';end if;\r\n if not exists(select 1 from public.app_assets where id=p_asset_id and status='READY' and mime_type like 'image/%' and (owner_company_id=p_company_id or public.has_admin_permission('companies.write') or public.has_section_action('companies','assets'))) then raise exception 'COMPANY_ASSET_OWNERSHIP_REQUIRED';end if;\r\n perform 1 from public.companies where id=p_company_id for update;\r\n if p_role='logo' then perform public.save_company_ficha(p_company_id,jsonb_build_object('logo_asset_id',p_asset_id));return;end if;\r\n if p_role='cover' then delete from public.company_assets where company_id=p_company_id and role='cover';end if;\r\n insert into public.company_assets(company_id,asset_id,role,sort_order,record_origin) values(p_company_id,p_asset_id,p_role,coalesce((select max(sort_order)+1 from public.company_assets where company_id=p_company_id),1),'ADMIN_SECTION_ROLLOUT');\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "can_access_app_screen",
+      "signature": "can_access_app_screen(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_access_app_screen(p_screen_id text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select coalesce((select public.matches_current_affiliate_audience(access_mode,union_codes,employment_category_codes,gender_codes,tag_codes) from public.screen_access_policies where screen_id=p_screen_id),true) $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "can_manage_company_ficha",
+      "signature": "can_manage_company_ficha(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_manage_company_ficha(p_company_id uuid, p_action text DEFAULT 'update'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select auth.uid() is not null and (\r\n public.has_admin_permission('companies.write') or public.has_section_action('companies',p_action)\r\n or (not public.company_is_paid(p_company_id) and public.has_section_action('agreements',case when p_action='assets' then 'update' else p_action end))\r\n or (p_action in ('update','assets') and public.is_marketplace_company_member(p_company_id,'write') and public.company_has_active_plan(p_company_id)))\r\n$function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "can_upload_company_ficha",
+      "signature": "can_upload_company_ficha(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_upload_company_ficha(p_path text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_parts text[]:=string_to_array(p_path,'/');v_company uuid;\r\nbegin\r\n if array_length(v_parts,1)<>4 or v_parts[1]<>'convenios' or v_parts[2]<>auth.uid()::text then return false;end if;\r\n begin v_company:=v_parts[3]::uuid;exception when invalid_text_representation then return false;end;\r\n return exists(select 1 from public.companies where id=v_company) and (public.can_manage_company_ficha(v_company,'assets') or (not public.company_is_paid(v_company) and public.has_section_action('agreements','update')));\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "can_view_company",
+      "signature": "can_view_company(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_view_company(p_company_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select coalesce((select public.matches_current_affiliate_audience(audience_mode,union_codes,employment_category_codes,gender_codes,tag_codes) from public.company_audience_rules where company_id=p_company_id),true) $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "company_has_active_plan",
+      "signature": "company_has_active_plan(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.company_has_active_plan(p_company_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select exists(select 1 from public.company_portal_subscriptions s join public.company_portal_plans p on p.id=s.plan_id\r\n join public.companies c on c.id=s.company_id where s.company_id=p_company_id and c.enabled and s.status='active'\r\n and p.enabled and current_date between s.starts_on and s.ends_on)\r\n$function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,anon=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "company_is_paid",
+      "signature": "company_is_paid(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.company_is_paid(p_company_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select exists(select 1 from public.company_portal_subscriptions where company_id=p_company_id and plan_id is not null)\r\n$function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,anon=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "enforce_company_ficha_action",
+      "signature": "enforce_company_ficha_action()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare o jsonb:=case when tg_op='INSERT' then '{}' else to_jsonb(old) end;\r\n n jsonb:=case when tg_op='DELETE' then '{}' else to_jsonb(new) end; a text; v_id uuid:=coalesce(new.id,old.id);\r\nbegin\r\n if auth.role()='service_role' or public.has_admin_permission('companies.write') then return coalesce(new,old);end if;\r\n if tg_op='UPDATE' and (o-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   = (n-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   and public.is_marketplace_company_member(v_id,'write') and public.company_has_active_plan(v_id) then return new;end if;\r\n foreach a in array public.section_row_required_actions(o,n,tg_op,'enabled','sort_order',array['logo_asset_id']) loop\r\n  if not public.can_manage_company_ficha(v_id,a) then raise exception 'COMPANY_ACTION_DENIED:%',a;end if;\r\n end loop;\r\n if tg_op='INSERT' and new.record_origin<>'ADMIN_H009' then raise exception 'ADMIN_ORIGIN_REQUIRED';end if;\r\n if tg_op='DELETE' and old.record_origin<>'ADMIN_H009' then raise exception 'HISTORICAL_DELETE_DENIED';end if;\r\n if tg_op='UPDATE' and (o->'record_origin' is distinct from n->'record_origin' or (o-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at']) is distinct from (n-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at'])) then raise exception 'COMPANY_PROVENANCE_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "enforce_company_ficha_asset_action",
+      "signature": "enforce_company_ficha_asset_action()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_asset_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid:=coalesce(new.company_id,old.company_id);\r\nbegin\r\n if auth.role()='service_role' or public.has_admin_permission('companies.write') then return coalesce(new,old);end if;\r\n if not(public.can_manage_company_ficha(v_id,'assets') or (not public.company_is_paid(v_id) and public.has_section_action('agreements','update'))) then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if tg_op='UPDATE' and new.company_id<>old.company_id then raise exception 'COMPANY_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "enforce_company_plan_limits",
+      "signature": "enforce_company_plan_limits()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_plan_limits()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid:=coalesce(new.company_id,old.company_id);v_max integer;v_n integer;\r\nbegin\r\n if auth.role()='service_role' or public.has_admin_permission('marketplace.write') or public.has_admin_permission('companies.write') or public.has_section_action('marketplace',case when tg_op='INSERT' then 'create' when tg_op='DELETE' then 'delete' else 'update' end) then return coalesce(new,old);end if;\r\n if tg_table_name='marketplace_products' and public.can_manage_agreement_product(v_id,case when tg_op='INSERT' then 'create' when tg_op='DELETE' then 'delete' else 'update' end) then return coalesce(new,old);end if;\r\n if not public.is_marketplace_company_member(v_id,'write') or not public.company_has_active_plan(v_id) then raise exception 'ACTIVE_COMPANY_PLAN_REQUIRED';end if;\r\n if tg_op='UPDATE' and new.company_id is distinct from old.company_id then raise exception 'COMPANY_IMMUTABLE';end if;\r\n if tg_table_name='marketplace_products' and tg_op<>'DELETE' then\r\n  perform 1 from public.company_portal_subscriptions where company_id=v_id for update;\r\n  select p.max_products into v_max from public.company_portal_subscriptions s join public.company_portal_plans p on p.id=s.plan_id where s.company_id=v_id;\r\n  select count(*) into v_n from public.marketplace_products where company_id=v_id and id<>new.id;\r\n  if v_n>=v_max then raise exception 'COMPANY_PRODUCT_LIMIT:%',v_max;end if;\r\n end if;\r\n return coalesce(new,old);\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "enforce_company_popup_author",
+      "signature": "enforce_company_popup_author()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_popup_author()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n if auth.role()<>'service_role' and (not public.is_marketplace_company_member(new.company_id,'write') or not public.company_has_active_plan(new.company_id)) then raise exception 'COMPANY_POPUP_AUTHOR_DENIED';end if;\n return new;\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "enforce_company_promotion_publication",
+      "signature": "enforce_company_promotion_publication()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_promotion_publication()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n if auth.role()='service_role' then return new;end if;\n if (tg_op='INSERT' and new.approval_status<>'pending') or (tg_op='UPDATE' and new.approval_status is distinct from old.approval_status and new.approval_status<>'pending') then\n  if not public.has_admin_permission('marketplace.write') and not public.has_section_action('marketplace','publish') then raise exception 'PROMOTION_PUBLICATION_DENIED';end if;\n end if;\n if new.image_asset_id is not null and not public.has_admin_permission('marketplace.write') and not public.has_section_action('marketplace','assets') then\n  if not exists(select 1 from public.app_assets a where a.id=new.image_asset_id and a.owner_company_id=new.company_id and a.status='READY') then raise exception 'PROMOTION_IMAGE_DENIED';end if;\n end if;\n return new;\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_admin_access_context",
+      "signature": "get_admin_access_context()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_access_context()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.effective_context();\r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_company_activity",
+      "signature": "get_company_activity(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_company_activity(p_company_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_history boolean;v_result jsonb;\r\nbegin\r\n if not public.is_marketplace_company_member(p_company_id) and not public.has_admin_permission('company_portal.read') then raise exception 'COMPANY_DENIED';end if;\r\n select coalesce(p.allows_stats_history,false) and public.company_has_active_plan(p_company_id) into v_history from public.company_portal_subscriptions s join public.company_portal_plans p on p.id=s.plan_id where s.company_id=p_company_id;\r\n select jsonb_build_object('history_allowed',coalesce(v_history,false),'logs',coalesce(jsonb_agg(jsonb_build_object('action',action,'ts',created_at,'detail',resource) order by created_at desc),'[]')) into v_result\r\n from (select action,created_at,resource from public.admin_audit_log where target_id=p_company_id::text or (resource='marketplace_products' and target_id in(select id::text from public.marketplace_products where company_id=p_company_id)) or (resource='marketplace_promotions' and target_id in(select id::text from public.marketplace_promotions where company_id=p_company_id)) order by created_at desc limit 60) a;\r\n if v_history then v_result:=v_result||jsonb_build_object('monthly',coalesce((select jsonb_agg(to_jsonb(m) order by month desc) from (select to_char(created_at,'YYYY-MM') as month,count(*) as requests from public.program_requests where company_id=p_company_id group by to_char(created_at,'YYYY-MM')) m),'[]'));end if;\r\n return v_result;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_current_company_access",
+      "signature": "get_current_company_access()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_current_company_access()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if auth.uid() is null then raise exception 'AUTH_REQUIRED';end if;\r\n return coalesce((select jsonb_agg(jsonb_build_object('company_id',m.company_id,'role',m.role)) from public.marketplace_company_memberships m where m.auth_user_id=auth.uid() and m.enabled and public.company_has_active_plan(m.company_id)),'[]');\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_admin_module",
+      "signature": "has_admin_module(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_admin_module(p_module text, p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.module_visible(auth.uid(),p_module)\r\n and admin_support_private.module_visible((select subject_auth_user_id from admin_support_private.context()),p_module)\r\n and (not admin_support_private.is_module_admin(auth.uid()) or admin_support_private.has_admin_module(auth.uid(),p_module,p_action))\r\n and (not admin_support_private.is_module_admin((select subject_auth_user_id from admin_support_private.context()))\r\n or admin_support_private.has_admin_module((select subject_auth_user_id from admin_support_private.context()),p_module,p_action))\r\n and (select subject_auth_user_id is not null from admin_support_private.context())\r\n else admin_support_private.has_admin_module(auth.uid(),p_module,p_action) end;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_admin_permission",
+      "signature": "has_admin_permission(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_admin_permission(required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.has_admin_permission(auth.uid(),required_permission)\r\n and case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.has_admin_permission((select subject_auth_user_id from admin_support_private.context()),required_permission) else true end;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_section_action",
+      "signature": "has_section_action(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_section_action(p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.has_section_action((select subject_auth_user_id from admin_support_private.context()),p_section_key,p_action)\r\n and (coalesce((admin_support_private.get_admin_access_context(auth.uid())->>'full_access')::boolean,false)\r\n or admin_support_private.has_section_action(auth.uid(),p_section_key,p_action))\r\n else admin_support_private.has_section_action(auth.uid(),p_section_key,p_action) end;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "is_marketplace_company_member",
+      "signature": "is_marketplace_company_member(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_marketplace_company_member(p_company_id uuid, p_capability text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists (\n    select 1 from public.marketplace_company_memberships m\n    where m.auth_user_id=(select auth.uid()) and m.company_id=p_company_id and m.enabled\n      and (p_capability='read' or m.role in ('owner','editor') or (p_capability='quotes' and m.role='quotes'))\n  );\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "list_admin_module_catalog",
+      "signature": "list_admin_module_catalog()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_admin_module_catalog()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\r\nbegin\r\r\n if not public.has_admin_permission('authorization.read') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\r\r\n return (select jsonb_agg(jsonb_build_object('key',module_key,'label',display_name,'total_only',module_total_only) order by module_order)\r\r\n from public.admin_section_definitions where module_key is not null and enforcement_status='ENFORCED');\r\r\nend \r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "list_company_commercial_requests",
+      "signature": "list_company_commercial_requests()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_company_commercial_requests()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_result jsonb;\nbegin\n if auth.uid() is null then raise exception 'AUTH_REQUIRED';end if;\n select coalesce(jsonb_agg(jsonb_build_object(\n  'id',r.id,'folio',r.folio,'company_id',r.company_id,'affiliate_id',r.affiliate_id,'numero_control',r.numero_control,\n  'program_id',r.program_id,'product_id',r.product_id,'request_type',r.request_type,'status',r.status,'quantity',r.quantity,\n  'notes',r.notes,'quoted_amount',r.quoted_amount,'quote_note',r.quote_note,'valid_until',r.valid_until,'responded_at',r.responded_at,\n  'seen_at',r.seen_at,'created_at',r.created_at,'updated_at',r.updated_at,\n  'affiliate',jsonb_build_object('display_name',coalesce(a.display_name,a.full_name)),\n  'product',jsonb_build_object('name',p.name,'price',p.price),'company',jsonb_build_object('display_name',c.display_name)\n ) order by r.created_at desc),'[]') into v_result\n from public.program_requests r join public.companies c on c.id=r.company_id\n left join public.marketplace_products p on p.id=r.product_id left join public.affiliates a on a.id=r.affiliate_id\n where r.program_id='marketplace' and r.request_type in ('quote','benefit')\n and not exists(select 1 from public.program_request_deletions d where d.request_id=r.id)\n and (public.has_admin_permission('company_portal.read') or public.has_admin_permission('program_requests.read')\n  or (public.is_marketplace_company_member(r.company_id) and public.company_has_active_plan(r.company_id)));\n return v_result;\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "list_paid_company_ids",
+      "signature": "list_paid_company_ids()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_paid_company_ids()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if auth.uid() is null or not(public.has_admin_permission('companies.read') or public.has_section_action('companies','read') or public.has_section_action('agreements','read')) then raise exception 'COMPANY_ADMIN_READ_REQUIRED';end if;\r\n return coalesce((select jsonb_agg(company_id) from public.company_portal_subscriptions where plan_id is not null),'[]');\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "register_company_ficha_image",
+      "signature": "register_company_ficha_image(uuid,text,text,text,bigint)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_company_ficha_image(p_company_id uuid, p_path text, p_sha256 text, p_mime text, p_size bigint)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid;\r\nbegin\r\n if not public.can_upload_company_ficha(p_path) or split_part(p_path,'/',3)<>p_company_id::text then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if p_mime not in('image/jpeg','image/png','image/webp','image/gif') or p_size not between 1 and 10485760 or p_sha256!~'^[a-fA-F0-9]{64}$' then raise exception 'INVALID_IMAGE';end if;\r\n if not exists(select 1 from storage.objects where bucket_id='company-assets' and name=p_path and (metadata->>'size')::bigint=p_size and metadata->>'mimetype'=p_mime) then raise exception 'UPLOADED_IMAGE_REQUIRED';end if;\r\n insert into public.app_assets(asset_key,asset_type,title,alt_text,storage_bucket,storage_path,mime_type,file_size,content_sha256,status,owner_company_id)\r\n values('company.ficha.'||extensions.gen_random_uuid(),'COMPANY','Imagen empresarial','Imagen empresarial','company-assets',p_path,p_mime,p_size,upper(p_sha256),'READY',p_company_id) returning id into v_id;\r\n return v_id;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "replace_company_asset",
+      "signature": "replace_company_asset(uuid,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.replace_company_asset(p_company_id uuid, p_asset_id uuid, p_role text)\n RETURNS void\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  if p_role not in ('logo','cover') then raise exception 'unsupported company asset role'; end if;\n  if not public.has_admin_permission('companies.write') then raise exception 'admin permission denied'; end if;\n  delete from public.company_assets where company_id = p_company_id and role = p_role;\n  insert into public.company_assets(company_id, asset_id, role, sort_order)\n  values (p_company_id, p_asset_id, p_role, 1);\n  if p_role = 'logo' then\n    update public.companies set logo_asset_id = p_asset_id where id = p_company_id;\n  end if;\nend;\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "review_company_popup_proposal",
+      "signature": "review_company_popup_proposal(uuid,boolean,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.review_company_popup_proposal(p_proposal_id uuid, p_approve boolean, p_reason text DEFAULT NULL::text)\n RETURNS company_popup_proposals\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_proposal public.company_popup_proposals%rowtype; v_popup_id uuid;\nbegin\n  if not (public.has_admin_permission('popups.write') and public.admin_module_boundary(array['aprobaciones'],'update')) then raise exception 'ADMIN_PERMISSION_REQUIRED' using errcode='42501'; end if;\n  select * into v_proposal from public.company_popup_proposals where id=p_proposal_id for update;\n  if v_proposal.id is null then raise exception 'POPUP_PROPOSAL_NOT_FOUND' using errcode='P0002'; end if;\n  if v_proposal.status<>'pending' then raise exception 'POPUP_PROPOSAL_ALREADY_REVIEWED' using errcode='P0001'; end if;\n  if p_approve then\n    insert into public.popups(title,body,image_asset_id,action_label,action_url,audience_raw,enabled,start_at,end_at,sort_order,record_origin)\n    values(v_proposal.title,v_proposal.body,v_proposal.image_asset_id,v_proposal.action_label,\n      case when v_proposal.action_type='url' then v_proposal.action_target else null end,\n      v_proposal.audience_raw,false,v_proposal.start_at,v_proposal.end_at,\n      coalesce((select max(sort_order)+1 from public.popups),1),'ADMIN_H009') returning id into v_popup_id;\n    update public.company_popup_proposals set status='approved',popup_id=v_popup_id,reviewed_by=auth.uid(),reviewed_at=now(),rejection_reason=null where id=p_proposal_id returning * into v_proposal;\n  else\n    if nullif(btrim(coalesce(p_reason,'')),'') is null then raise exception 'REJECTION_REASON_REQUIRED' using errcode='22023'; end if;\n    update public.company_popup_proposals set status='rejected',reviewed_by=auth.uid(),reviewed_at=now(),rejection_reason=btrim(p_reason) where id=p_proposal_id returning * into v_proposal;\n  end if;\n  return v_proposal;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "save_admin_user_modules",
+      "signature": "save_admin_user_modules(text,text,text[],text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_admin_user_modules(p_email text, p_mode text, p_modules text[], p_expected_version text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\r\ndeclare target uuid; before_state jsonb; selected_role uuid; selected_modules text[]; begin\r\r\n if not public.has_admin_permission('authorization.write') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\r\r\n before_state:=public.get_admin_user_modules(p_email);target:=(before_state->>'auth_user_id')::uuid;\r\r\n if target=auth.uid() or coalesce(target=(select subject_auth_user_id from admin_support_private.context()),false) then raise exception 'SELF_ASSIGNMENT_DENIED' using errcode='42501'; end if;\r\r\n perform pg_advisory_xact_lock(hashtextextended('admin-user-modules:'||target::text,0));\r\r\n perform 1 from public.admin_assignments where auth_user_id=target for update;\r\r\n if p_expected_version is null or p_expected_version<>public.admin_user_module_version(target) then raise exception 'ADMIN_ACCESS_CHANGED' using errcode='40001'; end if;\r\r\n if p_mode is null or p_mode not in ('limited','total') then raise exception 'INVALID_ACCESS_MODE'; end if;\r\r\n select coalesce(array_agg(distinct m order by m),'{}') into selected_modules from unnest(p_modules) m;\r\r\n if p_mode='limited' and (cardinality(selected_modules)=0 or exists(select 1 from unnest(selected_modules) m\r\r\n  where not exists(select 1 from public.admin_section_definitions d where d.module_key=m and not d.module_total_only and d.enforcement_status='ENFORCED'))) then\r\r\n  raise exception 'INVALID_ADMIN_MODULE'; end if;\r\r\n select id into selected_role from public.admin_roles where code=case when p_mode='total' then 'principal_admin' else 'module_admin' end and enabled;\r\r\n if selected_role is null then raise exception 'ADMIN_ROLE_UNAVAILABLE'; end if;\r\r\n -- Existing writer preserves protected/last-admin guards, actor metadata and session revocation.\r\r\n perform public.assign_admin_role(target,selected_role,true);\r\r\n update public.admin_section_responsibilities set enabled=false,revoked_at=now(),revoked_by_auth_user_id=auth.uid(),updated_at=now()\r\r\n where auth_user_id=target and enabled;\r\r\n if p_mode='limited' then\r\r\n  insert into public.admin_section_responsibilities(auth_user_id,section_key,action,enabled,granted_by_auth_user_id)\r\r\n  select target,d.section_key,a,true,auth.uid() from public.admin_section_definitions d cross join unnest(array['read','update']) a\r\r\n  where d.module_key=any(selected_modules)\r\r\n  on conflict(auth_user_id,section_key,action) do update set enabled=true,granted_by_auth_user_id=excluded.granted_by_auth_user_id,\r\r\n   assigned_at=now(),updated_at=now(),revoked_at=null,revoked_by_auth_user_id=null;\r\r\n end if;\r\r\n insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\r\r\n values(auth.uid(),'admin_user_modules','SET',target::text,'SUCCESS',jsonb_build_object('before',before_state,'mode',p_mode,'modules',to_jsonb(selected_modules)));\r\r\n return public.get_admin_user_modules(p_email);\r\r\nend \r\n$function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "save_company_ficha",
+      "signature": "save_company_ficha(uuid,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_company_ficha(p_company_id uuid, p_fields jsonb)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c public.companies; k text;\r\nbegin\r\n if auth.uid() is null then raise exception 'AUTH_REQUIRED';end if;\r\n if jsonb_typeof(p_fields)<>'object' then raise exception 'INVALID_PROFILE';end if;\r\n for k in select jsonb_object_keys(p_fields) loop\r\n  if not k=any(array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','enabled','sort_order']) then raise exception 'INVALID_PROFILE_FIELD:%',k;end if;\r\n end loop;\r\n if p_company_id is null then\r\n  if not public.can_manage_company_ficha(null,'create') then raise exception 'COMPANY_CREATE_DENIED';end if;\r\n  insert into public.companies(display_name,description,enabled,sort_order,record_origin) values(p_fields->>'display_name',coalesce(p_fields->>'description',''),false,coalesce((p_fields->>'sort_order')::integer,1),'ADMIN_H009') returning * into c;\r\n else\r\n  select * into c from public.companies where id=p_company_id for update;\r\n  if not found or not (public.can_manage_company_ficha(c.id,'update') or public.can_manage_company_ficha(c.id,'publish') or public.can_manage_company_ficha(c.id,'order') or public.can_manage_company_ficha(c.id,'assets')) then raise exception 'COMPANY_DENIED';end if;\r\n end if;\r\n c:=jsonb_populate_record(c,p_fields);\r\n if c.logo_asset_id is not null and not exists(select 1 from public.app_assets a where a.id=c.logo_asset_id and a.status='READY' and a.mime_type like 'image/%' and (public.has_admin_permission('companies.write') or public.has_section_action('companies','assets') or (not public.company_is_paid(c.id) and public.has_section_action('agreements','update')) or a.owner_company_id=c.id)) then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n update public.companies set display_name=c.display_name,legal_name=c.legal_name,description=c.description,category_raw=c.category_raw,phone_raw=c.phone_raw,whatsapp_raw=c.whatsapp_raw,email_raw=c.email_raw,website_url=c.website_url,address_raw=c.address_raw,location_raw=c.location_raw,social_links=c.social_links,public_details=c.public_details,logo_asset_id=c.logo_asset_id,enabled=c.enabled,sort_order=c.sort_order where id=c.id;\r\n return c.id;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "update_marketplace_company_profile",
+      "signature": "update_marketplace_company_profile(uuid,text,text,text,text,text,text,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_marketplace_company_profile(p_company_id uuid, p_description text, p_phone_raw text, p_whatsapp_raw text, p_email_raw text, p_website_url text, p_address_raw text, p_social_links jsonb)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ begin\n  if not public.is_marketplace_company_member(p_company_id,'write') then raise exception 'COMPANY_DENIED' using errcode='P0001'; end if;\n  update public.companies set description=p_description,phone_raw=p_phone_raw,whatsapp_raw=p_whatsapp_raw,email_raw=p_email_raw,website_url=p_website_url,address_raw=p_address_raw,social_links=coalesce(p_social_links,'{}'::jsonb),updated_at=now() where id=p_company_id;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "admin_section_definitions",
+      "policyname": "admin_section_definitions_authorized_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('authorization.read'::text) OR (EXISTS ( SELECT 1\n   FROM admin_section_responsibilities r\n  WHERE ((r.auth_user_id = ( SELECT auth.uid() AS uid)) AND (r.section_key = admin_section_definitions.section_key) AND r.enabled AND (admin_section_definitions.enforcement_status = 'ENFORCED'::text)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "admin_section_responsibilities",
+      "policyname": "admin_section_responsibilities_authorized_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((auth_user_id = ( SELECT auth.uid() AS uid)) OR has_admin_permission('authorization.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('companies.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled AND can_view_company(id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "((has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'delete'::text)) AND (record_origin = 'ADMIN_H009'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'create'::text)) AND (record_origin = 'ADMIN_H009'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_section_action('companies'::text, 'read'::text) OR has_section_action('agreements'::text, 'read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "companies_section_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'update'::text) OR has_section_action('companies'::text, 'publish'::text) OR has_section_action('companies'::text, 'order'::text) OR has_section_action('companies'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'update'::text) OR has_section_action('companies'::text, 'publish'::text) OR has_section_action('companies'::text, 'order'::text) OR has_section_action('companies'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "companies",
+      "policyname": "marketplace_company_member_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "is_marketplace_company_member(id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_assets",
+      "policyname": "company_assets_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_assets",
+      "policyname": "company_assets_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('companies'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "company_audience_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_audience_rules",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(((EXISTS ( SELECT 1\n   FROM companies c\n  WHERE ((c.id = company_benefit_profiles.company_id) AND c.enabled))) AND can_view_company(company_id)) OR has_admin_permission('companies.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "company_profiles_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text) OR has_section_action('agreements'::text, 'order'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'order'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefit_profiles",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "((enabled AND (EXISTS ( SELECT 1\n   FROM companies c\n  WHERE ((c.id = company_benefits.company_id) AND c.enabled))) AND can_view_company(company_id) AND matches_current_affiliate_audience(audience_mode, union_codes, employment_category_codes, gender_codes, tag_codes)) OR has_admin_permission('companies.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_section_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_section_action('agreements'::text, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "company_benefits_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'delete'::text) OR has_section_action('agreements'::text, 'publish'::text) OR has_section_action('agreements'::text, 'order'::text))",
+      "with_check": "(has_admin_permission('companies.write'::text) OR has_section_action('agreements'::text, 'create'::text) OR has_section_action('agreements'::text, 'update'::text) OR has_section_action('agreements'::text, 'publish'::text) OR has_section_action('agreements'::text, 'order'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_benefits",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['convenios'::text, 'sindicato'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "company_popup_proposals_company_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((submitted_by = ( SELECT auth.uid() AS uid)) AND (status = 'pending'::text) AND (popup_id IS NULL) AND (reviewed_by IS NULL) AND (reviewed_at IS NULL) AND (rejection_reason IS NULL) AND is_marketplace_company_member(company_id) AND ((image_asset_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM app_assets a\n  WHERE ((a.id = company_popup_proposals.image_asset_id) AND (a.owner_company_id = company_popup_proposals.company_id) AND (a.status = 'READY'::text))))) AND (EXISTS ( SELECT 1\n   FROM (company_portal_subscriptions s\n     JOIN company_portal_plans p ON ((p.id = s.plan_id)))\n  WHERE ((s.company_id = company_popup_proposals.company_id) AND (s.status = 'active'::text) AND p.enabled AND p.allows_popups AND (s.starts_on <= CURRENT_DATE) AND (s.ends_on >= CURRENT_DATE)))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "company_popup_proposals_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('popups.read'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(admin_module_boundary(ARRAY['aprobaciones'::text], 'update'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(admin_module_boundary(ARRAY['aprobaciones'::text], 'update'::text) OR is_marketplace_company_member(company_id))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "module_scope_read",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(admin_module_boundary(ARRAY['aprobaciones'::text]) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_popup_proposals",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(admin_module_boundary(ARRAY['aprobaciones'::text], 'update'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": "(admin_module_boundary(ARRAY['aprobaciones'::text], 'update'::text) OR is_marketplace_company_member(company_id))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_portal_plans",
+      "policyname": "company_portal_plans_admin_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('company_portal.write'::text)",
+      "with_check": "has_admin_permission('company_portal.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_portal_plans",
+      "policyname": "company_portal_plans_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('company_portal.read'::text) OR (EXISTS ( SELECT 1\n   FROM company_portal_subscriptions s\n  WHERE ((s.plan_id = company_portal_plans.id) AND is_marketplace_company_member(s.company_id)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_portal_subscriptions",
+      "policyname": "company_portal_subscriptions_admin_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('company_portal.write'::text)",
+      "with_check": "has_admin_permission('company_portal.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "company_portal_subscriptions",
+      "policyname": "company_portal_subscriptions_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('company_portal.read'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "investment_screen_copy",
+      "policyname": "investment_copy_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "investment_screen_copy",
+      "policyname": "investment_copy_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "has_admin_permission('workflow.write'::text)",
+      "with_check": "has_admin_permission('workflow.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "investment_screen_copy",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['inversion'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['inversion'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('marketplace.quotes.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_admin_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "has_admin_permission('marketplace.quotes.write'::text)",
+      "with_check": "has_admin_permission('marketplace.quotes.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_affiliate_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((actor_real_auth_user_id = ( SELECT auth.uid() AS uid)) AND (affiliate_id = get_effective_affiliate_id()) AND (EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_benefit_requests.product_id) AND (p.company_id = p.company_id) AND p.enabled AND (NOT p.requires_quote)))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_affiliate_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(affiliate_id = get_effective_affiliate_id())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_company_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "is_marketplace_company_member(company_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_benefit_requests",
+      "policyname": "marketplace_requests_company_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "is_marketplace_company_member(company_id, 'write'::text)",
+      "with_check": "is_marketplace_company_member(company_id, 'write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_categories",
+      "policyname": "marketplace_categories_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled OR has_admin_permission('marketplace.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_categories",
+      "policyname": "marketplace_categories_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'delete'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'create'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_company_favorites",
+      "policyname": "marketplace_company_favorites_self",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(auth_user_id = ( SELECT auth.uid() AS uid))",
+      "with_check": "(auth_user_id = ( SELECT auth.uid() AS uid))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_company_memberships",
+      "policyname": "marketplace_memberships_admin_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "has_admin_permission('company_portal.write'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_company_memberships",
+      "policyname": "marketplace_memberships_admin_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "has_admin_permission('company_portal.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_company_memberships",
+      "policyname": "marketplace_memberships_admin_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "has_admin_permission('company_portal.write'::text)",
+      "with_check": "has_admin_permission('company_portal.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_company_memberships",
+      "policyname": "marketplace_memberships_self_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((auth_user_id = ( SELECT auth.uid() AS uid)) OR has_admin_permission('companies.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_favorites",
+      "policyname": "marketplace_favorites_self",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(auth_user_id = ( SELECT auth.uid() AS uid))",
+      "with_check": "(auth_user_id = ( SELECT auth.uid() AS uid))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_product_assets",
+      "policyname": "agreement_product_asset_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_product_assets.product_id) AND can_manage_agreement_product(p.company_id, 'assets'::text))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_product_assets.product_id) AND can_manage_agreement_product(p.company_id, 'assets'::text))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_product_assets",
+      "policyname": "marketplace_product_assets_company_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_product_assets.product_id) AND is_marketplace_company_member(p.company_id, 'write'::text))))",
+      "with_check": "(EXISTS ( SELECT 1\n   FROM (marketplace_products p\n     JOIN app_assets a ON ((a.id = marketplace_product_assets.asset_id)))\n  WHERE ((p.id = marketplace_product_assets.product_id) AND is_marketplace_company_member(p.company_id, 'write'::text) AND (a.owner_company_id = p.company_id))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_product_assets",
+      "policyname": "marketplace_product_assets_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_product_assets.product_id) AND (p.enabled OR has_admin_permission('marketplace.read'::text) OR is_marketplace_company_member(p.company_id)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_product_assets",
+      "policyname": "marketplace_product_assets_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "agreement_product_delete",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "(can_manage_agreement_product(company_id, 'delete'::text) AND (record_origin = 'ADMIN_PHASE3'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "agreement_product_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "can_manage_agreement_product(company_id, 'create'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "agreement_product_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "can_manage_agreement_product(company_id, 'read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "agreement_product_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(can_manage_agreement_product(company_id, 'update'::text) OR can_manage_agreement_product(company_id, 'publish'::text) OR can_manage_agreement_product(company_id, 'order'::text))",
+      "with_check": "(can_manage_agreement_product(company_id, 'update'::text) OR can_manage_agreement_product(company_id, 'publish'::text) OR can_manage_agreement_product(company_id, 'order'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "marketplace_products_company_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "is_marketplace_company_member(company_id, 'write'::text)",
+      "with_check": "is_marketplace_company_member(company_id, 'write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "marketplace_products_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "((enabled AND (EXISTS ( SELECT 1\n   FROM companies c\n  WHERE ((c.id = marketplace_products.company_id) AND c.enabled)))) OR has_admin_permission('marketplace.read'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_products",
+      "policyname": "marketplace_products_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'delete'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'create'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_promotions",
+      "policyname": "marketplace_promotions_company_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "is_marketplace_company_member(company_id, 'write'::text)",
+      "with_check": "(is_marketplace_company_member(company_id, 'write'::text) AND (approval_status = 'pending'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_promotions",
+      "policyname": "marketplace_promotions_public_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "((enabled AND (approval_status = 'approved'::text) AND ((start_date IS NULL) OR (start_date <= CURRENT_DATE)) AND ((end_date IS NULL) OR (end_date >= CURRENT_DATE))) OR has_admin_permission('marketplace.read'::text) OR is_marketplace_company_member(company_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_promotions",
+      "policyname": "marketplace_promotions_section_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'delete'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))",
+      "with_check": "(has_admin_permission('marketplace.write'::text) OR has_section_action('marketplace'::text, 'create'::text) OR has_section_action('marketplace'::text, 'update'::text) OR has_section_action('marketplace'::text, 'publish'::text) OR has_section_action('marketplace'::text, 'order'::text) OR has_section_action('marketplace'::text, 'assets'::text))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('marketplace.quotes.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_admin_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "has_admin_permission('marketplace.quotes.write'::text)",
+      "with_check": "has_admin_permission('marketplace.quotes.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_affiliate_insert",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((actor_real_auth_user_id = ( SELECT auth.uid() AS uid)) AND (affiliate_id = get_effective_affiliate_id()) AND (EXISTS ( SELECT 1\n   FROM marketplace_products p\n  WHERE ((p.id = marketplace_quote_requests.product_id) AND (p.company_id = p.company_id) AND p.enabled AND p.requires_quote))))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_affiliate_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(affiliate_id = get_effective_affiliate_id())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_company_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "is_marketplace_company_member(company_id, 'quotes'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "marketplace_quote_requests",
+      "policyname": "marketplace_quotes_company_update",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "is_marketplace_company_member(company_id, 'quotes'::text)",
+      "with_check": "(is_marketplace_company_member(company_id, 'quotes'::text) AND (quoted_by_auth_user_id = ( SELECT auth.uid() AS uid)))"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "admin_module_boundary(ARRAY['pantallas'::text], 'update'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "admin_module_boundary(ARRAY['pantallas'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "module_scope_read",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "admin_module_boundary(ARRAY['pantallas'::text])",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['pantallas'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['pantallas'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "screen_access_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "screen_access_policies",
+      "policyname": "screen_access_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('segmentation.write'::text)",
+      "with_check": "has_admin_permission('segmentation.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "union_screen_content",
+      "policyname": "union_screen_admin",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('union_content.write'::text)",
+      "with_check": "has_admin_permission('union_content.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "union_screen_content",
+      "policyname": "union_screen_public",
+      "permissive": "PERMISSIVE",
+      "roles": "{anon,authenticated}",
+      "cmd": "SELECT",
+      "qual": "(published OR has_admin_permission('union_content.read'::text))",
+      "with_check": null
+    }
+  ],
+  "tables": [
+    {
+      "name": "companies",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_assets",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_audience_rules",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_benefit_profiles",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_benefits",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_popup_proposals",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_portal_plans",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "company_portal_subscriptions",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "investment_screen_copy",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "marketplace_company_favorites",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "marketplace_company_memberships",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "screen_access_policies",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "name": "union_screen_content",
+      "rls": true,
+      "force_rls": true
+    }
+  ]
+}

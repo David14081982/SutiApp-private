@@ -47,6 +47,7 @@ async function loginSealSurface(page, label = 'main') {
 }
 
 async function audit(page) {
+  await page.waitForFunction(() => ['banner_convenio','ecosistema','comite','noticias','footer'].every(id=>document.querySelector('[data-reveal-key="'+id+'"]')), null, {timeout:30000});
   return page.evaluate(async () => {
     const failures = [];
     const classify = (family, code, detail) => failures.push({ family, code, detail });
@@ -82,7 +83,8 @@ async function audit(page) {
       return false;
     };
     const unique = (values) => [...new Set(values.filter(Boolean))];
-    const parallelPassed = async (items, worker, concurrency = 12) => {
+    // Bound browser decode/network pressure. Every asset and retry remains checked.
+    const parallelPassed = async (items, worker, concurrency = 4) => {
       let cursor = 0, passed = 0;
       const consume = async () => {
         while (cursor < items.length) {
@@ -94,6 +96,10 @@ async function audit(page) {
       return passed;
     };
     const report = { families: {}, surfaces: {}, failures };
+    const homeKeys=['banner_convenio','ecosistema','comite','noticias','footer'];
+    const actualHomeKeys=Array.from(document.querySelectorAll('[data-reveal-key]')).map(n=>n.dataset.revealKey).filter(id=>homeKeys.includes(id));
+    report.surfaces.homeBlockOrder=JSON.stringify(homeKeys)===JSON.stringify(actualHomeKeys)?'PASS':'FAIL';
+    if(report.surfaces.homeBlockOrder!=='PASS')classify('HOME_STRUCTURE','ORDER_OR_BLOCK_CHANGED','EXPECTED_FOUR_BLOCKS_AND_FOOTER');
 
     const branding = await window.BrandingRepository.get();
     const brandingEntries = [
@@ -423,6 +429,7 @@ async function main() {
   assert(values.H005_TEST_EMAIL && values.H005_TEST_PASSWORD, 'Controlled login credentials missing');
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: true, executablePath: chromePath, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+  const editorialBridge = process.env.SUTIAPP_EDITORIAL_ISOLATED === '1' ? await require('./editorial-global-test-bridge')(browser) : null;
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'allow' });
   const page = await context.newPage();
   const browserErrors = [];
@@ -434,8 +441,14 @@ async function main() {
   });
   try {
     await page.goto(target, { waitUntil: 'domcontentloaded' });
+    let verifiedBundleSha256=null;
+    if(process.env.SUTIAPP_IMAGE_EXPECTED_BUNDLE_SHA256){
+      verifiedBundleSha256=await page.evaluate(async()=>{const script=document.querySelector('script[src*="app/bundle.js?v="]');const response=await fetch(script.src,{cache:'no-store'});const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');});
+      assert.equal(verifiedBundleSha256,process.env.SUTIAPP_IMAGE_EXPECTED_BUNDLE_SHA256);
+    }
     const loginSeal = await loginSealSurface(page, 'initial');
     await login(page, values, 'initial');
+    if (editorialBridge) assert.deepEqual(await page.evaluate(()=>({news:typeof window.EditorialContent?.bootstrap,layout:typeof window.AppScreenLayout?.Region})),{news:'function',layout:'function'});
     const initial = await audit(page);
     initial.surfaces.loginSeal = loginSeal.status;
     const admin = await adminSurface(page);
@@ -483,6 +496,8 @@ async function main() {
       browserErrors: 0,
       productionDataMutations: 0,
       rawUrlsLogged: 0,
+      verifiedBundleSha256,
+      editorialAuthority: editorialBridge ? {source:'ISOLATED_POSTGRES_NEW_EDITORIAL_READS_ONLY',calls:editorialBridge.calls} : 'DEPLOYED',
     }));
   } catch (error) {
     if (networkErrors.length) console.error(JSON.stringify({ networkErrors: networkErrors.slice(-10) }));
@@ -490,6 +505,7 @@ async function main() {
   } finally {
     await context.close();
     await browser.close();
+    if (editorialBridge) await editorialBridge.close();
   }
 }
 

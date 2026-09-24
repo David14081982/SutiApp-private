@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "command": "node scripts/build-pages-site.js <isolated output>",
+  "config": "Synthetic publishable config for build-only test; never published",
+  "artifact": {
+    "status": "PASS",
+    "output": "C:\\Users\\david\\Downloads\\SutiApp\\tmp\\screen-permission-tests\\pages-final-1790266183885",
+    "files": 25
+  },
+  "runtimeFilesChangedByThisTask": 0,
+  "productionWrites": 0
+}

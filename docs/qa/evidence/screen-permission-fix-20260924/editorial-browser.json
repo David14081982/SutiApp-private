@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "productionWrites": 0,
+  "network": "blocked",
+  "checks": [
+    "existing News projection global remains intact",
+    "secciones: actual New/Save controls persist and close only after success",
+    "menus: actual New/Save controls persist and close only after success",
+    "formularios: actual New/Save controls persist and close only after success",
+    "published renderer reloads actual saved section, menu navigation and form submission",
+    "original four Home blocks and order retained"
+  ],
+  "pageErrors": []
+}

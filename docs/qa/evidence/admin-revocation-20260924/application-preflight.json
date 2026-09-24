@@ -1,0 +1,381 @@
+{
+  "status": "PASS",
+  "at": "2026-09-24T15:15:12.493Z",
+  "migrationSha256": "14b95208f648e178b3ba1fe2209a31b85901d631133dcfd679b88c98deb8a64d",
+  "recoverySha256": "10decfaa2a19118385d39bd2b28a5b4d9dfcf3de7e0c75559775ef7ff7327423",
+  "functions": [
+    {
+      "signature": "admin_actor_can_impersonate()",
+      "oid": "85994",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "955919ddebde225f0885240da0f607fd"
+    },
+    {
+      "signature": "admin_module_boundary(text[],text)",
+      "oid": "85341",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "ff60b8b05a6d990574e3a34c903419c1"
+    },
+    {
+      "signature": "admin_support_private.audit_affiliate_write()",
+      "oid": "86003",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "6fae146ca9912cd8daf4482f1e9d8dd7"
+    },
+    {
+      "signature": "admin_support_private.audit_context()",
+      "oid": "86000",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "ced753b1ab003c2d8b7817698ab6eae9"
+    },
+    {
+      "signature": "admin_support_private.context()",
+      "oid": "85993",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "e4be8a89678a6c5a6036aea87bf8bde6"
+    },
+    {
+      "signature": "admin_support_private.effective_context()",
+      "oid": "85996",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "4c9465a88c4f66483644eb859700e32d"
+    },
+    {
+      "signature": "admin_support_private.get_admin_access_context(uuid)",
+      "oid": "85991",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "b0c568bbca5c698955c8a23959a27bf5"
+    },
+    {
+      "signature": "admin_support_private.has_admin_module(uuid,text,text)",
+      "oid": "85981",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "e24cb11f24ba22888f15426920ec74ea"
+    },
+    {
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "oid": "85988",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "a1a563930a2d9bd5e6fafbcd3c4d63a9"
+    },
+    {
+      "signature": "admin_support_private.has_section_action(uuid,text,text)",
+      "oid": "85984",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "0f3eec92e5989e922b056a3cfff03546"
+    },
+    {
+      "signature": "admin_support_private.is_active_admin(uuid)",
+      "oid": "85992",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "23b889787fcefa1543cdcc434dac46de"
+    },
+    {
+      "signature": "admin_support_private.is_module_admin(uuid)",
+      "oid": "85980",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "e803c1a69d6d469afbbba3c22a9fc91b"
+    },
+    {
+      "signature": "admin_support_private.module_effective_permissions(uuid)",
+      "oid": "85982",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "c37a53025523f2656d52f9c22e12375e"
+    },
+    {
+      "signature": "admin_support_private.module_prior_get_admin_access_context(uuid)",
+      "oid": "85990",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "329e2cf7d4c673e289fe65f5cd375817"
+    },
+    {
+      "signature": "admin_support_private.module_prior_has_admin_permission(uuid,text)",
+      "oid": "85987",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "c6af30ee3ac3372b1d127f9213fbe903"
+    },
+    {
+      "signature": "admin_support_private.module_prior_has_section_action(uuid,text,text)",
+      "oid": "85983",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "3db7f9a8f695ea16e5b5e8e4d9639c10"
+    },
+    {
+      "signature": "admin_support_private.module_visible(uuid,text)",
+      "oid": "85995",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "5386a38facd028135d1211ccbfe9670f"
+    },
+    {
+      "signature": "admin_support_private.savings_admin_access_allowed(uuid)",
+      "oid": "85986",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "fa37124015caaab633433abd0377e236"
+    },
+    {
+      "signature": "admin_support_private.savings_context_before_20260906(uuid)",
+      "oid": "85989",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "61fd13358f39a094f53657cc3f3cdc8d"
+    },
+    {
+      "signature": "admin_support_private.savings_permission_before_20260906(uuid,text)",
+      "oid": "85985",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "c949aa647f57012bf0b1a653133f3c92"
+    },
+    {
+      "signature": "admin_user_module_version(uuid)",
+      "oid": "85347",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "41af090af53d44700670fc55cb3319d9"
+    },
+    {
+      "signature": "assign_admin_role(uuid,uuid,boolean)",
+      "oid": "19402",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "4f36a81ae47f0996092c4a2a452a2bac"
+    },
+    {
+      "signature": "get_admin_access_context()",
+      "oid": "20153",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "b372ea54dfe4d6c5f2dd897ce9e6b95d"
+    },
+    {
+      "signature": "get_admin_user_modules(text)",
+      "oid": "85348",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "18cc1628e7f87586b129c805d0ba2da1"
+    },
+    {
+      "signature": "get_effective_affiliate_id()",
+      "oid": "18030",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "c78a1c0391e21211945b0ddca46e9009"
+    },
+    {
+      "signature": "get_impersonation_context()",
+      "oid": "18029",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "178a9f53bb5763002b7d560f0c55d7b0"
+    },
+    {
+      "signature": "has_admin_module(text,text)",
+      "oid": "85340",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "0e9350c0440fae98d1b735ed252fb06d"
+    },
+    {
+      "signature": "has_admin_permission(text)",
+      "oid": "17903",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "ede6d35b74b6163f3765b518adead8ce"
+    },
+    {
+      "signature": "has_section_action(text,text)",
+      "oid": "20152",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "75b86987478108afdfb3a1c3ce05d644"
+    },
+    {
+      "signature": "is_active_admin()",
+      "oid": "20719",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "022de184317e6ce34672ebbf42a33d21"
+    },
+    {
+      "signature": "is_module_admin()",
+      "oid": "85339",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "eaf09c3fdc98ddae1ea9fe24cdacd997"
+    },
+    {
+      "signature": "list_admin_assignments()",
+      "oid": "33588",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "77f4e1b825ec9872fe97d666c265ff84"
+    },
+    {
+      "signature": "list_admin_module_catalog()",
+      "oid": "85345",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "6b0b50cfbede5f4954650e8213fcb3a0"
+    },
+    {
+      "signature": "module_effective_permissions()",
+      "oid": "85342",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "f7d50377d021a74e7c2213cda8656380"
+    },
+    {
+      "signature": "module_prior_get_admin_access_context()",
+      "oid": "85338",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "770089bdbcb39c64d7b0bf8207362d9e"
+    },
+    {
+      "signature": "module_prior_has_admin_permission(text)",
+      "oid": "85336",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "6d4c90dea3a402709e7df1cb480e005e"
+    },
+    {
+      "signature": "module_prior_has_section_action(text,text)",
+      "oid": "85337",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "eb91ca7917ff48d4bd486422cb81ae18"
+    },
+    {
+      "signature": "revoke_admin_assignment(uuid)",
+      "oid": "33590",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "d2341af7fe87c0be83ab40cdf86267bf"
+    },
+    {
+      "signature": "save_admin_user_modules(text,text,text[],text)",
+      "oid": "85349",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "hash": "c7b57055153dad88564784bf330d8d41"
+    },
+    {
+      "signature": "savings_admin_access_allowed()",
+      "oid": "43333",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "e7cd82be7d89c41a98c11fcad0da3dbe"
+    },
+    {
+      "signature": "savings_context_before_20260906()",
+      "oid": "43307",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "80d14522535e0863397aa946256536bd"
+    },
+    {
+      "signature": "savings_permission_before_20260906(text)",
+      "oid": "43306",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "hash": "7550385caccf2f04e6f66e4eece28030"
+    },
+    {
+      "signature": "set_section_responsibilities(text,text,text[])",
+      "oid": "20154",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "ab817b40270b06f7bb7f35f90b0f8136"
+    },
+    {
+      "signature": "set_total_admin_by_email(text)",
+      "oid": "33589",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "276bc374279479d3e268582fb8fea3b5"
+    },
+    {
+      "signature": "start_affiliate_impersonation(uuid,text)",
+      "oid": "18027",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "186d628254f2ee0b3f02ff456ac0e6e9"
+    },
+    {
+      "signature": "stop_affiliate_impersonation()",
+      "oid": "18028",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "hash": "dfd09764d7cf7e3eb691a622f825b16f"
+    }
+  ],
+  "constraint": {
+    "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))",
+    "hash": "2d001f1a4f3f0b8e4a3c8ae948647051"
+  },
+  "fingerprints": {
+    "auth.users": {
+      "hash": "96a7a23cd4e1f4a0ca4e6fe5d1cca295",
+      "count": 338
+    },
+    "public.affiliates": {
+      "hash": "e92ecb9d2f53b5e1470dfb7b1a2dbdc9",
+      "count": 976
+    },
+    "public.admin_roles": {
+      "hash": "c6dfe5d55e615218bb0925ee69038da7",
+      "count": 3
+    },
+    "public.admin_audit_log": {
+      "hash": "cee4f1a19fb471c3aa2349aadfd8fe69",
+      "count": 5820
+    },
+    "public.admin_assignments": {
+      "hash": "bda149de2d5b640e164d5af8c7b76f79",
+      "count": 8
+    },
+    "public.request_documents": {
+      "hash": "6378c8eea3e9e0d5ab76046d22176d5b",
+      "count": 871
+    },
+    "public.identity_audit_log": {
+      "hash": "0a99f92e05bb3323601ea6d06aa3f05a",
+      "count": 788
+    },
+    "public.affiliate_documents": {
+      "hash": "b5eed76c53ad3eab580e592de8e8ac63",
+      "count": 3921
+    },
+    "public.admin_role_permissions": {
+      "hash": "8106a7fd641b8e3c2fef137d93717219",
+      "count": 66
+    },
+    "public.impersonation_sessions": {
+      "hash": "510b46c32f761c8acc8721b3dc9ece5d",
+      "count": 200
+    },
+    "public.admin_section_responsibilities": {
+      "hash": "1d4d11e4345eb8540be1d648677026e5",
+      "count": 93
+    }
+  },
+  "productionWrites": 0
+}

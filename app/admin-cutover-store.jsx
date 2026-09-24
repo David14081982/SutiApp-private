@@ -190,8 +190,7 @@
   store.removeAnuncio=async id=>{const r=await window.SutiSupabase.getClient().rpc('archive_admin_banner',{p_banner_id:id});if(r.error)throw r.error;await load();};
   store.duplicateAnuncio=id=>{const a=store.getAnuncio(id);if(a)store.saveAnuncio(Object.assign({},a,{id:null,empresa:a.empresa+' (copia)',visible:false})).catch(fail);};
   store.reorderAnuncios=ids=>window.AdminRepository.reorderManaged('banners',ids).then(load).catch(fail);
-  const structural=()=>{if(window.__sutiToast)window.__sutiToast('La estructura se administra mediante versión de la aplicación');};
-  store.saveNode=structural;store.toggleNode=structural;store.removeNode=structural;store.duplicateNode=structural;store.reorderContent=structural;store.resetContent=structural;
+  // Editorial adapter is installed after this store and uses its segment mappings.
   window.AdminCutoverStore=Object.freeze({load,toCodes,toLabels,get segments(){return segments;},get failedDomains(){return failedDomains.slice();}});
   if(window.AdminRepository&&window.AdminRepository.subscribe)window.AdminRepository.subscribe(receiveContext);
 })();

@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "productionWrites": 0,
+  "checks": [
+    "additive installation and no-use recovery preserve original Home order",
+    "no-use recovery rejects schema and function ACL drift atomically",
+    "Secciones edits real nodes without gaining menu/form writers",
+    "editor without catalog administration can select only real enabled audience codes",
+    "Menús saves navigation; arbitrary routes and cross-type changes denied",
+    "Formularios persists fields and optimistic version conflict is enforced",
+    "real form validates required fields, choice and email before storing one response",
+    "ordinary and other-module users cannot read another user response or edit configuration",
+    "archiving a form retains response and exact submitted schema, then rejects new submissions",
+    "anonymous audience filters hidden nodes and parent visibility; builtin cannot be removed",
+    "revoked already-open admin session loses editor writers and form responses",
+    "recovery after use refuses to remove versions and submissions"
+  ]
+}

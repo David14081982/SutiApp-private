@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "environment": "isolated PostgreSQL WASM with captured production definitions and synthetic rows",
+  "productionWrites": 0,
+  "checks": [
+    "baseline exact function and constraint hashes",
+    "reproduce original revoke and total-admin add CHECK failures",
+    "unlisted role permission aborts the entire migration without changing the constraint",
+    "unexpected function baseline rejected before any candidate schema writes",
+    "migration installs without changing business rows or function grants",
+    "no-use recovery restores exact definitions; reapply works",
+    "repeat apply refuses atomically",
+    "recovery refuses later function drift atomically",
+    "recovery refuses constraint drift without discarding the newer constraint",
+    "no-use recovery also refuses later role catalog edits",
+    "add total admin succeeds; self and protected principal denied",
+    "independent responsibilities active before revoke",
+    "total revocation retires all grants with original grant metadata and audit",
+    "same preexisting JWT loses backend permissions immediately",
+    "module admin grant and revoke; unrelated admins unaffected",
+    "active support session terminated and cannot be reused",
+    "audit failure rolls back assignment, section and support-session revocation together",
+    "last principal and attended-account protection remain enforced",
+    "normal user and anonymous cannot revoke or read recovery state",
+    "post-use recovery refuses and preserves all history",
+    "revoked caller cannot restore assignment through direct table access",
+    "Auth account, affiliate, historical dossier and protected principal preserved",
+    "actual browser UI with an already-open revoked administrator session"
+  ],
+  "originalErrors": [
+    {
+      "code": "23514",
+      "message": "new row for relation \"admin_assignments\" violates check constraint \"admin_assignments_permissions_check\"",
+      "constraint": "admin_assignments_permissions_check"
+    },
+    {
+      "code": "23514",
+      "message": "new row for relation \"admin_assignments\" violates check constraint \"admin_assignments_permissions_check\"",
+      "constraint": "admin_assignments_permissions_check"
+    }
+  ],
+  "migrationSha256": "14b95208f648e178b3ba1fe2209a31b85901d631133dcfd679b88c98deb8a64d",
+  "recoverySha256": "10decfaa2a19118385d39bd2b28a5b4d9dfcf3de7e0c75559775ef7ff7327423",
+  "limits": [
+    "Auth JWT signature verification/HTTP transport not emulated; same-session claims are reused against actual backend functions",
+    "Auth/affiliate/dossier fixtures contain only synthetic rows; no production business rows copied",
+    "Multi-connection contention not exercised: native PostgreSQL 18 initdb crashed with 0xC0000005; no native cluster/server remains"
+  ]
+}

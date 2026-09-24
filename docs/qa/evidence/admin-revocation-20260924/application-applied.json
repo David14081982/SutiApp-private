@@ -1,0 +1,106 @@
+{
+  "status": "PASS",
+  "at": "2026-09-24T15:15:17.302Z",
+  "version": "20260924000100",
+  "migrationSha256": "14b95208f648e178b3ba1fe2209a31b85901d631133dcfd679b88c98deb8a64d",
+  "businessRowsChanged": 0,
+  "realAccountRevocations": 0,
+  "transaction": "REPEATABLE READ, exact tested migration + tracking",
+  "receipt": [
+    {
+      "status": "PASS",
+      "before": {
+        "auth.users": {
+          "hash": "96a7a23cd4e1f4a0ca4e6fe5d1cca295",
+          "count": 338
+        },
+        "public.affiliates": {
+          "hash": "e92ecb9d2f53b5e1470dfb7b1a2dbdc9",
+          "count": 976
+        },
+        "public.admin_roles": {
+          "hash": "c6dfe5d55e615218bb0925ee69038da7",
+          "count": 3
+        },
+        "public.admin_audit_log": {
+          "hash": "cee4f1a19fb471c3aa2349aadfd8fe69",
+          "count": 5820
+        },
+        "public.admin_assignments": {
+          "hash": "bda149de2d5b640e164d5af8c7b76f79",
+          "count": 8
+        },
+        "public.request_documents": {
+          "hash": "6378c8eea3e9e0d5ab76046d22176d5b",
+          "count": 871
+        },
+        "public.identity_audit_log": {
+          "hash": "0a99f92e05bb3323601ea6d06aa3f05a",
+          "count": 788
+        },
+        "public.affiliate_documents": {
+          "hash": "b5eed76c53ad3eab580e592de8e8ac63",
+          "count": 3921
+        },
+        "public.admin_role_permissions": {
+          "hash": "8106a7fd641b8e3c2fef137d93717219",
+          "count": 66
+        },
+        "public.impersonation_sessions": {
+          "hash": "510b46c32f761c8acc8721b3dc9ece5d",
+          "count": 200
+        },
+        "public.admin_section_responsibilities": {
+          "hash": "1d4d11e4345eb8540be1d648677026e5",
+          "count": 93
+        }
+      },
+      "after": {
+        "auth.users": {
+          "hash": "96a7a23cd4e1f4a0ca4e6fe5d1cca295",
+          "count": 338
+        },
+        "public.affiliates": {
+          "hash": "e92ecb9d2f53b5e1470dfb7b1a2dbdc9",
+          "count": 976
+        },
+        "public.admin_roles": {
+          "hash": "c6dfe5d55e615218bb0925ee69038da7",
+          "count": 3
+        },
+        "public.admin_audit_log": {
+          "hash": "cee4f1a19fb471c3aa2349aadfd8fe69",
+          "count": 5820
+        },
+        "public.admin_assignments": {
+          "hash": "bda149de2d5b640e164d5af8c7b76f79",
+          "count": 8
+        },
+        "public.request_documents": {
+          "hash": "6378c8eea3e9e0d5ab76046d22176d5b",
+          "count": 871
+        },
+        "public.identity_audit_log": {
+          "hash": "0a99f92e05bb3323601ea6d06aa3f05a",
+          "count": 788
+        },
+        "public.affiliate_documents": {
+          "hash": "b5eed76c53ad3eab580e592de8e8ac63",
+          "count": 3921
+        },
+        "public.admin_role_permissions": {
+          "hash": "8106a7fd641b8e3c2fef137d93717219",
+          "count": 66
+        },
+        "public.impersonation_sessions": {
+          "hash": "510b46c32f761c8acc8721b3dc9ece5d",
+          "count": 200
+        },
+        "public.admin_section_responsibilities": {
+          "hash": "1d4d11e4345eb8540be1d648677026e5",
+          "count": 93
+        }
+      }
+    }
+  ]
+}

@@ -289,70 +289,9 @@
   const CTYPE = (id) => CONTENT_TYPES.find((c) => c.id === id) || CONTENT_TYPES[0];
   ADMIN.CTYPE = CTYPE;
 
-  const CKEY = 'suti_admin_content_v1';
   const openAud = () => ({ mode: 'all', cargos: [], sindicatos: [], niveles: [] });
-  function seedContent() {
-    const N = (screen, id, parentId, type, label, order, locked) => ({ id, screen, parentId, type, label, visible: true, locked: !!locked, order, audience: openAud() });
-    return [
-      // ── Inicio (conectado en vivo) ──
-      N('home', 'quick_actions', null, 'section', 'Accesos rápidos', 1),
-      N('home', 'qa_prestamo', 'quick_actions', 'button', 'Préstamo', 1),
-      N('home', 'qa_credencial', 'quick_actions', 'button', 'Credencial', 2),
-      N('home', 'qa_convenios', 'quick_actions', 'button', 'Convenios', 3),
-      N('home', 'qa_documentos', 'quick_actions', 'button', 'Documentos', 4),
-      N('home', 'banner_convenio', null, 'banner', 'Banner: Convenio Unilíder', 2),
-      N('home', 'noticias', null, 'section', 'Noticias del sindicato', 3),
-      N('home', 'ecosistema', null, 'section', 'Tu sindicato (módulos)', 4),
-      N('home', 'comite', null, 'section', 'Comité Ejecutivo', 5),
-      // ── Mi Financiera ──
-      N('financiera', 'fin_saldo', null, 'component', 'Resumen de saldo', 1),
-      N('financiera', 'fin_productos', null, 'section', 'Productos financieros', 2),
-      N('financiera', 'fin_recomendados', null, 'section', 'Recomendados para ti', 3),
-      // ── Convenios ──
-      N('convenios', 'conv_buscador', null, 'component', 'Buscador de convenios', 1),
-      N('convenios', 'conv_categorias', null, 'section', 'Categorías', 2),
-      N('convenios', 'conv_anuncios', null, 'banner', 'Anuncios patrocinados', 3),
-      // ── Mi Credencial ──
-      N('credencial', 'cred_tarjeta', null, 'component', 'Tarjeta de credencial', 1),
-      N('credencial', 'cred_qr', null, 'button', 'Botón mostrar QR', 2),
-    ];
-  }
-  // Approved owner decision: frontend structure is versioned code, never browser storage.
-  let content = seedContent();
-  const persistContent = () => { listeners.forEach((l) => l()); };
-  const cuid = () => 'node_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  const norm = (v) => v || null;
-
-  adminStore.contentAll = () => content;
-  adminStore.contentChildren = (screen, parentId) => content.filter((n) => n.screen === screen && norm(n.parentId) === norm(parentId)).sort((a, b) => (a.order || 0) - (b.order || 0));
-  adminStore.getNode = (id) => content.find((n) => n.id === id);
   adminStore.nodeVisible = (node, v) => node.visible !== false && audienceMatch(node, v || viewer);
-  // Nodos visibles para el frontend en vivo. null = no hay nodos definidos (usar orden por defecto)
-  adminStore.liveNodes = (screen, parentId, v) => {
-    const all = content.filter((n) => n.screen === screen && norm(n.parentId) === norm(parentId));
-    if (!all.length) return null;
-    return all.filter((n) => adminStore.nodeVisible(n, v)).sort((a, b) => (a.order || 0) - (b.order || 0));
-  };
-  adminStore.blankNode = (screen, parentId, type) => ({ id: cuid(), screen, parentId: norm(parentId), type: type || 'component', label: '', visible: true, locked: false, order: (adminStore.contentChildren(screen, parentId).slice(-1)[0] || { order: 0 }).order + 1, audience: openAud() });
-  adminStore.saveNode = (node) => {
-    const i = content.findIndex((n) => n.id === node.id);
-    if (i >= 0) content = content.map((n) => (n.id === node.id ? node : n));
-    else content = [...content, node];
-    persistContent();
-  };
-  adminStore.toggleNode = (id) => { content = content.map((n) => (n.id === id ? { ...n, visible: n.visible === false } : n)); persistContent(); };
-  adminStore.removeNode = (id) => { content = content.filter((n) => n.id !== id && n.parentId !== id); persistContent(); };
-  adminStore.duplicateNode = (id) => {
-    const s = content.find((n) => n.id === id); if (!s) return;
-    content = [...content, { ...s, id: cuid(), label: s.label + ' (copia)', visible: false, locked: false, order: (adminStore.contentChildren(s.screen, s.parentId).slice(-1)[0] || { order: 0 }).order + 1 }];
-    persistContent();
-  };
-  adminStore.reorderContent = (screen, parentId, orderedIds) => {
-    const rank = {}; orderedIds.forEach((id, i) => { rank[id] = i + 1; });
-    content = content.map((n) => (n.screen === screen && norm(n.parentId) === norm(parentId) && rank[n.id] != null ? { ...n, order: rank[n.id] } : n));
-    persistContent();
-  };
-  adminStore.resetContent = () => { content = seedContent(); persistContent(); };
+  // Editorial reads/writes are installed by editorial-content.jsx from Supabase.
 
   // ─────────────────────────────────────────────────────────────
   // Noticias del sindicato (contenido + orden + visibilidad + responsable)

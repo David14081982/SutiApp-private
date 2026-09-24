@@ -2,8 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const root = path.resolve(__dirname, '..');
+// A new route must have an explicit controller and a registered backend module.
+// This reads schema evidence only; it never creates permissions during a build.
+require('./screen-permission-contract').check();
 const outputArg = process.argv[2] || '_site';
 const output = path.resolve(root, outputArg);
 const url = String(process.env.SUTIAPP_SUPABASE_URL || '').trim();
@@ -49,7 +53,15 @@ for (const relative of publicFiles) {
   if (!fs.statSync(source).isFile()) throw new Error(`Required public file missing: ${relative}`);
   const target = path.join(output, relative);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.copyFileSync(source, target);
+  if (relative.startsWith('app/vendor/') && relative.endsWith('.js')) {
+    // Windows CRLF checkouts must produce the exact LF vendor bytes signed in HTML.
+    const bytes = fs.readFileSync(source, 'utf8').replace(/\r\n/g, '\n');
+    const html = fs.readFileSync(path.join(root, 'SutiApp.html'), 'utf8');
+    const tag = [...html.matchAll(/<script\b[^>]*>/g)].map(m=>m[0]).find(t=>t.includes('src="'+relative+'"'));
+    const expected = tag && /integrity="sha384-([^"]+)"/.exec(tag);
+    if (!expected || crypto.createHash('sha384').update(bytes).digest('base64') !== expected[1]) throw new Error('VENDOR_INTEGRITY_MISMATCH: '+relative);
+    fs.writeFileSync(target, bytes);
+  } else fs.copyFileSync(source, target);
 }
 
 fs.copyFileSync(path.join(root, 'SutiApp.html'), path.join(output, 'index.html'));

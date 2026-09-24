@@ -1,0 +1,238 @@
+{
+  "capturedAt": "2026-09-24T14:57:17.155Z",
+  "productionMode": "READ ONLY",
+  "productionWrites": 0,
+  "constraint": [
+    {
+      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))",
+      "hash": "2d001f1a4f3f0b8e4a3c8ae948647051"
+    }
+  ],
+  "missingRolePermissions": [
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.create"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.delete"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.export_identified_votes"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.publish"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.results"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.update"
+    }
+  ],
+  "summary": [
+    {
+      "assignments": 8,
+      "protected_assignments": 1,
+      "active_assignments_with_section_grants": 4,
+      "revoked_assignments_with_section_grants": 0,
+      "candidate_state": null,
+      "tracked_candidate": 0
+    }
+  ],
+  "functions": [
+    {
+      "signature": "admin_support_private.audit_affiliate_write()",
+      "hash": "6fae146ca9912cd8daf4482f1e9d8dd7"
+    },
+    {
+      "signature": "admin_support_private.audit_context()",
+      "hash": "ced753b1ab003c2d8b7817698ab6eae9"
+    },
+    {
+      "signature": "admin_support_private.context()",
+      "hash": "e4be8a89678a6c5a6036aea87bf8bde6"
+    },
+    {
+      "signature": "admin_support_private.effective_context()",
+      "hash": "4c9465a88c4f66483644eb859700e32d"
+    },
+    {
+      "signature": "admin_support_private.get_admin_access_context(uuid)",
+      "hash": "b0c568bbca5c698955c8a23959a27bf5"
+    },
+    {
+      "signature": "admin_support_private.has_admin_module(uuid,text,text)",
+      "hash": "e24cb11f24ba22888f15426920ec74ea"
+    },
+    {
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "hash": "a1a563930a2d9bd5e6fafbcd3c4d63a9"
+    },
+    {
+      "signature": "admin_support_private.has_section_action(uuid,text,text)",
+      "hash": "0f3eec92e5989e922b056a3cfff03546"
+    },
+    {
+      "signature": "admin_support_private.is_active_admin(uuid)",
+      "hash": "23b889787fcefa1543cdcc434dac46de"
+    },
+    {
+      "signature": "admin_support_private.is_module_admin(uuid)",
+      "hash": "e803c1a69d6d469afbbba3c22a9fc91b"
+    },
+    {
+      "signature": "admin_support_private.module_effective_permissions(uuid)",
+      "hash": "c37a53025523f2656d52f9c22e12375e"
+    },
+    {
+      "signature": "admin_support_private.module_prior_get_admin_access_context(uuid)",
+      "hash": "329e2cf7d4c673e289fe65f5cd375817"
+    },
+    {
+      "signature": "admin_support_private.module_prior_has_admin_permission(uuid,text)",
+      "hash": "c6af30ee3ac3372b1d127f9213fbe903"
+    },
+    {
+      "signature": "admin_support_private.module_prior_has_section_action(uuid,text,text)",
+      "hash": "3db7f9a8f695ea16e5b5e8e4d9639c10"
+    },
+    {
+      "signature": "admin_support_private.module_visible(uuid,text)",
+      "hash": "5386a38facd028135d1211ccbfe9670f"
+    },
+    {
+      "signature": "admin_support_private.savings_admin_access_allowed(uuid)",
+      "hash": "fa37124015caaab633433abd0377e236"
+    },
+    {
+      "signature": "admin_support_private.savings_context_before_20260906(uuid)",
+      "hash": "61fd13358f39a094f53657cc3f3cdc8d"
+    },
+    {
+      "signature": "admin_support_private.savings_permission_before_20260906(uuid,text)",
+      "hash": "c949aa647f57012bf0b1a653133f3c92"
+    },
+    {
+      "signature": "admin_actor_can_impersonate()",
+      "hash": "955919ddebde225f0885240da0f607fd"
+    },
+    {
+      "signature": "admin_module_boundary(text[],text)",
+      "hash": "ff60b8b05a6d990574e3a34c903419c1"
+    },
+    {
+      "signature": "admin_user_module_version(uuid)",
+      "hash": "41af090af53d44700670fc55cb3319d9"
+    },
+    {
+      "signature": "assign_admin_role(uuid,uuid,boolean)",
+      "hash": "4f36a81ae47f0996092c4a2a452a2bac"
+    },
+    {
+      "signature": "get_admin_access_context()",
+      "hash": "b372ea54dfe4d6c5f2dd897ce9e6b95d"
+    },
+    {
+      "signature": "get_admin_user_modules(text)",
+      "hash": "18cc1628e7f87586b129c805d0ba2da1"
+    },
+    {
+      "signature": "get_effective_affiliate_id()",
+      "hash": "c78a1c0391e21211945b0ddca46e9009"
+    },
+    {
+      "signature": "get_impersonation_context()",
+      "hash": "178a9f53bb5763002b7d560f0c55d7b0"
+    },
+    {
+      "signature": "has_admin_module(text,text)",
+      "hash": "0e9350c0440fae98d1b735ed252fb06d"
+    },
+    {
+      "signature": "has_admin_permission(text)",
+      "hash": "ede6d35b74b6163f3765b518adead8ce"
+    },
+    {
+      "signature": "has_section_action(text,text)",
+      "hash": "75b86987478108afdfb3a1c3ce05d644"
+    },
+    {
+      "signature": "is_active_admin()",
+      "hash": "022de184317e6ce34672ebbf42a33d21"
+    },
+    {
+      "signature": "is_module_admin()",
+      "hash": "eaf09c3fdc98ddae1ea9fe24cdacd997"
+    },
+    {
+      "signature": "list_admin_assignments()",
+      "hash": "77f4e1b825ec9872fe97d666c265ff84"
+    },
+    {
+      "signature": "list_admin_module_catalog()",
+      "hash": "6b0b50cfbede5f4954650e8213fcb3a0"
+    },
+    {
+      "signature": "module_effective_permissions()",
+      "hash": "f7d50377d021a74e7c2213cda8656380"
+    },
+    {
+      "signature": "module_prior_get_admin_access_context()",
+      "hash": "770089bdbcb39c64d7b0bf8207362d9e"
+    },
+    {
+      "signature": "module_prior_has_admin_permission(text)",
+      "hash": "6d4c90dea3a402709e7df1cb480e005e"
+    },
+    {
+      "signature": "module_prior_has_section_action(text,text)",
+      "hash": "eb91ca7917ff48d4bd486422cb81ae18"
+    },
+    {
+      "signature": "revoke_admin_assignment(uuid)",
+      "hash": "d2341af7fe87c0be83ab40cdf86267bf"
+    },
+    {
+      "signature": "save_admin_user_modules(text,text,text[],text)",
+      "hash": "c7b57055153dad88564784bf330d8d41"
+    },
+    {
+      "signature": "savings_admin_access_allowed()",
+      "hash": "e7cd82be7d89c41a98c11fcad0da3dbe"
+    },
+    {
+      "signature": "savings_context_before_20260906()",
+      "hash": "80d14522535e0863397aa946256536bd"
+    },
+    {
+      "signature": "savings_permission_before_20260906(text)",
+      "hash": "7550385caccf2f04e6f66e4eece28030"
+    },
+    {
+      "signature": "set_section_responsibilities(text,text,text[])",
+      "hash": "ab817b40270b06f7bb7f35f90b0f8136"
+    },
+    {
+      "signature": "set_total_admin_by_email(text)",
+      "hash": "276bc374279479d3e268582fb8fea3b5"
+    },
+    {
+      "signature": "start_affiliate_impersonation(uuid,text)",
+      "hash": "186d628254f2ee0b3f02ff456ac0e6e9"
+    },
+    {
+      "signature": "stop_affiliate_impersonation()",
+      "hash": "dfd09764d7cf7e3eb691a622f825b16f"
+    }
+  ],
+  "privateBaselineSha256": "be469a95cc3a2df5577604f9066e7925a31ec78812e482d03bfdb6bebe39ac2d"
+}

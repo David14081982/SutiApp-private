@@ -1,0 +1,45 @@
+{
+  "purpose": "Build-time coverage classification; never a runtime authorization source",
+  "knownAssistedVisibilityGaps": ["login_history", "votaciones", "votaciones_nominal", "inversion"],
+  "affiliate": {
+    "home": ["secciones", "banners", "popups", "sindicato", "noticias", "votaciones"],
+    "financiera": ["fincat", "program_products", "fondos"],
+    "convenios": ["convenios", "companies_admin", "marketplace"],
+    "historial": ["requests", "finanzas", "savings", "flujos"],
+    "credencial": ["affiliates", "branding"],
+    "admin": ["administrators", "screen_permissions"],
+    "loan": ["finanzas", "fondos"],
+    "product": ["fincat", "program_products", "marketplace"],
+    "modulo": ["sindicato", "education"],
+    "articulo": ["noticias"],
+    "convenio": ["convenios", "companies_admin"],
+    "tracking": ["requests", "finanzas", "flujos"],
+    "catitem": ["program_products", "marketplace"],
+    "documentos": ["documents_admin", "affiliates"],
+    "membership": ["membresias"],
+    "notifs": ["requests", "finanzas", "marketplace"],
+    "perfil": ["affiliates"],
+    "settings": [],
+    "terreno": ["fincat", "program_products"],
+    "investment": ["inversion"],
+    "savings": ["savings", "savings_withdrawal_override", "savings_yield_override"]
+  },
+  "selfManaged": {"settings": "Preferencias del dispositivo y salida de la propia sesión; el contenido editorial añadido no modifica esas operaciones"},
+  "editorial": {"controllers":["secciones","menus","formularios"],"scope":"Additive content on existing affiliate routes except admin; Home uses its four known blocks. Existing business forms, validation, company login and financial writers remain compiled."},
+  "unionEditors": {"directory_admin": "sindicato", "union": "sindicato"},
+  "company": {
+    "empresa": {"controllers": ["companies_admin", "convenios", "planes"], "authority": "marketplace_company_memberships + can_manage_company_ficha"},
+    "productos": {"controllers": ["marketplace"], "authority": "marketplace_company_memberships + marketplace_products RLS"},
+    "promos": {"controllers": ["marketplace"], "authority": "marketplace_company_memberships + marketplace_promotions RLS"},
+    "popups": {"controllers": ["aprobaciones", "popups"], "authority": "company_popup_proposals + membership + plan"},
+    "solicitudes": {"controllers": ["requests"], "authority": "list_company_commercial_requests + company membership"},
+    "cotizaciones": {"controllers": ["requests", "marketplace"], "authority": "company membership capability quotes"},
+    "stats": {"controllers": ["planes"], "authority": "companyStore derived metrics and plan; no independent screen permission"},
+    "notifs": {"controllers": ["requests", "marketplace"], "authority": "companyStore derived requests/quotes; no independent screen permission"},
+    "bitacora": {"controllers": ["planes"], "authority": "get_company_activity + company membership"}
+  },
+  "capabilities": {
+    "savings_withdrawal_override": "savings",
+    "savings_yield_override": "savings"
+  }
+}

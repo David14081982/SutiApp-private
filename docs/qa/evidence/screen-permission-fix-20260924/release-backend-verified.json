@@ -1,0 +1,122 @@
+{
+  "status": "PASS",
+  "at": "2026-09-24T18:16:17.784Z",
+  "functionsCompared": 52,
+  "previousFunctionOwnerAclPreserved": true,
+  "trackingExact": true,
+  "security": [
+    {
+      "relname": "admin_permission_fix_recovery_20260924000200",
+      "rls": true,
+      "force_rls": true,
+      "anon_write": false,
+      "browser_write": false
+    },
+    {
+      "relname": "app_editorial_screens",
+      "rls": true,
+      "force_rls": true,
+      "anon_write": false,
+      "browser_write": false
+    },
+    {
+      "relname": "app_editorial_revisions",
+      "rls": true,
+      "force_rls": true,
+      "anon_write": false,
+      "browser_write": false
+    },
+    {
+      "relname": "app_editorial_submissions",
+      "rls": true,
+      "force_rls": true,
+      "anon_write": false,
+      "browser_write": false
+    },
+    {
+      "relname": "app_editorial_installation_20260924000300",
+      "rls": true,
+      "force_rls": true,
+      "anon_write": false,
+      "browser_write": false
+    }
+  ],
+  "current": [
+    {
+      "fingerprints": {
+        "auth.users": {
+          "hash": "8590839c6e8f1b05b4d8d4a4e80afa5f",
+          "count": 343
+        },
+        "public.companies": {
+          "hash": "1eb3da8538341cb55c40274596d85d28",
+          "count": 33
+        },
+        "public.affiliates": {
+          "hash": "88d8431e8b214111ee5f2902cc058971",
+          "count": 978
+        },
+        "public.admin_roles": {
+          "hash": "3781956d156435ffbc8d08e171776569",
+          "count": 3
+        },
+        "public.company_assets": {
+          "hash": "742c53c76ae0790adbb8b0da4e237b65",
+          "count": 35
+        },
+        "public.admin_audit_log": {
+          "hash": "56a3ebe92a60b7873ce9f5095fd1fee1",
+          "count": 5846
+        },
+        "public.company_benefits": {
+          "hash": "ea9caa4d75c56b9b8d4c7173fa0d1e29",
+          "count": 2
+        },
+        "public.admin_assignments": {
+          "hash": "08a7b823c9b4a8b293bc5d16c7aa20c0",
+          "count": 9
+        },
+        "public.request_documents": {
+          "hash": "8122cd3bba5477d25757b46f06ee2a10",
+          "count": 886
+        },
+        "public.affiliate_documents": {
+          "hash": "840baa1cdeaae96250bf2206443eb9ea",
+          "count": 3938
+        },
+        "public.company_portal_plans": {
+          "hash": "431d6e0942834bfd9a797016a3638381",
+          "count": 3
+        },
+        "public.admin_role_permissions": {
+          "hash": "26e1fe04912baf65354f3c9381b88899",
+          "count": 66
+        },
+        "public.company_audience_rules": {
+          "hash": "269177a56abc18aa94d0e69d179e20b1",
+          "count": 33
+        },
+        "public.company_benefit_profiles": {
+          "hash": "2935a898922bbd208e12c2f9f7b59938",
+          "count": 33
+        },
+        "public.company_portal_subscriptions": {
+          "hash": "d751713988987e9331980363e24189ce",
+          "count": 0
+        },
+        "public.admin_section_responsibilities": {
+          "hash": "1f27fa25ff149a9ae50700f7c184d448",
+          "count": 105
+        },
+        "public.marketplace_company_memberships": {
+          "hash": "d751713988987e9331980363e24189ce",
+          "count": 0
+        }
+      },
+      "enabled_assignments": 8,
+      "editorial_screens": 20,
+      "submissions": 0
+    }
+  ],
+  "realAccountRevocations": 0
+}

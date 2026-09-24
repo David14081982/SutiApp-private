@@ -1,0 +1,6 @@
+{
+  "productionChanges": 0,
+  "vendorIntegrity": {"cause":"Windows CRLF checkout differs from published LF bytes signed by SRI","fix":"Normalize generated vendor JS to LF and verify existing SHA-384 before emitting","integrityDisabled":false},
+  "documentOrigin": {"http://127.0.0.1:4174":403,"http://127.0.0.1:8080":403,"http://localhost:8080":204,"method":"Unauthenticated OPTIONS; no writes","fix":"Use already authorized localhost:8080"},
+  "namespace": {"preserved":"EditorialContent (existing News)","new":"AppScreenLayout","test":"Browser retains exact original News projection object"}
+}

@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "build": "132 sources compiled with the unchanged canonical builder into tmp",
+  "chunks": 132,
+  "semanticSourceBundleParity": true,
+  "formattingOnlyDifferences": [
+    "screens-admin-fincat.jsx",
+    "screens-admin-access.jsx",
+    "screens-admin-program-products.jsx"
+  ],
+  "protectedContract": {
+    "status": "PASS",
+    "protected_contract": true,
+    "protected_sha": "b8c1f6c0057dabded90804ffadd5bd012fb41a1a",
+    "migrations": 3,
+    "invariants": 10,
+    "focused_static": true,
+    "global_suites": "NOT_EXECUTED",
+    "functional_change": false,
+    "production_data_change": false
+  },
+  "swChange": "cache name and bundle cachebuster only; no logic changes",
+  "bundleSha256": "b7921e24f2262f3ca8b1b23b47ef59e6d4fea574aec74a8330b2688b3c36ac44"
+}

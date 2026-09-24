@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "productionWrites": 0,
+  "checks": [
+    "baseline reproduces unauthorized paid company write from Convenios",
+    "installation preserves assignments and exact no-use recovery",
+    "all four omitted modules become visible without granting new screens",
+    "recovery refuses function ACL drift before use",
+    "Convenios can edit unpaid ficha but cannot edit paid ficha or its benefits",
+    "independent Convenios responsibility preserves unpaid benefits and denies paid benefits",
+    "own company login context and permitted ficha update survive; other company write denied",
+    "Empresas administrator retains global ficha and membership management access",
+    "revocation affects already-open session; company membership and accounts survive",
+    "used recovery refuses rollback without erasing history or data"
+  ],
+  "limits": [
+    "No production business RPC invoked.",
+    "Storage upload and all portal business views require browser/global regression separately.",
+    "Recovery detects state changes; read-only use is not detectable."
+  ]
+}

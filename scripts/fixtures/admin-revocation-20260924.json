@@ -1,0 +1,3049 @@
+{
+  "purpose": "ISOLATED_TEST_ONLY: schema and permission catalog; no production accounts or business rows",
+  "constraint": [
+    {
+      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))",
+      "hash": "2d001f1a4f3f0b8e4a3c8ae948647051"
+    }
+  ],
+  "functions": [
+    {
+      "schema": "admin_support_private",
+      "name": "audit_affiliate_write",
+      "signature": "admin_support_private.audit_affiliate_write()",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_affiliate_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if exists(select 1 from admin_support_private.context()) then\r\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\r\n  values(auth.uid(),'affiliate_admin_events',new.action,new.affiliate_id::text,'SUCCESS',jsonb_build_object('event_id',new.event_id));\r\n end if;\r\n return new;\r\nend $function$\n",
+      "hash": "6fae146ca9912cd8daf4482f1e9d8dd7",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "audit_context",
+      "signature": "admin_support_private.audit_context()",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_context()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare support record; begin\r\n select * into support from admin_support_private.context();\r\n if found then new.details:=coalesce(new.details,'{}'::jsonb)||jsonb_build_object('admin_assistance',\r\n  jsonb_build_object('session_id',support.session_id,'actor_real_auth_user_id',auth.uid(),\r\n  'subject_auth_user_id',support.subject_auth_user_id,'usuario_contexto_affiliate_id',support.affiliate_id)); end if;\r\n return new;\r\nend $function$\n",
+      "hash": "ced753b1ab003c2d8b7817698ab6eae9",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "context",
+      "signature": "admin_support_private.context()",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.context()\n RETURNS TABLE(session_id uuid, actor_auth_user_id uuid, subject_auth_user_id uuid, affiliate_id uuid)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select s.id,auth.uid(),case when u.email_confirmed_at is not null\r\n  and (select count(*) from public.affiliates f where f.auth_user_id=u.id and not f.is_archived)=1 then u.id end,a.id\r\n from public.impersonation_sessions s join public.affiliates a on a.id=s.usuario_contexto_affiliate_id and not a.is_archived\r\n left join auth.users u on u.id=a.auth_user_id\r\n where s.actor_real_auth_user_id=auth.uid() and s.ended_at is null and s.expires_at>now()\r\n and s.actor_auth_session_id=nullif(auth.jwt()->>'session_id','')\r\n and admin_support_private.has_admin_permission(auth.uid(),'affiliates.impersonate')\r\n order by s.started_at desc limit 1;\r\n$function$\n",
+      "hash": "e4be8a89678a6c5a6036aea87bf8bde6",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "effective_context",
+      "signature": "admin_support_private.effective_context()",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.effective_context()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare support record; actor jsonb; target jsonb; modules jsonb; permissions jsonb; sections jsonb; begin\r\n select * into support from admin_support_private.context();\r\n if not found then return admin_support_private.get_admin_access_context(auth.uid()); end if;\r\n actor:=admin_support_private.get_admin_access_context(auth.uid());\r\n target:=admin_support_private.get_admin_access_context(support.subject_auth_user_id);\r\n select coalesce(jsonb_agg(d.module_key order by d.module_order),'[]'::jsonb) into modules\r\n from public.admin_section_definitions d where d.module_key is not null\r\n and admin_support_private.module_visible(support.subject_auth_user_id,d.module_key)\r\n and admin_support_private.module_visible(auth.uid(),d.module_key);\r\n select coalesce(jsonb_agg(value order by value),'[]'::jsonb) into permissions\r\n from jsonb_array_elements_text(target->'technical_permissions') value\r\n where admin_support_private.has_admin_permission(auth.uid(),value);\r\n select coalesce(jsonb_agg(entry),'[]'::jsonb) into sections\r\n from jsonb_array_elements(target->'section_actions') entry\r\n where coalesce((actor->>'full_access')::boolean,false)\r\n or admin_support_private.has_section_action(auth.uid(),entry->>'section_key',entry->>'action');\r\n return target||jsonb_build_object('module_keys',modules,'technical_permissions',permissions,'section_actions',sections,\r\n  'full_access',coalesce((actor->>'full_access')::boolean,false) and coalesce((target->>'full_access')::boolean,false),\r\n  'role_code',case when jsonb_array_length(modules)>0 then coalesce(target->>'role_code','assisted_sections') else null end,\r\n  'support_context',jsonb_build_object('session_id',support.session_id,'actor_auth_user_id',auth.uid(),\r\n   'subject_auth_user_id',support.subject_auth_user_id,'affiliate_id',support.affiliate_id));\r\nend $function$\n",
+      "hash": "4c9465a88c4f66483644eb859700e32d",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "get_admin_access_context",
+      "signature": "admin_support_private.get_admin_access_context(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.get_admin_access_context(p_subject uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select original || case when admin_support_private.is_module_admin(p_subject) then jsonb_build_object(\r\r\n  'module_access_version',1,\r\r\n  'module_keys',coalesce((select jsonb_agg(d.module_key order by d.module_order) from public.admin_section_definitions d\r\r\n    where d.module_key is not null and admin_support_private.has_admin_module(p_subject,d.module_key)),'[]'::jsonb),\r\r\n  'technical_permissions',to_jsonb(admin_support_private.module_effective_permissions(p_subject)),\r\r\n  'section_actions',coalesce((select jsonb_agg(jsonb_build_object('section_key',d.section_key,'action',a))\r\r\n    from public.admin_section_definitions d cross join lateral unnest(d.allowed_actions) a\r\r\n    where d.module_key is null and admin_support_private.has_section_action(p_subject,d.section_key,a)),'[]'::jsonb)\r\r\n ) else jsonb_build_object('module_access_version',1,'module_keys',null,'section_actions',coalesce((\r\r\n  select jsonb_agg(entry) from jsonb_array_elements(original->'section_actions') entry\r\r\n  where not exists(select 1 from public.admin_section_definitions d where d.section_key=entry->>'section_key' and d.module_key is not null)\r\r\n ),'[]'::jsonb)) end\r\r\n from (select admin_support_private.module_prior_get_admin_access_context(p_subject) original) context;\r\r\n$function$\n",
+      "hash": "b0c568bbca5c698955c8a23959a27bf5",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_admin_module",
+      "signature": "admin_support_private.has_admin_module(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_admin_module(p_subject uuid, p_module text, p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select exists(select 1 from public.admin_assignments a join public.admin_roles role on role.id=a.role_id and role.enabled\r\r\n  join public.admin_section_responsibilities grant_row on grant_row.auth_user_id=a.auth_user_id and grant_row.enabled\r\r\n  join public.admin_section_definitions d on d.section_key=grant_row.section_key and d.enforcement_status='ENFORCED'\r\r\n  where a.auth_user_id=p_subject and a.enabled and role.code='module_admin'\r\r\n   and d.module_key=p_module and not d.module_total_only and grant_row.action=p_action);\r\r\n$function$\n",
+      "hash": "e24cb11f24ba22888f15426920ec74ea",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_admin_permission",
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_admin_permission(p_subject uuid, required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select case when admin_support_private.is_module_admin(p_subject) then required_permission=any(admin_support_private.module_effective_permissions(p_subject))\r\r\n else admin_support_private.module_prior_has_admin_permission(p_subject,required_permission) end;\r\r\n$function$\n",
+      "hash": "a1a563930a2d9bd5e6fafbcd3c4d63a9",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "has_section_action",
+      "signature": "admin_support_private.has_section_action(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.has_section_action(p_subject uuid, p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select case when admin_support_private.is_module_admin(p_subject) then exists(\r\r\n  select 1 from public.admin_section_definitions d\r\r\n  where p_section_key=any(d.module_sections) and admin_support_private.has_admin_module(p_subject,d.module_key,case when p_action='read' then 'read' else 'update' end)\r\r\n   and exists(select 1 from public.admin_section_definitions original where original.section_key=p_section_key\r\r\n    and original.enforcement_status='ENFORCED' and p_action=any(original.allowed_actions))\r\r\n ) else not exists(select 1 from public.admin_section_definitions where section_key=p_section_key and module_key is not null)\r\r\n and admin_support_private.module_prior_has_section_action(p_subject,p_section_key,p_action) end;\r\r\n$function$\n",
+      "hash": "0f3eec92e5989e922b056a3cfff03546",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "is_active_admin",
+      "signature": "admin_support_private.is_active_admin(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.is_active_admin(p_subject uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ select exists(\r\n  select 1 from public.admin_assignments a\r\n  join public.admin_roles r on r.id=a.role_id and r.enabled\r\n  where a.auth_user_id=(select p_subject) and a.enabled\r\n) $function$\n",
+      "hash": "23b889787fcefa1543cdcc434dac46de",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "is_module_admin",
+      "signature": "admin_support_private.is_module_admin(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.is_module_admin(p_subject uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id\r\r\n  where a.auth_user_id=p_subject and r.code='module_admin');\r\r\n$function$\n",
+      "hash": "e803c1a69d6d469afbbba3c22a9fc91b",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_effective_permissions",
+      "signature": "admin_support_private.module_effective_permissions(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_effective_permissions(p_subject uuid)\n RETURNS text[]\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\r\n select coalesce(array_agg(distinct permission order by permission),'{}') from (\r\r\n  select unnest(case when g.action='update' then d.module_write_permissions else d.module_read_permissions end) permission\r\r\n  from public.admin_section_responsibilities g join public.admin_section_definitions d on d.section_key=g.section_key\r\r\n  where g.auth_user_id=p_subject and g.enabled and d.module_key is not null\r\r\n   and admin_support_private.has_admin_module(p_subject,d.module_key,g.action)\r\r\n ) permissions;\r\r\n$function$\n",
+      "hash": "c37a53025523f2656d52f9c22e12375e",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_prior_get_admin_access_context",
+      "signature": "admin_support_private.module_prior_get_admin_access_context(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_prior_get_admin_access_context(p_subject uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select original || jsonb_build_object('technical_permissions',coalesce((\r\n  select jsonb_agg(permission order by permission) from (\r\n   select value as permission from jsonb_array_elements_text(original->'technical_permissions')\r\n    where value not like 'savings.%' or admin_support_private.has_admin_permission(p_subject,value)\r\n   union select 'savings.read' where admin_support_private.has_section_action(p_subject,'savings','read') and admin_support_private.savings_admin_access_allowed(p_subject)\r\n  ) permissions),'[]'::jsonb))\r\n from (select admin_support_private.savings_context_before_20260906(p_subject) original) context;\r\n$function$\n",
+      "hash": "329e2cf7d4c673e289fe65f5cd375817",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_prior_has_admin_permission",
+      "signature": "admin_support_private.module_prior_has_admin_permission(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_prior_has_admin_permission(p_subject uuid, required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select case when required_permission like 'savings.%' then\r\n  admin_support_private.savings_admin_access_allowed(p_subject) and (admin_support_private.savings_permission_before_20260906(p_subject,required_permission)\r\n   or (required_permission='savings.read' and admin_support_private.has_section_action(p_subject,'savings','read')))\r\n else admin_support_private.savings_permission_before_20260906(p_subject,required_permission) end;\r\n$function$\n",
+      "hash": "c6af30ee3ac3372b1d127f9213fbe903",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_prior_has_section_action",
+      "signature": "admin_support_private.module_prior_has_section_action(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_prior_has_section_action(p_subject uuid, p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  select exists (\r\n    select 1\r\n    from public.admin_section_responsibilities r\r\n    join public.admin_section_definitions d on d.section_key=r.section_key\r\n    where r.auth_user_id=(select p_subject)\r\n      and r.section_key=p_section_key\r\n      and r.action=p_action\r\n      and r.enabled\r\n      and d.enforcement_status='ENFORCED'\r\n      and p_action=any(d.allowed_actions)\r\n  )\r\n$function$\n",
+      "hash": "3db7f9a8f695ea16e5b5e8e4d9639c10",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_visible",
+      "signature": "admin_support_private.module_visible(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('branding','assets.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('popups','popups.read',array['popups']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('program_products','program_catalog.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('aprobaciones','popups.read',array[]::text[]),('sindicato','union_content.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
+      "hash": "5386a38facd028135d1211ccbfe9670f",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "savings_admin_access_allowed",
+      "signature": "admin_support_private.savings_admin_access_allowed(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.savings_admin_access_allowed(p_subject uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select p_subject is not null and (\r\n  admin_support_private.savings_permission_before_20260906(p_subject,'authorization.write') or\r\n  admin_support_private.has_section_action(p_subject,'savings','read') or\r\n  ((select mode from public.savings_admin_access_mode where id)='OPEN' and admin_support_private.savings_permission_before_20260906(p_subject,'savings.read'))\r\n );\r\n$function$\n",
+      "hash": "fa37124015caaab633433abd0377e236",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "savings_context_before_20260906",
+      "signature": "admin_support_private.savings_context_before_20260906(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.savings_context_before_20260906(p_subject uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  select jsonb_build_object(\r\n    'role_code',(\r\n      select r.code from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\r\n      where a.auth_user_id=(select p_subject) and a.enabled limit 1\r\n    ),\r\n    'full_access',coalesce((\r\n      select r.code='principal_admin' from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\r\n      where a.auth_user_id=(select p_subject) and a.enabled limit 1\r\n    ),false),\r\n    'technical_permissions',coalesce((\r\n      select jsonb_agg(rp.permission order by rp.permission)\r\n      from public.admin_assignments a\r\n      join public.admin_roles ar on ar.id=a.role_id and ar.enabled\r\n      join public.admin_role_permissions rp on rp.role_id=ar.id\r\n      where a.auth_user_id=(select p_subject) and a.enabled\r\n    ),'[]'::jsonb),\r\n    'section_actions',coalesce((\r\n      select jsonb_agg(jsonb_build_object('section_key',r.section_key,'action',r.action) order by r.section_key,r.action)\r\n      from public.admin_section_responsibilities r\r\n      join public.admin_section_definitions d on d.section_key=r.section_key\r\n      where r.auth_user_id=(select p_subject) and r.enabled and d.enforcement_status='ENFORCED'\r\n    ),'[]'::jsonb)\r\n  )\r\n$function$\n",
+      "hash": "61fd13358f39a094f53657cc3f3cdc8d",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "savings_permission_before_20260906",
+      "signature": "admin_support_private.savings_permission_before_20260906(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.savings_permission_before_20260906(p_subject uuid, required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  select exists(\r\n    select 1\r\n    from public.admin_assignments a\r\n    join public.admin_roles r on r.id=a.role_id and r.enabled\r\n    join public.admin_role_permissions rp on rp.role_id=r.id\r\n    where a.auth_user_id=(select p_subject) and a.enabled and rp.permission=required_permission\r\n  )\r\n$function$\n",
+      "hash": "c949aa647f57012bf0b1a653133f3c92",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "admin_actor_can_impersonate",
+      "signature": "admin_actor_can_impersonate()",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_actor_can_impersonate()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select admin_support_private.has_admin_permission(auth.uid(),'affiliates.impersonate');\r\n$function$\n",
+      "hash": "955919ddebde225f0885240da0f607fd",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "admin_module_boundary",
+      "signature": "admin_module_boundary(text[],text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_module_boundary(p_modules text[], p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select not public.is_module_admin() or exists(select 1 from unnest(p_modules) m where public.has_admin_module(m,p_action));\r\n$function$\n",
+      "hash": "ff60b8b05a6d990574e3a34c903419c1",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "admin_user_module_version",
+      "signature": "admin_user_module_version(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_user_module_version(p_user uuid)\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select md5(coalesce((select to_jsonb(a)::text from public.admin_assignments a where auth_user_id=p_user),'')||\r\n  coalesce((select string_agg(to_jsonb(g)::text,',' order by g.section_key,g.action) from public.admin_section_responsibilities g where auth_user_id=p_user),''));\r\n$function$\n",
+      "hash": "41af090af53d44700670fc55cb3319d9",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "assign_admin_role",
+      "signature": "assign_admin_role(uuid,uuid,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.assign_admin_role(p_auth_user_id uuid, p_role_id uuid, p_enabled boolean DEFAULT true)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\ndeclare\r\n  v_actor uuid:=auth.uid();v_id uuid;v_permissions text[];v_before jsonb;v_after jsonb;\r\nbegin\r\n  if v_actor is null or not public.has_admin_permission('authorization.write') then\r\n    raise exception 'AUTHORIZATION_DENIED' using errcode='42501';\r\n  end if;\r\n  if p_auth_user_id=v_actor or coalesce(p_auth_user_id=(select subject_auth_user_id from admin_support_private.context()),false) then raise exception 'SELF_ASSIGNMENT_DENIED' using errcode='42501'; end if;\r\n  if not exists(select 1 from auth.users where id=p_auth_user_id and email_confirmed_at is not null) then\r\n    raise exception 'CONFIRMED_AUTH_USER_NOT_FOUND' using errcode='P0001';\r\n  end if;\r\n  if not exists(select 1 from public.admin_roles where id=p_role_id and enabled) then\r\n    raise exception 'ROLE_NOT_FOUND' using errcode='P0001';\r\n  end if;\r\n  select to_jsonb(a) into v_before from public.admin_assignments a where a.auth_user_id=p_auth_user_id for update;\r\n  if coalesce((v_before->>'protected_assignment')::boolean,false) and\r\n     (not p_enabled or (v_before->>'role_id')::uuid is distinct from p_role_id) then\r\n    raise exception 'PROTECTED_SUPERADMIN' using errcode='42501';\r\n  end if;\r\n  select array_agg(permission order by permission) into v_permissions\r\n  from public.admin_role_permissions where role_id=p_role_id;\r\n  insert into public.admin_assignments(\r\n    auth_user_id,role,role_id,permissions,enabled,assigned_at,assigned_by_auth_user_id,\r\n    revoked_at,revoked_by_auth_user_id,protected_assignment\r\n  ) values(\r\n    p_auth_user_id,'visual_admin',p_role_id,coalesce(v_permissions,'{}'),p_enabled,now(),v_actor,\r\n    case when p_enabled then null else now() end,case when p_enabled then null else v_actor end,false\r\n  )\r\n  on conflict(auth_user_id) do update set\r\n    role_id=excluded.role_id,permissions=excluded.permissions,enabled=excluded.enabled,\r\n    assigned_at=case when excluded.enabled then now() else admin_assignments.assigned_at end,\r\n    assigned_by_auth_user_id=case when excluded.enabled then v_actor else admin_assignments.assigned_by_auth_user_id end,\r\n    revoked_at=excluded.revoked_at,revoked_by_auth_user_id=excluded.revoked_by_auth_user_id,updated_at=now()\r\n  returning id into v_id;\r\n  select to_jsonb(a) into v_after from public.admin_assignments a where a.id=v_id;\r\n  if not exists(\r\n    select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id\r\n    where a.enabled and r.code='principal_admin'\r\n  ) then raise exception 'LAST_PRINCIPAL_ADMIN_REQUIRED' using errcode='23514'; end if;\r\n  if not p_enabled or not ('affiliates.impersonate'=any(coalesce(v_permissions,'{}'))) then\r\n    with closed as (\r\n      update public.impersonation_sessions s set ended_at=now(),ended_by_auth_user_id=v_actor\r\n      where s.actor_real_auth_user_id=p_auth_user_id and s.ended_at is null returning s.*\r\n    ) insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n      select v_actor,c.usuario_contexto_affiliate_id,'IMPERSONATION_STOPPED','SUCCESS',jsonb_build_object(\r\n        'session_id',c.id,'reason',c.reason,'automatic',true,'cause','ADMIN_ASSIGNMENT_REVOKED','session_actor_auth_user_id',c.actor_real_auth_user_id)\r\n      from closed c;\r\n  end if;\r\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\r\n  values(v_actor,'admin_assignments',case when p_enabled then 'UPSERT' else 'REVOKE' end,v_id::text,'SUCCESS',\r\n    jsonb_build_object('subject_auth_user_id',p_auth_user_id,'before',v_before,'after',v_after,'assigned_by_auth_user_id',v_actor));\r\n  return v_id;\r\nend \r\n$function$\n",
+      "hash": "4f36a81ae47f0996092c4a2a452a2bac",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_admin_access_context",
+      "signature": "get_admin_access_context()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_access_context()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.effective_context();\r\n$function$\n",
+      "hash": "b372ea54dfe4d6c5f2dd897ce9e6b95d",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_admin_user_modules",
+      "signature": "get_admin_user_modules(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_user_modules(p_email text)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\r\ndeclare ids uuid[]; target uuid; result jsonb; begin\r\r\n if not public.has_admin_permission('authorization.write') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\r\r\n select array_agg(id) into ids from auth.users where lower(email)=lower(btrim(p_email)) and email_confirmed_at is not null;\r\r\n if coalesce(cardinality(ids),0)<>1 then raise exception 'CONFIRMED_AUTH_USER_NOT_FOUND_OR_AMBIGUOUS'; end if;\r\r\n target:=ids[1];\r\r\n select jsonb_build_object('auth_user_id',target,'email',u.email,\r\r\n  'mode',case when a.enabled and r.code='principal_admin' then 'total' when a.enabled and r.code='module_admin' then 'limited' else 'unassigned' end,\r\r\n  'existing_role',case when a.enabled then r.name else null end,'protected',coalesce(a.protected_assignment,false),'self',(target=auth.uid() or coalesce(target=(select subject_auth_user_id from admin_support_private.context()),false)),\r\r\n  'version',public.admin_user_module_version(target),\r\r\n  'modules',coalesce((select jsonb_agg(d.module_key order by d.module_order) from public.admin_section_responsibilities g\r\r\n   join public.admin_section_definitions d on d.section_key=g.section_key\r\r\n   where g.auth_user_id=target and g.enabled and g.action='read' and d.module_key is not null),'[]'::jsonb)) into result\r\r\n from auth.users u left join public.admin_assignments a on a.auth_user_id=u.id left join public.admin_roles r on r.id=a.role_id where u.id=target;\r\r\n return result;\r\r\nend \r\n$function$\n",
+      "hash": "18cc1628e7f87586b129c805d0ba2da1",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_effective_affiliate_id",
+      "signature": "get_effective_affiliate_id()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_effective_affiliate_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\n  select coalesce(\r\n    (\r\n      select s.usuario_contexto_affiliate_id\r\n      from public.impersonation_sessions s\r\n      join public.affiliates a\r\n        on a.id = s.usuario_contexto_affiliate_id\r\n       and not a.is_archived\r\n      where s.actor_real_auth_user_id = (select auth.uid())\r\n        and s.ended_at is null\r\n        and s.expires_at > now()\r\n        and s.actor_auth_session_id = nullif((select auth.jwt()->>'session_id'), '')\r\n        and public.admin_actor_can_impersonate()\r\n      limit 1\r\n    ),\r\n    (\r\n      select a.id\r\n      from public.affiliates a\r\n      join auth.users u on u.id = (select auth.uid())\r\n      where a.auth_user_id = u.id\r\n        and not a.is_archived\r\n        and u.email_confirmed_at is not null\r\n        and lower(btrim(u.email)) <> ''\r\n        and (\r\n          (\r\n            a.historical_email_normalized = lower(btrim(u.email))\r\n            and (\r\n              select count(*)\r\n              from public.affiliates candidate\r\n              where candidate.historical_email_normalized = lower(btrim(u.email))\r\n            ) = 1\r\n          )\r\n          or public.has_certified_affiliate_auth_link(u.id, a.id, u.email)\r\n        )\r\n      limit 1\r\n    )\r\n  )\r\n\r\n$function$\n",
+      "hash": "c78a1c0391e21211945b0ddca46e9009",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "get_impersonation_context",
+      "signature": "get_impersonation_context()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_impersonation_context()\n RETURNS TABLE(session_id uuid, actor_real_auth_user_id uuid, usuario_contexto_affiliate_id uuid, reason text, expires_at timestamp with time zone)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select s.id,s.actor_real_auth_user_id,s.usuario_contexto_affiliate_id,s.reason,s.expires_at\r\n from public.impersonation_sessions s join public.affiliates a on a.id=s.usuario_contexto_affiliate_id and not a.is_archived\r\n where s.actor_real_auth_user_id=(select auth.uid()) and s.ended_at is null and s.expires_at>now()\r\n   and s.actor_auth_session_id=nullif((select auth.jwt()->>'session_id'),'')\r\n   and public.admin_actor_can_impersonate() limit 1 \r\n$function$\n",
+      "hash": "178a9f53bb5763002b7d560f0c55d7b0",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_admin_module",
+      "signature": "has_admin_module(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_admin_module(p_module text, p_action text DEFAULT 'read'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.module_visible(auth.uid(),p_module)\r\n and admin_support_private.module_visible((select subject_auth_user_id from admin_support_private.context()),p_module)\r\n and (not admin_support_private.is_module_admin(auth.uid()) or admin_support_private.has_admin_module(auth.uid(),p_module,p_action))\r\n and (not admin_support_private.is_module_admin((select subject_auth_user_id from admin_support_private.context()))\r\n or admin_support_private.has_admin_module((select subject_auth_user_id from admin_support_private.context()),p_module,p_action))\r\n and (select subject_auth_user_id is not null from admin_support_private.context())\r\n else admin_support_private.has_admin_module(auth.uid(),p_module,p_action) end;\r\n$function$\n",
+      "hash": "0e9350c0440fae98d1b735ed252fb06d",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_admin_permission",
+      "signature": "has_admin_permission(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_admin_permission(required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.has_admin_permission(auth.uid(),required_permission)\r\n and case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.has_admin_permission((select subject_auth_user_id from admin_support_private.context()),required_permission) else true end;\r\n$function$\n",
+      "hash": "ede6d35b74b6163f3765b518adead8ce",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "has_section_action",
+      "signature": "has_section_action(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_section_action(p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.has_section_action((select subject_auth_user_id from admin_support_private.context()),p_section_key,p_action)\r\n and (coalesce((admin_support_private.get_admin_access_context(auth.uid())->>'full_access')::boolean,false)\r\n or admin_support_private.has_section_action(auth.uid(),p_section_key,p_action))\r\n else admin_support_private.has_section_action(auth.uid(),p_section_key,p_action) end;\r\n$function$\n",
+      "hash": "75b86987478108afdfb3a1c3ce05d644",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "is_active_admin",
+      "signature": "is_active_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_active_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.is_active_admin(auth.uid()) and case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.is_active_admin((select subject_auth_user_id from admin_support_private.context())) else true end;\r\n$function$\n",
+      "hash": "022de184317e6ce34672ebbf42a33d21",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "is_module_admin",
+      "signature": "is_module_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_module_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.is_module_admin(auth.uid()) or\r\n (exists(select 1 from admin_support_private.context()) and admin_support_private.is_module_admin((select subject_auth_user_id from admin_support_private.context())));\r\n$function$\n",
+      "hash": "eaf09c3fdc98ddae1ea9fe24cdacd997",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "list_admin_assignments",
+      "signature": "list_admin_assignments()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_admin_assignments()\n RETURNS TABLE(assignment_id uuid, auth_user_id uuid, email text, display_name text, role_id uuid, role_code text, role_name text, system_role boolean, enabled boolean, protected_assignment boolean, assigned_at timestamp with time zone, assigned_by_email text, revoked_at timestamp with time zone)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ begin\n  if not public.has_admin_permission('authorization.read') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\n  return query select a.id,a.auth_user_id,u.email::text,\n    coalesce(nullif(btrim(u.raw_user_meta_data->>'full_name'),''),u.email)::text,\n    r.id,r.code,r.name,r.system_role,a.enabled,a.protected_assignment,a.assigned_at,assigner.email::text,a.revoked_at\n  from public.admin_assignments a\n  join auth.users u on u.id=a.auth_user_id\n  join public.admin_roles r on r.id=a.role_id\n  left join auth.users assigner on assigner.id=a.assigned_by_auth_user_id\n  order by a.enabled desc,a.protected_assignment desc,a.assigned_at,a.id;\nend $function$\n",
+      "hash": "77f4e1b825ec9872fe97d666c265ff84",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "list_admin_module_catalog",
+      "signature": "list_admin_module_catalog()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_admin_module_catalog()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\r\nbegin\r\r\n if not public.has_admin_permission('authorization.read') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\r\r\n return (select jsonb_agg(jsonb_build_object('key',module_key,'label',display_name,'total_only',module_total_only) order by module_order)\r\r\n from public.admin_section_definitions where module_key is not null and enforcement_status='ENFORCED');\r\r\nend \r\n$function$\n",
+      "hash": "6b0b50cfbede5f4954650e8213fcb3a0",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "module_effective_permissions",
+      "signature": "module_effective_permissions()",
+      "definition": "CREATE OR REPLACE FUNCTION public.module_effective_permissions()\n RETURNS text[]\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect case when exists(select 1 from admin_support_private.context()) then\r\n array(select jsonb_array_elements_text(admin_support_private.effective_context()->'technical_permissions'))\r\n else admin_support_private.module_effective_permissions(auth.uid()) end;\r\n$function$\n",
+      "hash": "f7d50377d021a74e7c2213cda8656380",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "module_prior_get_admin_access_context",
+      "signature": "module_prior_get_admin_access_context()",
+      "definition": "CREATE OR REPLACE FUNCTION public.module_prior_get_admin_access_context()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select original || jsonb_build_object('technical_permissions',coalesce((\n  select jsonb_agg(permission order by permission) from (\n   select value as permission from jsonb_array_elements_text(original->'technical_permissions')\n    where value not like 'savings.%' or public.has_admin_permission(value)\n   union select 'savings.read' where public.has_section_action('savings','read') and public.savings_admin_access_allowed()\n  ) permissions),'[]'::jsonb))\n from (select public.savings_context_before_20260906() original) context;\n$function$\n",
+      "hash": "770089bdbcb39c64d7b0bf8207362d9e",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "module_prior_has_admin_permission",
+      "signature": "module_prior_has_admin_permission(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.module_prior_has_admin_permission(required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select case when required_permission like 'savings.%' then\n  public.savings_admin_access_allowed() and (public.savings_permission_before_20260906(required_permission)\n   or (required_permission='savings.read' and public.has_section_action('savings','read')))\n else public.savings_permission_before_20260906(required_permission) end;\n$function$\n",
+      "hash": "6d4c90dea3a402709e7df1cb480e005e",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "module_prior_has_section_action",
+      "signature": "module_prior_has_section_action(text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.module_prior_has_section_action(p_section_key text, p_action text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists (\n    select 1\n    from public.admin_section_responsibilities r\n    join public.admin_section_definitions d on d.section_key=r.section_key\n    where r.auth_user_id=(select auth.uid())\n      and r.section_key=p_section_key\n      and r.action=p_action\n      and r.enabled\n      and d.enforcement_status='ENFORCED'\n      and p_action=any(d.allowed_actions)\n  )\n$function$\n",
+      "hash": "eb91ca7917ff48d4bd486422cb81ae18",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "revoke_admin_assignment",
+      "signature": "revoke_admin_assignment(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.revoke_admin_assignment(p_auth_user_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_role uuid;\nbegin\n  if not public.has_admin_permission('authorization.write') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\n  select role_id into v_role from public.admin_assignments where auth_user_id=p_auth_user_id;\n  if v_role is null then raise exception 'ADMIN_ASSIGNMENT_NOT_FOUND' using errcode='P0001'; end if;\n  perform public.assign_admin_role(p_auth_user_id,v_role,false);\n  return true;\nend $function$\n",
+      "hash": "d2341af7fe87c0be83ab40cdf86267bf",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "save_admin_user_modules",
+      "signature": "save_admin_user_modules(text,text,text[],text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_admin_user_modules(p_email text, p_mode text, p_modules text[], p_expected_version text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\r\ndeclare target uuid; before_state jsonb; selected_role uuid; selected_modules text[]; begin\r\r\n if not public.has_admin_permission('authorization.write') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\r\r\n before_state:=public.get_admin_user_modules(p_email);target:=(before_state->>'auth_user_id')::uuid;\r\r\n if target=auth.uid() or coalesce(target=(select subject_auth_user_id from admin_support_private.context()),false) then raise exception 'SELF_ASSIGNMENT_DENIED' using errcode='42501'; end if;\r\r\n perform pg_advisory_xact_lock(hashtextextended('admin-user-modules:'||target::text,0));\r\r\n perform 1 from public.admin_assignments where auth_user_id=target for update;\r\r\n if p_expected_version is null or p_expected_version<>public.admin_user_module_version(target) then raise exception 'ADMIN_ACCESS_CHANGED' using errcode='40001'; end if;\r\r\n if p_mode is null or p_mode not in ('limited','total') then raise exception 'INVALID_ACCESS_MODE'; end if;\r\r\n select coalesce(array_agg(distinct m order by m),'{}') into selected_modules from unnest(p_modules) m;\r\r\n if p_mode='limited' and (cardinality(selected_modules)=0 or exists(select 1 from unnest(selected_modules) m\r\r\n  where not exists(select 1 from public.admin_section_definitions d where d.module_key=m and not d.module_total_only and d.enforcement_status='ENFORCED'))) then\r\r\n  raise exception 'INVALID_ADMIN_MODULE'; end if;\r\r\n select id into selected_role from public.admin_roles where code=case when p_mode='total' then 'principal_admin' else 'module_admin' end and enabled;\r\r\n if selected_role is null then raise exception 'ADMIN_ROLE_UNAVAILABLE'; end if;\r\r\n -- Existing writer preserves protected/last-admin guards, actor metadata and session revocation.\r\r\n perform public.assign_admin_role(target,selected_role,true);\r\r\n update public.admin_section_responsibilities set enabled=false,revoked_at=now(),revoked_by_auth_user_id=auth.uid(),updated_at=now()\r\r\n where auth_user_id=target and enabled;\r\r\n if p_mode='limited' then\r\r\n  insert into public.admin_section_responsibilities(auth_user_id,section_key,action,enabled,granted_by_auth_user_id)\r\r\n  select target,d.section_key,a,true,auth.uid() from public.admin_section_definitions d cross join unnest(array['read','update']) a\r\r\n  where d.module_key=any(selected_modules)\r\r\n  on conflict(auth_user_id,section_key,action) do update set enabled=true,granted_by_auth_user_id=excluded.granted_by_auth_user_id,\r\r\n   assigned_at=now(),updated_at=now(),revoked_at=null,revoked_by_auth_user_id=null;\r\r\n end if;\r\r\n insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\r\r\n values(auth.uid(),'admin_user_modules','SET',target::text,'SUCCESS',jsonb_build_object('before',before_state,'mode',p_mode,'modules',to_jsonb(selected_modules)));\r\r\n return public.get_admin_user_modules(p_email);\r\r\nend \r\n$function$\n",
+      "hash": "c7b57055153dad88564784bf330d8d41",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "savings_admin_access_allowed",
+      "signature": "savings_admin_access_allowed()",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_admin_access_allowed()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nselect admin_support_private.savings_admin_access_allowed(auth.uid()) and case when exists(select 1 from admin_support_private.context()) then\r\n admin_support_private.savings_admin_access_allowed((select subject_auth_user_id from admin_support_private.context())) else true end;\r\n$function$\n",
+      "hash": "e7cd82be7d89c41a98c11fcad0da3dbe",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "savings_context_before_20260906",
+      "signature": "savings_context_before_20260906()",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_context_before_20260906()\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select jsonb_build_object(\n    'role_code',(\n      select r.code from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n      where a.auth_user_id=(select auth.uid()) and a.enabled limit 1\n    ),\n    'full_access',coalesce((\n      select r.code='principal_admin' from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n      where a.auth_user_id=(select auth.uid()) and a.enabled limit 1\n    ),false),\n    'technical_permissions',coalesce((\n      select jsonb_agg(rp.permission order by rp.permission)\n      from public.admin_assignments a\n      join public.admin_roles ar on ar.id=a.role_id and ar.enabled\n      join public.admin_role_permissions rp on rp.role_id=ar.id\n      where a.auth_user_id=(select auth.uid()) and a.enabled\n    ),'[]'::jsonb),\n    'section_actions',coalesce((\n      select jsonb_agg(jsonb_build_object('section_key',r.section_key,'action',r.action) order by r.section_key,r.action)\n      from public.admin_section_responsibilities r\n      join public.admin_section_definitions d on d.section_key=r.section_key\n      where r.auth_user_id=(select auth.uid()) and r.enabled and d.enforcement_status='ENFORCED'\n    ),'[]'::jsonb)\n  )\n$function$\n",
+      "hash": "80d14522535e0863397aa946256536bd",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "savings_permission_before_20260906",
+      "signature": "savings_permission_before_20260906(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_permission_before_20260906(required_permission text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select exists(\n    select 1\n    from public.admin_assignments a\n    join public.admin_roles r on r.id=a.role_id and r.enabled\n    join public.admin_role_permissions rp on rp.role_id=r.id\n    where a.auth_user_id=(select auth.uid()) and a.enabled and rp.permission=required_permission\n  )\n$function$\n",
+      "hash": "7550385caccf2f04e6f66e4eece28030",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "set_section_responsibilities",
+      "signature": "set_section_responsibilities(text,text,text[])",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_section_responsibilities(p_email text, p_section_key text, p_actions text[])\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid := auth.uid();\n  v_subject uuid;\n  v_subjects uuid[];\n  v_allowed text[];\nbegin\n  if v_actor is null or not public.has_admin_permission('authorization.write') then\n    raise exception 'AUTHORIZATION_DENIED' using errcode='42501';\n  end if;\n  if nullif(btrim(coalesce(p_email,'')),'') is null then\n    raise exception 'EMAIL_REQUIRED' using errcode='22023';\n  end if;\n  select array_agg(id order by id) into v_subjects from auth.users\n   where lower(email)=lower(btrim(p_email)) and email_confirmed_at is not null;\n  if coalesce(cardinality(v_subjects),0)=0 then\n    raise exception 'CONFIRMED_AUTH_USER_NOT_FOUND' using errcode='P0001';\n  end if;\n  if cardinality(v_subjects)<>1 then\n    raise exception 'AUTH_USER_EMAIL_AMBIGUOUS' using errcode='P0001';\n  end if;\n  v_subject:=v_subjects[1];\n  if v_subject=v_actor then raise exception 'SELF_ASSIGNMENT_DENIED' using errcode='42501'; end if;\n\n  select allowed_actions into v_allowed from public.admin_section_definitions\n   where section_key=p_section_key and enforcement_status='ENFORCED';\n  if v_allowed is null then raise exception 'SECTION_NOT_ENFORCED' using errcode='P0001'; end if;\n  if p_actions is null or cardinality(p_actions)=0\n     or exists(select 1 from unnest(p_actions) a where not(a=any(v_allowed))) then\n    raise exception 'INVALID_SECTION_ACTION' using errcode='22023';\n  end if;\n\n  update public.admin_section_responsibilities\n     set enabled=false, updated_at=now(), revoked_at=now(), revoked_by_auth_user_id=v_actor\n   where auth_user_id=v_subject and section_key=p_section_key and enabled;\n  insert into public.admin_section_responsibilities\n    (auth_user_id,section_key,action,enabled,granted_by_auth_user_id)\n  select v_subject,p_section_key,a,true,v_actor from (select distinct unnest(p_actions) a) q\n  on conflict(auth_user_id,section_key,action) do update\n    set enabled=true, assigned_at=now(), updated_at=now(),\n        granted_by_auth_user_id=excluded.granted_by_auth_user_id,\n        revoked_at=null, revoked_by_auth_user_id=null;\n\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\n  values(v_actor,'admin_section_responsibilities','SET',v_subject::text,'SUCCESS',\n    jsonb_build_object('section_key',p_section_key,'actions',to_jsonb(p_actions)));\n  return v_subject;\nend\n$function$\n",
+      "hash": "ab817b40270b06f7bb7f35f90b0f8136",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "set_total_admin_by_email",
+      "signature": "set_total_admin_by_email(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_total_admin_by_email(p_email text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_ids uuid[];v_role uuid;\nbegin\n  if not public.has_admin_permission('authorization.write') then raise exception 'AUTHORIZATION_DENIED' using errcode='42501'; end if;\n  if nullif(btrim(coalesce(p_email,'')),'') is null then raise exception 'EMAIL_REQUIRED' using errcode='22023'; end if;\n  select array_agg(id order by id) into v_ids from auth.users\n  where lower(email)=lower(btrim(p_email)) and email_confirmed_at is not null;\n  if coalesce(cardinality(v_ids),0)=0 then raise exception 'CONFIRMED_AUTH_USER_NOT_FOUND' using errcode='P0001'; end if;\n  if cardinality(v_ids)<>1 then raise exception 'AUTH_USER_EMAIL_AMBIGUOUS' using errcode='P0001'; end if;\n  select id into v_role from public.admin_roles where code='principal_admin' and enabled;\n  if v_role is null then raise exception 'PRINCIPAL_ADMIN_ROLE_REQUIRED' using errcode='P0001'; end if;\n  return public.assign_admin_role(v_ids[1],v_role,true);\nend $function$\n",
+      "hash": "276bc374279479d3e268582fb8fea3b5",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "start_affiliate_impersonation",
+      "signature": "start_affiliate_impersonation(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.start_affiliate_impersonation(p_affiliate_id uuid, p_reason text)\n RETURNS TABLE(session_id uuid, affiliate_id uuid, expires_at timestamp with time zone)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\ndeclare\r\n  v_actor uuid:=auth.uid();v_auth_session text:=nullif(auth.jwt()->>'session_id','');v_created public.impersonation_sessions%rowtype;v_archived boolean;\r\nbegin\r\n  if v_actor is null or not public.admin_actor_can_impersonate() then raise exception 'IMPERSONATION_DENIED' using errcode='42501'; end if;\r\n  if v_auth_session is null then raise exception 'AUTH_SESSION_REQUIRED' using errcode='42501'; end if;\r\n  if char_length(btrim(coalesce(p_reason,'')))<8 then raise exception 'REASON_REQUIRED' using errcode='22023'; end if;\r\n  select a.is_archived into v_archived from public.affiliates a where a.id=p_affiliate_id;\r\n  if v_archived is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\r\n  if v_archived then raise exception 'AFFILIATE_ARCHIVED' using errcode='42501'; end if;\r\n  with closed as (\r\n    update public.impersonation_sessions s set ended_at=now(),ended_by_auth_user_id=v_actor\r\n    where s.actor_real_auth_user_id=v_actor and s.ended_at is null\r\n      and (s.expires_at<=now() or s.actor_auth_session_id is distinct from v_auth_session)\r\n    returning s.*\r\n  ) insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n    select v_actor,c.usuario_contexto_affiliate_id,'IMPERSONATION_STOPPED','SUCCESS',jsonb_build_object(\r\n      'session_id',c.id,'reason',c.reason,'automatic',true,'cause','AUTH_SESSION_REPLACED_OR_EXPIRED') from closed c;\r\n  if exists(select 1 from public.impersonation_sessions s where s.actor_real_auth_user_id=v_actor and s.ended_at is null) then\r\n    raise exception 'IMPERSONATION_ALREADY_ACTIVE' using errcode='P0001';\r\n  end if;\r\n  insert into public.impersonation_sessions(actor_real_auth_user_id,usuario_contexto_affiliate_id,reason,expires_at,actor_auth_session_id)\r\n  values(v_actor,p_affiliate_id,btrim(p_reason),now()+interval '30 minutes',v_auth_session) returning * into v_created;\r\n  insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n  values(v_actor,p_affiliate_id,'IMPERSONATION_STARTED','SUCCESS',jsonb_build_object(\r\n    'session_id',v_created.id,'expires_at',v_created.expires_at,'reason',v_created.reason,\r\n    'actor_auth_session_id',v_auth_session,'scope','ASSISTED_AFFILIATE_SERVICE'));\r\n  return query select v_created.id,v_created.usuario_contexto_affiliate_id,v_created.expires_at;\r\nend \r\n$function$\n",
+      "hash": "186d628254f2ee0b3f02ff456ac0e6e9",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "schema": "public",
+      "name": "stop_affiliate_impersonation",
+      "signature": "stop_affiliate_impersonation()",
+      "definition": "CREATE OR REPLACE FUNCTION public.stop_affiliate_impersonation()\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\ndeclare v_actor uuid:=auth.uid();v_active public.impersonation_sessions%rowtype;\r\nbegin\r\n  if v_actor is null or not public.admin_actor_can_impersonate() then\r\n    raise exception 'IMPERSONATION_DENIED' using errcode='42501';\r\n  end if;\r\n  if nullif(auth.jwt()->>'session_id','') is null then raise exception 'AUTH_SESSION_REQUIRED' using errcode='42501'; end if;\r\n  select * into v_active from public.impersonation_sessions\r\n  where actor_real_auth_user_id=v_actor and ended_at is null\r\n    and actor_auth_session_id=nullif(auth.jwt()->>'session_id','')\r\n  order by started_at desc limit 1 for update;\r\n  if v_active.id is null then return false; end if;\r\n  update public.impersonation_sessions set ended_at=now(),ended_by_auth_user_id=v_actor where id=v_active.id;\r\n  insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n  values(v_actor,v_active.usuario_contexto_affiliate_id,'IMPERSONATION_STOPPED','SUCCESS',jsonb_build_object(\r\n    'session_id',v_active.id,'reason',v_active.reason,'manual',true,'actor_auth_session_id',v_active.actor_auth_session_id));\r\n  return true;\r\nend \r\n$function$\n",
+      "hash": "dfd09764d7cf7e3eb691a622f825b16f",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "admin_assignments",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "role",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'visual_admin'::text"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "permissions",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "role_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "assigned_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "assigned_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "revoked_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "revoked_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "protected_assignment",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "actor_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "resource",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "target_id",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "result",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "details",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "impersonation_session_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "reason",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "name": "role_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "name": "permission",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "description",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "''::text"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "system_role",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "section_key",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "display_name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "data_boundary",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "allowed_actions",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "enforcement_status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'DESIGN_ONLY'::text"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_key",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_read_permissions",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": "'{}'::text[]"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_write_permissions",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": "'{}'::text[]"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_sections",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": "'{}'::text[]"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_total_only",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "module_order",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "section_key",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "granted_by_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "assigned_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "revoked_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "revoked_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "result",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "details",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "reason",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "ended_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "actor_auth_session_id",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_assigned_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (assigned_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_auth_user_id_key",
+      "type": "u",
+      "definition": "UNIQUE (auth_user_id)"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_permissions_check",
+      "type": "c",
+      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_revocation_coherence_check",
+      "type": "c",
+      "definition": "CHECK (((enabled AND (revoked_at IS NULL)) OR ((NOT enabled) AND (revoked_at IS NOT NULL))))"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_revoked_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (revoked_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_role_check",
+      "type": "c",
+      "definition": "CHECK ((role = 'visual_admin'::text))"
+    },
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_role_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (role_id) REFERENCES admin_roles(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_audit_log_actor_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_audit_log_impersonation_session_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (impersonation_session_id) REFERENCES impersonation_sessions(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_audit_log_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_audit_log_usuario_contexto_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_audit_result_check",
+      "type": "c",
+      "definition": "CHECK ((result = ANY (ARRAY['SUCCESS'::text, 'DENIED'::text, 'FAILURE'::text])))"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "name": "admin_role_permissions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (role_id, permission)"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "name": "admin_role_permissions_role_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (role_id) REFERENCES admin_roles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_code_check",
+      "type": "c",
+      "definition": "CHECK ((code ~ '^[a-z][a-z0-9_]{2,63}$'::text))"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_code_key",
+      "type": "u",
+      "definition": "UNIQUE (code)"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_name_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(name)) >= 3) AND (length(btrim(name)) <= 80)))"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_allowed_actions_check",
+      "type": "c",
+      "definition": "CHECK (((allowed_actions <@ ARRAY['read'::text, 'create'::text, 'update'::text, 'delete'::text, 'publish'::text, 'order'::text, 'assets'::text, 'export'::text]) AND (cardinality(allowed_actions) > 0)))"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_data_boundary_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(data_boundary)) >= 3) AND (length(btrim(data_boundary)) <= 500)))"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_display_name_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(display_name)) >= 3) AND (length(btrim(display_name)) <= 100)))"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_enforcement_status_check",
+      "type": "c",
+      "definition": "CHECK ((enforcement_status = ANY (ARRAY['DESIGN_ONLY'::text, 'ENFORCED'::text])))"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_module_key_key",
+      "type": "u",
+      "definition": "UNIQUE (module_key)"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (section_key)"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_section_key_check",
+      "type": "c",
+      "definition": "CHECK ((section_key ~ '^[a-z][a-z0-9_]{2,63}$'::text))"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilitie_auth_user_id_section_key_acti_key",
+      "type": "u",
+      "definition": "UNIQUE (auth_user_id, section_key, action)"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_action_check",
+      "type": "c",
+      "definition": "CHECK ((action = ANY (ARRAY['read'::text, 'create'::text, 'update'::text, 'delete'::text, 'publish'::text, 'order'::text, 'assets'::text, 'export'::text])))"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_check",
+      "type": "c",
+      "definition": "CHECK (((enabled AND (revoked_at IS NULL) AND (revoked_by_auth_user_id IS NULL)) OR ((NOT enabled) AND (revoked_at IS NOT NULL) AND (revoked_by_auth_user_id IS NOT NULL))))"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_granted_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (granted_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_revoked_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (revoked_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_section_key_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (section_key) REFERENCES admin_section_definitions(section_key) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_action_check",
+      "type": "c",
+      "definition": "CHECK ((action = ANY (ARRAY['AFFILIATE_CLAIMED'::text, 'IMPERSONATION_STARTED'::text, 'IMPERSONATION_STOPPED'::text])))"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_actor_real_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_real_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_usuario_contexto_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_result_check",
+      "type": "c",
+      "definition": "CHECK ((result = ANY (ARRAY['SUCCESS'::text, 'DENIED'::text, 'FAILURE'::text])))"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_reason_check",
+      "type": "c",
+      "definition": "CHECK (((char_length(btrim(reason)) >= 8) AND (char_length(btrim(reason)) <= 500)))"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_actor_real_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_real_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_ended_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (ended_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_usuario_contexto_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_ttl_check",
+      "type": "c",
+      "definition": "CHECK (((expires_at > started_at) AND (expires_at <= (started_at + '00:30:00'::interval))))"
+    }
+  ],
+  "triggers": [
+    {
+      "table_name": "admin_assignments",
+      "name": "admin_assignments_updated_at",
+      "definition": "CREATE TRIGGER admin_assignments_updated_at BEFORE UPDATE ON public.admin_assignments FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+      "signature": "set_h0072_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_h0072_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "name": "admin_assisted_context",
+      "definition": "CREATE TRIGGER admin_assisted_context BEFORE INSERT ON public.admin_audit_log FOR EACH ROW EXECUTE FUNCTION admin_support_private.audit_context()",
+      "signature": "admin_support_private.audit_context()",
+      "function_definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_context()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare support record; begin\r\n select * into support from admin_support_private.context();\r\n if found then new.details:=coalesce(new.details,'{}'::jsonb)||jsonb_build_object('admin_assistance',\r\n  jsonb_build_object('session_id',support.session_id,'actor_real_auth_user_id',auth.uid(),\r\n  'subject_auth_user_id',support.subject_auth_user_id,'usuario_contexto_affiliate_id',support.affiliate_id)); end if;\r\n return new;\r\nend $function$\n"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "name": "admin_role_permissions_admin_audit",
+      "definition": "CREATE TRIGGER admin_role_permissions_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.admin_role_permissions FOR EACH ROW EXECUTE FUNCTION audit_admin_write()",
+      "signature": "audit_admin_write()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.audit_admin_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare row_data jsonb; target text; ctx public.impersonation_sessions%rowtype;\nbegin\n  if (select auth.uid()) is null then return coalesce(new, old); end if;\n  row_data := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;\n  target := coalesce(row_data->>'id', row_data->>'company_id', row_data->>'asset_id', row_data->>'asset_key');\n  select * into ctx from public.impersonation_sessions where actor_real_auth_user_id=(select auth.uid()) and ended_at is null and expires_at>now() limit 1;\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,usuario_contexto_affiliate_id,impersonation_session_id,reason)\n  values ((select auth.uid()),tg_table_name,tg_op,target,'SUCCESS',ctx.usuario_contexto_affiliate_id,ctx.id,ctx.reason);\n  return coalesce(new, old);\nend;\n$function$\n"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_admin_audit",
+      "definition": "CREATE TRIGGER admin_roles_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.admin_roles FOR EACH ROW EXECUTE FUNCTION audit_admin_write()",
+      "signature": "audit_admin_write()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.audit_admin_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare row_data jsonb; target text; ctx public.impersonation_sessions%rowtype;\nbegin\n  if (select auth.uid()) is null then return coalesce(new, old); end if;\n  row_data := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;\n  target := coalesce(row_data->>'id', row_data->>'company_id', row_data->>'asset_id', row_data->>'asset_key');\n  select * into ctx from public.impersonation_sessions where actor_real_auth_user_id=(select auth.uid()) and ended_at is null and expires_at>now() limit 1;\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,usuario_contexto_affiliate_id,impersonation_session_id,reason)\n  values ((select auth.uid()),tg_table_name,tg_op,target,'SUCCESS',ctx.usuario_contexto_affiliate_id,ctx.id,ctx.reason);\n  return coalesce(new, old);\nend;\n$function$\n"
+    },
+    {
+      "table_name": "admin_roles",
+      "name": "admin_roles_updated_at",
+      "definition": "CREATE TRIGGER admin_roles_updated_at BEFORE UPDATE ON public.admin_roles FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+      "signature": "set_h0072_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_h0072_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "name": "admin_section_definitions_updated_at",
+      "definition": "CREATE TRIGGER admin_section_definitions_updated_at BEFORE UPDATE ON public.admin_section_definitions FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+      "signature": "set_h0072_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_h0072_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "name": "admin_section_responsibilities_updated_at",
+      "definition": "CREATE TRIGGER admin_section_responsibilities_updated_at BEFORE UPDATE ON public.admin_section_responsibilities FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+      "signature": "set_h0072_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_h0072_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "admin_assisted_context",
+      "definition": "CREATE TRIGGER admin_assisted_context BEFORE INSERT ON public.identity_audit_log FOR EACH ROW EXECUTE FUNCTION admin_support_private.audit_context()",
+      "signature": "admin_support_private.audit_context()",
+      "function_definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_context()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare support record; begin\r\n select * into support from admin_support_private.context();\r\n if found then new.details:=coalesce(new.details,'{}'::jsonb)||jsonb_build_object('admin_assistance',\r\n  jsonb_build_object('session_id',support.session_id,'actor_real_auth_user_id',auth.uid(),\r\n  'subject_auth_user_id',support.subject_auth_user_id,'usuario_contexto_affiliate_id',support.affiliate_id)); end if;\r\n return new;\r\nend $function$\n"
+    }
+  ],
+  "security": [
+    {
+      "table_name": "admin_assignments",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "admin_audit_log",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "admin_roles",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "identity_audit_log",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "rls": true,
+      "force_rls": true
+    }
+  ],
+  "policies": [
+    {
+      "tablename": "admin_assignments",
+      "policyname": "admin_assignments_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((auth_user_id = auth.uid()) OR has_admin_permission('authorization.read'::text))",
+      "with_check": null
+    },
+    {
+      "tablename": "admin_audit_log",
+      "policyname": "admin_audit_read_authorized",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('assets.read'::text)",
+      "with_check": null
+    },
+    {
+      "tablename": "admin_role_permissions",
+      "policyname": "admin_role_permissions_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('authorization.read'::text)",
+      "with_check": null
+    },
+    {
+      "tablename": "admin_roles",
+      "policyname": "admin_roles_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('authorization.read'::text)",
+      "with_check": null
+    },
+    {
+      "tablename": "admin_section_definitions",
+      "policyname": "admin_section_definitions_authorized_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('authorization.read'::text) OR (EXISTS ( SELECT 1\n   FROM admin_section_responsibilities r\n  WHERE ((r.auth_user_id = ( SELECT auth.uid() AS uid)) AND (r.section_key = admin_section_definitions.section_key) AND r.enabled AND (admin_section_definitions.enforcement_status = 'ENFORCED'::text)))))",
+      "with_check": null
+    },
+    {
+      "tablename": "admin_section_responsibilities",
+      "policyname": "admin_section_responsibilities_authorized_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((auth_user_id = ( SELECT auth.uid() AS uid)) OR has_admin_permission('authorization.read'::text))",
+      "with_check": null
+    },
+    {
+      "tablename": "identity_audit_log",
+      "policyname": "identity_audit_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('affiliates.read'::text)",
+      "with_check": null
+    }
+  ],
+  "grants": [
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_audit_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_roles",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_role_permissions",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_section_definitions",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_section_responsibilities",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "admin_assignments",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    }
+  ],
+  "rolePermissions": [
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.impersonate"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "affiliates.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "assets.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "assets.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "authorization.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "authorization.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "bank_accounts.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "banners.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "banners.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "companies.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "companies.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "company_portal.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "company_portal.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "content.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "content.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "data_exports.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "documents.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "documents.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_criteria.visibility.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_criteria.visibility.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_programs.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_programs.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rates.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.publish"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "financial_rules.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.quotes.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.quotes.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "marketplace.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "memberships.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "memberships.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "news.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "news.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "popups.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "popups.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_catalog.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_catalog.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_requests.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "program_requests.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.approve"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.config"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.identity_review"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.reports"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.withdrawal.override"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "savings.yield.override"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "segmentation.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "segmentation.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "union_content.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "union_content.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.create"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.delete"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.export_identified_votes"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.publish"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.results"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "votaciones.update"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "workflow.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "workflow.write"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "banners.read"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "banners.write"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "news.read"
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "permission": "news.write"
+    }
+  ],
+  "roles": [
+    {
+      "code": "module_admin",
+      "name": "Fixture module_admin",
+      "enabled": true,
+      "system_role": true
+    },
+    {
+      "code": "principal_admin",
+      "name": "Fixture principal_admin",
+      "enabled": true,
+      "system_role": true
+    },
+    {
+      "code": "role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "name": "Fixture role_9b9884c8cbfb489ba8cf9d5044a3ca5b",
+      "enabled": true,
+      "system_role": false
+    }
+  ],
+  "sections": [
+    {
+      "section_key": "admin_administrators",
+      "display_name": "Administradores",
+      "data_boundary": "Administrative module: administrators",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "administrators",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 0
+    },
+    {
+      "section_key": "admin_affiliates",
+      "display_name": "Afiliados",
+      "data_boundary": "Administrative module: affiliates",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "affiliates",
+      "module_read_permissions": [
+        "affiliates.read",
+        "documents.read",
+        "assets.read",
+        "bank_accounts.read"
+      ],
+      "module_write_permissions": [
+        "affiliates.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 3
+    },
+    {
+      "section_key": "admin_aprobaciones",
+      "display_name": "Aprobación de Pop-ups",
+      "data_boundary": "Administrative module: aprobaciones",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "aprobaciones",
+      "module_read_permissions": [
+        "popups.read"
+      ],
+      "module_write_permissions": [
+        "popups.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 15
+    },
+    {
+      "section_key": "admin_banners",
+      "display_name": "Banners",
+      "data_boundary": "Administrative module: banners",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "banners",
+      "module_read_permissions": [
+        "banners.read"
+      ],
+      "module_write_permissions": [
+        "banners.write"
+      ],
+      "module_sections": [
+        "banners"
+      ],
+      "module_total_only": false,
+      "module_order": 25
+    },
+    {
+      "section_key": "admin_branding",
+      "display_name": "Ícono e instalación",
+      "data_boundary": "Administrative module: branding",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "branding",
+      "module_read_permissions": [
+        "assets.read"
+      ],
+      "module_write_permissions": [
+        "assets.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 32
+    },
+    {
+      "section_key": "admin_catalogos",
+      "display_name": "Catálogos de segmentación",
+      "data_boundary": "Administrative module: catalogos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "catalogos",
+      "module_read_permissions": [
+        "segmentation.read"
+      ],
+      "module_write_permissions": [
+        "segmentation.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 21
+    },
+    {
+      "section_key": "admin_companies_admin",
+      "display_name": "Empresas",
+      "data_boundary": "Administrative module: companies_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "companies_admin",
+      "module_read_permissions": [
+        "companies.read"
+      ],
+      "module_write_permissions": [
+        "companies.write"
+      ],
+      "module_sections": [
+        "companies"
+      ],
+      "module_total_only": false,
+      "module_order": 26
+    },
+    {
+      "section_key": "admin_convenios",
+      "display_name": "Convenios y beneficios",
+      "data_boundary": "Administrative module: convenios",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "convenios",
+      "module_read_permissions": [
+        "companies.read",
+        "segmentation.read",
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "companies.write"
+      ],
+      "module_sections": [
+        "agreements"
+      ],
+      "module_total_only": false,
+      "module_order": 20
+    },
+    {
+      "section_key": "admin_data_exports",
+      "display_name": "Datos y respaldos",
+      "data_boundary": "Administrative module: data_exports",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "data_exports",
+      "module_read_permissions": [
+        "data_exports.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 4
+    },
+    {
+      "section_key": "admin_documents_admin",
+      "display_name": "Documentos y PDF",
+      "data_boundary": "Administrative module: documents_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "documents_admin",
+      "module_read_permissions": [
+        "documents.read",
+        "assets.read"
+      ],
+      "module_write_permissions": [
+        "documents.write"
+      ],
+      "module_sections": [
+        "documents"
+      ],
+      "module_total_only": false,
+      "module_order": 27
+    },
+    {
+      "section_key": "admin_education",
+      "display_name": "Educación",
+      "data_boundary": "Administrative module: education",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "education",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [
+        "content.write"
+      ],
+      "module_sections": [
+        "education",
+        "tutorials"
+      ],
+      "module_total_only": false,
+      "module_order": 19
+    },
+    {
+      "section_key": "admin_finanzas",
+      "display_name": "Finanzas · Solicitudes",
+      "data_boundary": "Administrative module: finanzas",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "finanzas",
+      "module_read_permissions": [
+        "program_requests.read",
+        "documents.read",
+        "bank_accounts.read",
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "program_requests.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 8
+    },
+    {
+      "section_key": "admin_fincat",
+      "display_name": "Catálogo de Finanzas",
+      "data_boundary": "Administrative module: fincat",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "fincat",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 11
+    },
+    {
+      "section_key": "admin_flujos",
+      "display_name": "Etapas y seguimiento",
+      "data_boundary": "Administrative module: flujos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "flujos",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 13
+    },
+    {
+      "section_key": "admin_fondos",
+      "display_name": "Fondos y reglas",
+      "data_boundary": "Administrative module: fondos",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "fondos",
+      "module_read_permissions": [
+        "financial_criteria.visibility.read"
+      ],
+      "module_write_permissions": [
+        "financial_criteria.visibility.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 10
+    },
+    {
+      "section_key": "admin_formularios",
+      "display_name": "Formularios",
+      "data_boundary": "Administrative module: formularios",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "formularios",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 31
+    },
+    {
+      "section_key": "admin_impersonation",
+      "display_name": "Tomar control",
+      "data_boundary": "Administrative module: impersonation",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "impersonation",
+      "module_read_permissions": [
+        "affiliates.impersonate"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 2
+    },
+    {
+      "section_key": "admin_inversion",
+      "display_name": "Suti Inversión · Textos",
+      "data_boundary": "Administrative module: inversion",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "inversion",
+      "module_read_permissions": [
+        "workflow.read"
+      ],
+      "module_write_permissions": [
+        "workflow.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 36
+    },
+    {
+      "section_key": "admin_login_history",
+      "display_name": "Historial de accesos",
+      "data_boundary": "Read-only Auth sign-ins and affiliate contact",
+      "allowed_actions": [
+        "read"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "login_history",
+      "module_read_permissions": [
+        "authorization.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 90
+    },
+    {
+      "section_key": "admin_marketplace",
+      "display_name": "Marketplace",
+      "data_boundary": "Administrative module: marketplace",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "marketplace",
+      "module_read_permissions": [
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "marketplace.write"
+      ],
+      "module_sections": [
+        "marketplace"
+      ],
+      "module_total_only": false,
+      "module_order": 14
+    },
+    {
+      "section_key": "admin_membresias",
+      "display_name": "Membresías",
+      "data_boundary": "Administrative module: membresias",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "membresias",
+      "module_read_permissions": [
+        "memberships.read"
+      ],
+      "module_write_permissions": [
+        "memberships.write",
+        "assets.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 17
+    },
+    {
+      "section_key": "admin_menus",
+      "display_name": "Menús y botones",
+      "data_boundary": "Administrative module: menus",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "menus",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 30
+    },
+    {
+      "section_key": "admin_minutes_admin",
+      "display_name": "Minutas",
+      "data_boundary": "Administrative module: minutes_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "minutes_admin",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [
+        "minutes"
+      ],
+      "module_total_only": false,
+      "module_order": 28
+    },
+    {
+      "section_key": "admin_noticias",
+      "display_name": "Noticias del sindicato",
+      "data_boundary": "Administrative module: noticias",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "noticias",
+      "module_read_permissions": [
+        "news.read"
+      ],
+      "module_write_permissions": [
+        "news.write"
+      ],
+      "module_sections": [
+        "news"
+      ],
+      "module_total_only": false,
+      "module_order": 18
+    },
+    {
+      "section_key": "admin_pantallas",
+      "display_name": "Acceso a pantallas",
+      "data_boundary": "Administrative module: pantallas",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "pantallas",
+      "module_read_permissions": [
+        "segmentation.read"
+      ],
+      "module_write_permissions": [
+        "segmentation.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 23
+    },
+    {
+      "section_key": "admin_planes",
+      "display_name": "Planes de empresas",
+      "data_boundary": "Administrative module: planes",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "planes",
+      "module_read_permissions": [
+        "company_portal.read"
+      ],
+      "module_write_permissions": [
+        "company_portal.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 16
+    },
+    {
+      "section_key": "admin_popups",
+      "display_name": "Pop-ups por pantalla",
+      "data_boundary": "Administrative module: popups",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "popups",
+      "module_read_permissions": [
+        "popups.read"
+      ],
+      "module_write_permissions": [
+        "popups.write"
+      ],
+      "module_sections": [
+        "popups"
+      ],
+      "module_total_only": false,
+      "module_order": 5
+    },
+    {
+      "section_key": "admin_program_products",
+      "display_name": "Programas · Productos",
+      "data_boundary": "Administrative module: program_products",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "program_products",
+      "module_read_permissions": [
+        "program_catalog.read"
+      ],
+      "module_write_permissions": [
+        "program_catalog.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 12
+    },
+    {
+      "section_key": "admin_programs_admin",
+      "display_name": "Programas institucionales",
+      "data_boundary": "Administrative module: programs_admin",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "programs_admin",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [
+        "programs"
+      ],
+      "module_total_only": false,
+      "module_order": 29
+    },
+    {
+      "section_key": "admin_requests",
+      "display_name": "Solicitudes",
+      "data_boundary": "Administrative module: requests",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "requests",
+      "module_read_permissions": [
+        "program_requests.read",
+        "documents.read",
+        "bank_accounts.read"
+      ],
+      "module_write_permissions": [
+        "program_requests.write",
+        "documents.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 7
+    },
+    {
+      "section_key": "admin_roles",
+      "display_name": "Roles y permisos",
+      "data_boundary": "Administrative module: roles",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "roles",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 22
+    },
+    {
+      "section_key": "admin_savings",
+      "display_name": "Ahorro",
+      "data_boundary": "Administrative module: savings",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.write",
+        "savings.approve",
+        "savings.config",
+        "savings.identity_review",
+        "savings.reports"
+      ],
+      "module_sections": [
+        "savings"
+      ],
+      "module_total_only": false,
+      "module_order": 9
+    },
+    {
+      "section_key": "admin_savings_withdrawal_override",
+      "display_name": "Ahorro · Autorizar retiro excepcional",
+      "data_boundary": "Specific withdrawal exception",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings_withdrawal_override",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.withdrawal.override"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 90
+    },
+    {
+      "section_key": "admin_savings_yield_override",
+      "display_name": "Ahorro · Excepción de permanencia",
+      "data_boundary": "Specific period tenure exception",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "savings_yield_override",
+      "module_read_permissions": [
+        "savings.read"
+      ],
+      "module_write_permissions": [
+        "savings.yield.override"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 91
+    },
+    {
+      "section_key": "admin_screen_permissions",
+      "display_name": "Permisos por pantalla",
+      "data_boundary": "Administrative module: screen_permissions",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "screen_permissions",
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": true,
+      "module_order": 1
+    },
+    {
+      "section_key": "admin_secciones",
+      "display_name": "Secciones y componentes",
+      "data_boundary": "Administrative module: secciones",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "secciones",
+      "module_read_permissions": [
+        "content.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 24
+    },
+    {
+      "section_key": "admin_sindicato",
+      "display_name": "Tu Sindicato",
+      "data_boundary": "Administrative module: sindicato",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "sindicato",
+      "module_read_permissions": [
+        "union_content.read",
+        "companies.read",
+        "segmentation.read",
+        "marketplace.read"
+      ],
+      "module_write_permissions": [
+        "union_content.write",
+        "companies.write"
+      ],
+      "module_sections": [
+        "documents",
+        "minutes",
+        "programs",
+        "agreements"
+      ],
+      "module_total_only": false,
+      "module_order": 6
+    },
+    {
+      "section_key": "admin_votaciones",
+      "display_name": "Votaciones",
+      "data_boundary": "Consultas, preguntas y resultados agregados",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "votaciones",
+      "module_read_permissions": [
+        "votaciones.read",
+        "votaciones.results"
+      ],
+      "module_write_permissions": [
+        "votaciones.create",
+        "votaciones.update",
+        "votaciones.delete",
+        "votaciones.publish"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 34
+    },
+    {
+      "section_key": "admin_votaciones_nominal",
+      "display_name": "Votaciones · votos identificados",
+      "data_boundary": "Permiso independiente para conocer y exportar votos nominales",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "votaciones_nominal",
+      "module_read_permissions": [
+        "votaciones.read"
+      ],
+      "module_write_permissions": [
+        "votaciones.export_identified_votes"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 35
+    },
+    {
+      "section_key": "agreements",
+      "display_name": "Convenios y beneficios",
+      "data_boundary": "company_benefit_profiles + company_benefits + company_audience_rules; companies is read-only",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "banners",
+      "display_name": "Banners",
+      "data_boundary": "banners",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "companies",
+      "display_name": "Empresas",
+      "data_boundary": "companies + company_assets; excludes benefit/audience configuration",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "documents",
+      "display_name": "Documentos",
+      "data_boundary": "institutional_documents + directory_members",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "education",
+      "display_name": "Educación",
+      "data_boundary": "educational_resources where resource_kind=education",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "marketplace",
+      "display_name": "Marketplace",
+      "data_boundary": "marketplace catalog; excludes quote/request adjudication",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "minutes",
+      "display_name": "Minutas",
+      "data_boundary": "minutes; distinct from institutional_documents",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "news",
+      "display_name": "Noticias",
+      "data_boundary": "news_articles + news_settings",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "popups",
+      "display_name": "Pop-ups",
+      "data_boundary": "popups",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "programs",
+      "display_name": "Programas institucionales",
+      "data_boundary": "institutional_programs and non-financial presentation only",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "savings",
+      "display_name": "Ahorro · Revisión privada",
+      "data_boundary": "Private savings review; no financial posting or publication",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "tutorials",
+      "display_name": "Tutoriales",
+      "data_boundary": "educational_resources where resource_kind=tutorial",
+      "allowed_actions": [
+        "delete",
+        "export",
+        "update",
+        "create",
+        "read",
+        "assets",
+        "order",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones",
+      "display_name": "Votaciones · acciones",
+      "data_boundary": "Consultas y preguntas",
+      "allowed_actions": [
+        "read",
+        "create",
+        "update",
+        "delete",
+        "publish"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones_identified",
+      "display_name": "Votaciones · exportación nominal",
+      "data_boundary": "Votos identificados, permiso separado",
+      "allowed_actions": [
+        "export"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    },
+    {
+      "section_key": "votaciones_results",
+      "display_name": "Votaciones · resultados",
+      "data_boundary": "Conteos agregados",
+      "allowed_actions": [
+        "read",
+        "export"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": null,
+      "module_read_permissions": [],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": null
+    }
+  ]
+}

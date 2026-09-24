@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## 2026-09-24 — H-SCREEN-PERMISSION-COVERAGE-001 — PASS de auditoría y herramientas
+
+Lectura de producción: 37/37 módulos del menú en catálogo de 39; 21 rutas de afiliados,
+9 pantallas Sindicato y 9 vistas empresariales clasificadas. Identificados cuatro módulos
+omitidos por visibilidad asistida, capacidades compartidas (Convenios/Empresas), edición
+estructural de lectura y ausencia de permisos por vista en portal empresarial.
+Build Pages exige registro/clasificación; declara una pantalla una vez y prepara SQL/recovery
+automáticamente, sin conceder acceso a usuarios. 20 pruebas PostgreSQL aisladas PASS,
+incluidos registro futuro, asignación, revocación, principal protegida y límites recovery.
+Build de 25 archivos PASS; cero escrituras productivas, cambios runtime o publicación.
+No se declara aislamiento universal por subpantalla. [Auditoría](audits/H-SCREEN-PERMISSION-COVERAGE-001.md).
+
 
 ## 2026-09-23 - H-LOAN-FUND-DISPLAY-ORDER-001 - PASS
 
@@ -49,6 +61,15 @@ El propietario activó auditoría Postgres en Dashboard; captura de nuevo acceso
 y matriz de permisos PASS. Publicado v280 (7e90334), pantalla productiva verificada.
 Evidencia y estado de cierre en
 [auditoría](audits/H-ADMIN-LOGIN-HISTORY-001.md).
+
+## 2026-09-22 — H-SAVINGS-SEP15-READONLY-AUDIT-001 — auditoría de lectura
+
+Producción confirma 290 aportaciones del 15/09/2026 por $229,041.39, todas abonadas;
+290/290 proyecciones contienen el movimiento y sus saldos coinciden con el ledger.
+La RPC administrativa devuelve esos registros al seleccionar el 15; la fecha de hoy,
+predeterminada en conciliación, devuelve cero. Resumen del periodo: CONFIRMED, 100%.
+Sin escrituras financieras ni cambios de aplicación. No se reprodujo la sesión de
+la encargada. [Evidencia y límites](audits/H-SAVINGS-SEP15-READONLY-AUDIT-001.md).
 
 ## 2026-09-22 — H-LOAN-ADVANCE-ADMIN-FEE-001 — backend publicado
 
@@ -3553,3 +3574,52 @@ Owner-authorized request-detail typography, full-width submitted images and coll
 H-FINANCE-DETAIL-READABILITY-001 continuation: publication explicitly authorized; stale test assertions reconciled with current verified behavior. Protected suite, isolated browser, local real-data browser, Auth/request deployment contracts and Pages artifact build PASS. Preparing v277/cache v215; no business data changes. Prior BLOCKED status superseded.
 
 H-FINANCE-DETAIL-READABILITY-001 published: v277/cache v215, commit 43f2760, Pages run 35729960951 success. Deployed bundle hash matched; real-record desktop/mobile typography/images/accordion/viewer PASS, zero business writes/errors. Final status PASS; earlier blocked/pending statuses superseded.
+
+## 2026-09-24 — H-ADMIN-REVOCATION-001 — candidate verified, NOT APPLIED
+
+Owner requested read-only production diagnosis and isolated repair before application.
+Installed CHECK and existing logs confirm 23514 during revoke_admin_assignment.
+Candidate widens the CHECK by the seven existing voting permissions and strengthens
+Revocar to retire independent section grants atomically with role/session/audit updates.
+No-use recovery rejects definition drift and authorization history. Existing accounts,
+affiliates, dossier and grant history remain intact. sw.js cache references aligned
+with the already-prepared v284 bundle; no SW logic or screen redesign.
+23 isolated checks, actual Chrome Add/Revocar/stale-session denial, canonical build
+and protected-contract test PASS. No production writes/deployment. Native concurrency
+probe unavailable (PostgreSQL initdb crash); limitations and exact evidence in
+[audit](audits/H-ADMIN-REVOCATION-001.md). Reviewer approves preparation only.
+
+## 2026-09-24 — H-ADMIN-REVOCATION-001 — APPLIED / VERIFIED
+
+Owner authorized the prepared application with "hazlo de forma quirurgica".
+Exact tested migration 20260924000100 installed with tracking in one transaction.
+Live preflight matched 46 function definitions/ACLs and the prior CHECK. Eleven
+before/after table fingerprints remained identical, including 338 Auth accounts,
+976 affiliates, eight assignments, roles, grants, sessions, audit and documents.
+Read-back confirmed exact CHECK/RPC hashes, unchanged OIDs/owners/ACLs, forced RLS
+and API-denied recovery metadata, and zero role permissions outside the CHECK.
+No real administrator revoked; no frontend publication. Earlier NOT APPLIED status
+is superseded. [Application evidence and closure](audits/H-ADMIN-REVOCATION-001.md).
+# 2026-09-24 — H-SCREEN-PERMISSION-FIX-001 — preparado, no desplegado
+
+Actualización posterior autorizada: 002/003 APPLIED / VERIFIED juntas; huellas de
+17 tablas existentes conservadas, 52 funciones verificadas, ocho asignaciones
+habilitadas. Frontend v285 autorizado para commit/push/Pages. Evidencia:
+qa/evidence/screen-permission-fix-20260924/release-applied.json y
+release-backend-verified.json. Las notas de preparación siguientes son históricas.
+
+Edición real autorizada desde Secciones, Menús y Formularios mediante Repository,
+RPC, RLS, versiones inmutables y respuestas autenticadas. Corrección focal de
+fronteras empresariales y visibilidad de cuatro módulos; conserva asignaciones,
+cuenta principal, login propio de empresas e historial. Registro automático hace
+nuevos módulos asignables sin concederlos a usuarios existentes.
+
+PASS: backend empresas 10, editorial 12, navegador 6, sesiones 6, módulos 9,
+registro 20; contrato protegido y regresión global local/publicada. Release v285,
+worker v219, 127 chunks ajenos intactos. Migraciones 002/003 y recovery probados
+sin uso y con bloqueo después del uso. Producción leída: ocho asignaciones al
+cierre, cambio concurrente auditado, nuevas migraciones no instaladas.
+
+Detalle, alcance, limitaciones y revisión: `audits/H-SCREEN-PERMISSION-FIX-001.md`.
+Evidencia y hashes: `qa/evidence/screen-permission-fix-20260924/release.json`.
+Sin publicación ni nuevas escrituras productivas en esta H.

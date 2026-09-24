@@ -25,7 +25,7 @@ const files = [
   'screens-home-r2.jsx', 'screens-financiera.jsx', 'savings-request-form.jsx', 'screens-savings.jsx', 'investment-copy-store.jsx', 'screens-inversion.jsx', 'screens-loan.jsx',
   'screens-marketplace.jsx', 'screens-terreno.jsx', 'convenios-repository.js', 'screens-convenios.jsx',
   'request-notifications.js', 'screens-historial.jsx', 'screens-credencial.jsx', 'image-slot.js',
-  'screens-documentos.jsx', 'admin-store.jsx', 'admin-cutover-store.jsx', 'custom-screen.jsx',
+  'screens-documentos.jsx', 'admin-store.jsx', 'admin-cutover-store.jsx', 'editorial-repository.js', 'editorial-content.jsx', 'custom-screen.jsx',
   'sindicato-store.jsx', 'finance-store.jsx', 'savings-store.jsx', 'quotes-store.jsx', 'operations-store.jsx', 'flow-store.jsx',
   'funds-store.jsx', 'savings-loan-eligibility.js', 'admin-popup-editor.jsx', 'savings-review-repository.js', 'savings-access-admin.jsx', 'savings-recorded-history.jsx', 'savings-withdrawal-list.jsx', 'savings-review-admin.jsx', 'savings-operations-admin.jsx', 'savings-retirement-admin.jsx', 'savings-yield-admin.jsx',
   'section-responsibility.jsx', 'screens-admin-roles.jsx', 'screens-admin-content.jsx', 'screens-admin-news.jsx',

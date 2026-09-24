@@ -1,0 +1,7 @@
+# Preserve exact tested/applied SQL bytes; release checks use raw SHA-256.
+supabase/migrations/20260924000100_admin_assignment_voting_permissions.sql -text
+supabase/recovery/20260924000100_admin_assignment_voting_permissions_recovery.sql -text
+supabase/migrations/20260924000200_admin_screen_permission_boundaries.sql -text
+supabase/recovery/20260924000200_admin_screen_permission_boundaries_recovery.sql -text
+supabase/migrations/20260924000300_app_editorial_panels.sql -text
+supabase/recovery/20260924000300_app_editorial_panels_recovery.sql -text

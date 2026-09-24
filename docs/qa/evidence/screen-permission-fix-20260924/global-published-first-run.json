@@ -1,0 +1,11 @@
+{
+  "status": "FAIL",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "productionCodeChanged": false,
+  "businessDataMutations": 0,
+  "family": "E_PROGRAM_CATALOG_ITEM_ASSETS",
+  "failure": "BROKEN_SIGNED_URL / IMAGE_TIMEOUT",
+  "failures": 12,
+  "parallelAssetChecks": 12,
+  "nextCheck": "Repeat all original checks with browser asset concurrency bounded to 4; identical asset coverage and timeouts. Do not infer a production defect or PASS from this first timeout result."
+}

@@ -688,7 +688,7 @@
         // scrollable tab content
         React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },
           tabAllowed || !window.ScreenLocked
-            ? React.createElement(tabScreen, { app, t })
+            ? React.createElement(React.Fragment, null, React.createElement(tabScreen, { app, t }), tab !== 'admin' && tab !== 'home' && React.createElement(window.AppScreenLayout.Region, {screen:tab,app}))
             : React.createElement(window.ScreenLocked, { screen: tab })),
         // bottom nav
         React.createElement(BottomNav, { tab, setTab, textSize: textPreference.value, adminOnly: !auth.affiliateView, showAdmin: adminAuthorized }),
@@ -706,7 +706,7 @@
             style: { position: 'absolute', inset: 0, zIndex: l.depth, pointerEvents: l.out ? 'none' : 'auto', willChange: l.out ? 'opacity' : undefined },
           },
             (l.out ? true : pushAllowed) || !window.ScreenLocked
-              ? React.createElement(l.Comp, { app, params: l.params })
+              ? React.createElement(React.Fragment, null, React.createElement(l.Comp, { app, params: l.params }), React.createElement(window.AppScreenLayout.RouteSlot,{screen:l.name,app,container:l.out?outNode:inNode}))
               : React.createElement(window.ScreenLocked, { screen: l.name, onBack: back })))),
         // toast
         React.createElement(Toast, { msg: toast }),

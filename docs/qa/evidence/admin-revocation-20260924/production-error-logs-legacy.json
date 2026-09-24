@@ -1,0 +1,11 @@
+{
+  "endpoint": "logs.all",
+  "status": 410,
+  "window": {
+    "start": "2026-09-23T14:52:26.888Z",
+    "end": "2026-09-24T14:52:26.888Z"
+  },
+  "errors": [],
+  "queryError": null,
+  "productionWrites": 0
+}

@@ -634,3 +634,31 @@ Savings beneficiary distributions remain exclusively in savings_beneficiary_vers
 ## H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001
 
 Beneficiary frontend delivery now consumes only the installed signed self RPCs and private signature bucket. The prior PENDING_FRONTEND_DELIVERY classification is superseded by H-SAVINGS-BENEFICIARIES-FRONTEND-DELIVERY-001. No backend authority, tracking or historical data changes.
+
+## H-SCREEN-PERMISSION-FIX-001 — backend APPLIED / VERIFIED
+
+Owner explicitly requested editing from Secciones, Menús and Formularios. The prepared
+20260924000300 migration adds `app_editorial_screens` as the sole authority for
+editable presentation nodes by existing affiliate route, `app_editorial_revisions`
+for immutable saved versions and `app_editorial_submissions` for authenticated
+editorial form responses. `EditorialRepository` transports RPCs; browser memory
+holds verified snapshots and unsaved edits only, cleared on identity changes.
+No localStorage, seed or local fallback can restore a removed node.
+
+Compiled components, navigation and original business forms remain code. Their
+financial/identity validation and writers are not configurable through these panels.
+The initial Home configuration reproduces its four existing blocks in published
+order; all other configured routes start with no added nodes. `segmentation_catalog_entries`
+and `matches_current_affiliate_audience` remain the audience authority/engine.
+Versions retain submitted form schema even after a form leaves the current layout.
+Forms cannot be submitted during impersonation; administrative edits retain real
+actor and assistance context in existing audit columns.
+
+20260924000200 only narrows unintended cross-module company administration and
+repairs assisted module visibility. Existing assignments, independent responsibilities,
+business memberships, company login and company data retain their current authorities.
+Neither migration is applied by a build. Owner authorized the release on 2026-09-24;
+002 and 003 are APPLIED / VERIFIED atomically, with existing rows unchanged and eight
+enabled assignments preserved. Evidence: qa/evidence/screen-permission-fix-20260924/
+release-applied.json and release-backend-verified.json. Frontend v285 is the associated
+verified release candidate; Pages publication is checked separately.

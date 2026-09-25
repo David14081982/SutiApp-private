@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## 2026-09-25 — H-REQUEST-APPROVED-CELEBRATION-POPUP-001
+
+Popup de autorización adaptado al HTML aprobado: modal centrado, cabecera guinda,
+check/ring, contenido escalonado y dos chorros de confeti con limpieza. Conserva
+evento/acuse atómico y datos de solicitud; cola individual y seguimiento exacto.
+Sin backend, schema, writers, finanzas, routing ni cambios visuales a Historial.
+PASS: navegador aislado, 21 combinaciones viewport/texto, reduced motion, acuses,
+foco, regreso de seguimiento, build Pages y 133 chunks ajenos idénticos.
+Versiones: bundle 287, worker 221 (sólo referencias de caché). QA permanente nuevo: 0.
+Publicación y evidencia: `audits/H-REQUEST-APPROVED-CELEBRATION-POPUP-001.md`.
+
 ## 2026-09-24 — H-AFFILIATES-OPTIONAL-REASON-001 — PASS publicado
 
 Motivo opcional en los seis formularios de Afiliados, incluidas ambas acciones de

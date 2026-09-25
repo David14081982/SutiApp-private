@@ -6,8 +6,9 @@ async function main(){
  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.setContent('<div id="one"></div><div id="two"></div><div id="screen"></div>');
+  await page.setContent('<div style="transform:translateZ(0);overflow:hidden;height:10px"><div id="one"></div><div id="two"></div></div><div id="screen"></div>');
   for(const file of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js'])await page.addScriptTag({content:read(file)});
+  await page.addStyleTag({content:read('app/text-size.css')});
   await page.evaluate(()=>{
    window.__seen=new Set();window.__calls=[];window.__context='a';window.__listeners=new Set();window.__push=[];window.__fail=false;
    window.PrivateResourceDemand={context:()=>__context,subscribe:fn=>{__listeners.add(fn);return()=>__listeners.delete(fn);}};
@@ -21,7 +22,10 @@ async function main(){
    window.__app={push:(...args)=>__push.push(args),toast:()=>{}};window.__requests=[{sourceId:'r1',requestStatus:'approved',tipo:'Programa de prueba',steps:[{active:true,label:'Autorización'}]}];
    window.Icon=()=>null;window.RequestPushInvitation=()=>null;window.useQuoteStore=()=>({state:()=>({phase:'loaded'}),mine:()=>[],retry:()=>{}});
   });
-  await page.addScriptTag({content:read('app/request-notifications.js')});
+  const notificationSource=process.env.SUTIAPP_TEST_BUNDLE
+   ? fs.readFileSync(process.env.SUTIAPP_TEST_BUNDLE,'utf8').split('/* @@file request-notifications.js */')[1].split('/* @@file ')[0]
+   : read('app/request-notifications.js');
+  await page.addScriptTag({content:notificationSource});
   await page.evaluate(()=>{
    window.__roots=['one','two'].map(id=>ReactDOM.createRoot(document.getElementById(id)));
    __roots.forEach(root=>root.render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests})));
@@ -32,11 +36,75 @@ async function main(){
   await page.getByRole('button',{name:'Entendido'}).click();
   await page.evaluate(()=>{__roots.forEach(root=>root.unmount());__roots=['one','two'].map(id=>ReactDOM.createRoot(document.getElementById(id)));__roots.forEach(root=>root.render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests})));});
   await page.waitForTimeout(250);assert.equal(await page.locator('[data-user-authorization]').count(),0,'no repeated celebration on reopening');
+  // Reuse isolated events; never create or authorize a production request.
+  await page.evaluate(()=>{
+   __roots.forEach(root=>root.unmount());__roots=[ReactDOM.createRoot(document.getElementById('one'))];
+   __events.push({id:'approved-2',request_id:'r5',folio:'SR-QA-5',status:'approved',authorized:true},
+    {id:'approved-3',request_id:'r6',folio:'SR-QA-6',status:'approved',authorized:true});
+   __requests.push({sourceId:'r5',requestStatus:'approved',tipo:'Membresía de prueba',steps:[]},
+    {sourceId:'r6',requestStatus:'approved',tipo:'Producto de prueba',steps:[{active:true,label:'Entrega'}]});
+   __roots[0].render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests}));
+  });
+  await page.locator('[data-user-authorization="approved-2"]').waitFor();
+  await page.waitForTimeout(800);
+  assert.equal(await page.getByRole('dialog').count(),1);
+  assert.equal(await page.getByRole('heading',{name:'¡Tu solicitud fue autorizada!',exact:true}).count(),1);
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Ver seguimiento');
+  assert.equal(await page.evaluate(()=>__seen.has('approved-3')),false,'do not consume queued events');
+  assert((await page.getByRole('dialog').textContent()).includes('Membresía de prueba'));
+  assert((await page.getByRole('dialog').textContent()).includes('SR-QA-5'));
+  assert.equal(await page.locator('[data-approved-confetti="two-jets"]').count(),1);
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Entendido');
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Ver seguimiento');
+  for(const width of [320,360,375,390,412,430,1280])for(const size of ['normal','large','largest']){
+   await page.setViewportSize({width,height:width===1280?800:640});
+   await page.locator('[data-user-authorization]').evaluate((el,size)=>el.setAttribute('data-text-size',size),size);
+   const geometry=await page.getByRole('dialog').evaluate(el=>{
+    const r=el.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,overflow:el.scrollWidth>el.clientWidth+1};
+   });
+   assert(geometry.left>=0&&geometry.right<=width&&geometry.top>=0&&geometry.bottom<=640+(width===1280?160:0),JSON.stringify({width,size,geometry}));
+   assert.equal(geometry.overflow,false,`horizontal overflow ${width}/${size}`);
+   for(const button of await page.getByRole('dialog').getByRole('button').all()){
+    await button.scrollIntoViewIfNeeded();const box=await button.boundingBox();assert(box.height>=44&&box.x>=0&&box.x+box.width<=width);
+   }
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('[data-user-authorization]').evaluate(el=>el.setAttribute('data-text-size','normal'));
+  await page.getByRole('dialog').evaluate(el=>el.scrollTop=0);
+  if(process.env.SUTIAPP_TEST_EVIDENCE_DIR){fs.mkdirSync(process.env.SUTIAPP_TEST_EVIDENCE_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.SUTIAPP_TEST_EVIDENCE_DIR,'celebration-mobile.png')});}
+  await page.waitForTimeout(4700);
+  assert.equal(await page.locator('canvas').count(),0,'canvas removed after finite celebration');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.getByRole('button',{name:'Entendido'}).click();
+  await page.locator('[data-user-authorization="approved-3"]').waitFor();
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator('canvas').count(),0,'reduced motion: no confetti');
+  assert((await page.getByRole('dialog').textContent()).includes('Etapa actual: Entrega'));
+  assert.equal(await page.locator('.suti-au-badge path').evaluate(el=>getComputedStyle(el).strokeDashoffset),'0px');
+  await page.getByRole('button',{name:'Ver seguimiento'}).click();
+  assert.deepEqual(await page.evaluate(()=>__push.pop()),['tracking',{s:{sourceId:'r6'}}]);
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator('[data-user-authorization]').count(),0,'rejection/cancellation/intermediate stage never celebrate');
+  await page.evaluate(()=>{
+   const route=document.createElement('div');route.dataset.appRoute='tracking';document.body.appendChild(route);
+   __events.push({id:'approved-4',request_id:'r7',folio:'SR-QA-7',status:'approved',authorized:true});
+   __requests.push({sourceId:'r7',requestStatus:'approved',tipo:'Viaje de prueba',steps:[]});
+   __app={...__app};__roots[0].render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests}));
+   window.dispatchEvent(new Event('focus'));
+  });
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>__seen.has('approved-4')),false,'tracking must not consume the next event');
+  await page.evaluate(()=>{document.querySelector('[data-app-route]').remove();__app={...__app};__roots[0].render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests}));});
+  await page.locator('[data-user-authorization="approved-4"]').waitFor();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('[data-user-authorization]').count(),0,'Escape closes the claimed event');
   const app=read('app/app.jsx'),start=app.indexOf('  function NotifsScreen('),end=app.indexOf('  // ---------- PERFIL',start);
   await page.addScriptTag({content:'const I=window.Icon;'+app.slice(start,end)+'window.__Notifs=NotifsScreen;'});
   await page.evaluate(()=>{window.__screen=ReactDOM.createRoot(document.getElementById('screen'));__screen.render(React.createElement(__Notifs,{app:__app}));});
   await page.locator('[data-notification-id="event_cancel"]').waitFor();
-  assert.equal(await page.locator('[data-notification-id]').count(),4);
+  assert.equal(await page.locator('[data-notification-id]').count(),7);
   await page.locator('[data-notification-id="event_reject"]').focus();await page.keyboard.press('Enter');
   await page.waitForFunction(()=>__push.length===1);
   assert.deepEqual(await page.evaluate(()=>__push[0]),['tracking',{s:{sourceId:'r2'}}]);
@@ -68,8 +136,9 @@ async function main(){
    assert((await page.locator('#screen').textContent()).includes(rendered),'authoritative transition timestamp missing');
   }
   assert.deepEqual(errors,[]);
-  const proof={status:'PASS',concurrentClaim:'PASS',reopenOnce:'PASS',notificationTypes:4,keyboardDeepLink:'PASS',error:'PASS',contextIsolation:'PASS',historyRefresh:'PASS',timelineDates:'PASS',backend:'ISOLATED_FIXTURE',errors};
-  fs.writeFileSync(path.join(root,'docs/qa/evidence/finance-request-confirmation-20260908/notifications-browser.json'),JSON.stringify(proof,null,2));console.log(JSON.stringify(proof));
+  const proof={status:'PASS',concurrentClaim:'PASS',reopenOnce:'PASS',queue:'PASS',trackingReturn:'PASS',escape:'PASS',responsive:'21 combinations PASS',reducedMotion:'PASS',canvasCleanup:'PASS',focusTrap:'PASS',requestDeepLink:'PASS',notificationTypes:7,keyboardDeepLink:'PASS',error:'PASS',contextIsolation:'PASS',historyRefresh:'PASS',timelineDates:'PASS',backend:'ISOLATED_FIXTURE',errors};
+  const evidence=process.env.SUTIAPP_TEST_EVIDENCE_DIR||require('os').tmpdir();fs.mkdirSync(evidence,{recursive:true});
+  fs.writeFileSync(path.join(evidence,'notifications-browser.json'),JSON.stringify(proof,null,2));console.log(JSON.stringify(proof));
  }finally{await browser.close();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

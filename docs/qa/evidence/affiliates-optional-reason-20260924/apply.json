@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "version": "20260924000400",
+  "migrationSha256": "6a8bcb404719311c158c1969cdbea0c02d35567fec8c510e350c973d3cde9dad",
+  "result": [
+    {
+      "result": {
+        "status": "PASS",
+        "tables": [
+          {
+            "hash": "5b7d094baefdd53d4cb88b5163c2d23c",
+            "name": "auth.users",
+            "rows": 351
+          },
+          {
+            "hash": "d2157f36091a36c78da0ba3054dd6dbe",
+            "name": "public.admin_audit_log",
+            "rows": 5891
+          },
+          {
+            "hash": "693bd75ce81bb4f19558f0175a7c81df",
+            "name": "public.affiliate_admin_events",
+            "rows": 136
+          },
+          {
+            "hash": "7f93fbc8bd6bddf61053683ca02a9637",
+            "name": "public.affiliate_documents",
+            "rows": 3967
+          },
+          {
+            "hash": "28cedf03137545c2c0ee751c42022421",
+            "name": "public.affiliate_profile_audit_log",
+            "rows": 1808
+          },
+          {
+            "hash": "0bf1a3163266c5a3e7fd86bb666df6f2",
+            "name": "public.affiliates",
+            "rows": 982
+          },
+          {
+            "hash": "7a01cd1a0abc772b06483703336c4855",
+            "name": "public.document_types",
+            "rows": 13
+          },
+          {
+            "hash": "d0a5eb383846d024d928455e32fe59d8",
+            "name": "public.identity_audit_log",
+            "rows": 813
+          },
+          {
+            "hash": "dcccf97fc2940d1de8c2198021b4442d",
+            "name": "public.impersonation_sessions",
+            "rows": 205
+          },
+          {
+            "hash": "b14a26661f5fac43df3d56f27817dc82",
+            "name": "public.private_assets",
+            "rows": 13545
+          },
+          {
+            "hash": "d551155a1412d340c6b634cc4ab51676",
+            "name": "public.program_requests",
+            "rows": 153
+          },
+          {
+            "hash": "217286876c12bffdd296ba52f8f9768f",
+            "name": "public.segmentation_catalog_entries",
+            "rows": 20
+          },
+          {
+            "hash": "25446f40f7253ae8e866e50bf155ce90",
+            "name": "public.sensitive_change_audit",
+            "rows": 1089
+          }
+        ],
+        "applied": true,
+        "version": "20260924000400",
+        "businessDataChanged": false,
+        "tableSecurityChanged": false,
+        "functionSecurityChanged": false
+      }
+    }
+  ],
+  "syntheticProductionWrites": 0
+}

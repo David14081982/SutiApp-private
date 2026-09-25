@@ -1,5 +1,16 @@
 # Reglas de seguridad
 
+## Afiliados: motivo opcional autorizado — 2026-09-24
+
+H-AFFILIATES-OPTIONAL-REASON-001 cambia exclusivamente la validación de motivo
+en create_admin_affiliate, update_admin_affiliate, change_admin_affiliate_status,
+archive_admin_affiliate, restore_admin_affiliate, register_admin_affiliate_document
+y start_affiliate_impersonation: vacío o hasta 500 caracteres. Sustituye las
+referencias a obligatoriedad/8 caracteres para esas RPC en este documento.
+RLS, grants, permisos, actor real/contexto, sesión Auth, TTL, no anidamiento,
+versión optimista, propiedad Storage y auditoría permanecen obligatorios.
+No se reemplazan motivos históricos ni se inventan explicaciones automáticas.
+
 ## Receptor Google: lectura fija del guard de préstamos — 2026-09-21
 
 La acción `read_loan_status` reutiliza OAuth del receptor y su secreto server-side;

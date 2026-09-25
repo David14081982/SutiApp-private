@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "checks": [
+    "exact installed baselines and minimum length failure reproduced",
+    "exact deployment envelope preserves rows, owners, OIDs, grants and tracks migration",
+    "recovery before use restores exact definitions and constraints; reapply succeeds",
+    "duplicate migration fails atomically on drift",
+    "all seven writers accept optional reason 0",
+    "all seven writers accept optional reason null",
+    "all seven writers accept optional reason 3",
+    "all seven writers accept optional reason 2",
+    "all seven writers accept optional reason 500",
+    "501 rejected for every writer",
+    "unauthorized for every writer",
+    "anonymous for every writer",
+    "version conflict, missing session, direct audit writes remain denied",
+    "history with optional reason blocks recovery atomically without deleting evidence"
+  ],
+  "productionTraffic": false,
+  "limits": "Synthetic permission provider, workbench reader and duplicate lookup; external audit/classification/financial triggers excluded. Actual seven writers, table shapes, CHECKs, RLS flags and RPC ACLs tested."
+}

@@ -1,0 +1,2400 @@
+{
+  "functions": [
+    {
+      "signature": "archive_admin_affiliate(uuid,timestamp with time zone,text)",
+      "name": "archive_admin_affiliate",
+      "definition": "CREATE OR REPLACE FUNCTION public.archive_admin_affiliate(p_affiliate_id uuid, p_expected_updated_at timestamp with time zone, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_old public.affiliates%rowtype;v_new public.affiliates%rowtype;v_reason text:=btrim(coalesce(p_reason,''));\nbegin\n  if not public.has_admin_permission('affiliates.write') then raise exception 'AFFILIATE_WRITE_DENIED' using errcode='42501'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'AFFILIATE_ARCHIVE_REASON_REQUIRED' using errcode='22023'; end if;\n  select * into v_old from public.affiliates where id=p_affiliate_id for update;\n  if v_old.id is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\n  if v_old.updated_at is distinct from p_expected_updated_at then raise exception 'AFFILIATE_VERSION_CONFLICT' using errcode='PT409'; end if;\n  if v_old.is_archived then raise exception 'AFFILIATE_ALREADY_ARCHIVED' using errcode='22023'; end if;\n  update public.affiliates set is_archived=true,archived_at=now(),archived_by_auth_user_id=auth.uid(),\n    archive_reason=v_reason,archive_previous_status_raw=coalesce(affiliate_status_raw,'Sin estado'),\n    restored_at=null,restored_by_auth_user_id=null,restore_reason=null\n  where id=p_affiliate_id returning * into v_new;\n  update public.impersonation_sessions set ended_at=now(),ended_by_auth_user_id=auth.uid()\n   where usuario_contexto_affiliate_id=p_affiliate_id and ended_at is null;\n  insert into public.affiliate_admin_events(affiliate_id,actor_auth_user_id,action,before_values,after_values,changed_fields,reason)\n  values(p_affiliate_id,auth.uid(),'ARCHIVE',\n    jsonb_build_object('is_archived',false,'affiliate_status_raw',v_old.affiliate_status_raw),\n    jsonb_build_object('is_archived',true,'archived_at',v_new.archived_at,'archive_previous_status_raw',v_new.archive_previous_status_raw),\n    array['is_archived','archived_at','archived_by_auth_user_id','archive_reason','archive_previous_status_raw'],v_reason);\n  return public.get_admin_affiliate_workbench(p_affiliate_id);\nend $function$\n",
+      "hash": "97ab7cb6cc5bda40b17dd623f0494715",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "change_admin_affiliate_status(uuid,timestamp with time zone,text,text)",
+      "name": "change_admin_affiliate_status",
+      "definition": "CREATE OR REPLACE FUNCTION public.change_admin_affiliate_status(p_affiliate_id uuid, p_expected_updated_at timestamp with time zone, p_new_status text, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_old public.affiliates%rowtype;v_new public.affiliates%rowtype;v_status text:=btrim(coalesce(p_new_status,''));v_reason text:=btrim(coalesce(p_reason,''));\nbegin\n  if not public.has_admin_permission('affiliates.write') then raise exception 'AFFILIATE_WRITE_DENIED' using errcode='42501'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'AFFILIATE_REASON_REQUIRED' using errcode='22023'; end if;\n  if v_status='' or not exists(select 1 from public.affiliates where affiliate_status_raw=v_status) then raise exception 'AFFILIATE_STATUS_INVALID' using errcode='22023'; end if;\n  select * into v_old from public.affiliates where id=p_affiliate_id for update;\n  if v_old.id is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\n  if v_old.updated_at is distinct from p_expected_updated_at then raise exception 'AFFILIATE_VERSION_CONFLICT' using errcode='PT409'; end if;\n  if v_old.affiliate_status_raw is not distinct from v_status then raise exception 'AFFILIATE_STATUS_NO_CHANGE' using errcode='22023'; end if;\n  update public.affiliates set affiliate_status_raw=v_status where id=p_affiliate_id returning * into v_new;\n  insert into public.affiliate_admin_events(affiliate_id,actor_auth_user_id,action,before_values,after_values,changed_fields,reason)\n  values(p_affiliate_id,auth.uid(),'STATUS_CHANGE',jsonb_build_object('affiliate_status_raw',v_old.affiliate_status_raw),jsonb_build_object('affiliate_status_raw',v_new.affiliate_status_raw),array['affiliate_status_raw'],v_reason);\n  return public.get_admin_affiliate_workbench(p_affiliate_id);\nend $function$\n",
+      "hash": "69b45f8ba9280a08f23b3b5a3edf3344",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "create_admin_affiliate(jsonb,text)",
+      "name": "create_admin_affiliate",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_admin_affiliate(p_values jsonb, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_row public.affiliates%rowtype;v_duplicates jsonb;v_email text;v_eligibility text;v_reason text:=btrim(coalesce(p_reason,''));\n  v_status text:=nullif(btrim(p_values->>'affiliate_status_raw'),'');\nbegin\n  if not public.has_admin_permission('affiliates.write') then raise exception 'AFFILIATE_WRITE_DENIED' using errcode='42501'; end if;\n  if jsonb_typeof(p_values)<>'object' then raise exception 'AFFILIATE_VALUES_REQUIRED' using errcode='22023'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'AFFILIATE_REASON_REQUIRED' using errcode='22023'; end if;\n  if length(btrim(coalesce(p_values->>'numero_control',''))) not between 1 and 80 then raise exception 'AFFILIATE_CONTROL_REQUIRED' using errcode='22023'; end if;\n  if length(btrim(coalesce(p_values->>'full_name',''))) not between 3 and 240 then raise exception 'AFFILIATE_NAME_REQUIRED' using errcode='22023'; end if;\n  if v_status is null or not exists(select 1 from public.affiliates where affiliate_status_raw=v_status) then raise exception 'AFFILIATE_STATUS_INVALID' using errcode='22023'; end if;\n  if nullif(btrim(p_values->>'financial_union_code'),'') is not null and not exists(select 1 from public.segmentation_catalog_entries where catalog_type='union' and code=p_values->>'financial_union_code' and enabled) then raise exception 'AFFILIATE_UNION_INVALID' using errcode='22023'; end if;\n  if nullif(btrim(p_values->>'financial_employee_category_code'),'') is not null and not exists(select 1 from public.segmentation_catalog_entries where catalog_type='employment_category' and code=p_values->>'financial_employee_category_code' and enabled) then raise exception 'AFFILIATE_CATEGORY_INVALID' using errcode='22023'; end if;\n  v_duplicates:=public.find_admin_affiliate_duplicates(p_values,null);\n  if exists(select 1 from jsonb_array_elements(v_duplicates) d(value) where (d.value->'matches') ?| array['numero_control','rfc','curp']) then\n    raise exception 'AFFILIATE_DUPLICATE_REVIEW_REQUIRED' using errcode='23505';\n  end if;\n  v_email:=nullif(lower(btrim(p_values->>'historical_email_raw')),'');\n  v_eligibility:=case when v_email is null then 'missing_email' when v_email!~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then 'invalid_email'\n    when exists(select 1 from public.affiliates where historical_email_normalized=v_email) then 'duplicate_email' else 'eligible' end;\n  insert into public.affiliates(\n    numero_control,full_name,display_name,affiliate_status_raw,historical_email_raw,historical_email_normalized,phone_raw,address_raw,\n    birth_date_raw,gender_raw,marital_status_raw,children_count_raw,rfc_raw,curp_raw,unit_raw,city_raw,employment_position_raw,\n    employment_entry_date_raw,occupation_raw,institute_entry_date_raw,employment_area_raw,employment_level_raw,pension_raw,subdirectorate_raw,\n    union_enrollment_date_raw,capture_date_raw,affiliation_raw,union_position_raw,termination_date_raw,financial_union_code,\n    financial_employee_category_code,financial_employee_type,financial_affiliation_status,financial_employment_status,\n    auth_eligibility,auth_ineligibility_reason,record_origin,source_row_ordinal,source_file_hash\n  ) values(\n    btrim(p_values->>'numero_control'),btrim(p_values->>'full_name'),nullif(btrim(p_values->>'display_name'),''),v_status,\n    nullif(btrim(p_values->>'historical_email_raw'),''),v_email,nullif(btrim(p_values->>'phone_raw'),''),nullif(btrim(p_values->>'address_raw'),''),\n    nullif(btrim(p_values->>'birth_date_raw'),''),nullif(btrim(p_values->>'gender_raw'),''),nullif(btrim(p_values->>'marital_status_raw'),''),nullif(btrim(p_values->>'children_count_raw'),''),\n    nullif(upper(btrim(p_values->>'rfc_raw')),''),nullif(upper(btrim(p_values->>'curp_raw')),''),nullif(btrim(p_values->>'unit_raw'),''),nullif(btrim(p_values->>'city_raw'),''),\n    nullif(btrim(p_values->>'employment_position_raw'),''),nullif(btrim(p_values->>'employment_entry_date_raw'),''),nullif(btrim(p_values->>'occupation_raw'),''),nullif(btrim(p_values->>'institute_entry_date_raw'),''),\n    nullif(btrim(p_values->>'employment_area_raw'),''),nullif(btrim(p_values->>'employment_level_raw'),''),nullif(btrim(p_values->>'pension_raw'),''),nullif(btrim(p_values->>'subdirectorate_raw'),''),\n    nullif(btrim(p_values->>'union_enrollment_date_raw'),''),nullif(btrim(p_values->>'capture_date_raw'),''),nullif(btrim(p_values->>'affiliation_raw'),''),nullif(btrim(p_values->>'union_position_raw'),''),\n    nullif(btrim(p_values->>'termination_date_raw'),''),nullif(btrim(p_values->>'financial_union_code'),''),nullif(btrim(p_values->>'financial_employee_category_code'),''),\n    nullif(btrim(p_values->>'financial_employee_type'),''),nullif(btrim(p_values->>'financial_affiliation_status'),''),nullif(btrim(p_values->>'financial_employment_status'),''),\n    v_eligibility,case when v_eligibility='eligible' then null else v_eligibility end,'ADMIN_AFFILIATES',null,null\n  ) returning * into v_row;\n  insert into public.affiliate_admin_events(affiliate_id,actor_auth_user_id,action,before_values,after_values,changed_fields,reason)\n  values(v_row.id,auth.uid(),'CREATE',null,to_jsonb(v_row)-array['auth_user_id','historical_email_normalized','source_file_hash']::text[],\n    array['numero_control','full_name','affiliate_status_raw'],v_reason);\n  return public.get_admin_affiliate_workbench(v_row.id);\nend $function$\n",
+      "hash": "ac7bdd86a394d511c6eea7f7a1b440b3",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "register_admin_affiliate_document(uuid,uuid,text,text,bigint,text,text)",
+      "name": "register_admin_affiliate_document",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_admin_affiliate_document(p_affiliate_id uuid, p_document_type_id uuid, p_storage_path text, p_mime_type text, p_file_size bigint, p_sha256 text, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_type public.document_types%rowtype;v_asset public.private_assets%rowtype;v_doc public.affiliate_documents%rowtype;v_replaced uuid;v_path text:=btrim(coalesce(p_storage_path,''));v_reason text:=btrim(coalesce(p_reason,''));v_cleanup_path text;\nbegin\n  if not public.has_admin_permission('documents.write') then raise exception 'ADMIN_DOCUMENT_WRITE_DENIED' using errcode='42501'; end if;\n  if auth.uid() is null or not exists(select 1 from public.affiliates where id=p_affiliate_id) then raise exception 'AFFILIATE_NOT_FOUND' using errcode='22023'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'DOCUMENT_REASON_REQUIRED' using errcode='22023'; end if;\n  select * into v_type from public.document_types where id=p_document_type_id and enabled;\n  if v_type.id is null then raise exception 'DOCUMENT_TYPE_UNAVAILABLE' using errcode='22023'; end if;\n  if not v_type.file_upload_allowed or not(p_mime_type=any(v_type.accepted_mime_types)) or p_file_size<1 or p_file_size>v_type.max_file_size_bytes or upper(coalesce(p_sha256,''))!~'^[A-F0-9]{64}$' then raise exception 'INVALID_DOCUMENT_FILE' using errcode='22023'; end if;\n  if v_path!~('^affiliate-documents/'||p_affiliate_id::text||'/[A-Za-z0-9._-]+$') then raise exception 'INVALID_STORAGE_PATH' using errcode='22023'; end if;\n  if not exists(select 1 from storage.objects where bucket_id='private-assets' and name=v_path and owner_id=auth.uid()::text) then raise exception 'UPLOAD_NOT_FOUND' using errcode='22023'; end if;\n  select d.id into v_replaced from public.affiliate_documents d where d.affiliate_id=p_affiliate_id and d.document_type_id=p_document_type_id order by d.created_at desc,d.id desc limit 1;\n  select * into v_asset from public.private_assets where content_sha256=upper(p_sha256) for update;\n  if v_asset.id is null then begin\n    insert into public.private_assets(asset_key,asset_type,title,storage_bucket,storage_path,mime_type,file_size,content_sha256)\n    values('affiliate_document_'||replace(extensions.gen_random_uuid()::text,'-',''),'AFFILIATE_DOCUMENT',v_type.label,'private-assets',v_path,p_mime_type,p_file_size,upper(p_sha256)) returning * into v_asset;\n  exception when unique_violation then select * into v_asset from public.private_assets where content_sha256=upper(p_sha256) for update;end;end if;\n  if v_asset.id is null then raise exception 'DOCUMENT_ASSET_REGISTRATION_FAILED'; end if;\n  if v_asset.storage_path is distinct from v_path then v_cleanup_path:=v_path; end if;\n  update public.affiliate_documents set status='REJECTED',review_observation='Reemplazado por una nueva carga administrativa.',reviewed_by_auth_user_id=auth.uid(),reviewed_at=now()\n   where affiliate_id=p_affiliate_id and document_type_id=p_document_type_id and status in('PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED');\n  insert into public.affiliate_documents(affiliate_id,document_type_id,private_asset_id,status,created_by_auth_user_id,replaces_document_id)\n   values(p_affiliate_id,p_document_type_id,v_asset.id,'PENDING_REVIEW',auth.uid(),v_replaced) returning * into v_doc;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n   values(auth.uid(),p_affiliate_id,'affiliate_documents',case when v_replaced is null then 'ADMIN_UPLOAD' else 'ADMIN_REPLACEMENT_UPLOAD' end,v_doc.id,jsonb_strip_nulls(jsonb_build_object('document_type_id',p_document_type_id,'mime_type',p_mime_type,'file_size',p_file_size,'reason',v_reason,'replaces_document_id',v_replaced)));\n  return jsonb_build_object('document',to_jsonb(v_doc),'cleanup_storage_path',v_cleanup_path);\nend $function$\n",
+      "hash": "b4f82f011dc7894df3fdebcb7329670e",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "restore_admin_affiliate(uuid,timestamp with time zone,text)",
+      "name": "restore_admin_affiliate",
+      "definition": "CREATE OR REPLACE FUNCTION public.restore_admin_affiliate(p_affiliate_id uuid, p_expected_updated_at timestamp with time zone, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_old public.affiliates%rowtype;v_new public.affiliates%rowtype;v_reason text:=btrim(coalesce(p_reason,''));v_email text;v_eligibility text;\nbegin\n  if not public.has_admin_permission('affiliates.write') then raise exception 'AFFILIATE_WRITE_DENIED' using errcode='42501'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'AFFILIATE_RESTORE_REASON_REQUIRED' using errcode='22023'; end if;\n  select * into v_old from public.affiliates where id=p_affiliate_id for update;\n  if v_old.id is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\n  if v_old.updated_at is distinct from p_expected_updated_at then raise exception 'AFFILIATE_VERSION_CONFLICT' using errcode='PT409'; end if;\n  if not v_old.is_archived then raise exception 'AFFILIATE_NOT_ARCHIVED' using errcode='22023'; end if;\n  v_email:=v_old.historical_email_normalized;\n  v_eligibility:=case when v_email is null then 'missing_email'\n    when v_email!~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then 'invalid_email'\n    when exists(select 1 from public.affiliates a where a.id<>p_affiliate_id and a.historical_email_normalized=v_email) then 'duplicate_email'\n    else 'eligible' end;\n  update public.affiliates set is_archived=false,archived_at=null,archived_by_auth_user_id=null,\n    archive_reason=null,archive_previous_status_raw=null,restored_at=now(),\n    restored_by_auth_user_id=auth.uid(),restore_reason=v_reason,auth_eligibility=v_eligibility,\n    auth_ineligibility_reason=case when v_eligibility='eligible' then null else v_eligibility end\n  where id=p_affiliate_id returning * into v_new;\n  insert into public.affiliate_admin_events(affiliate_id,actor_auth_user_id,action,before_values,after_values,changed_fields,reason)\n  values(p_affiliate_id,auth.uid(),'RESTORE',\n    jsonb_build_object('is_archived',true,'archived_at',v_old.archived_at,'archive_previous_status_raw',v_old.archive_previous_status_raw),\n    jsonb_build_object('is_archived',false,'restored_at',v_new.restored_at,'affiliate_status_raw',v_new.affiliate_status_raw,'auth_eligibility',v_new.auth_eligibility),\n    array['is_archived','restored_at','restored_by_auth_user_id','restore_reason','auth_eligibility'],v_reason);\n  return public.get_admin_affiliate_workbench(p_affiliate_id);\nend $function$\n",
+      "hash": "19bf8d0ce97e05f79b3d9574ae058191",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "start_affiliate_impersonation(uuid,text)",
+      "name": "start_affiliate_impersonation",
+      "definition": "CREATE OR REPLACE FUNCTION public.start_affiliate_impersonation(p_affiliate_id uuid, p_reason text)\n RETURNS TABLE(session_id uuid, affiliate_id uuid, expires_at timestamp with time zone)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n\r\ndeclare\r\n  v_actor uuid:=auth.uid();v_auth_session text:=nullif(auth.jwt()->>'session_id','');v_created public.impersonation_sessions%rowtype;v_archived boolean;\r\nbegin\r\n  if v_actor is null or not public.admin_actor_can_impersonate() then raise exception 'IMPERSONATION_DENIED' using errcode='42501'; end if;\r\n  if v_auth_session is null then raise exception 'AUTH_SESSION_REQUIRED' using errcode='42501'; end if;\r\n  if char_length(btrim(coalesce(p_reason,'')))<8 then raise exception 'REASON_REQUIRED' using errcode='22023'; end if;\r\n  select a.is_archived into v_archived from public.affiliates a where a.id=p_affiliate_id;\r\n  if v_archived is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\r\n  if v_archived then raise exception 'AFFILIATE_ARCHIVED' using errcode='42501'; end if;\r\n  with closed as (\r\n    update public.impersonation_sessions s set ended_at=now(),ended_by_auth_user_id=v_actor\r\n    where s.actor_real_auth_user_id=v_actor and s.ended_at is null\r\n      and (s.expires_at<=now() or s.actor_auth_session_id is distinct from v_auth_session)\r\n    returning s.*\r\n  ) insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n    select v_actor,c.usuario_contexto_affiliate_id,'IMPERSONATION_STOPPED','SUCCESS',jsonb_build_object(\r\n      'session_id',c.id,'reason',c.reason,'automatic',true,'cause','AUTH_SESSION_REPLACED_OR_EXPIRED') from closed c;\r\n  if exists(select 1 from public.impersonation_sessions s where s.actor_real_auth_user_id=v_actor and s.ended_at is null) then\r\n    raise exception 'IMPERSONATION_ALREADY_ACTIVE' using errcode='P0001';\r\n  end if;\r\n  insert into public.impersonation_sessions(actor_real_auth_user_id,usuario_contexto_affiliate_id,reason,expires_at,actor_auth_session_id)\r\n  values(v_actor,p_affiliate_id,btrim(p_reason),now()+interval '30 minutes',v_auth_session) returning * into v_created;\r\n  insert into public.identity_audit_log(actor_real_auth_user_id,usuario_contexto_affiliate_id,action,result,details)\r\n  values(v_actor,p_affiliate_id,'IMPERSONATION_STARTED','SUCCESS',jsonb_build_object(\r\n    'session_id',v_created.id,'expires_at',v_created.expires_at,'reason',v_created.reason,\r\n    'actor_auth_session_id',v_auth_session,'scope','ASSISTED_AFFILIATE_SERVICE'));\r\n  return query select v_created.id,v_created.usuario_contexto_affiliate_id,v_created.expires_at;\r\nend \r\n$function$\n",
+      "hash": "186d628254f2ee0b3f02ff456ac0e6e9",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "update_admin_affiliate(uuid,timestamp with time zone,jsonb,text)",
+      "name": "update_admin_affiliate",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_admin_affiliate(p_affiliate_id uuid, p_expected_updated_at timestamp with time zone, p_patch jsonb, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_old public.affiliates%rowtype;v_new public.affiliates%rowtype;v_key text;v_value text;v_reason text:=btrim(coalesce(p_reason,''));\n  v_allowed constant text[]:=array['full_name','display_name','historical_email_raw','phone_raw','address_raw','birth_date_raw','gender_raw','marital_status_raw','children_count_raw','rfc_raw','curp_raw','unit_raw','city_raw','employment_position_raw','employment_entry_date_raw','occupation_raw','institute_entry_date_raw','employment_area_raw','employment_level_raw','pension_raw','subdirectorate_raw','union_enrollment_date_raw','capture_date_raw','affiliation_raw','union_position_raw','termination_date_raw','financial_union_code','financial_employee_category_code','financial_employee_type','financial_affiliation_status','financial_employment_status'];\n  v_profile_fields constant text[]:=array['full_name','display_name','phone_raw','unit_raw','city_raw','employment_position_raw','employment_area_raw','financial_union_code','financial_employee_category_code','financial_employee_type','financial_affiliation_status','financial_employment_status'];\n  v_changed text[]:=array[]::text[];v_before jsonb:='{}'::jsonb;v_after jsonb:='{}'::jsonb;v_profile_change boolean:=false;v_email text;v_eligibility text;\nbegin\n  if not public.has_admin_permission('affiliates.write') then raise exception 'AFFILIATE_WRITE_DENIED' using errcode='42501'; end if;\n  if jsonb_typeof(p_patch)<>'object' or p_patch='{}'::jsonb then raise exception 'AFFILIATE_PATCH_REQUIRED' using errcode='22023'; end if;\n  if length(v_reason) not between 8 and 500 then raise exception 'AFFILIATE_REASON_REQUIRED' using errcode='22023'; end if;\n  select * into v_old from public.affiliates where id=p_affiliate_id for update;\n  if v_old.id is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;\n  if v_old.updated_at is distinct from p_expected_updated_at then raise exception 'AFFILIATE_VERSION_CONFLICT' using errcode='PT409'; end if;\n  for v_key in select jsonb_object_keys(p_patch) loop\n    if not(v_key=any(v_allowed)) then raise exception 'AFFILIATE_FIELD_DENIED: %',v_key using errcode='22023'; end if;\n    v_value:=nullif(btrim(p_patch->>v_key),'');\n    if v_key in ('rfc_raw','curp_raw') then v_value:=upper(v_value); end if;\n    if to_jsonb(v_old)->>v_key is distinct from v_value then\n      v_changed:=array_append(v_changed,v_key);v_before:=v_before||jsonb_build_object(v_key,to_jsonb(v_old)->v_key);v_after:=v_after||jsonb_build_object(v_key,to_jsonb(v_value));\n      if v_key=any(v_profile_fields) then v_profile_change:=true; end if;\n    end if;\n  end loop;\n  if cardinality(v_changed)=0 then raise exception 'AFFILIATE_NO_CHANGE' using errcode='22023'; end if;\n  if p_patch?'rfc_raw' and nullif(upper(btrim(p_patch->>'rfc_raw')),'') is not null and exists(select 1 from public.affiliates where id<>p_affiliate_id and upper(btrim(rfc_raw))=upper(btrim(p_patch->>'rfc_raw'))) then raise exception 'AFFILIATE_RFC_DUPLICATE' using errcode='23505'; end if;\n  if p_patch?'curp_raw' and nullif(upper(btrim(p_patch->>'curp_raw')),'') is not null and exists(select 1 from public.affiliates where id<>p_affiliate_id and upper(btrim(curp_raw))=upper(btrim(p_patch->>'curp_raw'))) then raise exception 'AFFILIATE_CURP_DUPLICATE' using errcode='23505'; end if;\n  if p_patch?'financial_union_code' and nullif(btrim(p_patch->>'financial_union_code'),'') is not null and not exists(select 1 from public.segmentation_catalog_entries where catalog_type='union' and code=p_patch->>'financial_union_code' and enabled) then raise exception 'AFFILIATE_UNION_INVALID' using errcode='22023'; end if;\n  if p_patch?'financial_employee_category_code' and nullif(btrim(p_patch->>'financial_employee_category_code'),'') is not null and not exists(select 1 from public.segmentation_catalog_entries where catalog_type='employment_category' and code=p_patch->>'financial_employee_category_code' and enabled) then raise exception 'AFFILIATE_CATEGORY_INVALID' using errcode='22023'; end if;\n  v_email:=case when p_patch?'historical_email_raw' then nullif(lower(btrim(p_patch->>'historical_email_raw')),'') else v_old.historical_email_normalized end;\n  v_eligibility:=case when v_old.auth_user_id is not null then v_old.auth_eligibility when v_email is null then 'missing_email'\n    when v_email!~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then 'invalid_email'\n    when exists(select 1 from public.affiliates where id<>p_affiliate_id and historical_email_normalized=v_email) then 'duplicate_email' else 'eligible' end;\n  update public.affiliates set\n    full_name=case when p_patch?'full_name' then nullif(btrim(p_patch->>'full_name'),'') else full_name end,\n    display_name=case when p_patch?'display_name' then nullif(btrim(p_patch->>'display_name'),'') else display_name end,\n    historical_email_raw=case when p_patch?'historical_email_raw' then nullif(btrim(p_patch->>'historical_email_raw'),'') else historical_email_raw end,\n    historical_email_normalized=case when p_patch?'historical_email_raw' then v_email else historical_email_normalized end,\n    phone_raw=case when p_patch?'phone_raw' then nullif(btrim(p_patch->>'phone_raw'),'') else phone_raw end,\n    address_raw=case when p_patch?'address_raw' then nullif(btrim(p_patch->>'address_raw'),'') else address_raw end,\n    birth_date_raw=case when p_patch?'birth_date_raw' then nullif(btrim(p_patch->>'birth_date_raw'),'') else birth_date_raw end,\n    gender_raw=case when p_patch?'gender_raw' then nullif(btrim(p_patch->>'gender_raw'),'') else gender_raw end,\n    marital_status_raw=case when p_patch?'marital_status_raw' then nullif(btrim(p_patch->>'marital_status_raw'),'') else marital_status_raw end,\n    children_count_raw=case when p_patch?'children_count_raw' then nullif(btrim(p_patch->>'children_count_raw'),'') else children_count_raw end,\n    rfc_raw=case when p_patch?'rfc_raw' then nullif(upper(btrim(p_patch->>'rfc_raw')),'') else rfc_raw end,\n    curp_raw=case when p_patch?'curp_raw' then nullif(upper(btrim(p_patch->>'curp_raw')),'') else curp_raw end,\n    unit_raw=case when p_patch?'unit_raw' then nullif(btrim(p_patch->>'unit_raw'),'') else unit_raw end,\n    city_raw=case when p_patch?'city_raw' then nullif(btrim(p_patch->>'city_raw'),'') else city_raw end,\n    employment_position_raw=case when p_patch?'employment_position_raw' then nullif(btrim(p_patch->>'employment_position_raw'),'') else employment_position_raw end,\n    employment_entry_date_raw=case when p_patch?'employment_entry_date_raw' then nullif(btrim(p_patch->>'employment_entry_date_raw'),'') else employment_entry_date_raw end,\n    occupation_raw=case when p_patch?'occupation_raw' then nullif(btrim(p_patch->>'occupation_raw'),'') else occupation_raw end,\n    institute_entry_date_raw=case when p_patch?'institute_entry_date_raw' then nullif(btrim(p_patch->>'institute_entry_date_raw'),'') else institute_entry_date_raw end,\n    employment_area_raw=case when p_patch?'employment_area_raw' then nullif(btrim(p_patch->>'employment_area_raw'),'') else employment_area_raw end,\n    employment_level_raw=case when p_patch?'employment_level_raw' then nullif(btrim(p_patch->>'employment_level_raw'),'') else employment_level_raw end,\n    pension_raw=case when p_patch?'pension_raw' then nullif(btrim(p_patch->>'pension_raw'),'') else pension_raw end,\n    subdirectorate_raw=case when p_patch?'subdirectorate_raw' then nullif(btrim(p_patch->>'subdirectorate_raw'),'') else subdirectorate_raw end,\n    union_enrollment_date_raw=case when p_patch?'union_enrollment_date_raw' then nullif(btrim(p_patch->>'union_enrollment_date_raw'),'') else union_enrollment_date_raw end,\n    capture_date_raw=case when p_patch?'capture_date_raw' then nullif(btrim(p_patch->>'capture_date_raw'),'') else capture_date_raw end,\n    affiliation_raw=case when p_patch?'affiliation_raw' then nullif(btrim(p_patch->>'affiliation_raw'),'') else affiliation_raw end,\n    union_position_raw=case when p_patch?'union_position_raw' then nullif(btrim(p_patch->>'union_position_raw'),'') else union_position_raw end,\n    termination_date_raw=case when p_patch?'termination_date_raw' then nullif(btrim(p_patch->>'termination_date_raw'),'') else termination_date_raw end,\n    financial_union_code=case when p_patch?'financial_union_code' then nullif(btrim(p_patch->>'financial_union_code'),'') else financial_union_code end,\n    financial_employee_category_code=case when p_patch?'financial_employee_category_code' then nullif(btrim(p_patch->>'financial_employee_category_code'),'') else financial_employee_category_code end,\n    financial_employee_type=case when p_patch?'financial_employee_type' then nullif(btrim(p_patch->>'financial_employee_type'),'') else financial_employee_type end,\n    financial_affiliation_status=case when p_patch?'financial_affiliation_status' then nullif(btrim(p_patch->>'financial_affiliation_status'),'') else financial_affiliation_status end,\n    financial_employment_status=case when p_patch?'financial_employment_status' then nullif(btrim(p_patch->>'financial_employment_status'),'') else financial_employment_status end,\n    auth_eligibility=case when p_patch?'historical_email_raw' and auth_user_id is null then v_eligibility else auth_eligibility end,\n    auth_ineligibility_reason=case when p_patch?'historical_email_raw' and auth_user_id is null then case when v_eligibility='eligible' then null else v_eligibility end else auth_ineligibility_reason end,\n    financial_profile_version=financial_profile_version+case when v_profile_change then 1 else 0 end,\n    financial_profile_updated_at=case when v_profile_change then now() else financial_profile_updated_at end,\n    financial_profile_updated_by=case when v_profile_change then auth.uid() else financial_profile_updated_by end\n  where id=p_affiliate_id returning * into v_new;\n  insert into public.affiliate_admin_events(affiliate_id,actor_auth_user_id,action,before_values,after_values,changed_fields,reason)\n  values(p_affiliate_id,auth.uid(),'UPDATE',v_before,v_after,v_changed,v_reason);\n  for v_key in select unnest(v_changed) loop\n    if v_key=any(v_profile_fields) then\n      insert into public.affiliate_profile_audit_log(affiliate_id,field_name,old_value,new_value,changed_by,reason,profile_version)\n      values(p_affiliate_id,v_key,v_before->v_key,v_after->v_key,auth.uid(),v_reason,v_new.financial_profile_version);\n    end if;\n  end loop;\n  return public.get_admin_affiliate_workbench(p_affiliate_id);\nend $function$\n",
+      "hash": "f145088ca0cf71c18151e342ee9abc82",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "event_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "actor_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "before_values",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "after_values",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "changed_fields",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "reason",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "document_type_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_file_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "private_asset_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'PENDING_REVIEW'::text"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "review_observation",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "reviewed_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "created_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "replaces_document_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "field_name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "old_value",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "new_value",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "changed_by",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "changed_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "reason",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "profile_version",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "batch_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "change_source",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'ADMIN'::text"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "numero_control",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "full_name",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "display_name",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "historical_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliate_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "historical_email_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "historical_email_normalized",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "phone_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "address_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "birth_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "gender_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "marital_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "children_count_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "rfc_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "curp_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "unit_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "city_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "employment_position_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "employment_entry_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "occupation_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "institute_entry_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "employment_area_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "employment_level_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "pension_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "subdirectorate_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "union_enrollment_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "capture_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliation_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "union_position_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "termination_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "auth_eligibility",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "auth_ineligibility_reason",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "source_row_ordinal",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "source_file_hash",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_union_code",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_employee_category_code",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_employee_type",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_affiliation_status",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_employment_status",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_version",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": "0"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_updated_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_updated_by",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_seed_source_hash",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_seed_row_ordinal",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "financial_profile_seeded_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "record_origin",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'HISTORICAL_IMPORT'::text"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "notification_phone",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "is_archived",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "archived_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "archived_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "archive_reason",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "archive_previous_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "restored_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "restored_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "affiliates",
+      "name": "restore_reason",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "document_types",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "document_types",
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "document_types",
+      "name": "label",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "document_types",
+      "name": "description",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "''::text"
+    },
+    {
+      "table_name": "document_types",
+      "name": "icon",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'doc'::text"
+    },
+    {
+      "table_name": "document_types",
+      "name": "required_by_default",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "document_types",
+      "name": "accepted_mime_types",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": "ARRAY['image/jpeg'::text, 'image/png'::text, 'image/webp'::text, 'application/pdf'::text]"
+    },
+    {
+      "table_name": "document_types",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "document_types",
+      "name": "sort_order",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "document_types",
+      "name": "system_type",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false"
+    },
+    {
+      "table_name": "document_types",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "document_types",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "document_types",
+      "name": "camera_allowed",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "document_types",
+      "name": "file_upload_allowed",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "document_types",
+      "name": "max_file_size_bytes",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": "10485760"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "result",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "details",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "reason",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "ended_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "actor_auth_session_id",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "asset_key",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "asset_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "title",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "storage_bucket",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "storage_path",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "mime_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "file_size",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "content_sha256",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "private_assets",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'READY'::text"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "catalog_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "label",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "true"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "sort_order",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": "0"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "source_sheet",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "source_range",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "source_snapshot_hash",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "actor_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "resource",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "target_id",
+      "type": "uuid",
+      "not_null": false,
+      "default_expr": null
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "metadata",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()"
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_action_check",
+      "type": "c",
+      "definition": "CHECK ((action = ANY (ARRAY['CREATE'::text, 'UPDATE'::text, 'STATUS_CHANGE'::text, 'ARCHIVE'::text, 'RESTORE'::text])))",
+      "hash": "e1cb36e3eabd6af3aa8d0a65cc6918ed"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_actor_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "e636fbabdd373dc88e7bc34f17461886"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "4043273a57b5779ddf9f4aa7b5ff67ce"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_after_values_check",
+      "type": "c",
+      "definition": "CHECK ((jsonb_typeof(after_values) = 'object'::text))",
+      "hash": "7b336df25737b35d25babb4158e37579"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_before_values_check",
+      "type": "c",
+      "definition": "CHECK (((before_values IS NULL) OR (jsonb_typeof(before_values) = 'object'::text)))",
+      "hash": "797012ac47f43b1336bb7e13542ddfa6"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_changed_fields_check",
+      "type": "c",
+      "definition": "CHECK ((cardinality(changed_fields) > 0))",
+      "hash": "6e204048ab1497bcaf6ff4b3667f164d"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (event_id)",
+      "hash": "1e909a41847e2371a95110af439aa15e"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "affiliate_admin_events_reason_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(reason)) >= 8) AND (length(btrim(reason)) <= 500)))",
+      "hash": "d3f034b3a0745890550b338bfb73cab5"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_affiliate_file_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (affiliate_file_id) REFERENCES affiliate_files(id) ON DELETE RESTRICT",
+      "hash": "a115504af7a44bff6928067712dd463a"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "4043273a57b5779ddf9f4aa7b5ff67ce"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_asset_check",
+      "type": "c",
+      "definition": "CHECK (((affiliate_file_id IS NULL) <> (private_asset_id IS NULL)))",
+      "hash": "f0ea9594fe9b9dd5d5c9ddb8e97e2a91"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_created_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (created_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "427ed19d7b57ac7703b9a117e16ff5f6"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_document_type_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE RESTRICT",
+      "hash": "a43176cd5b2a504e7cfc71db8f3d7a70"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_private_asset_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (private_asset_id) REFERENCES private_assets(id) ON DELETE RESTRICT",
+      "hash": "2f559e81a6f438005d74513c9782005b"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_replaces_document_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (replaces_document_id) REFERENCES affiliate_documents(id) ON DELETE RESTRICT",
+      "hash": "a336f2c16497e678c6aa3faf72f4c8e0"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_review_check",
+      "type": "c",
+      "definition": "CHECK ((((status = 'VERIFIED'::text) AND (affiliate_file_id IS NOT NULL) AND (created_by_auth_user_id IS NULL)) OR ((status = ANY (ARRAY['PENDING_REVIEW'::text, 'UNDER_REVIEW'::text])) AND (reviewed_by_auth_user_id IS NULL) AND (reviewed_at IS NULL)) OR ((status = ANY (ARRAY['VERIFIED'::text, 'REJECTED'::text, 'REUPLOAD_REQUIRED'::text])) AND (reviewed_by_auth_user_id IS NOT NULL) AND (reviewed_at IS NOT NULL))))",
+      "hash": "0e2a970e08eda420e823b38d2977c3a4"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_reviewed_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (reviewed_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "aef3d46182cef49b998aa36b9021c1f2"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['PENDING_REVIEW'::text, 'UNDER_REVIEW'::text, 'VERIFIED'::text, 'REJECTED'::text, 'REUPLOAD_REQUIRED'::text])))",
+      "hash": "89f6e0022aaa40028659d82d907947a8"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_actor_source_check",
+      "type": "c",
+      "definition": "CHECK ((((change_source = 'ADMIN'::text) AND (changed_by IS NOT NULL) AND (batch_id IS NULL)) OR ((change_source = ANY (ARRAY['BULK_INITIAL_FINANCIAL_PROFILE_SEED'::text, 'BULK_INITIAL_FINANCIAL_PROFILE_SEED_RECOVERY'::text])) AND (changed_by IS NULL) AND (batch_id IS NOT NULL))))",
+      "hash": "c20522d0b10b353190968039a8b3308f"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "4043273a57b5779ddf9f4aa7b5ff67ce"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_batch_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (batch_id) REFERENCES affiliate_financial_profile_seed_batches(id) ON DELETE RESTRICT",
+      "hash": "e12b8d89b4f653598e00a8acccf375fc"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_changed_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (changed_by) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "dd33fad3cac854d17c74375751783622"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_field_name_check",
+      "type": "c",
+      "definition": "CHECK ((field_name = ANY (ARRAY['full_name'::text, 'display_name'::text, 'phone_raw'::text, 'unit_raw'::text, 'city_raw'::text, 'employment_position_raw'::text, 'employment_area_raw'::text, 'financial_union_code'::text, 'financial_employee_category_code'::text, 'financial_employee_type'::text, 'financial_affiliation_status'::text, 'financial_employment_status'::text])))",
+      "hash": "611c5b5b75f0ec0501a224a2dbba1718"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_profile_version_check",
+      "type": "c",
+      "definition": "CHECK ((profile_version > 0))",
+      "hash": "08a0d2fd7c5117b26d6b82d5b611bfcd"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "name": "affiliate_profile_audit_log_reason_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(reason)) >= 8) AND (length(btrim(reason)) <= 500)))",
+      "hash": "d3f034b3a0745890550b338bfb73cab5"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_archive_state_check",
+      "type": "c",
+      "definition": "CHECK (((is_archived AND (archived_at IS NOT NULL) AND (archived_by_auth_user_id IS NOT NULL) AND ((length(btrim(archive_reason)) >= 8) AND (length(btrim(archive_reason)) <= 500)) AND (archive_previous_status_raw IS NOT NULL)) OR ((NOT is_archived) AND (archived_at IS NULL) AND (archived_by_auth_user_id IS NULL) AND (archive_reason IS NULL) AND (archive_previous_status_raw IS NULL))))",
+      "hash": "606b24a5ba8b098fb41e161ca6e3c45a"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_archived_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (archived_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "834215658083b5ef946a5ca5a5b3d524"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_auth_eligibility_check",
+      "type": "c",
+      "definition": "CHECK ((auth_eligibility = ANY (ARRAY['eligible'::text, 'missing_email'::text, 'invalid_email'::text, 'duplicate_email'::text])))",
+      "hash": "912f51e70923d6903b2cef38a7c22be0"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_auth_reason_check",
+      "type": "c",
+      "definition": "CHECK ((((auth_eligibility = 'eligible'::text) AND (auth_ineligibility_reason IS NULL)) OR ((auth_eligibility <> 'eligible'::text) AND (auth_ineligibility_reason = auth_eligibility))))",
+      "hash": "ade258b89aaab3ce2b004b84cc15fb51"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL",
+      "hash": "f91277b3e8169a1b117532ba0a21d069"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_affiliation_status_check",
+      "type": "c",
+      "definition": "CHECK (((financial_affiliation_status IS NULL) OR ((length(btrim(financial_affiliation_status)) >= 1) AND (length(btrim(financial_affiliation_status)) <= 80))))",
+      "hash": "186e3ec16dbdef222992f0ae2fd08200"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_employee_type_check",
+      "type": "c",
+      "definition": "CHECK (((financial_employee_type IS NULL) OR ((length(btrim(financial_employee_type)) >= 1) AND (length(btrim(financial_employee_type)) <= 120))))",
+      "hash": "1fcb338589da3ab29415de6a6813a25b"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_employment_status_check",
+      "type": "c",
+      "definition": "CHECK (((financial_employment_status IS NULL) OR ((length(btrim(financial_employment_status)) >= 1) AND (length(btrim(financial_employment_status)) <= 80))))",
+      "hash": "f7d6f8859a8410c5907f72fec3098257"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_profile_updated_by_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (financial_profile_updated_by) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "44f1d00eeade727f09df8f0c17df22d5"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_profile_version_check",
+      "type": "c",
+      "definition": "CHECK ((financial_profile_version >= 0))",
+      "hash": "010e1af94922920c72252a8d0251999e"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_financial_seed_check",
+      "type": "c",
+      "definition": "CHECK ((((financial_profile_seed_source_hash IS NULL) AND (financial_profile_seed_row_ordinal IS NULL) AND (financial_profile_seeded_at IS NULL)) OR ((financial_profile_seed_source_hash ~ '^[A-F0-9]{64}$'::text) AND (financial_profile_seed_row_ordinal > 0) AND (financial_profile_seeded_at IS NOT NULL))))",
+      "hash": "8c10f1894f48c2d1b5231183c3e995f3"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_notification_phone_check",
+      "type": "c",
+      "definition": "CHECK (((notification_phone IS NULL) OR (notification_phone ~ '^[0-9]{10}$'::text)))",
+      "hash": "44a6e815f8ac23f57a835c85684559cb"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_record_origin_check",
+      "type": "c",
+      "definition": "CHECK ((record_origin = ANY (ARRAY['HISTORICAL_IMPORT'::text, 'ADMIN_AFFILIATES'::text])))",
+      "hash": "8b8872e18f1e527458346d9517471771"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_restore_state_check",
+      "type": "c",
+      "definition": "CHECK ((((restored_at IS NULL) AND (restored_by_auth_user_id IS NULL) AND (restore_reason IS NULL)) OR ((restored_at IS NOT NULL) AND (restored_by_auth_user_id IS NOT NULL) AND ((length(btrim(restore_reason)) >= 8) AND (length(btrim(restore_reason)) <= 500)))))",
+      "hash": "95ccafca37c36fcd60fc6c4e2d18f3bd"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_restored_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (restored_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "f21746fe7dea2d00eea9f1f64e559668"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_source_provenance_check",
+      "type": "c",
+      "definition": "CHECK ((((record_origin = 'HISTORICAL_IMPORT'::text) AND (source_row_ordinal IS NOT NULL) AND (source_row_ordinal > 0) AND (source_file_hash IS NOT NULL) AND (source_file_hash ~ '^[A-F0-9]{64}$'::text)) OR ((record_origin = 'ADMIN_AFFILIATES'::text) AND (source_row_ordinal IS NULL) AND (source_file_hash IS NULL))))",
+      "hash": "57530f922b1bade64eb20a2f29e9af6b"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_capture_check",
+      "type": "c",
+      "definition": "CHECK ((camera_allowed OR file_upload_allowed))",
+      "hash": "a2c6aa04c319d8b39ef3130e9ab291fe"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_code_check",
+      "type": "c",
+      "definition": "CHECK ((code ~ '^[a-z][a-z0-9_]{1,63}$'::text))",
+      "hash": "9ce0b06d7d3330ab65ef6c9c7460440e"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_code_key",
+      "type": "u",
+      "definition": "UNIQUE (code)",
+      "hash": "62cc54e4d671b4dc6829956b3bc420bd"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_label_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(label)) >= 1) AND (length(btrim(label)) <= 100)))",
+      "hash": "ca4b81944aace5fb6549f3c605f718a0"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_max_file_check",
+      "type": "c",
+      "definition": "CHECK (((max_file_size_bytes >= 1024) AND (max_file_size_bytes <= 10485760)))",
+      "hash": "18850b3a335429cb67e6075e8d7c700e"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_mimes_check",
+      "type": "c",
+      "definition": "CHECK (((cardinality(accepted_mime_types) >= 1) AND (cardinality(accepted_mime_types) <= 20)))",
+      "hash": "1938dfb3318a7dab1cc84a9af4f990c9"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_order_check",
+      "type": "c",
+      "definition": "CHECK ((sort_order > 0))",
+      "hash": "fd0845eba121f158be9650d0d0d43568"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_action_check",
+      "type": "c",
+      "definition": "CHECK ((action = ANY (ARRAY['AFFILIATE_CLAIMED'::text, 'IMPERSONATION_STARTED'::text, 'IMPERSONATION_STOPPED'::text])))",
+      "hash": "cf43e71ec5b9cecd2b7f08e5beef5aa4"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_actor_real_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_real_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "c4382f831e07c16db90e216373d10b50"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_log_usuario_contexto_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "d9377c1eb83c3c2ff474dd64f584df7c"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "identity_audit_result_check",
+      "type": "c",
+      "definition": "CHECK ((result = ANY (ARRAY['SUCCESS'::text, 'DENIED'::text, 'FAILURE'::text])))",
+      "hash": "c99455f59a6a6518ce57939e6b49dc19"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_reason_check",
+      "type": "c",
+      "definition": "CHECK (((char_length(btrim(reason)) >= 8) AND (char_length(btrim(reason)) <= 500)))",
+      "hash": "6bc03eb8c77938bf38d5ac357dbcfb54"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_actor_real_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_real_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "c4382f831e07c16db90e216373d10b50"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_ended_by_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (ended_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "3fd1da369af0f8af6d64bf32f220c5f5"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_sessions_usuario_contexto_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "d9377c1eb83c3c2ff474dd64f584df7c"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "name": "impersonation_ttl_check",
+      "type": "c",
+      "definition": "CHECK (((expires_at > started_at) AND (expires_at <= (started_at + '00:30:00'::interval))))",
+      "hash": "fe21f19c6cad11c83d5f6cad0858a3d8"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_asset_key_key",
+      "type": "u",
+      "definition": "UNIQUE (asset_key)",
+      "hash": "a4dd75827553b6663f8a16d5bc0c8db7"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_bucket_check",
+      "type": "c",
+      "definition": "CHECK ((storage_bucket = 'private-assets'::text))",
+      "hash": "6e28b2c03da21ca97b568155c14377c4"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_hash_check",
+      "type": "c",
+      "definition": "CHECK ((content_sha256 ~ '^[A-F0-9]{64}$'::text))",
+      "hash": "60511857728e2ca0f5b8e62396c8c0b1"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_hash_unique",
+      "type": "u",
+      "definition": "UNIQUE (content_sha256)",
+      "hash": "2480416b77abf53a31250d2d5da26456"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_path_check",
+      "type": "c",
+      "definition": "CHECK (((storage_path <> ''::text) AND (storage_path !~ '(^|/)\\.\\.(/|$)'::text)))",
+      "hash": "0d243b080837ebb758c564312d6a9262"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_size_check",
+      "type": "c",
+      "definition": "CHECK (((file_size > 0) AND (file_size <= 104857600)))",
+      "hash": "eb605f10826262305f798d9bb0a62922"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_status_check",
+      "type": "c",
+      "definition": "CHECK ((status = ANY (ARRAY['READY'::text, 'DISABLED'::text])))",
+      "hash": "81f29b539ce57e7f3e2f09585ffa48fd"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_storage_unique",
+      "type": "u",
+      "definition": "UNIQUE (storage_bucket, storage_path)",
+      "hash": "2aa50d6aa73976618681d9681128eb5f"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_catalog_type_check",
+      "type": "c",
+      "definition": "CHECK ((catalog_type = ANY (ARRAY['union'::text, 'employment_category'::text, 'gender'::text, 'tag'::text])))",
+      "hash": "36680fd3ce370a2e43d8547c6b6e3647"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_catalog_type_code_key",
+      "type": "u",
+      "definition": "UNIQUE (catalog_type, code)",
+      "hash": "c1b00066935c47b10a9843d0b5b5e6c2"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_label_check",
+      "type": "c",
+      "definition": "CHECK (((length(btrim(label)) >= 1) AND (length(btrim(label)) <= 120)))",
+      "hash": "0e6ee977bbccd8aaddd8a67e4e19480c"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_source_snapshot_hash_check",
+      "type": "c",
+      "definition": "CHECK (((source_snapshot_hash IS NULL) OR (source_snapshot_hash ~ '^[A-F0-9]{64}$'::text)))",
+      "hash": "d40d7ef2a3d9b1f5ac55a760aa175ebd"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "sensitive_change_audit_actor_auth_user_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (actor_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT",
+      "hash": "e636fbabdd373dc88e7bc34f17461886"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "sensitive_change_audit_affiliate_id_fkey",
+      "type": "f",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT",
+      "hash": "4043273a57b5779ddf9f4aa7b5ff67ce"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "name": "sensitive_change_audit_pkey",
+      "type": "p",
+      "definition": "PRIMARY KEY (id)",
+      "hash": "4c6419b3704337bbfe50f018842a9ad3"
+    }
+  ],
+  "triggers": [
+    {
+      "table_name": "affiliate_admin_events",
+      "name": "admin_assisted_context",
+      "definition": "CREATE TRIGGER admin_assisted_context AFTER INSERT ON public.affiliate_admin_events FOR EACH ROW EXECUTE FUNCTION admin_support_private.audit_affiliate_write()",
+      "function_definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_affiliate_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if exists(select 1 from admin_support_private.context()) then\r\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\r\n  values(auth.uid(),'affiliate_admin_events',new.action,new.affiliate_id::text,'SUCCESS',jsonb_build_object('event_id',new.event_id));\r\n end if;\r\n return new;\r\nend $function$\n"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_sync_expediente_classification",
+      "definition": "CREATE TRIGGER affiliate_documents_sync_expediente_classification AFTER INSERT OR DELETE OR UPDATE OF affiliate_id, document_type_id, affiliate_file_id, created_at ON public.affiliate_documents FOR EACH ROW EXECUTE FUNCTION sync_affiliate_expediente_classification()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.sync_affiliate_expediente_classification()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nbegin\n  if tg_op <> 'INSERT' and old.affiliate_id is not null then\n    perform public.refresh_affiliate_expediente_classification(old.affiliate_id);\n  end if;\n  if tg_op <> 'DELETE' and new.affiliate_id is not null\n     and (tg_op = 'INSERT' or old.affiliate_id is distinct from new.affiliate_id) then\n    perform public.refresh_affiliate_expediente_classification(new.affiliate_id);\n  elsif tg_op = 'UPDATE' and new.affiliate_id is not null then\n    perform public.refresh_affiliate_expediente_classification(new.affiliate_id);\n  end if;\n  return null;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "name": "affiliate_documents_updated_at",
+      "definition": "CREATE TRIGGER affiliate_documents_updated_at BEFORE UPDATE ON public.affiliate_documents FOR EACH ROW EXECUTE FUNCTION set_completion_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_completion_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at=now(); return new; end $function$\n"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "affiliates_set_updated_at",
+      "definition": "CREATE TRIGGER affiliates_set_updated_at BEFORE UPDATE ON public.affiliates FOR EACH ROW EXECUTE FUNCTION set_affiliates_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_affiliates_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    },
+    {
+      "table_name": "affiliates",
+      "name": "savings_capture_affiliate_process_change",
+      "definition": "CREATE TRIGGER savings_capture_affiliate_process_change AFTER UPDATE OF financial_employee_category_code ON public.affiliates FOR EACH ROW WHEN ((old.financial_employee_category_code IS DISTINCT FROM new.financial_employee_category_code)) EXECUTE FUNCTION capture_savings_process_change_from_affiliate()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.capture_savings_process_change_from_affiliate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_old_process text;v_new_process text;v_participant record;v_enrollment record;v_plan jsonb;\nbegin\n  v_old_process:=case old.financial_employee_category_code\n    when 'SUPLENTES_VARIABLES' then 'PROCESS_3' when 'JUBILADOS_PENSIONADOS' then 'JUB'\n    when 'SUPLENTES_FIJOS' then 'PROCESS_1' when 'EVENTUALES' then 'PROCESS_1' when 'BASE' then 'PROCESS_1' else null end;\n  v_new_process:=case new.financial_employee_category_code\n    when 'SUPLENTES_VARIABLES' then 'PROCESS_3' when 'JUBILADOS_PENSIONADOS' then 'JUB'\n    when 'SUPLENTES_FIJOS' then 'PROCESS_1' when 'EVENTUALES' then 'PROCESS_1' when 'BASE' then 'PROCESS_1' else null end;\n  if v_new_process is null or v_new_process is not distinct from v_old_process then return new; end if;\n  select * into v_participant from public.savings_participants where affiliate_id=new.id;\n  if not found then return new; end if;\n  select * into v_enrollment from public.savings_enrollments\n    where participant_id=v_participant.id and status in ('ACTIVE','TERMINATION_PENDING')\n    order by sequence_number desc limit 1;\n  if found then\n    select to_jsonb(p) into v_plan from public.savings_contribution_plans p\n      where p.enrollment_id=v_enrollment.id order by p.effective_from desc limit 1;\n  end if;\n  insert into public.savings_process_change_events(\n    participant_id,affiliate_id,legacy_folio,old_process,new_process,status,current_plan_snapshot,reason,actor_real_auth_user_id\n  ) values(\n    v_participant.id,new.id,v_participant.legacy_folio,coalesce(v_participant.current_process,v_old_process),v_new_process,\n    case when v_enrollment.id is null then 'NO_ACTIVE_ENROLLMENT' else 'SAVINGS_PROCESS_CHANGE_REVIEW_REQUIRED' end,\n    coalesce(v_plan,'{}'::jsonb),'Cambio detectado desde Admin Afiliados',auth.uid()\n  );\n  update public.savings_participants set current_process=v_new_process,process_source='SHADOW' where id=v_participant.id;\n  insert into public.savings_audit_events(actor_real_auth_user_id,usuario_contexto_affiliate_id,participant_id,resource,action,target_id,before_data,after_data,reason)\n  values(auth.uid(),new.id,v_participant.id,'affiliates.financial_employee_category_code','PROCESS_CHANGE_DETECTED',new.id::text,\n    jsonb_build_object('category',old.financial_employee_category_code,'process',coalesce(v_participant.current_process,v_old_process)),\n    jsonb_build_object('category',new.financial_employee_category_code,'process',v_new_process),'Plan hist�rico sin modificar; revisi�n futura requerida');\n  return new;\nend $function$\n"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_admin_audit",
+      "definition": "CREATE TRIGGER document_types_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.document_types FOR EACH ROW EXECUTE FUNCTION audit_admin_write()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.audit_admin_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare row_data jsonb; target text; ctx public.impersonation_sessions%rowtype;\nbegin\n  if (select auth.uid()) is null then return coalesce(new, old); end if;\n  row_data := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;\n  target := coalesce(row_data->>'id', row_data->>'company_id', row_data->>'asset_id', row_data->>'asset_key');\n  select * into ctx from public.impersonation_sessions where actor_real_auth_user_id=(select auth.uid()) and ended_at is null and expires_at>now() limit 1;\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,usuario_contexto_affiliate_id,impersonation_session_id,reason)\n  values ((select auth.uid()),tg_table_name,tg_op,target,'SUCCESS',ctx.usuario_contexto_affiliate_id,ctx.id,ctx.reason);\n  return coalesce(new, old);\nend;\n$function$\n"
+    },
+    {
+      "table_name": "document_types",
+      "name": "document_types_updated_at",
+      "definition": "CREATE TRIGGER document_types_updated_at BEFORE UPDATE ON public.document_types FOR EACH ROW EXECUTE FUNCTION set_completion_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_completion_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at=now(); return new; end $function$\n"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "name": "admin_assisted_context",
+      "definition": "CREATE TRIGGER admin_assisted_context BEFORE INSERT ON public.identity_audit_log FOR EACH ROW EXECUTE FUNCTION admin_support_private.audit_context()",
+      "function_definition": "CREATE OR REPLACE FUNCTION admin_support_private.audit_context()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare support record; begin\r\n select * into support from admin_support_private.context();\r\n if found then new.details:=coalesce(new.details,'{}'::jsonb)||jsonb_build_object('admin_assistance',\r\n  jsonb_build_object('session_id',support.session_id,'actor_real_auth_user_id',auth.uid(),\r\n  'subject_auth_user_id',support.subject_auth_user_id,'usuario_contexto_affiliate_id',support.affiliate_id)); end if;\r\n return new;\r\nend $function$\n"
+    },
+    {
+      "table_name": "private_assets",
+      "name": "private_assets_updated_at",
+      "definition": "CREATE TRIGGER private_assets_updated_at BEFORE UPDATE ON public.private_assets FOR EACH ROW EXECUTE FUNCTION set_master_asset_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_master_asset_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at = now(); return new; end $function$\n"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_admin_audit",
+      "definition": "CREATE TRIGGER segmentation_catalog_entries_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.segmentation_catalog_entries FOR EACH ROW EXECUTE FUNCTION audit_admin_write()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.audit_admin_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare row_data jsonb; target text; ctx public.impersonation_sessions%rowtype;\nbegin\n  if (select auth.uid()) is null then return coalesce(new, old); end if;\n  row_data := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;\n  target := coalesce(row_data->>'id', row_data->>'company_id', row_data->>'asset_id', row_data->>'asset_key');\n  select * into ctx from public.impersonation_sessions where actor_real_auth_user_id=(select auth.uid()) and ended_at is null and expires_at>now() limit 1;\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,usuario_contexto_affiliate_id,impersonation_session_id,reason)\n  values ((select auth.uid()),tg_table_name,tg_op,target,'SUCCESS',ctx.usuario_contexto_affiliate_id,ctx.id,ctx.reason);\n  return coalesce(new, old);\nend;\n$function$\n"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "name": "segmentation_catalog_entries_updated_at",
+      "definition": "CREATE TRIGGER segmentation_catalog_entries_updated_at BEFORE UPDATE ON public.segmentation_catalog_entries FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+      "function_definition": "CREATE OR REPLACE FUNCTION public.set_h0072_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$function$\n"
+    }
+  ],
+  "security": [
+    {
+      "table_name": "affiliate_admin_events",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "affiliate_documents",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "affiliates",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "document_types",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "identity_audit_log",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "private_assets",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "rls": true,
+      "force_rls": true
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "rls": true,
+      "force_rls": true
+    }
+  ],
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "affiliate_admin_events",
+      "policyname": "affiliate_admin_events_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('affiliates.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "affiliate_documents",
+      "policyname": "affiliate_documents_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "((affiliate_id = get_effective_affiliate_id()) OR has_admin_permission('documents.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "affiliate_profile_audit_log",
+      "policyname": "affiliate_profile_audit_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('affiliates.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "affiliates",
+      "policyname": "affiliates_select_effective",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(id = get_effective_affiliate_id())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "document_types",
+      "policyname": "document_types_admin_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('documents.write'::text)",
+      "with_check": "has_admin_permission('documents.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "document_types",
+      "policyname": "document_types_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(enabled OR has_admin_permission('documents.read'::text))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "identity_audit_log",
+      "policyname": "identity_audit_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('affiliates.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "private_assets",
+      "policyname": "private_assets_authorized_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('assets.read'::text) OR (EXISTS ( SELECT 1\n   FROM affiliate_files af\n  WHERE ((af.private_asset_id = private_assets.id) AND (af.affiliate_id = get_effective_affiliate_id()) AND (af.status = 'READY'::text) AND (af.expediente_classification = 'CURRENT_DOCUMENT'::text)))) OR (EXISTS ( SELECT 1\n   FROM (affiliate_documents d\n     LEFT JOIN affiliate_files af ON ((af.id = d.affiliate_file_id)))\n  WHERE ((COALESCE(d.private_asset_id, af.private_asset_id) = private_assets.id) AND (d.affiliate_id = get_effective_affiliate_id()) AND (d.status <> 'REJECTED'::text)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "private_assets",
+      "policyname": "program_catalog_linked_private_asset_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (program_catalog_item_assets l\n     JOIN program_catalog_items i ON ((i.id = l.item_id)))\n  WHERE ((l.private_asset_id = private_assets.id) AND l.enabled AND (i.enabled OR has_admin_permission('program_catalog.read'::text)))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "module_scope_delete",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "admin_module_boundary(ARRAY['catalogos'::text], 'update'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "module_scope_insert",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "admin_module_boundary(ARRAY['catalogos'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "module_scope_update",
+      "permissive": "RESTRICTIVE",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "admin_module_boundary(ARRAY['catalogos'::text], 'update'::text)",
+      "with_check": "admin_module_boundary(ARRAY['catalogos'::text], 'update'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "segmentation_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "has_admin_permission('segmentation.read'::text)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "segmentation_catalog_entries",
+      "policyname": "segmentation_admin_write",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "ALL",
+      "qual": "has_admin_permission('segmentation.write'::text)",
+      "with_check": "has_admin_permission('segmentation.write'::text)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "sensitive_change_audit",
+      "policyname": "sensitive_audit_admin_read",
+      "permissive": "PERMISSIVE",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('documents.read'::text) OR has_admin_permission('bank_accounts.read'::text))",
+      "with_check": null
+    }
+  ],
+  "grants": [
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "impersonation_sessions",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "identity_audit_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "segmentation_catalog_entries",
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "private_assets",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "affiliate_profile_audit_log",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "sensitive_change_audit",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "document_types",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "affiliate_documents",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "affiliates",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "table_name": "affiliate_admin_events",
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    }
+  ],
+  "versions": [
+    {
+      "version": "20260924000300"
+    },
+    {
+      "version": "20260924000200"
+    },
+    {
+      "version": "20260924000100"
+    },
+    {
+      "version": "20260923000500"
+    },
+    {
+      "version": "20260923000400"
+    },
+    {
+      "version": "20260923000300"
+    },
+    {
+      "version": "20260923000200"
+    },
+    {
+      "version": "20260923000100"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "status": "BASELINE_FAILURE_CONFIRMED",
+  "test": "scripts/test-admin-affiliates.js",
+  "expected": "/const belongsToAffiliate=/",
+  "code": "ERR_ASSERTION",
+  "unchangedFile": "app/screens-admin-finanzas.jsx"
+}

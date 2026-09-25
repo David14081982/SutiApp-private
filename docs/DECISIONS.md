@@ -1,5 +1,18 @@
 # Registro de decisiones arquitectónicas
 
+## Motivo opcional en Afiliados — H-AFFILIATES-OPTIONAL-REASON-001 — 2026-09-24
+
+El propietario ordena quitar la obligatoriedad en los seis lugares de Afiliados.
+Alta, edición, estado, archivo/restauración, carga/reemplazo documental y atención
+asistida aceptan motivo vacío o de 1–500 caracteres, recortado. No se inventa una
+justificación automática. Persisten actor, fecha, acción, cambios, permisos,
+versión optimista y auditoría; asistencia conserva actor/contexto, sesión, TTL y
+no anidamiento. Esta decisión sustituye sólo la exigencia de 8–500 caracteres de
+los contratos previos de estas siete RPC. Otras pantallas mantienen sus guardas UI;
+las RPC compartidas de documento/asistencia aceptan vacío. Otros writers conservan
+sus validaciones de motivo. No autoriza editar historia, Google o cálculos.
+Estado de implementación y despliegue: [auditoría](audits/H-AFFILIATES-OPTIONAL-REASON-001.md).
+
 ## Adelantos: interés y gasto por el mismo calendario — 2026-09-23
 
 OWNER confirma explícitamente $10,000 × 6% × 6 quincenas = $3,600 de interés,

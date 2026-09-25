@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "functions": [
+    {
+      "rpc": "archive_admin_affiliate",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "74d3b2ec246b49f1238591470c84dcef03363343ca4b6ad7716eaa9a74313042"
+    },
+    {
+      "rpc": "change_admin_affiliate_status",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "1a58e7e44f2be5787ba17ff0d926d8135c256c1741a7bdc64c0b34840cb56508"
+    },
+    {
+      "rpc": "create_admin_affiliate",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "87a161b5a81937fa298d7e8afde9b2055c39062bf231572f36ba151992f0bea9"
+    },
+    {
+      "rpc": "register_admin_affiliate_document",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "83222228c35df7f54b8532d015c9052b2335b51aee5e9a1fd5c54a43b986ee99"
+    },
+    {
+      "rpc": "restore_admin_affiliate",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "221ab791a47e91c2ac0c9fe2a072a93ae652103b65ce223f1cc67c0e5503f1b2"
+    },
+    {
+      "rpc": "start_affiliate_impersonation",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "c611812dfb75a010eb6754415ab84e884c641e6853472e41314d48d2e715dd84"
+    },
+    {
+      "rpc": "update_admin_affiliate",
+      "exactExpectedDefinition": true,
+      "aclUnchanged": true,
+      "sha256": "d01efb5e82028c4d2c3a204a270dfd435a0c57edd734f7352ed0af0b138437be"
+    }
+  ],
+  "optionalReasonConstraints": 5,
+  "businessWrites": 0
+}

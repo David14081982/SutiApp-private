@@ -1,5 +1,14 @@
 # Invariantes
 
+## Excepción autorizada: motivo opcional en Afiliados — 2026-09-24
+
+H-AFFILIATES-OPTIONAL-REASON-001 sustituye únicamente la obligatoriedad/mínimo
+del motivo en INV-038/090/116/117/118/168/172/195 para las siete RPC de alta,
+edición, estado, archivo/restauración, documento Admin e inicio de asistencia.
+Se conserva un campo de motivo (vacío si se omite), máximo 500 caracteres, todos
+los permisos backend y toda la auditoría. Actor/contexto, TTL, versión, documentos
+privados, identidad e historia no cambian. Otros writers no se modifican.
+
 ## Adelantos: interés simple — excepción autorizada 2026-09-23
 
 H-LOAN-ADVANCE-INTEREST-001 sustituye, para nuevos adelantos fechados desde 2026,

@@ -1,5 +1,20 @@
 # Reglas de migración
 
+## 20260924000400 — motivo opcional en Afiliados — APPLIED
+
+Autorización: solicitud expresa del propietario en H-AFFILIATES-OPTIONAL-REASON-001.
+Siete RPC conservan firmas/OIDs/ACL/owners y todos sus controles excepto mínimo
+del motivo. Cinco CHECKs permiten longitud 0–500; NOT NULL, PK/FK, triggers, RLS,
+auditoría, identidad y datos permanecen intactos. Sin DML de negocio.
+Forward/recovery comparan definiciones exactas y fallan ante deriva. Recovery
+restaura CHECKs antiguos sólo si toda la historia los satisface; de otro modo
+revierte la transacción completa, sin borrar ni inventar motivos. Backup de
+catálogo sin datos personales: scripts/fixtures/affiliates-optional-reason-20260924.json.
+Pruebas PostgreSQL aisladas y navegador: docs/qa/evidence/affiliates-optional-reason-20260924/.
+Estado de aplicación y limitaciones: docs/audits/H-AFFILIATES-OPTIONAL-REASON-001.md.
+Aplicación transaccional PASS: trece tablas con conteos/huellas intactos; mismos
+OIDs, owners, ACL, RLS y grants. No se ejecutaron operaciones sintéticas en producción.
+
 ## 20260921000300 / 20260921000400 ? certification/receipt compatibility ? APPLIED
 
 Owner-authorized all-Q certification: three certification/review functions accept

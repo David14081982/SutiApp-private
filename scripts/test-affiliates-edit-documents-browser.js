@@ -3,7 +3,7 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert').strict;
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
-const dir=path.join(root,'docs/qa/evidence/affiliates-edit-documents-20260909');
+const dir=path.join(root,'docs/qa/evidence/affiliates-optional-reason-20260924');
 async function main(){
  fs.mkdirSync(dir,{recursive:true});const errors=[],checks=[];
  const server=http.createServer((req,res)=>res.end('<!doctype html><html><head><meta charset="utf-8"></head><body><div id="fixture"></div></body></html>'));
@@ -21,11 +21,14 @@ async function main(){
     window.__types=[{id:'t1',code:'ine_front',label:'Identificación oficial',accepted_mime_types:['application/pdf','image/png'],file_upload_allowed:true,max_file_size_bytes:10485760},{id:'t2',code:'address_proof',label:'Comprobante de domicilio',accepted_mime_types:['application/pdf'],file_upload_allowed:true,max_file_size_bytes:10485760}];
     window.__docs=Array.from({length:10},(_,i)=>({id:'d'+i,affiliate_id:'a1',document_type_id:i===0?'t2':'t1',document_type:__types[i===0?1:0],mimeType:'application/pdf',mime_type:'application/pdf',status:'VERIFIED',available:true,created_at:'2026-09-01T01:00:00Z',updated_at:'2026-09-01T01:00:00Z'}));
     window.__detail=id=>({profile:__profiles.find(p=>p.id===id),capabilities:{documents:true,requests:true},documents:__docs.filter(d=>d.affiliate_id===id),requests:[],audit:[],options:{union:[],employment_category:[]}});
-    window.AdminRepository={has:p=>!p.endsWith('.write')||__writable,getState:()=>({phase:'authorized'}),subscribe:()=>()=>{}};
+    window.AdminRepository={has:p=>!p.endsWith('.write')||__writable,getState:()=>({phase:'authorized'}),subscribe:()=>()=>{},startImpersonation:async(id,reason)=>{__calls.push({name:'start_affiliate_impersonation',args:{p_affiliate_id:id,p_reason:reason}});}};
     window.AffiliateAuth={getState:()=>({phase:'authenticated',session:{user:{id:'admin-fixture'}},affiliate:{id:'a1'}}),subscribe:()=>()=>{}};
     window.__client={
      rpc:async(name,args)=>{__calls.push({name,args});
-      if(name==='list_admin_affiliates')return{data:{items:__profiles,total:2,page:1,page_size:25,filter_options:{statuses:['Activo'],unions:[],categories:[]}}};
+      if(name==='list_admin_affiliates'||name==='list_admin_archived_affiliates')return{data:{items:__profiles,total:2,page:1,page_size:25,filter_options:{statuses:['Activo','Baja'],unions:[],categories:[]}}};
+      if(name==='find_admin_affiliate_duplicates')return{data:[]};
+      if(name==='create_admin_affiliate'){const p={id:'new-affiliate',...args.p_values,updated_at:'2026-09-24T00:00:00Z'};__profiles.push(p);return{data:__detail(p.id)};}
+      if(['change_admin_affiliate_status','archive_admin_affiliate','restore_admin_affiliate'].includes(name)){const p=__profiles.find(p=>p.id===args.p_affiliate_id);if(name==='change_admin_affiliate_status')p.affiliate_status_raw=args.p_new_status;else p.is_archived=name==='archive_admin_affiliate';return{data:__detail(p.id)};}
       if(name==='get_admin_affiliate_workbench')return{data:__detail(args.p_affiliate_id)};
       if(name==='update_admin_affiliate'){
        if(__wait)await new Promise(resolve=>window.__resolve=resolve);
@@ -46,7 +49,7 @@ async function main(){
     window.DocumentViewer=({onClose})=>React.createElement('button',{onClick:onClose},'Cerrar vista de documento');
    });
    for(const f of ['app/private-resource-demand.js','app/admin-affiliates-repository.js'])await page.addScriptTag({content:read(f)});
-   await page.addScriptTag({content:before?fs.readFileSync(path.join(dir,'screen-before.txt'),'utf8'):read('app/screens-admin-affiliates.jsx')});
+   await page.addScriptTag({content:before?require('child_process').execFileSync('git',['show','HEAD:app/screens-admin-affiliates.jsx'],{cwd:root,encoding:'utf8'}):read('app/screens-admin-affiliates.jsx')});
    await page.evaluate(()=>{
     window.__root=ReactDOM.createRoot(document.getElementById('fixture'));
     window.__render=()=>__root.render(React.createElement(AffiliatesAdminModule,{app:{admin:AdminRepository,toast:()=>{}},header:()=>React.createElement('header',null,'Afiliados'),onOpenModule:(id,args)=>__calls.push({name:'navigate',id,args})}));__render();
@@ -58,26 +61,26 @@ async function main(){
   const form=page.locator('[data-affiliate-edit-form]'),save=form.getByRole('button',{name:'Guardar cambios auditados'});
   assert.equal(await form.locator('input').count(),25);assert.equal(await form.locator('select').count(),2);
   await form.getByLabel('Teléfono',{exact:true}).fill('6629999999');await save.click();
-  assert((await form.getByRole('alert').textContent()).includes('8 caracteres'));assert.equal(await page.evaluate(()=>__calls.filter(c=>c.name==='update_admin_affiliate').length),0);
-  assert(await form.locator('textarea').evaluate(e=>document.activeElement===e));
-  await form.locator('textarea').fill('Corrección de teléfono');
+  await page.locator('[data-admin-affiliate-detail="a1"]').waitFor();assert.equal(await page.evaluate(()=>__calls.filter(c=>c.name==='update_admin_affiliate').at(-1).args.p_reason),'');
+  await page.getByRole('button',{name:'Editar información',exact:true}).click();await form.getByLabel('Teléfono',{exact:true}).fill('6628888888');
+  await form.locator('textarea').fill('ok');
   await page.evaluate(()=>window.__fail='AFFILIATE_VERSION_CONFLICT');await save.click();
-  assert((await form.getByRole('alert').textContent()).includes('otra sesión'));assert.equal(await form.getByLabel('Teléfono',{exact:true}).inputValue(),'6629999999');
+  assert((await form.getByRole('alert').textContent()).includes('otra sesión'));assert.equal(await form.getByLabel('Teléfono',{exact:true}).inputValue(),'6628888888');
   await page.evaluate(()=>window.__fail='AFFILIATE_RFC_DUPLICATE');await save.click();assert((await form.getByRole('alert').textContent()).includes('RFC'));
   await page.evaluate(()=>{window.__fail='';window.__wait=true;});await save.click();assert(await form.getByRole('button',{name:'Guardando…'}).isDisabled());assert(await form.getByRole('button',{name:'Cancelar'}).isDisabled());
   await page.evaluate(()=>{window.__wait=false;window.__resolve();});await page.locator('[data-admin-affiliate-detail="a1"]').waitFor();
-  assert((await page.locator('.aff-facts').textContent()).includes('6629999999'));
+  assert((await page.locator('.aff-facts').textContent()).includes('6628888888'));
   const call=await page.evaluate(()=>__calls.filter(c=>c.name==='update_admin_affiliate').at(-1));
-  assert.deepEqual(call.args.p_patch,{phone_raw:'6629999999'});assert.equal(call.args.p_affiliate_id,'a1');assert.equal(call.args.p_expected_updated_at,'2026-09-09T01:00:00Z');
+  assert.deepEqual(call.args.p_patch,{phone_raw:'6628888888'});assert.equal(call.args.p_affiliate_id,'a1');assert.equal(call.args.p_expected_updated_at,'2026-09-09T02:00:00Z');assert.equal(call.args.p_reason,'ok');
   checks.push('Save reaches actual repository with minimal patch, version, target and reason; validation, conflict, duplicate, busy, retry, readback');
   await page.getByRole('button',{name:'Expediente',exact:true}).click();
   const actions=page.locator('.aff-document-actions'),grid=page.locator('.aff-document-grid');
   assert((await actions.boundingBox()).y<(await grid.boundingBox()).y);
   await page.locator('[data-affiliate-document-replace="d0"]').click();
   let modal=page.getByRole('dialog');assert.equal(await modal.locator('select').inputValue(),'t2');assert(await modal.locator('select').isDisabled());
-  await modal.locator('input[type=file]').setInputFiles({name:'prueba.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nfixture only\n%%EOF')});await modal.locator('textarea').fill('Documento actualizado de prueba');await modal.getByRole('button',{name:'Crear versión',exact:true}).click();await modal.waitFor({state:'detached'});
+  await modal.locator('input[type=file]').setInputFiles({name:'prueba.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nfixture only\n%%EOF')});await modal.getByRole('button',{name:'Crear versión',exact:true}).click();await modal.waitFor({state:'detached'});
   const upload=await page.evaluate(()=>__calls.find(c=>c.name==='register_admin_affiliate_document'));
-  assert.equal(upload.args.p_affiliate_id,'a1');assert.equal(upload.args.p_document_type_id,'t2');assert.equal(upload.args.p_reason,'Documento actualizado de prueba');assert.match(upload.args.p_sha256,/^[A-F0-9]{64}$/);
+  assert.equal(upload.args.p_affiliate_id,'a1');assert.equal(upload.args.p_document_type_id,'t2');assert.equal(upload.args.p_reason,'');assert.match(upload.args.p_sha256,/^[A-F0-9]{64}$/);
   assert((await page.locator('.aff-document-grid').textContent()).includes('PENDING_REVIEW'));
   assert.equal(await page.evaluate(()=>__docs.filter(d=>d.status==='VERIFIED').length),10);
   await page.locator('[data-affiliate-upload-open]').click();modal=page.getByRole('dialog');await modal.locator('select').selectOption('t1');
@@ -85,10 +88,26 @@ async function main(){
   await modal.getByRole('button',{name:'Cancelar',exact:true}).click();
   checks.push('Replacement selects exact document type; actual repository upload/hash/register; preserves verified history; invalid MIME never uploaded');
   await page.locator('[data-affiliate-row="a2"]').click();await page.locator('[data-admin-affiliate-detail="a2"]').waitFor();await page.getByRole('button',{name:'Expediente',exact:true}).click();assert((await page.locator('.aff-document-grid').textContent()).includes('Expediente vacío'));
-  await page.locator('[data-affiliate-upload-open]').click();modal=page.getByRole('dialog');await modal.locator('input[type=file]').setInputFiles({name:'new.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nnew fixture\n%%EOF')});await modal.locator('textarea').fill('Carga de expediente vacío');await modal.getByRole('button',{name:'Cargar documento',exact:true}).click();await modal.waitFor({state:'detached'});
+  await page.locator('[data-affiliate-upload-open]').click();modal=page.getByRole('dialog');await modal.locator('input[type=file]').setInputFiles({name:'new.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nnew fixture\n%%EOF')});await modal.getByRole('button',{name:'Cargar documento',exact:true}).click();await modal.waitFor({state:'detached'});
   assert.equal(await page.evaluate(()=>__calls.filter(c=>c.name==='register_admin_affiliate_document').at(-1).args.p_affiliate_id),'a2');
   checks.push('Upload to empty second affiliate targets that affiliate and does not reuse first profile');
   await page.close();
+  const optional=await fixture();
+  await optional.getByRole('button',{name:'Cambiar estado / reactivar',exact:true}).click();
+  await optional.getByRole('dialog').locator('select').selectOption('Baja');
+  await optional.getByRole('dialog').getByRole('button',{name:'Confirmar cambio',exact:true}).click();await optional.getByRole('dialog').waitFor({state:'detached'});
+  assert.equal(await optional.evaluate(()=>__calls.find(c=>c.name==='change_admin_affiliate_status').args.p_reason),'');
+  await optional.locator('[data-affiliate-archive="archive"]').click();await optional.locator('[data-affiliate-archive-confirm="archive"]').click();await optional.getByRole('dialog').waitFor({state:'detached'});
+  assert.equal(await optional.evaluate(()=>__calls.find(c=>c.name==='archive_admin_affiliate').args.p_reason),'');
+  await optional.locator('[data-affiliate-archive="restore"]').click();await optional.locator('[data-affiliate-archive-confirm="restore"]').click();await optional.getByRole('dialog').waitFor({state:'detached'});
+  assert.equal(await optional.evaluate(()=>__calls.find(c=>c.name==='restore_admin_affiliate').args.p_reason),'');
+  await optional.getByRole('button',{name:'Acceso',exact:true}).click();await optional.getByRole('button',{name:'Iniciar atención asistida',exact:true}).click();
+  assert.equal(await optional.evaluate(()=>__calls.find(c=>c.name==='start_affiliate_impersonation').args.p_reason),'');
+  await optional.getByRole('button',{name:'Nuevo afiliado',exact:true}).click();
+  await optional.getByRole('dialog').getByLabel('Número de control',{exact:true}).fill('QA-NEW');await optional.getByRole('dialog').getByLabel('Nombre completo',{exact:true}).fill('Nueva persona sintética');
+  await optional.getByRole('dialog').getByRole('button',{name:'Crear afiliado',exact:true}).click();await optional.getByRole('dialog').waitFor({state:'detached'});
+  assert.equal(await optional.evaluate(()=>__calls.find(c=>c.name==='create_admin_affiliate').args.p_reason),'');
+  checks.push('All six forms send empty reasons successfully, including archive/restore and document create/replacement; short optional edit reason retained');await optional.close();
   const guarded=await fixture();
   await guarded.getByRole('button',{name:'Expediente',exact:true}).click();
   await guarded.locator('.aff-document-card').first().click();await guarded.getByRole('button',{name:'Cerrar vista de documento'}).click();
@@ -100,7 +119,7 @@ async function main(){
   assert.equal(await guarded.evaluate(()=>__calls.filter(c=>c.name==='storage.remove').length),1);
   await failed.getByRole('button',{name:'Cancelar',exact:true}).click();
   await guarded.evaluate(()=>{window.__types=[];window.__fail='';});await guarded.locator('[data-affiliate-document-replace="d0"]').click();assert((await guarded.getByRole('dialog').getByRole('alert').textContent()).includes('no permite'));assert(await guarded.getByRole('dialog').locator('input[type=file]').isDisabled());await guarded.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
-  await guarded.evaluate(()=>{window.__writable=false;window.__render();});assert.equal(await guarded.locator('[data-affiliate-upload-open]').count(),0);assert.equal(await guarded.locator('[data-affiliate-document-replace]').count(),0);assert.equal(await guarded.getByRole('button',{name:'Editar información',exact:true}).count(),0);
+  await guarded.evaluate(()=>{window.__writable=false;window.__render();});await guarded.locator('[data-affiliate-upload-open]').waitFor({state:'detached'});assert.equal(await guarded.locator('[data-affiliate-upload-open]').count(),0);assert.equal(await guarded.locator('[data-affiliate-document-replace]').count(),0);assert.equal(await guarded.getByRole('button',{name:'Editar información',exact:true}).count(),0);
   checks.push('Preview/navigation preserve affiliate context; upload denial keeps file/reason and cleans staged object; unavailable type and missing write permission fail closed');
   await guarded.close();
   for(const [width,height] of [[1440,900],[1100,849],[1024,768],[390,844],[390,600]]){

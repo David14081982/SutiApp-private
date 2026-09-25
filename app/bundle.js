@@ -61375,13 +61375,13 @@ Object.assign(window, {
       value: row.code
     }, row.label)))), h('label', {
       className: 'aff-span-2'
-    }, h('span', null, 'Motivo del alta'), h('textarea', {
+    }, h('span', null, 'Motivo del alta (opcional)'), h('textarea', {
       className: inputClass,
       value: reason,
       maxLength: 500,
       rows: 3,
       onChange: event => setReason(event.target.value),
-      placeholder: 'Motivo operativo obligatorio (mínimo 8 caracteres)'
+      placeholder: 'Opcional: motivo del alta'
     })), duplicates.length > 0 && h('div', {
       className: 'aff-duplicate aff-span-2'
     }, h('strong', null, 'Coincidencias encontradas'), duplicates.map(row => h('div', {
@@ -61399,7 +61399,7 @@ Object.assign(window, {
     }, 'Cancelar'), h('button', {
       type: 'button',
       className: 'aff-primary',
-      disabled: busy || form.numero_control.trim() === '' || form.full_name.trim().length < 3 || !form.affiliate_status_raw || reason.trim().length < 8,
+      disabled: busy || form.numero_control.trim() === '' || form.full_name.trim().length < 3 || !form.affiliate_status_raw,
       onClick: submit
     }, busy ? 'Creando…' : emailReviewed && duplicates.length ? 'Confirmar alta' : 'Crear afiliado'));
     return h(Overlay, {
@@ -61420,7 +61420,7 @@ Object.assign(window, {
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState('');
     const save = async () => {
-      if (!target || reason.trim().length < 8) return;
+      if (!target) return;
       if (!window.confirm('¿Confirmas este cambio de estado administrativo? No archiva ni elimina al afiliado.')) return;
       setBusy(true);
       setError('');
@@ -61447,13 +61447,13 @@ Object.assign(window, {
     }, 'Selecciona un estado real'), statuses.filter(value => value !== profile.affiliate_status_raw).map(value => h('option', {
       key: value,
       value
-    }, value)))), h('label', null, h('span', null, 'Motivo obligatorio'), h('textarea', {
+    }, value)))), h('label', null, h('span', null, 'Motivo (opcional)'), h('textarea', {
       className: inputClass,
       value: reason,
       maxLength: 500,
       rows: 4,
       onChange: event => setReason(event.target.value),
-      placeholder: 'Mínimo 8 caracteres'
+      placeholder: 'Opcional, máximo 500 caracteres'
     })), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
@@ -61464,7 +61464,7 @@ Object.assign(window, {
       onClick: onClose
     }, 'Cancelar'), h('button', {
       className: 'aff-primary',
-      disabled: busy || !target || reason.trim().length < 8,
+      disabled: busy || !target,
       onClick: save
     }, busy ? 'Guardando…' : 'Confirmar cambio')));
   }
@@ -61478,7 +61478,7 @@ Object.assign(window, {
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState('');
     const save = async () => {
-      if (reason.trim().length < 8 || busy) return;
+      if (busy) return;
       const question = restoring ? '¿Restaurar este afiliado con el mismo ID y número de control?' : '¿Archivar este afiliado? Se bloquearán nuevas operaciones, pero Auth, expediente, solicitudes e historial permanecerán intactos.';
       if (!window.confirm(question)) return;
       setBusy(true);
@@ -61498,13 +61498,13 @@ Object.assign(window, {
       onClose
     }, h('div', {
       className: 'aff-modal-body'
-    }, h('label', null, h('span', null, restoring ? 'Motivo de restauración' : 'Motivo de archivo'), h('textarea', {
+    }, h('label', null, h('span', null, restoring ? 'Motivo de restauración (opcional)' : 'Motivo de archivo (opcional)'), h('textarea', {
       className: inputClass,
       value: reason,
       maxLength: 500,
       rows: 4,
       onChange: event => setReason(event.target.value),
-      placeholder: 'Mínimo 8 caracteres'
+      placeholder: 'Opcional, máximo 500 caracteres'
     })), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
@@ -61516,7 +61516,7 @@ Object.assign(window, {
     }, 'Cancelar'), h('button', {
       'data-affiliate-archive-confirm': restoring ? 'restore' : 'archive',
       className: restoring ? 'aff-primary' : 'aff-danger-button',
-      disabled: busy || reason.trim().length < 8,
+      disabled: busy,
       onClick: save
     }, busy ? 'Guardando…' : restoring ? 'Restaurar' : 'Archivar')));
   }
@@ -61557,7 +61557,7 @@ Object.assign(window, {
       replacing = Boolean(selected && (documents || []).some(row => row.document_type_id === selected.id || row.type_id === selected.id)),
       limitMb = selected ? Math.min(10, (Number(selected.max_file_size_bytes) || 10485760) / 1048576) : 10;
     const submit = async () => {
-      if (!selected || !file || reason.trim().length < 8 || busy) return;
+      if (!selected || !file || busy) return;
       if (!window.confirm(replacing ? '¿Crear una nueva versión? El documento anterior conservará su historial y procedencia.' : '¿Cargar este documento al expediente privado del afiliado?')) return;
       setBusy(true);
       setError('');
@@ -61602,14 +61602,14 @@ Object.assign(window, {
       disabled: busy || !selected,
       accept: accept.join(','),
       onChange: event => setFile(event.target.files && event.target.files[0] || null)
-    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga (obligatorio, 8 caracteres como mínimo)'), h('textarea', {
+    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga (opcional)'), h('textarea', {
       className: inputClass,
       value: reason,
       maxLength: 500,
       rows: 3,
       disabled: busy,
       onChange: event => setReason(event.target.value),
-      placeholder: 'Mínimo 8 caracteres'
+      placeholder: 'Opcional, máximo 500 caracteres'
     })), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
@@ -61621,7 +61621,7 @@ Object.assign(window, {
       onClick: onClose
     }, 'Cancelar'), h('button', {
       className: 'aff-primary',
-      disabled: busy || loading || !selected || !file || reason.trim().length < 8,
+      disabled: busy || loading || !selected || !file,
       onClick: submit
     }, busy ? 'Guardando en Supabase…' : replacing ? 'Crear versión' : 'Cargar documento')));
   }
@@ -61688,7 +61688,7 @@ Object.assign(window, {
   function mutationError(value, document) {
     const code = String(value && value.message || '');
     if (code.includes('VERSION')) return 'El perfil cambió en otra sesión. Cancela y recarga el perfil antes de volver a editar.';
-    if (code.includes('REASON')) return 'Escribe un motivo de al menos 8 caracteres para registrar el cambio.';
+    if (code.includes('REASON')) return 'El motivo no puede superar los 500 caracteres.';
     if (code.includes('NO_CHANGE')) return 'No hay cambios por guardar.';
     if (code.includes('RFC_DUPLICATE')) return 'El RFC ya está registrado en otro afiliado. Revisa el dato.';
     if (code.includes('CURP_DUPLICATE')) return 'La CURP ya está registrada en otro afiliado. Revisa el dato.';
@@ -61709,8 +61709,7 @@ Object.assign(window, {
       [reason, setReason] = React.useState(''),
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState('');
-    const reasonRef = React.useRef(null),
-      unions = options.union || [],
+    const unions = options.union || [],
       categories = options.employment_category || [];
     const set = (key, value) => {
       setForm(current => Object.assign({}, current, {
@@ -61720,11 +61719,6 @@ Object.assign(window, {
     };
     const save = async () => {
       if (busy) return;
-      if (reason.trim().length < 8) {
-        setError('Escribe un motivo de al menos 8 caracteres para guardar los cambios.');
-        reasonRef.current && reasonRef.current.focus();
-        return;
-      }
       const patch = {};
       EDIT_FIELDS.concat([['financial_union_code'], ['financial_employee_category_code']]).forEach(([key]) => {
         const next = String(form[key] ?? '').trim(),
@@ -61785,8 +61779,7 @@ Object.assign(window, {
       value: row.code
     }, row.label))))), h('div', {
       className: 'aff-edit-footer'
-    }, h('label', null, h('span', null, 'Motivo del cambio (obligatorio)'), h('textarea', {
-      ref: reasonRef,
+    }, h('label', null, h('span', null, 'Motivo del cambio (opcional)'), h('textarea', {
       className: inputClass,
       value: reason,
       rows: 2,
@@ -61800,7 +61793,7 @@ Object.assign(window, {
       placeholder: 'Describe por qué se actualiza la información'
     })), h('small', {
       id: 'aff-edit-reason-help'
-    }, 'Mínimo 8 caracteres. El motivo quedará en la auditoría del afiliado.'), error && h('div', {
+    }, 'Opcional, máximo 500 caracteres. El cambio se audita aunque no escribas un motivo.'), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, error), h('div', {
@@ -62091,10 +62084,10 @@ Object.assign(window, {
       rows: 3,
       maxLength: 500,
       onChange: event => setReason(event.target.value),
-      placeholder: 'Motivo operativo (mínimo 8 caracteres)'
+      placeholder: 'Motivo operativo (opcional)'
     }), h('button', {
       className: 'aff-secondary aff-block',
-      disabled: busy || reason.trim().length < 8,
+      disabled: busy,
       onClick: start
     }, busy ? 'Activando…' : 'Iniciar atención asistida'), message && h('small', null, message));
   }

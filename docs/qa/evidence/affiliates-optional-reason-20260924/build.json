@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "screens-admin-affiliates.jsx"
+  ],
+  "preservedChunks": 133,
+  "totalChunks": 134,
+  "bundleSha256": "62cc263da478bad1c20acbddd5fe8c3c155f629a6a9b620d12216322197aa626"
+}

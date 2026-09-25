@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "phase": "legitimate PDF preview",
+  "error": "DOCUMENT_PREVIEW_UNAVAILABLE",
+  "productionDataMutations": 0,
+  "note": "Repeated once with the same result. Read-only OPTIONS confirmed the attempted origin http://127.0.0.1:4184 is forbidden (403). The service advertises its authorized http://localhost:8080 origin. The corrected test uses that origin without changing CORS, security or document data."
+}

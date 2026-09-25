@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## 2026-09-24 — H-AFFILIATES-OPTIONAL-REASON-001 — implementación verificada
+
+Motivo opcional en los seis formularios de Afiliados, incluidas ambas acciones de
+archivo y carga documental. Backend 20260924000400 aplicado: siete RPC/cinco CHECKs,
+cero datos de negocio alterados y permisos intactos. PostgreSQL aislado (14 grupos),
+navegador (10 grupos, cinco tamaños), build focal (133 módulos preservados) y
+regresión global local/Pages PASS. Una prueba estática antigua de Finanzas falla
+también en HEAD; no se atribuye a esta H. Registry sin cambio de topología; STALE
+conocido, validación dirigida contra catálogo real. Estado de publicación y cierre:
+[auditoría](audits/H-AFFILIATES-OPTIONAL-REASON-001.md).
+
 ## 2026-09-24 — H-SCREEN-PERMISSION-COVERAGE-001 — PASS de auditoría y herramientas
 
 Lectura de producción: 37/37 módulos del menú en catálogo de 39; 21 rutas de afiliados,

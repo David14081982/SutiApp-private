@@ -10,6 +10,8 @@ PASS: navegador aislado, 21 combinaciones viewport/texto, reduced motion, acuses
 foco, regreso de seguimiento, build Pages y 133 chunks ajenos idénticos.
 Versiones: bundle 287, worker 221 (sólo referencias de caché). QA permanente nuevo: 0.
 Publicación y evidencia: `audits/H-REQUEST-APPROVED-CELEBRATION-POPUP-001.md`.
+Publicado: `f2f7aee`, Pages `36101596506` SUCCESS. Hashes productivos, startup,
+reload y regresión aislada del bundle descargado PASS. PRODUCTION / CLOSED.
 
 ## 2026-09-24 — H-AFFILIATES-OPTIONAL-REASON-001 — PASS publicado
 

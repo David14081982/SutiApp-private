@@ -84,4 +84,59 @@ Next instruction: publish the authorized focal files, verify deployed bytes and 
 the isolated regression against the downloaded module; record deployment and STOP.
 Do not start another H. Old financial queue tasks do not authorize extra work here.
 
-Publication: pending.
+## Production closure
+
+Commit: `f2f7aee3971f9c5b9ff04875fc36ea17507324b1`. Push to origin/main: PASS.
+Initial automatic approval rejected the push as insufficiently authorized; rechecking
+the owner's attached instructions (origin/main; publish if PASS; publish and close)
+established explicit authorization, and the same normal push was approved. No bypass.
+GitHub Pages run [36101596506](https://github.com/David14081982/SutiApp-private/actions/runs/36101596506): SUCCESS.
+Auth compatibility, critical request compatibility, public build and production request
+verification all passed. Membership Google contract run 36101596420 also succeeded.
+Read-only production check: exact normalized SHA256 equality for bundle, SutiApp.html
+and sw.js; mobile startup/reload PASS; zero browser errors; zero business writes.
+Existing isolated browser regression rerun with the downloaded production bundle: PASS.
+Proof: `%TEMP%/suti-approved-celebration/production.json` plus browser/build proof above.
+
+```text
+H-REQUEST-APPROVED-CELEBRATION-POPUP-001 RESULT
+Status: PASS
+CURRENT EVENT REUSED: program_request_admin_events -> list_self_request_event_notifications
+NEW BACKEND: NO
+SUPABASE SCHEMA CHANGE: NO
+REAL REQUEST DATA: PASS (existing authority projection; isolated verification)
+REQUEST TYPE: PASS
+REAL FOLIO: PASS
+FINAL AUTHORIZATION ONLY: PASS
+POPUP: PASS
+CONFETTI: PASS
+REDUCED MOTION: PASS
+NORMAL TEXT: PASS
+LARGE TEXT: PASS
+VERY LARGE TEXT: PASS
+MOBILE: PASS
+ACKNOWLEDGEMENT: PASS (existing atomic before-display receipt)
+SHOW ONCE: PASS
+MULTIPLE UNSEEN EVENTS: PASS
+REJECTION CONFETTI: 0
+INTERMEDIATE-STAGE CONFETTI: 0
+QA FILES ADDED: 0 (one existing test extended)
+QA RESIDUAL DATA: 0
+FILES CREATED: 1 audit
+FILES MODIFIED: 6
+BUILD: PASS
+FOCAL REGRESSION: PASS (source, built and downloaded production module)
+Source-of-truth verdict: SAFE
+Invariant verdict: PASS
+Security: PASS; no backend change
+Legacy impact: NONE
+Unexpected files changed: 0; prior unrelated dirty files preserved
+Known limitations: no genuine authorization created/consumed for QA
+COMMIT: f2f7aee
+PUSH: PASS
+DEPLOYMENT: PASS
+SUTIAPP.COM: PASS
+APPROVED REQUEST CELEBRATION: PASS / PRODUCTION / CLOSED
+```
+
+Final architect verdict: APPROVED. Next action: STOP, as instructed by owner.

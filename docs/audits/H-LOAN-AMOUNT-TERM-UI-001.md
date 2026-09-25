@@ -8,6 +8,22 @@ Plan: checks focales, commit allowlisted, push main, Actions Pages y paridad de
 HTML/bundle/SW publicados. Recovery: revertir el commit focal y republicar.
 Riesgo: caché obsoleta; versiones alineadas. Status pre-change: PASS.
 
+## Cierre de publicación — PASS
+Commit funcional `13771486afa11755d241ee72b638d6c765351e4d`, push a main confirmado.
+Actions [36186712405](https://github.com/David14081982/SutiApp-private/actions/runs/36186712405)
+SUCCESS: compatibilidad Auth/backend de solicitudes, build Pages, deploy y verificación
+productiva de solicitudes. Sitio: https://sutiapp.com/; bundle 290, worker/cache 224.
+`publication.json`: HTTP 200 y paridad SHA256 normalizada LF de /, SutiApp.html,
+bundle y worker contra archivos locales. Verificado 2026-09-25T20:37:15Z.
+`production-browser.json`: Chrome ejecuta el mismo test focal contra el bundle
+descargado de sutiapp.com, con fixtures en memoria y sin login/escrituras productivas;
+PASS en los tres fondos, 6/12, monto, edición/límites, slider, responsive y stale quote.
+`production-loan-390.png`: evidencia visual del componente publicado con fixture.
+Runtime ajeno, cambios previos, políticas backend y datos conservados.
+Reviewer: APPROVED publicación autorizada; sin decisión ni continuación pendiente.
+H RESULT: PASS; Build/Tests/Source-of-truth/Invariants PASS; seguridad y legacy intactos;
+unexpected files: ninguno; limitación: prueba focal aislada, no envío real de solicitud.
+
 ## PRE-CHANGE AUDIT
 Objetivo: selector de Caja Chica/Caja de Ahorro/Sutiexpress limitado a 6/12 pagos;
 retirar montos rápidos; monto y slider con diseño de Invertir. Autorización: OWNER

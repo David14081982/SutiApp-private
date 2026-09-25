@@ -1,12 +1,15 @@
 # Bitácora de agentes
 
-## 2026-09-25 ? H-LOAN-AMOUNT-TERM-UI-001 ? local PASS
+## 2026-09-25 — H-LOAN-AMOUNT-TERM-UI-001 — producción PASS
 
-Suti Pr?stamo: Caja Chica/Caja de Ahorro/Sutiexpress muestran s?lo 6/12 pagos;
-se retiran montos r?pidos y el monto/barra adoptan el dise?o de Invertir.
-Cotizaciones, l?mites, autoridades, backend y legacy intactos. Build focal de un
-m?dulo; pruebas est?ticas y Chrome aislado PASS (390/430/768px). Sin publicaci?n.
-Evidencia y revisi?n: `audits/H-LOAN-AMOUNT-TERM-UI-001.md`.
+Suti Préstamo: Caja Chica/Caja de Ahorro/Sutiexpress muestran sólo 6/12 pagos;
+se retiran montos rápidos y el monto/barra adoptan el diseño de Invertir.
+Cotizaciones, límites, autoridades, backend y legacy intactos. Build focal de un
+módulo; pruebas estáticas y Chrome aislado PASS (390/430/768px).
+Commit 1377148 publicado por autorización OWNER: bundle 290 / worker 224.
+Actions 36186712405 SUCCESS; HTML/bundle/SW con paridad SHA256 en sutiapp.com.
+Chrome focal sobre el bundle publicado PASS; sin escrituras de datos productivos.
+Evidencia y revisión: `audits/H-LOAN-AMOUNT-TERM-UI-001.md`.
 
 ## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-FIX-001 — producción PASS
 

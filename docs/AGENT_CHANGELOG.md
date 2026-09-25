@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-FIX-001 — candidato verificado
+## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-FIX-001 — producción PASS
 
 Recuperación segura del transporte vigente, detección de rotación, estados claros,
 invitación en Inicio con pausa de 24 h y respeto de baja explícita. Worker confirma
@@ -8,9 +8,12 @@ deduplicación después de mostrar y permite reintento tras fallo. Preservados p
 privacidad de cuenta/impersonación, autoridades y popup de aprobación existente.
 PASS: 14 lifecycle + 9 security, popup móvil/21 combinaciones responsive, build Pages y
 regresión global local con assets/PDF reales. Bundle 289 / worker 223; 132 chunks
-ajenos intactos. Sin migración ni cambios de negocio. Commit local 1fc746b.
-Publicación BLOCKED: revisión automática exige permiso explícito para push/main;
-el candidato no está publicado. Pages vigente v288 pasó la regresión de referencia.
+ajenos intactos. Sin migración ni cambios de negocio. Implementación 1fc746b y
+evidencia eb7e619 publicados tras autorización explícita del propietario.
+Actions 36163387481 SUCCESS; sutiapp.com/Pages con paridad de HTML, bundle y SW.
+Regresión global del v289 publicado PASS: imágenes, documentos, PDF real, Admin,
+visor, refresh y sin SW. Aviso inicial móvil y pausa al reabrir verificados live.
+Bloqueo de publicación anterior resuelto. Android nocturno físico no probado.
 Detalle: `audits/H-REQUEST-PUSH-ACTIVATION-FIX-001.md`.
 
 ## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-AUDIT-001 — auditoría PASS

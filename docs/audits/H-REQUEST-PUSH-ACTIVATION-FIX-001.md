@@ -164,3 +164,69 @@ negocio. Legacy: intacto. Owner decision: YES, publicar commit 1fc746b en origin
 Next action: solicitar aprobación explícita de publicación y detenerse; al recibirla,
 publicar, esperar Pages, comprobar paridad y repetir la regresión global publicada.
 No avanzar a otras H ni modificar políticas para superar el bloqueo.
+
+## Autorización posterior y despliegue — 2026-09-25
+
+El propietario respondió explícitamente «Si, realiza commit, Push y despliegue».
+Esta autorización resuelve el gate anterior. Publicados `1fc746b` (implementación)
+y `eb7e619` (evidencia local) mediante push normal a origin/main; cambios ajenos
+del workspace quedaron excluidos.
+
+GitHub Actions `36163387481`: SUCCESS. Verificaciones de Auth/backend de solicitudes,
+build público, Pages y comprobación productiva de solicitudes completadas.
+URL: https://github.com/David14081982/SutiApp-private/actions/runs/36163387481
+
+Paridad a las 2026-09-25T16:52:12Z: sutiapp.com y GitHub Pages sirven HTML, bundle
+y SW idénticos al candidato verificado (normalización LF). Bundle 289 / worker 223.
+HTML SHA-256: 07af76284e1aa6116a40b3d33c253939d31981b0d75a2822c9ba240f92ce6529.
+SW SHA-256: 254fcbbf76e116bbb005cdbcc31c6c38bc310c370e270a7e0b2c927ae9689298.
+Bundle SHA-256: 8b67435c130c8ae923abfe0d7edb4338ece13ab71ccbe8f1a5048e3ed7adba2f.
+Evidencia: production-parity.json. El estado final siguiente reemplaza el bloqueo
+histórico anterior tras la autorización explícita y la verificación publicada.
+
+Regresión global del candidato publicado: PASS (`global-production-289.json`),
+SHA ejecutado idéntico al candidato local. Pasaron 194 app assets, foto/sello,
+29 documentos imagen, propósitos Expediente/Préstamo/Membership, Admin Afiliados,
+226 imágenes de 118 programas, galería, Marketplace, fullscreen, refresh,
+comparación con/sin service worker y PDF legítimo HTTP 200 abierto en visor.
+Cero errores de navegador, cero mutaciones de negocio, cero URLs privadas en logs.
+
+Verificación adicional de producto publicado: `production-startup.json`,
+2026-09-25T16:53:30Z. En sutiapp.com a 390x844, tarjeta inicial visible con permiso
+nativo default; sin pedir permiso ni registrar push automáticamente. «Ahora no»
+oculta la tarjeta y persiste al recargar. Captura sólo de la tarjeta inspeccionada:
+production-startup-card.png. Sin PII en la evidencia ni cambios de negocio.
+
+```text
+H-REQUEST-PUSH-ACTIVATION-FIX-001 RESULT
+Status: PASS / PRODUCTION
+Files changed: nueve archivos declarados; cierre posterior sólo documental
+Source-of-truth verdict: PASS; autoridades y RPC existentes conservados
+Invariant verdict: PASS
+Build: PASS; bundle 289 / worker 223; 132 chunks ajenos intactos
+Tests: PASS; 23 escenarios push, popup móvil y 21 combinaciones responsive
+Global local: PASS
+Global production: PASS; hash ejecutado del candidato verificado
+Security: PASS para el delta; privacidad/impersonación y opt-out conservados
+Legacy impact: NONE
+Unexpected files changed: 0 propios; modificaciones ajenas preservadas
+Known limitations: sin prueba nocturna física en Android ni envío push real de QA
+Evidence: build/lifecycle/security/production-parity/production-startup/global-production-289 JSON en TEMP
+Commit: 1fc746b (implementación), eb7e619 (evidencia local)
+Push: PASS
+Deployment: PASS; GitHub Actions 36163387481
+```
+
+SUTIAPP ARCHITECT REVIEW
+Task: corrección y publicación de recuperación/invitación push.
+Verdict: APPROVED.
+Critical findings: ninguno pendiente en el alcance verificado; limitación física
+de Android expresamente conservada. Contraste con código, diff, hash publicado,
+pruebas aisladas y regresión real; no se atribuye una prueba de entrega nocturna.
+Source of truth: PASS. Architecture: focal. Security: PASS para el delta.
+Data: sin cambios de negocio. Legacy: intacto. Owner decision: NO.
+Next action: registrar este cierre, verificar que el commit documental no cambia
+el artefacto, entregar resultado y detenerse. Response generated for Codex: YES.
+
+RESPONSE TO CODEX: aprobar y cerrar esta H como producción verificada; preservar
+archivos ajenos. No avanzar a otras H ni reactivar dispositivos reales para QA.

@@ -34,7 +34,16 @@ Source of truth SAFE; invariant/security/UI preservation PASS; legacy impact NON
 Architect correction review: APPROVED for publication; no new authority or persistent
 storage; real identity boundaries and atomic claim remain. Owner decision: NO.
 Next action: publish correction, verify deployed bytes/mobile test, stop this H.
-Incident status: corrected and tested, publication pending. Prior CLOSED is historical.
+Correction published: `11d9eafc03d815061ecd0115512787b1ff2e07fb`.
+Pages run `36103458469`: SUCCESS. Membership contract `36103458449`: SUCCESS.
+Production read-only hashes match bundle 288 / HTML / worker 222; startup/reload PASS.
+Mobile/touch isolated suite rerun against downloaded production module: PASS.
+No historical receipt reset, no new authorization or synthetic production writes.
+Architect final correction review: APPROVED for the demonstrated race. Exact cause
+on the owner's physical Android and OS-level notification display remain unverified.
+Existing consumed event does not automatically replay; a new release cannot establish
+whether the previous mobile runtime ever displayed it. No claim of push display PASS.
+Next action: STOP. Current correction PASS / PRODUCTION; earlier release is historical.
 
 ## PRE-CHANGE AUDIT
 

@@ -10,6 +10,8 @@ PASS: antes 0/después 1 popup, aislamiento de otro actor, suite desktop/móvil 
 21 combinaciones de pantalla/texto, build Pages y 133 chunks ajenos intactos.
 La causa histórica en el Android del propietario no puede afirmarse desde logs.
 Bundle 288 / worker 222. Evidencia y alcance en la auditoría de la misma H.
+Publicado `11d9eaf`, Pages `36103458469` SUCCESS; hashes productivos y suite móvil
+del bundle descargado PASS. Causa física del incidente y visualización push no verificadas.
 
 ## 2026-09-25 — H-REQUEST-APPROVED-CELEBRATION-POPUP-001
 

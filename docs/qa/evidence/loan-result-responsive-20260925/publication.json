@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "at": "2026-09-25T22:23:57.644Z",
+  "commit": "9f5cd07",
+  "actionsRun": 36196418543,
+  "bundle": 292,
+  "worker": 226,
+  "checks": [
+    {
+      "path": "/",
+      "matches": true,
+      "sha256": "b5902f1583583ad2e7fc3756a7ab9dc943465a0ea39f5367c85c6a1988e1c00e"
+    },
+    {
+      "path": "app/bundle.js?v=292",
+      "matches": true,
+      "sha256": "367a290368a8dc604725f82ce1d2fed50a27ff311d4e8f2715671af256c2eac2"
+    },
+    {
+      "path": "sw.js?v=226",
+      "matches": true,
+      "sha256": "63f2e7c19268578db817728379c32c3a5b64a7f04f69c1ea6f7695aee979e471"
+    }
+  ]
+}

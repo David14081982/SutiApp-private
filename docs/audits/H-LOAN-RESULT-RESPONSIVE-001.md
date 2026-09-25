@@ -6,6 +6,17 @@ Alcance adicional: SutiApp.html/sw.js sólo cachebusters (bundle 292, worker 226
 sin cambios de lógica; evidencia de Actions y archivos publicados en carpeta de H.
 Pre-change: PASS. Recovery: revertir commit focal y republicar.
 
+## Publicación verificada — PASS
+Commit 9f5cd07 subido a main; Actions 36196418543 SUCCESS.
+sutiapp.com sirve bundle 292 y worker/cache 226. publication.json registra
+paridad SHA256 normalizada LF del HTML, bundle y SW contra el resultado probado.
+Chrome focal sobre el bundle publicado PASS: edición/clamp, plazos y protección
+de cotización obsoleta; fixtures en memoria, sin login ni escrituras productivas.
+Evidencia production-browser.json y production-loan-390.png en esta carpeta.
+La matriz local de 72 combinaciones corresponde al mismo bundle publicado.
+Reviewer / post-change: APPROVED, PASS publicado; autoridad, fórmulas, datos,
+seguridad y legacy intactos. Archivos ajenos preservados.
+
 PRE-CHANGE AUDIT
 Objetivo OWNER: tarjeta horizontal responsiva, mismo color/fondo/borde; importe
 izquierdo, pagos/tasa derechos, cuatro cifras inferiores en una fila; ocultar .00.

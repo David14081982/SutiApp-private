@@ -16732,10 +16732,11 @@ Object.assign(window, {
     loading = false,
     compact = false,
     style,
-    cycleKey
+    cycleKey,
+    hideZeroCents = false
   }) {
     const valid = typeof value === 'number' && Number.isFinite(value);
-    const label = valid ? exactMoneyOrDash(value) : null;
+    const label = valid ? hideZeroCents ? exactMoneyOrDash(value).replace(/\.00$/, '') : exactMoneyOrDash(value) : null;
     const previous = React.useRef(null);
     const previousLabel = previous.current;
     React.useEffect(() => {
@@ -16983,6 +16984,44 @@ Object.assign(window, {
       }, rateLabel));
     })));
   }
+
+  // Fit presentation text to its assigned column; never change the quote value.
+  function ResultFit({
+    children,
+    className,
+    style
+  }) {
+    const box = React.useRef(null),
+      text = React.useRef(null);
+    React.useLayoutEffect(() => {
+      const fit = () => {
+        if (!box.current || !text.current || !box.current.clientWidth) return;
+        const size = parseFloat(getComputedStyle(box.current).fontSize);
+        text.current.style.fontSize = size + 'px';
+        const width = text.current.getBoundingClientRect().width;
+        text.current.style.fontSize = size * Math.min(1, box.current.clientWidth / Math.max(1, width)) + 'px';
+      };
+      fit();
+      const observer = new ResizeObserver(fit);
+      observer.observe(box.current);
+      let active = true;
+      if (document.fonts) document.fonts.ready.then(() => {
+        if (active) fit();
+      });
+      return () => {
+        active = false;
+        observer.disconnect();
+      };
+    }, [children]);
+    return React.createElement('div', {
+      ref: box,
+      className: 'su-result-fit ' + (className || ''),
+      style
+    }, React.createElement('span', {
+      ref: text,
+      className: 'su-result-fit-text'
+    }, children));
+  }
   function ResultCard({
     result,
     periodLabel,
@@ -16992,7 +17031,7 @@ Object.assign(window, {
     animationCycle,
     loadingCycle
   }) {
-    const cells = [['Recibes', result && result.amount], ['Interés', result && Math.round(result.interest)], ['Gto. admin.', result && Math.round(result.administrativeFeeTotal)], ['Total', result && Math.round(result.total)]];
+    const cells = [['Recibes', result && result.amount], ['Interés', result && result.interest], ['Gto. admin.', result && result.administrativeFeeTotal], ['Total', result && result.total]];
     const loadingMotion = initialLoading || updating;
     const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
     const resultState = initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
@@ -17006,21 +17045,29 @@ Object.assign(window, {
         background: 'linear-gradient(var(--bg) 78%, transparent)'
       }
     }, React.createElement('div', {
+      className: 'su-result-card',
       'data-simulator-result': resultState,
       'aria-busy': initialLoading || updating ? 'true' : 'false',
       'aria-label': 'Resultado de la simulación',
       style: {
-        minHeight: 159,
+        minHeight: 142,
         boxSizing: 'border-box',
         background: 'var(--grad-guinda)',
         color: '#fff',
         borderRadius: 24,
-        padding: '18px 18px 16px',
+        padding: '16px 18px 14px',
         boxShadow: 'var(--glow-guinda)',
         position: 'relative',
         overflow: 'hidden'
       }
-    }, React.createElement('div', {
+    }, React.createElement('style', null, `
+          [data-simulator-result].su-result-card .su-result-top{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)!important;gap:10px!important;align-items:center!important}
+          [data-simulator-result].su-result-card .su-result-meta,[data-text-size] [data-simulator-result].su-result-card > div > .su-result-top > .su-result-meta{text-align:right!important;min-width:0}
+          [data-simulator-result].su-result-card .su-result-cells{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
+          [data-simulator-result].su-result-card .su-result-fit{min-width:0;white-space:nowrap;line-height:1.2}
+          [data-simulator-result].su-result-card .su-result-fit-text{display:inline-block;white-space:nowrap;max-width:none}
+          [data-simulator-result].su-result-card .su-odometer{flex-wrap:nowrap!important;max-width:none!important}
+        `), React.createElement('div', {
       'aria-hidden': 'true',
       style: {
         position: 'absolute',
@@ -17036,23 +17083,21 @@ Object.assign(window, {
         opacity: updating ? .66 : 1
       }
     }, React.createElement('div', {
+      className: 'su-result-top'
+    }, React.createElement('div', {
       style: {
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap: 12
+        minWidth: 0
       }
-    }, React.createElement('div', null, React.createElement('div', {
+    }, React.createElement(ResultFit, {
       style: {
         fontSize: 'var(--text-12, 12px)',
         opacity: .8,
         fontWeight: 700,
         letterSpacing: '.02em'
       }
-    }, 'Cada pago será de'), React.createElement('div', {
+    }, 'Cada pago será de'), React.createElement(ResultFit, {
+      className: 'su-result-payment',
       style: {
-        minWidth: 150,
-        minHeight: 45,
         borderRadius: 9,
         fontSize: 'var(--text-40, 40px)',
         fontWeight: 800,
@@ -17062,10 +17107,12 @@ Object.assign(window, {
         whiteSpace: 'nowrap'
       }
     }, React.createElement(SmoothMoney, {
+      hideZeroCents: true,
       value: result ? result.paymentPerPeriod : null,
       loading: loadingMotion || !result,
       cycleKey: loadingMotion || !result ? placeholderCycle : animationCycle
     }))), React.createElement('div', {
+      className: 'su-result-meta',
       style: {
         textAlign: 'right',
         fontSize: 'var(--text-11-5, 11.5px)',
@@ -17074,7 +17121,11 @@ Object.assign(window, {
         lineHeight: 1.45,
         paddingBottom: 5
       }
-    }, updating && React.createElement('div', {
+    }, updating && React.createElement(ResultFit, {
+      style: {
+        fontSize: 'var(--text-10-5, 10.5px)'
+      }
+    }, React.createElement('div', {
       role: 'status',
       'aria-live': 'polite',
       style: {
@@ -17094,14 +17145,14 @@ Object.assign(window, {
         width: 10,
         height: 10
       }
-    }), 'Actualizando…'), React.createElement('div', {
+    }), 'Actualizando…')), React.createElement(ResultFit, {
       style: {
         minHeight: '1.45em'
       }
     }, !result ? React.createElement(LoadingReels, {
       columns: 2,
       cycleKey: placeholderCycle
-    }) : result.paymentCount + ' ' + result.paymentPeriod), React.createElement('div', {
+    }) : result.paymentCount + (result.paymentCount === 1 ? ' pago' : ' pagos')), React.createElement(ResultFit, {
       style: {
         minHeight: '1.45em'
       }
@@ -17109,10 +17160,8 @@ Object.assign(window, {
       columns: 3,
       cycleKey: placeholderCycle
     }) : result.rate + '% ' + result.ratePeriod))), React.createElement('div', {
+      className: 'su-result-cells',
       style: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4,1fr)',
-        gap: 8,
         marginTop: 13,
         paddingTop: 11,
         borderTop: '1px solid rgba(255,255,255,.18)'
@@ -17122,14 +17171,14 @@ Object.assign(window, {
       style: {
         minWidth: 0
       }
-    }, React.createElement('div', {
+    }, React.createElement(ResultFit, {
       style: {
         opacity: .72,
         fontWeight: 600,
         fontSize: 'var(--text-10-5, 10.5px)',
         whiteSpace: 'nowrap'
       }
-    }, cell[0]), React.createElement('div', {
+    }, cell[0]), React.createElement(ResultFit, {
       style: {
         minHeight: '1.2em',
         fontWeight: 800,
@@ -17137,11 +17186,10 @@ Object.assign(window, {
         fontSize: 'var(--text-13, 13px)',
         letterSpacing: '-.02em',
         fontVariantNumeric: 'tabular-nums',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
+        whiteSpace: 'nowrap'
       }
     }, React.createElement(SmoothMoney, {
+      hideZeroCents: true,
       value: result ? cell[1] : null,
       loading: loadingMotion || !result,
       compact: true,

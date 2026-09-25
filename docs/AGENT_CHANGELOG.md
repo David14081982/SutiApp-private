@@ -1,5 +1,13 @@
 # Bitácora de agentes
 
+## 2026-09-25 — H-LOAN-RESULT-RESPONSIVE-001 — local PASS
+
+Tarjeta de simulación mantiene dos columnas superiores y cuatro datos inferiores;
+pagos singular/plural, tasa derecha, ajuste de texto al ancho y ocultación sólo de .00.
+Se conserva gradiente/radio/sombra/odómetro y valores financieros del servidor.
+72 combinaciones Chrome y tres estados PASS; pruebas focales/flujo y build PASS.
+Sin backend, fórmulas, datos o publicación. Evidencia: `audits/H-LOAN-RESULT-RESPONSIVE-001.md`.
+
 ## 2026-09-25 — H-LOAN-AMOUNT-TERM-UI-002 — producción PASS
 
 Retirados deslizador y etiqueta Mínimo por instrucción OWNER. Monto/lápiz,

@@ -1,0 +1,518 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "cases": 72,
+  "proofs": [
+    {
+      "width": 280,
+      "preference": "small",
+      "payments": 6,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "small",
+      "payments": 12,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "small",
+      "payments": 1,
+      "height": 142.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "normal",
+      "payments": 6,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "normal",
+      "payments": 12,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "normal",
+      "payments": 1,
+      "height": 142.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "large",
+      "payments": 6,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "large",
+      "payments": 12,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "large",
+      "payments": 1,
+      "height": 142.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "largest",
+      "payments": 6,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "largest",
+      "payments": 12,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 280,
+      "preference": "largest",
+      "payments": 1,
+      "height": 142.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "small",
+      "payments": 6,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "small",
+      "payments": 12,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "small",
+      "payments": 1,
+      "height": 143.09375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "normal",
+      "payments": 6,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "normal",
+      "payments": 12,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "normal",
+      "payments": 1,
+      "height": 143.09375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "large",
+      "payments": 6,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "large",
+      "payments": 12,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "large",
+      "payments": 1,
+      "height": 143.09375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "largest",
+      "payments": 6,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "largest",
+      "payments": 12,
+      "height": 148.109375,
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "preference": "largest",
+      "payments": 1,
+      "height": 143.09375,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "small",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "small",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "small",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "normal",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "normal",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "normal",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "large",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "large",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "large",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "largest",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "largest",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "preference": "largest",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "small",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "small",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "small",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "normal",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "normal",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "normal",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "large",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "large",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "large",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "largest",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "largest",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "preference": "largest",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "small",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "small",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "small",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "normal",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "normal",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "normal",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "large",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "large",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "large",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "largest",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "largest",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 430,
+      "preference": "largest",
+      "payments": 1,
+      "height": 144.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "small",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "small",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "small",
+      "payments": 1,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "normal",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "normal",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "normal",
+      "payments": 1,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "large",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "large",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "large",
+      "payments": 1,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "largest",
+      "payments": 6,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "largest",
+      "payments": 12,
+      "height": 150.578125,
+      "status": "PASS"
+    },
+    {
+      "width": 768,
+      "preference": "largest",
+      "payments": 1,
+      "height": 150.578125,
+      "status": "PASS"
+    }
+  ],
+  "states": [
+    "loading",
+    "updating",
+    "error"
+  ],
+  "zeroCentsHidden": true,
+  "nonzeroCentsPreserved": true
+}

@@ -5,19 +5,23 @@ const root=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(roo
 async function main(){
  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  try{
-  const page=await browser.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.setContent('<div style="transform:translateZ(0);overflow:hidden;height:10px"><div id="one"></div><div id="two"></div></div><div id="screen"></div>');
+  const page=await browser.newPage(process.env.SUTIAPP_TEST_MOBILE?{isMobile:true,hasTouch:true,deviceScaleFactor:2}:{}),errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.setContent('<meta name="viewport" content="width=device-width,initial-scale=1"><div style="transform:translateZ(0);overflow:hidden;height:10px"><div id="one"></div><div id="two"></div></div><div id="screen"></div>');
   for(const file of ['app/vendor/react-18.3.1/react.production.min.js','app/vendor/react-dom-18.3.1/react-dom.production.min.js'])await page.addScriptTag({content:read(file)});
   await page.addStyleTag({content:read('app/text-size.css')});
   await page.evaluate(()=>{
-   window.__seen=new Set();window.__calls=[];window.__context='a';window.__listeners=new Set();window.__push=[];window.__fail=false;
+   window.__seen=new Set();window.__calls=[];window.__context='a';window.__owner='a';window.__listeners=new Set();window.__push=[];window.__fail=false;
+   window.AffiliateAuth={getState:()=>({phase:'authenticated',session:{user:{id:__owner}},affiliate:{id:__owner}})};
    window.PrivateResourceDemand={context:()=>__context,subscribe:fn=>{__listeners.add(fn);return()=>__listeners.delete(fn);}};
    window.__events=[{id:'approved',request_id:'r1',folio:'SR-QA-1',status:'approved',authorized:true,stage:'Autorización',created_at:'2026-09-08T10:00:00Z'}, {id:'reject',request_id:'r2',folio:'SR-QA-2',status:'rejected',authorized:false,created_at:'2026-09-08T10:00:00Z'}, {id:'cancel',request_id:'r3',folio:'SR-QA-3',status:'cancelled',authorized:false,created_at:'2026-09-08T10:00:00Z'}, {id:'advance',request_id:'r4',folio:'SR-QA-4',status:'in_review',stage:'Documentos',created_at:'2026-09-08T10:00:00Z'}];
    window.SutiSupabase={getClient:()=>({rpc:async(name,args)=>{
     __calls.push({name,args});await new Promise(resolve=>setTimeout(resolve,30));
     if(__fail)return{error:Error('OFFLINE')};
     if(name==='list_self_request_event_notifications')return{data:__events.map(row=>({...row,seen_at:__seen.has(row.id)?'2026-09-08':null}))};
-    const claimed=!__seen.has(args.p_event_id);__seen.add(args.p_event_id);return{data:claimed};
+    const claimed=!__seen.has(args.p_event_id);__seen.add(args.p_event_id);
+    if(claimed&&window.__switchClaimOwner){__switchClaimOwner=false;__owner='different-owner';__context+='-identity-change';__events=[];__listeners.forEach(fn=>fn());await new Promise(resolve=>setTimeout(resolve,50));}
+    if(claimed&&window.__rotateClaim){__rotateClaim=false;__context+='-refresh';__listeners.forEach(fn=>fn());await new Promise(resolve=>setTimeout(resolve,50));}
+    return{data:claimed};
    }})};
    window.__app={push:(...args)=>__push.push(args),toast:()=>{}};window.__requests=[{sourceId:'r1',requestStatus:'approved',tipo:'Programa de prueba',steps:[{active:true,label:'Autorización'}]}];
    window.Icon=()=>null;window.RequestPushInvitation=()=>null;window.useQuoteStore=()=>({state:()=>({phase:'loaded'}),mine:()=>[],retry:()=>{}});
@@ -38,7 +42,7 @@ async function main(){
   await page.waitForTimeout(250);assert.equal(await page.locator('[data-user-authorization]').count(),0,'no repeated celebration on reopening');
   // Reuse isolated events; never create or authorize a production request.
   await page.evaluate(()=>{
-   __roots.forEach(root=>root.unmount());__roots=[ReactDOM.createRoot(document.getElementById('one'))];
+   __roots.forEach(root=>root.unmount());__roots=[ReactDOM.createRoot(document.getElementById('one'))];window.__rotateClaim=true;
    __events.push({id:'approved-2',request_id:'r5',folio:'SR-QA-5',status:'approved',authorized:true},
     {id:'approved-3',request_id:'r6',folio:'SR-QA-6',status:'approved',authorized:true});
    __requests.push({sourceId:'r5',requestStatus:'approved',tipo:'Membresía de prueba',steps:[]},
@@ -46,6 +50,8 @@ async function main(){
    __roots[0].render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests}));
   });
   await page.locator('[data-user-authorization="approved-2"]').waitFor();
+  assert((await page.evaluate(()=>__context)).includes('refresh'),'same-owner refresh occurred during claim');
+  await page.evaluate(()=>{__context+='-refresh-again';__listeners.forEach(fn=>fn());});
   await page.waitForTimeout(800);
   assert.equal(await page.getByRole('dialog').count(),1);
   assert.equal(await page.getByRole('heading',{name:'¡Tu solicitud fue autorizada!',exact:true}).count(),1);
@@ -111,9 +117,19 @@ async function main(){
   await page.evaluate(()=>{__fail=true;window.dispatchEvent(new Event('focus'));});
   await page.locator('[data-notifications-state="error"]').waitFor();
   assert.equal(await page.locator('[data-notification-id]').count(),0,'visible backend failure, no fallback');
-  await page.evaluate(()=>{__context='b';__events=[];__fail=false;__listeners.forEach(fn=>fn());});
+  await page.evaluate(()=>{__context='b';__owner='b';__events=[];__fail=false;__listeners.forEach(fn=>fn());});
   await page.locator('[data-notifications-state="empty"]').waitFor();
   assert.equal(await page.locator('[data-user-authorization]').count(),0,'no notice across identity changes');
+  await page.evaluate(()=>{
+   __switchClaimOwner=true;
+   __events=[{id:'owner-race',request_id:'owner-request',folio:'QA-OWNER',authorized:true}];
+   __requests=[{sourceId:'owner-request',requestStatus:'approved',tipo:'Prueba aislada',steps:[]}];
+   __roots[0].render(React.createElement(RequestAuthorizationNotice,{app:__app,requests:__requests}));
+   window.dispatchEvent(new Event('focus'));
+  });
+  await page.waitForFunction(()=>__seen.has('owner-race'));
+  await page.waitForTimeout(200);
+  assert.equal(await page.getByRole('dialog').count(),0,'claimed notice never follows a different owner');
   await page.evaluate(()=>{
    __roots.forEach(root=>root.unmount());
    window.__historyRows=[{id:'history-1',folio:'SR-HISTORY-1',program_id:'prestamo',status:'in_review',created_at:'2026-09-01T12:00:00Z',requested_amount:1000,requested_term:2,requested_term_semantics:'quincenas',workflow_state:{available:true,stages:[{id:'received',label:'Recibida',state:'done',date:'2026-09-01T12:00:00Z'},{id:'review',label:'Revisión de documentos',state:'current',date:'2026-09-02T15:30:00Z'},{id:'authorized',label:'Autorización',state:'upcoming'}]}}];
@@ -136,7 +152,7 @@ async function main(){
    assert((await page.locator('#screen').textContent()).includes(rendered),'authoritative transition timestamp missing');
   }
   assert.deepEqual(errors,[]);
-  const proof={status:'PASS',concurrentClaim:'PASS',reopenOnce:'PASS',queue:'PASS',trackingReturn:'PASS',escape:'PASS',responsive:'21 combinations PASS',reducedMotion:'PASS',canvasCleanup:'PASS',focusTrap:'PASS',requestDeepLink:'PASS',notificationTypes:7,keyboardDeepLink:'PASS',error:'PASS',contextIsolation:'PASS',historyRefresh:'PASS',timelineDates:'PASS',backend:'ISOLATED_FIXTURE',errors};
+  const proof={status:'PASS',sameOwnerRefresh:'PASS',differentOwnerPendingClaim:'PASS',concurrentClaim:'PASS',reopenOnce:'PASS',queue:'PASS',trackingReturn:'PASS',escape:'PASS',responsive:'21 combinations PASS',reducedMotion:'PASS',canvasCleanup:'PASS',focusTrap:'PASS',requestDeepLink:'PASS',notificationTypes:7,keyboardDeepLink:'PASS',error:'PASS',contextIsolation:'PASS',historyRefresh:'PASS',timelineDates:'PASS',backend:'ISOLATED_FIXTURE',errors};
   const evidence=process.env.SUTIAPP_TEST_EVIDENCE_DIR||require('os').tmpdir();fs.mkdirSync(evidence,{recursive:true});
   fs.writeFileSync(path.join(evidence,'notifications-browser.json'),JSON.stringify(proof,null,2));console.log(JSON.stringify(proof));
  }finally{await browser.close();}

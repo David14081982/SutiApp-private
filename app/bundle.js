@@ -24103,8 +24103,17 @@ Object.assign(window, {
             h('button', { className: 'suti-au-btn suti-au-btn--sec', type: 'button', onClick: onClose }, 'Entendido'))))), document.body);
   }
   function RequestAuthorizationNotice({ app, requests }) {
+    // Token refresh changes the private resource generation, not who owns a
+    // successfully claimed celebration. Never carry it across a real identity change.
+    const ownerKey = () => {
+      const auth = window.AffiliateAuth.getState();
+      if (auth.phase !== 'authenticated' || !auth.session || !auth.session.user || !auth.affiliate) return null;
+      const acting = auth.impersonation || auth.affiliate._impersonation;
+      return JSON.stringify([auth.session.user.id, auth.affiliate.id, acting && acting.session_id || null]);
+    };
     const notifications = useRequestNotifications(), [notice, setNotice] = React.useState(null), [error, setError] = React.useState(false);
     const pending = React.useRef(new Set()), busy = React.useRef(false), leaving = React.useRef(false), mounted = React.useRef(false), generation = React.useRef(0);
+    const owner = React.useRef(ownerKey());
     React.useEffect(() => { mounted.current = true; return () => { mounted.current = false; ++generation.current; }; }, []);
     // History stays mounted under tracking. Resume the queue only after returning.
     React.useEffect(() => { leaving.current = !!document.querySelector('[data-app-route]:not([aria-hidden="true"])'); }, [app]);
@@ -24112,10 +24121,11 @@ Object.assign(window, {
       if (notice || busy.current || leaving.current || document.querySelector('[data-app-route]:not([aria-hidden="true"])')) return;
       const event = notifications.rows.find(row => row.authorized && !row.seen_at && !pending.current.has(row.id) && requests.some(request => request.sourceId === row.request_id && request.requestStatus === 'approved'));
       if (!event || document.hidden) return;
-      const context = window.PrivateResourceDemand.context(), ticket = generation.current;
+      const claimOwner = ownerKey(), ticket = generation.current;
+      if (!claimOwner) return;
       pending.current.add(event.id); busy.current = true;
       markSeen(event.id).then(claimed => {
-        if (!mounted.current || ticket !== generation.current || context !== window.PrivateResourceDemand.context()) return;
+        if (!mounted.current || ticket !== generation.current || claimOwner !== ownerKey()) return;
         busy.current = false;
         // Preserve the existing atomic BEFORE-display receipt: only its winner celebrates.
         if (claimed) { setNotice(event); setError(false); }
@@ -24125,7 +24135,12 @@ Object.assign(window, {
         busy.current = false; pending.current.delete(event.id); setError(true);
       });
     }, [notifications.rows, requests, notice, app]);
-    React.useEffect(() => window.PrivateResourceDemand.subscribe(() => { ++generation.current; busy.current = false; leaving.current = false; setNotice(null); setError(false); pending.current.clear(); }), []);
+    React.useEffect(() => window.PrivateResourceDemand.subscribe(() => {
+      const next = ownerKey();
+      if (next && next === owner.current) return;
+      owner.current = next; ++generation.current; busy.current = false; leaving.current = false;
+      setNotice(null); setError(false); pending.current.clear();
+    }), []);
     if (!notice) return (error || notifications.phase === 'error') ? h('p', { role: 'status', style: { margin: 16, color: 'var(--ink-2)' } }, 'No pudimos consultar los avisos de tus solicitudes. ', h('button', { onClick: notifications.retry }, 'Reintentar')) : null;
     const request = requests.find(row => row.sourceId === notice.request_id);
     if (!request) return null;

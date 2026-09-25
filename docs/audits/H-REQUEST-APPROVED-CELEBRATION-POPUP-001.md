@@ -1,5 +1,41 @@
 # H-REQUEST-APPROVED-CELEBRATION-POPUP-001
 
+## Reopened: mobile incident and same-owner context race
+
+Owner reports no popup or visible push on Android installed app, entering History.
+Read-only inspection of the reported request confirms authorization, a receipt by
+its owner, and push transport accepted (HTTP 201). Acceptance does not prove display.
+No receipt/request was altered. Full published-page isolated popup renders correctly.
+Exact historical browser failure is not observable from those server records.
+
+PRE-CHANGE AUDIT: PASS for correction in the same H. Scope remains the same seven
+files below; request-notifications.js only owns the functional correction.
+Reproduction: same authenticated actor/effective affiliate, PrivateResourceDemand
+generation changes while atomic claim response is pending => receipt=true/modal=0.
+Auth quiet token refresh preserves the mounted app but changes private generation;
+the old notice callback discarded the successfully claimed event on any generation.
+Fix: distinguish stable actor/affiliate/impersonation identity from token/context
+refresh for this pending visual intention. Keep backend atomic claim and all readers;
+still discard on logout, identity/impersonation change or unmount. No persistent cache.
+Tests: same-owner race, already-visible notice during refresh, different-owner race,
+plus existing queue/mobile/production bundle regressions. Recovery: revert focal code.
+No backend, push worker logic, schema, historical receipt, auth helper or routing edits.
+Correction verification: PASS. Before: receipt=true/modal=0. After: receipt=true/modal=1.
+Existing browser test now covers same-owner refresh during claim and after display,
+different-owner pending response, and the full earlier suite. Desktop and Chromium
+touch/mobile emulation PASS, 21 viewport/text combinations each. Physical Android
+incident cause remains unconfirmed; server receipt/transport acceptance cannot prove UI.
+Pages packaging PASS. All 133 unrelated bundle chunks remain identical.
+Corrected bundle SHA256: `28454d66fefa86ee1f0c36d430f993ea30e4510eed4b581d381a40372678fea0`.
+Release: bundle 288 / worker 222, references only. Proof in
+`%TEMP%/suti-approved-celebration-fix/notifications-browser.json` and temporary
+`suti-popup-session-race.cjs` reproduction. New permanent QA files: 0.
+Source of truth SAFE; invariant/security/UI preservation PASS; legacy impact NONE.
+Architect correction review: APPROVED for publication; no new authority or persistent
+storage; real identity boundaries and atomic claim remain. Owner decision: NO.
+Next action: publish correction, verify deployed bytes/mobile test, stop this H.
+Incident status: corrected and tested, publication pending. Prior CLOSED is historical.
+
 ## PRE-CHANGE AUDIT
 
 Status: PASS. Owner explicitly requests implementation and publication after PASS.

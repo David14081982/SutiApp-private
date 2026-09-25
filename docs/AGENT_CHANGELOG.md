@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## 2026-09-25 — corrección móvil de H-REQUEST-APPROVED-CELEBRATION-POPUP-001
+
+Reproducida carrera de renovación de contexto: acuse exitoso pero popup descartado.
+El aviso distingue actor/afiliado/impersonación de la generación de token; mantiene
+la intención visual durante refresh del mismo propietario y la elimina al cambiar
+identidad. Sin cambios en Auth global, backend, push, datos históricos ni workflow.
+PASS: antes 0/después 1 popup, aislamiento de otro actor, suite desktop/móvil táctil,
+21 combinaciones de pantalla/texto, build Pages y 133 chunks ajenos intactos.
+La causa histórica en el Android del propietario no puede afirmarse desde logs.
+Bundle 288 / worker 222. Evidencia y alcance en la auditoría de la misma H.
+
 ## 2026-09-25 — H-REQUEST-APPROVED-CELEBRATION-POPUP-001
 
 Popup de autorización adaptado al HTML aprobado: modal centrado, cabecera guinda,

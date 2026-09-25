@@ -6,10 +6,12 @@ Recuperación segura del transporte vigente, detección de rotación, estados cl
 invitación en Inicio con pausa de 24 h y respeto de baja explícita. Worker confirma
 deduplicación después de mostrar y permite reintento tras fallo. Preservados permisos,
 privacidad de cuenta/impersonación, autoridades y popup de aprobación existente.
-PASS: 14 lifecycle + 9 security, popup móvil/21 combinaciones responsive, Pages y
+PASS: 14 lifecycle + 9 security, popup móvil/21 combinaciones responsive, build Pages y
 regresión global local con assets/PDF reales. Bundle 289 / worker 223; 132 chunks
-ajenos intactos. Sin migración ni cambios de negocio. Publicación pendiente de
-verificar. Detalle: `audits/H-REQUEST-PUSH-ACTIVATION-FIX-001.md`.
+ajenos intactos. Sin migración ni cambios de negocio. Commit local 1fc746b.
+Publicación BLOCKED: revisión automática exige permiso explícito para push/main;
+el candidato no está publicado. Pages vigente v288 pasó la regresión de referencia.
+Detalle: `audits/H-REQUEST-PUSH-ACTIVATION-FIX-001.md`.
 
 ## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-AUDIT-001 — auditoría PASS
 

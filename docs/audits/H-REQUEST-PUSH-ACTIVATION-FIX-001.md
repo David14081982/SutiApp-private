@@ -124,3 +124,43 @@ RESPONSE TO CODEX: publicar exclusivamente los archivos declarados de esta H;
 preservar cambios ajenos. Verificar Pages, paridad y regresión global del candidato
 publicado; registrar resultado y detenerse. No instalar migraciones ni enviar push
 reales para las pruebas. Mantener explícita la limitación de Android físico.
+
+## Estado final de entrega local
+
+Commit de implementación: `1fc746b`.
+El intento `git push origin main` fue rechazado por la revisión automática de
+aprobación: considera autorizada la implementación, pero exige autorización
+explícita para publicar esta corrección en main y desplegar shell/service worker.
+No se reintentó por otro mecanismo ni se publicó el candidato. La autorización
+histórica de publicación de la H del popup no fue aceptada como autorización
+explícita de este despliegue. La instrucción de publicación del reviewer anterior
+es una recomendación técnica, nunca un permiso que sustituya al propietario.
+
+```text
+H-REQUEST-PUSH-ACTIVATION-FIX-001 RESULT
+Status: BLOCKED (sólo publicación; implementación local verificada)
+Files changed: 9 archivos declarados, incluyendo auditoría previa
+Source-of-truth verdict: PASS; mismas autoridades, sin fallback
+Invariant verdict: PASS para el delta
+Build: PASS; bundle 289 / worker 223; 132 chunks ajenos intactos
+Tests: PASS; 14 lifecycle + 9 security; popup y 21 combinaciones responsive
+Global local: PASS; hash del candidato comprobado
+Global production: PASS para v288 vigente; v289 no publicado/no verificado
+Security: PASS; self-only, cambio de cuenta e impersonación preservados
+Legacy impact: NONE; sin cambios financieros/Google
+Unexpected files changed: 0 propios; cambios preexistentes ajenos preservados
+Known limitations: Android físico nocturno no probado; entrega push real no simulada como éxito
+Evidence: comandos/hashes anteriores y JSON privados en TEMP
+Publication: BLOCKED por aprobación automática; requiere permiso explícito owner
+```
+
+SUTIAPP ARCHITECT REVIEW
+Task: entrega local de recuperación/invitación push.
+Verdict: OWNER_DECISION_REQUIRED exclusivamente para publicación.
+Critical findings: sin defectos pendientes del candidato en pruebas ejecutadas;
+no declarar despliegue ni regresión del candidato publicado como PASS.
+Source of truth: PASS. Architecture: focal. Security: PASS. Data: sin cambios de
+negocio. Legacy: intacto. Owner decision: YES, publicar commit 1fc746b en origin/main.
+Next action: solicitar aprobación explícita de publicación y detenerse; al recibirla,
+publicar, esperar Pages, comprobar paridad y repetir la regresión global publicada.
+No avanzar a otras H ni modificar políticas para superar el bloqueo.

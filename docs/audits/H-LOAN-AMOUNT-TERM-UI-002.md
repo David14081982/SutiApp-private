@@ -7,6 +7,17 @@ bundle 291 y worker/cache 225; sin cambio lógico del worker. Registrar evidenci
 de Actions y paridad publicada en la carpeta de esta H. Pre-change: PASS.
 Recovery: revertir commit focal y republicar. Sin cambios de backend o datos.
 
+## Publicación verificada — PASS
+Commit 29753c9 subido a main. Actions 36192441028 SUCCESS.
+https://sutiapp.com/ sirve bundle 291 y worker 225; HTML/bundle/SW coinciden
+con los archivos verificados (SHA256 normalizado LF en publication.json).
+Chrome focal sobre el bundle publicado PASS: sin slider/min-label; monto editable,
+clamp, 6/12 pagos, cotización/reintento y responsive 390/430/768 conservados.
+Fixtures sólo en memoria del navegador, sin login ni escritura productiva.
+Evidencia: production-browser.json y production-loan-390.png en la carpeta de esta H.
+Post-change / Architect review: APPROVED. Resultado final PASS publicado;
+autoridad, seguridad, datos y legacy intactos. Cambios ajenos preservados.
+
 PRE-CHANGE AUDIT
 Objetivo: retirar deslizador y etiqueta Mínimo de la tarjeta de monto, por OWNER.
 Alcance: app/screens-loan.jsx, app/bundle.js (GENERATED_ARTIFACT),

@@ -218,6 +218,9 @@
   }
 
   function AmountField({ amount, setAmount, commitAmount, min, max, disabled }) {
+    const [editing, setEditing] = React.useState(false);
+    const inputRef = React.useRef(null);
+    React.useEffect(() => { if (editing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [editing]);
     const bounded = typeof min === 'number' && typeof max === 'number' && max >= min;
     const settle = commitAmount || setAmount;
     // Arrastre y tecleo: valor continuo, entra al debounce.
@@ -231,39 +234,42 @@
       settle(Math.min(max, Math.max(min, next)));
     };
     const showNumericMinimum = bounded && min !== 1;
-    const quickValues = bounded ? Array.from(new Set([
-      showNumericMinimum ? min : null,
-      Math.round((min + ((max - min) * .33)) / 100) * 100,
-      Math.round((min + ((max - min) * .66)) / 100) * 100,
-      max,
-    ].filter((value) => value != null).map((value) => Math.min(max, Math.max(min, value))))) : [];
     const percent = bounded && max > min ? ((Math.min(max, Math.max(min, amount || min)) - min) / (max - min)) * 100 : 0;
     return React.createElement('div', { className: 'su-card', 'data-loan-amount-card': '', style: { background: 'var(--surface)', boxShadow: 'var(--neo-sm)', borderRadius: 20, padding: '16px 16px 14px', opacity: disabled ? .62 : 1 } },
+      React.createElement('style', null, `
+        [data-loan-amount-card] .su-loan-amount{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-width:0;border:0;background:transparent;padding:0;margin:6px 0 10px;font-family:Nunito,system-ui,-apple-system,sans-serif;font-size:44px!important;line-height:1.15!important;font-weight:900;letter-spacing:-.03em;color:#910022;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;cursor:text}
+        [data-loan-amount-card] input.su-loan-amount{outline:0;border-bottom:2px solid #910022}
+        [data-loan-amount-card] .su-loan-amount-pen{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:#fbeef1;color:#910022;box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)}
+        [data-loan-amount-card] .su-range::-webkit-slider-runnable-track{height:7px;background:transparent}
+        [data-loan-amount-card] .su-range::-moz-range-track{height:7px;background:transparent}
+        [data-loan-amount-card] .su-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
+        [data-loan-amount-card] .su-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25)}
+        @media(max-width:400px){[data-loan-amount-card] .su-loan-amount{font-size:40px!important}[data-loan-amount-card] .su-loan-amount-pen{width:30px;height:30px;border-radius:11px}}
+      `),
       React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.01em' } }, '¿Cuánto necesitas?'),
-      React.createElement('input', { type: 'number', inputMode: 'numeric', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => commit(event.target.value), 'aria-label': 'Monto solicitado', style: { width: '100%', border: 'none', borderBottom: '2px solid var(--guinda)', background: 'transparent', outline: 'none', fontSize: 'var(--text-34, 34px)', fontWeight: 800, letterSpacing: '-.03em', color: 'var(--guinda)', fontFamily: 'inherit', padding: '4px 0 2px', margin: '2px 0 6px' } }),
-      bounded && React.createElement('div', { style: { position: 'relative', height: 30, display: 'flex', alignItems: 'center' } },
-        React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, height: 8, borderRadius: 999, background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)' } }),
-        React.createElement('div', { style: { position: 'absolute', left: 0, width: percent + '%', height: 8, borderRadius: 999, background: 'var(--grad-guinda-soft)' } }),
-        React.createElement('input', { className: 'su-range', type: 'range', min, max, step: 1, value: Math.min(max, Math.max(min, amount || min)), disabled, onChange: (event) => change(event.target.value), onPointerUp: (event) => commit(event.target.value), onKeyUp: (event) => commit(event.target.value), style: { position: 'absolute', width: '100%', appearance: 'none', background: 'transparent', margin: 0, height: 30, cursor: disabled ? 'default' : 'pointer' } })),
+      editing
+        ? React.createElement('input', { ref: inputRef, className: 'su-loan-amount', type: 'number', inputMode: 'numeric', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => { commit(event.target.value); setEditing(false); }, onKeyDown: (event) => { if (event.key === 'Enter') event.target.blur(); }, 'aria-label': 'Monto solicitado' })
+        : React.createElement('button', { type: 'button', className: 'su-loan-amount', disabled: disabled || !bounded, onClick: () => setEditing(true), 'aria-label': 'Editar monto solicitado' }, bounded ? moneyOrDash(amount) : dash, React.createElement('span', { className: 'su-loan-amount-pen', 'aria-hidden': true }, React.createElement(I, { name: 'pencil', size: 19 }))),
+      bounded && React.createElement('div', { style: { position: 'relative', height: 34, display: 'flex', alignItems: 'center' } },
+        React.createElement('div', { style: { position: 'absolute', left: 0, right: 0, height: 7, borderRadius: 999, background: '#eef1f6', boxShadow: 'inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)' } }),
+        React.createElement('div', { style: { position: 'absolute', left: 0, width: percent + '%', height: 7, borderRadius: 999, background: 'linear-gradient(90deg,#910022,#e8364f)' } }),
+        React.createElement('input', { className: 'su-range', type: 'range', min, max, step: 1, value: Math.min(max, Math.max(min, amount || min)), disabled, 'aria-label': 'Ajustar monto solicitado', onChange: (event) => change(event.target.value), onPointerUp: (event) => commit(event.target.value), onKeyUp: (event) => commit(event.target.value), style: { position: 'relative', width: '100%', appearance: 'none', WebkitAppearance: 'none', background: 'transparent', margin: 0, height: 34, cursor: disabled ? 'default' : 'pointer' } })),
       React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
         React.createElement('span', { 'data-loan-min-label': '' }, bounded ? (showNumericMinimum ? moneyOrDash(min) : 'Mínimo') : dash),
-        React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)),
-      bounded && React.createElement('div', { 'data-loan-quick-amounts': '', style: { display: 'flex', gap: 7, marginTop: 11, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' } }, quickValues.map((value, index) => {
-        const active = amount === value;
-        return React.createElement('button', { key: value, type: 'button', disabled, onClick: () => settle(value), 'data-loan-quick-amount': value, 'data-press': 'subtle', style: { flexShrink: 0, height: 32, padding: '0 12px', borderRadius: 10, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'), background: active ? 'var(--guinda-50)' : 'var(--surface)', color: active ? 'var(--guinda)' : 'var(--ink-2)', fontSize: 'var(--text-12, 12px)', fontWeight: 700 } }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
-      })));
+        React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)));
   }
 
-  function TermPicker({ terms, selected, setSelected, disabled, result, customTerm }) {
+  function TermPicker({ terms, selected, setSelected, disabled, result, customTerm, presetsOnly }) {
     const min = Number(customTerm && customTerm.min), max = Number(customTerm && customTerm.max);
     const stepSize = Number(customTerm && customTerm.step) || 1;
-    const hasCustomRange = Number.isFinite(min) && Number.isFinite(max) && max >= min;
+    const hasCustomRange = !presetsOnly && Number.isFinite(min) && Number.isFinite(max) && max >= min;
     const [free, setFree] = React.useState(!terms.includes(selected));
     const [draft, setDraft] = React.useState(String(selected || ''));
     React.useEffect(() => {
       setDraft(String(selected || ''));
-      if (!terms.includes(selected)) setFree(true);
-    }, [selected, terms.join('|')]);
+      if (presetsOnly) setFree(false);
+      else if (!terms.includes(selected)) setFree(true);
+    }, [selected, terms.join('|'), presetsOnly]);
     const quotes = result && Array.isArray(result.termOptions) ? result.termOptions : [];
     const paymentFor = (value) => {
       if (result && result.paymentCount === value) return result.paymentPerPeriod;
@@ -286,16 +292,16 @@
         React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, monthLabel)),
       React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 20px 6px', margin: '0 -20px' } },
         terms.length || hasCustomRange ? terms.map((value) => {
-          const active = value === selected && !free, payment = paymentFor(value);
+          const active = value === selected && (presetsOnly || !free), payment = paymentFor(value);
           return React.createElement('button', { key: value, disabled, onClick: () => choosePreset(value), 'data-term-card': value, 'data-on': active ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px solid ' + (active ? 'var(--guinda)' : 'transparent'), background: active ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: active ? 'none' : 'var(--neo-sm)', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
             React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink)' } }, value + ' pagos'),
             React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : 'Cotizando…'),
             React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, 'por quincena'));
-        }).concat(React.createElement('button', { key: 'other', type: 'button', disabled, onClick: chooseFree, 'data-term-card': 'other', 'data-on': free ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'), background: free ? 'var(--guinda-50)' : 'transparent', boxShadow: 'none' } },
+        }).concat(presetsOnly ? [] : React.createElement('button', { key: 'other', type: 'button', disabled, onClick: chooseFree, 'data-term-card': 'other', 'data-on': free ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'), background: free ? 'var(--guinda-50)' : 'transparent', boxShadow: 'none' } },
           React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
           React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? 'Cotizando…' : 'a tu medida')),
           React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
-      free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
+      !presetsOnly && free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
           React.createElement('button', { type: 'button', disabled: disabled || selected <= min, onClick: () => commit(selected - stepSize), 'aria-label': 'Reducir plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '−'),
           React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6 } },
@@ -358,10 +364,13 @@
       RETRYABLE_GATEWAY.some((token) => message.includes(token));
   }
 
+  // Restricción de presentación autorizada: sólo recorta opciones del servidor.
+  const hasShortTerms = (program) => !!program && ['CAJA CHICA', 'CAJA DE AHORRO', 'SUTIEXPRESS'].includes(fundKey(program.fund || program.label));
   const allowedTermsOf = (program) => (program && Array.isArray(program.allowed_terms)
-    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0) : []);
+    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || value === 6 || value === 12)) : []);
 
   function customTermAccepts(program, term) {
+    if (hasShortTerms(program)) return false;
     const custom = (program && program.custom_term) || {};
     const min = Number(custom.min), max = Number(custom.max), step = Number(custom.step);
     return Number.isInteger(term) && Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(step) &&
@@ -386,7 +395,7 @@
     // a `terms[0]` cambiaba la selección a espaldas del afiliado.
     const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm)
       ? previousTerm
-      : (terms[0] || Number(program.custom_term && program.custom_term.min) || 0);
+      : (terms[0] || (hasShortTerms(program) ? 0 : Number(program.custom_term && program.custom_term.min)) || 0);
     return { programId: program.id, amount, term };
   }
 
@@ -466,7 +475,7 @@
     const maxAmount = program && Number(program.max_amount);
     const customTerm = program && program.custom_term || {};
     const customMin = Number(customTerm.min), customMax = Number(customTerm.max), customStep = Number(customTerm.step);
-    const validTerm = Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) &&
+    const validTerm = (!hasShortTerms(program) || terms.includes(term)) && Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) &&
       term >= customMin && term <= customMax && (term - customMin) % customStep === 0;
     const validSelection = !!(program && Number.isFinite(amount) && amount > 0 &&
       Number.isFinite(minAmount) && Number.isFinite(maxAmount) && amount >= minAmount && amount <= maxAmount && validTerm);
@@ -654,7 +663,7 @@
       state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
       React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading }),
       React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),
-      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading, result, customTerm: program && program.custom_term }),
+      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
       React.createElement(Breakdown, { result }),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),

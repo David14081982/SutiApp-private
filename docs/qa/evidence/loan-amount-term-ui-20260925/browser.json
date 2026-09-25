@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "proofs": [
+    {
+      "fund": "Caja Chica",
+      "cards": [
+        "6",
+        "12"
+      ],
+      "custom": false,
+      "quick": false,
+      "amount": "$5,000",
+      "font": "40px",
+      "weight": "900",
+      "color": "rgb(145, 0, 34)",
+      "overflow": false,
+      "term": 6,
+      "select12": "PASS"
+    },
+    {
+      "fund": "Caja de Ahorro",
+      "cards": [
+        "6",
+        "12"
+      ],
+      "custom": false,
+      "quick": false,
+      "amount": "$5,000",
+      "font": "40px",
+      "weight": "900",
+      "color": "rgb(145, 0, 34)",
+      "overflow": false,
+      "term": 6,
+      "select12": "PASS"
+    },
+    {
+      "fund": "Sutiexpress",
+      "cards": [
+        "6",
+        "12"
+      ],
+      "custom": false,
+      "quick": false,
+      "amount": "$5,000",
+      "font": "40px",
+      "weight": "900",
+      "color": "rgb(145, 0, 34)",
+      "overflow": false,
+      "term": 6,
+      "select12": "PASS"
+    }
+  ],
+  "manualClamp": "PASS",
+  "sliderQuote": "PASS",
+  "responsive": [
+    390,
+    430,
+    768
+  ],
+  "staleQuote": "PASS",
+  "googleCalls": 0
+}

@@ -17157,6 +17157,14 @@ Object.assign(window, {
     max,
     disabled
   }) {
+    const [editing, setEditing] = React.useState(false);
+    const inputRef = React.useRef(null);
+    React.useEffect(() => {
+      if (editing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [editing]);
     const bounded = typeof min === 'number' && typeof max === 'number' && max >= min;
     const settle = commitAmount || setAmount;
     // Arrastre y tecleo: valor continuo, entra al debounce.
@@ -17170,7 +17178,6 @@ Object.assign(window, {
       settle(Math.min(max, Math.max(min, next)));
     };
     const showNumericMinimum = bounded && min !== 1;
-    const quickValues = bounded ? Array.from(new Set([showNumericMinimum ? min : null, Math.round((min + (max - min) * .33) / 100) * 100, Math.round((min + (max - min) * .66) / 100) * 100, max].filter(value => value != null).map(value => Math.min(max, Math.max(min, value))))) : [];
     const percent = bounded && max > min ? (Math.min(max, Math.max(min, amount || min)) - min) / (max - min) * 100 : 0;
     return React.createElement('div', {
       className: 'su-card',
@@ -17182,14 +17189,25 @@ Object.assign(window, {
         padding: '16px 16px 14px',
         opacity: disabled ? .62 : 1
       }
-    }, React.createElement('div', {
+    }, React.createElement('style', null, `
+        [data-loan-amount-card] .su-loan-amount{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-width:0;border:0;background:transparent;padding:0;margin:6px 0 10px;font-family:Nunito,system-ui,-apple-system,sans-serif;font-size:44px!important;line-height:1.15!important;font-weight:900;letter-spacing:-.03em;color:#910022;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;cursor:text}
+        [data-loan-amount-card] input.su-loan-amount{outline:0;border-bottom:2px solid #910022}
+        [data-loan-amount-card] .su-loan-amount-pen{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:#fbeef1;color:#910022;box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)}
+        [data-loan-amount-card] .su-range::-webkit-slider-runnable-track{height:7px;background:transparent}
+        [data-loan-amount-card] .su-range::-moz-range-track{height:7px;background:transparent}
+        [data-loan-amount-card] .su-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
+        [data-loan-amount-card] .su-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25)}
+        @media(max-width:400px){[data-loan-amount-card] .su-loan-amount{font-size:40px!important}[data-loan-amount-card] .su-loan-amount-pen{width:30px;height:30px;border-radius:11px}}
+      `), React.createElement('div', {
       style: {
         fontSize: 'var(--text-13, 13px)',
         fontWeight: 700,
         color: 'var(--ink-3)',
         letterSpacing: '.01em'
       }
-    }, '¿Cuánto necesitas?'), React.createElement('input', {
+    }, '¿Cuánto necesitas?'), editing ? React.createElement('input', {
+      ref: inputRef,
+      className: 'su-loan-amount',
       type: 'number',
       inputMode: 'numeric',
       value: amount || '',
@@ -17197,26 +17215,30 @@ Object.assign(window, {
       max: bounded ? max : undefined,
       disabled: disabled || !bounded,
       onChange: event => change(event.target.value),
-      onBlur: event => commit(event.target.value),
-      'aria-label': 'Monto solicitado',
-      style: {
-        width: '100%',
-        border: 'none',
-        borderBottom: '2px solid var(--guinda)',
-        background: 'transparent',
-        outline: 'none',
-        fontSize: 'var(--text-34, 34px)',
-        fontWeight: 800,
-        letterSpacing: '-.03em',
-        color: 'var(--guinda)',
-        fontFamily: 'inherit',
-        padding: '4px 0 2px',
-        margin: '2px 0 6px'
-      }
-    }), bounded && React.createElement('div', {
+      onBlur: event => {
+        commit(event.target.value);
+        setEditing(false);
+      },
+      onKeyDown: event => {
+        if (event.key === 'Enter') event.target.blur();
+      },
+      'aria-label': 'Monto solicitado'
+    }) : React.createElement('button', {
+      type: 'button',
+      className: 'su-loan-amount',
+      disabled: disabled || !bounded,
+      onClick: () => setEditing(true),
+      'aria-label': 'Editar monto solicitado'
+    }, bounded ? moneyOrDash(amount) : dash, React.createElement('span', {
+      className: 'su-loan-amount-pen',
+      'aria-hidden': true
+    }, React.createElement(I, {
+      name: 'pencil',
+      size: 19
+    }))), bounded && React.createElement('div', {
       style: {
         position: 'relative',
-        height: 30,
+        height: 34,
         display: 'flex',
         alignItems: 'center'
       }
@@ -17225,19 +17247,19 @@ Object.assign(window, {
         position: 'absolute',
         left: 0,
         right: 0,
-        height: 8,
+        height: 7,
         borderRadius: 999,
-        background: 'var(--surface-2)',
-        boxShadow: 'var(--neo-inset)'
+        background: '#eef1f6',
+        boxShadow: 'inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)'
       }
     }), React.createElement('div', {
       style: {
         position: 'absolute',
         left: 0,
         width: percent + '%',
-        height: 8,
+        height: 7,
         borderRadius: 999,
-        background: 'var(--grad-guinda-soft)'
+        background: 'linear-gradient(90deg,#910022,#e8364f)'
       }
     }), React.createElement('input', {
       className: 'su-range',
@@ -17247,16 +17269,18 @@ Object.assign(window, {
       step: 1,
       value: Math.min(max, Math.max(min, amount || min)),
       disabled,
+      'aria-label': 'Ajustar monto solicitado',
       onChange: event => change(event.target.value),
       onPointerUp: event => commit(event.target.value),
       onKeyUp: event => commit(event.target.value),
       style: {
-        position: 'absolute',
+        position: 'relative',
         width: '100%',
         appearance: 'none',
+        WebkitAppearance: 'none',
         background: 'transparent',
         margin: 0,
-        height: 30,
+        height: 34,
         cursor: disabled ? 'default' : 'pointer'
       }
     })), React.createElement('div', {
@@ -17270,40 +17294,7 @@ Object.assign(window, {
       }
     }, React.createElement('span', {
       'data-loan-min-label': ''
-    }, bounded ? showNumericMinimum ? moneyOrDash(min) : 'Mínimo' : dash), React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)), bounded && React.createElement('div', {
-      'data-loan-quick-amounts': '',
-      style: {
-        display: 'flex',
-        gap: 7,
-        marginTop: 11,
-        overflowX: 'auto',
-        paddingBottom: 2,
-        scrollbarWidth: 'none'
-      }
-    }, quickValues.map((value, index) => {
-      const active = amount === value;
-      return React.createElement('button', {
-        key: value,
-        type: 'button',
-        disabled,
-        onClick: () => settle(value),
-        'data-loan-quick-amount': value,
-        'data-press': 'subtle',
-        style: {
-          flexShrink: 0,
-          height: 32,
-          padding: '0 12px',
-          borderRadius: 10,
-          cursor: disabled ? 'default' : 'pointer',
-          fontFamily: 'inherit',
-          border: '1px solid ' + (active ? 'var(--guinda)' : 'var(--hairline)'),
-          background: active ? 'var(--guinda-50)' : 'var(--surface)',
-          color: active ? 'var(--guinda)' : 'var(--ink-2)',
-          fontSize: 'var(--text-12, 12px)',
-          fontWeight: 700
-        }
-      }, index === quickValues.length - 1 ? 'Máximo' : moneyOrDash(value));
-    })));
+    }, bounded ? showNumericMinimum ? moneyOrDash(min) : 'Mínimo' : dash), React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)));
   }
   function TermPicker({
     terms,
@@ -17311,18 +17302,19 @@ Object.assign(window, {
     setSelected,
     disabled,
     result,
-    customTerm
+    customTerm,
+    presetsOnly
   }) {
     const min = Number(customTerm && customTerm.min),
       max = Number(customTerm && customTerm.max);
     const stepSize = Number(customTerm && customTerm.step) || 1;
-    const hasCustomRange = Number.isFinite(min) && Number.isFinite(max) && max >= min;
+    const hasCustomRange = !presetsOnly && Number.isFinite(min) && Number.isFinite(max) && max >= min;
     const [free, setFree] = React.useState(!terms.includes(selected));
     const [draft, setDraft] = React.useState(String(selected || ''));
     React.useEffect(() => {
       setDraft(String(selected || ''));
-      if (!terms.includes(selected)) setFree(true);
-    }, [selected, terms.join('|')]);
+      if (presetsOnly) setFree(false);else if (!terms.includes(selected)) setFree(true);
+    }, [selected, terms.join('|'), presetsOnly]);
     const quotes = result && Array.isArray(result.termOptions) ? result.termOptions : [];
     const paymentFor = value => {
       if (result && result.paymentCount === value) return result.paymentPerPeriod;
@@ -17384,7 +17376,7 @@ Object.assign(window, {
         margin: '0 -20px'
       }
     }, terms.length || hasCustomRange ? terms.map(value => {
-      const active = value === selected && !free,
+      const active = value === selected && (presetsOnly || !free),
         payment = paymentFor(value);
       return React.createElement('button', {
         key: value,
@@ -17428,7 +17420,7 @@ Object.assign(window, {
           marginTop: 1
         }
       }, 'por quincena'));
-    }).concat(React.createElement('button', {
+    }).concat(presetsOnly ? [] : React.createElement('button', {
       key: 'other',
       type: 'button',
       disabled,
@@ -17478,7 +17470,7 @@ Object.assign(window, {
         fontSize: 'var(--text-12-5, 12.5px)',
         fontWeight: 600
       }
-    }, 'Los plazos aparecerán al consultar tus condiciones.')), free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', {
+    }, 'Los plazos aparecerán al consultar tus condiciones.')), !presetsOnly && free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', {
       'data-custom-term-editor': '',
       style: {
         marginTop: 4,
@@ -17722,8 +17714,12 @@ Object.assign(window, {
     if (!message || message.includes('snapshot_invalid')) return false;
     return RETRYABLE_TRANSPORT.some(token => message.includes(token)) || RETRYABLE_POSTGRES.some(code => message.includes(code)) || RETRYABLE_GATEWAY.some(token => message.includes(token));
   }
-  const allowedTermsOf = program => program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter(value => typeof value === 'number' && value > 0) : [];
+
+  // Restricción de presentación autorizada: sólo recorta opciones del servidor.
+  const hasShortTerms = program => !!program && ['CAJA CHICA', 'CAJA DE AHORRO', 'SUTIEXPRESS'].includes(fundKey(program.fund || program.label));
+  const allowedTermsOf = program => program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter(value => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || value === 6 || value === 12)) : [];
   function customTermAccepts(program, term) {
+    if (hasShortTerms(program)) return false;
     const custom = program && program.custom_term || {};
     const min = Number(custom.min),
       max = Number(custom.max),
@@ -17750,7 +17746,7 @@ Object.assign(window, {
     const previousTerm = previous && previous.term;
     // Un plazo personalizado válido para el fondo nuevo se conserva: reiniciarlo
     // a `terms[0]` cambiaba la selección a espaldas del afiliado.
-    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm) ? previousTerm : terms[0] || Number(program.custom_term && program.custom_term.min) || 0;
+    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm) ? previousTerm : terms[0] || (hasShortTerms(program) ? 0 : Number(program.custom_term && program.custom_term.min)) || 0;
     return {
       programId: program.id,
       amount,
@@ -17846,7 +17842,7 @@ Object.assign(window, {
     const customMin = Number(customTerm.min),
       customMax = Number(customTerm.max),
       customStep = Number(customTerm.step);
-    const validTerm = Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) && term >= customMin && term <= customMax && (term - customMin) % customStep === 0;
+    const validTerm = (!hasShortTerms(program) || terms.includes(term)) && Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) && term >= customMin && term <= customMax && (term - customMin) % customStep === 0;
     const validSelection = !!(program && Number.isFinite(amount) && amount > 0 && Number.isFinite(minAmount) && Number.isFinite(maxAmount) && amount >= minAmount && amount <= maxAmount && validTerm);
     const selectionKey = validSelection ? [program.id, amount, term].join('|') : '';
     latestSelection.current = selectionKey;
@@ -18075,7 +18071,8 @@ Object.assign(window, {
       setSelected: selectTerm,
       disabled: !program || overviewLoading,
       result,
-      customTerm: program && program.custom_term
+      customTerm: program && program.custom_term,
+      presetsOnly: hasShortTerms(program)
     }), React.createElement(Breakdown, {
       result
     }), React.createElement('div', {

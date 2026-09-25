@@ -1,5 +1,13 @@
 # Bitácora de agentes
 
+## 2026-09-25 ? H-LOAN-AMOUNT-TERM-UI-001 ? local PASS
+
+Suti Pr?stamo: Caja Chica/Caja de Ahorro/Sutiexpress muestran s?lo 6/12 pagos;
+se retiran montos r?pidos y el monto/barra adoptan el dise?o de Invertir.
+Cotizaciones, l?mites, autoridades, backend y legacy intactos. Build focal de un
+m?dulo; pruebas est?ticas y Chrome aislado PASS (390/430/768px). Sin publicaci?n.
+Evidencia y revisi?n: `audits/H-LOAN-AMOUNT-TERM-UI-001.md`.
+
 ## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-FIX-001 — producción PASS
 
 Recuperación segura del transporte vigente, detección de rotación, estados claros,

@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## 2026-09-24 — H-AFFILIATES-OPTIONAL-REASON-001 — implementación verificada
+## 2026-09-24 — H-AFFILIATES-OPTIONAL-REASON-001 — PASS publicado
 
 Motivo opcional en los seis formularios de Afiliados, incluidas ambas acciones de
 archivo y carga documental. Backend 20260924000400 aplicado: siete RPC/cinco CHECKs,
@@ -9,7 +9,9 @@ navegador (10 grupos, cinco tamaños), build focal (133 módulos preservados) y
 regresión global local/Pages PASS. Una prueba estática antigua de Finanzas falla
 también en HEAD; no se atribuye a esta H. Registry sin cambio de topología; STALE
 conocido, validación dirigida contra catálogo real. Estado de publicación y cierre:
-[auditoría](audits/H-AFFILIATES-OPTIONAL-REASON-001.md).
+[auditoría](audits/H-AFFILIATES-OPTIONAL-REASON-001.md). Commit funcional df36704;
+Pages run 36083304947 SUCCESS; bundle v286/SW v220; hash publicado coincide con el
+build probado. Regresión global sobre esa publicación PASS; revisión final APPROVED.
 
 ## 2026-09-24 — H-SCREEN-PERMISSION-COVERAGE-001 — PASS de auditoría y herramientas
 

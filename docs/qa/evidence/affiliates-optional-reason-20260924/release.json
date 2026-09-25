@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "bundleSha256": "62cc263da478bad1c20acbddd5fe8c3c155f629a6a9b620d12216322197aa626",
+  "bundleVersion": "286",
+  "optionalLabels": 7,
+  "oldMinimumGuard": false,
+  "productionBusinessWrites": 0,
+  "deploymentRun": "https://github.com/David14081982/SutiApp-private/actions/runs/36083304947",
+  "commit": "df3670467d7f9bd6091504d0baf5c28ef7aada2f"
+}

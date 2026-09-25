@@ -54,3 +54,30 @@ Verdict: APPROVED para implementación y backend aplicado; publicación frontend
 Evidencia reconstruida: diff focal UI, siete definiciones contra catálogo, cinco CHECKs, receipt transaccional, pruebas PostgreSQL/navegador/build y regresión global. No se eliminan campos ni auditoría; no se añade autoridad. Los errores de longitud se ajustan a 500; los otros formularios retienen su UI y la RPC compartida acepta vacío.
 Owner decision required: NO; la instrucción explícita del propietario cubre las seis acciones.
 Recommended next action: publicar exclusivamente los archivos de esta H y verificar bundle/etiquetas/regresión en Pages. No incluir la migración de asistencia previamente modificada ni la auditoría de Ahorro ajena. Esta revisión no autoriza ninguna tarea siguiente de WORK_QUEUE.
+
+## H-AFFILIATES-OPTIONAL-REASON-001 RESULT
+
+Status: PASS.
+Files changed: pantalla Afiliados, bundle focal y cachebusters; migración/recovery 20260924000400; atributos de bytes SQL; scripts/fixture/prueba de navegador y evidencia de esta H; DECISIONS, INVARIANTS, SECURITY_RULES, MIGRATION_RULES, AGENT_CHANGELOG y este informe. Commit funcional: df3670467d7f9bd6091504d0baf5c28ef7aada2f.
+Source-of-truth verdict: SAFE; mismas autoridades Supabase, sin alternativas productivas.
+Invariant verdict: PASS con excepción del motivo autorizada explícitamente; identidad, permisos, auditoría e historia preservados.
+Build: PASS; 1/134 módulos actualizado, 133 preservados. SHA-256 publicado 62cc263da478bad1c20acbddd5fe8c3c155f629a6a9b620d12216322197aa626; bundle v286 / SW v220.
+Tests: PASS PostgreSQL aislado (14 grupos), navegador (10 grupos), build y regresión global local/Pages final con assets legítimos. Prueba estática antigua de Finanzas: fallo basal confirmado y excluido de esta corrección, documentado arriba.
+Security: PASS; backend readback de siete definiciones exactas y cinco CHECKs, ACL intactos; permisos/sesión/versión/TTL/actor-contexto probados en aislamiento. Datos productivos intactos durante migración.
+Legacy impact: ninguno en Google, cálculos, balances, fórmulas o triggers; sólo texto de motivo de auditoría autorizado.
+Unexpected files changed: ninguno por esta H. Los dos cambios ajenos del baseline quedaron fuera de ambos commits.
+Known limitations: no se hicieron guardados sintéticos sobre personas reales; las pruebas de escritura fueron aisladas. Registry derivado sigue STALE por hashes y sin cambio de topología; no se afirma prueba completa del generador.
+Evidence: `docs/qa/evidence/affiliates-optional-reason-20260924/`: apply, backend-readback, postgres-isolated, browser-result, capturas, build, global-local, global-production-release, release y legacy-test-baseline.
+
+Publicación: [GitHub Actions 36083304947](https://github.com/David14081982/SutiApp-private/actions/runs/36083304947), SUCCESS. Chrome comprobó hash, bundle v286, siete variantes de etiqueta opcional (seis formularios) y ausencia de la guarda mínima. Regresión sobre esa publicación PASS: sello/Login, foto, Admin Afiliados, imágenes/PDF, Membership, Préstamo, programas/galería, Marketplace, fullscreen, refresh y comparación con/sin SW. Cero mutaciones de negocio en esa verificación.
+
+## ARCHITECT REVIEW — cierre
+
+Task reviewed: H-AFFILIATES-OPTIONAL-REASON-001.
+Verdict: APPROVED.
+What Codex did correctly: implementó los seis lugares y ambas variantes de archivo/documento; backend real acepta vacío; conserva campo opcional, límite 500, auditoría y permisos; publicación comprobada por hash y regresión.
+Important findings: la restricción estaba tanto en UI como en siete RPC/cinco CHECKs. Sólo cambiar UI habría dejado operaciones bloqueadas. La RPC de asistencia es compartida; sus otros controles permanecen intactos.
+Problems detected: ninguno nuevo; fallo estático basal y limitación del Registry identificados, no presentados como PASS.
+Architecture/source-of-truth/security/data implications: sin nueva autoridad ni topología; validación de motivo relajada por instrucción del propietario; huellas de trece tablas intactas; no se pierde historia.
+Owner decision required: NO.
+Recommended next action / RESPONSE TO CODEX: informar al propietario que los seis motivos ya son opcionales y que recargue la aplicación si conserva la versión anterior. No iniciar otra H ni tareas de WORK_QUEUE.

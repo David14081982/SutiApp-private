@@ -1,5 +1,12 @@
 # Bitácora de agentes
 
+## 2026-09-25 — H-LOAN-AMOUNT-TERM-UI-002 — local PASS
+
+Retirados deslizador y etiqueta Mínimo por instrucción OWNER. Monto/lápiz,
+máximo, límites y plazos intactos. Build focal y tres checks PASS, incluido Chrome
+aislado con edición/clamp y responsive. Sin deploy ni cambios backend/legacy.
+Evidencia: `audits/H-LOAN-AMOUNT-TERM-UI-002.md`.
+
 ## 2026-09-25 — H-LOAN-AMOUNT-TERM-UI-001 — producción PASS
 
 Suti Préstamo: Caja Chica/Caja de Ahorro/Sutiexpress muestran sólo 6/12 pagos;

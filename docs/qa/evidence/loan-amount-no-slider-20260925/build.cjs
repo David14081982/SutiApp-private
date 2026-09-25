@@ -1,0 +1,23 @@
+'use strict';
+// Regenerate only the authorized module; preserve every unrelated bundle byte.
+const fs=require('fs'),path=require('path'),vm=require('vm'),crypto=require('crypto');
+const root=path.resolve(__dirname,'../../../..');
+const babelPath=process.argv[2];
+if(!babelPath)throw Error('Supply Babel Standalone 7.28.4 path');
+const context=vm.createContext({});
+vm.runInContext(fs.readFileSync(babelPath,'utf8'),context);
+if(context.Babel.version!=='7.28.4')throw Error('Expected Babel 7.28.4');
+const file='screens-loan.jsx',bundle=path.join(root,'app/bundle.js');
+const before=fs.readFileSync(bundle,'utf8');
+const source=fs.readFileSync(path.join(root,'app',file),'utf8');
+const code=context.Babel.transform(source.replace(/\r\n/g,'\n'),{presets:['react'],filename:file}).code;
+const marker=`/* @@file ${file} */`;
+const start=before.indexOf(marker),end=before.indexOf('/* @@file ',start+marker.length);
+if(start<0||end<0)throw Error('Missing module boundary');
+const after=before.slice(0,start)+`${marker}\n(function(){\n${code}\n})();\n`+before.slice(end);
+new vm.Script(after);
+fs.writeFileSync(bundle,after);
+const sha=value=>crypto.createHash('sha256').update(value).digest('hex');
+const proof={status:'PASS',method:'Babel 7.28.4; focal module regeneration',changedModules:[file],unchangedPrefix:after.startsWith(before.slice(0,start)),unchangedSuffix:after.endsWith(before.slice(end)),bundleSHA256:sha(after),sourceSHA256:sha(source)};
+fs.writeFileSync(path.join(__dirname,'build.json'),JSON.stringify(proof,null,2)+'\n');
+console.log(JSON.stringify(proof));

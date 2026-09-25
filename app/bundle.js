@@ -17177,8 +17177,6 @@ Object.assign(window, {
       if (!Number.isFinite(next) || !bounded) return;
       settle(Math.min(max, Math.max(min, next)));
     };
-    const showNumericMinimum = bounded && min !== 1;
-    const percent = bounded && max > min ? (Math.min(max, Math.max(min, amount || min)) - min) / (max - min) * 100 : 0;
     return React.createElement('div', {
       className: 'su-card',
       'data-loan-amount-card': '',
@@ -17193,10 +17191,6 @@ Object.assign(window, {
         [data-loan-amount-card] .su-loan-amount{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-width:0;border:0;background:transparent;padding:0;margin:6px 0 10px;font-family:Nunito,system-ui,-apple-system,sans-serif;font-size:44px!important;line-height:1.15!important;font-weight:900;letter-spacing:-.03em;color:#910022;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;cursor:text}
         [data-loan-amount-card] input.su-loan-amount{outline:0;border-bottom:2px solid #910022}
         [data-loan-amount-card] .su-loan-amount-pen{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:#fbeef1;color:#910022;box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)}
-        [data-loan-amount-card] .su-range::-webkit-slider-runnable-track{height:7px;background:transparent}
-        [data-loan-amount-card] .su-range::-moz-range-track{height:7px;background:transparent}
-        [data-loan-amount-card] .su-range::-webkit-slider-thumb{-webkit-appearance:none;width:25px;height:25px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25);margin-top:-9px}
-        [data-loan-amount-card] .su-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:7px solid #910022;box-shadow:0 4px 12px rgba(20,33,61,.25)}
         @media(max-width:400px){[data-loan-amount-card] .su-loan-amount{font-size:40px!important}[data-loan-amount-card] .su-loan-amount-pen{width:30px;height:30px;border-radius:11px}}
       `), React.createElement('div', {
       style: {
@@ -17235,66 +17229,16 @@ Object.assign(window, {
     }, React.createElement(I, {
       name: 'pencil',
       size: 19
-    }))), bounded && React.createElement('div', {
-      style: {
-        position: 'relative',
-        height: 34,
-        display: 'flex',
-        alignItems: 'center'
-      }
-    }, React.createElement('div', {
-      style: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        height: 7,
-        borderRadius: 999,
-        background: '#eef1f6',
-        boxShadow: 'inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)'
-      }
-    }), React.createElement('div', {
-      style: {
-        position: 'absolute',
-        left: 0,
-        width: percent + '%',
-        height: 7,
-        borderRadius: 999,
-        background: 'linear-gradient(90deg,#910022,#e8364f)'
-      }
-    }), React.createElement('input', {
-      className: 'su-range',
-      type: 'range',
-      min,
-      max,
-      step: 1,
-      value: Math.min(max, Math.max(min, amount || min)),
-      disabled,
-      'aria-label': 'Ajustar monto solicitado',
-      onChange: event => change(event.target.value),
-      onPointerUp: event => commit(event.target.value),
-      onKeyUp: event => commit(event.target.value),
-      style: {
-        position: 'relative',
-        width: '100%',
-        appearance: 'none',
-        WebkitAppearance: 'none',
-        background: 'transparent',
-        margin: 0,
-        height: 34,
-        cursor: disabled ? 'default' : 'pointer'
-      }
-    })), React.createElement('div', {
+    }))), React.createElement('div', {
       style: {
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
         fontSize: 'var(--text-11-5, 11.5px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 6
       }
-    }, React.createElement('span', {
-      'data-loan-min-label': ''
-    }, bounded ? showNumericMinimum ? moneyOrDash(min) : 'Mínimo' : dash), React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)));
+    }, React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)));
   }
   function TermPicker({
     terms,

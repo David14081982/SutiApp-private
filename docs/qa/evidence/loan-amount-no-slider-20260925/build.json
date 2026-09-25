@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "method": "Babel 7.28.4; focal module regeneration",
+  "changedModules": [
+    "screens-loan.jsx"
+  ],
+  "unchangedPrefix": true,
+  "unchangedSuffix": true,
+  "bundleSHA256": "afc80f6b0866898ff36d38ec650cf07a537ef481742582fd3a8fa64458fa130c",
+  "sourceSHA256": "9148d8501ab47061ababec296f54fd1f536bbd87c70dcdf7a6159c33c83529ee"
+}

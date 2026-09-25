@@ -2,7 +2,7 @@
 // Exactly two automated suites; real application JS/IndexedDB, isolated transport.
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert').strict;
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/request-push-persistence-fix-20260911');
+const root=path.resolve(__dirname,'..'),out=process.env.SUTIAPP_PUSH_EVIDENCE||path.join(require('os').tmpdir(),'suti-push-activation-fix');
 const suite=process.argv[2];assert(['lifecycle','security'].includes(suite),'Choose lifecycle or security');
 const build=JSON.parse(fs.readFileSync(path.join(out,'build.json'),'utf8'));
 const bundle=fs.readFileSync(path.join(build.site,'app/bundle.js'),'utf8').replace(/\r\n/g,'\n');
@@ -17,7 +17,8 @@ async function initialize(page,options={}){
     window.__failure=options.failure||null;window.__backendStatus=true;window.__answer='granted';window.__asks=0;window.__unsubscribes=0;window.__revokes=0;window.__registrations=0;window.__subscribeCalls=0;
     window.__user='11111111-1111-4111-8111-111111111111';window.__impersonation=false;window.__permission=options.existing?'granted':'default';
     window.__subid='22222222-2222-4222-8222-222222222222';window.__trace=[];
-    const sub={toJSON:()=>({endpoint:'https://fcm.googleapis.com/test/isolated-persistence',keys:{p256dh:'A'.repeat(87),auth:'B'.repeat(22)}}),unsubscribe:async()=>{__unsubscribes++;window.__sub=null;return true;}};
+    window.__endpoint='https://fcm.googleapis.com/test/isolated-persistence';
+    const sub={toJSON:()=>({endpoint:__endpoint,keys:{p256dh:'A'.repeat(87),auth:'B'.repeat(22)}}),unsubscribe:async()=>{__unsubscribes++;window.__sub=null;return true;}};
     window.__sub=options.existing?sub:null;
     Object.defineProperty(Notification,'permission',{get:()=>__permission,configurable:true});
     Notification.requestPermission=async()=>{__asks++;__permission=__answer;return __permission;};
@@ -33,7 +34,7 @@ async function initialize(page,options={}){
         if(window.__holdStatus){window.__holdStatus=false;return new Promise(resolve=>{window.__releaseStatus=()=>resolve({data:false});});}
         return{data:__backendStatus};
       }
-      if(name==='register_self_request_push'){__registrations++;return{data:__subid};}
+      if(name==='register_self_request_push'){if(__failure==='register')return{error:Error('ISOLATED_OFFLINE')};__registrations++;return{data:__subid};}
       if(name==='revoke_self_request_push'){__revokes++;return{data:true};}
       throw Error('UNEXPECTED_RPC:'+name);
     }};
@@ -81,11 +82,58 @@ async function main(){
       cases.push({name:'rpc_offline_online',result:await snapshot(page)});
       // Older backend response must not overwrite a newer successful state.
       await page.evaluate(()=>{__holdStatus=true;window.dispatchEvent(new Event('focus'));});await page.waitForFunction(()=>typeof __releaseStatus==='function');
-      await refresh(page);await page.locator('[data-request-push="active"]').waitFor();await page.evaluate(()=>__releaseStatus());
+      await refresh(page);await page.evaluate(()=>__releaseStatus());
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await page.locator('[data-request-push="active"]').waitFor();
       await page.screenshot({path:path.join(out,'active-preserved.png')});cases.push({name:'stale_response_ignored',result:await snapshot(page)});
+      const beforeRepair=await snapshot(page);
+      await page.evaluate(()=>{__sub=null;__endpoint+='-recovered';document.dispatchEvent(new Event('visibilitychange'));});
+      await page.waitForFunction(()=>__sub!==null);await page.locator('[data-request-push="active"]').waitFor();
+      const repaired=await snapshot(page);assert.equal(repaired.registrations,beforeRepair.registrations+1);assert.equal(repaired.asks,beforeRepair.asks);assert.equal(repaired.unsubscribes,0);
+      cases.push({name:'missing_transport_recovers_on_visibility_without_permission_prompt',result:repaired});
+      await page.evaluate(()=>{__endpoint+='-rotated';window.dispatchEvent(new Event('pageshow'));});
+      await page.waitForFunction(count=>__registrations===count, repaired.registrations+1);
+      cases.push({name:'rotated_transport_registered_on_pageshow',result:await snapshot(page)});
+      const beforeFailure=await snapshot(page);
+      await page.evaluate(()=>{__failure='register';__endpoint+='-network';navigator.serviceWorker.dispatchEvent(new MessageEvent('message',{data:{type:'SUTIAPP_PUSH_CHANGED'}}));});
+      await page.locator('[data-request-push="error"]').waitFor();assert.equal((await snapshot(page)).unsubscribes,0);assert.equal((await snapshot(page)).subscription,true);
+      await page.evaluate(()=>{__failure=null;window.dispatchEvent(new Event('online'));});await page.locator('[data-request-push="active"]').waitFor();assert.equal((await snapshot(page)).registrations,beforeFailure.registrations+1);
+      cases.push({name:'registration_failure_preserves_transport_and_retries',result:await snapshot(page)});
+      await page.evaluate(()=>__root.render(React.createElement(RequestPushInvitation,{startup:true})));
+      await page.waitForFunction(()=>!document.querySelector('[data-request-push]'));
+      cases.push({name:'active_device_has_no_startup_invitation'});
       await context.close();
+      ({page,context}=await fresh());
+      await page.evaluate(()=>__root.render(React.createElement(RequestPushInvitation,{startup:true})));
+      await page.locator('[data-request-push-startup="true"]').waitFor();assert.equal(await page.evaluate(()=>__asks),0);
+      await page.screenshot({path:path.join(out,'startup-invitation.png')});await page.getByRole('button',{name:'Ahora no',exact:true}).click();
+      await page.waitForFunction(()=>!document.querySelector('[data-request-push]'));
+      await page.reload();await initialize(page);await page.evaluate(()=>__root.render(React.createElement(RequestPushInvitation,{startup:true})));
+      await refresh(page);assert.equal(await page.locator('[data-request-push-startup]').count(),0);
+      // Age only presentation metadata in the isolated browser, never business data.
+      await page.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('sutiapp-request-push-v1',1);r.onsuccess=()=>{const db=r.result,tx=db.transaction('device','readwrite');tx.objectStore('device').put({until:Date.now()-1},'prompt:'+__user);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};}));
+      await refresh(page);await page.locator('[data-request-push-startup="true"]').waitFor();
+      cases.push({name:'startup_snooze_survives_reload_and_expires_after_24h',nativePrompts:await page.evaluate(()=>__asks)});
+      await page.evaluate(()=>{__permission='denied';document.dispatchEvent(new Event('visibilitychange'));});await page.locator('[data-request-push="denied"]').waitFor();
+      await page.getByRole('button',{name:'Cómo activarlas'}).click();assert.match(await page.locator('[data-request-push]').innerText(),/Android/);
+      await page.evaluate(()=>{__permission='granted';document.dispatchEvent(new Event('visibilitychange'));});await page.locator('[data-request-push="repair"]').waitFor();
+      assert.equal(await page.evaluate(()=>__registrations),0);await page.getByRole('button',{name:'Restablecer notificaciones'}).click();
+      await page.waitForFunction(()=>__registrations===1);await page.waitForFunction(()=>!document.querySelector('[data-request-push]'));
+      cases.push({name:'blocked_help_and_explicit_restore_without_binding',result:await snapshot(page)});
+      await page.evaluate(()=>__root.render(React.createElement(RequestPushInvitation)));await page.locator('[data-request-push="active"]').waitFor();
+      await page.getByRole('button',{name:'Desactivar en este dispositivo'}).click();await page.locator('[data-request-push="ready"]').waitFor();
+      await page.reload();await initialize(page);await page.evaluate(()=>{__permission='granted';__root.render(React.createElement(RequestPushInvitation,{startup:true}));});await refresh(page);
+      const disabled=await snapshot(page);assert.equal(disabled.registrations,0);assert.equal(disabled.subscription,false);assert.equal(await page.locator('[data-request-push-startup]').count(),0);
+      cases.push({name:'explicit_optout_not_reactivated_or_prompted_on_reopen',result:disabled});await context.close();
     }else{
+      {
+        const {page,context}=await fresh();await page.locator('[data-request-push="ready"]').waitFor();
+        await page.evaluate(()=>{__holdSubscribe=true;});await page.getByRole('button',{name:'Activar notificaciones',exact:true}).click();
+        await page.waitForFunction(()=>typeof __releaseSubscribe==='function');
+        await page.evaluate(async()=>{__user='66666666-6666-4666-8666-666666666666';await AffiliateAuth.refreshContext();__releaseSubscribe();});
+        await page.waitForFunction(()=>__unsubscribes>0);const result=await snapshot(page);
+        assert.equal(result.registrations,0);assert.equal(result.binding,false);assert.equal(result.subscription,false);
+        cases.push({name:'account_switch_during_pending_activation_never_binds_other_owner',result});await context.close();
+      }
       for(const action of ['logout','switch','impersonation']){
         const {page,context}=await fresh();await enable(page);
         if(action==='logout')await page.evaluate(async()=>{await RequestPush.clearDevice();await AffiliateAuth.signOut();});
@@ -98,12 +146,12 @@ async function main(){
       }
       const {page,context}=await fresh();await enable(page);
       for(const reason of ['revoked','expired']){
-        await page.evaluate(()=>{__backendStatus=false;});await refresh(page);await page.locator('[data-request-push="ready"]').waitFor();const result=await snapshot(page);assert.equal(result.phase,'ready');assert.equal(result.registrations,1);assert.equal(result.asks,1);
+        await page.evaluate(()=>{__backendStatus=false;});await refresh(page);await page.locator('[data-request-push="repair"]').waitFor();const result=await snapshot(page);assert.equal(result.phase,'repair');assert.equal(result.registrations,1);assert.equal(result.asks,1);
         cases.push({name:'backend_'+reason+'_not_auto_registered',result});await page.evaluate(()=>{__backendStatus=true;});await refresh(page);await page.locator('[data-request-push="active"]').waitFor();
       }
       await page.evaluate(workerSource=>{
         window.__handlers={};window.__shown=[];window.__opened=[];
-        const worker={addEventListener:(name,fn)=>{__handlers[name]=fn;},location:{origin:location.origin},registration:{scope:location.origin+'/',showNotification:async(title,options)=>__shown.push({title,...options})},clients:{matchAll:async()=>[],openWindow:async url=>__opened.push(url)}};
+        const worker={addEventListener:(name,fn)=>{__handlers[name]=fn;},location:{origin:location.origin},registration:{scope:location.origin+'/',showNotification:async(title,options)=>{if(window.__failShow>0){__failShow--;throw Error('ISOLATED_DISPLAY_FAILURE');}__shown.push({title,...options});}},clients:{matchAll:async()=>[],openWindow:async url=>__opened.push(url)}};
         new Function('self',workerSource)(worker);
         window.__emit=async(name,data)=>{let pending;__handlers[name]({...data,waitUntil:p=>{pending=p;}});await pending;};
         window.__payload={v:1,event_id:'33333333-3333-4333-8333-333333333333',request_id:'44444444-4444-4444-8444-444444444444',subscription_id:__subid,title:'Aviso técnico aislado',body:'Prueba sin datos reales'};
@@ -111,9 +159,16 @@ async function main(){
       await page.evaluate(async()=>{await Promise.all(Array.from({length:8},()=>__emit('push',{data:{json:()=>__payload}})));});assert.equal(await page.evaluate(()=>__shown.length),1);
       await page.evaluate(()=>__emit('notificationclick',{notification:{...__shown[0],close:()=>{}}}));assert.match(await page.evaluate(()=>__opened[0]),/#\/historial\?request=44444444-4444-4444-8444-444444444444$/);
       await page.evaluate(()=>__emit('push',{data:{json:()=>({...__payload,event_id:'55555555-5555-4555-8555-555555555555',subscription_id:'77777777-7777-4777-8777-777777777777'})}}));assert.equal(await page.evaluate(()=>__shown.length),1);
+      await page.evaluate(async()=>{__failShow=1;await __emit('push',{data:{json:()=>({...__payload,event_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'})}});});assert.equal(await page.evaluate(()=>__shown.length),2);
+      const failed=await page.evaluate(async()=>{__failShow=2;try{await __emit('push',{data:{json:()=>({...__payload,event_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'})}});return false;}catch{return true;}});assert(failed);
+      await page.evaluate(async()=>{await Promise.all(Array.from({length:8},()=>__emit('push',{data:{json:()=>({...__payload,event_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'})}})));});assert.equal(await page.evaluate(()=>__shown.length),3);
+      cases.push({name:'worker_failed_display_retries_and_releases_dedup_reservation',displayedAfterFailure:3});
+      await page.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('sutiapp-request-push-v1',1);r.onsuccess=()=>{const db=r.result,tx=db.transaction('events','readwrite');tx.objectStore('events').put({at:Date.now()-61000,token:'interrupted-worker'},'cccccccc-cccc-4ccc-8ccc-cccccccccccc');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=reject;};}));
+      await page.evaluate(()=>__emit('push',{data:{json:()=>({...__payload,event_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'})}}));assert.equal(await page.evaluate(()=>__shown.length),4);
+      cases.push({name:'worker_interrupted_reservation_can_be_reclaimed',displayed:4});
       await page.getByRole('button',{name:'Desactivar en este dispositivo'}).click();await page.locator('[data-request-push="ready"]').waitFor();
-      await page.evaluate(()=>__emit('push',{data:{json:()=>({...__payload,event_id:'88888888-8888-4888-8888-888888888888'})}}));assert.equal(await page.evaluate(()=>__shown.length),1);
-      cases.push({name:'worker_dedup_click_cross_binding_revocation',displayed:1,openedCorrectRequest:true,otherBindingIgnored:true,revokedIgnored:true});await context.close();
+      await page.evaluate(()=>__emit('push',{data:{json:()=>({...__payload,event_id:'88888888-8888-4888-8888-888888888888'})}}));assert.equal(await page.evaluate(()=>__shown.length),4);
+      cases.push({name:'worker_dedup_click_cross_binding_revocation',displayed:4,openedCorrectRequest:true,otherBindingIgnored:true,revokedIgnored:true});await context.close();
     }
     assert.deepEqual(errors,[]);
     const proof={suite,status:'PASS',checkedAt:new Date().toISOString(),bundleSha256:build.bundleSha256,environment:'Chrome desktop mobile viewport; built Auth/Push/SW source and real IndexedDB; Auth RPC, Push provider and native permission simulated; no production writes or messages',cases,errors};

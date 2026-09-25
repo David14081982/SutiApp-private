@@ -1,5 +1,28 @@
 # Bitácora de agentes
 
+## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-FIX-001 — candidato verificado
+
+Recuperación segura del transporte vigente, detección de rotación, estados claros,
+invitación en Inicio con pausa de 24 h y respeto de baja explícita. Worker confirma
+deduplicación después de mostrar y permite reintento tras fallo. Preservados permisos,
+privacidad de cuenta/impersonación, autoridades y popup de aprobación existente.
+PASS: 14 lifecycle + 9 security, popup móvil/21 combinaciones responsive, Pages y
+regresión global local con assets/PDF reales. Bundle 289 / worker 223; 132 chunks
+ajenos intactos. Sin migración ni cambios de negocio. Publicación pendiente de
+verificar. Detalle: `audits/H-REQUEST-PUSH-ACTIVATION-FIX-001.md`.
+
+## 2026-09-25 — H-REQUEST-PUSH-ACTIVATION-AUDIT-001 — auditoría PASS
+
+Auditada activación/persistencia/invitación: no hay invitación al inicio; pérdida
+de transporte/vínculo sin recuperación, retorno de impersonación listo para activar,
+estado desactualizado por visibilitychange, destino renovado sin conciliación y
+fallo de showNotification consumido por deduplicación. Sección: NEEDS_FIX.
+Reutilizadas 7 pruebas agrupadas lifecycle y 6 security; 5 reproducciones adicionales
+en TEMP. Auth/Push/SW locales iguales a producción. SELECT agregado: 58 suscripciones,
+37 no revocadas, 21 revocadas (14 con HTTP 410); cron 1,440 ejecuciones exitosas/24h.
+Sin causa diaria única demostrada; sin cambios runtime/backend, mensajes ni datos QA.
+Informe: `audits/H-REQUEST-PUSH-ACTIVATION-AUDIT-001.md`.
+
 ## 2026-09-25 — corrección móvil de H-REQUEST-APPROVED-CELEBRATION-POPUP-001
 
 Reproducida carrera de renovación de contexto: acuse exitoso pero popup descartado.

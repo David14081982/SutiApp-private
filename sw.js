@@ -1,5 +1,5 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v222';
+const CACHE = 'sutiapp-v223';
 const SHELL_URL = './SutiApp.html';
 const CORE = [
   './',
@@ -7,7 +7,7 @@ const CORE = [
   './app/vendor/react-18.3.1/react.production.min.js',
   './app/vendor/react-dom-18.3.1/react-dom.production.min.js',
   './app/vendor/supabase-js-2.112.3/supabase.min.js',
-  './app/bundle.js?v=288',
+  './app/bundle.js?v=289',
   './app/text-size.css?v=244',
   './app/supabase-client.js',
   './app/affiliate-repository.js?v=5',
@@ -30,30 +30,50 @@ function pushDatabase() {
     open.onsuccess=()=>resolve(open.result);open.onerror=()=>reject(open.error);
   });
 }
-async function claimPush(payload) {
+async function claimPush(payload,token) {
   const db=await pushDatabase();
   try{return await new Promise((resolve,reject)=>{
     const tx=db.transaction(['device','events'],'readwrite'),binding=tx.objectStore('device').get('binding');let claimed=false;
     binding.onsuccess=()=>{
       if(!binding.result||binding.result.subscription_id!==payload.subscription_id)return;
       const events=tx.objectStore('events'),prior=events.get(payload.event_id);
-      prior.onsuccess=()=>{if(prior.result)return;events.put(Date.now(),payload.event_id);claimed=true;};
-      const cursor=events.openCursor();cursor.onsuccess=()=>{const row=cursor.result;if(row){if(row.value<Date.now()-7*86400000)row.delete();row.continue();}};
+      prior.onsuccess=()=>{const value=prior.result;if(value&&(typeof value==='number'||value.at>Date.now()-60000))return;events.put({at:Date.now(),token},payload.event_id);claimed=true;};
+      const cursor=events.openCursor();cursor.onsuccess=()=>{const row=cursor.result;if(row){if((typeof row.value==='number'?row.value:row.value.at)<Date.now()-7*86400000)row.delete();row.continue();}};
     };
     tx.oncomplete=()=>resolve(claimed);tx.onerror=()=>reject(tx.error);
   });}finally{db.close();}
 }
+async function finishPush(payload,token,shown){
+  const db=await pushDatabase();
+  try{await new Promise((resolve,reject)=>{
+    const tx=db.transaction('events','readwrite'),events=tx.objectStore('events'),r=events.get(payload.event_id);
+    r.onsuccess=()=>{if(r.result&&r.result.token===token){if(shown)events.put(Date.now(),payload.event_id);else events.delete(payload.event_id);}};
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  });}finally{db.close();}
+}
+async function currentPushBinding(payload){
+  const db=await pushDatabase();
+  try{return await new Promise((resolve,reject)=>{const r=db.transaction('device').objectStore('device').get('binding');r.onsuccess=()=>resolve(!!r.result&&r.result.subscription_id===payload.subscription_id);r.onerror=()=>reject(r.error);});}finally{db.close();}
+}
+self.addEventListener('pushsubscriptionchange',event=>{
+  // No Auth token in the worker. The authenticated foreground reconciles transport.
+  event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(windows=>{windows.forEach(client=>client.postMessage({type:'SUTIAPP_PUSH_CHANGED'}));}));
+});
 self.addEventListener('push',event=>{
   event.waitUntil((async()=>{
     let payload;try{payload=event.data.json();}catch{return;}
     const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if(!payload||payload.v!==1||!uuid.test(payload.event_id)||!uuid.test(payload.request_id)||!uuid.test(payload.subscription_id)||typeof payload.title!=='string'||typeof payload.body!=='string')return;
-    if(!await claimPush(payload))return;
-    await self.registration.showNotification(payload.title.slice(0,100),{
+    const token=crypto.randomUUID();if(!await claimPush(payload,token))return;
+    let shown=false;
+    try{for(let attempt=0;attempt<2;attempt++){
+      if(!await currentPushBinding(payload))return;
+      try{await self.registration.showNotification(payload.title.slice(0,100),{
       body:payload.body.slice(0,240),icon:new URL('./icon-192.png',self.registration.scope).href,
       badge:new URL('./icon-notification-badge.png',self.registration.scope).href,tag:'request-event-'+payload.event_id,renotify:false,
       data:{request_id:payload.request_id,subscription_id:payload.subscription_id},
-    });
+      });shown=true;break;}catch(e){if(attempt===1)throw e;await new Promise(resolve=>setTimeout(resolve,250));}
+    }}finally{await finishPush(payload,token,shown);}
   })());
 });
 self.addEventListener('notificationclick',event=>{

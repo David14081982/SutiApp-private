@@ -684,6 +684,7 @@
       textPreference.error && tab !== 'admin' && React.createElement('div', { role: 'alert', className: 'su-text-preference-error' }, textPreference.error, React.createElement('button', { onClick: () => push('settings') }, 'Tamaño de texto')),
       React.createElement(ImpersonationBanner,{auth,onAdmin:()=>{setPopupItems(null);commitTab('admin');}}),
       React.createElement(UpdateBanner, { tab }),
+      window.RequestPushInvitation && React.createElement(window.RequestPushInvitation, { startup: true, visible: tab === 'home' && !top && !outgoing && !popupItems }),
       React.createElement('div', { style: { position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', overflow: 'hidden' } },
         // scrollable tab content
         React.createElement('div', { key: tab, className: 'su-app-scroll', 'data-app-tab-scroll':tab, style: { flex: 1, overflowY: 'auto', overflowX: 'hidden' } },

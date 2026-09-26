@@ -1,6 +1,6 @@
 # H-AFFILIATE-ACCESS-REPAIR-001 — Diagnóstico y reparación de acceso en Admin › Afiliados
 
-Fecha: 2026-09-26. Estado: `LISTO — PENDIENTE DE AUTORIZACIÓN OWNER PARA PUBLICAR`.
+Fecha: 2026-09-26. Estado: `PRODUCCIÓN PASS` (publicado por autorización OWNER).
 
 ## Origen
 
@@ -73,8 +73,11 @@ También se comprobaron las negaciones: versión vieja, vínculo sano, reparaci�
 
 No ejecutado: `test-admin-affiliates-browser.js` (prueba en vivo) porque requiere `H005_TEST3_*`, que no existe en `supabase.env`.
 
-## Publicación (pendiente de autorización)
+## Publicación
 
-1. `node scripts/apply-affiliate-access-repair.js --apply`
-2. Commit de los archivos de esta H y push a `main` (Pages).
-3. Reparación de 13838 desde Admin › Afiliados › Acceso › «Pasar la cuenta a este afiliado».
+- Migración aplicada con `scripts/apply-affiliate-access-repair.js --apply`: dry-run previo PASS y sobre sin cambios en filas, funciones, permisos ni triggers existentes.
+  Read-back: 8 funciones, trigger activo, RLS forzada, 0 reparaciones; `anon` sin ejecución y `revert` no ejecutable por `authenticated`; 988 afiliados; caso 13838 intacto.
+- Commit `fdd23cc` en `main`; Actions `36261058669` SUCCESS.
+- sutiapp.com sirve bundle v293 (SHA-256 `7100efe4…9962`, idéntico al local) y worker `sutiapp-v227`.
+- Tag `restore/pre-affiliate-access-repair-20260926` publicado en origin.
+- Pendiente OWNER: reparar el caso 13838 desde Admin › Afiliados › Problemas de acceso › «Pasar la cuenta a este afiliado».

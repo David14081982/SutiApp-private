@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## 2026-09-26 — H-AFFILIATE-ACCESS-REPAIR-001 — listo, publicación pendiente OWNER
+## 2026-09-26 — H-AFFILIATE-ACCESS-REPAIR-001 — producción PASS
 
 Admin › Afiliados › Acceso: diagnóstico en lenguaje claro y reparación (pasar cuenta,
 separar cuenta, quitar bloqueo), lista «Problemas de acceso» y aviso al editar correo.
@@ -8,7 +8,8 @@ Trigger libera la ficha que queda única tras corregir un duplicado. Migración 
 20260926000100 + recovery; permisos affiliates.read/write. Punto de restauración:
 tag restore/pre-affiliate-access-repair-20260926. BD en ROLLBACK 41/41 y 44/44,
 dry-run PASS, Chrome 8/8, regresión Afiliados PASS, 132/134 chunks intactos.
-Bundle 293 / worker 227. Evidencia: `audits/H-AFFILIATE-ACCESS-REPAIR-001.md`.
+Publicado por OWNER: migración aplicada, fdd23cc, bundle 293 / worker 227;
+Actions 36261058669 SUCCESS, bundle público idéntico. Evidencia: `audits/H-AFFILIATE-ACCESS-REPAIR-001.md`.
 
 ## 2026-09-25 — H-LOAN-RESULT-RESPONSIVE-001 — producción PASS
 

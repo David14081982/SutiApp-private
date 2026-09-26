@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "version": "20260926000100",
+  "migrationSha256": "fe8ca540dc547caf7a6841e37fcafd372b654b3b60160da4f6890ae8804e4806",
+  "appliedAt": "2026-09-26T18:00:29.262Z",
+  "result": [
+    {
+      "result": {
+        "before": {
+          "fn_hash": "50bfdc160b87690114ac081fc6c1567e",
+          "trg_hash": "8f085859a1b778c30a2b8e6bc8db6efa",
+          "rows_hash": "564e976c6da39bc028187720fbeb0738",
+          "rows_count": 988,
+          "tables_hash": "c2f3c9c1da33c0ba19a0e8b4449dbdf2"
+        },
+        "status": "PASS",
+        "applied": true,
+        "version": "20260926000100",
+        "existingStateChanged": false
+      }
+    }
+  ],
+  "businessDataChanged": false
+}

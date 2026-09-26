@@ -40,6 +40,13 @@
   async function changeStatus(id,expectedUpdatedAt,status,reason){requirePermission('affiliates.write');const result=await db().rpc('change_admin_affiliate_status',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_new_status:status,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function archive(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('archive_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function restore(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('restore_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function accessDiagnosis(id){requirePermission('affiliates.read');const result=await db().rpc('get_admin_affiliate_access_diagnosis',{p_affiliate_id:id});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function accessIssues(){requirePermission('affiliates.read');const result=await db().rpc('list_admin_affiliate_access_issues');if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function accessRepair(action,id,expectedUpdatedAt,reason){
+    requirePermission('affiliates.write');
+    const name={relink:'admin_relink_affiliate_account',release:'admin_release_affiliate_account',recalculate:'admin_recalculate_affiliate_access'}[action];if(!name)throw new Error('ACCESS_ACTION_INVALID');
+    const result=await db().rpc(name,{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});
+  }
   async function documentTypes(){requirePermission('documents.write');const result=await db().from('document_types').select('id,code,label,description,accepted_mime_types,file_upload_allowed,max_file_size_bytes,sort_order').eq('enabled',true).eq('file_upload_allowed',true).order('sort_order',{ascending:true});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
   async function previewDocument(documentId,affiliateId){requirePermission('documents.read');if(!window.DocumentWorkflowRepository)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return window.DocumentWorkflowRepository.adminPreview(documentId,affiliateId,'ADMIN_AFFILIATE_PROFILE');}
   async function uploadDocument(affiliateId,type,file,reason){
@@ -59,5 +66,5 @@
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,archive,restore,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();

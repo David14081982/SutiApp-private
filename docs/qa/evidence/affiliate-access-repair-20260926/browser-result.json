@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "lista de problemas abre la ficha en la pestaña Acceso",
+    "diagnóstico explica el caso y ofrece solo la acción correcta",
+    "error del backend se muestra en español sin cerrar la confirmación",
+    "reparación envía id, versión y motivo exactos y el diagnóstico queda en ACTIVE",
+    "enlace a la ficha donde está la cuenta y opción de separarla",
+    "aviso al cambiar el correo de una ficha con cuenta unida",
+    "sin affiliates.write: diagnóstico sí, botones no",
+    "390 y 1024 px sin scroll horizontal"
+  ],
+  "pageErrors": 0,
+  "productionTraffic": false
+}

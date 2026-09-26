@@ -9759,6 +9759,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function changeStatus(id,expectedUpdatedAt,status,reason){requirePermission('affiliates.write');const result=await db().rpc('change_admin_affiliate_status',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_new_status:status,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function archive(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('archive_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function restore(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('restore_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function accessDiagnosis(id){requirePermission('affiliates.read');const result=await db().rpc('get_admin_affiliate_access_diagnosis',{p_affiliate_id:id});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function accessIssues(){requirePermission('affiliates.read');const result=await db().rpc('list_admin_affiliate_access_issues');if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function accessRepair(action,id,expectedUpdatedAt,reason){
+    requirePermission('affiliates.write');
+    const name={relink:'admin_relink_affiliate_account',release:'admin_release_affiliate_account',recalculate:'admin_recalculate_affiliate_access'}[action];if(!name)throw new Error('ACCESS_ACTION_INVALID');
+    const result=await db().rpc(name,{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});
+  }
   async function documentTypes(){requirePermission('documents.write');const result=await db().from('document_types').select('id,code,label,description,accepted_mime_types,file_upload_allowed,max_file_size_bytes,sort_order').eq('enabled',true).eq('file_upload_allowed',true).order('sort_order',{ascending:true});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
   async function previewDocument(documentId,affiliateId){requirePermission('documents.read');if(!window.DocumentWorkflowRepository)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return window.DocumentWorkflowRepository.adminPreview(documentId,affiliateId,'ADMIN_AFFILIATE_PROFILE');}
   async function uploadDocument(affiliateId,type,file,reason){
@@ -9778,7 +9785,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,archive,restore,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -61968,7 +61975,11 @@ Object.assign(window, {
     }, 'Sin dato'), categories.map(row => h('option', {
       key: row.code,
       value: row.code
-    }, row.label))))), h('div', {
+    }, row.label))))), profile.auth_linked && String(form.historical_email_raw ?? '').trim() !== String(profile.historical_email_raw ?? '').trim() && h('div', {
+      role: 'status',
+      'data-affiliate-email-warning': 'true',
+      className: 'aff-access-warning'
+    }, 'Esta ficha tiene una cuenta de la app unida a su correo actual. Si cambias el correo, esa persona dejará de poder entrar. Si la cuenta pertenece a otra persona, guarda el cambio y después, en la pestaña Acceso de la ficha correcta, usa «Pasar la cuenta a este afiliado».'), h('div', {
       className: 'aff-edit-footer'
     }, h('label', null, h('span', null, 'Motivo del cambio (opcional)'), h('textarea', {
       className: inputClass,
@@ -62011,7 +62022,9 @@ Object.assign(window, {
     onArchive,
     onUpload,
     onReload,
-    onOpenModule
+    onOpenModule,
+    onSaved,
+    onOpenAffiliate
   }) {
     const p = data.profile || {},
       documents = data.documents || [],
@@ -62186,6 +62199,12 @@ Object.assign(window, {
       }, p.is_archived ? 'Archivado · operaciones bloqueadas' : auth.label), h('p', null, p.is_archived ? 'La cuenta Auth se conserva, pero el backend no resuelve una identidad operativa hasta restaurar el registro.' : 'La afiliación administrativa y la cuenta Auth son autoridades separadas. Cambiar el estado no archiva ni elimina su acceso.'))), !p.is_archived && app.admin.has('affiliates.impersonate') && h(Assistance, {
         profile: p,
         app
+      }), h(AccessRepair, {
+        key: p.id,
+        profile: p,
+        app,
+        onSaved,
+        onOpenAffiliate
       }));
     } else content = h('div', {
       className: 'aff-timeline'
@@ -62282,6 +62301,273 @@ Object.assign(window, {
       onClick: start
     }, busy ? 'Activando…' : 'Iniciar atención asistida'), message && h('small', null, message));
   }
+
+  /* H-AFFILIATE-ACCESS-REPAIR-001 — diagnóstico y reparación de acceso. El backend decide y valida todo. */
+  const ACCESS_STATE = Object.freeze({
+    ACTIVE: ['Entra correctamente', 'ok'],
+    READY: ['Puede activar su cuenta', 'ok'],
+    BLOCKED: ['No puede entrar a la app', 'danger'],
+    ARCHIVED: ['Archivado', 'danger']
+  });
+  const ACCESS_ISSUE_LABEL = Object.freeze({
+    MISSING_EMAIL: 'Sin correo',
+    INVALID_EMAIL: 'Correo inválido',
+    SHARED_EMAIL: 'Correo repetido',
+    STALE_BLOCK: 'Bloqueo sin motivo',
+    ACCOUNT_ON_OTHER_AFFILIATE: 'Cuenta en otra ficha',
+    ACCOUNT_WITHOUT_AFFILIATE: 'Cuenta sin ficha',
+    LINK_EMAIL_MISMATCH: 'Cuenta ajena unida',
+    ARCHIVED: 'Archivado'
+  });
+  function accessIssueText(code, d) {
+    const holder = d.email_account && d.email_account.holder || {},
+      linked = d.linked_account || {};
+    if (code === 'MISSING_EMAIL') return 'No tiene correo registrado. Captúralo con «Editar información» para que pueda activar su cuenta.';
+    if (code === 'INVALID_EMAIL') return 'El correo registrado no es válido. Corrígelo con «Editar información».';
+    if (code === 'SHARED_EMAIL') return 'Su correo también está en otra ficha. Decide a quién pertenece y quítalo de la ficha equivocada con «Editar información»; el bloqueo de la ficha correcta se retira solo.';
+    if (code === 'STALE_BLOCK') return 'Está bloqueado por un correo duplicado que ya no existe.';
+    if (code === 'ACCOUNT_ON_OTHER_AFFILIATE') return 'Ya tiene cuenta con ' + text(d.email) + ', pero está unida a la ficha del control ' + text(holder.numero_control, 'sin número') + ' (' + text(holder.name) + '). Por eso ve datos de otra persona o no puede entrar.';
+    if (code === 'ACCOUNT_WITHOUT_AFFILIATE') return 'Ya existe una cuenta con ' + text(d.email) + ', pero no está unida a ninguna ficha.';
+    if (code === 'LINK_EMAIL_MISMATCH') return 'Esta ficha tiene unida la cuenta ' + text(linked.email, 'sin correo') + ', que no corresponde a su correo. Quien usa esa cuenta no puede entrar.';
+    if (code === 'ARCHIVED') return 'La ficha está archivada: no puede usar la app hasta restaurarla.';
+    return code;
+  }
+  function accessSeesText(d) {
+    if (d.state === 'ACTIVE') return 'Entra con «Entrar» y su contraseña.';
+    if (d.state === 'READY') return 'Puede usar «Activar mi cuenta» con ' + text(d.email) + '.';
+    if (d.state === 'ARCHIVED') return 'No puede usar la app mientras la ficha esté archivada.';
+    const seen = {
+        NOT_ELIGIBLE: 'Este correo no está habilitado para activar una cuenta.',
+        INVALID_EMAIL: 'Este correo no está habilitado para activar una cuenta.',
+        AMBIGUOUS: 'El correo coincide con más de un registro. Solicita revisión administrativa.',
+        NOT_REGISTERED: 'Este correo no está registrado en el padrón de afiliados.'
+      },
+      parts = [];
+    if (!d.linked_account && seen[d.activation_status]) parts.push('al pulsar «Activar mi cuenta»: «' + seen[d.activation_status] + '»');
+    if (d.linked_account) parts.push('al pulsar «Entrar»: «No pudimos verificar que esta sesión corresponda exactamente a tu afiliación…» y se cierra su sesión');else if ((d.issues || []).includes('ACCOUNT_ON_OTHER_AFFILIATE')) parts.push('al pulsar «Entrar»: ve datos de otra persona o se le cierra la sesión');
+    if (!parts.length) return 'No puede activar su cuenta ni entrar.';
+    const joined = parts.join('; ');
+    return joined.charAt(0).toUpperCase() + joined.slice(1) + '.';
+  }
+  function accessActions(d) {
+    const a = d.actions || {},
+      holder = d.email_account && d.email_account.holder,
+      list = [];
+    if (a.relink) list.push({
+      id: 'relink',
+      primary: true,
+      label: holder ? 'Pasar la cuenta a este afiliado' : 'Unir la cuenta a este afiliado',
+      confirm: (holder ? 'La cuenta ' + text(d.email) + ' se separará del control ' + text(holder.numero_control, 'sin número') + ' (' + text(holder.name) + ') y se unirá a esta ficha.' : 'La cuenta ' + text(d.email) + ' se unirá a esta ficha.') + ' La persona entrará con «Entrar» y la misma contraseña que ya tiene.'
+    });
+    if (a.release) list.push({
+      id: 'release',
+      danger: true,
+      label: 'Separar la cuenta de esta ficha',
+      confirm: 'La cuenta ' + text(d.linked_account && d.linked_account.email, 'sin correo') + ' dejará de estar unida a esta ficha. Después podrás unirla a la ficha correcta desde su pestaña Acceso.'
+    });
+    if (a.recalculate && !a.relink) list.push({
+      id: 'recalculate',
+      label: 'Quitar bloqueo',
+      confirm: 'El correo ' + text(d.email) + ' ya no está repetido. Se retirará el bloqueo y la persona podrá usar «Activar mi cuenta».'
+    });
+    return list;
+  }
+  function accessError(value) {
+    const code = String(value && value.message || '');
+    if (code.includes('VERSION')) return 'La ficha cambió mientras la revisabas. Cierra y recarga el perfil.';
+    if (code.includes('EMAIL_SHARED')) return 'El correo sigue repetido en otra ficha. Quítalo primero de la ficha equivocada.';
+    if (code.includes('CERTIFIED_LINK_PROTECTED')) return 'Esta cuenta quedó verificada en una reparación certificada y no puede moverse desde aquí.';
+    if (code.includes('ACCOUNT_UNCONFIRMED')) return 'La cuenta no ha confirmado su correo. Pide a la persona que abra el enlace de activación.';
+    if (code.includes('ACCOUNT_NOT_FOUND')) return 'Ya no existe una cuenta con ese correo. Recarga el perfil.';
+    if (code.includes('LINK_HEALTHY')) return 'La cuenta sí corresponde a esta ficha; no es necesario separarla.';
+    if (code.includes('ALREADY_LINKED')) return 'La ficha ya tiene una cuenta unida. Recarga el perfil.';
+    if (code.includes('NO_CHANGE')) return 'No hay nada que corregir. Recarga el perfil.';
+    if (code.includes('REASON')) return 'El motivo no puede superar los 400 caracteres.';
+    if (code.includes('DENIED') || String(value && value.code) === '42501') return 'Tu cuenta no tiene permiso para esta acción.';
+    return 'No fue posible aplicar la corrección. Intenta de nuevo.';
+  }
+  function AccessRepair({
+    profile,
+    app,
+    onSaved,
+    onOpenAffiliate
+  }) {
+    const [diag, setDiag] = React.useState(null),
+      [phase, setPhase] = React.useState('loading'),
+      [pending, setPending] = React.useState(null),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState('');
+    React.useEffect(() => {
+      let active = true;
+      setPhase('loading');
+      window.AdminAffiliatesRepository.accessDiagnosis(profile.id).then(value => {
+        if (active) {
+          setDiag(value);
+          setPhase('ready');
+        }
+      }).catch(() => {
+        if (active) setPhase('error');
+      });
+      return () => {
+        active = false;
+      };
+    }, [profile.id, profile.updated_at]);
+    if (phase === 'loading') return h('div', {
+      className: 'aff-loading'
+    }, 'Revisando acceso…');
+    if (phase === 'error' || !diag) return h('div', {
+      className: 'aff-boundary'
+    }, 'No fue posible revisar el acceso. Recarga el perfil.');
+    const state = ACCESS_STATE[diag.state] || ACCESS_STATE.BLOCKED,
+      issues = diag.issues || [],
+      linked = diag.linked_account,
+      holder = diag.email_account && diag.email_account.holder;
+    const actions = app.admin.has('affiliates.write') ? accessActions(diag) : [];
+    const run = async () => {
+      if (!pending || busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        const result = await window.AdminAffiliatesRepository.accessRepair(pending.id, profile.id, diag.updated_at, reason);
+        setPending(null);
+        setReason('');
+        onSaved(result);
+      } catch (value) {
+        setError(accessError(value));
+      } finally {
+        setBusy(false);
+      }
+    };
+    const link = row => h('button', {
+      key: row.id,
+      type: 'button',
+      className: 'aff-secondary',
+      onClick: () => onOpenAffiliate(row.id)
+    }, h('span', null, 'Control ' + text(row.numero_control, 'sin número') + ' · ' + text(row.name) + (row.linked ? ' · con cuenta' : '') + (row.is_archived ? ' · archivado' : '')), h(I, {
+      name: 'chevronRight',
+      size: 14
+    }));
+    return h('section', {
+      'data-affiliate-access-repair': diag.state,
+      className: 'aff-access-repair'
+    }, h('div', {
+      className: 'aff-access-repair-head'
+    }, h('strong', null, 'Diagnóstico de acceso'), h(Badge, {
+      tone: state[1]
+    }, state[0])), h('p', {
+      className: 'aff-access-sees'
+    }, h('span', null, 'Qué ve la persona: '), accessSeesText(diag)), linked && h('p', {
+      className: 'aff-access-meta'
+    }, 'Cuenta unida: ', h('strong', null, text(linked.email, 'sin correo')), ' · último acceso: ' + (linked.last_sign_in_at ? date(linked.last_sign_in_at) : 'nunca')), issues.length > 0 && h('ul', {
+      className: 'aff-access-issues'
+    }, issues.map(code => h('li', {
+      key: code
+    }, h(I, {
+      name: 'info',
+      size: 15
+    }), h('span', null, accessIssueText(code, diag))))), (diag.siblings || []).length > 0 && h('div', {
+      className: 'aff-access-links'
+    }, h('small', null, 'Fichas con el mismo correo'), diag.siblings.map(link)), holder && !holder.is_self && h('div', {
+      className: 'aff-access-links'
+    }, h('small', null, 'Ficha donde está su cuenta'), link(holder)), actions.length > 0 && h('div', {
+      className: 'aff-access-actions'
+    }, actions.map(action => h('button', {
+      key: action.id,
+      type: 'button',
+      'data-access-action': action.id,
+      className: action.primary ? 'aff-primary' : action.danger ? 'aff-danger-button' : 'aff-secondary',
+      onClick: () => {
+        setError('');
+        setReason('');
+        setPending(action);
+      }
+    }, action.label))), diag.state === 'BLOCKED' && issues.length > 0 && !actions.length && h('p', {
+      className: 'aff-access-meta'
+    }, 'No hay una reparación automática para este caso: corrige el dato indicado arriba.'), pending && h(Overlay, {
+      title: pending.label,
+      description: 'Acceso a la app · el cambio queda registrado en el historial del afiliado',
+      onClose: () => {
+        if (!busy) setPending(null);
+      }
+    }, h('div', {
+      className: 'aff-modal-body'
+    }, h('p', {
+      className: 'aff-access-confirm'
+    }, pending.confirm), h('label', null, h('span', null, 'Motivo (opcional)'), h('textarea', {
+      className: inputClass,
+      value: reason,
+      maxLength: 400,
+      rows: 3,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Opcional, máximo 400 caracteres'
+    })), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error)), h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      disabled: busy,
+      onClick: () => setPending(null)
+    }, 'Cancelar'), h('button', {
+      type: 'button',
+      'data-access-confirm': pending.id,
+      className: pending.danger ? 'aff-danger-button' : 'aff-primary',
+      disabled: busy,
+      onClick: run
+    }, busy ? 'Aplicando…' : 'Confirmar'))));
+  }
+  function AccessIssuesModal({
+    onClose,
+    onOpen
+  }) {
+    const [rows, setRows] = React.useState(null),
+      [error, setError] = React.useState('');
+    React.useEffect(() => {
+      let active = true;
+      window.AdminAffiliatesRepository.accessIssues().then(value => {
+        if (active) setRows(value);
+      }).catch(() => {
+        if (active) setError('No fue posible revisar el padrón. Intenta de nuevo.');
+      });
+      return () => {
+        active = false;
+      };
+    }, []);
+    return h(Overlay, {
+      title: 'Problemas de acceso',
+      description: 'Afiliados que hoy no pueden activar su cuenta o entrar a la app',
+      onClose,
+      wide: true
+    }, h('div', {
+      className: 'aff-modal-body'
+    }, error ? h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error) : rows === null ? h('div', {
+      className: 'aff-loading'
+    }, 'Revisando padrón…') : !rows.length ? h(Empty, {
+      title: 'Sin problemas de acceso',
+      sub: 'Todos los afiliados con correo pueden activar su cuenta o entrar.'
+    }) : h('div', {
+      className: 'aff-access-list'
+    }, h('small', null, rows.length + ' afiliado(s) · abre uno para ver el diagnóstico y repararlo'), rows.map(row => h('button', {
+      key: row.id,
+      type: 'button',
+      'data-access-issue-row': row.id,
+      onClick: () => onOpen(row.id)
+    }, h('span', null, h('strong', null, text(row.name, 'Sin nombre')), h('small', null, 'Control ' + text(row.numero_control, 'sin número') + ' · ' + text(row.email, 'sin correo'))), h('span', {
+      className: 'aff-access-chips'
+    }, (row.issues || []).map(code => h(Badge, {
+      key: code,
+      tone: code === 'SHARED_EMAIL' ? 'warn' : 'danger'
+    }, ACCESS_ISSUE_LABEL[code] || code))), h(I, {
+      name: 'chevronRight',
+      size: 16
+    }))))));
+  }
   function AffiliatesModule({
     app,
     onBack,
@@ -62326,7 +62612,14 @@ Object.assign(window, {
       [showArchive, setShowArchive] = React.useState(false),
       [showUpload, setShowUpload] = React.useState(null),
       [exporting, setExporting] = React.useState(false),
-      [nonce, setNonce] = React.useState(0);
+      [nonce, setNonce] = React.useState(0),
+      [showIssues, setShowIssues] = React.useState(false);
+    const openAccess = id => {
+      setShowIssues(false);
+      setEditing(false);
+      setSelectedId(id);
+      setTab('access');
+    };
     const updateFilter = (key, value) => setFilters(current => Object.assign({}, current, {
       [key]: value,
       page: key === 'page' ? value : 1
@@ -62492,7 +62785,14 @@ Object.assign(window, {
       'aria-label': 'Buscar afiliados'
     })), h('div', {
       className: 'aff-toolbar-actions'
-    }, !archiveView && app.admin.has('data_exports.read') && h('button', {
+    }, !archiveView && h('button', {
+      className: 'aff-secondary',
+      'data-access-issues-open': 'true',
+      onClick: () => setShowIssues(true)
+    }, h(I, {
+      name: 'shield',
+      size: 17
+    }), ' Problemas de acceso'), !archiveView && app.admin.has('data_exports.read') && h('button', {
       className: 'aff-secondary',
       disabled: exporting,
       onClick: runExport
@@ -62641,7 +62941,9 @@ Object.assign(window, {
       onReload: () => setNonce(value => value + 1),
       onOpenModule: (id, context) => onOpenModule(id, Object.assign({
         from: 'affiliates'
-      }, context))
+      }, context)),
+      onSaved: useSaved,
+      onOpenAffiliate: openAccess
     }) : h(Empty, {
       title: 'Selecciona un afiliado',
       sub: 'Abre su perfil, expediente, solicitudes y auditoría.'
@@ -62665,6 +62967,9 @@ Object.assign(window, {
       documents: detail.documents || [],
       onClose: () => setShowUpload(false),
       onUploaded: documentUploaded
+    }), showIssues && h(AccessIssuesModal, {
+      onClose: () => setShowIssues(false),
+      onOpen: openAccess
     })));
   }
   function Styles() {
@@ -62675,6 +62980,10 @@ Object.assign(window, {
     @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
     @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-control,.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(5),.aff-table-body .aff-docs{display:none}.aff-table-body .aff-cell:nth-child(4){display:block}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-profile-actions{order:4;flex-basis:100%;justify-content:stretch}.aff-profile-actions button{flex:1 1 auto}.aff-detail-scroll{max-height:none}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts,.aff-document-grid{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}
+    .aff-access-repair{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);font-size:11px;line-height:1.5}.aff-access-repair-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.aff-access-repair-head strong{font-size:12px}.aff-access-sees,.aff-access-meta,.aff-access-confirm{margin:0}.aff-access-sees span{font-weight:850}.aff-access-meta{color:var(--ink-3);font-size:10.5px;overflow-wrap:anywhere}.aff-access-confirm{font-size:11.5px;line-height:1.5}
+    .aff-access-issues{display:grid;gap:6px;margin:0;padding:0;list-style:none}.aff-access-issues li{display:flex;align-items:flex-start;gap:7px;padding:8px 9px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:650;overflow-wrap:anywhere}.aff-access-issues li>svg{flex:0 0 auto;margin-top:1px}.aff-access-issues li>span{flex:1;min-width:0}.aff-access-links{display:grid;gap:5px}.aff-access-links small{color:var(--ink-3);font-size:9.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.aff-access-links button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;text-align:left}.aff-access-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .aff-access-warning{margin:10px 0;padding:10px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:750;line-height:1.45}.aff-access-list{display:grid;gap:6px}.aff-access-list>small{color:var(--ink-3);font-size:10.5px}.aff-access-list button{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--hairline);border-radius:11px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}.aff-access-list strong,.aff-access-list small{display:block}.aff-access-list strong{font-size:11.5px}.aff-access-list button small{color:var(--ink-3);font-size:10px;overflow-wrap:anywhere}.aff-access-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+    @media(max-width:600px){.aff-access-list button{grid-template-columns:minmax(0,1fr) 16px}.aff-access-chips{grid-column:1/-1;grid-row:2;justify-content:flex-start}}
   `);
   }
   window.AffiliatesAdminModule = AffiliatesModule;

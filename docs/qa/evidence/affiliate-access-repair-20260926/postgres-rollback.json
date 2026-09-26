@@ -1,0 +1,174 @@
+{
+  "status": "PASS",
+  "checks": 41,
+  "failed": 0,
+  "recovery": false,
+  "productionWrites": 0,
+  "rolledBack": true,
+  "results": [
+    {
+      "name": "migration: filas de afiliados intactas",
+      "ok": true
+    },
+    {
+      "name": "migration: funciones existentes intactas",
+      "ok": true
+    },
+    {
+      "name": "migration: triggers existentes intactos",
+      "ok": true
+    },
+    {
+      "name": "caso 13838 resuelto por número de control",
+      "ok": true
+    },
+    {
+      "name": "fixtures de prueba encontrados",
+      "ok": true
+    },
+    {
+      "name": "diagnóstico 13838: bloqueado, cuenta en otro afiliado, relink disponible",
+      "ok": true
+    },
+    {
+      "name": "diagnóstico fila errónea: vínculo roto, separar disponible",
+      "ok": true
+    },
+    {
+      "name": "lista de problemas incluye 13838 y la fila errónea",
+      "ok": true
+    },
+    {
+      "name": "relink rechaza versión vieja",
+      "ok": true
+    },
+    {
+      "name": "recalcular rechaza fila vinculada",
+      "ok": true
+    },
+    {
+      "name": "separar rechaza un vínculo sano",
+      "ok": true
+    },
+    {
+      "name": "separar protege reparación certificada (control 1536)",
+      "ok": true
+    },
+    {
+      "name": "relink rechaza correo compartido",
+      "ok": true
+    },
+    {
+      "name": "afiliado sin permiso: diagnóstico denegado",
+      "ok": true
+    },
+    {
+      "name": "afiliado sin permiso: relink denegado",
+      "ok": true
+    },
+    {
+      "name": "anónimo sin ejecución",
+      "ok": true
+    },
+    {
+      "name": "anónimo no puede revertir",
+      "ok": true
+    },
+    {
+      "name": "admin no puede usar revert técnico",
+      "ok": true
+    },
+    {
+      "name": "pasar cuenta al caso 13838",
+      "ok": true
+    },
+    {
+      "name": "13838 queda con su cuenta y habilitada",
+      "ok": true
+    },
+    {
+      "name": "fila errónea queda sin cuenta y sin habilitación falsa",
+      "ok": true
+    },
+    {
+      "name": "historial: un evento en cada ficha",
+      "ok": true
+    },
+    {
+      "name": "evidencia de reparación registrada",
+      "ok": true
+    },
+    {
+      "name": "sesión del caso 13838: estado ACTIVE",
+      "ok": true
+    },
+    {
+      "name": "sesión del caso 13838: resuelve su propia ficha 13838",
+      "ok": true
+    },
+    {
+      "name": "sesión del caso 13838: ve solo su fila por RLS",
+      "ok": true
+    },
+    {
+      "name": "activación de su correo: ALREADY_ACTIVATED",
+      "ok": true
+    },
+    {
+      "name": "diagnóstico posterior: ACTIVE sin problemas",
+      "ok": true
+    },
+    {
+      "name": "revert técnico",
+      "ok": true
+    },
+    {
+      "name": "revert: vínculos y habilitación idénticos al estado original",
+      "ok": true
+    },
+    {
+      "name": "separar cuenta de la fila errónea",
+      "ok": true
+    },
+    {
+      "name": "quitar bloqueo a 13838",
+      "ok": true
+    },
+    {
+      "name": "con el bloqueo retirado su correo puede activar (ELIGIBLE)",
+      "ok": true
+    },
+    {
+      "name": "quitar bloqueo dos veces no hace nada",
+      "ok": true
+    },
+    {
+      "name": "vincular cuenta existente sin ficha",
+      "ok": true
+    },
+    {
+      "name": "ruta alterna termina en el mismo estado correcto",
+      "ok": true
+    },
+    {
+      "name": "edición existente: quitar correo duplicado en una ficha",
+      "ok": true
+    },
+    {
+      "name": "edición existente sin tocar correo",
+      "ok": true
+    },
+    {
+      "name": "trigger: la otra ficha del duplicado queda habilitada sola",
+      "ok": true
+    },
+    {
+      "name": "trigger: evento visible en el historial de esa ficha",
+      "ok": true
+    },
+    {
+      "name": "edición sin cambio de correo no altera la habilitación",
+      "ok": true
+    }
+  ]
+}

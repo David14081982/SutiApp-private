@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "admin-affiliates-repository.js",
+    "screens-admin-affiliates.jsx"
+  ],
+  "headRecipeReproduced": true,
+  "preservedChunks": 132,
+  "totalChunks": 134,
+  "bundleSha256": "7100efe4c40744c9c3df2a4961e9f02d12fd50bce30a65977afefd8907ad9962"
+}

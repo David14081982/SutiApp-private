@@ -627,7 +627,7 @@
         var hadControllerAtBoot = Boolean(navigator.serviceWorker.controller);
         // Keep this version aligned with sw.js CACHE. CDN caches can outlive
         // the browser cache even when updateViaCache is disabled.
-        var serviceWorkerUrl = "./sw.js?v=226";
+        var serviceWorkerUrl = "./sw.js?v=227";
         // Un worker nuevo tomó control. Antes se recargaba aquí: en la primera
         // apertura tras publicar la página ya era la nueva y la recarga sólo
         // devolvía a Inicio; con la app abierta además borraba formularios.
@@ -702,7 +702,7 @@
     <script src="app/supabase-client.js" onerror="window.__sutiStartupFail('SUPABASE_CLIENT_LOAD_FAILED')"></script>
     <script src="app/affiliate-repository.js?v=profile-photo-20260916" onerror="window.__sutiStartupFail('AFFILIATE_REPOSITORY_LOAD_FAILED')"></script>
     <script src="app/financial-legacy-repository.js?v=11" onerror="window.__sutiStartupFail('FINANCIAL_REPOSITORY_LOAD_FAILED')"></script>
-  <script src="app/bundle.js?v=292" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
+  <script src="app/bundle.js?v=293" onerror="window.__sutiStartupFail('APP_BUNDLE_LOAD_FAILED')"></script>
 
   </body>
 </html>

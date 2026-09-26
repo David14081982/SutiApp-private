@@ -7,3 +7,5 @@ supabase/migrations/20260924000300_app_editorial_panels.sql -text
 supabase/recovery/20260924000300_app_editorial_panels_recovery.sql -text
 supabase/migrations/20260924000400_affiliates_optional_reason.sql -text
 supabase/recovery/20260924000400_affiliates_optional_reason.sql -text
+supabase/migrations/20260926000100_affiliate_access_repair.sql -text
+supabase/recovery/20260926000100_affiliate_access_repair_recovery.sql -text

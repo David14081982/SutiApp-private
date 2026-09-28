@@ -15,6 +15,7 @@ if (babelPath) {
 }
 
 const files = [
+  'document-generation-design.js','document-generation-repository.js','screens-admin-document-generation.jsx',
   'login-history-repository.js', 'screens-admin-login-history.jsx',
   'voting-design.js', 'voting-repository.js', 'screens-voting.jsx',
   'vendor-qrcode-generator.js',

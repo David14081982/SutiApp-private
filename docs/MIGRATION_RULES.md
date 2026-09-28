@@ -329,3 +329,11 @@ passed in isolated PostgreSQL. Existing private function backup enables exact
 function recovery without deleting publication events or money. Owner-authorized
 publication used the existing fingerprint/version RPC after 334/334 projections
 matched ledger and pending=0. No production test DDL or test financial operations.
+
+## 20260928000100 document_generation_core
+
+Owner approved additive document schema, private bucket, final-event capture,
+worker dispatch and capability catalog. Existing business rows are unchanged.
+Recovery disables generation and restores the captured module visibility function
+only if its applied hash still matches; preserves all historical documentary data
+and private assets. Verified against isolated PostgreSQL before live application.

@@ -28,6 +28,7 @@
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   const MODULES = [
+    { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
     { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
     { id: 'votaciones_nominal', label: 'Votos identificados', icon: 'doc', desc: 'Exportación nominal autorizada', ready: true },
@@ -70,7 +71,7 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
-    login_history:'authorization.read',
+    document_generation:'document_generation.config.read',login_history:'authorization.read',
     votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
     administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
     affiliates:'affiliates.read',data_exports:'data_exports.read',branding:'assets.read',banners:'banners.read',popups:'popups.read',companies_admin:'companies.read',documents_admin:'documents.read',minutes_admin:'minutes.read',programs_admin:'programs.read',noticias:'news.read',education:'content.read',marketplace:'marketplace.read',program_products:'program_catalog.read',membresias:'memberships.read',planes:'company_portal.read',requests:'program_requests.read',finanzas:'program_requests.read',savings:'savings.read',fondos:'financial_criteria.visibility.read',aprobaciones:'popups.read',sindicato:'union_content.read',fincat:'workflow.read',flujos:'workflow.read',inversion:'workflow.read',convenios:'companies.read',catalogos:'segmentation.read',roles:'authorization.read',pantallas:'segmentation.read',secciones:'content.read',menus:'content.read',formularios:'content.read'
@@ -78,7 +79,7 @@
   const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
-    { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin'] },
+    { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin','document_generation'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos','inversion'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
@@ -101,7 +102,7 @@
       const sectionAccess=sectionKeys.some((key)=>sectionActions.some((entry)=>entry.section_key===key));
       const sectionExport=m.id==='data_exports'&&sectionActions.some((x)=>x.action==='export');
       const productive=m.ready||String(m.classification||'').startsWith('PRODUCTIVE_');
-      const canView=Array.isArray(assignment.moduleKeys)?assignment.moduleKeys.includes(m.id):sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
+      const canView=m.id==='document_generation'?app.admin.has(permission):Array.isArray(assignment.moduleKeys)?assignment.moduleKeys.includes(m.id):sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
       const usable=productive&&canView;
       const desktopCanView=canView;
       const desktopUsable=productive&&desktopCanView;
@@ -523,6 +524,7 @@
     else if(view==='marketplace')body=React.createElement(window.MarketplaceModule,{app,onBack:()=>setView('menu'),header:headerFn,canEdit:app.admin.has('marketplace.create')||app.admin.has('marketplace.update')});
     else if(view==='program_products')body=React.createElement(window.ProgramProductsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='membresias')body=React.createElement(window.MembresiasModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='document_generation')body=React.createElement(window.AdminDocumentGeneration,{app,onBack:backFromEditor});
     else if(view==='documents_admin'&&unionChild)body=React.createElement(window.VisualCrudModule,{kind:'documents',app,onBack:backFromEditor,header:headerFn,filterKinds:viewContext.kinds,title:viewContext.title});
     else if(view==='documents_admin')body=React.createElement(window.DocumentsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='planes')body=React.createElement(window.PlanesModule,{app,onBack:()=>setView('menu'),header:headerFn});

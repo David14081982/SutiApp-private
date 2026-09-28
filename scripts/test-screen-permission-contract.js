@@ -1,6 +1,6 @@
 'use strict';
 // Isolated PostgreSQL and synthetic accounts only. No HTTP and no production RPCs.
-const fs=require('fs'),path=require('path'),assert=require('assert/strict'),cp=require('child_process');
+const fs=require('fs'),os=require('os'),path=require('path'),assert=require('assert/strict'),cp=require('child_process');
 const {sourceInventory,inspect,root,read}=require('./screen-permission-contract');
 const {compile}=require('./register-admin-screen');
 const {PGlite}=require(path.join(root,'.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
@@ -34,7 +34,7 @@ async function main(){
    const bad=clone(future);bad.modules.at(-1).registration.writePermissions.push('invented.superuser');assert.throws(()=>compile(bad,metadata,'20260924000200'),/UNREGISTERED_TECHNICAL_PERMISSION/);
   });
   await test('build automatically prepares a declared future screen and blocks release until registered',()=>{
-   const base=path.join(root,'tmp/screen-permission-tests');fs.mkdirSync(base,{recursive:true});const scratch=fs.mkdtempSync(path.join(base,'future-'));
+   const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'sutiapp-permission-future-'));try{
    for(const p of ['scripts/screen-permission-contract.js','scripts/register-admin-screen.js','scripts/screen-permission-surfaces.json','docs/qa/evidence/screen-permissions-20260924/production-metadata.json','app/screens-admin.jsx','app/screens-company.jsx','app/app.jsx','app/admin-store.jsx','app/union-screen-registry.js']){const dest=path.join(scratch,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,p),dest);}
    const item=clone(future.modules.at(-1));item.registration.version='20260924000200';
    const admin=read('app/screens-admin.jsx').replace('  const MODULES = [','  const MODULES = ['+JSON.stringify(item)+',').replace('  const MODULE_PERMISSION = Object.freeze({',"  const MODULE_PERMISSION = Object.freeze({future_panel:'news.read',").replace("modules:['administrators'","modules:['future_panel','administrators'");
@@ -42,6 +42,7 @@ async function main(){
    fs.mkdirSync(path.join(scratch,'supabase/migrations'),{recursive:true});fs.writeFileSync(path.join(scratch,item.registration.backendEvidence),"-- ISOLATED ONLY: select admin_module_boundary(array['future_panel'],'update');");fs.writeFileSync(path.join(scratch,item.registration.isolatedTest),'// ISOLATED proof of generation only; not a business writer test.');
    const run=cp.spawnSync(process.execPath,['scripts/screen-permission-contract.js'],{cwd:scratch,encoding:'utf8'});assert.equal(run.status,1);assert.match(run.stderr,/REGISTRATION_SQL_PREPARED_NOT_APPLIED/);
    assert(fs.existsSync(path.join(scratch,'tmp/screen-permission-registration/20260924000200/forward.sql')));
+   }finally{fs.rmSync(scratch,{recursive:true,force:true});}
   });
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create role supabase_admin;create schema auth;create schema extensions;create schema admin_support_private;
    create function extensions.gen_random_uuid() returns uuid language sql as $$select gen_random_uuid()$$;
@@ -65,20 +66,24 @@ async function main(){
   for(const g of baseline.grants)await db.exec(`grant ${g.privilege_type} on ${qid(g.table_name)} to ${qid(g.grantee)}`);
   for(const [id,email] of [[owner,'owner@example.invalid'],[target,'target@example.invalid']])await q('insert into auth.users(id,email,email_confirmed_at) values($1,$2,now())',[id,email]);
   for(const r of baseline.roles)await q('insert into admin_roles(code,name,enabled,system_role) values($1,$2,$3,$4)',[r.code,r.name,r.enabled,r.system_role]);
-  for(const p of metadata.rolePermissions)await q('insert into admin_role_permissions select id,$2 from admin_roles where code=$1',[p.code,p.permission]);
+  for(const p of metadata.rolePermissions.filter(p=>!p.permission.startsWith('document_generation.')))await q('insert into admin_role_permissions select id,$2 from admin_roles where code=$1',[p.code,p.permission]);
   for(const s of metadata.sections){const keys=Object.keys(s);await q(`insert into admin_section_definitions(${keys.map(qid)}) values(${keys.map((_,i)=>'$'+(i+1))})`,Object.values(s));}
   await q("insert into admin_assignments(auth_user_id,role,role_id,permissions,enabled,protected_assignment) select $1,'visual_admin',id,array['authorization.read','authorization.write'],true,true from admin_roles where code='principal_admin'",[owner]);
   await db.exec(read('supabase/migrations/20260924000100_admin_assignment_voting_permissions.sql'));
-  await test('production assisted visibility defect reproduced for four registered modules',async()=>{
+  // Reuse current read-only metadata after validating the historical migration against its baseline.
+  await db.exec('alter table admin_assignments drop constraint admin_assignments_permissions_check;alter table admin_assignments add constraint admin_assignments_permissions_check '+metadata.permissionConstraint[0].definition);
+  for(const p of metadata.rolePermissions.filter(p=>p.permission.startsWith('document_generation.')))await q('insert into admin_role_permissions select id,$2 from admin_roles where code=$1',[p.code,p.permission]);
+  await db.exec(metadata.functions.find(f=>f.schema==='admin_support_private'&&f.name==='module_visible').definition);
+  await test('current assisted visibility metadata is internally consistent',async()=>{
    for(const id of inspect(inventory,metadata,surfaces).assistedVisibilityMissing)assert.equal(await scalar('select admin_support_private.module_visible($1,$2) value',[owner,id]),false,id);
   });
   const currentCorrection=compile(inventory,metadata,'20260924000200');
-  await test('current visibility-only candidate restores all 37 modules and recovers without data changes',async()=>{
+  await test('current visibility-only candidate preserves all modules and recovers without data changes',async()=>{
    await db.exec(currentCorrection.forward);
    for(const m of inventory.modules)assert.equal(await scalar('select admin_support_private.module_visible($1,$2) value',[owner,m.id]),true,m.id);
    await assert.rejects(()=>db.exec(currentCorrection.forward),/MODULE_VISIBILITY_BASELINE_CHANGED|already exists/);await db.exec('rollback');
    await db.exec(currentCorrection.recovery);
-   assert.equal(await scalar('select count(*)::int value from admin_section_definitions where module_key is not null'),39);
+   assert.equal(await scalar('select count(*)::int value from admin_section_definitions where module_key is not null'),metadata.sections.filter(s=>s.module_key).length);
    assert.equal(await scalar('select count(*)::int value from admin_assignments'),1);
   });
   const generated=compile(future,metadata,'20260924000200');
@@ -151,8 +156,7 @@ async function main(){
   });
   const result={status:'PASS',productionWrites:0,checks,coverage:inspect(inventory,metadata,surfaces),generated:{forwardSha256:generated.forwardSha256,recoverySha256:generated.recoverySha256},limits:['Company test exercises installed membership helper, not every business RPC or Storage policy.','Synthetic new module has no real business writer; boundary denial tested directly.','Recovery refuses any subsequent authorization/audit changes; read-only function usage is not observable.','Current production visibility defect is reproduced; generated correction is not deployed.']};
   result.currentCorrection={forwardSha256:currentCorrection.forwardSha256,recoverySha256:currentCorrection.recoverySha256,status:'ISOLATED_PASS_NOT_APPLIED'};
-  const output=path.resolve(root,process.env.SUTIAPP_PERMISSION_TEST_EVIDENCE||'docs/qa/evidence/screen-permissions-20260924/isolated.json');
-  assert(output.startsWith(root+path.sep),'EVIDENCE_OUTSIDE_WORKSPACE');fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
+  console.log(JSON.stringify({status:result.status,checks:checks.length,productionWrites:0,residualData:0}));
  }finally{await db.close();}
 }
 main().catch(e=>{console.error(e.stack);process.exitCode=1;});

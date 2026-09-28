@@ -102,6 +102,7 @@
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600 } }, 'Monto'), React.createElement('div', { style: { fontSize: 'var(--text-18, 18px)', fontWeight: 800, color: 'var(--guinda)', marginTop: 2 } }, s.monto==null?'Por cotizar':window.money(s.monto))),
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600 } }, 'Plazo'), React.createElement('div', { style: { fontSize: 'var(--text-18, 18px)', fontWeight: 800, marginTop: 2 } }, s.plazo)),
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600 } }, 'Fecha'), React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, marginTop: 4 } }, s.fecha)))),
+        React.createElement(window.GeneratedDocuments,{domain:'program',operationId:s.sourceId}),
         // rejection reason
         s.motivo && React.createElement('div', { style: { marginTop: 16, background: '#FDEAEA', border: '1px solid #F6CBC6', borderRadius: 16, padding: 16, display: 'flex', gap: 11 } },
           React.createElement(I, { name: 'info', size: 20, stroke: 2, style: { color: '#C0341D', flexShrink: 0, marginTop: 1 } }),

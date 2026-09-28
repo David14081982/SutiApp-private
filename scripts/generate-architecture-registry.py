@@ -417,9 +417,18 @@ def build_registry(facts: dict[str, dict], fps: dict[str, str], overrides: dict)
                 edge(fid, file_ids[target], "TESTS" if file.startswith("scripts/test-") else "REFERENCES", ref["evidence"])
         if file.startswith("scripts/test-"):
             content = read_text(ROOT / file)
+            # Necessary substring prefilter for ASCII resource names. Python's
+            # Unicode IGNORECASE also equates i with dotted/dotless I, s with
+            # long s, and k with Kelvin; preserve those matches before filtering.
+            # Non-ASCII names retain the original regex path unchanged.
+            folded_content = content.replace("\u0130", "I").replace("\u0131", "i").casefold()
             for nid, item in list(nodes.items()):
                 needle = item["name"] if item["type"] == "permission" else item["name"].split(".")[-1]
-                if item["type"] in {"table", "rpc", "permission", "storage_bucket", "edge_function"} and len(needle) >= 4 and re.search(rf"(?<![\w]){re.escape(needle)}(?![\w])", content, re.I):
+                if item["type"] not in {"table", "rpc", "permission", "storage_bucket", "edge_function"} or len(needle) < 4:
+                    continue
+                if needle.isascii() and needle.casefold() not in folded_content:
+                    continue
+                if re.search(rf"(?<![\w]){re.escape(needle)}(?![\w])", content, re.I):
                     edge(fid, nid, "TESTS", {"file": file, "line": 1, "method": "explicit_resource_literal"})
 
     # Minimal semantic overrides: aliases, authorities, protected boundaries, and proven links.

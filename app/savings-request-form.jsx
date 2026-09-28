@@ -34,7 +34,7 @@
  function SavingsRequestHistory({requests}){
   const names={JOIN:'Ingreso al ahorro',WITHDRAW:'Retiro de ahorro',CHANGE_AMOUNT:'Cambio de monto',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
   const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisi?n',APPROVED:'Aprobada',APPLIED:'Aplicada',SETTLED:'Pagada',CANCELLED:'Cancelada',REJECTED:'Rechazada'};
-  return h('div',{'data-savings-request-history':''},(requests||[]).map(r=>h('div',{className:'sav-tx',key:r.id},h('div',null,h('b',null,names[r.request_type]||'Solicitud de ahorro'),h('span',null,r.folio+' ? '+(states[r.status]||'Por confirmar')),r.effective_from&&h('span',null,'Fecha prevista: '+new Date(r.effective_from+'T12:00:00').toLocaleDateString('es-MX'))),h('strong',null,r.new_contribution_amount||r.requested_amount?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.new_contribution_amount||r.requested_amount):''))));
+  return h('div',{'data-savings-request-history':''},(requests||[]).map(r=>h('div',{className:'sav-tx',key:r.id},h('div',null,h('b',null,names[r.request_type]||'Solicitud de ahorro'),h(window.GeneratedDocuments,{domain:'savings',operationId:r.id}),h('span',null,r.folio+' ? '+(states[r.status]||'Por confirmar')),r.effective_from&&h('span',null,'Fecha prevista: '+new Date(r.effective_from+'T12:00:00').toLocaleDateString('es-MX'))),h('strong',null,r.new_contribution_amount||r.requested_amount?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.new_contribution_amount||r.requested_amount):''))));
  }
  function useSavingsBeneficiaries(identityKey,revision){
   const [state,setState]=useState({phase:'loading'}),[retry,setRetry]=useState(0);

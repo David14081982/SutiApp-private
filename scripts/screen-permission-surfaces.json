@@ -39,6 +39,14 @@
     "bitacora": {"controllers": ["planes"], "authority": "get_company_activity + company membership"}
   },
   "capabilities": {
+    "document_templates": "document_generation",
+    "document_signers": "document_generation",
+    "document_signatures_read": "document_generation",
+    "document_signatures_write": "document_generation",
+    "document_configuration": "document_generation",
+    "document_read": "document_generation",
+    "document_retry": "document_generation",
+
     "savings_withdrawal_override": "savings",
     "savings_yield_override": "savings"
   }

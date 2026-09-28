@@ -1267,3 +1267,12 @@ editorial edits/responses or authorization/company history exist after installat
 retain them and repair forward. No restoration may erase subsequent work. Local
 implementation and isolated tests are authorized; this entry is not an assertion
 that either new migration or frontend has been deployed.
+
+## H-SUTIAPP-DOCUMENT-GENERATION-CORE-001 (owner approval, 2026-09-28)
+
+Implement seven approved contracts in one document domain, server-side pdf-lib,
+configurable PDF letterheads and 1..N versioned signers by program/document.
+Automatic final-event generation, immutable snapshots, independent failed-document
+retry and private access. Preserve supplied Admin HTML/CSS. DOCX deferred; nine
+optional contracts, extraordinary withdrawal and settlement document excluded.
+Owner explicitly authorized commit, push, deployment and sutiapp.com verification.

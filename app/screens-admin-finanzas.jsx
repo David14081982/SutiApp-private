@@ -582,6 +582,7 @@
           h('section', { className: 'finwb-card' }, h('h3', null, h(I, { name: 'receipt', size: 17, stroke: 2 }), 'Resumen'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))),detail.financial_processing_status!=null&&h('div',null,h('span',null,'Procesamiento financiero'),h('strong',null,processingMeta(detail.financial_processing_status).label)),detail.quoted_amount!=null&&h('div',null,h('span',null,'Monto cotizado'),h('strong',null,moneyValue(detail.quoted_amount)))), detail.notes && h('div', { className: 'finwb-snapshot-note', style: { marginTop: 10 } }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))),
           ),
           h('div', { className: 'finwb-card finwb-card-group' },
+          h(window.GeneratedDocuments,{domain:'program',operationId:detail.id,admin:true}),
           h('section', { className: 'finwb-card', 'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable' }, h('h3', null, 'Registro en Google'), h('div', { className: 'finwb-snapshot-note' }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')),
           h('section', { className: 'finwb-card', 'data-financial-terms': 'true' }, h('h3', null, h(I, { name: 'checkCircle', size: 17, stroke: 2 }), 'Términos aceptados'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible')))),
           ),
@@ -726,6 +727,7 @@
 
     return React.createElement('div', null,
       header({ title: 'Solicitud ' + r.folio, sub: r.fechaHora, onBack }),
+      React.createElement(window.GeneratedDocuments,{domain:'program',operationId:r.id,admin:true}),
       React.createElement('div', { className: 'su-app-scroll', style: { padding: 16, paddingBottom: 28 } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 } },
           React.createElement('div', { style: { flex: 1 } },

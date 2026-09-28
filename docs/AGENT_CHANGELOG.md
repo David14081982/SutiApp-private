@@ -3731,3 +3731,11 @@ cierre, cambio concurrente auditado, nuevas migraciones no instaladas.
 Detalle, alcance, limitaciones y revisión: `audits/H-SCREEN-PERMISSION-FIX-001.md`.
 Evidencia y hashes: `qa/evidence/screen-permission-fix-20260924/release.json`.
 Sin publicación ni nuevas escrituras productivas en esta H.
+
+## H-SUTIAPP-DOCUMENT-GENERATION-CORE-001 (2026-09-28)
+
+Shared seven-contract documentary domain, private worker/storage, configurable
+letterhead and signers, exact supplied Admin visual structure, Historial/Admin
+access. No changes to financial calculations or Google. One shared contractual
+test; synthetic PDFs in memory, no production QA records or signature fixtures.
+Scope, commands, security and release: audits/H-SUTIAPP-DOCUMENT-GENERATION-CORE-001.md.

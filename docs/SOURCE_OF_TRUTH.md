@@ -662,3 +662,12 @@ Neither migration is applied by a build. Owner authorized the release on 2026-09
 enabled assignments preserved. Evidence: qa/evidence/screen-permission-fix-20260924/
 release-applied.json and release-backend-verified.json. Frontend v285 is the associated
 verified release candidate; Pages publication is checked separately.
+
+## Document generation core (2026-09-28)
+
+`document_private` is the authority for immutable document configuration, snapshots,
+issued records and audit. Existing final approval events and financial snapshots
+remain business authorities. `document-generation` renders sealed inputs without
+financial recalculation into private `generated-documents` Storage. Historial and
+Admin share the same record. No local cache, legacy writer, automatic backfill or
+optional document contract. See audits/H-SUTIAPP-DOCUMENT-GENERATION-CORE-001.md.

@@ -9,6 +9,10 @@
     {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
   ],
   "nodes": [
+    {"type": "admin_screen", "name": "AdminDocumentGeneration", "file": "app/screens-admin-document-generation.jsx", "domain": "documents", "aliases": ["Documentos y Firmas", "Generacion PDF", "Plantillas y firmantes"], "source_of_truth": "SUPABASE"},
+    {"type": "repository", "name": "DocumentGenerationRepository", "file": "app/document-generation-repository.js", "domain": "documents", "source_of_truth": "SUPABASE", "properties": {"authority": "document_private immutable configuration, snapshots and records", "rpc": "document_generation_command", "edge": "document-generation", "access": "effective affiliate owner or explicit admin capabilities; no browser cache"}},
+    {"type": "storage_bucket", "name": "generated-documents", "file": "supabase/migrations/20260928000100_document_generation_core.sql", "domain": "documents", "source_of_truth": "STORAGE", "properties": {"private": true, "isolation": "restrictive storage.objects policy; service-role only; authorized signed URLs"}},
+
     {"type": "screen", "name": "VotingHome", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votaciones afiliado", "Votaciones"], "source_of_truth": "SUPABASE"},
     {"type": "admin_screen", "name": "VotingAdmin", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votaciones Admin", "Votos identificados", "Pregunta activa"], "source_of_truth": "SUPABASE"},
     {"type": "admin_screen", "name": "VotingLive", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votación en vivo", "Pantalla gigante", "Resultados en vivo"], "source_of_truth": "SUPABASE", "properties": {"reader": "get_voting_live", "refresh": "Realtime voting_live_state + 2 s foreground polling", "permission": "votaciones.results"}},

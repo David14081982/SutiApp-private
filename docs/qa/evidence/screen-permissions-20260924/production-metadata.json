@@ -1,9 +1,9 @@
 {
-  "capturedAt": "2026-09-24T16:01:03.753Z",
+  "capturedAt": "2026-09-28T08:36:49.430Z",
   "productionWrites": 0,
   "permissionConstraint": [
     {
-      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'votaciones.read'::text, 'votaciones.create'::text, 'votaciones.update'::text, 'votaciones.delete'::text, 'votaciones.publish'::text, 'votaciones.results'::text, 'votaciones.export_identified_votes'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))"
+      "definition": "CHECK ((permissions <@ ARRAY['assets.read'::text, 'assets.write'::text, 'companies.read'::text, 'companies.write'::text, 'popups.read'::text, 'popups.write'::text, 'banners.read'::text, 'banners.write'::text, 'documents.read'::text, 'documents.write'::text, 'affiliates.read'::text, 'affiliates.write'::text, 'affiliates.impersonate'::text, 'news.read'::text, 'news.write'::text, 'content.read'::text, 'content.write'::text, 'marketplace.read'::text, 'marketplace.write'::text, 'marketplace.quotes.read'::text, 'marketplace.quotes.write'::text, 'memberships.read'::text, 'memberships.write'::text, 'company_portal.read'::text, 'company_portal.write'::text, 'program_requests.read'::text, 'program_requests.write'::text, 'document_generation.read'::text, 'document_generation.retry'::text, 'document_generation.config.read'::text, 'document_generation.templates.write'::text, 'document_generation.signers.write'::text, 'document_generation.signatures.read'::text, 'document_generation.signatures.write'::text, 'document_generation.config.write'::text, 'authorization.read'::text, 'authorization.write'::text, 'segmentation.read'::text, 'segmentation.write'::text, 'workflow.read'::text, 'workflow.write'::text, 'union_content.read'::text, 'union_content.write'::text, 'data_exports.read'::text, 'financial_criteria.visibility.read'::text, 'financial_criteria.visibility.write'::text, 'financial_programs.read'::text, 'financial_programs.write'::text, 'financial_rules.read'::text, 'financial_rules.write'::text, 'financial_rules.publish'::text, 'financial_rates.write'::text, 'bank_accounts.read'::text, 'program_catalog.read'::text, 'program_catalog.write'::text, 'savings.withdrawal.override'::text, 'savings.yield.override'::text, 'votaciones.read'::text, 'votaciones.create'::text, 'votaciones.update'::text, 'votaciones.delete'::text, 'votaciones.publish'::text, 'votaciones.results'::text, 'votaciones.export_identified_votes'::text, 'savings.read'::text, 'savings.write'::text, 'savings.approve'::text, 'savings.config'::text, 'savings.reports'::text, 'savings.identity_review'::text]))"
     }
   ],
   "rolePermissions": [
@@ -74,6 +74,38 @@
     {
       "code": "principal_admin",
       "permission": "data_exports.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.config.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.config.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.retry"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.signatures.read"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.signatures.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.signers.write"
+    },
+    {
+      "code": "principal_admin",
+      "permission": "document_generation.templates.write"
     },
     {
       "code": "principal_admin",
@@ -1077,6 +1109,164 @@
       "module_order": 91
     },
     {
+      "section_key": "admin_document_generation",
+      "display_name": "Documentos y Firmas",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_generation",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 101
+    },
+    {
+      "section_key": "admin_document_templates",
+      "display_name": "Documentos · Plantillas",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_templates",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.templates.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 102
+    },
+    {
+      "section_key": "admin_document_signers",
+      "display_name": "Documentos · Identidad de firmantes",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_signers",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.signers.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 103
+    },
+    {
+      "section_key": "admin_document_signatures_read",
+      "display_name": "Documentos · Ver imágenes de firma",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_signatures_read",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.signatures.read"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 104
+    },
+    {
+      "section_key": "admin_document_signatures_write",
+      "display_name": "Documentos · Cambiar imágenes de firma",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_signatures_write",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.signatures.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 105
+    },
+    {
+      "section_key": "admin_document_configuration",
+      "display_name": "Documentos · Asignaciones",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_configuration",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.config.write"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 106
+    },
+    {
+      "section_key": "admin_document_read",
+      "display_name": "Documentos · Lectura administrativa",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_read",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.read"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 107
+    },
+    {
+      "section_key": "admin_document_retry",
+      "display_name": "Documentos · Reintentos",
+      "data_boundary": "Private generated documents",
+      "allowed_actions": [
+        "read",
+        "update"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "document_retry",
+      "module_read_permissions": [
+        "document_generation.config.read"
+      ],
+      "module_write_permissions": [
+        "document_generation.retry"
+      ],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 108
+    },
+    {
       "section_key": "agreements",
       "display_name": "Convenios y beneficios",
       "data_boundary": "company_benefit_profiles + company_benefits + company_audience_rules; companies is read-only",
@@ -1417,7 +1607,7 @@
       "schema": "admin_support_private",
       "name": "module_visible",
       "signature": "admin_support_private.module_visible(uuid,text)",
-      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('branding','assets.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('popups','popups.read',array['popups']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('program_products','program_catalog.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('aprobaciones','popups.read',array[]::text[]),('sindicato','union_content.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('document_generation','document_generation.config.read',array[]::text[]),('login_history','authorization.read',array[]::text[]),('votaciones','votaciones.read',array['votaciones','votaciones_results']::text[]),('votaciones_nominal','votaciones.export_identified_votes',array['votaciones_identified']::text[]),('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('popups','popups.read',array['popups']::text[]),('sindicato','union_content.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('program_products','program_catalog.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('inversion','workflow.read',array[]::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('aprobaciones','popups.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[]),('branding','assets.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
       "acl": "{postgres=X/postgres}"
     },
     {
@@ -1452,7 +1642,7 @@
       "schema": "public",
       "name": "can_manage_company_ficha",
       "signature": "can_manage_company_ficha(uuid,text)",
-      "definition": "CREATE OR REPLACE FUNCTION public.can_manage_company_ficha(p_company_id uuid, p_action text DEFAULT 'update'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select auth.uid() is not null and (\r\n public.has_admin_permission('companies.write') or public.has_section_action('companies',p_action)\r\n or (not public.company_is_paid(p_company_id) and public.has_section_action('agreements',case when p_action='assets' then 'update' else p_action end))\r\n or (p_action in ('update','assets') and public.is_marketplace_company_member(p_company_id,'write') and public.company_has_active_plan(p_company_id)))\r\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_manage_company_ficha(p_company_id uuid, p_action text DEFAULT 'update'::text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select auth.uid() is not null and (\r\n (public.has_admin_permission('companies.write') and public.admin_module_boundary(array['companies_admin'],'update')) or public.has_section_action('companies',p_action)\r\n or (not public.company_is_paid(p_company_id) and public.has_section_action('agreements',case when p_action='assets' then 'update' else p_action end))\r\n or (p_action in ('update','assets') and public.is_marketplace_company_member(p_company_id,'write') and public.company_has_active_plan(p_company_id)))\r\n$function$\n",
       "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
     },
     {
@@ -1485,16 +1675,23 @@
     },
     {
       "schema": "public",
+      "name": "enforce_admin_company_module_scope",
+      "signature": "enforce_admin_company_module_scope()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_admin_company_module_scope()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare company_id uuid:=coalesce(new.company_id,old.company_id); action_name text:=case tg_op when 'INSERT' then 'create' when 'DELETE' then 'delete' else 'update' end;\nbegin\n if auth.role()='service_role' then return coalesce(new,old);end if;\n if tg_op='UPDATE' and new.company_id is distinct from old.company_id then raise exception 'COMPANY_BOUNDARY_IMMUTABLE';end if;\n if not (\n  (public.has_admin_permission('companies.write') and public.admin_module_boundary(array['companies_admin'],'update'))\n  or public.has_section_action('companies',action_name)\n  or not public.company_is_paid(company_id)\n ) then raise exception 'COMPANY_MODULE_BOUNDARY_DENIED';end if;\n return coalesce(new,old);\nend $function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "schema": "public",
       "name": "enforce_company_ficha_action",
       "signature": "enforce_company_ficha_action()",
-      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare o jsonb:=case when tg_op='INSERT' then '{}' else to_jsonb(old) end;\r\n n jsonb:=case when tg_op='DELETE' then '{}' else to_jsonb(new) end; a text; v_id uuid:=coalesce(new.id,old.id);\r\nbegin\r\n if auth.role()='service_role' or public.has_admin_permission('companies.write') then return coalesce(new,old);end if;\r\n if tg_op='UPDATE' and (o-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   = (n-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   and public.is_marketplace_company_member(v_id,'write') and public.company_has_active_plan(v_id) then return new;end if;\r\n foreach a in array public.section_row_required_actions(o,n,tg_op,'enabled','sort_order',array['logo_asset_id']) loop\r\n  if not public.can_manage_company_ficha(v_id,a) then raise exception 'COMPANY_ACTION_DENIED:%',a;end if;\r\n end loop;\r\n if tg_op='INSERT' and new.record_origin<>'ADMIN_H009' then raise exception 'ADMIN_ORIGIN_REQUIRED';end if;\r\n if tg_op='DELETE' and old.record_origin<>'ADMIN_H009' then raise exception 'HISTORICAL_DELETE_DENIED';end if;\r\n if tg_op='UPDATE' and (o->'record_origin' is distinct from n->'record_origin' or (o-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at']) is distinct from (n-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at'])) then raise exception 'COMPANY_PROVENANCE_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare o jsonb:=case when tg_op='INSERT' then '{}' else to_jsonb(old) end;\r\n n jsonb:=case when tg_op='DELETE' then '{}' else to_jsonb(new) end; a text; v_id uuid:=coalesce(new.id,old.id);\r\nbegin\r\n if auth.role()='service_role' or (public.has_admin_permission('companies.write') and public.admin_module_boundary(array['companies_admin'],'update')) then return coalesce(new,old);end if;\r\n if tg_op='UPDATE' and (o-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   = (n-array['display_name','legal_name','description','category_raw','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','public_details','logo_asset_id','updated_at'])\r\n   and public.is_marketplace_company_member(v_id,'write') and public.company_has_active_plan(v_id) then return new;end if;\r\n foreach a in array public.section_row_required_actions(o,n,tg_op,'enabled','sort_order',array['logo_asset_id']) loop\r\n  if not public.can_manage_company_ficha(v_id,a) then raise exception 'COMPANY_ACTION_DENIED:%',a;end if;\r\n end loop;\r\n if tg_op='INSERT' and new.record_origin<>'ADMIN_H009' then raise exception 'ADMIN_ORIGIN_REQUIRED';end if;\r\n if tg_op='DELETE' and old.record_origin<>'ADMIN_H009' then raise exception 'HISTORICAL_DELETE_DENIED';end if;\r\n if tg_op='UPDATE' and (o->'record_origin' is distinct from n->'record_origin' or (o-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at']) is distinct from (n-array['display_name','legal_name','description','category_raw','contact_name','phone_raw','whatsapp_raw','email_raw','website_url','address_raw','location_raw','social_links','status_raw','logo_asset_id','sort_order','enabled','public_details','updated_at'])) then raise exception 'COMPANY_PROVENANCE_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
       "acl": "{postgres=X/postgres,service_role=X/postgres}"
     },
     {
       "schema": "public",
       "name": "enforce_company_ficha_asset_action",
       "signature": "enforce_company_ficha_asset_action()",
-      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_asset_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid:=coalesce(new.company_id,old.company_id);\r\nbegin\r\n if auth.role()='service_role' or public.has_admin_permission('companies.write') then return coalesce(new,old);end if;\r\n if not(public.can_manage_company_ficha(v_id,'assets') or (not public.company_is_paid(v_id) and public.has_section_action('agreements','update'))) then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if tg_op='UPDATE' and new.company_id<>old.company_id then raise exception 'COMPANY_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_company_ficha_asset_action()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid:=coalesce(new.company_id,old.company_id);\r\nbegin\r\n if auth.role()='service_role' or (public.has_admin_permission('companies.write') and public.admin_module_boundary(array['companies_admin'],'update')) then return coalesce(new,old);end if;\r\n if not(public.can_manage_company_ficha(v_id,'assets') or (not public.company_is_paid(v_id) and public.has_section_action('agreements','update'))) then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if tg_op='UPDATE' and new.company_id<>old.company_id then raise exception 'COMPANY_IMMUTABLE';end if;\r\n return coalesce(new,old);\r\nend $function$\n",
       "acl": "{postgres=X/postgres,service_role=X/postgres}"
     },
     {
@@ -2179,7 +2376,7 @@
       "permissive": "PERMISSIVE",
       "roles": "{authenticated}",
       "cmd": "SELECT",
-      "qual": "((auth_user_id = ( SELECT auth.uid() AS uid)) OR has_admin_permission('companies.read'::text))",
+      "qual": "((auth_user_id = ( SELECT auth.uid() AS uid)) OR (has_admin_permission('companies.read'::text) AND admin_module_boundary(ARRAY['companies_admin'::text, 'planes'::text])))",
       "with_check": null
     },
     {
@@ -2474,6 +2671,11 @@
     }
   ],
   "tables": [
+    {
+      "name": "app_editorial_screens",
+      "rls": true,
+      "force_rls": true
+    },
     {
       "name": "companies",
       "rls": true,

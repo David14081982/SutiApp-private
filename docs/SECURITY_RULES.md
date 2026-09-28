@@ -337,3 +337,13 @@ During a valid session-bound Tomar control, Admin capabilities are the intersect
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 Installed beneficiary raw/provenance/authorization tables force RLS and deny direct browser access; new self RPCs derive effective identity while recording the real actor. Signature Storage is private, with restrictive policies and no overwrite/delete of sealed signatures; the old unsigned writer remains revoked. Guarantor helpers accepting an explicit affiliate UUID are service-only; financial-legacy obtains category policy for the request affiliate and fails closed on unavailable policy. Restoring source changes no live grants, Auth, RLS or Storage. Secrets remain in ignored local configuration.
+
+## Document domain boundary (2026-09-28)
+
+Document capabilities are independently delegated through the existing catalog.
+Eight `document_private` tables force RLS with no direct browser schema grants.
+Service-role worker only; command RPC validates effective owner or explicit admin
+read capability plus the source-domain permission. Signature image read/write
+are separate. Restrictive Storage isolation overrides broad existing policies.
+Two-minute URLs are minted after authorization; no browser service secrets.
+Recovery retains private historical objects and their isolation.

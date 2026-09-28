@@ -1,0 +1,131 @@
+{
+  "status": "PASS",
+  "mode": "LOCAL_BUNDLE_WITH_READ_ONLY_LIVE_BACKEND",
+  "cases": [
+    {
+      "width": 1600,
+      "height": 900,
+      "candidateLoaded": true,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4228,
+            "viewport": 900
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 900
+          },
+          "closed": {
+            "scrollTop": 4228,
+            "viewport": 900
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4228,
+            "viewport": 900
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 900
+          },
+          "closed": {
+            "scrollTop": 4228,
+            "viewport": 900
+          }
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "candidateLoaded": true,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4408,
+            "viewport": 720
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 720
+          },
+          "closed": {
+            "scrollTop": 4408,
+            "viewport": 720
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4408,
+            "viewport": 720
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 720
+          },
+          "closed": {
+            "scrollTop": 4408,
+            "viewport": 720
+          }
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "candidateLoaded": true,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4744,
+            "viewport": 844
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 844
+          },
+          "closed": {
+            "scrollTop": 4744,
+            "viewport": 844
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4744,
+            "viewport": 844
+          },
+          "opened": {
+            "scrollTop": 0,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 844
+          },
+          "closed": {
+            "scrollTop": 4744,
+            "viewport": 844
+          }
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "businessMutations": 0
+}

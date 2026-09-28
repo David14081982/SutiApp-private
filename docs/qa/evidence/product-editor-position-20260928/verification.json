@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "changedModules": [
+    "screens-admin-program-products.jsx"
+  ],
+  "unchangedModules": 138,
+  "sourceBundleParity": true,
+  "workerLogicUnchanged": true,
+  "htmlOnlyCachebusters": true,
+  "bundleSha256": "a26d93f8db7d1b7f6806c974ab446494c7ed753fb8e6ee19f7b8bc567045465b"
+}

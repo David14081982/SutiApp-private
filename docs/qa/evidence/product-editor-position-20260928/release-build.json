@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "base": "19e9951",
+  "excludedLocalCommit": "91a6d6f",
+  "changedModules": [
+    "screens-admin-program-products.jsx"
+  ],
+  "preservedModules": 138,
+  "bundleSha256": "a2613d1efdf626d6b59af2f24080309c978124c58ecee5a3ae80c0ebb0a8074c"
+}

@@ -1,0 +1,131 @@
+{
+  "status": "BUG_REPRODUCED",
+  "mode": "PUBLISHED_BASELINE",
+  "cases": [
+    {
+      "width": 1600,
+      "height": 900,
+      "candidateLoaded": false,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4228,
+            "viewport": 900
+          },
+          "opened": {
+            "scrollTop": 4228,
+            "headerY": -4228,
+            "headerBottom": -4167,
+            "viewport": 900
+          },
+          "closed": {
+            "scrollTop": 0,
+            "viewport": 900
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4228,
+            "viewport": 900
+          },
+          "opened": {
+            "scrollTop": 4228,
+            "headerY": -4228,
+            "headerBottom": -4167,
+            "viewport": 900
+          },
+          "closed": {
+            "scrollTop": 0,
+            "viewport": 900
+          }
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "candidateLoaded": false,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4408,
+            "viewport": 720
+          },
+          "opened": {
+            "scrollTop": 4408,
+            "headerY": -4408,
+            "headerBottom": -4347,
+            "viewport": 720
+          },
+          "closed": {
+            "scrollTop": 0,
+            "viewport": 720
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4408,
+            "viewport": 720
+          },
+          "opened": {
+            "scrollTop": 4408,
+            "headerY": -4408,
+            "headerBottom": -4347,
+            "viewport": 720
+          },
+          "closed": {
+            "scrollTop": 0,
+            "viewport": 720
+          }
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "candidateLoaded": false,
+      "checks": [
+        {
+          "kind": "existing",
+          "before": {
+            "scrollTop": 4744,
+            "viewport": 844
+          },
+          "opened": {
+            "scrollTop": 4744,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 844
+          },
+          "closed": {
+            "scrollTop": 4744,
+            "viewport": 844
+          }
+        },
+        {
+          "kind": "new",
+          "before": {
+            "scrollTop": 4744,
+            "viewport": 844
+          },
+          "opened": {
+            "scrollTop": 4744,
+            "headerY": 0,
+            "headerBottom": 61,
+            "viewport": 844
+          },
+          "closed": {
+            "scrollTop": 4744,
+            "viewport": 844
+          }
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "businessMutations": 0
+}

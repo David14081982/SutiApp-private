@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## 2026-09-28 — H-PRODUCT-EDITOR-POSITION-001 — local PASS
+
+Corrección exclusiva de posición en Programas · Productos: el editor abre arriba
+y restaura el desplazamiento de la lista al cerrar. Defecto reproducido en la
+publicación; candidato local PASS en seis casos (editar/nuevo, 1600/1280/390 px).
+Sin cambios financieros, de visibilidad, datos, backend o shell compartido.
+Build focal: un módulo / 138 conservados; bundle 298 y worker 232 sólo cachebusters.
+No publicado. Evidencia: `audits/H-PRODUCT-EDITOR-POSITION-001.md`.
+
 ## 2026-09-26 — H-AFFILIATE-ACCESS-REPAIR-001 — producción PASS
 
 Admin › Afiliados › Acceso: diagnóstico en lenguaje claro y reparación (pasar cuenta,

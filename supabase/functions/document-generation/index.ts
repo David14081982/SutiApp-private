@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import * as PDFLib from 'https://esm.sh/pdf-lib@1.17.1';
 import { createRenderer, syntheticSnapshot } from './renderer.mjs';
+import {handleLayout} from './layout-service.mjs';
 
 const render=createRenderer(PDFLib),bucket='generated-documents';
 const origins=(Deno.env.get('ALLOWED_APP_ORIGINS')||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -42,6 +43,11 @@ Deno.serve(async(req)=>{
   const user=await client.auth.getUser();if(user.error||!user.data.user)return reply(401,{error:'DOCUMENT_AUTH_INVALID'});
   if(Number(req.headers.get('content-length'))>12000000)return reply(413,{error:'DOCUMENT_UPLOAD_TOO_LARGE'});
   const body=await req.json(),command=(action:string,data:unknown={})=>rpc(client,'document_generation_command',action,data);
+  if(['LAYOUT_MANIFEST','LAYOUT_SAVE','LAYOUT_ACTIVATE','LAYOUT_SYSTEM','LAYOUT_PREVIEW'].includes(body.action)){
+   const result=await handleLayout(body,{contextCall:(action,data)=>rpc(client,'document_layout_context',action,data),command,persist:(action,data)=>rpc(service,'document_layout_persist',action,data),render,loadAsset});
+   if(result.pdf)return new Response(result.pdf,{status:200,headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'inline; filename="distribucion.pdf"'}});
+   return reply(result.status,result.data);
+  }
   if(body.action==='UPLOAD'){
    const permission=await command('UPLOAD_PERMISSION',{kind:body.kind});
    if(typeof body.base64!=='string'||body.base64.length>11200000)throw Error('DOCUMENT_UPLOAD_TOO_LARGE');

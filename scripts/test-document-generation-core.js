@@ -10,10 +10,14 @@ const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const checks=[];async function test(name,fn){await fn();checks.push(name);console.log('PASS '+name);}
 async function main(){
  const renderer=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/renderer.mjs')));
+ const layouts=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout.mjs')));
+ const {handleLayout}=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout-service.mjs')));
  let activeBrowser;const db=new PGlite();const q=async(sql,args=[])=> (await db.query(sql,args)).rows;
  const scalar=async(sql,args=[])=>(await q(sql,args))[0]?.v;
  const call=(action,data={})=>scalar('select public.document_generation_command($1,$2::jsonb) v',[action,JSON.stringify(data)]);
  const worker=(action,data={})=>scalar('select public.document_generation_worker($1,$2::jsonb) v',[action,JSON.stringify(data)]);
+ const layoutCall=(action,data={})=>scalar('select public.document_layout_context($1,$2::jsonb) v',[action,JSON.stringify(data)]);
+ const layoutPersist=(action,data={})=>scalar('select public.document_layout_persist($1,$2::jsonb) v',[action,JSON.stringify(data)]);
  const actor=async(id,permissions=[])=>{await db.exec('reset role');await q("select set_config('test.uid',$1,false),set_config('test.permissions',$2,false)",[id,JSON.stringify(permissions)]);await db.exec('set role authenticated');};
  const permissions=['config.read','templates.write','signers.write','signatures.write','signatures.read','config.write','read','retry'].map(p=>'document_generation.'+p).concat('program_requests.read','savings.read');
  try{
@@ -41,8 +45,9 @@ async function main(){
  `);
  await test('migration compiles in PostgreSQL without live data',()=>db.exec(read('supabase/migrations/20260928000100_document_generation_core.sql')));
  await db.exec(read('supabase/migrations/20260928000200_document_signer_assignment_order.sql'));
+ await db.exec(read('supabase/migrations/20260928000300_document_layout_designer.sql'));
  await test('all private tables force RLS; no direct browser grants',async()=>{
-  assert.equal(await scalar("select count(*)::integer v from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='document_private' and c.relkind='r' and c.relrowsecurity and c.relforcerowsecurity"),8);
+  assert.equal(await scalar("select count(*)::integer v from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='document_private' and c.relkind='r' and c.relrowsecurity and c.relforcerowsecurity"),10);
   await actor(uid,permissions);await assert.rejects(q('select * from document_private.records'),/permission denied/);
   await assert.rejects(worker('CLAIM'),/permission denied/);
   await assert.rejects(q("insert into storage.objects values(gen_random_uuid(),'generated-documents','secret')"),/row-level security/);
@@ -61,6 +66,47 @@ async function main(){
  const ordered=await call('PREVIEW_CONFIG',{program:'auto',document_type:'PROGRAM_FINANCING_APPROVAL'});assert.deepEqual(ordered.signers.map(x=>x.id),[revised.id,second.id]);await db.exec('rollback');await actor(uid,permissions);
  const renderConfig=await call('PREVIEW_CONFIG',{program:'auto',document_type:'PROGRAM_FINANCING_APPROVAL'});
  const synthetic=renderer.syntheticSnapshot('PROGRAM_FINANCING_APPROVAL','auto',renderConfig);
+ const design=layouts.initialLayout(config.document_type,renderConfig.template);
+ let layoutV1,layoutV2;
+ await test('contract palettes, required fields, geometry and controlled formatters',async()=>{
+  for(const type of Object.keys(renderer.TITLES)){
+   const fields=layouts.layoutFields(type),draft=layouts.initialLayout(type,renderConfig.template);
+   assert.deepEqual(layouts.validateLayout(draft,type,renderConfig.template),[]);
+   if(type!=='LOAN_APPROVAL')assert(!fields.some(f=>f.key.startsWith('bank.')));
+   assert(!fields.some(f=>f.key==='bank.account_holder'),'unsupported source never invented');
+   await renderer.createRenderer(PDFLib)({...renderer.syntheticSnapshot(type,'auto',renderConfig),layout:{definition:draft}},async()=>templateBytes,{preview:true});
+  }
+  const invalid=structuredClone(design);invalid.elements[0].field='bank.account';assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('Campo no disponible')));
+  invalid.elements=design.elements.slice(1);assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('obligatorio')));
+  invalid.elements=structuredClone(design.elements);invalid.elements[0].x=-1;assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('fuera')));
+  invalid.elements[0]={...invalid.elements[1],id:'duplicate-position'};assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('superpuestos')));
+  assert.equal(layouts.formatField(25000,'MONEY'),'$25,000.00');assert.match(layouts.formatField('2026-09-28','DATE'),/28.*septiembre.*2026/);assert.equal(layouts.formatField(2,'PERCENT'),'2.00 %');assert.equal(layouts.formatField('12345678','MASKED_BANK_ACCOUNT'),'**** 5678');assert.equal(layouts.formatField(24,'INTEGER'),'24');assert.equal(layouts.formatField(null,'TEXT','na'),'No aplica');assert.equal(layouts.formatField(null,'TEXT','hide'),null);assert.equal(layouts.formatField(null,'TEXT','empty'),'');
+ });
+ await test('layout versions, permission gates, activation isolation and historical resolution',async()=>{
+  await actor(other,[]);await assert.rejects(layoutCall('READ',config),/PERMISSION_DENIED/);await assert.rejects(layoutPersist('SAVE',{}),/permission denied/);
+  await actor(uid,permissions);const gate=await layoutCall('WRITE',config);assert.equal(gate.actor,uid);assert(!JSON.stringify(gate.config.signers).includes('assets/'));
+  await db.exec('reset role');layoutV1=await layoutPersist('SAVE',{...config,id:crypto.randomUUID(),actor:uid,context_affiliate:other,definition:design});
+  assert.equal(layoutV1.version,1);assert.deepEqual((await layoutPersist('SAVE',{...config,id:layoutV1.id,actor:uid,context_affiliate:other,definition:design})).id,layoutV1.id);
+  const act=crypto.randomUUID();await layoutPersist('ACTIVATE',{...config,id:act,layout_id:layoutV1.id,actor:uid});await layoutPersist('ACTIVATE',{...config,id:act,layout_id:layoutV1.id,actor:uid});
+  const at=await scalar('select clock_timestamp()::text v');const sealed=await scalar('select document_private.resolve_configuration($1,$2,$3::timestamptz) v',[config.program,config.document_type,at]);assert.equal(sealed.layout.id,layoutV1.id);
+  const changed=structuredClone(design);changed.elements[0].size=9;layoutV2=await layoutPersist('SAVE',{...config,id:crypto.randomUUID(),actor:uid,definition:changed});assert.equal(layoutV2.version,2);
+  await layoutPersist('ACTIVATE',{...config,id:crypto.randomUUID(),layout_id:layoutV2.id,actor:uid});assert.equal((await scalar('select document_private.resolve_configuration($1,$2,clock_timestamp()) v',[config.program,config.document_type])).layout.id,layoutV2.id);
+  assert.deepEqual((await scalar('select document_private.resolve_configuration($1,$2,$3::timestamptz) v',[config.program,config.document_type,at])).layout,sealed.layout);
+  await assert.rejects(q('update document_private.layouts set definition=$1 where id=$2',[JSON.stringify(design),layoutV1.id]),/IMMUTABLE/);
+  await actor(uid,permissions);await call('SAVE_CONFIGURATION',{...config,program:'caja',document_type:'SAVINGS_ENROLLMENT_APPROVAL'});await assert.rejects(layoutCall('VERSION',{program:'caja',document_type:'SAVINGS_ENROLLMENT_APPROVAL',id:layoutV1.id}),/SCOPE_DENIED/);
+  await db.exec('reset role');await assert.rejects(layoutPersist('ACTIVATE',{program:'caja',document_type:'SAVINGS_ENROLLMENT_APPROVAL',id:crypto.randomUUID(),layout_id:layoutV1.id,actor:uid}),/SCOPE_DENIED/);
+  assert.equal((await scalar("select document_private.resolve_configuration('caja','SAVINGS_ENROLLMENT_APPROVAL',clock_timestamp()) v")).layout.mode,'SYSTEM');
+  await layoutPersist('ACTIVATE',{...config,id:crypto.randomUUID(),layout_id:layoutV1.id,actor:uid});await actor(uid,permissions);
+ });
+ await test('custom positions, signer grid and long frozen schedule paginate deterministically',async()=>{
+  const snapshot={...structuredClone(synthetic),layout:{...layoutV1}};snapshot.signers=Array.from({length:12},(_,n)=>({...synthetic.signers[0],full_name:'Firmante sintético '+n}));snapshot.operation.financial.payment_schedule.rows=Array.from({length:120},(_,n)=>({number:n+1,date:'2027-01-15',payment:125,remaining_total:2500}));
+  const frozen=JSON.stringify(snapshot),render=renderer.createRenderer(PDFLib),a=await render(snapshot,async()=>templateBytes,{preview:true}),b=await render(snapshot,async()=>templateBytes,{preview:true});assert(a.pages>8);assert.equal(Buffer.compare(a.bytes,b.bytes),0);assert.equal(JSON.stringify(snapshot),frozen);
+  const pdf=await PDFLib.PDFDocument.load(a.bytes);assert.equal(pdf.getPageCount(),a.pages);
+  const contents=pdf.getPage(0).node.Contents().asArray().map(ref=>Buffer.from(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode()).toString()).join('\n');
+  const matrices=[...contents.matchAll(/1 0 0 1 ([\d.]+) ([\d.]+) Tm/g)].map(m=>[Number(m[1]),Number(m[2])]);
+  const first=design.elements[0];assert(matrices.some(([x,y])=>Math.abs(x-first.x*72/25.4)<.001&&Math.abs(y-(792-first.y*72/25.4-first.size))<.001),'physical positions reach PDF operators');
+  const signatureBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jH9sAAAAASUVORK5CYII=','base64');snapshot.signers=snapshot.signers.map(s=>({...s,asset:{mime:'image/png'}}));const issued=await render(snapshot,async asset=>asset.mime==='image/png'?signatureBytes:templateBytes);assert.equal(issued.pages,a.pages);
+ });
  await test('all seven contracts render; no invented optional contract',async()=>{
   for(const type of Object.keys(renderer.TITLES)){const s=renderer.syntheticSnapshot(type,'auto',renderConfig);const out=await renderer.createRenderer(PDFLib)(s,async()=>templateBytes,{preview:true});assert(out.bytes.length>1000);assert(out.pages>=1);}
   const signatureBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jH9sAAAAASUVORK5CYII=','base64');
@@ -130,25 +176,45 @@ async function main(){
   await page.exposeFunction('__command',(action,data)=>serial(async()=>{await actor(uid,permissions);return call(action,data);}));
   await page.exposeFunction('__edge',(body)=>serial(async()=>{
    await actor(uid,permissions);
+   if(body.action.startsWith('LAYOUT_')){
+    const result=await handleLayout(body,{contextCall:async(a,d)=>{await actor(uid,permissions);return layoutCall(a,d);},command:async(a,d)=>{await actor(uid,permissions);return call(a,d);},persist:async(a,d)=>{await db.exec('reset role');return layoutPersist(a,d);},render:renderer.createRenderer(PDFLib),loadAsset:async()=>templateBytes});
+    if(result.status!==200)throw Error(result.data.details?.join(' ')||result.data.error);
+    return result.pdf?{base64:Buffer.from(result.pdf).toString('base64')}:result.data;
+   }
    if(body.action==='ASSET_ACCESS'||body.action==='ACCESS')return {url:'https://document-test.invalid/template.pdf'};
    if(body.action==='PREVIEW'){const c=await call('PREVIEW_CONFIG',{...body.config,program:body.program,document_type:body.document_type});const output=await renderer.createRenderer(PDFLib)(renderer.syntheticSnapshot(body.document_type,body.program,c),async()=>templateBytes,{preview:true});return {base64:Buffer.from(output.bytes).toString('base64')};}
    if(body.action==='UPLOAD'){await call('UPLOAD_PERMISSION',{kind:body.kind});return register(body.kind,body.kind==='TEMPLATE'?'application/pdf':'image/png');}
    throw Error('UNEXPECTED_EDGE_ACTION');
   }));
-  await page.route('https://document-test.invalid/**',route=>route.fulfill({contentType:'application/pdf',body:Buffer.from(templateBytes)}));
-  await page.setContent('<!doctype html><html><head></head><body style="margin:0"><div id="root"></div></body></html>');
+  await page.route('https://document-test.invalid/**',route=>{const pathname=new URL(route.request().url()).pathname;if(pathname.startsWith('/app/vendor/pdfjs-5.4.149/'))return route.fulfill({contentType:'text/javascript',body:read(pathname.slice(1))});if(pathname.endsWith('.pdf'))return route.fulfill({contentType:'application/pdf',body:Buffer.from(templateBytes)});return route.fulfill({contentType:'text/html',body:'<!doctype html><html><head></head><body style="margin:0"><div id="root"></div></body></html>'});});
+  await page.goto('https://document-test.invalid/');
   await page.addScriptTag({content:read('app/vendor/react-18.3.1/react.production.min.js')});await page.addScriptTag({content:read('app/vendor/react-dom-18.3.1/react-dom.production.min.js')});
   await page.evaluate(({uid})=>{
    window.AffiliateAuth={getState:()=>({session:{user:{id:uid}},affiliate:{id:uid}})};window.AdminRepository={getState:()=>({assignment:{}})};
    window.SutiSupabase={getClient:()=>({rpc:async(name,p)=>{try{return {data:await window.__command(p.p_action,p.p_data)}}catch(e){return {error:e}}},functions:{invoke:async(name,{body})=>{try{const value=await window.__edge(body);if(value.base64){const bytes=Uint8Array.from(atob(value.base64),c=>c.charCodeAt(0));return {data:new Blob([bytes],{type:'application/pdf'})};}return {data:value};}catch(e){return {error:e}}}}})};
   },{uid});
-  for(const f of ['document-generation-design.js','document-generation-repository.js','screens-admin-document-generation.jsx'])await page.addScriptTag({content:f.endsWith('.jsx')?sandbox.Babel.transform(read('app/'+f),{presets:['react']}).code:read('app/'+f)});
+  for(const f of ['document-generation-design.js','document-generation-repository.js','document-layout-repository.js','document-layout-designer.jsx','screens-admin-document-generation.jsx'])await page.addScriptTag({content:f.endsWith('.jsx')?sandbox.Babel.transform(read('app/'+f),{presets:['react']}).code:read('app/'+f)});
   await page.evaluate(()=>ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.AdminDocumentGeneration,{app:{},onBack:()=>{}})));
   await page.getByRole('button',{name:'Usar como activa',exact:true}).first().click();await page.getByRole('button',{name:'Activar plantilla',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByRole('button',{name:/Firmantes\s*\d/}).click();await page.getByLabel('Buscar firmante').fill('no coincide');assert.equal(await page.locator('.df-fi').count(),0);await page.getByLabel('Buscar firmante').fill('');assert.equal(await page.locator('.df-fi').count(),1);
   await page.getByRole('button',{name:'Editar',exact:true}).click();await page.getByLabel('Nombre completo',{exact:true}).fill('Firmante editado sintético');await page.getByRole('dialog').getByRole('button',{name:'Nómina',exact:true}).click();await page.getByRole('dialog').getByLabel('Autorización de préstamo',{exact:true}).last().check();await page.getByRole('button',{name:'Guardar nueva versión'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByRole('button',{name:'Editar',exact:true}).click();await page.locator('select').filter({has:page.locator('option[value="false"]')}).selectOption('false');await page.getByRole('button',{name:'Guardar nueva versi\u00f3n'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});assert.equal(await page.locator('.df-fi.is-off').count(),1);await page.getByRole('button',{name:'Editar',exact:true}).click();await page.locator('select').filter({has:page.locator('option[value="false"]')}).selectOption('true');await page.getByRole('button',{name:'Guardar nueva versi\u00f3n'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByRole('button',{name:/Firmas por programa/}).click();await page.getByLabel('Buscar programa').fill('Autos');await page.locator('.df-pr').first().getByRole('button',{name:'Configurar',exact:true}).click();assert.equal(await page.locator('.df-ord__row').count(),1);await page.getByRole('button',{name:'Vista previa',exact:true}).click();await page.getByRole('dialog',{name:'Vista previa del documento'}).waitFor();await page.keyboard.press('Escape');
+  await page.locator('.df-pr').first().getByRole('button',{name:'Configurar',exact:true}).click();await page.getByRole('button',{name:'Diseñar documento',exact:true}).click();await page.getByRole('dialog',{name:'Diseñar documento',exact:true}).waitFor();
+  await page.waitForFunction(()=>!document.querySelector('.dl-host button.df-btn--pri')?.disabled,{},{timeout:30000});
+  assert.equal(await page.locator('.dl-field[data-field^="bank."]').count(),0);assert(await page.locator('canvas[aria-label="Membrete PDF real"]').evaluate(c=>c.width>0));
+  await page.getByRole('button',{name:'+ Página',exact:true}).click();const sheet=page.locator('.dl-page');
+  await page.locator('.dl-field[data-field="operation.financial.price_source"]').dragTo(sheet,{targetPosition:{x:80,y:100}});
+  const dragged=page.locator('.dl-element').last();await dragged.click();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'32');assert.equal(await page.getByLabel('Y · mm',{exact:true}).inputValue(),'40');
+  const box=await dragged.boundingBox();await page.mouse.move(box.x+15,box.y+8);await page.mouse.down();await page.mouse.move(box.x+40,box.y+33,{steps:5});await page.mouse.up();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'42');assert.equal(await page.getByLabel('Y · mm',{exact:true}).inputValue(),'50');
+  const handle=await page.getByRole('button',{name:'Redimensionar elemento'}).boundingBox();await page.mouse.move(handle.x+6,handle.y+6);await page.mouse.down();await page.mouse.move(handle.x+31,handle.y+16,{steps:4});await page.mouse.up();assert.equal(await page.getByLabel('Ancho · mm',{exact:true}).inputValue(),'75');
+  await page.getByRole('button',{name:'+ Texto',exact:true}).click();await page.getByLabel('Texto',{exact:true}).fill('Información general');await page.getByLabel('Y · mm',{exact:true}).fill('85');
+  await page.getByRole('button',{name:'Vista previa PDF',exact:true}).click();await page.locator('iframe[title="Vista previa PDF del diseño"]').waitFor();await page.getByRole('button',{name:'Volver al diseño'}).click();
+  await page.waitForFunction(()=>!document.querySelector('.dl-host button.df-btn--pri')?.disabled);await page.getByRole('button',{name:'Activar diseño',exact:true}).click();await page.getByText(/Versión \d+ activa para documentos nuevos/).waitFor();
+  await page.getByLabel('Página del diseño').selectOption(String(design.pages+1));await page.locator('.dl-element').filter({hasText:'PRICE_CASH'}).click();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'42');assert.equal(await page.getByLabel('Ancho · mm',{exact:true}).inputValue(),'75');
+  for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){await page.setViewportSize(viewport);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'designer contains its canvas scrolling');assert(await page.getByRole('button',{name:'Activar diseño',exact:true}).isVisible());}
+  if(process.env.SUTIAPP_LAYOUT_INSPECT_PNG)await page.screenshot({path:process.env.SUTIAPP_LAYOUT_INSPECT_PNG});
+  await page.getByRole('dialog',{name:'Diseñar documento',exact:true}).getByRole('button',{name:'Cerrar',exact:true}).last().click();await page.keyboard.press('Escape');
   await page.getByRole('button',{name:/Plantillas\s*\d/}).click();await page.getByRole('button',{name:'Subir nueva plantilla',exact:true}).click();await page.locator('input[type=file]').setInputFiles({name:'synthetic.pdf',mimeType:'application/pdf',buffer:Buffer.from(templateBytes)});await page.getByLabel('Nombre de la plantilla').fill('Segundo membrete sintético');await page.getByRole('button',{name:'Guardar sin activar'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByLabel('Margen superior').fill('45');assert.equal(await page.locator('.df-mrow__v').first().innerText(),'45 mm');await page.getByRole('button',{name:'Guardar como nueva versión'}).click();await page.getByRole('button',{name:'Guardar sin activar'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){await page.setViewportSize(viewport);assert(await page.locator('.df-kpis').isVisible());assert.equal(await page.locator('.df-kpi').count(),3);assert.equal(await page.locator('.df-panel--pl .df-side').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal page overflow');}
@@ -160,7 +226,7 @@ async function main(){
   assert.equal((await scalar('select document_snapshot v from document_private.records where id=$1',[recordId])).template.id,template.id);await assert.rejects(q('delete from document_private.templates'),/IMMUTABLE/);
   await actor(uid,permissions);await assert.rejects(call('PREVIEW_CONFIG',{program:'auto',document_type:'PROGRAM_FINANCING_APPROVAL'}),/SIGNER_NOT_EFFECTIVE/);await db.exec('reset role');
  });
- await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records');await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
+ await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records'),layoutCount=await scalar('select count(*)::integer v from document_private.layouts');await db.exec(read('supabase/recovery/20260928000300_document_layout_designer.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.layouts'),layoutCount);await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
  console.log(JSON.stringify({status:'PASS',checks:checks.length,permanentQaPdfs:0,residualData:0,productionTouched:false}));
  }finally{if(activeBrowser)await activeBrowser.close();await db.close();}
 }

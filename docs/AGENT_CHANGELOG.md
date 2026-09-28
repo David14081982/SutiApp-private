@@ -3739,3 +3739,10 @@ letterhead and signers, exact supplied Admin visual structure, Historial/Admin
 access. No changes to financial calculations or Google. One shared contractual
 test; synthetic PDFs in memory, no production QA records or signature fixtures.
 Scope, commands, security and release: audits/H-SUTIAPP-DOCUMENT-GENERATION-CORE-001.md.
+## H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-001 (2026-09-28)
+
+Focal extension of Documentos y Firmas: contract-bound visual millimetre layout,
+immutable versions, pinned letterhead, synthetic server preview and the existing
+renderer/storage/snapshots. No financial calculations or legacy writes. Existing
+core QA extended in memory/browser; zero new QA files or persistent PDFs.
+Verification/release: audits/H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-001.md.

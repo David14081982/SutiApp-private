@@ -671,3 +671,16 @@ remain business authorities. `document-generation` renders sealed inputs without
 financial recalculation into private `generated-documents` Storage. Historial and
 Admin share the same record. No local cache, legacy writer, automatic backfill or
 optional document contract. See audits/H-SUTIAPP-DOCUMENT-GENERATION-CORE-001.md.
+## Document layout presentation (2026-09-28)
+
+`document_private.layouts` and `layout_activations` are the sole authority for
+versioned program + document-type distribution. They store physical millimetres,
+contract bindings and controlled presentation only. Template versions are pinned;
+activation history is append-only and selected at the business event time. The
+existing document snapshot seals the entire layout alongside template/signers and
+contract version. Financial and identity values continue to come from that snapshot.
+The existing automatic renderer remains the explicit SYSTEM layout for all seven
+contracts until a custom version is activated. No browser persistence or Google writer.
+`layout.mjs` declares the presentation bindings of the existing document contracts;
+the Edge validates them, user-bound RPC checks config.read/config.write, and service-only
+persistence records real actor/effective context. Existing private Storage is reused.

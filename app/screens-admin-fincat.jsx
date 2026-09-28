@@ -130,6 +130,7 @@
   }
 
   function ItemSheet({ gid, item, editable, onClose }) {
+    if(item.id==='farma')return React.createElement('div',{style:{position:'absolute',inset:0,zIndex:76,background:'var(--bg)',overflowY:'auto'}},React.createElement(window.FarmaAdmin,{app:{admin:window.AdminRepository.getState()},onBack:onClose,header:({title,onBack})=>React.createElement('div',{style:{padding:16}},React.createElement(window.Btn,{onClick:onBack,variant:'outline'},'Cerrar'),React.createElement('h2',null,title)),catalogEntry:true}));
     if(window.ProgramGeneralInfo.keys.includes(item.id))return React.createElement('div',{style:{position:'absolute',inset:0,zIndex:76,background:'var(--bg)',overflowY:'auto',padding:18}},React.createElement(window.Btn,{onClick:onClose,variant:'outline'},'Cerrar'),React.createElement(window.ProgramGeneralInfo.Editor,{programKey:item.id,canWrite:window.AdminRepository.has('program_catalog.write')||window.AdminRepository.has('workflow.write')}));
     const [d, setD] = useState(() => ({ audience: { mode: 'all', cargos: [], sindicatos: [], niveles: [] }, ...item }));
     const set = (k, v) => setD((p) => ({ ...p, [k]: v }));

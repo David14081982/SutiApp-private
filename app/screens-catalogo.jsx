@@ -6,7 +6,7 @@
   const { useState, useRef } = React;
   const I = window.Icon;
 
-  const precioTxt = (it) => (it.precio != null && !it.cotiza ? window.money(it.precio) : it.catalogSource === 'program' && !it.cotiza ? 'Consulta disponibilidad' : 'Se cotiza');
+  const precioTxt = (it) => it.program_key==='farma'?'Donación':(it.precio != null && !it.cotiza ? window.money(it.precio) : it.catalogSource === 'program' && !it.cotiza ? 'Consulta disponibilidad' : 'Se cotiza');
 
   function ProgramCatalogImage({asset,...props}) {
     const ref=useRef(null),demand=window.PrivateResourceDemand,visible=demand.useVisible(ref);
@@ -100,6 +100,7 @@
     const [requestSheet,setRequestSheet]=useState(false);
 
     const programItem = item.catalogSource === 'program';
+    const farma=programItem&&item.program_key==='farma';
     const commercialMode=programItem?(item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED')):null;
     const sold=programItem&&item.sold===true;
     const cotiza = programItem ? commercialMode==='PAYROLL_QUOTE' : (item.precio == null || item.cotiza);
@@ -114,8 +115,8 @@
     if (ctx.label) info.push([item.scope === 'convenio' ? 'Convenio' : 'Categoría', ctx.label]);
     if (item.badge) info.push(['Etiqueta', item.badge]);
     if(item.discount_percent!=null)info.push(['Descuento',Number(item.discount_percent)+'%']);
-    if(item.stock!=null)info.push(['Stock',String(item.stock)]);
-    if(item.quantity_raw)info.push(['Existencia histórica',item.quantity_raw]);
+    if(!farma&&item.stock!=null)info.push(['Stock',String(item.stock)]);
+    if(!farma&&item.quantity_raw)info.push(['Existencia histórica',item.quantity_raw]);
     if(item.presentation_raw)info.push(['Presentación',item.presentation_raw]);
     if(item.category_raw)info.push(['Categoría',item.category_raw]);
 
@@ -139,7 +140,7 @@
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } },
               React.createElement(I, { name: it.icon, size: 15, stroke: 2.2, style: { color: 'var(--guinda)' } }), ctx.label || ''),
             React.createElement('h1', { style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.15, margin: '8px 0 0', textWrap: 'pretty' } }, item.nombre),
-            cotiza
+            farma?React.createElement(window.Badge,{tone:'green'},'Donación'):cotiza
               ? React.createElement('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 12, background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 12, padding: '9px 14px' } },
                 React.createElement(I, { name: 'doc', size: 16, stroke: 2.2, style: { color: 'var(--guinda)' } }),
                 React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-2)' } }, 'Precio a cotizar'))
@@ -148,8 +149,9 @@
                 : React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
             sold&&React.createElement('div',{'data-program-product-sold-badge':'detail',style:{display:'inline-flex',alignItems:'center',gap:6,marginTop:12,background:'#FCE8E6',color:'#B3261E',fontSize: 'var(--text-12, 12px)',fontWeight:950,letterSpacing:'.08em',padding:'7px 11px',borderRadius:999}},React.createElement(I,{name:'close',size:14,stroke:2.4}),'VENDIDO'),
             quote && React.createElement(QuoteBanner, { quote }),
-            programItem&&!sold&&commercialMode==='DIRECT_CONTACT'&&React.createElement(DirectContactPanel,{item,app}),
-            programItem&&!sold&&commercialMode!=='DIRECT_CONTACT'&&item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true)}),
+            !farma&&programItem&&!sold&&commercialMode==='DIRECT_CONTACT'&&React.createElement(DirectContactPanel,{item,app}),
+            farma&&React.createElement(window.FarmaRequest,{item,app}),
+            !farma&&programItem&&!sold&&commercialMode!=='DIRECT_CONTACT'&&item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow,{item,app,onRequestQuote:()=>setRequestSheet(true)}),
             item.desc && React.createElement('div', { style: { marginTop: 20 } },
               React.createElement(window.SectionHead, { title: 'Descripción' }),
               React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6 } },
@@ -163,7 +165,7 @@
             React.createElement('div', { style: { display: 'flex', gap: 11, alignItems: 'flex-start', background: 'var(--guinda-50)', borderRadius: 15, padding: '13px 14px', marginTop: 20 } },
               React.createElement(I, { name: 'shield', size: 18, stroke: 2, style: { color: 'var(--guinda)', flexShrink: 0, marginTop: 1 } }),
               React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } },
-                programItem
+                farma?'Donación sujeta a disponibilidad y confirmación de Suti Farma. Pronto nos pondremos en contacto para tu atención personalizada.':programItem
                   ? sold
                     ? 'Este artículo permanece visible como referencia, pero ya no está disponible para nuevas solicitudes, cotizaciones o contacto de adquisición.'
                     : commercialMode==='DIRECT_CONTACT'
@@ -178,7 +180,7 @@
       zoom != null && React.createElement(Lightbox, { item, imgs: item.imagenes || [], start: zoom, onClose: () => setZoom(null) }),
       window.FinanceSimSheet && React.createElement(window.FinanceSimSheet, { open: sheet, onClose: () => setSheet(false), it, hue, app, isListing: true, producto: item, quote: quoteReady ? quote : null }),
       window.QuoteRequestSheet && React.createElement(window.QuoteRequestSheet, { open: qSheet, onClose: () => setQSheet(false), it, app, producto: item }),
-      !sold&&commercialMode!=='DIRECT_CONTACT'&&React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));
+      !farma&&!sold&&commercialMode!=='DIRECT_CONTACT'&&React.createElement(BenefitRequestSheet,{open:requestSheet,onClose:()=>setRequestSheet(false),item,app}));
   }
 
   function BenefitRequestSheet({ open, onClose, item, app }) {

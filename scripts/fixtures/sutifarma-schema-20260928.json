@@ -1,0 +1,555 @@
+{
+  "definitions": [
+    {
+      "schema": "public",
+      "name": "get_current_notification_phone",
+      "args": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_current_notification_phone()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_affiliate public.affiliates%rowtype; v_suggested text;\nbegin\n  if auth.uid() is null then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  select * into v_affiliate from public.affiliates where id=public.get_effective_affiliate_id();\n  if v_affiliate.id is null then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  v_suggested:=regexp_replace(coalesce(v_affiliate.phone_raw,''),'\\D','','g');\n  if v_suggested !~ '^[0-9]{10}$' then v_suggested:=null; end if;\n  return jsonb_build_object(\n    'notification_phone',coalesce(v_affiliate.notification_phone,v_suggested),\n    'source',case when v_affiliate.notification_phone is not null then 'CURRENT_NOTIFICATION_PHONE'\n      when v_suggested is not null then 'HISTORICAL_SUGGESTION' else 'NONE' end\n  );\nend $function$\n"
+    },
+    {
+      "schema": "public",
+      "name": "save_current_notification_phone",
+      "args": "p_phone text",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_current_notification_phone(p_phone text)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_affiliate uuid; v_phone text;\nbegin\n  v_affiliate:=public.get_effective_affiliate_id();\n  v_phone:=regexp_replace(coalesce(p_phone,''),'\\D','','g');\n  if auth.uid() is null or v_affiliate is null then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  if v_phone !~ '^[0-9]{10}$' then raise exception 'INVALID_NOTIFICATION_PHONE' using errcode='22023'; end if;\n  update public.affiliates set notification_phone=v_phone where id=v_affiliate;\n  if not found then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,metadata)\n  values(auth.uid(),v_affiliate,'affiliate_notification_phone','NOTIFICATION_PHONE_CONFIRMED',jsonb_build_object('phone_last4',right(v_phone,4)));\n  return v_phone;\nend $function$\n"
+    },
+    {
+      "schema": "public",
+      "name": "save_program_catalog_item",
+      "args": "p_item_id uuid, p_payload jsonb, p_asset_links jsonb",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_program_catalog_item(p_item_id uuid, p_payload jsonb, p_asset_links jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid:=(select auth.uid());\n  v_before public.program_catalog_items%rowtype;\n  v_after public.program_catalog_items%rowtype;\n  v_id uuid;\n  v_program text:=btrim(coalesce(p_payload->>'program_key',''));\n  v_name text:=btrim(coalesce(p_payload->>'name',''));\n  v_description text:=nullif(btrim(coalesce(p_payload->>'description','')),'');\n  v_category text:=nullif(btrim(coalesce(p_payload->>'category_raw','')),'');\n  v_price numeric;\n  v_quote boolean;\n  v_mode text;\n  v_sold boolean;\n  v_enabled boolean;\n  v_sort integer;\n  v_existing_asset_count integer:=0;\n  v_requested_asset_count integer:=0;\n  v_allowed_asset_count integer:=8;\n  v_link jsonb;\n  v_link_id uuid;\n  v_public_asset_id uuid;\n  v_kept uuid[]:='{}'::uuid[];\n  v_position integer:=0;\nbegin\n  if v_actor is null or not public.has_admin_permission('program_catalog.write') then\n    raise exception 'PROGRAM_CATALOG_WRITE_REQUIRED' using errcode='42501';\n  end if;\n  if p_payload is null or jsonb_typeof(p_payload)<>'object'\n     or p_asset_links is null or jsonb_typeof(p_asset_links)<>'array' then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if exists(\n    select 1 from jsonb_object_keys(p_payload) k\n    where k not in('program_key','name','description','category_raw','price_cash','requires_quote','commercial_mode','sold','enabled','sort_order')\n  ) then\n    raise exception 'PROGRAM_CATALOG_FIELD_NOT_EDITABLE' using errcode='22023';\n  end if;\n\n  if p_item_id is not null then\n    select * into v_before from public.program_catalog_items where id=p_item_id for update;\n    if v_before.id is null then raise exception 'PROGRAM_CATALOG_ITEM_NOT_FOUND' using errcode='P0001'; end if;\n    select count(*)::integer into v_existing_asset_count\n    from public.program_catalog_item_assets where item_id=p_item_id and enabled;\n    v_allowed_asset_count:=greatest(8,v_existing_asset_count);\n  end if;\n\n  begin\n    v_price:=nullif(p_payload->>'price_cash','')::numeric;\n    v_quote:=(p_payload->>'requires_quote')::boolean;\n    v_enabled:=(p_payload->>'enabled')::boolean;\n    v_sort:=(p_payload->>'sort_order')::integer;\n    v_mode:=nullif(btrim(coalesce(p_payload->>'commercial_mode','')),'');\n    v_sold:=case when p_payload ? 'sold' then (p_payload->>'sold')::boolean\n      when v_before.id is not null then v_before.sold else false end;\n    v_requested_asset_count:=jsonb_array_length(p_asset_links);\n  exception when others then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end;\n  if v_quote is null or v_enabled is null or v_sold is null or v_sort is null then\n    raise exception 'PROGRAM_CATALOG_PAYLOAD_INVALID' using errcode='22023';\n  end if;\n  if v_mode is null then\n    v_mode:=case when v_before.id is not null then v_before.commercial_mode when v_quote then 'PAYROLL_QUOTE' else 'PAYROLL_FIXED' end;\n  end if;\n\n  if length(v_name) not between 2 and 180\n     and (v_before.id is null or v_name is distinct from v_before.name) then\n    raise exception 'PROGRAM_CATALOG_NAME_INVALID' using errcode='22023';\n  end if;\n  if length(coalesce(v_description,''))>12000\n     and (v_before.id is null or v_description is distinct from v_before.description) then\n    raise exception 'PROGRAM_CATALOG_DESCRIPTION_TOO_LONG' using errcode='22023';\n  end if;\n  if length(coalesce(v_category,''))>240\n     and (v_before.id is null or v_category is distinct from v_before.category_raw) then\n    raise exception 'PROGRAM_CATALOG_CATEGORY_TOO_LONG' using errcode='22023';\n  end if;\n  if v_sort not between 1 and 10000\n     and (v_before.id is null or v_sort is distinct from v_before.sort_order) then\n    raise exception 'PROGRAM_CATALOG_ORDER_INVALID' using errcode='22023';\n  end if;\n  if v_price<0 and (v_before.id is null or v_price is distinct from v_before.price_cash) then\n    raise exception 'PROGRAM_CATALOG_PRICE_INVALID' using errcode='22023';\n  end if;\n  if v_mode not in('PAYROLL_FIXED','PAYROLL_QUOTE','DIRECT_CONTACT') then\n    raise exception 'PROGRAM_CATALOG_MODE_INVALID' using errcode='22023';\n  end if;\n  if (v_mode='PAYROLL_QUOTE')<>v_quote then\n    raise exception 'PROGRAM_CATALOG_MODE_QUOTE_MISMATCH' using errcode='22023';\n  end if;\n  if v_mode='PAYROLL_FIXED' and (v_price is null or v_price<=0)\n     and (\n       v_before.id is null\n       or v_before.commercial_mode<>'PAYROLL_FIXED'\n       or (v_before.price_cash is not null and v_before.price_cash>0)\n       or v_price is distinct from v_before.price_cash\n     ) then\n    raise exception 'PROGRAM_CATALOG_PRICE_REQUIRED' using errcode='22023';\n  end if;\n  if not exists(select 1 from public.program_catalog_items where program_key=v_program)\n     and (v_before.id is null or v_program is distinct from v_before.program_key) then\n    raise exception 'PROGRAM_CATALOG_PROGRAM_INVALID' using errcode='22023';\n  end if;\n  if v_requested_asset_count>v_allowed_asset_count then\n    raise exception 'PROGRAM_CATALOG_IMAGE_LIMIT_EXCEEDED' using errcode='22023',\n      detail='allowed='||v_allowed_asset_count::text||',requested='||v_requested_asset_count::text;\n  end if;\n\n  if p_item_id is null then\n    insert into public.program_catalog_items(\n      program_key,name,description,category_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,sold_by,\n      request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,source_payload\n    ) values(\n      v_program,v_name,v_description,v_category,v_price,v_quote,v_mode,v_sold,\n      case when v_sold then now() else null end,case when v_sold then v_actor else null end,\n      'supabase',false,v_enabled,v_sort,'ADMIN_PROGRAM_CATALOG',null,null,null,'{}'::jsonb\n    ) returning * into v_after;\n    v_id:=v_after.id;\n  else\n    update public.program_catalog_items set\n      program_key=v_program,name=v_name,description=v_description,category_raw=v_category,\n      price_cash=v_price,requires_quote=v_quote,commercial_mode=v_mode,sold=v_sold,\n      sold_at=case when v_sold then coalesce(v_before.sold_at,now()) else null end,\n      sold_by=case when v_sold then coalesce(v_before.sold_by,v_actor) else null end,\n      enabled=v_enabled,sort_order=v_sort\n    where id=p_item_id returning * into v_after;\n    v_id:=v_after.id;\n  end if;\n\n  update public.program_catalog_item_assets set sort_order=sort_order+10000 where item_id=v_id and enabled;\n  for v_link in select value from jsonb_array_elements(p_asset_links) loop\n    v_position:=v_position+1;\n    begin\n      v_link_id:=nullif(v_link->>'link_id','')::uuid;\n      v_public_asset_id:=nullif(v_link->>'public_asset_id','')::uuid;\n    exception when others then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end;\n    if (v_link_id is null)=(v_public_asset_id is null) then\n      raise exception 'PROGRAM_CATALOG_ASSET_LINK_INVALID' using errcode='22023';\n    end if;\n    if v_link_id is not null then\n      if not exists(select 1 from public.program_catalog_item_assets where id=v_link_id and item_id=v_id) then\n        raise exception 'PROGRAM_CATALOG_ASSET_LINK_NOT_FOUND' using errcode='P0001';\n      end if;\n      update public.program_catalog_item_assets set\n        enabled=true,role=case when v_position=1 then 'cover' else 'gallery' end,sort_order=v_position\n      where id=v_link_id;\n    else\n      if not exists(\n        select 1 from public.app_assets\n        where id=v_public_asset_id and status='READY' and storage_bucket='app-assets'\n          and storage_path like 'program-products/%'\n      ) then\n        raise exception 'PROGRAM_CATALOG_PUBLIC_ASSET_INVALID' using errcode='22023';\n      end if;\n      select id into v_link_id from public.program_catalog_item_assets\n      where item_id=v_id and public_asset_id=v_public_asset_id order by enabled desc limit 1;\n      if v_link_id is null then\n        v_link_id:=extensions.gen_random_uuid();\n        insert into public.program_catalog_item_assets(\n          id,item_id,public_asset_id,private_asset_id,role,sort_order,source_column,source_column_letter,enabled\n        ) values(\n          v_link_id,v_id,v_public_asset_id,null,case when v_position=1 then 'cover' else 'gallery' end,\n          v_position,'ADMIN_UPLOAD','ADMIN_'||replace(v_link_id::text,'-',''),true\n        );\n      else\n        update public.program_catalog_item_assets set\n          enabled=true,role=case when v_position=1 then 'cover' else 'gallery' end,sort_order=v_position\n        where id=v_link_id;\n      end if;\n    end if;\n    if v_link_id=any(v_kept) then\n      raise exception 'PROGRAM_CATALOG_ASSET_DUPLICATE' using errcode='22023';\n    end if;\n    v_kept:=array_append(v_kept,v_link_id);\n  end loop;\n  update public.program_catalog_item_assets set enabled=false\n  where item_id=v_id and enabled and not(id=any(v_kept));\n\n  insert into public.admin_audit_log(actor_auth_user_id,resource,action,target_id,result,details)\n  values(v_actor,'program_catalog_items',case when p_item_id is null then 'INSERT' else 'UPDATE' end,v_id::text,'SUCCESS',\n    jsonb_build_object(\n      'program_key',v_after.program_key,\n      'before',case when v_before.id is null then null else jsonb_build_object(\n        'name',v_before.name,'price_cash',v_before.price_cash,'requires_quote',v_before.requires_quote,\n        'commercial_mode',v_before.commercial_mode,'sold',v_before.sold,'sold_at',v_before.sold_at,\n        'sold_by',v_before.sold_by,'enabled',v_before.enabled,'sort_order',v_before.sort_order\n      ) end,\n      'after',jsonb_build_object(\n        'name',v_after.name,'price_cash',v_after.price_cash,'requires_quote',v_after.requires_quote,\n        'commercial_mode',v_after.commercial_mode,'sold',v_after.sold,'sold_at',v_after.sold_at,\n        'sold_by',v_after.sold_by,'enabled',v_after.enabled,'sort_order',v_after.sort_order\n      ),\n      'asset_count',v_position,'asset_limit',v_allowed_asset_count,'delta_aware',true\n    ));\n  return (to_jsonb(v_after)-'source_payload'-'sold_by');\nend $function$\n"
+    },
+    {
+      "schema": "admin_support_private",
+      "name": "module_visible",
+      "args": "p_subject uuid, p_module text",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('document_generation','document_generation.config.read',array[]::text[]),('login_history','authorization.read',array[]::text[]),('votaciones','votaciones.read',array['votaciones','votaciones_results']::text[]),('votaciones_nominal','votaciones.export_identified_votes',array['votaciones_identified']::text[]),('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('popups','popups.read',array['popups']::text[]),('sindicato','union_content.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('program_products','program_catalog.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('inversion','workflow.read',array[]::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('aprobaciones','popups.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[]),('branding','assets.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n"
+    },
+    {
+      "schema": "public",
+      "name": "admin_asset_module_boundary",
+      "args": "p_bucket text, p_path text",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_asset_module_boundary(p_bucket text, p_path text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n select not public.is_module_admin() or case\r\n  when p_bucket='private-assets' then (split_part(p_path,'/',1)='affiliate-documents' and split_part(p_path,'/',2)=public.get_effective_affiliate_id()::text)\r\n   or public.admin_module_boundary(array['affiliates','documents_admin','requests','finanzas'],'update')\r\n  when p_bucket='company-assets' and split_part(p_path,'/',1)='marketplace' and split_part(p_path,'/',2)~'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\r\n   then public.is_marketplace_company_member(split_part(p_path,'/',2)::uuid)\r\n  when p_bucket='app-assets' and split_part(p_path,'/',1)='branding' then public.has_admin_module('branding','update')\r\n  when split_part(p_path,'/',2)<>auth.uid()::text then false\r\n  when p_bucket='company-assets' and split_part(p_path,'/',1)='convenios' and split_part(p_path,'/',3)~'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\r\n   then public.can_manage_company_ficha(split_part(p_path,'/',3)::uuid,'assets')\r\n  when p_bucket='app-assets' and split_part(p_path,'/',1)='membership' then public.has_admin_module('membresias','update')\r\n  when p_bucket='app-assets' and split_part(p_path,'/',1)='program-products' then public.has_admin_module('program_products','update')\r\n  when p_bucket='app-assets' and split_part(p_path,'/',1)='program-general' then public.admin_module_boundary(array['program_products','fincat'],'update')\r\n  when split_part(p_path,'/',1)='sindicato' then public.has_admin_module('sindicato','update')\r\n  when split_part(p_path,'/',1)='directory' then public.has_admin_module('sindicato','update')\r\n  else public.has_section_action(split_part(p_path,'/',1),'assets') end;\r\n$function$\n"
+    }
+  ],
+  "columns": [
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "section_key",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "display_name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "data_boundary",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "allowed_actions",
+      "data_type": "ARRAY",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "enforcement_status",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'DESIGN_ONLY'::text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_key",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_read_permissions",
+      "data_type": "ARRAY",
+      "is_nullable": "NO",
+      "column_default": "'{}'::text[]"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_write_permissions",
+      "data_type": "ARRAY",
+      "is_nullable": "NO",
+      "column_default": "'{}'::text[]"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_sections",
+      "data_type": "ARRAY",
+      "is_nullable": "NO",
+      "column_default": "'{}'::text[]"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_total_only",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "admin_section_definitions",
+      "column_name": "module_order",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "item_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "public_asset_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "private_asset_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "role",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'gallery'::text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "sort_order",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "1"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "source_column",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "source_column_letter",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_item_assets",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "program_key",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "category_raw",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "quantity_raw",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "presentation_raw",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "contact_url_raw",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "price_cash",
+      "data_type": "numeric",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "requires_quote",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "request_mode",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'legacy_pending'::text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "legacy_boundary",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "enabled",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "sort_order",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "record_origin",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'HISTORICAL_IMPORT'::text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "source_sheet",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "source_row_ordinal",
+      "data_type": "integer",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "source_snapshot_hash",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "source_payload",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "commercial_mode",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'PAYROLL_QUOTE'::text"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "sold",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "sold_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "sold_by",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "program_catalog_items",
+      "column_name": "financing_config",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "auth_user_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "affiliate_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "endpoint",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "p256dh",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "auth_key",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "expiration_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "request_push_subscriptions",
+      "column_name": "revoked_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    }
+  ],
+  "constraints": [
+    {
+      "conname": "program_catalog_items_commercial_mode_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK (((commercial_mode = ANY (ARRAY['PAYROLL_FIXED'::text, 'PAYROLL_QUOTE'::text, 'DIRECT_CONTACT'::text])) AND ((commercial_mode = 'PAYROLL_QUOTE'::text) = requires_quote)))"
+    },
+    {
+      "conname": "program_catalog_items_pkey",
+      "relname": "program_catalog_items",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "program_catalog_items_program_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK ((program_key = ANY (ARRAY['auto'::text, 'renta'::text, 'casa'::text, 'terrenos'::text, 'solar'::text, 'aires'::text, 'puertas'::text, 'computo'::text, 'farma'::text, 'tours'::text, 'donativos'::text, 'prestamo'::text, 'cirugias'::text])))"
+    },
+    {
+      "conname": "program_catalog_items_request_mode_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK ((request_mode = ANY (ARRAY['supabase'::text, 'legacy_pending'::text, 'disabled'::text])))"
+    },
+    {
+      "conname": "program_catalog_items_snapshot_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK ((source_snapshot_hash ~ '^[A-F0-9]{64}$'::text))"
+    },
+    {
+      "conname": "program_catalog_items_sold_audit_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK ((((NOT sold) AND (sold_at IS NULL) AND (sold_by IS NULL)) OR (sold AND (sold_at IS NOT NULL) AND (sold_by IS NOT NULL))))"
+    },
+    {
+      "conname": "program_catalog_items_sold_by_fkey",
+      "relname": "program_catalog_items",
+      "definition": "FOREIGN KEY (sold_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "conname": "program_catalog_items_source_row_check",
+      "relname": "program_catalog_items",
+      "definition": "CHECK ((source_row_ordinal > 1))"
+    },
+    {
+      "conname": "program_catalog_items_source_unique",
+      "relname": "program_catalog_items",
+      "definition": "UNIQUE (source_snapshot_hash, source_sheet, source_row_ordinal)"
+    }
+  ]
+}

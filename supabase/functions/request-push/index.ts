@@ -3,6 +3,7 @@ import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2.112.3';
 
 export function payloadFor(job: any) {
+  if(job.kind==='farma')return {v:1,event_id:job.event_id,request_id:job.request_id,subscription_id:job.subscription_id,kind:'farma',title:'Nueva solicitud de Suti Farma',body:'Abre SutiApp para atender la solicitud.'};
   const title = job.authorized ? '✅ Solicitud autorizada' : job.status === 'rejected' ? 'Solicitud rechazada' : job.status === 'cancelled' ? 'Solicitud cancelada' : 'Tu solicitud avanzó';
   const body = job.authorized ? `Tu solicitud ${job.folio} fue autorizada.` : job.status === 'rejected' ? 'Revisa el detalle en SutiApp.' : job.status === 'cancelled' ? `Tu solicitud ${job.folio} fue cancelada.` : job.stage ? `Ahora se encuentra en ${job.stage}.` : 'Revisa el avance en SutiApp.';
   return { v: 1, event_id: job.event_id, request_id: job.request_id, subscription_id: job.subscription_id, title, body };
@@ -21,8 +22,8 @@ async function sameSecret(left: string, right: string) {
   for (let i=0;i<x.length;i++) diff |= x[i]^y[i];
   return right.length >= 32 && diff === 0;
 }
-export async function dispatch(client: any, vapid: any, transport = fetch) {
-  const { data: jobs, error } = await client.rpc('claim_request_push_batch');
+export async function dispatch(client: any, vapid: any, transport = fetch, farma = false) {
+  const { data: jobs, error } = await client.rpc(farma?'claim_farma_push_batch':'claim_request_push_batch');
   if (error) throw new Error('CLAIM_FAILED');
   const counts = { claimed: (jobs || []).length, accepted: 0, deferred: 0 };
   // Six bounded concurrent requests finish comfortably inside the 90s database lease.
@@ -40,7 +41,7 @@ export async function dispatch(client: any, vapid: any, transport = fetch) {
           await response.body?.cancel();
         }
       } catch { status = 0; }
-      const result = await client.rpc('finish_request_push',{p_id:job.id,p_lease_token:job.lease_token,p_http_status:status});
+      const result = await client.rpc(farma?'finish_farma_push':'finish_request_push',{p_id:job.id,p_lease_token:job.lease_token,p_http_status:status});
       if (result.error) throw new Error('RECEIPT_FAILED');
       if (result.data && status >= 200 && status < 300) counts.accepted++; else counts.deferred++;
     }));
@@ -54,6 +55,7 @@ Deno.serve(async (request: Request) => {
   try {
     const client = createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
     const result = await dispatch(client,{subject:'https://sutiapp.com',publicKey:Deno.env.get('REQUEST_PUSH_VAPID_PUBLIC_KEY'),privateKey:Deno.env.get('REQUEST_PUSH_VAPID_PRIVATE_KEY')});
-    return Response.json(result,{headers:{'Cache-Control':'no-store'}});
+    const farma=await dispatch(client,{subject:'https://sutiapp.com',publicKey:Deno.env.get('REQUEST_PUSH_VAPID_PUBLIC_KEY'),privateKey:Deno.env.get('REQUEST_PUSH_VAPID_PRIVATE_KEY')},fetch,true);
+    return Response.json({...result,farma},{headers:{'Cache-Control':'no-store'}});
   } catch { return Response.json({error:'PUSH_DISPATCH_FAILED'},{status:503,headers:{'Cache-Control':'no-store'}}); }
 });

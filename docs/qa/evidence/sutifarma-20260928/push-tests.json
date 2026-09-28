@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "encryptedFarmaTransport": true,
+  "privateContentExcluded": true,
+  "existingRequestPayloadsPreserved": true,
+  "workerDuplicateSuppression": true,
+  "workerIdentityBinding": true,
+  "deepLinkToRequest": true,
+  "externalNotificationsSent": 0
+}

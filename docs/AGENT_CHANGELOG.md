@@ -3764,3 +3764,7 @@ name and select fit errors, and display actual PDF pages without a browser plugi
 Focal designer v2 and additive event-time identity projection; old layouts/snapshots preserved.
 Existing isolated core suite extended; no new QA scripts, fixtures or permanent PDFs.
 Evidence/release: audits/H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002.md.
+
+## H-SUTIFARMA-DONATIONS-001 — 2026-09-28
+
+Added Farma donation requests, private stock initialized from 50 current medicines (377 packages), scoped manager panel, affiliate contact confirmation, existing success/confetti, self history and push transport. Public stock hidden. Manager granted only farma; no test requests persisted. Product/gallery UI preserved; existing 130 released bundle modules retained byte-for-byte. Migration and recovery tested in isolated PostgreSQL; mobile/desktop browser and push transport/worker tests passed. Shared helpers/SW trigger global legitimate-image regression. Evidence: docs/qa/evidence/sutifarma-20260928; detailed status and limitations: docs/audits/H-SUTIFARMA-DONATIONS-001.md.

@@ -38,12 +38,14 @@
     if(links.error)throw links.error;
     const allLinks=links.data||[],assetUrls=settings.deferImages?new Map():await resolveAssetUrls(allLinks),byItem=new Map();
     for(const link of allLinks){if(!byItem.has(link.item_id))byItem.set(link.item_id,[]);byItem.get(link.item_id).push(link);}
+    const stock=admin?new Map((await window.FarmaRepository.inventory()).map(row=>[row.item_id,row])):null;
     const projected=[];
     for(const row of rows.data||[]){
+      if(admin&&row.program_key==='farma'&&!stock.has(row.id))continue;
       const itemLinks=(byItem.get(row.id)||[]),urls=itemLinks.map((link)=>assetUrls.get(link)).filter(Boolean);
       const imageAssets=itemLinks.map((link)=>{const asset={link_id:link.id,public_asset_id:link.public_asset_id||null,private_asset_id:link.private_asset_id||null,role:link.role,sort_order:link.sort_order,source_column:link.source_column,source_column_letter:link.source_column_letter,url:assetUrls.get(link)||null};Object.defineProperty(asset,'resource',{value:link,enumerable:false});return Object.freeze(asset);});
-      const detail=[row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
-      projected.push(Object.freeze(Object.assign({},row,{nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
+      const detail=[row.program_key!=='farma'&&row.quantity_raw&&('Existencia: '+row.quantity_raw),row.presentation_raw&&('Presentación: '+row.presentation_raw)].filter(Boolean).join(' · ');
+      projected.push(Object.freeze(Object.assign({},row,{farmaInventory:stock&&stock.get(row.id)||null,nombre:row.name,ficha:detail||row.category_raw||'',desc:row.description||'',precio:row.price_cash==null?null:Number(row.price_cash),cotiza:Boolean(row.requires_quote),commercialMode:row.commercial_mode,sold:Boolean(row.sold),soldAt:row.sold_at||null,activo:row.enabled!==false,orden:row.sort_order,scope:'fin',scopeId:row.program_key,imagenes:urls,imagenAssets:imageAssets,catalogSource:'program',requestMode:row.request_mode,legacyBoundary:Boolean(row.legacy_boundary)})));
     }
     return Object.freeze(projected);
   }
@@ -111,6 +113,7 @@
     const mode=item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED');
     const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
+    if(payload.program_key==='farma')return window.FarmaRepository.save({item_id:item.id||null,product:payload,assets:links,quantity:item.farmaQuantity,unit:item.farmaUnit,presentation:item.presentation_raw||'',version:item.farmaInventory&&item.farmaInventory.version});
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
     const out=Object.prototype.hasOwnProperty.call(item,'financingDraft')
       ?await db().rpc('save_program_catalog_item_financing',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links,p_config:item.financingDraft,p_expected_config:item.financing_config||null,p_bootstrap:bootstrap})

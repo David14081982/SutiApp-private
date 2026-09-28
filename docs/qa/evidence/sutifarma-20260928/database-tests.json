@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "environment": "isolated PostgreSQL / synthetic fixtures",
+  "checks": [
+    "migration and exact shared-definition drift guards",
+    "opening stock from package counts without confirmation",
+    "private tables force RLS and deny browser access",
+    "submit derives identity and stores affiliate phone atomically",
+    "retries/double submits do not duplicate request or push",
+    "invalid contact rolls back and financial path is blocked",
+    "delivery requires valid transition, stock, version and single-use action",
+    "product save, presentation, quantities, archive and stale writer protection",
+    "new medication and catalog boundary",
+    "push worker retries, token leases and revoked manager suppression",
+    "event history is immutable",
+    "recovery disables access and preserves all history and stock"
+  ]
+}

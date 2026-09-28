@@ -696,3 +696,11 @@ registered email is the historical business address, never inferred from Auth. E
 remain untouched. New layouts use suti-layout-2 (template margins are guides); suti-layout-1 remains
 supported for sealed history. Editing an old layout creates a new version without the removed
 scope-of-authorization field. The letterhead version is explicitly selected and pinned.
+
+## Suti Farma donations — H-SUTIFARMA-DONATIONS-001, 2026-09-28
+
+Owner explicitly classifies current Farma catalog as donations and current quantities as opening stock without confirmation. Product/name/presentation/images remain in program_catalog_items/program_catalog_item_assets. DONATION is restricted to Farma. Imported quantity_raw and origin fields remain provenance; farma_private.inventory is the only current stock authority, initialized once from leading package counts (singular caja/frasco = one package). Public cards/details omit quantities.
+
+farma_private.requests owns only the new nonfinancial medicine-donation domain; it is not a copy of program_requests and cannot enter its Google/financial writers. farma_private.events is immutable operational history. CONTACT and SUBMIT derive get_effective_affiliate_id and use affiliates + the existing notification-phone writer. Private contact/product snapshots preserve the submitted record; they do not become mutable masters. MINE is self-only; QUEUE/INVENTORY/actions require backend Farma/catalog administration and reject assisted context. Atomic versioned delivery decrements stock exactly once; requests do not reserve or deduct stock. Archive hides the catalog item while preserving quantities/history.
+
+Existing request_push_subscriptions remains consent/device authority. farma_private.push_deliveries and push_attempts contain transport only, addressed to the active Farma module assignment; dispatch rechecks grants and identity. Payload has no medicine/contact details. Mariana receives only the farma module. Mi Historial renders the same donation authority. No production mocks, browser storage or Google fallback.

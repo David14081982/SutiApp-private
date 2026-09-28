@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "writes": 0,
+  "checks": [
+    {
+      "queue_count": 0,
+      "stock_count": 50,
+      "farma_module": true,
+      "finance_permission": false,
+      "other_catalog_module": false,
+      "authorization_permission": false
+    }
+  ]
+}

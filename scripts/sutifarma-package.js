@@ -1,0 +1,28 @@
+'use strict';
+const fs=require('fs'),path=require('path');const root=path.resolve(__dirname,'..'),release=path.join(root,'.tmp/sutifarma/release');
+const files=['SutiApp.html','sw.js','app/bundle.js','app/farma-repository.js','app/screens-farma.jsx','app/program-catalog-repository.js','app/program-catalog-admin-store.jsx','app/screens-admin-program-products.jsx','app/screens-catalogo.jsx','app/request-submission-success.jsx','app/screens-admin-fincat.jsx','app/screens-admin.jsx','app/screens-historial.jsx','app/request-push.js','scripts/build-bundle.js','supabase/functions/request-push/index.ts','supabase/migrations/20260928000600_sutifarma_donations.sql','supabase/recovery/20260928000600_sutifarma_donations.sql','scripts/sutifarma-inspect.js','scripts/sutifarma-release.js','scripts/sutifarma-build.js','scripts/sutifarma-local.js','scripts/sutifarma-package.js','scripts/test-sutifarma.js','scripts/test-sutifarma-browser.js','scripts/test-sutifarma-push.js','scripts/fixtures/sutifarma-schema-20260928.json','docs/audits/H-SUTIFARMA-DONATIONS-001.md','docs/qa/evidence/screen-permissions-20260924/production-metadata.json'];
+const sections={
+ 'docs/SOURCE_OF_TRUTH.md':`## Suti Farma donations — H-SUTIFARMA-DONATIONS-001, 2026-09-28
+
+Owner explicitly classifies current Farma catalog as donations and current quantities as opening stock without confirmation. Product/name/presentation/images remain in program_catalog_items/program_catalog_item_assets. DONATION is restricted to Farma. Imported quantity_raw and origin fields remain provenance; farma_private.inventory is the only current stock authority, initialized once from leading package counts (singular caja/frasco = one package). Public cards/details omit quantities.
+
+farma_private.requests owns only the new nonfinancial medicine-donation domain; it is not a copy of program_requests and cannot enter its Google/financial writers. farma_private.events is immutable operational history. CONTACT and SUBMIT derive get_effective_affiliate_id and use affiliates + the existing notification-phone writer. Private contact/product snapshots preserve the submitted record; they do not become mutable masters. MINE is self-only; QUEUE/INVENTORY/actions require backend Farma/catalog administration and reject assisted context. Atomic versioned delivery decrements stock exactly once; requests do not reserve or deduct stock. Archive hides the catalog item while preserving quantities/history.
+
+Existing request_push_subscriptions remains consent/device authority. farma_private.push_deliveries and push_attempts contain transport only, addressed to the active Farma module assignment; dispatch rechecks grants and identity. Payload has no medicine/contact details. Mariana receives only the farma module. Mi Historial renders the same donation authority. No production mocks, browser storage or Google fallback.
+`,
+ 'docs/DECISIONS.md':`## Owner decision — Suti Farma donations, 2026-09-28
+
+H-SUTIFARMA-DONATIONS-001: implement the approved donation flow surgically, preserving existing UI. Current Farma quantities are accepted immediately as opening stock; no manager confirmation process. Users see medicine/presentation and Solicitar [name], never stock quantities. Manager marianafrancoq32@gmail.com may add/edit/archive products, set stock, attend requests and receive push after device consent. Affiliate contact is reused; successful submission uses the existing confetti confirmation. Delivery quantity is determined during attention and decremented on delivery. Logical removal preserves past requests and imported provenance.
+
+This supersedes Farma's former financial/contact modality for new donation requests only. Dedicated private donation authority avoids triggering financial request/Google automation; existing financial/general requests and all legacy contracts remain untouched. Migration 20260928000600 and existing-role writer applied; no global administrator assignment. Exact definition backups and non-destructive operational recovery are included.
+`,
+ 'docs/AGENT_CHANGELOG.md':`## H-SUTIFARMA-DONATIONS-001 — 2026-09-28
+
+Added Farma donation requests, private stock initialized from 50 current medicines (377 packages), scoped manager panel, affiliate contact confirmation, existing success/confetti, self history and push transport. Public stock hidden. Manager granted only farma; no test requests persisted. Product/gallery UI preserved; existing 130 released bundle modules retained byte-for-byte. Migration and recovery tested in isolated PostgreSQL; mobile/desktop browser and push transport/worker tests passed. Shared helpers/SW trigger global legitimate-image regression. Evidence: docs/qa/evidence/sutifarma-20260928; detailed status and limitations: docs/audits/H-SUTIFARMA-DONATIONS-001.md.
+`
+};
+function append(target,file,section){const p=path.join(target,file),text=fs.readFileSync(p,'utf8');if(!text.includes(section.split('\n')[0]))fs.writeFileSync(p,text.trimEnd()+'\n\n'+section);}
+for(const [file,section] of Object.entries(sections)){append(root,file,section);append(release,file,section);}
+for(const file of files){const p=path.join(release,file);fs.mkdirSync(path.dirname(p),{recursive:true});fs.copyFileSync(path.join(root,file),p);}
+const evidence='docs/qa/evidence/sutifarma-20260928';fs.mkdirSync(path.join(release,evidence),{recursive:true});for(const name of fs.readdirSync(path.join(root,evidence))){const p=path.join(root,evidence,name);if(fs.statSync(p).isFile()&&fs.statSync(p).size)fs.copyFileSync(p,path.join(release,evidence,name));}
+console.log(JSON.stringify({status:'PASS',files:files.length,documentation:Object.keys(sections),isolatedFrom:'unpublished local document changes'}));

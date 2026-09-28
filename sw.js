@@ -1,5 +1,5 @@
 /* sw.js — SutiApp service worker (offline app-shell, cache-first con actualización) */
-const CACHE = 'sutiapp-v232';
+const CACHE = 'sutiapp-v233';
 const SHELL_URL = './SutiApp.html';
 const CORE = [
   './',
@@ -7,7 +7,7 @@ const CORE = [
   './app/vendor/react-18.3.1/react.production.min.js',
   './app/vendor/react-dom-18.3.1/react-dom.production.min.js',
   './app/vendor/supabase-js-2.112.3/supabase.min.js',
-  './app/bundle.js?v=298',
+  './app/bundle.js?v=299',
   './app/text-size.css?v=244',
   './app/supabase-client.js',
   './app/affiliate-repository.js?v=5',
@@ -71,7 +71,7 @@ self.addEventListener('push',event=>{
       try{await self.registration.showNotification(payload.title.slice(0,100),{
       body:payload.body.slice(0,240),icon:new URL('./icon-192.png',self.registration.scope).href,
       badge:new URL('./icon-notification-badge.png',self.registration.scope).href,tag:'request-event-'+payload.event_id,renotify:false,
-      data:{request_id:payload.request_id,subscription_id:payload.subscription_id},
+      data:{request_id:payload.request_id,subscription_id:payload.subscription_id,kind:payload.kind==='farma'?'farma':undefined},
       });shown=true;break;}catch(e){if(attempt===1)throw e;await new Promise(resolve=>setTimeout(resolve,250));}
     }}finally{await finishPush(payload,token,shown);}
   })());
@@ -84,7 +84,8 @@ self.addEventListener('notificationclick',event=>{
     const db=await pushDatabase();
     const binding=await new Promise((resolve,reject)=>{const tx=db.transaction('device'),r=tx.objectStore('device').get('binding');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});db.close();
     if(!binding||binding.subscription_id!==data.subscription_id)return;
-    const url=new URL('./SutiApp.html',self.registration.scope);url.hash='/historial?request='+data.request_id;
+    const url=new URL('./SutiApp.html',self.registration.scope);url.hash=data.kind==='farma'?'/admin/farma':'/historial?request='+data.request_id;
+    if(data.kind==='farma')url.searchParams.set('farma_request',data.request_id);
     const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     const existing=windows.find(client=>client.url.startsWith(self.registration.scope));
     if(existing){await existing.navigate(url.href);await existing.focus();}else await self.clients.openWindow(url.href);

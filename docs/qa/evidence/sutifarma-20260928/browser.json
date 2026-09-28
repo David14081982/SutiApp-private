@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "bundleSha256": "6a13594346f98e10ff1607f20dd2faa191efd9283f0e2526bd34feb129221a8a",
+  "cases": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "adminInventory": true,
+      "editorStock": true,
+      "noFinancialFields": true,
+      "publicStockHidden": true,
+      "submitCelebration": true,
+      "history": true,
+      "managerTransitions": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "adminInventory": true,
+      "editorStock": true,
+      "noFinancialFields": true,
+      "publicStockHidden": true,
+      "submitCelebration": true,
+      "history": true,
+      "managerTransitions": true
+    }
+  ],
+  "browserErrors": [],
+  "productionBusinessWrites": 0,
+  "syntheticSubmitsIntercepted": 2
+}

@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "farma-repository.js",
+    "screens-farma.jsx",
+    "program-catalog-repository.js",
+    "program-catalog-admin-store.jsx",
+    "screens-admin-program-products.jsx",
+    "screens-catalogo.jsx",
+    "request-submission-success.jsx",
+    "screens-admin-fincat.jsx",
+    "screens-admin.jsx",
+    "screens-historial.jsx",
+    "request-push.js"
+  ],
+  "preservedChunks": 130,
+  "bundleSha256": "6a13594346f98e10ff1607f20dd2faa191efd9283f0e2526bd34feb129221a8a",
+  "baselineSha256": "a2613d1efdf626d6b59af2f24080309c978124c58ecee5a3ae80c0ebb0a8074c"
+}

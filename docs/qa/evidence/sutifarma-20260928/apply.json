@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "before": {
+    "latest": "20260928000500",
+    "requests": 187,
+    "requests_hash": "081dffd2a5dd62b7fc51ee408bd3ffcc",
+    "farma_products": 50,
+    "affiliates_hash": "cc1cfcae5f5878328bab8447175d8ab6",
+    "other_catalog_hash": "d99d13d05fa8b5cf21ffe929e5fd01a1",
+    "catalog_assets_hash": "17563a7f6bb0b402b1bfcebc43473b37"
+  },
+  "after": {
+    "latest": "20260928000600",
+    "requests": 187,
+    "requests_hash": "081dffd2a5dd62b7fc51ee408bd3ffcc",
+    "farma_products": 50,
+    "affiliates_hash": "cc1cfcae5f5878328bab8447175d8ab6",
+    "other_catalog_hash": "d99d13d05fa8b5cf21ffe929e5fd01a1",
+    "catalog_assets_hash": "17563a7f6bb0b402b1bfcebc43473b37"
+  },
+  "security": {
+    "cron": 1,
+    "public_rpc": false,
+    "rls_tables": 7,
+    "new_requests": 0,
+    "opening_units": 377,
+    "browser_worker": false,
+    "inventory_count": 50,
+    "manager_modules": [
+      "farma"
+    ],
+    "push_subscribed": 0
+  },
+  "migrationSha256": "ab2d9a66feef0f7c77e3d4d5ddeb89def95a4064f683855e48111476e84ad351",
+  "syntheticProductionWrites": 0
+}

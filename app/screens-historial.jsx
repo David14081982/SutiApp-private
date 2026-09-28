@@ -39,6 +39,7 @@
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
       React.createElement(window.RequestAuthorizationNotice, { app, requests: mine }),
+      React.createElement(window.FarmaHistory,{app}),
       // active tracker hero
       activa && React.createElement('div', { style: { padding: '4px 16px 0' } },
         React.createElement('div', { onClick: () => app.push('tracking', { s: activa }), className: 'su-press su-history-hero', style: { cursor: 'pointer', background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))', borderRadius: 22, padding: 18, color: '#fff', boxShadow: 'var(--neo-md)', position: 'relative', overflow: 'hidden' } },

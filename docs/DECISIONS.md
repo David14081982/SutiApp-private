@@ -1276,3 +1276,9 @@ Automatic final-event generation, immutable snapshots, independent failed-docume
 retry and private access. Preserve supplied Admin HTML/CSS. DOCX deferred; nine
 optional contracts, extraordinary withdrawal and settlement document excluded.
 Owner explicitly authorized commit, push, deployment and sutiapp.com verification.
+
+## Owner decision — Suti Farma donations, 2026-09-28
+
+H-SUTIFARMA-DONATIONS-001: implement the approved donation flow surgically, preserving existing UI. Current Farma quantities are accepted immediately as opening stock; no manager confirmation process. Users see medicine/presentation and Solicitar [name], never stock quantities. Manager marianafrancoq32@gmail.com may add/edit/archive products, set stock, attend requests and receive push after device consent. Affiliate contact is reused; successful submission uses the existing confetti confirmation. Delivery quantity is determined during attention and decremented on delivery. Logical removal preserves past requests and imported provenance.
+
+This supersedes Farma's former financial/contact modality for new donation requests only. Dedicated private donation authority avoids triggering financial request/Google automation; existing financial/general requests and all legacy contracts remain untouched. Migration 20260928000600 and existing-role writer applied; no global administrator assignment. Exact definition backups and non-destructive operational recovery are included.

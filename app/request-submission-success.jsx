@@ -55,7 +55,8 @@
     const history=()=>{if(window.operationsStore&&window.operationsStore.invalidate)window.operationsStore.invalidate();if(app&&app.setTab)app.setTab('historial');};
     const home=()=>app&&app.setTab&&app.setTab('home');
     let lead;
-    if(kind==='loan')lead=React.createElement(React.Fragment,null,'Tu préstamo',amountLabel?React.createElement(React.Fragment,null,' por ',React.createElement('strong',null,amountLabel)):null,' ya está en revisión. Te avisaremos al avanzar.');
+    if(kind==='farma')lead=React.createElement(React.Fragment,null,'Recibimos tu solicitud de ',React.createElement('strong',null,subject),'. Pronto nos pondremos en contacto contigo para brindarte atención personalizada.');
+    else if(kind==='loan')lead=React.createElement(React.Fragment,null,'Tu préstamo',amountLabel?React.createElement(React.Fragment,null,' por ',React.createElement('strong',null,amountLabel)):null,' ya está en revisión. Te avisaremos al avanzar.');
     else if(kind==='quote')lead=React.createElement(React.Fragment,null,'Tu solicitud de cotización',subject?React.createElement(React.Fragment,null,' para ',React.createElement('strong',null,subject)):null,' ya está en revisión. Te avisaremos cuando el presupuesto esté listo.');
     else if(kind==='membership')lead=React.createElement(React.Fragment,null,'Tu solicitud',subject?React.createElement(React.Fragment,null,' para ',React.createElement('strong',null,subject)):null,' ya está en revisión. Te avisaremos al avanzar.');
     else lead=React.createElement(React.Fragment,null,'Tu solicitud',subject?React.createElement(React.Fragment,null,' de ',React.createElement('strong',null,subject)):null,' ya está en revisión. Te avisaremos al avanzar.');
@@ -68,7 +69,7 @@
           React.createElement('div',{className:'request-success-icon',style:{animation:celebrate?'su-pop .5s cubic-bezier(.22,1,.36,1)':'none'}},React.createElement(I,{name:'checkCircle',size:50,stroke:2})),
           React.createElement('h2',{id:'request-success-title'},'¡Solicitud enviada!'),
           React.createElement('p',{className:'request-success-lead'},lead),
-          React.createElement('div',{className:'request-success-folio'},'Folio '+(folio||dash)),
+          React.createElement('div',{className:'request-success-folio',style:kind==='farma'?{maxWidth:'100%',overflowWrap:'anywhere',boxSizing:'border-box'}:undefined},'Folio '+(folio||dash)),
           React.createElement('p',{className:'request-success-destination'},destination||'Tu solicitud fue enviada al área responsable para su revisión.')),
         React.createElement('section',{className:'request-success-next','aria-labelledby':'request-success-next-title'},
           React.createElement('h3',{id:'request-success-next-title',className:'request-success-next-title'},React.createElement(I,{name:'clock',size:18,stroke:2.2}),'¿Qué sigue?'),

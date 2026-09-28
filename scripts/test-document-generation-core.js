@@ -43,9 +43,11 @@ async function main(){
  create table savings_contribution_plans(enrollment_id uuid,source_request_id uuid,process_snapshot text,amount numeric,effective_from date,effective_to date);
  grant usage on schema public,auth,storage to anon,authenticated,service_role;
  `);
+ await db.exec(`alter table affiliates add column rfc_raw text,add column curp_raw text,add column phone_raw text,add column historical_email_raw text,add column address_raw text,add column city_raw text,add column employment_position_raw text,add column employment_area_raw text,add column employment_level_raw text,add column occupation_raw text,add column subdirectorate_raw text,add column employment_entry_date_raw text,add column institute_entry_date_raw text,add column union_position_raw text,add column union_enrollment_date_raw text;create table segmentation_catalog_entries(catalog_type text,code text,label text,enabled boolean);update affiliates set rfc_raw='RFC-SYNTHETIC',curp_raw='CURP-SYNTHETIC',address_raw='Domicilio sintético';insert into segmentation_catalog_entries values('union','TEST','Sindicato sintético',true);`);
  await test('migration compiles in PostgreSQL without live data',()=>db.exec(read('supabase/migrations/20260928000100_document_generation_core.sql')));
  await db.exec(read('supabase/migrations/20260928000200_document_signer_assignment_order.sql'));
  await db.exec(read('supabase/migrations/20260928000300_document_layout_designer.sql'));
+ await db.exec(read('supabase/migrations/20260928000400_document_layout_refinement.sql'));
  await test('all private tables force RLS; no direct browser grants',async()=>{
   assert.equal(await scalar("select count(*)::integer v from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='document_private' and c.relkind='r' and c.relrowsecurity and c.relforcerowsecurity"),10);
   await actor(uid,permissions);await assert.rejects(q('select * from document_private.records'),/permission denied/);
@@ -81,6 +83,20 @@ async function main(){
   invalid.elements=structuredClone(design.elements);invalid.elements[0].x=-1;assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('fuera')));
   invalid.elements[0]={...invalid.elements[1],id:'duplicate-position'};assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('superpuestos')));
   assert.equal(layouts.formatField(25000,'MONEY'),'$25,000.00');assert.match(layouts.formatField('2026-09-28','DATE'),/28.*septiembre.*2026/);assert.equal(layouts.formatField(2,'PERCENT'),'2.00 %');assert.equal(layouts.formatField('12345678','MASKED_BANK_ACCOUNT'),'**** 5678');assert.equal(layouts.formatField(24,'INTEGER'),'24');assert.equal(layouts.formatField(null,'TEXT','na'),'No aplica');assert.equal(layouts.formatField(null,'TEXT','hide'),null);assert.equal(layouts.formatField(null,'TEXT','empty'),'');
+ });
+ await test('refinement: physical page freedom, named fit errors, draft preview and exact template margins',async()=>{
+  assert(!layouts.layoutFields(config.document_type).some(f=>f.key==='document.note'));
+  assert(layouts.layoutFields(config.document_type).some(f=>f.key==='identity.affiliate.rfc'));
+  assert(!layouts.layoutFields(config.document_type).some(f=>/auth_user|archive|bank.account/.test(f.key)));
+  const outside=structuredClone(design);Object.assign(outside.elements[0],{x:1,y:1});assert.deepEqual(layouts.validateLayout(outside,config.document_type,renderConfig.template),[]);
+  const legacy=structuredClone(design);legacy.version='suti-layout-1';legacy.pages++;legacy.elements.push({...legacy.elements[0],id:'old_note',page:legacy.pages,field:'document.note',height:23});assert.deepEqual(layouts.validateLayout(legacy,config.document_type,renderConfig.template),[]);
+  await renderer.createRenderer(PDFLib)({...synthetic,layout:{definition:legacy}},async()=>templateBytes,{preview:true});legacy.elements[0].x=1;assert(layouts.validateLayout(legacy,config.document_type,renderConfig.template).some(x=>x.includes('márgenes')));
+  const short=structuredClone(design);Object.assign(short.elements[0],{width:8,height:4,size:12});
+  const deps={contextCall:async(a,d)=>{await actor(uid,permissions);return layoutCall(a,d);},command:call,persist:layoutPersist,render:renderer.createRenderer(PDFLib),loadAsset:async()=>templateBytes};
+  const failed=await handleLayout({action:'LAYOUT_PREVIEW',...config,definition:short},deps);assert.equal(failed.status,409);assert.equal(failed.data.details[0].element_id,short.elements[0].id);assert.equal(failed.data.details[0].element_label,'Beneficiario');assert(failed.data.details[0].required_height>4);
+  const draft={...outside,elements:outside.elements.slice(0,1)};const preview=await handleLayout({action:'LAYOUT_PREVIEW',...config,definition:draft},deps);assert(preview.pdf.length>1000);assert.equal((await handleLayout({action:'LAYOUT_SAVE',...config,definition:draft},deps)).status,409);
+  const small=await call('SAVE_TEMPLATE',{previous_id:template.id,asset_id:asset.id,name:'Márgenes de 10 mm',margins:{top:10,left:10,right:10,bottom:10},valid_from:'2020-01-01'});
+  const manifest=await handleLayout({action:'LAYOUT_MANIFEST',...config,template_id:small.id},deps);assert.deepEqual(manifest.data.template.margins,{top:10,left:10,right:10,bottom:10});assert(manifest.data.templates.some(t=>t.id===small.id));
  });
  await test('layout versions, permission gates, activation isolation and historical resolution',async()=>{
   await actor(other,[]);await assert.rejects(layoutCall('READ',config),/PERMISSION_DENIED/);await assert.rejects(layoutPersist('SAVE',{}),/permission denied/);
@@ -133,6 +149,9 @@ async function main(){
   await q("update affiliates set full_name='Nombre posterior' where id=$1",[uid]);assert.equal((await scalar('select document_snapshot v from document_private.records')).identity.full_name,'Persona sintética');
  });
  const recordId=await scalar('select id v from document_private.records');
+ await test('optional affiliate fields are frozen once and never fetched at render time',async()=>{
+  await db.exec('reset role');const frozen=await scalar('select source_snapshot v from document_private.records where id=$1',[recordId]);assert.equal(frozen.identity.affiliate.rfc,'RFC-SYNTHETIC');assert.equal(frozen.identity.union_label,'Sindicato sintético');assert.equal(frozen.affiliate_fields_version,'1');assert(!JSON.stringify(frozen.identity).includes('auth_user_id'));await q("update affiliates set rfc_raw='RFC-CHANGED' where id=$1",[uid]);assert.equal((await scalar('select source_snapshot v from document_private.records where id=$1',[recordId])).identity.affiliate.rfc,'RFC-SYNTHETIC');
+ });
  await test('cross-user access and separated capabilities enforced in backend',async()=>{
   await actor(other,[]);assert.deepEqual(await call('LIST'),[]);await assert.rejects(call('ACCESS',{id:recordId}),/ACCESS_DENIED/);await assert.rejects(call('RETRY',{id:recordId,admin:true}),/PERMISSION_DENIED/);
   await actor(uid,[]);assert.equal((await call('LIST')).length,1);await assert.rejects(call('SAVE_CONFIGURATION',config),/PERMISSION_DENIED/);await assert.rejects(call('ASSET_ACCESS',{id:sig.id}),/DENIED/);
@@ -178,7 +197,7 @@ async function main(){
    await actor(uid,permissions);
    if(body.action.startsWith('LAYOUT_')){
     const result=await handleLayout(body,{contextCall:async(a,d)=>{await actor(uid,permissions);return layoutCall(a,d);},command:async(a,d)=>{await actor(uid,permissions);return call(a,d);},persist:async(a,d)=>{await db.exec('reset role');return layoutPersist(a,d);},render:renderer.createRenderer(PDFLib),loadAsset:async()=>templateBytes});
-    if(result.status!==200)throw Error(result.data.details?.join(' ')||result.data.error);
+    if(result.status!==200)return {failure:result.data};
     return result.pdf?{base64:Buffer.from(result.pdf).toString('base64')}:result.data;
    }
    if(body.action==='ASSET_ACCESS'||body.action==='ACCESS')return {url:'https://document-test.invalid/template.pdf'};
@@ -191,7 +210,7 @@ async function main(){
   await page.addScriptTag({content:read('app/vendor/react-18.3.1/react.production.min.js')});await page.addScriptTag({content:read('app/vendor/react-dom-18.3.1/react-dom.production.min.js')});
   await page.evaluate(({uid})=>{
    window.AffiliateAuth={getState:()=>({session:{user:{id:uid}},affiliate:{id:uid}})};window.AdminRepository={getState:()=>({assignment:{}})};
-   window.SutiSupabase={getClient:()=>({rpc:async(name,p)=>{try{return {data:await window.__command(p.p_action,p.p_data)}}catch(e){return {error:e}}},functions:{invoke:async(name,{body})=>{try{const value=await window.__edge(body);if(value.base64){const bytes=Uint8Array.from(atob(value.base64),c=>c.charCodeAt(0));return {data:new Blob([bytes],{type:'application/pdf'})};}return {data:value};}catch(e){return {error:e}}}}})};
+   window.SutiSupabase={getClient:()=>({rpc:async(name,p)=>{try{return {data:await window.__command(p.p_action,p.p_data)}}catch(e){return {error:e}}},functions:{invoke:async(name,{body})=>{try{const value=await window.__edge(body);if(value.failure)return {error:{context:{json:async()=>value.failure}}};if(value.base64){const bytes=Uint8Array.from(atob(value.base64),c=>c.charCodeAt(0));return {data:new Blob([bytes],{type:'application/pdf'})};}return {data:value};}catch(e){return {error:e}}}}})};
   },{uid});
   for(const f of ['document-generation-design.js','document-generation-repository.js','document-layout-repository.js','document-layout-designer.jsx','screens-admin-document-generation.jsx'])await page.addScriptTag({content:f.endsWith('.jsx')?sandbox.Babel.transform(read('app/'+f),{presets:['react']}).code:read('app/'+f)});
   await page.evaluate(()=>ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(window.AdminDocumentGeneration,{app:{},onBack:()=>{}})));
@@ -203,15 +222,18 @@ async function main(){
   await page.locator('.df-pr').first().getByRole('button',{name:'Configurar',exact:true}).click();await page.getByRole('button',{name:'Diseñar documento',exact:true}).click();await page.getByRole('dialog',{name:'Diseñar documento',exact:true}).waitFor();
   await page.waitForFunction(()=>!document.querySelector('.dl-host button.df-btn--pri')?.disabled,{},{timeout:30000});
   assert.equal(await page.locator('.dl-field[data-field^="bank."]').count(),0);assert(await page.locator('canvas[aria-label="Membrete PDF real"]').evaluate(c=>c.width>0));
+  assert.equal(await page.locator('.dl-field[data-field="document.note"]').count(),0);assert.equal(await page.locator('.dl-field[data-field="identity.affiliate.rfc"]').count(),1);assert(await page.locator('.dl-element-label').count()>0);
+  const first=page.locator('.dl-element').first();await first.click();await page.getByLabel('X · mm',{exact:true}).fill('1');await page.getByLabel('Y · mm',{exact:true}).fill('1');await page.getByLabel('Ancho · mm',{exact:true}).fill('8');await page.getByLabel('Alto · mm',{exact:true}).fill('4');await page.getByRole('button',{name:'Vista previa PDF',exact:true}).click();await page.getByRole('button',{name:/Beneficiario.*Seleccionar campo/}).waitFor();assert.equal(await page.locator('.dl-element.is-invalid').count(),1);await page.getByRole('button',{name:'Ajustar alto',exact:true}).click();assert(Number(await page.getByLabel('Alto · mm',{exact:true}).inputValue())>4);await page.getByLabel('Ancho · mm',{exact:true}).fill(String(design.elements[0].width));await page.getByLabel('Alto · mm',{exact:true}).fill('11');
   await page.getByRole('button',{name:'+ Página',exact:true}).click();const sheet=page.locator('.dl-page');
   await page.locator('.dl-field[data-field="operation.financial.price_source"]').dragTo(sheet,{targetPosition:{x:80,y:100}});
   const dragged=page.locator('.dl-element').last();await dragged.click();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'32');assert.equal(await page.getByLabel('Y · mm',{exact:true}).inputValue(),'40');
   const box=await dragged.boundingBox();await page.mouse.move(box.x+15,box.y+8);await page.mouse.down();await page.mouse.move(box.x+40,box.y+33,{steps:5});await page.mouse.up();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'42');assert.equal(await page.getByLabel('Y · mm',{exact:true}).inputValue(),'50');
   const handle=await page.getByRole('button',{name:'Redimensionar elemento'}).boundingBox();await page.mouse.move(handle.x+6,handle.y+6);await page.mouse.down();await page.mouse.move(handle.x+31,handle.y+16,{steps:4});await page.mouse.up();assert.equal(await page.getByLabel('Ancho · mm',{exact:true}).inputValue(),'75');
   await page.getByRole('button',{name:'+ Texto',exact:true}).click();await page.getByLabel('Texto',{exact:true}).fill('Información general');await page.getByLabel('Y · mm',{exact:true}).fill('85');
-  await page.getByRole('button',{name:'Vista previa PDF',exact:true}).click();await page.locator('iframe[title="Vista previa PDF del diseño"]').waitFor();await page.getByRole('button',{name:'Volver al diseño'}).click();
+  const preserved=await page.locator('.dl-element').last().getAttribute('style');const ten=await page.getByLabel('Membrete del diseño').locator('option').evaluateAll(options=>options.find(o=>o.textContent.includes('Márgenes de 10 mm')).value);await page.getByLabel('Membrete del diseño').selectOption(ten);await page.waitForFunction(()=>document.querySelector('.dl-safe')?.style.top==='25px');assert.equal(await page.locator('.dl-safe').evaluate(e=>e.style.bottom),'25px');assert.equal(await page.locator('.dl-element').last().getAttribute('style'),preserved);
+  await page.getByRole('button',{name:'Vista previa PDF',exact:true}).click();await page.locator('canvas[aria-label="Vista previa PDF del diseño"][data-rendered="true"]').waitFor();assert(await page.locator('.dl-pdf-preview canvas').evaluate(c=>c.width>0&&c.height>0));await page.getByRole('button',{name:'Página siguiente',exact:true}).click();await page.locator('.dl-pdf-preview canvas[data-rendered="true"]').waitFor();await page.getByRole('button',{name:'Volver al diseño'}).click();
   await page.waitForFunction(()=>!document.querySelector('.dl-host button.df-btn--pri')?.disabled);await page.getByRole('button',{name:'Activar diseño',exact:true}).click();await page.getByText(/Versión \d+ activa para documentos nuevos/).waitFor();
-  await page.getByLabel('Página del diseño').selectOption(String(design.pages+1));await page.locator('.dl-element').filter({hasText:'PRICE_CASH'}).click();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'42');assert.equal(await page.getByLabel('Ancho · mm',{exact:true}).inputValue(),'75');
+  await page.getByLabel('Página del diseño').selectOption(String(design.pages+1));await page.locator('.dl-element').filter({hasText:'Origen del precio'}).click();assert.equal(await page.getByLabel('X · mm',{exact:true}).inputValue(),'42');assert.equal(await page.getByLabel('Ancho · mm',{exact:true}).inputValue(),'75');
   for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){await page.setViewportSize(viewport);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'designer contains its canvas scrolling');assert(await page.getByRole('button',{name:'Activar diseño',exact:true}).isVisible());}
   if(process.env.SUTIAPP_LAYOUT_INSPECT_PNG)await page.screenshot({path:process.env.SUTIAPP_LAYOUT_INSPECT_PNG});
   await page.getByRole('dialog',{name:'Diseñar documento',exact:true}).getByRole('button',{name:'Cerrar',exact:true}).last().click();await page.keyboard.press('Escape');
@@ -226,7 +248,7 @@ async function main(){
   assert.equal((await scalar('select document_snapshot v from document_private.records where id=$1',[recordId])).template.id,template.id);await assert.rejects(q('delete from document_private.templates'),/IMMUTABLE/);
   await actor(uid,permissions);await assert.rejects(call('PREVIEW_CONFIG',{program:'auto',document_type:'PROGRAM_FINANCING_APPROVAL'}),/SIGNER_NOT_EFFECTIVE/);await db.exec('reset role');
  });
- await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records'),layoutCount=await scalar('select count(*)::integer v from document_private.layouts');await db.exec(read('supabase/recovery/20260928000300_document_layout_designer.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.layouts'),layoutCount);await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
+ await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records'),layoutCount=await scalar('select count(*)::integer v from document_private.layouts');await db.exec(read('supabase/recovery/20260928000400_document_layout_refinement.sql'));await db.exec(read('supabase/recovery/20260928000300_document_layout_designer.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.layouts'),layoutCount);await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
  console.log(JSON.stringify({status:'PASS',checks:checks.length,permanentQaPdfs:0,residualData:0,productionTouched:false}));
  }finally{if(activeBrowser)await activeBrowser.close();await db.close();}
 }

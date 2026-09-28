@@ -12,3 +12,5 @@ supabase/recovery/20260926000100_affiliate_access_repair_recovery.sql -text
 supabase/migrations/20260928000300_document_layout_designer.sql -text
 supabase/recovery/20260928000300_document_layout_designer.sql -text
 app/vendor/pdfjs-5.4.149/* -text
+supabase/migrations/20260928000400_document_layout_refinement.sql -text
+supabase/recovery/20260928000400_document_layout_refinement.sql -text

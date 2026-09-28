@@ -40,7 +40,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     useEffect,
     useRef
   } = React;
-  const CSS = `.dl-host .df-ov__p{width:min(1540px,98vw);height:95vh;max-height:95vh}.dl-host .df-ov{padding:10px}.dl-host .df-ov__b{display:block;padding:14px}.dl-host .df-ov__f{flex-wrap:wrap}.dl-editor{display:grid;grid-template-columns:210px minmax(320px,1fr) 230px;gap:16px;align-items:start}.dl-palette,.dl-props{display:grid;gap:10px;position:sticky;top:0}.dl-palette h4{margin:8px 0;color:var(--ink-2);font-size:12px}.dl-field{display:block;text-align:left;width:100%;padding:9px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);font-weight:700;cursor:grab;font-size:12px}.dl-stage{overflow:auto;padding:10px;background:var(--surface-2);border-radius:16px;max-height:66vh}.dl-page{position:relative;background:white;margin:auto;box-shadow:var(--shadow-md);touch-action:none;flex-shrink:0}.dl-page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.dl-safe{position:absolute;border:1px dashed #d11f3a66;pointer-events:none}.dl-center{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #91002233;pointer-events:none}.dl-center-y{position:absolute;top:50%;left:0;right:0;border-top:1px dashed #91002233;pointer-events:none}.dl-element{position:absolute;border:1px dashed #91002255;background:#ffffffaa;color:#14213d;cursor:move;white-space:pre-wrap;overflow:hidden;user-select:none;line-height:1.25;box-sizing:border-box}.dl-element.is-selected{outline:2px solid var(--guinda);background:#fbeef1cc}.dl-element:focus-visible{outline:3px solid var(--guinda)}.dl-element.is-block{background:#eef1f6e8;display:grid;place-items:center;text-align:center}.dl-resize{position:absolute;width:14px;height:14px;right:0;bottom:0;background:var(--guinda);cursor:nwse-resize;touch-action:none}.dl-props .df-in,.dl-props .df-sel{min-height:36px;font-size:12px;padding:4px 8px}.dl-props .df-field__l{font-size:10px;margin-bottom:3px}.dl-props textarea{min-height:70px!important}.dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dl-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.dl-errors{margin:8px 0;padding:12px 28px;background:var(--warn-bg);border-radius:12px;color:var(--warn-fg);font-size:13px}.dl-help{font-size:12px;color:var(--ink-2);line-height:1.5}.dl-preview{width:100%;height:65vh;border:0}.dl-loading{padding:24px;text-align:center}.dl-palette-items{display:grid;gap:5px;max-height:56vh;overflow:auto}.dl-props button{font-size:12px}.dl-status{font-size:12px;color:var(--pos)}@media(max-width:1050px){.dl-editor{grid-template-columns:170px minmax(260px,1fr)}.dl-props{grid-column:1/-1;position:static;grid-template-columns:repeat(3,minmax(0,1fr))}.dl-stage{max-height:55vh}}@media(max-width:600px){.dl-editor{display:block}.dl-palette{position:static;margin-bottom:12px}.dl-palette-items{max-height:180px;grid-template-columns:1fr 1fr}.dl-palette h4{grid-column:1/-1}.dl-props{display:grid;grid-template-columns:1fr 1fr;margin-top:12px}.dl-stage{max-width:100%;max-height:55vh}.dl-host .df-ov__h{padding:12px}.dl-host .df-ov__f{padding:10px}.dl-host .df-btn{min-height:36px;font-size:12px;padding:0 10px}}`;
+  const CSS = `.dl-host .df-ov__p{width:min(1540px,98vw);height:95vh;max-height:95vh}.dl-host .df-ov{padding:10px}.dl-host .df-ov__b{display:block;padding:14px}.dl-host .df-ov__f{flex-wrap:wrap}.dl-editor{display:grid;grid-template-columns:210px minmax(320px,1fr) 230px;gap:16px;align-items:start}.dl-palette,.dl-props{display:grid;gap:10px;position:sticky;top:0}.dl-palette h4{margin:8px 0;color:var(--ink-2);font-size:12px}.dl-field{display:block;text-align:left;width:100%;padding:9px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);font-weight:700;cursor:grab;font-size:12px}.dl-stage{overflow:auto;padding:10px;background:var(--surface-2);border-radius:16px;max-height:66vh}.dl-page{position:relative;background:white;margin:auto;box-shadow:var(--shadow-md);touch-action:none;flex-shrink:0}.dl-page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.dl-safe{position:absolute;border:1px dashed #d11f3a66;pointer-events:none}.dl-center{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #91002233;pointer-events:none}.dl-center-y{position:absolute;top:50%;left:0;right:0;border-top:1px dashed #91002233;pointer-events:none}.dl-element{position:absolute;border:1px dashed #91002255;background:#ffffffaa;color:#14213d;cursor:move;white-space:pre-wrap;overflow:hidden;user-select:none;line-height:1.25;box-sizing:border-box}.dl-element.is-selected{outline:2px solid var(--guinda);background:#fbeef1cc}.dl-element:focus-visible{outline:3px solid var(--guinda)}.dl-element.is-block{background:#eef1f6e8;display:grid;place-items:center;text-align:center}.dl-resize{position:absolute;width:14px;height:14px;right:0;bottom:0;background:var(--guinda);cursor:nwse-resize;touch-action:none}.dl-props .df-in,.dl-props .df-sel{min-height:36px;font-size:12px;padding:4px 8px}.dl-props .df-field__l{font-size:10px;margin-bottom:3px}.dl-props textarea{min-height:70px!important}.dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dl-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.dl-errors{margin:8px 0;padding:12px 28px;background:var(--warn-bg);border-radius:12px;color:var(--warn-fg);font-size:13px}.dl-help{font-size:12px;color:var(--ink-2);line-height:1.5}.dl-preview-scroll{overflow:auto;max-height:65vh;background:var(--surface-2);padding:12px}.dl-element.is-invalid{outline:2px solid #cf1539}.dl-element-label{display:block;font:700 11px/1.3 var(--font);padding:2px;color:#6a001b}.dl-layers{width:100%;min-height:38px}.dl-errors button{border:0;background:transparent;color:inherit;text-align:left;text-decoration:underline;cursor:pointer}.dl-loading{padding:24px;text-align:center}.dl-palette-items{display:grid;gap:5px;max-height:56vh;overflow:auto}.dl-props button{font-size:12px}.dl-status{font-size:12px;color:var(--pos)}@media(max-width:1050px){.dl-editor{grid-template-columns:170px minmax(260px,1fr)}.dl-props{grid-column:1/-1;position:static;grid-template-columns:repeat(3,minmax(0,1fr))}.dl-stage{max-height:55vh}}@media(max-width:600px){.dl-editor{display:block}.dl-palette{position:static;margin-bottom:12px}.dl-palette-items{max-height:180px;grid-template-columns:1fr 1fr}.dl-palette h4{grid-column:1/-1}.dl-props{display:grid;grid-template-columns:1fr 1fr;margin-top:12px}.dl-stage{max-width:100%;max-height:55vh}.dl-host .df-ov__h{padding:12px}.dl-host .df-ov__f{padding:10px}.dl-host .df-btn{min-height:36px;font-size:12px;padding:0 10px}}`;
   const humanError = e => e.details || [{
     DOCUMENT_LAYOUT_TEXT_OVERFLOW: 'Un texto no cabe en su área. Amplía su alto o ancho, o reduce la fuente.',
     DOCUMENT_LAYOUT_SIGNER_TOO_TALL: 'Amplía el espacio disponible para las firmas.',
@@ -51,6 +51,100 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     DOCUMENT_SIGNER_NOT_EFFECTIVE: 'Revisa la vigencia de los firmantes.',
     DOCUMENT_LAYOUT_SCOPE_DENIED: 'La versión no pertenece a este documento.'
   }[e.message] || 'No se pudo completar la acción. Revisa la configuración e inténtalo de nuevo.'];
+  // Render the actual server PDF locally; browser PDF plugins are not required.
+  function PDFPreview({
+    url
+  }) {
+    const [pdf, setPdf] = useState(null),
+      [number, setNumber] = useState(1),
+      [ready, setReady] = useState(false),
+      [error, setError] = useState(''),
+      node = useRef(null);
+    useEffect(() => {
+      let cancelled = false,
+        task;
+      (async () => {
+        const lib = await import(new URL('app/vendor/pdfjs-5.4.149/pdf.min.mjs', document.baseURI).href);
+        lib.GlobalWorkerOptions.workerSrc = new URL('app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs', document.baseURI).href;
+        const response = await fetch(url);
+        if (!response.ok) throw Error();
+        task = lib.getDocument({
+          data: new Uint8Array(await response.arrayBuffer()),
+          isEvalSupported: false,
+          enableXfa: false,
+          useSystemFonts: true
+        });
+        const loaded = await task.promise;
+        if (!cancelled) setPdf(loaded);
+      })().catch(() => {
+        if (!cancelled) setError('No se pudo leer el PDF. Vuelve al diseño y reintenta la vista previa.');
+      });
+      return () => {
+        cancelled = true;
+        task?.destroy();
+      };
+    }, [url]);
+    useEffect(() => {
+      if (!pdf) return;
+      let cancelled = false,
+        render;
+      setReady(false);
+      (async () => {
+        const page = await pdf.getPage(number);
+        if (cancelled) return;
+        const viewport = page.getViewport({
+          scale: 1.5
+        });
+        node.current.width = viewport.width;
+        node.current.height = viewport.height;
+        render = page.render({
+          canvasContext: node.current.getContext('2d'),
+          viewport
+        });
+        await render.promise;
+        if (!cancelled) setReady(true);
+      })().catch(() => {
+        if (!cancelled) setError('No se pudo mostrar esta página del PDF.');
+      });
+      return () => {
+        cancelled = true;
+        render?.cancel();
+      };
+    }, [pdf, number]);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "dl-pdf-preview"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "dl-toolbar"
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "df-btn df-btn--ghost df-btn--sm",
+      disabled: !pdf || number === 1,
+      onClick: () => setNumber(n => n - 1)
+    }, "P\xE1gina anterior"), /*#__PURE__*/React.createElement("span", {
+      role: "status"
+    }, pdf ? 'Página ' + number + ' de ' + pdf.numPages : 'Leyendo PDF…'), /*#__PURE__*/React.createElement("button", {
+      className: "df-btn df-btn--ghost df-btn--sm",
+      disabled: !pdf || number === pdf.numPages,
+      onClick: () => setNumber(n => n + 1)
+    }, "P\xE1gina siguiente"), /*#__PURE__*/React.createElement("a", {
+      className: "df-btn df-btn--ghost df-btn--sm",
+      href: url,
+      download: "vista-previa-documento.pdf"
+    }, "Descargar vista previa")), error && /*#__PURE__*/React.createElement("p", {
+      role: "alert"
+    }, error), /*#__PURE__*/React.createElement("div", {
+      className: "dl-preview-scroll"
+    }, /*#__PURE__*/React.createElement("canvas", {
+      ref: node,
+      "aria-label": "Vista previa PDF del dise\xF1o",
+      "data-rendered": ready ? 'true' : 'false',
+      style: {
+        display: ready ? 'block' : 'none',
+        maxWidth: '100%',
+        height: 'auto',
+        margin: 'auto'
+      }
+    }), !ready && !error && /*#__PURE__*/React.createElement("p", null, "Mostrando p\xE1gina\u2026")));
+  }
   function Designer({
     scope,
     onClose,
@@ -68,7 +162,8 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       [notice, setNotice] = useState(''),
       [preview, setPreview] = useState(null),
       [backgroundReady, setBackgroundReady] = useState(false),
-      [zoom, setZoom] = useState(2.5);
+      [zoom, setZoom] = useState(2.5),
+      [showNames, setShowNames] = useState(true);
     const stage = useRef(null),
       canvas = useRef(null),
       gesture = useRef(null),
@@ -80,13 +175,14 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       ...scope,
       ...extra
     });
-    async function load(id, selectActive = false) {
+    async function load(id, selectActive = false, templateId, keepLayout = false) {
       const serial = ++sequence.current;
       setErrors([]);
       setBusy(true);
       try {
         let result = await request('LAYOUT_MANIFEST', {
-          version_id: id || undefined
+          version_id: id || undefined,
+          template_id: templateId
         });
         if (selectActive && result.active_id) {
           id = result.active_id;
@@ -97,9 +193,14 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         if (!alive.current || serial !== sequence.current) return;
         setData(result);
         setVersionId(id || '');
-        setLayout(structuredClone(result.versions.find(v => v.id === id)?.definition || result.initial));
-        setSelected(null);
-        setPage(1);
+        if (!keepLayout) {
+          const copy = structuredClone(result.versions.find(v => v.id === id)?.definition || result.initial);
+          copy.version = 'suti-layout-2';
+          copy.elements = copy.elements.filter(e => e.field !== 'document.note');
+          setLayout(copy);
+          setSelected(null);
+          setPage(1);
+        } else setNotice('Membrete actualizado. Guarda una nueva versión del diseño.');
         setPreview(null);
         operation.current = null;
       } catch (e) {
@@ -182,7 +283,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       } : e)
     }));
     const snap = v => Math.round(v * 2) / 2;
-    function add(key, x = data.template.margins.left, y = data.template.margins.top) {
+    function add(key, x, y) {
       if (!data.can_write) return;
       const d = fields.find(f => f.key === key),
         kind = d?.kind || 'TEXT';
@@ -193,10 +294,31 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       const id = crypto.randomUUID(),
         width = kind === 'FIELD' || kind === 'TEXT' ? 65 : W - data.template.margins.left - data.template.margins.right,
         height = kind === 'SIGNERS' ? 45 : kind === 'PAYMENT_SCHEDULE' ? 65 : 14;
+      let targetPage = page;
+      if (x === undefined || y === undefined) {
+        let found = false;
+        for (let yy = data.template.margins.top; yy + height <= H && !found; yy += height + 3) for (let xx = data.template.margins.left; xx + width <= W; xx += width + 3) {
+          if (!layout.elements.some(e => e.page === page && xx < e.x + e.width && xx + width > e.x && yy < e.y + e.height && yy + height > e.y)) {
+            x = xx;
+            y = yy;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          if (layout.pages >= 30) {
+            setErrors(['No hay espacio en esta página. Arrastra el campo a una posición disponible.']);
+            return;
+          }
+          targetPage = layout.pages + 1;
+          x = data.template.margins.left;
+          y = data.template.margins.top;
+        }
+      }
       const next = {
         id,
         kind,
-        page,
+        page: targetPage,
         x: snap(Math.max(0, Math.min(x, W - width))),
         y: snap(Math.max(0, Math.min(y, H - height))),
         width,
@@ -227,8 +349,10 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       };
       edit(old => ({
         ...old,
+        pages: Math.max(old.pages, targetPage),
         elements: [...old.elements, next]
       }));
+      setPage(targetPage);
       setSelected(id);
     }
     function start(e, item, resize = false) {
@@ -275,7 +399,8 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         if (action === 'preview') {
           const blob = await request('LAYOUT_PREVIEW', {
             definition: layout,
-            version_id: versionId || undefined
+            version_id: versionId || undefined,
+            template_id: data.template.id
           });
           if (!alive.current) return;
           const url = URL.createObjectURL(blob);
@@ -303,7 +428,8 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         const saved = await request('LAYOUT_SAVE', {
           id: operation.current.id,
           definition: layout,
-          version_id: versionId || undefined
+          version_id: versionId || undefined,
+          template_id: data.template.id
         });
         if (action === 'activate') await request('LAYOUT_ACTIVATE', {
           id: operation.current.activationId,
@@ -312,7 +438,15 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         await load(saved.id);
         setNotice('Versión ' + saved.version + (action === 'activate' ? ' activa para documentos nuevos.' : ' guardada sin activar.'));
       } catch (e) {
-        if (alive.current) setErrors(humanError(e));
+        if (alive.current) {
+          const issues = humanError(e);
+          setErrors(issues);
+          const first = issues.find(x => x.element_id);
+          if (first) {
+            setSelected(first.element_id);
+            setPage(first.page);
+          }
+        }
       } finally {
         if (alive.current) setBusy(false);
       }
@@ -347,22 +481,53 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       role: "alert"
     }, errors.map((e, n) => /*#__PURE__*/React.createElement("li", {
       key: n
-    }, e))), notice && /*#__PURE__*/React.createElement("p", {
+    }, typeof e === 'string' ? e : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setPreview(null);
+        setSelected(e.element_id);
+        setPage(e.page);
+        requestAnimationFrame(() => stage.current?.querySelector('[data-element="' + e.element_id + '"]')?.scrollIntoView({
+          block: 'center',
+          inline: 'nearest'
+        }));
+      }
+    }, e.message, " Seleccionar campo"), e.required_height && data?.can_write && /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        setPreview(null);
+        setSelected(e.element_id);
+        setPage(e.page);
+        edit(old => ({
+          ...old,
+          elements: old.elements.map(x => x.id === e.element_id ? {
+            ...x,
+            height: Math.min(H - x.y, e.required_height)
+          } : x)
+        }));
+      }
+    }, "Ajustar alto"))))), notice && /*#__PURE__*/React.createElement("p", {
       className: "dl-status",
       role: "status"
     }, notice), !data || !layout ? /*#__PURE__*/React.createElement("div", {
       className: "dl-loading"
     }, busy ? 'Cargando contrato y distribución…' : /*#__PURE__*/React.createElement(Button, {
       onClick: () => load('', true)
-    }, "Reintentar")) : preview ? /*#__PURE__*/React.createElement("iframe", {
-      className: "dl-preview",
-      title: "Vista previa PDF del dise\xF1o",
-      src: preview
+    }, "Reintentar")) : preview ? /*#__PURE__*/React.createElement(PDFPreview, {
+      url: preview
     }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "dl-toolbar"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "df-chip"
-    }, data.template.name, " \xB7 v", data.template.version), /*#__PURE__*/React.createElement("select", {
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      style: {
+        maxWidth: 320
+      },
+      "aria-label": "Membrete del dise\xF1o",
+      value: data.template.id,
+      disabled: noEdit,
+      onChange: e => load(versionId, false, e.target.value, true)
+    }, data.templates.map(t => /*#__PURE__*/React.createElement("option", {
+      key: t.id,
+      value: t.id
+    }, t.name, " \xB7 v", t.version, t.active ? ' (activa)' : ''))), /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
         width: 260
@@ -382,7 +547,9 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       small: true,
       disabled: noEdit || !data.active_id,
       onClick: () => perform('system')
-    }, "Usar dise\xF1o del sistema")), /*#__PURE__*/React.createElement("div", {
+    }, "Usar dise\xF1o del sistema")), /*#__PURE__*/React.createElement("p", {
+      className: "dl-help"
+    }, "Gu\xEDas del membrete: superior ", data.template.margins.top, " mm \xB7 inferior ", data.template.margins.bottom, " mm \xB7 izquierdo ", data.template.margins.left, " mm \xB7 derecho ", data.template.margins.right, " mm. Puedes colocar elementos fuera de las gu\xEDas, dentro de la hoja."), /*#__PURE__*/React.createElement("div", {
       className: "dl-editor"
     }, /*#__PURE__*/React.createElement("aside", {
       className: "dl-palette"
@@ -411,7 +578,13 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       onClick: () => add(f.key)
     }, f.label, f.required ? ' *' : '')))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       className: "dl-toolbar"
-    }, /*#__PURE__*/React.createElement("select", {
+    }, /*#__PURE__*/React.createElement("label", {
+      className: "dl-help"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      checked: showNames,
+      onChange: e => setShowNames(e.target.checked)
+    }), " Mostrar nombres de campos"), /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
         width: 130
@@ -497,7 +670,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         left: data.template.margins.left * zoom,
         right: data.template.margins.right * zoom,
         top: data.template.margins.top * zoom,
-        bottom: (data.template.margins.bottom + 7) * zoom
+        bottom: data.template.margins.bottom * zoom
       }
     }), /*#__PURE__*/React.createElement("div", {
       className: "dl-center"
@@ -512,7 +685,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         role: "button",
         tabIndex: 0,
         "aria-label": f?.label || 'Texto fijo',
-        className: 'dl-element' + (e.id === selected ? ' is-selected' : '') + (['SIGNERS', 'PAYMENT_SCHEDULE'].includes(e.kind) ? ' is-block' : ''),
+        className: 'dl-element' + (e.id === selected ? ' is-selected' : '') + (errors.some(x => x.element_id === e.id) ? ' is-invalid' : '') + (['SIGNERS', 'PAYMENT_SCHEDULE'].includes(e.kind) ? ' is-block' : ''),
         style: {
           left: e.x * zoom,
           top: e.y * zoom,
@@ -559,7 +732,9 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
             });
           }
         }
-      }, text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
+      }, showNames ? /*#__PURE__*/React.createElement("span", {
+        className: "dl-element-label"
+      }, f?.label || 'Texto: ' + e.text) : text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
         className: "dl-resize",
         role: "button",
         "aria-label": "Redimensionar elemento",
@@ -573,9 +748,25 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       className: "dl-help"
     }, "Ajuste cada 0.5 mm \xB7 flechas para mover \xB7 Supr para quitar. Calendarios y firmas contin\xFAan en p\xE1ginas adicionales sin recalcular datos.")), /*#__PURE__*/React.createElement("aside", {
       className: "dl-props"
-    }, /*#__PURE__*/React.createElement("p", {
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel dl-layers",
+      "aria-label": "Elementos del documento",
+      value: selected || '',
+      onChange: e => {
+        const item = layout.elements.find(x => x.id === e.target.value);
+        setSelected(item?.id || null);
+        if (item) setPage(item.page);
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: ""
+    }, "Selecciona un elemento"), layout.elements.map((e, n) => /*#__PURE__*/React.createElement("option", {
+      key: e.id,
+      value: e.id
+    }, n + 1, ". ", fields.find(f => f.key === e.field)?.label || 'Texto: ' + e.text.slice(0, 45), " \xB7 p\xE1g. ", e.page))), /*#__PURE__*/React.createElement("p", {
       className: "df-eyebrow"
-    }, definition?.label || (element ? 'Texto fijo' : 'Selecciona un elemento')), element && /*#__PURE__*/React.createElement(React.Fragment, null, element.kind === 'TEXT' && /*#__PURE__*/React.createElement(Field, {
+    }, definition?.label || (element ? 'Texto fijo' : 'Selecciona un elemento')), element && /*#__PURE__*/React.createElement(React.Fragment, null, definition && /*#__PURE__*/React.createElement("p", {
+      className: "dl-help"
+    }, definition.group, " \xB7 ", definition.label, /*#__PURE__*/React.createElement("br", null), "Ejemplo: ", definition.example), element.kind === 'TEXT' && /*#__PURE__*/React.createElement(Field, {
       label: "Texto"
     }, /*#__PURE__*/React.createElement("textarea", {
       className: "df-in",

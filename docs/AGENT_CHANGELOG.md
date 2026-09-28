@@ -3746,3 +3746,12 @@ immutable versions, pinned letterhead, synthetic server preview and the existing
 renderer/storage/snapshots. No financial calculations or legacy writes. Existing
 core QA extended in memory/browser; zero new QA files or persistent PDFs.
 Verification/release: audits/H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-001.md.
+
+## H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002 (2026-09-28)
+
+Owner corrective request: remove authorization-scope binding, allow full-page positioning,
+honor template margins/version, identify each field, expose approved affiliate bindings,
+name and select fit errors, and display actual PDF pages without a browser plugin.
+Focal designer v2 and additive event-time identity projection; old layouts/snapshots preserved.
+Existing isolated core suite extended; no new QA scripts, fixtures or permanent PDFs.
+Evidence/release: audits/H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002.md.

@@ -1,5 +1,6 @@
 // No financial calculators: every value below is read from the sealed approval.
 // Shared by the server worker, synthetic previews and isolated contract tests.
+import {AFFILIATE_FIELDS} from './layout.mjs';
 import {drawLayout} from './render-layout.mjs';
 export const RENDERER_VERSION='pdf-lib-1.17.1/suti-1';
 export const TITLES=Object.freeze({
@@ -56,15 +57,15 @@ export function documentContract(snapshot){
 
 export function syntheticSnapshot(type,program,config){
  if(!TITLES[type])throw Error('DOCUMENT_TYPE_NOT_SUPPORTED');
- const financial={product:{name:'Producto de ejemplo'},offering:{company_raw:'Empresa de ejemplo',concept:'Membresía de ejemplo'},authorized_price:12000,down_payment:2000,financed_amount:10000,price_source:'PRICE_CASH',financialResult:{amount:10000,paymentCount:4,paymentPeriod:'QUINCENAL',interest:0,administrativeFeeTotal:0,total:10000,paymentPerPeriod:2500},payment_schedule:{rows:[1,2,3,4].map((n)=>({number:n,date:'2026-10-'+String(n*5).padStart(2,'0'),payment:2500,remaining_total:10000-n*2500}))}};
- return {...config,document_type:type,contract_version:'1',renderer_version:RENDERER_VERSION,event_id:'PREVIEW',identity:{full_name:'Persona de ejemplo',numero_control:'EJEMPLO'},operation:{id:'PREVIEW',folio:'VISTA PREVIA',program,approved_at:'2026-09-28T12:00:00Z',financial,new_contribution_amount:400,previous_contribution_amount:200,process:'1',effective_from:'2026-10-30',request_type:'WITHDRAW',withdrawal_kind:'PARTIAL',requested_amount:500,authorized_amount:500,component:'CAPITAL',continue_saving:true},
+ const financial={product:{name:'Producto de ejemplo'},offering:{company_raw:'Empresa de ejemplo',concept:'Membresía de ejemplo'},authorized_price:12000,down_payment:2000,financed_amount:10000,price_source:'PRICE_CASH',financialResult:{fund:'Fondo de ejemplo',rate:0,administrativeFeePerPayment:0,lastPayment:2500,amount:10000,paymentCount:4,paymentPeriod:'QUINCENAL',interest:0,administrativeFeeTotal:0,total:10000,paymentPerPeriod:2500},payment_schedule:{rows:[1,2,3,4].map((n)=>({number:n,date:'2026-10-'+String(n*5).padStart(2,'0'),payment:2500,remaining_total:10000-n*2500}))}};
+ return {...config,document_type:type,contract_version:'1',renderer_version:RENDERER_VERSION,event_id:'PREVIEW',identity:{full_name:'Persona de ejemplo',numero_control:'EJEMPLO',union_label:'Sindicato de ejemplo',category_label:'Categoría de ejemplo',unit:'Unidad de ejemplo',affiliate:Object.fromEntries(AFFILIATE_FIELDS.map(([key,label])=>[key,label+' de ejemplo']))},operation:{id:'PREVIEW',folio:'VISTA PREVIA',program,approved_at:'2026-09-28T12:00:00Z',financial,new_contribution_amount:400,previous_contribution_amount:200,process:'1',effective_from:'2026-10-30',request_type:'WITHDRAW',withdrawal_kind:'PARTIAL',requested_amount:500,authorized_amount:500,component:'CAPITAL',continue_saving:true},
   bank:type==='LOAN_APPROVAL'?{bank_name:'BANCO DEMO',card_last4:'1234',clabe_last4:'5678'}:undefined,
   signers:(config.signers||[]).map((s,n)=>({...s,full_name:'Firmante de ejemplo '+(n+1),title:'Cargo de ejemplo',asset:null}))};
 }
 
 export function createRenderer(PDFLib){
  const {PDFDocument,StandardFonts,rgb}=PDFLib,mm=72/25.4;
- return async function render(snapshot,loadAsset,{preview=false}={}){
+ return async function render(snapshot,loadAsset,{preview=false,draft=false}={}){
   if(snapshot.renderer_version!==RENDERER_VERSION)throw Error('DOCUMENT_RENDERER_VERSION_UNSUPPORTED');
   const model=documentContract(snapshot),tpl=required(snapshot.template,'TEMPLATE'),signers=required(snapshot.signers,'SIGNERS');
   if(!Array.isArray(signers)||!signers.length)throw Error('DOCUMENT_SIGNERS_REQUIRED');
@@ -77,7 +78,7 @@ export function createRenderer(PDFLib){
   const background=base.node.Contents()?await pdf.embedPage(base):null,ink=rgb(.078,.129,.239),muted=rgb(.35,.39,.47),brand=rgb(.57,0,.133);
   const when=new Date(snapshot.operation.approved_at);if(!Number.isFinite(when.getTime()))throw Error('DOCUMENT_DATE_INVALID');
   pdf.setCreationDate(when);pdf.setModificationDate(when);pdf.setProducer(RENDERER_VERSION);pdf.setCreator('SutiApp');pdf.setTitle(model.title);
-  if(snapshot.layout?.definition){const pages=await drawLayout({snapshot,model,pdf,PDFLib,background,width,height,loadAsset,preview});return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages};}
+  if(snapshot.layout?.definition){const pages=await drawLayout({snapshot,model,pdf,PDFLib,background,width,height,loadAsset,preview,draft});return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages};}
   let page,y;const pages=[];
   function newPage(){page=pdf.addPage([width,height]);pages.push(page);if(background)page.drawPage(background,{x:0,y:0,width,height});y=top;
    if(preview){page.drawText('VISTA PREVIA / DATOS DE EJEMPLO',{x:left,y:y-11,size:10,font:bold,color:brand});y-=24;}

@@ -11,7 +11,14 @@ const headers={Authorization:'Bearer '+values.SUPABASE_ACCESS_TOKEN};
 async function api(route,options={}){const response=await fetch(base+route,{...options,headers:{...headers,...options.headers}});if(!response.ok){await response.body?.cancel();throw Error('MANAGEMENT_HTTP_'+response.status);}return response;}
 async function metadata(){return (await query(`select jsonb_build_object('installed',to_regclass('document_private.records') is not null,'tracking',exists(select 1 from supabase_migrations.schema_migrations where version='${version}'),'latest',(select max(version) from supabase_migrations.schema_migrations),'savings_event_type',(select data_type from information_schema.columns where table_schema='public' and table_name='savings_audit_events' and column_name='id'),'private_bucket',(select not public from storage.buckets where id='generated-documents')) as result`))[0].result;}
 async function main(){
- if(!['status','bundle','apply','apply-layout','deploy','verify'].includes(mode))throw Error('MODE_INVALID');
+ if(!['status','bundle','apply','apply-layout','apply-layout-refinement','deploy','verify'].includes(mode))throw Error('MODE_INVALID');
+ if(mode==='apply-layout-refinement'){
+  const migration='20260928000400',before=await metadata();
+  if(before.latest!=='20260928000300'||!before.installed||!before.tracking)throw Error('DOCUMENT_LAYOUT_BASELINE_DRIFT');
+  const sql=read('supabase/migrations/'+migration+'_document_layout_refinement.sql');
+  await query(sql.replace(/commit;\s*$/i,`insert into supabase_migrations.schema_migrations(version,name,statements) values('${migration}','document_layout_refinement',array['H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002 sha256:${hash(sql)}']);commit;`));
+  console.log(JSON.stringify({mode,status:'PASS',...await metadata(),migrationSha256:hash(sql)}));return;
+ }
  if(mode==='apply-layout'){
   const layoutVersion='20260928000300',before=await metadata();
   if(before.latest!=='20260928000200'||!before.installed||!before.tracking)throw Error('DOCUMENT_LAYOUT_BASELINE_DRIFT');

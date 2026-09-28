@@ -684,3 +684,15 @@ contracts until a custom version is activated. No browser persistence or Google 
 `layout.mjs` declares the presentation bindings of the existing document contracts;
 the Edge validates them, user-bound RPC checks config.read/config.write, and service-only
 persistence records real actor/effective context. Existing private Storage is reused.
+
+### Designer refinement (H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002)
+
+`public.affiliates` remains the master for optional RFC, CURP, registered contact/address,
+job/area/level/occupation/subdirectorate and employment/union dates and position.
+`document_private.capture_affiliate_fields` freezes this bounded projection and authoritative
+segmentation labels on INSERT of new documentary records at final approval. No full-row copy,
+Auth field, bank expansion, live rendering lookup or backfill. Historical raw dates stay TEXT;
+registered email is the historical business address, never inferred from Auth. Existing snapshots
+remain untouched. New layouts use suti-layout-2 (template margins are guides); suti-layout-1 remains
+supported for sealed history. Editing an old layout creates a new version without the removed
+scope-of-authorization field. The letterhead version is explicitly selected and pinned.

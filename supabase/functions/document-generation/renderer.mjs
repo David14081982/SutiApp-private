@@ -78,7 +78,15 @@ export function createRenderer(PDFLib){
   const background=base.node.Contents()?await pdf.embedPage(base):null,ink=rgb(.078,.129,.239),muted=rgb(.35,.39,.47),brand=rgb(.57,0,.133);
   const when=new Date(snapshot.operation.approved_at);if(!Number.isFinite(when.getTime()))throw Error('DOCUMENT_DATE_INVALID');
   pdf.setCreationDate(when);pdf.setModificationDate(when);pdf.setProducer(RENDERER_VERSION);pdf.setCreator('SutiApp');pdf.setTitle(model.title);
-  if(snapshot.layout?.definition){const pages=await drawLayout({snapshot,model,pdf,PDFLib,background,width,height,loadAsset,preview,draft});return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages};}
+  if(snapshot.layout?.definition){
+   // Automatic continuation repeats only the institutional bands outside the safe
+   // area. A filled form used as a background must not repeat its empty body.
+   const continuationBackground=[];
+   if(background)for(const [bottom,top] of [[height-m.top*mm,height],[0,m.bottom*mm]]){
+    if(top>bottom)continuationBackground.push({image:await pdf.embedPage(base,{left:0,bottom,right:width,top}),y:bottom,height:top-bottom});
+   }
+   const pages=await drawLayout({snapshot,model,pdf,PDFLib,background,continuationBackground,width,height,loadAsset,preview,draft});return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages};
+  }
   let page,y;const pages=[];
   function newPage(){page=pdf.addPage([width,height]);pages.push(page);if(background)page.drawPage(background,{x:0,y:0,width,height});y=top;
    if(preview){page.drawText('VISTA PREVIA / DATOS DE EJEMPLO',{x:left,y:y-11,size:10,font:bold,color:brand});y-=24;}

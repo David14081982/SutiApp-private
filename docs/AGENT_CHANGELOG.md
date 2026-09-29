@@ -1,4 +1,13 @@
 # Bitácora de agentes
+## 2026-09-29 — H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001 — candidato verificado
+
+Corrección focal del renderer: tres firmas caben en las tres columnas del rectángulo
+guardado; continuaciones conservan bandas institucionales y no repiten el formulario.
+FIELD/TEXT y páginas explícitas mantienen sus posiciones. Siete verificaciones
+documentales en memoria y compilaciones frontend/Edge PASS; cero nuevos archivos QA,
+PDFs, datos QA o cálculos financieros. Se prepara únicamente la corrección versionada
+de los bindings Cuota fija/Total a pagar; documentos históricos intactos. Auditoría:
+`docs/audits/H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001.md`.
 ## 2026-09-29 — H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 — publicado PASS
 
 Propietario exige nueva solicitud con condiciones actuales y autorizó publicar con “hazlo”. Edge v58 ACTIVE; Pages 226684c, workflow 36565625440 SUCCESS. Botón Revisar solicitud verificado en SR-2026-000432: 50,000 solicitado frente a 30,000 vigente; cancelación explícita y continuación asistida con permisos existentes. Solicitud real intacta. 11 pruebas Edge, 10 escenarios compilados, 9 de confirmación y regresiones globales local/Pages del bundle exacto PASS. Fuente de verdad, snapshots y writer financiero conservados; sin migración ni modificaciones de negocio durante las pruebas. Revisión arquitectónica APPROVED. Evidencia y límites: `docs/audits/H-LOAN-APPROVAL-GUIDED-RESOLUTION-001.md` y `docs/qa/evidence/loan-approval-resolution-20260928/`.

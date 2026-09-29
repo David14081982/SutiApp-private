@@ -1,13 +1,13 @@
 import {validateLayout,fieldValue,formatField,TABLE_COLUMNS,layoutFields,boundField} from './layout.mjs';
 
 // A positioning strategy inside the existing PDF renderer, not another generation pipeline.
-export async function drawLayout({snapshot,model,pdf,PDFLib,background,width,height,loadAsset,preview,draft=false}){
+export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuationBackground=[],width,height,loadAsset,preview,draft=false}){
  const layout=snapshot.layout.definition,legacy=layout.version==='suti-layout-1',fields=layoutFields(snapshot.document_type,layout.version),mm=72/25.4,m=snapshot.template.margins;
  if(validateLayout(layout,snapshot.document_type,snapshot.template,{draft:preview&&draft}).length)throw Error('DOCUMENT_LAYOUT_INVALID');
  const {StandardFonts,rgb}=PDFLib,ink=rgb(.078,.129,.239),brand=rgb(.57,0,.133),fonts={};
  for(const name of ['Helvetica','TimesRoman','Courier']){fonts[name]={regular:await pdf.embedFont(StandardFonts[name]),bold:await pdf.embedFont(StandardFonts[name==='TimesRoman'?'TimesRomanBold':name+'Bold'])};}
  const pages=[];
- function page(){if(pages.length>=500)throw Error('DOCUMENT_LAYOUT_PAGE_LIMIT');const p=pdf.addPage([width,height]);pages.push(p);if(background)p.drawPage(background,{x:0,y:0,width,height});if(preview)p.drawText('VISTA PREVIA / DATOS DE EJEMPLO',{x:m.left*mm,y:height-14,size:8,font:fonts.Helvetica.regular,color:brand});return p;}
+ function page(overflow=false){if(pages.length>=500)throw Error('DOCUMENT_LAYOUT_PAGE_LIMIT');const p=pdf.addPage([width,height]);pages.push(p);if(overflow){for(const band of continuationBackground)p.drawPage(band.image,{x:0,y:band.y,width,height:band.height});}else if(background)p.drawPage(background,{x:0,y:0,width,height});if(preview)p.drawText('VISTA PREVIA / DATOS DE EJEMPLO',{x:m.left*mm,y:height-14,size:8,font:fonts.Helvetica.regular,color:brand});return p;}
  function issue(code,e,requiredHeight){const label=fields.find(f=>f.key===e.field)?.label||('Texto: '+String(e.text||'').slice(0,48));const error=Error(code);error.layoutIssue={code,element_id:e.id,element_label:label,page:e.page,required_height:requiredHeight?Math.ceil(requiredHeight*2)/2:undefined,message:label+' · página '+e.page+': '+(code==='DOCUMENT_LAYOUT_TEXT_OVERFLOW'?'el texto necesita '+(Math.ceil(requiredHeight*2)/2)+' mm de alto (disponibles '+e.height+' mm). Amplía su área o reduce la fuente.':'revisa el tamaño o los caracteres de este elemento.')};return error;}
  const fontFor=e=>fonts[e.font][e.weight==='regular'?'regular':'bold'];
  function wrap(value,w,size,font){
@@ -20,20 +20,40 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,width,hei
   if(lines.length*lineHeight>h*mm+.1)throw issue('DOCUMENT_LAYOUT_TEXT_OVERFLOW',e,lines.length*lineHeight/mm);
   lines.forEach((line,n)=>{const length=font.widthOfTextAtSize(line,e.size),offset=e.align==='right'?w*mm-length:e.align==='center'?(w*mm-length)/2:0;p.drawText(line,{x:x*mm+offset,y:height-y*mm-e.size-n*lineHeight,size:e.size,font,color:ink});});return lines.length*lineHeight/mm;
  }
+ // Explicit page numbers never shift when an earlier dynamic block overflows.
+ const configured=Array.from({length:layout.pages},()=>page());
  for(let number=1;number<=layout.pages;number++){
-  const base=page();
+  const base=configured[number-1];
   for(const e of layout.elements.filter(e=>e.page===number)){
    try{
    if(e.kind==='TEXT'){drawText(base,e.text,e);continue;}
    if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null)drawText(base,value,e);continue;}
    let target=base,y=e.y,end=e.y+e.height;
-   const continuation=()=>{target=page();y=m.top;end=height/mm-m.bottom-(legacy?7:0);};
+   const continuation=()=>{target=page(true);y=m.top;end=height/mm-m.bottom-(legacy?7:0);};
    if(e.kind==='SIGNERS'){
-    const count=e.orientation==='vertical'?1:e.columns,cw=(e.width-(count-1)*e.gap)/count;
-    for(let n=0;n<snapshot.signers.length;n+=count){
-     const row=snapshot.signers.slice(n,n+count),blocks=row.map(s=>[s.full_name,s.title,s.role].map(t=>wrap(t,cw*mm,e.size,fontFor(e))));
-     const heights=blocks.map(b=>20+b.reduce((sum,lines)=>sum+lines.length*e.size*1.25/mm+1,0)),h=Math.max(...heights)+3;
-     if(n===0&&y+h>end)throw issue('DOCUMENT_LAYOUT_SIGNER_TOO_TALL',e);
+    // Small horizontal groups use their full rectangle. In particular an older
+    // two-column default must not orphan signer three when three columns fit.
+    const preferred=e.orientation==='vertical'?1:snapshot.signers.length<=3?snapshot.signers.length:Math.min(e.columns,snapshot.signers.length),continuationHeight=height/mm-m.bottom-m.top-(legacy?7:0);
+    const candidates=e.orientation==='horizontal'&&snapshot.signers.length<=3?Array.from({length:preferred},(_,n)=>preferred-n):[preferred];
+    const plans=[];
+    for(const count of candidates){
+     const cw=(e.width-(count-1)*e.gap)/count;if(cw<=0)continue;
+     const rows=[];let valid=true;
+     try{for(let n=0;n<snapshot.signers.length;n+=count){
+      const row=snapshot.signers.slice(n,n+count),heights=row.map(s=>26+[s.full_name,s.title,s.role].reduce((sum,t)=>sum+wrap(t,cw*mm,e.size,fontFor(e)).length*e.size*1.25/mm,0));
+      rows.push({row,h:Math.max(...heights)});
+     }}catch(error){if(error.message!=='DOCUMENT_LAYOUT_TEXT_TOO_WIDE')throw error;valid=false;}
+     if(valid&&rows.every(r=>r.h<=Math.max(e.height,continuationHeight)))plans.push({cw,rows,total:rows.reduce((sum,r)=>sum+r.h,0)+(rows.length-1)*e.gap});
+    }
+    // Prefer the full small-group row when it fits. Narrow rectangles may need
+    // fewer columns; select by measured text, never by a CSS-style minimum width.
+    const plan=plans.find(p=>p.total<=e.height)||plans.sort((a,b)=>a.total-b.total)[0];
+    if(!plan)throw issue('DOCUMENT_LAYOUT_SIGNER_TOO_TALL',e);
+    const {cw,rows,total}=plan;
+    // Keep the entire group together if it fits one continuation; otherwise
+    // continue only pending rows. Every image/name/title/role remains indivisible.
+    if(total>e.height&&total<=continuationHeight)continuation();
+    for(const {row,h} of rows){
      if(y+h>end)continuation();if(y+h>end)throw issue('DOCUMENT_LAYOUT_SIGNER_TOO_TALL',e);
      for(let k=0;k<row.length;k++){
       const s=row[k],x=e.x+k*(cw+e.gap);

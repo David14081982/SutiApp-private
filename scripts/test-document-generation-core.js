@@ -3,14 +3,87 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),crypto=require('crypto'),os=require('os');
 const {pathToFileURL}=require('url');
 const root=path.resolve(__dirname,'..');
-const {PGlite}=require(path.join(root,'.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
 const PDFLib=require(path.join(process.env.SUTIAPP_DOCUMENT_DEPS||path.join(os.tmpdir(),'sutiapp-document-core-20260928'),'node_modules/pdf-lib'));
 const uid='00000000-0000-4000-8000-000000000001',other='00000000-0000-4000-8000-000000000002';
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const checks=[];async function test(name,fn){await fn();checks.push(name);console.log('PASS '+name);}
+async function rendererRegression(renderer,layouts){
+ const {PDFDocument,StandardFonts,decodePDFRawStream,PDFName}=PDFLib,mm=72/25.4;
+ const background=await PDFDocument.create(),p=background.addPage([612,792]),font=await background.embedFont(StandardFonts.Helvetica);
+ p.drawText('Institutional header',{x:30,y:760,font,size:10});p.drawText('FORM BODY LABEL',{x:30,y:600,font,size:10});p.drawText('Institutional footer',{x:30,y:30,font,size:10});
+ const templateBytes=await background.save(),signature=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jH9sAAAAASUVORK5CYII=','base64');
+ const config={template:{id:'synthetic',page_size:{width:612,height:792},margins:{top:34,bottom:28,left:22,right:22},asset:{mime:'application/pdf'}},signers:[{role:'Autoriza'}]};
+ const s=renderer.syntheticSnapshot('LOAN_APPROVAL','prestamo',config),layout=layouts.initialLayout('LOAN_APPROVAL',config.template);
+ layout.pages=1;layout.elements=layout.elements.filter(e=>e.kind==='FIELD');
+ layout.elements.forEach((e,n)=>Object.assign(e,{page:1,x:25.5,y:37+n*17,height:11}));
+ const block={id:'signatures',kind:'SIGNERS',field:'signers',page:1,x:23,y:204,width:171.9,height:45,font:'Helvetica',size:10,weight:'regular',align:'left',columns:2,gap:5,orientation:'horizontal'};
+ layout.elements.push(block);s.layout={definition:layout};s.operation.financial.payment_schedule=null;
+ const setSigners=n=>{s.signers=Array.from({length:n},(_,k)=>({full_name:'Persona Ejemplo '+(k+1),title:'Responsable de la comision institucional',role:'Autoriza',asset:{mime:'image/png'}}));};
+ const load=async a=>a.mime==='image/png'?signature:templateBytes,render=renderer.createRenderer(PDFLib);
+ const operators=page=>page.node.Contents().asArray().map(ref=>Buffer.from(decodePDFRawStream(page.doc.context.lookup(ref)).decode()).toString()).join('\n');
+ const texts=page=>[...operators(page).matchAll(/<([0-9A-F]+)> Tj/g)].map(m=>Buffer.from(m[1],'hex').toString('latin1'));
+ const positions=page=>[...operators(page).matchAll(/1 0 0 1 ([\d.]+) ([\d.]+) Tm\n<([0-9A-F]+)> Tj/g)].map(m=>({x:+m[1],y:+m[2],text:Buffer.from(m[3],'hex').toString('latin1')}));
+ await test('owner rectangle: three signers fit one page in three columns without moving fields',async()=>{
+  setSigners(3);const frozen=JSON.stringify(s),out=await render(s,load),doc=await PDFDocument.load(out.bytes);assert.equal(out.pages,1);assert.equal(JSON.stringify(s),frozen);
+  const pos=positions(doc.getPage(0)),names=pos.filter(t=>t.text.startsWith('Persona Ejemplo'));assert.equal(names.length,3);assert.equal(new Set(names.map(t=>t.y)).size,1);
+  names.forEach((t,n)=>assert(Math.abs(t.x-(23+n*((171.9-10)/3+5))*mm)<.001));
+  const e=layout.elements[0];assert(pos.some(t=>Math.abs(t.x-e.x*mm)<.001&&Math.abs(t.y-(792-e.y*mm-e.size))<.001));
+  assert(positions(doc.getPage(0)).filter(t=>t.text==='Autoriza').every(t=>t.y>792-(block.y+block.height)*mm));
+  const preview=await render(s,load,{preview:true}),pdoc=await PDFDocument.load(preview.bytes);assert.equal(preview.pages,out.pages);
+  assert.deepEqual(positions(pdoc.getPage(0)).filter(t=>!t.text.includes('VISTA PREVIA /')&&t.text!=='Firma de ejemplo'),pos);
+  assert.equal(Buffer.compare(out.bytes,(await render(s,load)).bytes),0);
+ });
+ await test('one/two signers use full available columns; four use a two-by-two group',async()=>{
+  for(const n of [1,2,4]){setSigners(n);block.y=n===4?155:204;block.height=n===4?100:45;
+   const out=await render(s,load),doc=await PDFDocument.load(out.bytes),names=positions(doc.getPage(0)).filter(t=>t.text.startsWith('Persona Ejemplo'));assert.equal(out.pages,1);assert.equal(names.length,n);assert.equal(new Set(names.map(t=>t.x)).size,n===4?2:n);assert.equal(new Set(names.map(t=>t.y)).size,n===4?2:1);
+  }block.y=204;block.height=45;
+ });
+ await test('real overflow keeps signer groups intact and clips form body on continuation',async()=>{
+  setSigners(4);const out=await render(s,load),doc=await PDFDocument.load(out.bytes);assert.equal(out.pages,2);
+  assert(!texts(doc.getPage(0)).some(t=>t.startsWith('Persona Ejemplo')));
+  assert.equal(texts(doc.getPage(1)).filter(t=>t.startsWith('Persona Ejemplo')).length,4);
+  assert.equal(texts(doc.getPage(1)).filter(t=>t==='Autoriza').length,4);
+  const resource=doc.getPage(1).node.Resources().lookup(PDFName.of('XObject'));
+  const boxes=resource.entries().map(([,ref])=>doc.context.lookup(ref).dict.lookup(PDFName.of('BBox'))).filter(Boolean).map(box=>box.asArray().map(x=>x.asNumber()));
+  assert.equal(boxes.length,2);assert(boxes.every(b=>b[3]<=28*mm+.001||b[1]>=792-34*mm-.001),'no continuation XObject includes the body');
+  assert(!texts(doc.getPage(1)).includes('EJEMPLO'),'page-one control must not repeat');
+ });
+ await test('explicit page numbers stay fixed when a prior signer block overflows',async()=>{
+  setSigners(4);layout.pages=2;layout.elements.push({id:'page_two',kind:'TEXT',text:'EXPLICIT PAGE TWO',page:2,x:22,y:70,width:130,height:10,font:'Helvetica',size:10,weight:'regular',align:'left'});
+  const out=await render(s,load),doc=await PDFDocument.load(out.bytes);assert.equal(out.pages,3);assert(texts(doc.getPage(1)).includes('EXPLICIT PAGE TWO'));assert(!texts(doc.getPage(2)).includes('EXPLICIT PAGE TWO'));
+  assert.equal(texts(doc.getPage(2)).filter(t=>t.startsWith('Persona Ejemplo')).length,4);layout.elements.pop();layout.pages=1;
+ });
+ await test('long names and many signers continue indivisibly with preview/issued parity',async()=>{
+  setSigners(24);s.signers.forEach((v,k)=>{v.full_name='Responsable institucional de ejemplo '+k+' Apellido de prueba';v.title='Cargo institucional con responsabilidad y atribuciones de ejemplo';});
+  const issued=await render(s,load),preview=await render(s,load,{preview:true});assert(issued.pages>2);assert.equal(preview.pages,issued.pages);
+  const doc=await PDFDocument.load(issued.bytes);let found=0;for(const p of doc.getPages()){const t=texts(p),roles=t.filter(t=>t==='Autoriza').length;found+=roles;assert.equal(t.filter(t=>t.startsWith('Responsable institucional')).length,roles);}
+  assert.equal(found,24);
+ });
+ await test('correct financial bindings read frozen values; absent bank/rate element stays absent',async()=>{
+  s.operation.financial.financialResult={amount:5000,paymentCount:1,administrativeFeePerPayment:15,administrativeFeeTotal:30,interest:600,rate:6,paymentPerPeriod:5630,total:5630};s.bank.clabe=null;
+  const model=renderer.documentContract(s),before=JSON.stringify(s),prefix='operation.financial.financialResult.';
+  for(const [key,value] of [['amount','$5,000.00'],['paymentCount','1'],['paymentPerPeriod','$5,630.00'],['total','$5,630.00'],['interest','$600.00']])assert.equal(layouts.boundField(s,{field:prefix+key,format:key==='paymentCount'?'INTEGER':'MONEY',missing:'hide'},model),value);
+  assert.equal(layouts.boundField(s,{field:'bank.clabe_last4',format:'MASKED_BANK_ACCOUNT',missing:'hide'},model),null);assert.equal(layouts.boundField(s,{field:'bank.clabe',format:'TEXT',missing:'empty'},model),'');assert.equal(JSON.stringify(s),before);
+ });
+ await test('shared seven-contract renderer and long schedule preserve immutable inputs',async()=>{
+  for(const type of Object.keys(renderer.TITLES)){
+   const current=renderer.syntheticSnapshot(type,'example',config);current.signers=[{full_name:'Responsable Ejemplo',title:'Cargo Ejemplo',role:'Autoriza',asset:{mime:'image/png'}}];
+   for(const custom of [false,true]){
+    if(custom)current.layout={definition:layouts.initialLayout(type,config.template)};
+    const before=JSON.stringify(current),a=await render(current,load,{preview:true}),b=await render(current,load);assert(a.pages>0);assert.equal(a.pages,b.pages);assert.equal(JSON.stringify(current),before);
+   }
+  }
+  const current=renderer.syntheticSnapshot('PROGRAM_FINANCING_APPROVAL','example',config);current.layout={definition:layouts.initialLayout(current.document_type,config.template)};
+  current.operation.financial.payment_schedule.rows=Array.from({length:120},(_,n)=>({number:n+1,date:'2026-10-15',payment:123,remaining_total:456}));
+  const before=JSON.stringify(current),a=await render(current,load,{preview:true}),b=await render(current,load,{preview:true});assert(a.pages>5);assert.equal(Buffer.compare(a.bytes,b.bytes),0);assert.equal(JSON.stringify(current),before);
+ });
+ console.log(JSON.stringify({status:'PASS',scope:'document renderer only',checks:checks.length,permanentQaFilesAdded:0,qaResidualData:0,pdfsWritten:0}));
+}
 async function main(){
  const renderer=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/renderer.mjs')));
  const layouts=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout.mjs')));
+ if(process.argv.includes('--render-only'))return rendererRegression(renderer,layouts);
+ const {PGlite}=require(path.join(root,'.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
  const {handleLayout}=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout-service.mjs')));
  let activeBrowser;const db=new PGlite();const q=async(sql,args=[])=> (await db.query(sql,args)).rows;
  const scalar=async(sql,args=[])=>(await q(sql,args))[0]?.v;

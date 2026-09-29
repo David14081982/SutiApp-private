@@ -99,3 +99,50 @@ background's interest-rate label is intentionally retained without inventing a F
 Historical PDF bytes remain unchanged; opening an old READY record does not regenerate
 it. Next action: publish the verified renderer, append/activate the two-binding
 correction, verify readback and stop. Live release verification remains pending.
+
+## Published result — PASS
+
+- Code commit: `b851a2a` (push to main PASS).
+- Pages workflow `36569212783`: SUCCESS; existing Membership contract workflow
+  `36569212387`: SUCCESS. No financial test suite rerun.
+- Edge `document-generation` v11 ACTIVE. All five deployed source modules extracted
+  in memory from ESZIP match the published candidate. No worker-key rotation.
+- New active layout version 3: `54c1ac2f-7108-43b2-8e35-04c27c8040ca`;
+  activation `f9bfa420-e5b7-4acd-a761-5695c31af5b9`. Exactly two bindings changed;
+  all 16 element geometries and remaining properties equal the previous definition.
+- Existing WRITE gate verified the principal administrator who created the design
+  and approved the operation. Existing service persistence appended SAVE/ACTIVATE;
+  separate OWNER_DIRECTED_BINDING_REPAIR audit identifies the owner-authorized
+  management channel. Fixed IDs make the correction idempotent; lock and baseline
+  assertions prevent overwriting a concurrent design. Existing versions retained.
+- Transaction checked all existing READY records byte-for-byte at row level;
+  readback also confirmed the supplied document's PDF hash and snapshot hash unchanged.
+- Security postflight: ten forced-RLS tables, one existing cron, two existing business
+  triggers; browser worker/persistence and anonymous context/command remain denied;
+  anonymous Edge ACCESS returns 401. No business or Storage writes by this task.
+- sutiapp.com and GitHub Pages: HTTP 200; unchanged bundle v303 SHA256
+  `4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b`
+  equals the committed artifact. Frontend build passed without changing generated files.
+
+SIGNERS 3-COLUMN: PASS. SIGNERS KEEP-TOGETHER: PASS.
+UNNECESSARY PAGE 2: 0 in the corrected same-layout synthetic render.
+PAGE-1 CONTENT DUPLICATED: 0 on automatic continuations (body outside clipped bands).
+NEW OVERLAPS: 0. PREVIEW/PDF PARITY: PASS for identical content and coordinates.
+NULL CLABE: EXPECTED in both the sealed snapshot and original deposit source.
+PERMANENT QA FILES ADDED: 0. PERMANENT QA PDFs: 0. QA RESIDUAL DATA: 0.
+PDF/Screenshot files written: 0. Real signatures downloaded: 0.
+Build/tests/security/source-of-truth/invariants: PASS. Legacy writes: 0.
+Unexpected changed files: 0; unrelated dirty root workspace preserved.
+
+Limitations: `Interes quincenal` is a static label with no configured FIELD; the
+existing rate was not placed automatically. The isolated control stays where the
+owner positioned initial_1. The original two-page PDF remains historical; the existing
+**Emitir version corregida** action produces a separate revision using the active
+layout without authorizing the financial operation again. This task generated no
+new production PDF and did not automatically reissue historical records.
+
+Final architect review: APPROVED. One documentary authority, unchanged security and
+financial writers; no new infrastructure or architecture-registry dependency.
+Owner decision required: NO for the completed scope. Next instruction: stop after
+the diagnosis/correction result; do not move fields, add the absent rate element,
+or reissue any historical document automatically.

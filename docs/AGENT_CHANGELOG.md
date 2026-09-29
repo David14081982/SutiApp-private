@@ -1,12 +1,15 @@
 # Bitácora de agentes
-## 2026-09-29 — H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001 — candidato verificado
+## 2026-09-29 — H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001 — publicado PASS
 
 Corrección focal del renderer: tres firmas caben en las tres columnas del rectángulo
 guardado; continuaciones conservan bandas institucionales y no repiten el formulario.
 FIELD/TEXT y páginas explícitas mantienen sus posiciones. Siete verificaciones
 documentales en memoria y compilaciones frontend/Edge PASS; cero nuevos archivos QA,
-PDFs, datos QA o cálculos financieros. Se prepara únicamente la corrección versionada
-de los bindings Cuota fija/Total a pagar; documentos históricos intactos. Auditoría:
+PDFs, datos QA o cálculos financieros. Commit b851a2a y Pages 36569212783 SUCCESS;
+Edge v11 ACTIVE, cinco módulos publicados verificados. Layout v3 activado con sólo
+dos bindings corregidos y las 16 geometrías intactas; auditoría de reparación,
+permisos y readback PASS. Documentos históricos intactos. sutiapp.com HTTP 200,
+bundle v303 sin cambios y huella exacta. Auditoría y límites:
 `docs/audits/H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001.md`.
 ## 2026-09-29 — H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 — publicado PASS
 

@@ -74106,7 +74106,8 @@ Object.assign(window, {
       }, 'Reintentar')
     })));
     const programs = store.programs().filter(p => !scopedProgram || p.key === scopedProgram),
-      rows = program ? store.byProgram(program.key) : [];
+      rows = program ? store.byProgram(program.key) : [],
+      farmaInventory = scopedProgram === 'farma';
     return React.createElement('div', null, header({
       title: program ? program.label : 'Programas · Productos',
       sub: program ? `${rows.length} productos · ${rows.filter(x => x.activo !== false).length} activos` : `${programs.length} programas · ${store.all().length} productos`,
@@ -74127,7 +74128,7 @@ Object.assign(window, {
         lineHeight: 1.5,
         marginBottom: 14
       }
-    }, program ? 'Edita exclusivamente el catálogo propio de este programa. Los cambios se reflejan en la app desde program_catalog_items.' : 'Selecciona un programa para ver claramente sus productos, precios, modalidad, imágenes, estado y orden.'), !program && React.createElement('div', {
+    }, farmaInventory ? 'Administra medicamentos, imágenes y existencias. Los productos activos aparecen en Suti Farma para los usuarios; las cantidades sólo se muestran en este panel.' : program ? 'Edita exclusivamente el catálogo propio de este programa. Los cambios se reflejan en la app desde program_catalog_items.' : 'Selecciona un programa para ver claramente sus productos, precios, modalidad, imágenes, estado y orden.'), !program && React.createElement('div', {
       style: {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))',
@@ -74193,12 +74194,58 @@ Object.assign(window, {
       key: program.key,
       programKey: program.key,
       canWrite
-    }), React.createElement('h2', {
+    }), farmaInventory && React.createElement('div', {
+      'data-farma-inventory-summary': true,
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
+        gap: 10,
+        marginBottom: 16
+      }
+    }, React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 15,
+        padding: 13,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 800,
+        color: 'var(--ink-3)'
+      }
+    }, 'MEDICAMENTOS ACTIVOS'), React.createElement('strong', {
+      style: {
+        display: 'block',
+        fontSize: 24,
+        marginTop: 4
+      }
+    }, rows.filter(x => x.activo !== false).length)), React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 15,
+        padding: 13,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 11,
+        fontWeight: 800,
+        color: 'var(--ink-3)'
+      }
+    }, 'EXISTENCIAS REGISTRADAS'), React.createElement('strong', {
+      style: {
+        display: 'block',
+        fontSize: 24,
+        marginTop: 4
+      }
+    }, rows.reduce((sum, x) => sum + Number(x.farmaInventory?.quantity || 0), 0)))), React.createElement('h2', {
       style: {
         fontSize: 17,
         margin: '0 0 14px'
       }
-    }, 'Productos del programa'), rows.length === 0 ? React.createElement(window.EmptyState, {
+    }, farmaInventory ? 'Inventario de medicamentos' : 'Productos del programa'), rows.length === 0 ? React.createElement(window.EmptyState, {
       icon: 'cart',
       title: 'Sin productos',
       sub: 'Este programa todavía no tiene productos.'
@@ -74231,7 +74278,7 @@ Object.assign(window, {
       name: 'plus',
       size: 18,
       stroke: 2.6
-    }), 'Agregar producto'))), editing && React.createElement(ProductEditor, {
+    }), farmaInventory ? 'Agregar medicamento' : 'Agregar producto'))), editing && React.createElement(ProductEditor, {
       item: editing,
       programs,
       onClose: () => setEditing(null),
@@ -74507,7 +74554,7 @@ Object.assign(window, {
         fontSize: 16,
         fontWeight: 850
       }
-    }, item.id ? 'Editar producto' : 'Nuevo producto')), React.createElement('div', {
+    }, farma ? item.id ? 'Editar medicamento' : 'Nuevo medicamento' : item.id ? 'Editar producto' : 'Nuevo producto')), React.createElement('div', {
       className: 'su-app-scroll',
       style: {
         flex: 1,
@@ -74748,14 +74795,14 @@ Object.assign(window, {
         fontSize: 14,
         fontWeight: 850
       }
-    }, 'Activo en la app'), React.createElement('div', {
+    }, farma ? 'Visible para los usuarios' : 'Activo en la app'), React.createElement('div', {
       style: {
         fontSize: 11.5,
         fontWeight: 600,
         color: 'var(--ink-3)',
         marginTop: 3
       }
-    }, 'Desactivar conserva el producto y su historia.')), React.createElement(window.Toggle, {
+    }, farma ? 'Al activarlo aparece en la vista de Suti Farma. La cantidad permanece privada.' : 'Desactivar conserva el producto y su historia.')), React.createElement(window.Toggle, {
       on: draft.activo !== false,
       size: 'lg',
       onClick: () => set('activo', draft.activo === false)
@@ -83490,7 +83537,7 @@ Object.assign(window, {
     header,
     catalogEntry = false
   }) {
-    const [tab, setTab] = useState(catalogEntry ? 'Medicamentos' : 'Solicitudes'),
+    const [tab, setTab] = useState('Inventario'),
       [filter, setFilter] = useState('open'),
       [selected, setSelected] = useState(null),
       data = useRows('queue');
@@ -83523,13 +83570,13 @@ Object.assign(window, {
       sub: open.length + ' solicitudes pendientes',
       onBack
     }), h(window.ChipBar, {
-      items: catalogEntry ? ['Medicamentos', 'Solicitudes', 'Información general'] : ['Solicitudes', 'Medicamentos'],
+      items: catalogEntry ? ['Inventario', 'Solicitudes', 'Información general'] : ['Inventario', 'Solicitudes'],
       value: tab,
       onChange: setTab,
       style: {
         padding: 16
       }
-    }), tab === 'Medicamentos' && h(window.ProgramProductsModule, {
+    }), tab === 'Inventario' && h(window.ProgramProductsModule, {
       app: adminApp,
       scopedProgram: 'farma',
       onBack,

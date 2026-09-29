@@ -48,14 +48,14 @@
  }
  function FarmaHistory(){const data=useRows('mine'),[selected,setSelected]=useState(null);if(data.phase==='error')return h('div',{style:{padding:16}},h(Failure,{retry:data.retry}));if(!data.rows.length)return null;return h('section',{'data-farma-history':true,style:{padding:16}},h(window.SectionHead,{title:'Mis solicitudes Suti Farma'}),data.rows.map(row=>h(RequestCard,{key:row.id,row,onOpen:setSelected})),selected&&h(Detail,{row:data.rows.find(r=>r.id===selected.id)||selected,onClose:()=>setSelected(null)}));}
  function FarmaAdmin({app,onBack,header,catalogEntry=false}){
-  const [tab,setTab]=useState(catalogEntry?'Medicamentos':'Solicitudes'),[filter,setFilter]=useState('open'),[selected,setSelected]=useState(null),data=useRows('queue');
+  const [tab,setTab]=useState('Inventario'),[filter,setFilter]=useState('open'),[selected,setSelected]=useState(null),data=useRows('queue');
   useEffect(()=>{const id=new URLSearchParams(location.search).get('farma_request');if(id&&data.phase==='ready'){const row=data.rows.find(r=>r.id===id);if(row){setSelected(row);setTab('Solicitudes');const url=new URL(location.href);url.searchParams.delete('farma_request');history.replaceState(history.state,'',url);}}},[data.phase,data.rows]);
   const adminApp={...app,admin:{...app.admin,has:window.AdminRepository.has}};
   const open=data.rows.filter(r=>['received','in_progress','ready'].includes(r.status));
   const rows=filter==='all'?data.rows:filter==='open'?open:data.rows.filter(r=>r.status===filter);
   return h('div',{'data-farma-admin':true},header({title:'Suti Farma',sub:open.length+' solicitudes pendientes',onBack}),
-   h(window.ChipBar,{items:catalogEntry?['Medicamentos','Solicitudes','Información general']:['Solicitudes','Medicamentos'],value:tab,onChange:setTab,style:{padding:16}}),
-   tab==='Medicamentos'&&h(window.ProgramProductsModule,{app:adminApp,scopedProgram:'farma',onBack,header:()=>null}),
+   h(window.ChipBar,{items:catalogEntry?['Inventario','Solicitudes','Información general']:['Inventario','Solicitudes'],value:tab,onChange:setTab,style:{padding:16}}),
+   tab==='Inventario'&&h(window.ProgramProductsModule,{app:adminApp,scopedProgram:'farma',onBack,header:()=>null}),
    tab==='Información general'&&h('div',{style:{padding:16}},h(window.ProgramGeneralInfo.Editor,{programKey:'farma',canWrite:window.AdminRepository.has('workflow.write')})),
    tab==='Solicitudes'&&h('div',{style:{padding:16}},h(window.RequestPushInvitation,{farma:true}),h('label',null,'Solicitudes',h('select',{value:filter,onChange:e=>setFilter(e.target.value),style:field},h('option',{value:'open'},'Pendientes'),h('option',{value:'all'},'Todas'),Object.entries(R().states).map(([value,label])=>h('option',{key:value,value},label)))),h(window.Btn,{variant:'outline',onClick:data.retry},'Actualizar'),
     data.phase==='error'?h(Failure,{retry:data.retry}):data.phase==='loading'&&!data.rows.length?h('p',null,'Cargando solicitudes…'):!rows.length?h(window.EmptyState,{icon:'receipt',title:'Sin solicitudes',sub:'Las solicitudes de medicamentos aparecerán aquí.'}):rows.map(row=>h('div',{key:row.id},h('p',{style:{fontSize:13}},row.contact.name),h(RequestCard,{row,onOpen:setSelected})))),

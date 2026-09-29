@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "bundleSha256": "6a13594346f98e10ff1607f20dd2faa191efd9283f0e2526bd34feb129221a8a",
+  "bundleSha256": "aa00f47c3ae902a958167dc33294dc35c54cb4a284578b02eea7762ef4302429",
   "cases": [
     {
       "viewport": {
@@ -8,7 +8,10 @@
         "height": 900
       },
       "adminInventory": true,
+      "inventorySummary": true,
+      "addMedicine": true,
       "editorStock": true,
+      "publicVisibilityCopy": true,
       "noFinancialFields": true,
       "publicStockHidden": true,
       "submitCelebration": true,
@@ -21,7 +24,10 @@
         "height": 844
       },
       "adminInventory": true,
+      "inventorySummary": true,
+      "addMedicine": true,
       "editorStock": true,
+      "publicVisibilityCopy": true,
       "noFinancialFields": true,
       "publicStockHidden": true,
       "submitCelebration": true,

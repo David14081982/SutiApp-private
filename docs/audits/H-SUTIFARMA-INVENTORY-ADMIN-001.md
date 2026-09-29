@@ -125,3 +125,9 @@ Risk: accidentally narrowing the total administrator screen or leaving a broad r
 Corrective result: PASS. Source of truth, quantities, requests, permissions, schema and legacy remain unchanged. UI preservation: PASS; the existing Inventory/Solicitudes structure and all controls remain, while the erroneous fail-safe state is replaced by the authorized scoped data.
 
 Scope update before final corrective publication: `SutiApp.html` bundle query and `sw.js` cache/Core query are bumped together so already-installed clients cannot retain the defective same-URL bundle. This changes version identifiers only, not service-worker routing or cache policy. Required verification adds artifact build, SW registration/refresh and exact deployed bundle hash. Recovery is the preceding published artifact.
+
+## Corrective continuation — assisted administration
+
+The reported inventory flash and terminal error were reproduced under the real assisted context: the catalog returned 50 Farma rows while `farma_command('INVENTORY')` returned `42501:FARMA_ADMIN_DENIED`. Migration `20260928000700` removes only the redundant blanket assisted-session denial; the existing actor/subject permission intersection, module boundary, session binding, Auth requirement and audit actor remain authoritative. The UI now starts the scoped inventory in loading state, defers the request queue until its tab is selected, and suppresses the unrelated legacy role-preview banner during assisted administration. Forward plus exact recovery passed inside `ROLLBACK` with 50 rows and zero persistent writes.
+
+Owner explicitly authorized assisted control for Suti Farma. Production apply: PASS; migration tracking advanced from `20260928000600` to `20260928000700`, catalog and inventory hashes remained identical, and no business rows changed. Real assisted postflight: module `farma`, `program_catalog.read=true`, 50 catalog rows, 50 inventory rows, no errors.

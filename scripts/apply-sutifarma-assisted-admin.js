@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),external=path.resolve(root,'../../../scripts/savings-admin-review-db');
+const {query}=require(fs.existsSync(path.join(root,'supabase.env'))?'./savings-admin-review-db':external);
+const file='supabase/migrations/20260928000700_sutifarma_assisted_admin.sql',version='20260928000700';
+const sql=fs.readFileSync(path.join(root,file),'utf8'),body=sql.replace(/^\s*begin;\s*/i,'').replace(/\s*commit;\s*$/i,'');
+const hash=crypto.createHash('sha256').update(sql).digest('hex');
+const snap=async()=>((await query(`select jsonb_build_object('latest',(select max(version) from supabase_migrations.schema_migrations),'catalog',(select md5(string_agg(to_jsonb(x)::text,',' order by id)) from program_catalog_items x),'inventory',(select md5(string_agg(to_jsonb(x)::text,',' order by item_id)) from farma_private.inventory x),'requests',(select md5(string_agg(to_jsonb(x)::text,',' order by id)) from farma_private.requests x),'events',(select md5(string_agg(to_jsonb(x)::text,',' order by id)) from farma_private.events x)) result`))[0].result);
+(async()=>{const before=await snap();if(before.latest!=='20260928000600')throw Error('FARMA_ASSISTED_PREFLIGHT_'+before.latest);
+ await query(`begin;${body}insert into supabase_migrations.schema_migrations(version,name,statements) values('${version}','sutifarma_assisted_admin',array['sha256:${hash}']);commit;`);
+ const after=await snap();for(const key of ['catalog','inventory','requests','events'])if(before[key]!==after[key])throw Error('FARMA_ASSISTED_DATA_DRIFT_'+key);
+ console.log(JSON.stringify({status:'PASS',version,before,after,migrationSha256:hash,businessRowsChanged:0}));
+})().catch(e=>{console.error(e.message);process.exitCode=1;});

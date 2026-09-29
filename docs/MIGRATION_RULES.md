@@ -1,5 +1,9 @@
 # Reglas de migración
 
+## 20260928000700 — administración asistida Suti Farma — APPLIED / VERIFIED
+
+Reemplaza únicamente `farma_private.allowed(text)` para retirar la prohibición absoluta de sesiones asistidas. Conserva Auth, la intersección actor/sujeto de `has_admin_permission`, el límite de módulo `farma`/`program_products`, el vínculo de sesión y el actor real en auditoría. No modifica tablas, filas, inventario, solicitudes ni eventos. La definición previa queda en `farma_private.definition_backup`; recovery restaura su huella exacta. Forward, contexto real de la cuenta Farma y recovery pasaron juntos con `ROLLBACK`: 50 productos, lectura y capacidad de escritura acotada, cero persistencia. Aplicación productiva autorizada: huellas de catálogo e inventario idénticas, cero filas de negocio modificadas; postflight asistido devolvió 50 productos y 50 inventarios sin error.
+
 ## 20260924000400 — motivo opcional en Afiliados — APPLIED
 
 Autorización: solicitud expresa del propietario en H-AFFILIATES-OPTIONAL-REASON-001.

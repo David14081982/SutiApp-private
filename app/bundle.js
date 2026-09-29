@@ -2665,6 +2665,570 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
   });
 })();
 })();
+/* @@file farma-repository.js */
+(function(){
+/* Suti Farma: catalog products, private operational stock and donation requests. */
+(function(){
+ 'use strict';
+ async function command(action,data={}){const r=await window.SutiSupabase.getClient().rpc('farma_command',{p_action:action,p_data:data});if(r.error)throw r.error;return r.data;}
+ const changed=()=>window.dispatchEvent(new Event('suti:farma-changed'));
+ async function write(action,data){const row=await command(action,data);changed();return row;}
+ function message(error){const code=String(error&&error.message||'');return code.includes('VERSION_CONFLICT')?'La información cambió. Recarga antes de guardar.':code.includes('INSUFFICIENT_STOCK')?'La cantidad supera las existencias disponibles.':code.includes('UNAVAILABLE')?'Este medicamento no está disponible para nuevas solicitudes.':code.includes('NOTIFICATION_PHONE')?'Escribe un teléfono de 10 dígitos.':code.includes('QUANTITY')||code.includes('STOCK_INVALID')?'Revisa la cantidad y la unidad.':code.includes('DENIED')?'No tienes permiso para esta operación.':'No pudimos completar la operación. Intenta nuevamente.';}
+ const states={received:'Recibida',in_progress:'En atención',ready:'Lista para entrega',delivered:'Entregada',unavailable:'Sin disponibilidad',cancelled:'Cancelada'};
+ function workflow(row){const order=['received','in_progress','ready','delivered'],index=order.indexOf(row.status),terminal=index<0;return {available:true,stages:order.map((id,i)=>({id,label:states[id],state:i<index?'done':i===index?'current':'upcoming',description:i===0?'Pronto nos pondremos en contacto contigo para brindarte atención personalizada.':undefined,date:row.events.find(e=>e.status===id)?.created_at})),message:terminal?states[row.status]:undefined};}
+ window.FarmaRepository=Object.freeze({command,message,states,workflow,contact:()=>command('CONTACT'),mine:()=>command('MINE'),queue:()=>command('QUEUE'),inventory:()=>command('INVENTORY'),submit:data=>write('SUBMIT',data),save:data=>write('SAVE_PRODUCT',data),archive:data=>write('ARCHIVE',data),transition:data=>write('TRANSITION',data)});
+})();
+})();
+/* @@file screens-farma.jsx */
+(function(){
+/* Farma additions use the existing catalog/editor/gallery and submission celebration. */
+(function () {
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    R = () => window.FarmaRepository;
+  const panel = {
+    background: 'var(--surface)',
+    borderRadius: 18,
+    padding: 16,
+    boxShadow: 'var(--neo-sm)',
+    marginBottom: 12
+  };
+  const field = {
+    width: '100%',
+    boxSizing: 'border-box',
+    border: 0,
+    borderRadius: 12,
+    padding: '12px 13px',
+    background: 'var(--surface-2)',
+    color: 'var(--ink)',
+    font: 'inherit',
+    margin: '6px 0 12px',
+    boxShadow: 'var(--neo-inset)'
+  };
+  function useRows(kind, enabled = true) {
+    const [state, set] = useState({
+        phase: 'loading',
+        rows: []
+      }),
+      revision = useRef(0),
+      epoch = window.PrivateResourceDemand.useContext();
+    const load = () => {
+      const n = ++revision.current;
+      set(s => ({
+        epoch,
+        phase: 'loading',
+        rows: s.epoch === epoch ? s.rows : []
+      }));
+      return R()[kind]().then(rows => {
+        if (n === revision.current) set({
+          epoch,
+          phase: 'ready',
+          rows
+        });
+      }, () => {
+        if (n === revision.current) set({
+          epoch,
+          phase: 'error',
+          rows: []
+        });
+      });
+    };
+    useEffect(() => {
+      if (!enabled) {
+        revision.current++;
+        return;
+      }
+      load();
+      const refresh = () => {
+        if (!document.hidden) load();
+      };
+      window.addEventListener('suti:farma-changed', refresh);
+      window.addEventListener('focus', refresh);
+      const timer = setInterval(refresh, 30000);
+      return () => {
+        revision.current++;
+        clearInterval(timer);
+        window.removeEventListener('suti:farma-changed', refresh);
+        window.removeEventListener('focus', refresh);
+      };
+    }, [kind, epoch, enabled]);
+    return {
+      ...(!enabled ? {
+        phase: 'idle',
+        rows: []
+      } : state.epoch === epoch ? state : {
+        phase: 'loading',
+        rows: []
+      }),
+      retry: load
+    };
+  }
+  function Failure({
+    retry
+  }) {
+    return h('div', {
+      role: 'alert',
+      style: panel
+    }, h('p', null, 'No pudimos consultar Suti Farma.'), h(window.Btn, {
+      variant: 'outline',
+      onClick: retry
+    }, 'Reintentar'));
+  }
+  function FarmaRequest({
+    item,
+    app
+  }) {
+    const [open, setOpen] = useState(false),
+      [contact, setContact] = useState(null),
+      [phone, setPhone] = useState(''),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [sent, setSent] = useState(null);
+    const key = useRef(null),
+      sending = useRef(false),
+      epoch = window.PrivateResourceDemand.useContext();
+    useEffect(() => {
+      setOpen(false);
+      setSent(null);
+      setContact(null);
+      setBusy(false);
+      setError('');
+      sending.current = false;
+      key.current = null;
+    }, [epoch, item.id]);
+    const load = async () => {
+      const context = window.PrivateResourceDemand.context();
+      setOpen(true);
+      setError('');
+      setContact(null);
+      try {
+        const c = await R().contact();
+        if (context !== window.PrivateResourceDemand.context()) return;
+        setContact(c);
+        setPhone(c.phone || '');
+      } catch (e) {
+        setError(R().message(e));
+      }
+    };
+    const submit = async () => {
+      if (sending.current) return;
+      const context = window.PrivateResourceDemand.context();
+      sending.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        key.current = key.current || crypto.randomUUID();
+        const result = await R().submit({
+          item_id: item.id,
+          phone,
+          idempotency_key: key.current
+        });
+        if (context !== window.PrivateResourceDemand.context()) return;
+        setSent(result);
+      } catch (e) {
+        setError(R().message(e));
+      } finally {
+        sending.current = false;
+        setBusy(false);
+      }
+    };
+    if (sent) return h(window.RequestSubmissionSuccess, {
+      app,
+      fullScreen: true,
+      kind: 'farma',
+      subject: [sent.product.name, sent.product.presentation].filter(Boolean).join(' · '),
+      folio: sent.folio,
+      workflowState: R().workflow(sent),
+      destination: sent.existing ? 'Ya tienes una solicitud abierta para este medicamento. Puedes seguirla en Mi Historial.' : 'Tu solicitud llegó al área de Suti Farma.',
+      onBack: () => {
+        setSent(null);
+        setOpen(false);
+      }
+    });
+    return h('section', {
+      'data-farma-request': true,
+      style: {
+        marginTop: 18
+      }
+    }, h(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: 'plus',
+      onClick: load,
+      style: {
+        height: 'auto',
+        minHeight: 54,
+        whiteSpace: 'normal',
+        padding: '12px 16px'
+      }
+    }, 'Solicitar ' + item.nombre), open && h(window.Sheet, {
+      open,
+      onClose: () => {
+        if (!busy) setOpen(false);
+      },
+      title: 'Solicitar ' + item.nombre
+    }, h('div', {
+      style: {
+        padding: 16
+      }
+    }, h('h3', null, item.nombre), h('p', null, item.presentation_raw || ''), contact ? h(React.Fragment, null, h('p', null, h('strong', null, contact.name), h('br'), 'Número de control: ' + contact.numero_control), h('label', null, 'Teléfono de contacto', h('input', {
+      'data-farma-phone': true,
+      type: 'tel',
+      inputMode: 'tel',
+      maxLength: 10,
+      value: phone,
+      disabled: busy,
+      onChange: e => setPhone(e.target.value.replace(/\D/g, '')),
+      style: field
+    })), h('p', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink-2)'
+      }
+    }, 'Usaremos este teléfono de tu registro de afiliación para brindarte atención personalizada. Donación sujeta a disponibilidad y confirmación de Suti Farma.'), h(window.Btn, {
+      'data-farma-submit': true,
+      full: true,
+      disabled: busy || !/^\d{10}$/.test(phone),
+      onClick: submit
+    }, busy ? 'Enviando…' : 'Confirmar solicitud')) : h('p', null, error ? 'No se pudo cargar tu contacto.' : 'Cargando tus datos…'), error && h('p', {
+      role: 'alert'
+    }, error), !contact && error && h(window.Btn, {
+      onClick: load
+    }, 'Reintentar'))));
+  }
+  function FarmaStockFields({
+    draft,
+    set
+  }) {
+    return h('div', {
+      'data-farma-stock-fields': true,
+      style: panel
+    }, h(window.Badge, {
+      tone: 'green'
+    }, 'Donación'), h('label', {
+      style: {
+        display: 'block',
+        marginTop: 12
+      }
+    }, 'Presentación', h('input', {
+      'data-farma-presentation': true,
+      value: draft.presentation_raw || '',
+      maxLength: 240,
+      onChange: e => set('presentation_raw', e.target.value),
+      style: field
+    })), h('label', null, 'Existencias (solo administración)', h('input', {
+      'data-farma-stock': true,
+      type: 'number',
+      min: 0,
+      max: 1000000,
+      step: 1,
+      value: draft.farmaQuantity ?? draft.farmaInventory?.quantity ?? 0,
+      onChange: e => set('farmaQuantity', e.target.value === '' ? '' : Number(e.target.value)),
+      style: field
+    })), h('label', null, 'Unidad', h('select', {
+      'data-farma-unit': true,
+      value: draft.farmaUnit || draft.farmaInventory?.unit || 'caja',
+      onChange: e => set('farmaUnit', e.target.value),
+      style: field
+    }, h('option', {
+      value: 'caja'
+    }, 'Caja'), h('option', {
+      value: 'frasco'
+    }, 'Frasco'))));
+  }
+  function RequestCard({
+    row,
+    onOpen
+  }) {
+    return h('button', {
+      'data-farma-request-id': row.id,
+      onClick: () => onOpen(row),
+      style: {
+        ...panel,
+        width: '100%',
+        border: 0,
+        font: 'inherit',
+        textAlign: 'left',
+        cursor: 'pointer',
+        color: 'var(--ink)'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 10
+      }
+    }, h('strong', null, row.product.name), h(window.Badge, {
+      tone: row.status === 'delivered' ? 'green' : 'amber'
+    }, R().states[row.status])), h('p', {
+      style: {
+        margin: '8px 0',
+        fontSize: 13
+      }
+    }, row.product.presentation), h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, row.folio + ' · ' + new Date(row.created_at).toLocaleString('es-MX')));
+  }
+  function Detail({
+    row,
+    admin,
+    onClose,
+    onUpdated
+  }) {
+    const [status, setStatus] = useState(''),
+      [quantity, setQuantity] = useState(1),
+      [note, setNote] = useState(''),
+      [error, setError] = useState(''),
+      [busy, setBusy] = useState(false),
+      sending = useRef(false),
+      key = useRef(null);
+    const transitions = {
+      received: ['in_progress', 'unavailable', 'cancelled'],
+      in_progress: ['ready', 'unavailable', 'cancelled'],
+      ready: ['delivered', 'unavailable', 'cancelled']
+    };
+    const options = transitions[row.status] || [];
+    const submit = async () => {
+      if (sending.current) return;
+      sending.current = true;
+      setBusy(true);
+      setError('');
+      key.current = key.current || crypto.randomUUID();
+      try {
+        const updated = await R().transition({
+          request_id: row.id,
+          version: row.version,
+          status,
+          quantity,
+          note,
+          action_id: key.current
+        });
+        setStatus('');
+        setNote('');
+        key.current = null;
+        onUpdated(updated);
+      } catch (e) {
+        setError(R().message(e));
+      } finally {
+        sending.current = false;
+        setBusy(false);
+      }
+    };
+    return h(window.Sheet, {
+      open: true,
+      onClose: () => {
+        if (!busy) onClose();
+      },
+      title: 'Solicitud Suti Farma'
+    }, h('div', {
+      'data-farma-detail': true,
+      style: {
+        padding: 16
+      }
+    }, h('h3', null, row.product.name), h('p', null, row.product.presentation), h('p', {
+      style: {
+        overflowWrap: 'anywhere'
+      }
+    }, row.folio), h(window.Badge, {
+      tone: 'green'
+    }, R().states[row.status]), h('p', null, h('strong', null, row.contact.name), h('br'), 'Número de control: ' + row.contact.numero_control, h('br'), 'Teléfono: ' + row.contact.phone), admin && h('div', {
+      style: {
+        display: 'flex',
+        gap: 12,
+        marginBottom: 16
+      }
+    }, h('a', {
+      href: 'tel:' + row.contact.phone
+    }, 'Llamar'), h('a', {
+      href: 'https://wa.me/52' + row.contact.phone,
+      target: '_blank',
+      rel: 'noopener noreferrer'
+    }, 'Abrir WhatsApp')), h('h4', null, 'Seguimiento'), h('ol', null, row.events.map(e => h('li', {
+      key: e.id,
+      style: {
+        marginBottom: 12
+      }
+    }, R().states[e.status] || e.action, ' · ', new Date(e.created_at).toLocaleString('es-MX'), admin && e.note && h('p', null, e.note)))), row.delivered_quantity && h('p', null, 'Cantidad entregada: ' + row.delivered_quantity), admin && options.length > 0 && h(React.Fragment, null, h('label', null, 'Actualizar atención', h('select', {
+      'data-farma-status': true,
+      value: status,
+      disabled: busy,
+      onChange: e => {
+        setStatus(e.target.value);
+        key.current = null;
+      },
+      style: field
+    }, h('option', {
+      value: ''
+    }, 'Selecciona una acción'), options.map(value => h('option', {
+      key: value,
+      value
+    }, R().states[value])))), status === 'delivered' && h('label', null, 'Cantidad entregada', h('input', {
+      'data-farma-delivery-quantity': true,
+      type: 'number',
+      min: 1,
+      step: 1,
+      value: quantity,
+      disabled: busy,
+      onChange: e => setQuantity(Number(e.target.value)),
+      style: field
+    })), h('label', null, 'Nota interna', h('textarea', {
+      value: note,
+      disabled: busy,
+      maxLength: 2000,
+      onChange: e => setNote(e.target.value),
+      style: field
+    })), h(window.Btn, {
+      'data-farma-transition': true,
+      full: true,
+      disabled: busy || !status,
+      onClick: submit
+    }, busy ? 'Guardando…' : status === 'delivered' ? 'Registrar entrega y descontar existencias' : 'Guardar atención')), error && h('p', {
+      role: 'alert'
+    }, error)));
+  }
+  function FarmaHistory() {
+    const data = useRows('mine'),
+      [selected, setSelected] = useState(null);
+    if (data.phase === 'error') return h('div', {
+      style: {
+        padding: 16
+      }
+    }, h(Failure, {
+      retry: data.retry
+    }));
+    if (!data.rows.length) return null;
+    return h('section', {
+      'data-farma-history': true,
+      style: {
+        padding: 16
+      }
+    }, h(window.SectionHead, {
+      title: 'Mis solicitudes Suti Farma'
+    }), data.rows.map(row => h(RequestCard, {
+      key: row.id,
+      row,
+      onOpen: setSelected
+    })), selected && h(Detail, {
+      row: data.rows.find(r => r.id === selected.id) || selected,
+      onClose: () => setSelected(null)
+    }));
+  }
+  function FarmaAdmin({
+    app,
+    onBack,
+    header,
+    catalogEntry = false
+  }) {
+    const hasRequest = () => Boolean(new URLSearchParams(location.search).get('farma_request'));
+    const [tab, setTab] = useState(() => hasRequest() ? 'Solicitudes' : 'Inventario'),
+      [filter, setFilter] = useState('open'),
+      [selected, setSelected] = useState(null),
+      data = useRows('queue', tab === 'Solicitudes');
+    useEffect(() => {
+      const id = new URLSearchParams(location.search).get('farma_request');
+      if (id && data.phase === 'ready') {
+        const row = data.rows.find(r => r.id === id);
+        if (row) {
+          setSelected(row);
+          setTab('Solicitudes');
+          const url = new URL(location.href);
+          url.searchParams.delete('farma_request');
+          history.replaceState(history.state, '', url);
+        }
+      }
+    }, [data.phase, data.rows]);
+    const adminApp = {
+      ...app,
+      admin: {
+        ...app.admin,
+        has: window.AdminRepository.has
+      }
+    };
+    const open = data.rows.filter(r => ['received', 'in_progress', 'ready'].includes(r.status));
+    const rows = filter === 'all' ? data.rows : filter === 'open' ? open : data.rows.filter(r => r.status === filter);
+    return h('div', {
+      'data-farma-admin': true
+    }, header({
+      title: 'Suti Farma',
+      sub: open.length + ' solicitudes pendientes',
+      onBack
+    }), h(window.ChipBar, {
+      items: catalogEntry ? ['Inventario', 'Solicitudes', 'Información general'] : ['Inventario', 'Solicitudes'],
+      value: tab,
+      onChange: setTab,
+      style: {
+        padding: 16
+      }
+    }), tab === 'Inventario' && h(window.ProgramProductsModule, {
+      app: adminApp,
+      scopedProgram: 'farma',
+      onBack,
+      header: () => null
+    }), tab === 'Información general' && h('div', {
+      style: {
+        padding: 16
+      }
+    }, h(window.ProgramGeneralInfo.Editor, {
+      programKey: 'farma',
+      canWrite: window.AdminRepository.has('workflow.write')
+    })), tab === 'Solicitudes' && h('div', {
+      style: {
+        padding: 16
+      }
+    }, h(window.RequestPushInvitation, {
+      farma: true
+    }), h('label', null, 'Solicitudes', h('select', {
+      value: filter,
+      onChange: e => setFilter(e.target.value),
+      style: field
+    }, h('option', {
+      value: 'open'
+    }, 'Pendientes'), h('option', {
+      value: 'all'
+    }, 'Todas'), Object.entries(R().states).map(([value, label]) => h('option', {
+      key: value,
+      value
+    }, label)))), h(window.Btn, {
+      variant: 'outline',
+      onClick: data.retry
+    }, 'Actualizar'), data.phase === 'error' ? h(Failure, {
+      retry: data.retry
+    }) : data.phase === 'loading' && !data.rows.length ? h('p', null, 'Cargando solicitudes…') : !rows.length ? h(window.EmptyState, {
+      icon: 'receipt',
+      title: 'Sin solicitudes',
+      sub: 'Las solicitudes de medicamentos aparecerán aquí.'
+    }) : rows.map(row => h('div', {
+      key: row.id
+    }, h('p', {
+      style: {
+        fontSize: 13
+      }
+    }, row.contact.name), h(RequestCard, {
+      row,
+      onOpen: setSelected
+    })))), selected && h(Detail, {
+      key: selected.id,
+      row: data.rows.find(r => r.id === selected.id) || selected,
+      admin: true,
+      onClose: () => setSelected(null),
+      onUpdated: setSelected
+    }));
+  }
+  Object.assign(window, {
+    FarmaRequest,
+    FarmaStockFields,
+    FarmaHistory,
+    FarmaAdmin
+  });
+})();
+})();
 /* @@file login-history-repository.js */
 (function(){
 /* Dedicated read-only Admin boundary; Auth remains the event authority. */
@@ -67953,7 +68517,7 @@ Object.assign(window, {
         await load();
       } catch (e) {
         const t = String(e && e.message || e);
-        setError(t.includes('PROTECTED') ? 'La cuenta principal protegida no se puede revocar.' : t.includes('SELF_ASSIGNMENT') ? 'No puedes revocar tu propia cuenta (ni la cuenta que tienes bajo «Tomar control»).' : t.includes('AUTHORIZATION_DENIED')?'Tu sesión no tiene permiso para revocar. Si tienes activo «Tomar control», termínalo e inténtalo de nuevo.':t.includes('LAST_PRINCIPAL_ADMIN')?'Debe quedar al menos un Administrador principal activo.':t.includes('NOT_FOUND')?'La asignación ya no existe; recarga la lista.':'No fue posible revocar el acceso. ('+t+')');
+        setError(t.includes('PROTECTED') ? 'La cuenta principal protegida no se puede revocar.' : t.includes('SELF_ASSIGNMENT') ? 'No puedes revocar tu propia cuenta (ni la cuenta que tienes bajo «Tomar control»).' : t.includes('AUTHORIZATION_DENIED') ? 'Tu sesión no tiene permiso para revocar. Si tienes activo «Tomar control», termínalo e inténtalo de nuevo.' : t.includes('LAST_PRINCIPAL_ADMIN') ? 'Debe quedar al menos un Administrador principal activo.' : t.includes('NOT_FOUND') ? 'La asignación ya no existe; recarga la lista.' : 'No fue posible revocar el acceso. (' + t + ')');
       } finally {
         setBusy(false);
       }
@@ -73821,6 +74385,9 @@ Object.assign(window, {
   async function loadProgram(key) {
     const epoch = window.PrivateResourceDemand.context();
     selectedProgram = key;
+    phase = 'loading';
+    error = null;
+    emit();
     try {
       const rows = await fetchProgram(key);
       if (window.PrivateResourceDemand.context() !== epoch || selectedProgram !== key) return false;
@@ -74112,7 +74679,7 @@ Object.assign(window, {
         store.clearSelection();
         setProgram(null);
       } : onBack
-    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
+    }), window.ActingBanner && !app.admin.assignment?.supportContext && React.createElement(window.ActingBanner, {}), React.createElement('div', {
       className: 'su-app-scroll su-stagger',
       style: {
         padding: '16px 16px 28px'
@@ -83078,562 +83645,6 @@ Object.assign(window, {
   }
   window.AffiliateAuth.subscribe(syncIdentity);syncIdentity();
   window.RequestPush={state,enable,clearDevice,syncIdentity};window.RequestPushInvitation=RequestPushInvitation;
-})();
-})();
-/* @@file farma-repository.js */
-(function(){
-/* Suti Farma: catalog products, private operational stock and donation requests. */
-(function(){
- 'use strict';
- async function command(action,data={}){const r=await window.SutiSupabase.getClient().rpc('farma_command',{p_action:action,p_data:data});if(r.error)throw r.error;return r.data;}
- const changed=()=>window.dispatchEvent(new Event('suti:farma-changed'));
- async function write(action,data){const row=await command(action,data);changed();return row;}
- function message(error){const code=String(error&&error.message||'');return code.includes('VERSION_CONFLICT')?'La información cambió. Recarga antes de guardar.':code.includes('INSUFFICIENT_STOCK')?'La cantidad supera las existencias disponibles.':code.includes('UNAVAILABLE')?'Este medicamento no está disponible para nuevas solicitudes.':code.includes('NOTIFICATION_PHONE')?'Escribe un teléfono de 10 dígitos.':code.includes('QUANTITY')||code.includes('STOCK_INVALID')?'Revisa la cantidad y la unidad.':code.includes('DENIED')?'No tienes permiso para esta operación.':'No pudimos completar la operación. Intenta nuevamente.';}
- const states={received:'Recibida',in_progress:'En atención',ready:'Lista para entrega',delivered:'Entregada',unavailable:'Sin disponibilidad',cancelled:'Cancelada'};
- function workflow(row){const order=['received','in_progress','ready','delivered'],index=order.indexOf(row.status),terminal=index<0;return {available:true,stages:order.map((id,i)=>({id,label:states[id],state:i<index?'done':i===index?'current':'upcoming',description:i===0?'Pronto nos pondremos en contacto contigo para brindarte atención personalizada.':undefined,date:row.events.find(e=>e.status===id)?.created_at})),message:terminal?states[row.status]:undefined};}
- window.FarmaRepository=Object.freeze({command,message,states,workflow,contact:()=>command('CONTACT'),mine:()=>command('MINE'),queue:()=>command('QUEUE'),inventory:()=>command('INVENTORY'),submit:data=>write('SUBMIT',data),save:data=>write('SAVE_PRODUCT',data),archive:data=>write('ARCHIVE',data),transition:data=>write('TRANSITION',data)});
-})();
-})();
-/* @@file screens-farma.jsx */
-(function(){
-/* Farma additions use the existing catalog/editor/gallery and submission celebration. */
-(function () {
-  const h = React.createElement,
-    {
-      useState,
-      useEffect,
-      useRef
-    } = React,
-    R = () => window.FarmaRepository;
-  const panel = {
-    background: 'var(--surface)',
-    borderRadius: 18,
-    padding: 16,
-    boxShadow: 'var(--neo-sm)',
-    marginBottom: 12
-  };
-  const field = {
-    width: '100%',
-    boxSizing: 'border-box',
-    border: 0,
-    borderRadius: 12,
-    padding: '12px 13px',
-    background: 'var(--surface-2)',
-    color: 'var(--ink)',
-    font: 'inherit',
-    margin: '6px 0 12px',
-    boxShadow: 'var(--neo-inset)'
-  };
-  function useRows(kind) {
-    const [state, set] = useState({
-        phase: 'loading',
-        rows: []
-      }),
-      revision = useRef(0),
-      epoch = window.PrivateResourceDemand.useContext();
-    const load = () => {
-      const n = ++revision.current;
-      set(s => ({
-        epoch,
-        phase: 'loading',
-        rows: s.epoch === epoch ? s.rows : []
-      }));
-      return R()[kind]().then(rows => {
-        if (n === revision.current) set({
-          epoch,
-          phase: 'ready',
-          rows
-        });
-      }, () => {
-        if (n === revision.current) set({
-          epoch,
-          phase: 'error',
-          rows: []
-        });
-      });
-    };
-    useEffect(() => {
-      load();
-      const refresh = () => {
-        if (!document.hidden) load();
-      };
-      window.addEventListener('suti:farma-changed', refresh);
-      window.addEventListener('focus', refresh);
-      const timer = setInterval(refresh, 30000);
-      return () => {
-        revision.current++;
-        clearInterval(timer);
-        window.removeEventListener('suti:farma-changed', refresh);
-        window.removeEventListener('focus', refresh);
-      };
-    }, [kind, epoch]);
-    return {
-      ...(state.epoch === epoch ? state : {
-        phase: 'loading',
-        rows: []
-      }),
-      retry: load
-    };
-  }
-  function Failure({
-    retry
-  }) {
-    return h('div', {
-      role: 'alert',
-      style: panel
-    }, h('p', null, 'No pudimos consultar Suti Farma.'), h(window.Btn, {
-      variant: 'outline',
-      onClick: retry
-    }, 'Reintentar'));
-  }
-  function FarmaRequest({
-    item,
-    app
-  }) {
-    const [open, setOpen] = useState(false),
-      [contact, setContact] = useState(null),
-      [phone, setPhone] = useState(''),
-      [busy, setBusy] = useState(false),
-      [error, setError] = useState(''),
-      [sent, setSent] = useState(null);
-    const key = useRef(null),
-      sending = useRef(false),
-      epoch = window.PrivateResourceDemand.useContext();
-    useEffect(() => {
-      setOpen(false);
-      setSent(null);
-      setContact(null);
-      setBusy(false);
-      setError('');
-      sending.current = false;
-      key.current = null;
-    }, [epoch, item.id]);
-    const load = async () => {
-      const context = window.PrivateResourceDemand.context();
-      setOpen(true);
-      setError('');
-      setContact(null);
-      try {
-        const c = await R().contact();
-        if (context !== window.PrivateResourceDemand.context()) return;
-        setContact(c);
-        setPhone(c.phone || '');
-      } catch (e) {
-        setError(R().message(e));
-      }
-    };
-    const submit = async () => {
-      if (sending.current) return;
-      const context = window.PrivateResourceDemand.context();
-      sending.current = true;
-      setBusy(true);
-      setError('');
-      try {
-        key.current = key.current || crypto.randomUUID();
-        const result = await R().submit({
-          item_id: item.id,
-          phone,
-          idempotency_key: key.current
-        });
-        if (context !== window.PrivateResourceDemand.context()) return;
-        setSent(result);
-      } catch (e) {
-        setError(R().message(e));
-      } finally {
-        sending.current = false;
-        setBusy(false);
-      }
-    };
-    if (sent) return h(window.RequestSubmissionSuccess, {
-      app,
-      fullScreen: true,
-      kind: 'farma',
-      subject: [sent.product.name, sent.product.presentation].filter(Boolean).join(' · '),
-      folio: sent.folio,
-      workflowState: R().workflow(sent),
-      destination: sent.existing ? 'Ya tienes una solicitud abierta para este medicamento. Puedes seguirla en Mi Historial.' : 'Tu solicitud llegó al área de Suti Farma.',
-      onBack: () => {
-        setSent(null);
-        setOpen(false);
-      }
-    });
-    return h('section', {
-      'data-farma-request': true,
-      style: {
-        marginTop: 18
-      }
-    }, h(window.Btn, {
-      full: true,
-      size: 'lg',
-      icon: 'plus',
-      onClick: load,
-      style: {
-        height: 'auto',
-        minHeight: 54,
-        whiteSpace: 'normal',
-        padding: '12px 16px'
-      }
-    }, 'Solicitar ' + item.nombre), open && h(window.Sheet, {
-      open,
-      onClose: () => {
-        if (!busy) setOpen(false);
-      },
-      title: 'Solicitar ' + item.nombre
-    }, h('div', {
-      style: {
-        padding: 16
-      }
-    }, h('h3', null, item.nombre), h('p', null, item.presentation_raw || ''), contact ? h(React.Fragment, null, h('p', null, h('strong', null, contact.name), h('br'), 'Número de control: ' + contact.numero_control), h('label', null, 'Teléfono de contacto', h('input', {
-      'data-farma-phone': true,
-      type: 'tel',
-      inputMode: 'tel',
-      maxLength: 10,
-      value: phone,
-      disabled: busy,
-      onChange: e => setPhone(e.target.value.replace(/\D/g, '')),
-      style: field
-    })), h('p', {
-      style: {
-        fontSize: 13,
-        color: 'var(--ink-2)'
-      }
-    }, 'Usaremos este teléfono de tu registro de afiliación para brindarte atención personalizada. Donación sujeta a disponibilidad y confirmación de Suti Farma.'), h(window.Btn, {
-      'data-farma-submit': true,
-      full: true,
-      disabled: busy || !/^\d{10}$/.test(phone),
-      onClick: submit
-    }, busy ? 'Enviando…' : 'Confirmar solicitud')) : h('p', null, error ? 'No se pudo cargar tu contacto.' : 'Cargando tus datos…'), error && h('p', {
-      role: 'alert'
-    }, error), !contact && error && h(window.Btn, {
-      onClick: load
-    }, 'Reintentar'))));
-  }
-  function FarmaStockFields({
-    draft,
-    set
-  }) {
-    return h('div', {
-      'data-farma-stock-fields': true,
-      style: panel
-    }, h(window.Badge, {
-      tone: 'green'
-    }, 'Donación'), h('label', {
-      style: {
-        display: 'block',
-        marginTop: 12
-      }
-    }, 'Presentación', h('input', {
-      'data-farma-presentation': true,
-      value: draft.presentation_raw || '',
-      maxLength: 240,
-      onChange: e => set('presentation_raw', e.target.value),
-      style: field
-    })), h('label', null, 'Existencias (solo administración)', h('input', {
-      'data-farma-stock': true,
-      type: 'number',
-      min: 0,
-      max: 1000000,
-      step: 1,
-      value: draft.farmaQuantity ?? draft.farmaInventory?.quantity ?? 0,
-      onChange: e => set('farmaQuantity', e.target.value === '' ? '' : Number(e.target.value)),
-      style: field
-    })), h('label', null, 'Unidad', h('select', {
-      'data-farma-unit': true,
-      value: draft.farmaUnit || draft.farmaInventory?.unit || 'caja',
-      onChange: e => set('farmaUnit', e.target.value),
-      style: field
-    }, h('option', {
-      value: 'caja'
-    }, 'Caja'), h('option', {
-      value: 'frasco'
-    }, 'Frasco'))));
-  }
-  function RequestCard({
-    row,
-    onOpen
-  }) {
-    return h('button', {
-      'data-farma-request-id': row.id,
-      onClick: () => onOpen(row),
-      style: {
-        ...panel,
-        width: '100%',
-        border: 0,
-        font: 'inherit',
-        textAlign: 'left',
-        cursor: 'pointer',
-        color: 'var(--ink)'
-      }
-    }, h('div', {
-      style: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 10
-      }
-    }, h('strong', null, row.product.name), h(window.Badge, {
-      tone: row.status === 'delivered' ? 'green' : 'amber'
-    }, R().states[row.status])), h('p', {
-      style: {
-        margin: '8px 0',
-        fontSize: 13
-      }
-    }, row.product.presentation), h('div', {
-      style: {
-        fontSize: 12,
-        color: 'var(--ink-3)'
-      }
-    }, row.folio + ' · ' + new Date(row.created_at).toLocaleString('es-MX')));
-  }
-  function Detail({
-    row,
-    admin,
-    onClose,
-    onUpdated
-  }) {
-    const [status, setStatus] = useState(''),
-      [quantity, setQuantity] = useState(1),
-      [note, setNote] = useState(''),
-      [error, setError] = useState(''),
-      [busy, setBusy] = useState(false),
-      sending = useRef(false),
-      key = useRef(null);
-    const transitions = {
-      received: ['in_progress', 'unavailable', 'cancelled'],
-      in_progress: ['ready', 'unavailable', 'cancelled'],
-      ready: ['delivered', 'unavailable', 'cancelled']
-    };
-    const options = transitions[row.status] || [];
-    const submit = async () => {
-      if (sending.current) return;
-      sending.current = true;
-      setBusy(true);
-      setError('');
-      key.current = key.current || crypto.randomUUID();
-      try {
-        const updated = await R().transition({
-          request_id: row.id,
-          version: row.version,
-          status,
-          quantity,
-          note,
-          action_id: key.current
-        });
-        setStatus('');
-        setNote('');
-        key.current = null;
-        onUpdated(updated);
-      } catch (e) {
-        setError(R().message(e));
-      } finally {
-        sending.current = false;
-        setBusy(false);
-      }
-    };
-    return h(window.Sheet, {
-      open: true,
-      onClose: () => {
-        if (!busy) onClose();
-      },
-      title: 'Solicitud Suti Farma'
-    }, h('div', {
-      'data-farma-detail': true,
-      style: {
-        padding: 16
-      }
-    }, h('h3', null, row.product.name), h('p', null, row.product.presentation), h('p', {
-      style: {
-        overflowWrap: 'anywhere'
-      }
-    }, row.folio), h(window.Badge, {
-      tone: 'green'
-    }, R().states[row.status]), h('p', null, h('strong', null, row.contact.name), h('br'), 'Número de control: ' + row.contact.numero_control, h('br'), 'Teléfono: ' + row.contact.phone), admin && h('div', {
-      style: {
-        display: 'flex',
-        gap: 12,
-        marginBottom: 16
-      }
-    }, h('a', {
-      href: 'tel:' + row.contact.phone
-    }, 'Llamar'), h('a', {
-      href: 'https://wa.me/52' + row.contact.phone,
-      target: '_blank',
-      rel: 'noopener noreferrer'
-    }, 'Abrir WhatsApp')), h('h4', null, 'Seguimiento'), h('ol', null, row.events.map(e => h('li', {
-      key: e.id,
-      style: {
-        marginBottom: 12
-      }
-    }, R().states[e.status] || e.action, ' · ', new Date(e.created_at).toLocaleString('es-MX'), admin && e.note && h('p', null, e.note)))), row.delivered_quantity && h('p', null, 'Cantidad entregada: ' + row.delivered_quantity), admin && options.length > 0 && h(React.Fragment, null, h('label', null, 'Actualizar atención', h('select', {
-      'data-farma-status': true,
-      value: status,
-      disabled: busy,
-      onChange: e => {
-        setStatus(e.target.value);
-        key.current = null;
-      },
-      style: field
-    }, h('option', {
-      value: ''
-    }, 'Selecciona una acción'), options.map(value => h('option', {
-      key: value,
-      value
-    }, R().states[value])))), status === 'delivered' && h('label', null, 'Cantidad entregada', h('input', {
-      'data-farma-delivery-quantity': true,
-      type: 'number',
-      min: 1,
-      step: 1,
-      value: quantity,
-      disabled: busy,
-      onChange: e => setQuantity(Number(e.target.value)),
-      style: field
-    })), h('label', null, 'Nota interna', h('textarea', {
-      value: note,
-      disabled: busy,
-      maxLength: 2000,
-      onChange: e => setNote(e.target.value),
-      style: field
-    })), h(window.Btn, {
-      'data-farma-transition': true,
-      full: true,
-      disabled: busy || !status,
-      onClick: submit
-    }, busy ? 'Guardando…' : status === 'delivered' ? 'Registrar entrega y descontar existencias' : 'Guardar atención')), error && h('p', {
-      role: 'alert'
-    }, error)));
-  }
-  function FarmaHistory() {
-    const data = useRows('mine'),
-      [selected, setSelected] = useState(null);
-    if (data.phase === 'error') return h('div', {
-      style: {
-        padding: 16
-      }
-    }, h(Failure, {
-      retry: data.retry
-    }));
-    if (!data.rows.length) return null;
-    return h('section', {
-      'data-farma-history': true,
-      style: {
-        padding: 16
-      }
-    }, h(window.SectionHead, {
-      title: 'Mis solicitudes Suti Farma'
-    }), data.rows.map(row => h(RequestCard, {
-      key: row.id,
-      row,
-      onOpen: setSelected
-    })), selected && h(Detail, {
-      row: data.rows.find(r => r.id === selected.id) || selected,
-      onClose: () => setSelected(null)
-    }));
-  }
-  function FarmaAdmin({
-    app,
-    onBack,
-    header,
-    catalogEntry = false
-  }) {
-    const [tab, setTab] = useState('Inventario'),
-      [filter, setFilter] = useState('open'),
-      [selected, setSelected] = useState(null),
-      data = useRows('queue');
-    useEffect(() => {
-      const id = new URLSearchParams(location.search).get('farma_request');
-      if (id && data.phase === 'ready') {
-        const row = data.rows.find(r => r.id === id);
-        if (row) {
-          setSelected(row);
-          setTab('Solicitudes');
-          const url = new URL(location.href);
-          url.searchParams.delete('farma_request');
-          history.replaceState(history.state, '', url);
-        }
-      }
-    }, [data.phase, data.rows]);
-    const adminApp = {
-      ...app,
-      admin: {
-        ...app.admin,
-        has: window.AdminRepository.has
-      }
-    };
-    const open = data.rows.filter(r => ['received', 'in_progress', 'ready'].includes(r.status));
-    const rows = filter === 'all' ? data.rows : filter === 'open' ? open : data.rows.filter(r => r.status === filter);
-    return h('div', {
-      'data-farma-admin': true
-    }, header({
-      title: 'Suti Farma',
-      sub: open.length + ' solicitudes pendientes',
-      onBack
-    }), h(window.ChipBar, {
-      items: catalogEntry ? ['Inventario', 'Solicitudes', 'Información general'] : ['Inventario', 'Solicitudes'],
-      value: tab,
-      onChange: setTab,
-      style: {
-        padding: 16
-      }
-    }), tab === 'Inventario' && h(window.ProgramProductsModule, {
-      app: adminApp,
-      scopedProgram: 'farma',
-      onBack,
-      header: () => null
-    }), tab === 'Información general' && h('div', {
-      style: {
-        padding: 16
-      }
-    }, h(window.ProgramGeneralInfo.Editor, {
-      programKey: 'farma',
-      canWrite: window.AdminRepository.has('workflow.write')
-    })), tab === 'Solicitudes' && h('div', {
-      style: {
-        padding: 16
-      }
-    }, h(window.RequestPushInvitation, {
-      farma: true
-    }), h('label', null, 'Solicitudes', h('select', {
-      value: filter,
-      onChange: e => setFilter(e.target.value),
-      style: field
-    }, h('option', {
-      value: 'open'
-    }, 'Pendientes'), h('option', {
-      value: 'all'
-    }, 'Todas'), Object.entries(R().states).map(([value, label]) => h('option', {
-      key: value,
-      value
-    }, label)))), h(window.Btn, {
-      variant: 'outline',
-      onClick: data.retry
-    }, 'Actualizar'), data.phase === 'error' ? h(Failure, {
-      retry: data.retry
-    }) : data.phase === 'loading' && !data.rows.length ? h('p', null, 'Cargando solicitudes…') : !rows.length ? h(window.EmptyState, {
-      icon: 'receipt',
-      title: 'Sin solicitudes',
-      sub: 'Las solicitudes de medicamentos aparecerán aquí.'
-    }) : rows.map(row => h('div', {
-      key: row.id
-    }, h('p', {
-      style: {
-        fontSize: 13
-      }
-    }, row.contact.name), h(RequestCard, {
-      row,
-      onOpen: setSelected
-    })))), selected && h(Detail, {
-      key: selected.id,
-      row: data.rows.find(r => r.id === selected.id) || selected,
-      admin: true,
-      onClose: () => setSelected(null),
-      onUpdated: setSelected
-    }));
-  }
-  Object.assign(window, {
-    FarmaRequest,
-    FarmaStockFields,
-    FarmaHistory,
-    FarmaAdmin
-  });
 })();
 })();
 /* @@file app.jsx */

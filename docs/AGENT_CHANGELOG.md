@@ -3768,3 +3768,9 @@ Evidence/release: audits/H-SUTIAPP-DOCUMENT-LAYOUT-DESIGNER-002.md.
 ## H-SUTIFARMA-DONATIONS-001 — 2026-09-28
 
 Added Farma donation requests, private stock initialized from 50 current medicines (377 packages), scoped manager panel, affiliate contact confirmation, existing success/confetti, self history and push transport. Public stock hidden. Manager granted only farma; no test requests persisted. Product/gallery UI preserved; existing 130 released bundle modules retained byte-for-byte. Migration and recovery tested in isolated PostgreSQL; mobile/desktop browser and push transport/worker tests passed. Shared helpers/SW trigger global legitimate-image regression. Evidence: docs/qa/evidence/sutifarma-20260928; detailed status and limitations: docs/audits/H-SUTIFARMA-DONATIONS-001.md.
+## 2026-09-28 — H-SUTIFARMA-INVENTORY-ADMIN-001 assisted-context correction
+
+- Reproduced the production failure: scoped catalog read returned 50 Farma products while the inventory RPC returned `FARMA_ADMIN_DENIED` during a session-bound assisted context.
+- Prepared migration/recovery `20260928000700` to use the existing actor/subject permission intersection instead of rejecting every assisted session.
+- Inventory now enters a real loading state, request queue loading is deferred to its tab, and the unrelated role-preview banner is hidden during assisted administration.
+- PostgreSQL forward/recovery `ROLLBACK`, desktop/mobile browser flow, bundle compilation, authority hashes and zero-write checks passed. Owner explicitly authorized assisted Suti Farma; production migration applied and the real postflight returned 50 catalog and 50 inventory rows with no error or business-row changes.

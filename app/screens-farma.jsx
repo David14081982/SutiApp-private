@@ -3,11 +3,11 @@
  const h=React.createElement,{useState,useEffect,useRef}=React,R=()=>window.FarmaRepository;
  const panel={background:'var(--surface)',borderRadius:18,padding:16,boxShadow:'var(--neo-sm)',marginBottom:12};
  const field={width:'100%',boxSizing:'border-box',border:0,borderRadius:12,padding:'12px 13px',background:'var(--surface-2)',color:'var(--ink)',font:'inherit',margin:'6px 0 12px',boxShadow:'var(--neo-inset)'};
- function useRows(kind){
+ function useRows(kind,enabled=true){
   const [state,set]=useState({phase:'loading',rows:[]}),revision=useRef(0),epoch=window.PrivateResourceDemand.useContext();
   const load=()=>{const n=++revision.current;set(s=>({epoch,phase:'loading',rows:s.epoch===epoch?s.rows:[]}));return R()[kind]().then(rows=>{if(n===revision.current)set({epoch,phase:'ready',rows});},()=>{if(n===revision.current)set({epoch,phase:'error',rows:[]});});};
-  useEffect(()=>{load();const refresh=()=>{if(!document.hidden)load();};window.addEventListener('suti:farma-changed',refresh);window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{revision.current++;clearInterval(timer);window.removeEventListener('suti:farma-changed',refresh);window.removeEventListener('focus',refresh);};},[kind,epoch]);
-  return {...(state.epoch===epoch?state:{phase:'loading',rows:[]}),retry:load};
+  useEffect(()=>{if(!enabled){revision.current++;return;}load();const refresh=()=>{if(!document.hidden)load();};window.addEventListener('suti:farma-changed',refresh);window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{revision.current++;clearInterval(timer);window.removeEventListener('suti:farma-changed',refresh);window.removeEventListener('focus',refresh);};},[kind,epoch,enabled]);
+  return {...(!enabled?{phase:'idle',rows:[]}:state.epoch===epoch?state:{phase:'loading',rows:[]}),retry:load};
  }
  function Failure({retry}){return h('div',{role:'alert',style:panel},h('p',null,'No pudimos consultar Suti Farma.'),h(window.Btn,{variant:'outline',onClick:retry},'Reintentar'));}
  function FarmaRequest({item,app}){
@@ -48,7 +48,8 @@
  }
  function FarmaHistory(){const data=useRows('mine'),[selected,setSelected]=useState(null);if(data.phase==='error')return h('div',{style:{padding:16}},h(Failure,{retry:data.retry}));if(!data.rows.length)return null;return h('section',{'data-farma-history':true,style:{padding:16}},h(window.SectionHead,{title:'Mis solicitudes Suti Farma'}),data.rows.map(row=>h(RequestCard,{key:row.id,row,onOpen:setSelected})),selected&&h(Detail,{row:data.rows.find(r=>r.id===selected.id)||selected,onClose:()=>setSelected(null)}));}
  function FarmaAdmin({app,onBack,header,catalogEntry=false}){
-  const [tab,setTab]=useState('Inventario'),[filter,setFilter]=useState('open'),[selected,setSelected]=useState(null),data=useRows('queue');
+  const hasRequest=()=>Boolean(new URLSearchParams(location.search).get('farma_request'));
+  const [tab,setTab]=useState(()=>hasRequest()?'Solicitudes':'Inventario'),[filter,setFilter]=useState('open'),[selected,setSelected]=useState(null),data=useRows('queue',tab==='Solicitudes');
   useEffect(()=>{const id=new URLSearchParams(location.search).get('farma_request');if(id&&data.phase==='ready'){const row=data.rows.find(r=>r.id===id);if(row){setSelected(row);setTab('Solicitudes');const url=new URL(location.href);url.searchParams.delete('farma_request');history.replaceState(history.state,'',url);}}},[data.phase,data.rows]);
   const adminApp={...app,admin:{...app.admin,has:window.AdminRepository.has}};
   const open=data.rows.filter(r=>['received','in_progress','ready'].includes(r.status));

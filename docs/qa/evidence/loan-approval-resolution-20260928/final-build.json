@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseCommit": "611917f",
+  "publishedCommit": "226684c",
+  "changedBundleChunks": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "preservedBundleChunks": 140,
+  "serviceWorkerBehaviorUnchanged": true,
+  "pdfEntryPreserved": true,
+  "bundleVersion": 303,
+  "serviceWorkerVersion": 237,
+  "repositoryVersion": 12
+}

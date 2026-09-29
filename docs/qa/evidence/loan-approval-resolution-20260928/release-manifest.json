@@ -1,5 +1,5 @@
 {
-  "status": "AUTHORIZED_PREPARED",
+  "status": "PUBLISHED_VERIFIED",
   "baseCommit": "611917fc997f702a612ece54e152b31d11d483b7",
   "files": [
     {
@@ -29,5 +29,26 @@
   ],
   "unrelatedPublishedChunksPreserved": true,
   "publishedPdfFeaturePreserved": true,
-  "workspaceSourcePreserved": true
+  "workspaceSourcePreserved": true,
+  "publishedCommit": "226684c698e222f21233cec65e3757f639287c26",
+  "pagesRun": 36565625440,
+  "publishedFiles": [
+    {
+      "file": "app/bundle.js",
+      "sha256": "4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b"
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "sha256": "c83b50593c63831fc21c25783877d24315ce636651e99f8cc32eeaaa7305377f"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "86aaf9896cb4a16569bcff43ee198ab16a137a0e9d3e471c74450b61a3e6f234"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "354325b71f0c4fa1077b1e52527265afc6631f685bc38ba64e45ec56c5a3bd88"
+    }
+  ],
+  "hashNote": "Original file hashes describe prepared workspace bytes; publishedFiles describe Git-normalized LF artifacts fetched from Pages."
 }

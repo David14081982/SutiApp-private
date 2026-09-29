@@ -1,20 +1,7 @@
 # Bitácora de agentes
-## 2026-09-28 — H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 — publicaci?n autorizada
+## 2026-09-29 — H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 — publicado PASS
 
-Propietario eligió nueva solicitud con condiciones actuales. Se añadió revisión
-previa read-only de autorización, explicación del criterio sustituido y comparación
-de límites, cancelación confirmada mediante el writer existente y acceso a atención
-asistida. Firma, snapshots, permisos y aprobación no se omiten ni reescriben.
-11 pruebas Edge, 10 escenarios de navegador y 9 contratos de confirmación PASS.
-Lecturas reales de SR-2026-000432 confirman límite 30,000 frente a 50,000 solicitado,
-acceso anónimo denegado y huella de la solicitud intacta. Build focal PASS.
-Regresión global local/Pages y suite completa del Registry PASS. Publicación bloqueada
-por revisión automática: exige autorización expresa. Paquete focal listo sobre
-origin/main f120e1b, sin mezclar cambios locales de otras H. Auditoría y evidencia en
-`docs/audits/H-LOAN-APPROVAL-GUIDED-RESOLUTION-001.md` y
-`docs/qa/evidence/loan-approval-resolution-20260928/`.
-
-
+Propietario exige nueva solicitud con condiciones actuales y autorizó publicar con “hazlo”. Edge v58 ACTIVE; Pages 226684c, workflow 36565625440 SUCCESS. Botón Revisar solicitud verificado en SR-2026-000432: 50,000 solicitado frente a 30,000 vigente; cancelación explícita y continuación asistida con permisos existentes. Solicitud real intacta. 11 pruebas Edge, 10 escenarios compilados, 9 de confirmación y regresiones globales local/Pages del bundle exacto PASS. Fuente de verdad, snapshots y writer financiero conservados; sin migración ni modificaciones de negocio durante las pruebas. Revisión arquitectónica APPROVED. Evidencia y límites: `docs/audits/H-LOAN-APPROVAL-GUIDED-RESOLUTION-001.md` y `docs/qa/evidence/loan-approval-resolution-20260928/`.
 
 ## 2026-09-28 — H-PRODUCT-EDITOR-POSITION-001 — local PASS
 

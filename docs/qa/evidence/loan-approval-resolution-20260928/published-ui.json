@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "bundleSha256": "4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b",
+  "request": "SR-2026-000432",
+  "submittedAmount": 50000,
+  "currentLimit": 30000,
+  "guidedCancellationVisible": true,
+  "expiredApprovalUnavailable": true,
+  "reviewCalls": 1,
+  "businessWriteAttempts": 0,
+  "requestUnchanged": true
+}

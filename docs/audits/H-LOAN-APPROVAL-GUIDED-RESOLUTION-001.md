@@ -1,5 +1,7 @@
 # H-LOAN-APPROVAL-GUIDED-RESOLUTION-001
 
+Current result (2026-09-29): PASS, published and verified. Historical publication blocks below were resolved by the explicit owner response “hazlo”. See final result and architect review at the end.
+
 ## PRE-CHANGE AUDIT
 
 2026-09-28. Owner requests click-guided recovery in the existing authorization
@@ -214,3 +216,44 @@ they are not counted as successful verification.
 Owner answered “hazlo” to the explicit request to publish in Supabase and GitHub Pages. This supersedes the prior publication block. Scope includes isolated release preparation, backend deployment, frontend publication and read-only production verification. It does not authorize approving or cancelling a real request as a test. Remote advanced to 611917fc997f702a612ece54e152b31d11d483b7; the source was merged over that release, preserving the now-published PDF entry point and all unrelated bundle chunks. Cache versions advance from the latest published values. Recovery: prior git commit and downloaded deployed Edge body retained before deployment; no migration or historical rewrite.
 
 Backend deployment: financial-legacy version 58 ACTIVE, JWT verification retained. Deployed preflight PASS against SR-2026-000432: submitted 50000/current limit 30000, NEW_REQUEST_REQUIRED, anonymous denied, original row fingerprint unchanged. New integrated bundle 4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b passed 11 Edge and 10 compiled-browser scenarios. Frontend publication in progress.
+
+
+## Final published result — 2026-09-29
+
+Supabase financial-legacy v58 ACTIVE deployed before frontend; verify_jwt remains true. GitHub main release 226684c698e222f21233cec65e3757f639287c26; Pages workflow 36565625440 SUCCESS. Public artifact hashes match Git blobs (LF normalization explains differences from prepared workspace hashes). Bundle 303, financial repository 12, service worker/registration 237; service-worker behavior unchanged. Only the finance screen bundle chunk changed; 140 other chunks and the previously published authorization-PDF entry point remain intact.
+
+Production UI verification used the real authenticated navigation into Finanzas and SR-2026-000432, opening the authorization dialog and clicking only Revisar solicitud. It displayed NEW_REQUEST_REQUIRED, requested 50000/current maximum 30000, explicit cancellation confirmation and no expired-conditions approval button. Test interception blocked any attempted business mutation; none occurred. The complete request row fingerprint before/after was identical. Read-only probe harness: .tmp/approval-resolution/verify-ui-live.cjs; evidence: published-ui.json.
+
+Final global regressions both PASS on the exact published bundle, 4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b. Evidence: global-published-final.json and global-release-local-final.json. They cover login seal, profile, Admin Affiliates, image documents, legitimate stored PDF, Membership, loans, catalog/gallery, Marketplace, fullscreen, refresh and with/without service worker. The main account has no affiliate PDF; the separate legitimate-PDF probe passes, not a fabricated fixture. No data mutations.
+
+H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 RESULT
+Status: PASS
+Files changed: six scoped runtime files, focal tests/build harness, audit/evidence, three governance notes and five derived Registry outputs
+Source-of-truth verdict: PASS; existing Supabase authorities, no fallback
+Invariant verdict: PASS; request snapshots and real request fingerprint preserved
+Build: PASS; one finance chunk changed, 140 preserved; public hashes verified
+Tests: 11 Edge, 10 integrated compiled-browser and 9 confirmation cases PASS; deployed preflight/UI PASS; final global local/Pages PASS
+Security: PASS; JWT/origin and existing backend permissions retained, anonymous denied, no privilege added
+Legacy impact: no financial formula, Google writer, historical record or schema change; no production loan/cancellation test
+Unexpected files changed: NONE in isolated release; unrelated shared-workspace edits preserved
+Known limitations: cancellation/new application intentionally remain explicit user actions; new terms/signature required; assisted entry requires existing permission; infrastructure failures have no authorization bypass
+Evidence: docs/qa/evidence/loan-approval-resolution-20260928/
+
+## Final SUTIAPP ARCHITECT REVIEW
+
+Task: publish guided approval recovery under the owner's current-conditions/new-request policy.
+Verdict: APPROVED
+Critical findings: reconstructed from committed diff, published hashes, actual authenticated UI, deployed preflight and real-asset regressions. No migration or financial-condition override. Existing cancellation RPC owns lifecycle, permissions and idempotency; assisted entry retains actor/context authorization. Production cancellation/submission intentionally not performed.
+Source of truth: unchanged; historical financial rule is explanatory only.
+Architecture: one read-only approvalReview action and repository method; existing writers reused.
+Security: existing permission/JWT/origin gates; unknown failures remain controlled.
+Data: SR-2026-000432 unchanged; snapshots retained.
+Legacy: protected; no Google/formula changes or synthetic productive loans.
+Missing normative file: docs/WORK_QUEUE_HISTORY.md. WORK_QUEUE remains the separate master-plan queue; no Phase 8 or productive append authorized by this H.
+Owner decision: NO; publication explicitly authorized by “hazlo”.
+Next action: close this H; administrators use the new review/cancellation flow when they decide to resolve a request. No new implementation is started.
+Response generated for Codex: YES
+
+### RESPONSE TO CODEX
+
+Approve and close H-LOAN-APPROVAL-GUIDED-RESOLUTION-001 with the linked evidence. Report the published buttons and current-conditions requirement. Do not cancel, approve, resubmit or append any productive loan as a test. Do not advance to another H.

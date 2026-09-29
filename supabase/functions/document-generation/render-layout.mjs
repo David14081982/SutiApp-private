@@ -27,14 +27,14 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuat
   for(const e of layout.elements.filter(e=>e.page===number)){
    try{
    if(e.kind==='TEXT'){drawText(base,e.text,e);continue;}
-   if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null)drawText(base,value,e);continue;}
+   if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null&&value!=='')drawText(base,e.label?e.label+'\n'+value:value,e);continue;}
    let target=base,y=e.y,end=e.y+e.height;
    const continuation=()=>{target=page(true);y=m.top;end=height/mm-m.bottom-(legacy?7:0);};
    if(e.kind==='SIGNERS'){
     // Small horizontal groups use their full rectangle. In particular an older
     // two-column default must not orphan signer three when three columns fit.
-    const preferred=e.orientation==='vertical'?1:snapshot.signers.length<=3?snapshot.signers.length:Math.min(e.columns,snapshot.signers.length),continuationHeight=height/mm-m.bottom-m.top-(legacy?7:0);
-    const candidates=e.orientation==='horizontal'&&snapshot.signers.length<=3?Array.from({length:preferred},(_,n)=>preferred-n):[preferred];
+    const preferred=e.orientation==='vertical'?1:e.autoColumns===false?Math.min(e.columns,snapshot.signers.length):snapshot.signers.length<=3?snapshot.signers.length:Math.min(e.columns,snapshot.signers.length),continuationHeight=height/mm-m.bottom-m.top-(legacy?7:0);
+    const candidates=e.autoColumns!==false&&e.orientation==='horizontal'&&snapshot.signers.length<=3?Array.from({length:preferred},(_,n)=>preferred-n):[preferred];
     const plans=[];
     for(const count of candidates){
      const cw=(e.width-(count-1)*e.gap)/count;if(cw<=0)continue;

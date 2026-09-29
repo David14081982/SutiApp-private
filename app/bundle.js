@@ -40,8 +40,12 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     useEffect,
     useRef
   } = React;
-  const CSS = `.dl-host .df-ov__p{width:min(1540px,98vw);height:95vh;max-height:95vh}.dl-host .df-ov{padding:10px}.dl-host .df-ov__b{display:block;padding:14px}.dl-host .df-ov__f{flex-wrap:wrap}.dl-editor{display:grid;grid-template-columns:210px minmax(320px,1fr) 230px;gap:16px;align-items:start}.dl-palette,.dl-props{display:grid;gap:10px;position:sticky;top:0}.dl-palette h4{margin:8px 0;color:var(--ink-2);font-size:12px}.dl-field{display:block;text-align:left;width:100%;padding:9px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);font-weight:700;cursor:grab;font-size:12px}.dl-stage{overflow:auto;padding:10px;background:var(--surface-2);border-radius:16px;max-height:66vh}.dl-page{position:relative;background:white;margin:auto;box-shadow:var(--shadow-md);touch-action:none;flex-shrink:0}.dl-page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.dl-safe{position:absolute;border:1px dashed #d11f3a66;pointer-events:none}.dl-center{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #91002233;pointer-events:none}.dl-center-y{position:absolute;top:50%;left:0;right:0;border-top:1px dashed #91002233;pointer-events:none}.dl-element{position:absolute;border:1px dashed #91002255;background:#ffffffaa;color:#14213d;cursor:move;white-space:pre-wrap;overflow:hidden;user-select:none;line-height:1.25;box-sizing:border-box}.dl-element.is-selected{outline:2px solid var(--guinda);background:#fbeef1cc}.dl-element:focus-visible{outline:3px solid var(--guinda)}.dl-element.is-block{background:#eef1f6e8;display:grid;place-items:center;text-align:center}.dl-resize{position:absolute;width:14px;height:14px;right:0;bottom:0;background:var(--guinda);cursor:nwse-resize;touch-action:none}.dl-props .df-in,.dl-props .df-sel{min-height:36px;font-size:12px;padding:4px 8px}.dl-props .df-field__l{font-size:10px;margin-bottom:3px}.dl-props textarea{min-height:70px!important}.dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dl-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.dl-errors{margin:8px 0;padding:12px 28px;background:var(--warn-bg);border-radius:12px;color:var(--warn-fg);font-size:13px}.dl-help{font-size:12px;color:var(--ink-2);line-height:1.5}.dl-preview-scroll{overflow:auto;max-height:65vh;background:var(--surface-2);padding:12px}.dl-element.is-invalid{outline:2px solid #cf1539}.dl-element-label{display:block;font:700 11px/1.3 var(--font);padding:2px;color:#6a001b}.dl-layers{width:100%;min-height:38px}.dl-errors button{border:0;background:transparent;color:inherit;text-align:left;text-decoration:underline;cursor:pointer}.dl-loading{padding:24px;text-align:center}.dl-palette-items{display:grid;gap:5px;max-height:56vh;overflow:auto}.dl-props button{font-size:12px}.dl-status{font-size:12px;color:var(--pos)}@media(max-width:1050px){.dl-editor{grid-template-columns:170px minmax(260px,1fr)}.dl-props{grid-column:1/-1;position:static;grid-template-columns:repeat(3,minmax(0,1fr))}.dl-stage{max-height:55vh}}@media(max-width:600px){.dl-editor{display:block}.dl-palette{position:static;margin-bottom:12px}.dl-palette-items{max-height:180px;grid-template-columns:1fr 1fr}.dl-palette h4{grid-column:1/-1}.dl-props{display:grid;grid-template-columns:1fr 1fr;margin-top:12px}.dl-stage{max-width:100%;max-height:55vh}.dl-host .df-ov__h{padding:12px}.dl-host .df-ov__f{padding:10px}.dl-host .df-btn{min-height:36px;font-size:12px;padding:0 10px}}`;
+  const CSS = `.dl-host .df-ov__p{width:min(1540px,98vw);height:95vh;max-height:95vh}.dl-host .df-ov{padding:10px}.dl-host .df-ov__b{display:block;padding:14px}.dl-host .df-ov__f{flex-wrap:wrap}.dl-editor{display:grid;grid-template-columns:210px minmax(320px,1fr) 230px;gap:16px;align-items:start}.dl-palette,.dl-props{display:grid;gap:10px;position:sticky;top:0}.dl-palette h4{margin:8px 0;color:var(--ink-2);font-size:12px}.dl-field{display:block;text-align:left;width:100%;padding:9px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);font-weight:700;cursor:grab;font-size:12px}.dl-stage{overflow:auto;padding:10px;background:var(--surface-2);border-radius:16px;max-height:66vh}.dl-page{position:relative;background:white;margin:auto;box-shadow:var(--shadow-md);touch-action:none;flex-shrink:0}.dl-page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.dl-safe{position:absolute;border:1px dashed #d11f3a66;pointer-events:none}.dl-center{position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #91002233;pointer-events:none}.dl-center-y{position:absolute;top:50%;left:0;right:0;border-top:1px dashed #91002233;pointer-events:none}.dl-element{position:absolute;border:1px dashed #91002255;background:#ffffffaa;color:#14213d;cursor:move;white-space:pre-wrap;overflow:hidden;user-select:none;line-height:1.25;box-sizing:border-box}.dl-element.is-selected{outline:2px solid var(--guinda);background:#fbeef1cc}.dl-element:focus-visible{outline:3px solid var(--guinda)}.dl-element.is-block{background:#eef1f6e8;display:grid;place-items:center;text-align:center}.dl-resize{position:absolute;width:14px;height:14px;right:0;bottom:0;background:var(--guinda);cursor:nwse-resize;touch-action:none}.dl-props .df-in,.dl-props .df-sel{min-height:36px;font-size:12px;padding:4px 8px}.dl-props .df-field__l{font-size:10px;margin-bottom:3px}.dl-props textarea{min-height:70px!important}.dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dl-toolbar>.df-field{flex:1 1 220px;min-width:0}.dl-toolbar .df-sel{max-width:100%}.dl-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.dl-errors{margin:8px 0;padding:12px 28px;background:var(--warn-bg);border-radius:12px;color:var(--warn-fg);font-size:13px}.dl-help{font-size:12px;color:var(--ink-2);line-height:1.5}.dl-preview-scroll{overflow:auto;max-height:65vh;background:var(--surface-2);padding:12px}.dl-element.is-invalid{outline:2px solid #cf1539}.dl-element-label{display:block;font:700 11px/1.3 var(--font);padding:2px;color:#6a001b}.dl-layers{width:100%;min-height:38px}.dl-errors button{border:0;background:transparent;color:inherit;text-align:left;text-decoration:underline;cursor:pointer}.dl-loading{padding:24px;text-align:center}.dl-palette-items{display:grid;gap:5px;max-height:56vh;overflow:auto}.dl-props button{font-size:12px}.dl-status{font-size:12px;color:var(--pos)}@media(max-width:1050px){.dl-editor{grid-template-columns:170px minmax(260px,1fr)}.dl-props{grid-column:1/-1;position:static;grid-template-columns:repeat(3,minmax(0,1fr))}.dl-stage{max-height:55vh}}@media(max-width:600px){.dl-editor{display:block}.dl-palette{position:static;margin-bottom:12px}.dl-palette-items{max-height:180px;grid-template-columns:1fr 1fr}.dl-palette h4{grid-column:1/-1}.dl-props{display:grid;grid-template-columns:1fr 1fr;margin-top:12px}.dl-stage{max-width:100%;max-height:55vh}.dl-host .df-ov__h{padding:12px}.dl-host .df-ov__f{padding:10px}.dl-host .df-btn{min-height:36px;font-size:12px;padding:0 10px}}`;
   const humanError = e => e.details || [{
+    DOCUMENT_LAYOUT_ASSIGNMENTS_REQUIRED: 'Selecciona al menos un programa o fondo.',
+    DOCUMENT_LAYOUT_NAME_REQUIRED: 'Escribe el nombre del diseño.',
+    DOCUMENT_LAYOUT_ASSIGNMENT_CHANGED: 'La asignación cambió en otra sesión. Vuelve a abrir el diseñador para revisar la versión vigente.',
+    DOCUMENT_LAYOUT_FUND_INVALID: 'El fondo no pertenece al programa elegido.',
     DOCUMENT_LAYOUT_TEXT_OVERFLOW: 'Un texto no cabe en su área. Amplía su alto o ancho, o reduce la fuente.',
     DOCUMENT_LAYOUT_SIGNER_TOO_TALL: 'Amplía el espacio disponible para las firmas.',
     DOCUMENT_LAYOUT_TABLE_ROW_TOO_TALL: 'Amplía el calendario o reduce su fuente.',
@@ -152,6 +156,28 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     Button,
     Field
   }) {
+    const [program, setProgram] = useState(scope.program);
+    const [fundKey, setFundKey] = useState(''),
+      [designName, setDesignName] = useState(''),
+      [targets, setTargets] = useState([]),
+      [dirty, setDirty] = useState(false);
+    const targetKey = d => JSON.stringify([d.program, d.fund_key || '']);
+    const programName = p => ({
+      prestamo: 'Préstamos',
+      caja: 'Caja de Ahorro',
+      nomina: 'Nómina',
+      membership: 'Membresías',
+      tours: 'Viajes',
+      auto: 'Autos',
+      casa: 'Casa',
+      aires: 'Aires Acondicionados',
+      puertas: 'Puertas',
+      renta: 'Renta',
+      terrenos: 'Terrenos',
+      solar: 'Energía solar',
+      computo: 'Cómputo',
+      cirugias: 'Cirugías'
+    })[p] || p;
     const [data, setData] = useState(null),
       [layout, setLayout] = useState(null),
       [versionId, setVersionId] = useState(''),
@@ -173,28 +199,37 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       operation = useRef(null);
     const request = (action, extra = {}) => window.DocumentLayoutRepository.request(action, {
       ...scope,
+      program,
+      fund_key: fundKey,
       ...extra
     });
-    async function load(id, selectActive = false, templateId, keepLayout = false) {
+    async function load(id, selectActive = false, templateId, keepLayout = false, fund = fundKey, destinationProgram = program) {
       const serial = ++sequence.current;
       setErrors([]);
       setBusy(true);
       try {
         let result = await request('LAYOUT_MANIFEST', {
           version_id: id || undefined,
-          template_id: templateId
+          template_id: templateId,
+          fund_key: fund,
+          program: destinationProgram
         });
         if (selectActive && result.active_id) {
           id = result.active_id;
           result = await request('LAYOUT_MANIFEST', {
-            version_id: id
+            version_id: id,
+            fund_key: fund,
+            program: destinationProgram
           });
         }
         if (!alive.current || serial !== sequence.current) return;
         setData(result);
         setVersionId(id || '');
+        setFundKey(fund);
+        setProgram(destinationProgram);
         if (!keepLayout) {
-          const copy = structuredClone(result.versions.find(v => v.id === id)?.definition || result.initial);
+          const version = result.versions.find(v => v.id === id),
+            copy = structuredClone(version?.definition || result.initial);
           copy.version = 'suti-layout-3';
           copy.elements = copy.elements.filter(e => e.field !== 'document.note').map(e => ['bank.card_last4', 'bank.clabe_last4'].includes(e.field) ? {
             ...e,
@@ -202,9 +237,18 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
             format: 'TEXT'
           } : e);
           setLayout(copy);
+          setDesignName(version?.name || 'Autorización · ' + programName(destinationProgram));
+          setTargets([targetKey({
+            program: destinationProgram,
+            fund_key: fund
+          })]);
+          setDirty(false);
           setSelected(null);
           setPage(1);
-        } else setNotice('Membrete actualizado. Guarda una nueva versión del diseño.');
+        } else {
+          setDirty(true);
+          setNotice('Membrete actualizado. Guarda una nueva versión del diseño.');
+        }
         setPreview(null);
         operation.current = null;
       } catch (e) {
@@ -275,6 +319,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       H = data?.template.page_size.height * 25.4 / 72;
     const edit = fn => {
       setLayout(old => fn(old));
+      setDirty(true);
       operation.current = null;
       setNotice('Cambios sin guardar');
       setErrors([]);
@@ -338,12 +383,14 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         }),
         ...(kind === 'FIELD' ? {
           format: d.format,
-          missing: 'hide'
+          missing: 'hide',
+          label: d.label
         } : {}),
         ...(kind === 'SIGNERS' ? {
           columns: Math.min(3, data.signer_count || 1),
           gap: 5,
-          orientation: 'horizontal'
+          orientation: 'horizontal',
+          autoColumns: false
         } : {}),
         ...(kind === 'PAYMENT_SCHEDULE' ? {
           tableColumns: data.table_columns.map(c => c.key),
@@ -412,18 +459,22 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
           setPreview(url);
           return;
         }
-        if (action === 'system') {
+        if (action === 'unassign') {
+          const target = data.destinations.find(d => d.program === program && d.fund_key === fundKey);
           operation.current = operation.current || {
             id: crypto.randomUUID(),
             action
           };
-          await request('LAYOUT_SYSTEM', {
-            id: operation.current.id
+          await request('LAYOUT_UNASSIGN', {
+            id: operation.current.id,
+            expected_id: target?.expected_id ?? null
           });
-          await load('');
-          setNotice('Diseño del sistema activo para documentos nuevos.');
+          await load('', true);
+          setNotice('Destino sin diseño asignado. Las solicitudes conservan su estado; el PDF quedará pendiente de configuración.');
           return;
         }
+        if (!designName.trim()) throw Error('DOCUMENT_LAYOUT_NAME_REQUIRED');
+        if (action === 'activate' && !targets.length) throw Error('DOCUMENT_LAYOUT_ASSIGNMENTS_REQUIRED');
         if (!operation.current || operation.current.action !== action) operation.current = {
           id: crypto.randomUUID(),
           activationId: crypto.randomUUID(),
@@ -431,13 +482,19 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         };
         const saved = await request('LAYOUT_SAVE', {
           id: operation.current.id,
+          name: designName.trim(),
           definition: layout,
           version_id: versionId || undefined,
           template_id: data.template.id
         });
         if (action === 'activate') await request('LAYOUT_ACTIVATE', {
           id: operation.current.activationId,
-          version_id: saved.id
+          version_id: saved.id,
+          assignments: data.destinations.filter(d => targets.includes(targetKey(d))).map(d => ({
+            program: d.program,
+            fund_key: d.fund_key,
+            expected_id: d.expected_id
+          }))
         });
         await load(saved.id);
         setNotice('Versión ' + saved.version + (action === 'activate' ? ' activa para documentos nuevos.' : ' guardada sin activar.'));
@@ -460,9 +517,9 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       className: "dl-host"
     }, /*#__PURE__*/React.createElement("style", null, CSS), /*#__PURE__*/React.createElement(Dialog, {
       title: "Dise\xF1ar documento",
-      description: "Arrastra los campos sobre el membrete. Los documentos emitidos conservan su distribuci\xF3n.",
+      description: "El PDF utiliza esta distribuci\xF3n. Arrastra los elementos y activa el dise\xF1o en los programas o fondos elegidos.",
       onClose: () => {
-        if (!busy) onClose();
+        if (!busy && (!dirty || window.confirm('Hay cambios sin guardar. ¿Cerrar el diseñador?'))) onClose();
       },
       footer: /*#__PURE__*/React.createElement(React.Fragment, null, preview ? /*#__PURE__*/React.createElement(Button, {
         onClick: () => setPreview(null)
@@ -472,13 +529,15 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       }, "Vista previa PDF"), /*#__PURE__*/React.createElement(Button, {
         disabled: noEdit || !backgroundReady,
         onClick: () => perform('save')
-      }, "Guardar versi\xF3n"), /*#__PURE__*/React.createElement(Button, {
+      }, "Guardar borrador"), /*#__PURE__*/React.createElement(Button, {
         kind: "pri",
         disabled: noEdit || !backgroundReady,
         onClick: () => perform('activate')
       }, "Activar dise\xF1o")), /*#__PURE__*/React.createElement(Button, {
         disabled: busy,
-        onClick: onClose
+        onClick: () => {
+          if (!dirty || window.confirm('Hay cambios sin guardar. ¿Cerrar el diseñador?')) onClose();
+        }
       }, "Cerrar"))
     }, errors.length > 0 && /*#__PURE__*/React.createElement("ul", {
       className: "dl-errors",
@@ -519,6 +578,44 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       url: preview
     }) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       className: "dl-toolbar"
+    }, /*#__PURE__*/React.createElement(Field, {
+      label: "Nombre del dise\xF1o",
+      value: designName,
+      disabled: noEdit,
+      maxLength: 120,
+      onChange: v => {
+        setDesignName(v);
+        setDirty(true);
+        operation.current = null;
+      }
+    }), /*#__PURE__*/React.createElement(Field, {
+      label: "Programa"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      "aria-label": "Programa del documento",
+      value: program,
+      disabled: busy,
+      onChange: e => {
+        if (!dirty || window.confirm('Hay cambios sin guardar. ¿Cambiar de programa?')) load('', true, undefined, false, '', e.target.value);
+      }
+    }, [...new Set(data.destinations.map(d => d.program))].map(p => /*#__PURE__*/React.createElement("option", {
+      key: p,
+      value: p
+    }, programName(p))))), /*#__PURE__*/React.createElement(Field, {
+      label: "Fondo / destino"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      "aria-label": "Fondo del documento",
+      value: fundKey,
+      disabled: busy,
+      onChange: e => {
+        if (!dirty || window.confirm('Hay cambios sin guardar. ¿Cambiar de fondo?')) load('', true, undefined, false, e.target.value);
+      }
+    }, data.destinations.filter(d => d.program === program).map(d => /*#__PURE__*/React.createElement("option", {
+      key: targetKey(d),
+      value: d.fund_key
+    }, d.label))))), /*#__PURE__*/React.createElement("div", {
+      className: "dl-toolbar"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
@@ -531,27 +628,74 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, data.templates.map(t => /*#__PURE__*/React.createElement("option", {
       key: t.id,
       value: t.id
-    }, t.name, " \xB7 v", t.version, t.active ? ' (activa)' : ''))), /*#__PURE__*/React.createElement("select", {
+    }, t.name, " \xB7 v", t.version))), /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
-        width: 260
+        width: 300
       },
       "aria-label": "Versi\xF3n del dise\xF1o",
       value: versionId,
       disabled: busy,
-      onChange: e => load(e.target.value)
+      onChange: e => {
+        if (!dirty || window.confirm('Hay cambios sin guardar. ¿Abrir otra versión?')) load(e.target.value);
+      }
     }, /*#__PURE__*/React.createElement("option", {
       value: ""
-    }, "Dise\xF1o base editable"), data.versions.map(v => /*#__PURE__*/React.createElement("option", {
-      value: v.id,
-      key: v.id
-    }, "Versi\xF3n ", v.version, v.id === data.active_id ? ' · activa' : ''))), /*#__PURE__*/React.createElement("span", {
-      className: "dl-help"
-    }, data.active_id ? 'Diseño personalizado activo' : 'Diseño del sistema activo'), /*#__PURE__*/React.createElement(Button, {
+    }, "Nuevo dise\xF1o editable"), data.versions.map(v => /*#__PURE__*/React.createElement("option", {
+      key: v.id,
+      value: v.id
+    }, v.name, " \xB7 ", programName(v.program), " \xB7 v", v.version, v.id === data.active_id ? ' · activo aquí' : ''))), /*#__PURE__*/React.createElement("span", {
+      className: "dl-help",
+      role: "status"
+    }, data.active_id ? 'Activo: ' + (data.versions.find(v => v.id === data.active_id)?.name || 'Diseño guardado') + (fundKey && data.assignment_fund_key === '' ? ' · general del programa' : '') : 'Diseño pendiente de configurar'), /*#__PURE__*/React.createElement(Button, {
+      small: true,
+      disabled: noEdit,
+      onClick: () => {
+        setVersionId('');
+        setDesignName(n => (n + ' · copia').slice(0, 120));
+        setDirty(true);
+        operation.current = null;
+        setNotice('Copia editable. Guarda y selecciona dónde activarla.');
+      }
+    }, "Duplicar dise\xF1o"), /*#__PURE__*/React.createElement(Button, {
       small: true,
       disabled: noEdit || !data.active_id,
-      onClick: () => perform('system')
-    }, "Usar dise\xF1o del sistema")), /*#__PURE__*/React.createElement("p", {
+      onClick: () => perform('unassign')
+    }, "Quitar asignaci\xF3n")), /*#__PURE__*/React.createElement("details", {
+      className: "df-card",
+      style: {
+        padding: 12,
+        marginBottom: 12
+      },
+      open: true
+    }, /*#__PURE__*/React.createElement("summary", {
+      style: {
+        cursor: 'pointer',
+        fontWeight: 800
+      }
+    }, "Activar en programas y fondos \xB7 ", targets.length, " seleccionados"), /*#__PURE__*/React.createElement("p", {
+      className: "dl-help"
+    }, "La asignaci\xF3n espec\xEDfica del fondo tiene prioridad sobre la general de su programa. Activar sustituye la versi\xF3n de los destinos seleccionados; los dem\xE1s conservan la suya."), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
+        gap: 8,
+        maxHeight: 190,
+        overflowY: 'auto',
+        marginTop: 8
+      }
+    }, data.destinations.map(d => /*#__PURE__*/React.createElement("label", {
+      key: targetKey(d),
+      className: "dl-help"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      disabled: noEdit,
+      checked: targets.includes(targetKey(d)),
+      onChange: e => {
+        setTargets(old => e.target.checked ? [...old, targetKey(d)] : old.filter(k => k !== targetKey(d)));
+        operation.current = null;
+      }
+    }), " ", programName(d.program), " \xB7 ", d.label, /*#__PURE__*/React.createElement("br", null), d.layout_id ? data.versions.find(v => v.id === d.layout_id)?.name || 'Diseño activo' : 'Sin diseño asignado')))), /*#__PURE__*/React.createElement("p", {
       className: "dl-help"
     }, "Gu\xEDas del membrete: superior ", data.template.margins.top, " mm \xB7 inferior ", data.template.margins.bottom, " mm \xB7 izquierdo ", data.template.margins.left, " mm \xB7 derecho ", data.template.margins.right, " mm. Puedes colocar elementos fuera de las gu\xEDas, dentro de la hoja."), /*#__PURE__*/React.createElement("div", {
       className: "dl-editor"
@@ -682,13 +826,13 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       className: "dl-center-y"
     }), layout.elements.filter(e => e.page === page).map(e => {
       const f = fields.find(f => f.key === e.field),
-        text = e.kind === 'TEXT' ? e.text : f?.example || f?.label;
+        text = e.kind === 'TEXT' ? e.text : (e.label ? e.label + '\n' : '') + (f?.example || f?.label || '');
       return /*#__PURE__*/React.createElement("div", {
         key: e.id,
         "data-element": e.id,
         role: "button",
         tabIndex: 0,
-        "aria-label": f?.label || 'Texto fijo',
+        "aria-label": e.label || f?.label || 'Texto fijo',
         className: 'dl-element' + (e.id === selected ? ' is-selected' : '') + (errors.some(x => x.element_id === e.id) ? ' is-invalid' : '') + (['SIGNERS', 'PAYMENT_SCHEDULE'].includes(e.kind) ? ' is-block' : ''),
         style: {
           left: e.x * zoom,
@@ -738,7 +882,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         }
       }, showNames ? /*#__PURE__*/React.createElement("span", {
         className: "dl-element-label"
-      }, f?.label || 'Texto: ' + e.text) : e.kind === 'SIGNERS' ? /*#__PURE__*/React.createElement("div", {
+      }, e.label || f?.label || 'Texto: ' + e.text) : e.kind === 'SIGNERS' ? /*#__PURE__*/React.createElement("div", {
         style: {
           display: 'grid',
           gridTemplateColumns: 'repeat(' + (e.orientation === 'vertical' ? 1 : e.columns) + ',1fr)',
@@ -878,6 +1022,33 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, "Centro"), /*#__PURE__*/React.createElement("option", {
       value: "right"
     }, "Derecha"))), element.kind === 'FIELD' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Field, {
+      label: "Etiqueta en el PDF",
+      value: element.label || '',
+      disabled: noEdit,
+      maxLength: 120,
+      hint: "Opcional. Se imprime encima del valor.",
+      onChange: v => patch({
+        label: v
+      })
+    }), /*#__PURE__*/React.createElement(Field, {
+      label: "Dato vinculado"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      "aria-label": "Dato vinculado",
+      value: element.field,
+      disabled: noEdit,
+      onChange: e => {
+        const f = fields.find(x => x.key === e.target.value);
+        patch({
+          field: f.key,
+          format: f.format,
+          label: f.label
+        });
+      }
+    }, fields.filter(f => f.kind === 'FIELD').map(f => /*#__PURE__*/React.createElement("option", {
+      key: f.key,
+      value: f.key
+    }, f.group, " \xB7 ", f.label)))), /*#__PURE__*/React.createElement(Field, {
       label: "Formato"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
@@ -931,7 +1102,8 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       value: element.columns,
       disabled: noEdit,
       onChange: v => patch({
-        columns: Number(v)
+        columns: Number(v),
+        autoColumns: false
       })
     }), /*#__PURE__*/React.createElement(Field, {
       label: "Espaciado \xB7 mm",
@@ -1071,6 +1243,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     day: '2-digit'
   }).format(new Date());
   const message = e => ({
+    DOCUMENT_LAYOUT_ASSIGNMENT_MISSING: 'Abre Diseñar documento y activa un diseño para este programa o fondo.',
     DOCUMENT_CONFIGURATION_MISSING: 'Configura primero la plantilla y los firmantes de este documento.',
     DOCUMENT_SIGNER_NOT_EFFECTIVE: 'Revisa la vigencia y el estado de los firmantes.',
     DOCUMENT_TEMPLATE_NOT_EFFECTIVE: 'La plantilla no está vigente para esta fecha.',
@@ -1752,7 +1925,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, /*#__PURE__*/React.createElement("section", {
       className: "df-kpis",
       "aria-label": "Resumen"
-    }, [['doc', 'Plantilla activa', active?.name || 'Sin plantilla', active ? 'PDF · v' + active.version : 'Configura un membrete'], ['sign', 'Firmantes activos', signers.filter(s => s.enabled).length, signers.filter(s => !s.enabled).length + ' inactivos en historial'], ['check', 'Documentos configurados', configured + ' de ' + scopes.length, 'Por programa y tipo documental']].map(([icon, label, value, note]) => /*#__PURE__*/React.createElement("article", {
+    }, [['doc', 'Membrete predeterminado', active?.name || 'Sin plantilla', active ? 'PDF · v' + active.version : 'Configura un membrete'], ['sign', 'Firmantes activos', signers.filter(s => s.enabled).length, signers.filter(s => !s.enabled).length + ' inactivos en historial'], ['check', 'Documentos configurados', configured + ' de ' + scopes.length, 'Por programa y tipo documental']].map(([icon, label, value, note]) => /*#__PURE__*/React.createElement("article", {
       className: "df-card df-kpi",
       key: label
     }, /*#__PURE__*/React.createElement("span", {
@@ -2378,7 +2551,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       value: ""
     }, "Selecciona una plantilla"), active && /*#__PURE__*/React.createElement("option", {
       value: "ACTIVE"
-    }, "Plantilla activa \xB7 ", active.name), templates.map(t => /*#__PURE__*/React.createElement("option", {
+    }, "Membrete predeterminado \xB7 ", active.name), templates.map(t => /*#__PURE__*/React.createElement("option", {
       key: t.id,
       value: t.id
     }, t.name, " \xB7 v", t.version, t.active ? ' (activa)' : '')))), /*#__PURE__*/React.createElement(Field, {

@@ -6,6 +6,7 @@ const financial=[f('operation.financial.financialResult.fund','Fondo','TEXT',fal
 export const AFFILIATE_FIELDS=[['rfc','RFC'],['curp','CURP'],['phone','Teléfono registrado'],['email','Correo registrado'],['address','Domicilio'],['city','Ciudad'],['employment_position','Puesto'],['employment_area','Área de trabajo'],['employment_level','Nivel laboral'],['occupation','Ocupación'],['subdirectorate','Subdirección'],['employment_entry_date','Fecha de ingreso laboral'],['institute_entry_date','Fecha de ingreso al instituto'],['union_position','Cargo sindical'],['union_enrollment_date','Fecha de afiliación sindical']];
 export function layoutFields(type,version=LAYOUT_VERSION){
  const fields=[f('identity.full_name','Beneficiario','TEXT',true),f('identity.numero_control','Número de control','TEXT',true),f('operation.folio','Folio','TEXT',true),f('operation.program','Programa','TEXT',true),f('operation.approved_at','Fecha de autorización','DATE',true),f('identity.union','Sindicato'),f('identity.category','Categoría'),f('identity.unit','Adscripción')];
+ if(version!=='suti-layout-1')fields.push(f('document.title','Título del documento'));
  if(version==='suti-layout-1')fields.push(f('document.note','Alcance de la autorización','TEXT',true));
  else fields.push(...AFFILIATE_FIELDS.map(([key,label])=>f('identity.affiliate.'+key,label,'TEXT',false,'Base de afiliados')));
  const add=(key,label,format='TEXT',required=false)=>fields.push(f(key,label,format,required,'Datos del documento'));
@@ -27,6 +28,7 @@ export function layoutFields(type,version=LAYOUT_VERSION){
 export function fieldValue(snapshot,key,model){
  const o=snapshot.operation,i=snapshot.identity;
  if(key==='document.note')return model.note;
+ if(key==='document.title')return model.title;
  if(key==='identity.union')return i.union_label||i.union_code;
  if(key==='identity.category')return i.category_label||i.category_code;
  if(key==='operation.financial.offering.company')return o.financial?.offering?.company_raw||o.financial?.offering?.company;
@@ -66,7 +68,9 @@ export function validateLayout(layout,type,template,{draft=false}={}){
  const W=template?.page_size?.width*25.4/72,H=template?.page_size?.height*25.4/72,m=template?.margins;
  for(const e of layout.elements){
   if(!e||typeof e!=='object'){fail('Elemento inválido.');continue;}
-  const allowed=['id','kind','field','page','x','y','width','height','font','size','weight','align','format','missing','text','columns','gap','orientation','tableColumns','header','rowsPerPage'];
+  const allowed=['id','kind','field','page','x','y','width','height','font','size','weight','align','format','missing','text','label','autoColumns','columns','gap','orientation','tableColumns','header','rowsPerPage'];
+  if(e.autoColumns!==undefined&&(e.kind!=='SIGNERS'||typeof e.autoColumns!=='boolean'))fail('Distribución de firmas inválida.');
+  if(e.label!==undefined&&(e.kind!=='FIELD'||typeof e.label!=='string'||e.label.length>120))fail('La etiqueta debe ser un texto de hasta 120 caracteres.');
   if(Object.keys(e).some(k=>!allowed.includes(k)))fail('Un elemento contiene propiedades no permitidas.');
   if(typeof e.id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(e.id)||ids.has(e.id))fail('Identificador de elemento duplicado o inválido.');ids.add(e.id);
   const d=byKey.get(e.field),label=(d?.label||('Texto: '+String(e.text||'').slice(0,48)))+' (página '+e.page+')';
@@ -88,11 +92,18 @@ export function validateLayout(layout,type,template,{draft=false}={}){
 }
 export function initialLayout(type,template){
  const W=template.page_size.width*25.4/72,H=template.page_size.height*25.4/72,m=template.margins,w=W-m.left-m.right;
- let y=m.top,page=1;const elements=[];
- for(const [n,d] of layoutFields(type).filter(x=>x.required||(type==='LOAN_APPROVAL'&&x.key==='payment_schedule')).entries()){
-  const height=d.kind==='SIGNERS'?45:d.kind==='PAYMENT_SCHEDULE'?65:d.key==='document.note'?23:11;
-  if(y+height>H-m.bottom){page++;y=m.top;}
-  elements.push({id:'initial_'+n,kind:d.kind,field:d.key,page,x:m.left,y,width:w,height,font:'Helvetica',size:10,weight:'regular',align:'left',...(d.kind==='FIELD'?{format:d.format,missing:'hide'}:{}),...(d.kind==='SIGNERS'?{columns:2,gap:5,orientation:'horizontal'}:{}),...(d.kind==='PAYMENT_SCHEDULE'?{tableColumns:TABLE_COLUMNS.map(x=>x.key),header:true,rowsPerPage:10}:{})});y+=height+3;
- }
+ let y=m.top,page=1,column=0;const elements=[],fields=layoutFields(type);
+ const selected=fields.filter(d=>d.kind==='FIELD'&&d.group!=='Base de afiliados'&&d.key!=='document.title');
+ const add=(d,wide=false)=>{
+  if(wide&&column){y+=17;column=0;}
+  const height=d.kind==='SIGNERS'?55:d.kind==='PAYMENT_SCHEDULE'?75:d.key==='document.title'?12:14;
+  if(y+height>H-m.bottom){page++;y=m.top;column=0;}
+  elements.push({id:'initial_'+elements.length,kind:d.kind,field:d.key,page,x:m.left+(wide?0:column*(w+5)/2),y,width:wide?w:(w-5)/2,height,font:'Helvetica',size:d.key==='document.title'?13:9,weight:d.key==='document.title'?'bold':'regular',align:'left',...(d.kind==='FIELD'?{format:d.format,missing:'hide',label:d.key==='document.title'?'':d.label}:{}),...(d.kind==='SIGNERS'?{columns:3,gap:5,orientation:'horizontal',autoColumns:false}:{}),...(d.kind==='PAYMENT_SCHEDULE'?{tableColumns:TABLE_COLUMNS.map(x=>x.key),header:true,rowsPerPage:10}:{})});
+  if(wide){y+=height+3;}else if(column){y+=17;column=0;}else column=1;
+ };
+ add(fields.find(d=>d.key==='document.title'),true);
+ selected.forEach(d=>add(d,d.key==='identity.full_name'));
+ const schedule=fields.find(d=>d.kind==='PAYMENT_SCHEDULE');if(schedule)add(schedule,true);
+ add(fields.find(d=>d.kind==='SIGNERS'),true);
  return {version:LAYOUT_VERSION,unit:'mm',pages:page,elements};
 }

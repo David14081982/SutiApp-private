@@ -43,7 +43,7 @@ Deno.serve(async(req)=>{
   const user=await client.auth.getUser();if(user.error||!user.data.user)return reply(401,{error:'DOCUMENT_AUTH_INVALID'});
   if(Number(req.headers.get('content-length'))>12000000)return reply(413,{error:'DOCUMENT_UPLOAD_TOO_LARGE'});
   const body=await req.json(),command=(action:string,data:unknown={})=>rpc(client,'document_generation_command',action,data);
-  if(['LAYOUT_MANIFEST','LAYOUT_SAVE','LAYOUT_ACTIVATE','LAYOUT_SYSTEM','LAYOUT_PREVIEW'].includes(body.action)){
+  if(['LAYOUT_MANIFEST','LAYOUT_SAVE','LAYOUT_ACTIVATE','LAYOUT_SYSTEM','LAYOUT_UNASSIGN','LAYOUT_PREVIEW'].includes(body.action)){
    const result=await handleLayout(body,{contextCall:(action,data)=>rpc(client,'document_layout_context',action,data),command,persist:(action,data)=>rpc(service,'document_layout_persist',action,data),render,loadAsset});
    if(result.pdf)return new Response(result.pdf,{status:200,headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'inline; filename="distribucion.pdf"'}});
    return reply(result.status,result.data);
@@ -74,8 +74,12 @@ Deno.serve(async(req)=>{
    if(signed.error)throw Error('DOCUMENT_ACCESS_UNAVAILABLE');return reply(200,{url:signed.data.signedUrl,expires_in:120,mime:asset.mime||'application/pdf'});
   }
   if(body.action==='PREVIEW'){
-   const config=await command('PREVIEW_CONFIG',{...body.config,program:body.program,document_type:body.document_type});
-   const output=await render(syntheticSnapshot(body.document_type,body.program,config),loadAsset,{preview:true});
+   const context=await rpc(client,'document_layout_context','READ',{program:body.program,document_type:body.document_type,fund_key:body.fund_key||''});
+   if(!context.active_id)throw Error('DOCUMENT_LAYOUT_ASSIGNMENT_MISSING');
+   const version=await rpc(client,'document_layout_context','VERSION',{program:body.program,document_type:body.document_type,id:context.active_id});
+   const config=await command('PREVIEW_CONFIG',{program:body.program,document_type:body.document_type,template_id:version.template_id,signers:context.config.signers});
+   const snapshot=syntheticSnapshot(body.document_type,body.program,config);snapshot.layout={definition:version.definition};
+   const output=await render(snapshot,loadAsset,{preview:true});
    return new Response(output.bytes,{status:200,headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'inline; filename="vista-previa.pdf"'}});
   }
   return reply(400,{error:'DOCUMENT_ACTION_INVALID'});

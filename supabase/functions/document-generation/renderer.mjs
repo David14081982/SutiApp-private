@@ -1,6 +1,6 @@
 // No financial calculators: every value below is read from the sealed approval.
 // Shared by the server worker, synthetic previews and isolated contract tests.
-import {AFFILIATE_FIELDS} from './layout.mjs';
+import {AFFILIATE_FIELDS,initialLayout} from './layout.mjs';
 import {drawLayout} from './render-layout.mjs';
 export const RENDERER_VERSION='pdf-lib-1.17.1/suti-1';
 export const TITLES=Object.freeze({
@@ -36,7 +36,7 @@ export function documentContract(snapshot){
   if(snapshot.loan_payment_schedule?.error)throw Error(snapshot.loan_payment_schedule.error);
   schedule=snapshot.loan_payment_schedule||f.payment_schedule||null;
   if(snapshot.bank)sections.push({title:'Referencia bancaria de la solicitud',rows:pairs([['Banco',snapshot.bank.bank_name],['Tarjeta',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.card_number:(snapshot.bank.card_last4?'**** '+snapshot.bank.card_last4:null)],['CLABE',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.clabe:(snapshot.bank.clabe_last4?'************** '+snapshot.bank.clabe_last4:null)]])});
-  note='Autorización de la solicitud. No acredita depósito ni entrega de dinero.';break;
+  note='';break;
  case 'MEMBERSHIP_APPROVAL':
   sections=[{title:'Membresía solicitada',rows:pairs([['Empresa',f?.offering?.company_raw||f?.offering?.company],['Concepto',f?.offering?.concept]])},{title:'Plan autorizado',rows:finance(f)}];
   note='La solicitud fue autorizada. Este documento no acredita activación, vigencia ni renovación de la membresía.';break;
@@ -80,7 +80,9 @@ export function createRenderer(PDFLib){
   const background=base.node.Contents()?await pdf.embedPage(base):null,ink=rgb(.078,.129,.239),muted=rgb(.35,.39,.47),brand=rgb(.57,0,.133);
   const when=new Date(snapshot.operation.approved_at);if(!Number.isFinite(when.getTime()))throw Error('DOCUMENT_DATE_INVALID');
   pdf.setCreationDate(when);pdf.setModificationDate(when);pdf.setProducer(RENDERER_VERSION);pdf.setCreator('SutiApp');pdf.setTitle(model.title);
-  if(snapshot.layout?.definition){
+  {
+   // The editable definition is the only positioning strategy, including previews.
+   snapshot={...snapshot,layout:{...snapshot.layout,definition:snapshot.layout?.definition||initialLayout(snapshot.document_type,tpl)}};
    // Automatic continuation repeats only the institutional bands outside the safe
    // area. A filled form used as a background must not repeat its empty body.
    const continuationBackground=[];
@@ -89,42 +91,5 @@ export function createRenderer(PDFLib){
    }
    const pages=await drawLayout({snapshot,model,pdf,PDFLib,background,continuationBackground,width,height,loadAsset,preview,draft});return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages};
   }
-  let page,y;const pages=[];
-  function newPage(){page=pdf.addPage([width,height]);pages.push(page);if(background)page.drawPage(background,{x:0,y:0,width,height});y=top;
-   if(preview){page.drawText('VISTA PREVIA / DATOS DE EJEMPLO',{x:left,y:y-11,size:10,font:bold,color:brand});y-=24;}
-   for(const titleLine of lines(model.title,right-left,11,bold)){page.drawText(titleLine,{x:left,y:y-11,size:11,font:bold,color:brand});y-=15;}y-=9;
-  }
-  function lines(value,maxWidth,size=10,f=font){
-   const out=[];for(const paragraph of String(value).replace(/\r/g,'').split('\n')){let line='';for(const word of paragraph.split(/\s+/)){const candidate=line?line+' '+word:word;
-    if(f.widthOfTextAtSize(candidate,size)<=maxWidth){line=candidate;continue;}if(line){out.push(line);line='';}
-    let piece='';for(const ch of word){if(f.widthOfTextAtSize(piece+ch,size)>maxWidth){if(!piece)throw Error('DOCUMENT_GLYPH_TOO_WIDE');out.push(piece);piece='';}piece+=ch;}line=piece;
-   }out.push(line);}return out;
-  }
-  function ensure(h){if(y-h<bottom+18)newPage();if(y-h<bottom+18)throw Error('DOCUMENT_BLOCK_TOO_TALL');}
-  function paragraph(value,{size=10,f=font,color=ink,widthLimit=right-left}={}){for(const line of lines(value,widthLimit,size,f)){ensure(size+5);page.drawText(line,{x:left,y:y-size,size,font:f,color});y-=size+5;}}
-  function heading(value){ensure(40);y-=8;paragraph(value,{size:11,f:bold,color:brand});}
-  function fieldRows(rows){for(const [key,value] of rows)paragraph(key+': '+value);}
-  newPage();fieldRows(model.common);paragraph(model.note,{color:muted});
-  for(const section of model.sections){if(!section.rows.length)continue;heading(section.title);fieldRows(section.rows);}
-  if(model.schedule){
-   const rows=required(model.schedule.rows,'SCHEDULE_ROWS');if(!Array.isArray(rows)||!rows.length)throw Error('DOCUMENT_SCHEDULE_EMPTY');
-   heading('Calendario autorizado');const widths=[.10,.27,.30,.33].map(n=>(right-left)*n);
-   const header=()=>{ensure(24);let x=left;['Pago','Fecha','Importe','Saldo restante'].forEach((v,n)=>{page.drawText(v,{x,y:y-10,size:9,font:bold,color:brand});x+=widths[n];});y-=21;};header();
-   for(const row of rows){const cells=[required(row.number,'ROW_NUMBER'),date(required(row.date,'ROW_DATE')),money(required(row.payment,'ROW_PAYMENT')),money(row.remaining_total)??''];
-    const text=cells.map((v,n)=>lines(v,widths[n]-6,9)),h=Math.max(...text.map(a=>a.length))*13+6;if(y-h<bottom+18){newPage();header();}ensure(h);
-    let x=left;text.forEach((cell,n)=>{cell.forEach((v,k)=>page.drawText(v,{x,y:y-10-k*13,size:9,font,color:ink}));x+=widths[n];});y-=h;
-   }
-  }
-  heading('Firmas institucionales');
-  // Flowing blocks support any number of signers; never clip names/titles or signatures.
-  for(const s of signers){
-   const labels=[required(s.full_name,'SIGNER_NAME'),required(s.title,'SIGNER_TITLE'),required(s.role,'SIGNER_ROLE')];
-   const block=labels.flatMap(v=>lines(v,right-left,10));ensure(Math.min(55+block.length*15,top-bottom-70));
-   if(!preview){const bytes=await loadAsset(required(s.asset,'SIGNATURE_ASSET'));const image=s.asset.mime==='image/png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes);const scale=Math.min(140/image.width,38/image.height);page.drawImage(image,{x:left,y:y-38,width:image.width*scale,height:image.height*scale});}
-   else page.drawText('Firma de ejemplo',{x:left,y:y-24,size:10,font,color:muted});
-   y-=43;page.drawLine({start:{x:left,y},end:{x:Math.min(left+200,right),y},thickness:.5,color:ink});y-=4;block.forEach(v=>paragraph(v));y-=8;
-  }
-  pages.forEach((p,n)=>{const footer='SutiApp · Página '+(n+1)+' de '+pages.length;p.drawText(footer,{x:left,y:bottom+4,size:8,font,color:muted});});
-  return {bytes:await pdf.save({useObjectStreams:false,addDefaultPage:false,objectsPerTick:100}),pages:pages.length};
  };
 }

@@ -123,3 +123,5 @@ Risk: accidentally narrowing the total administrator screen or leaving a broad r
 - Isolated PostgreSQL twelve-scenario suite and focal build PASS. Final candidate bundle SHA256 `f3ad32c8ef689521b404079413800dc839beefa79cc51384504aeced290b56f0`.
 
 Corrective result: PASS. Source of truth, quantities, requests, permissions, schema and legacy remain unchanged. UI preservation: PASS; the existing Inventory/Solicitudes structure and all controls remain, while the erroneous fail-safe state is replaced by the authorized scoped data.
+
+Scope update before final corrective publication: `SutiApp.html` bundle query and `sw.js` cache/Core query are bumped together so already-installed clients cannot retain the defective same-URL bundle. This changes version identifiers only, not service-worker routing or cache policy. Required verification adds artifact build, SW registration/refresh and exact deployed bundle hash. Recovery is the preceding published artifact.

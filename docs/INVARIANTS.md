@@ -402,3 +402,11 @@ Para nuevas membresías: fondo exacto Vales y membresias; tasa e interés cero; 
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 Preserve historical controls as text, imported rows (including pending/duplicates), versions and signatures. Beneficiary totals must not exceed 100; no invented relationship/Auth actor for historical import. New distributions require private signature, consent, expected identity/version and idempotency. Only SUPLENTES_FIJOS/SUPLENTES_VARIABLES require the three guarantor documents; all other document/actor/snapshot controls remain. Disk IO replaces twelve deterministic business-conflict SQLSTATEs with PT409, preserving genuine database serialization semantics.
+
+## H-SUTIAPP-AUTHORIZATION-PDF-003
+
+Full card/CLABE in authorized private loan PDFs are explicitly owner-authorized.
+Never substitute live bank profile values or copy these identifiers into list metadata.
+A documentary revision must preserve original event, identity, authorized financial
+values, historical signers and the old PDF. New revision ID is idempotent; stale-parent
+revision is rejected. The revision never invokes any financial writer or Google.

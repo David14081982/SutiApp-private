@@ -33,7 +33,7 @@ export function documentContract(snapshot){
   schedule=required(f.payment_schedule,'PAYMENT_SCHEDULE');note='Se documentan las condiciones autorizadas de esta solicitud. Este documento no acredita entrega del bien ni pago realizado.';break;
  case 'LOAN_APPROVAL':
   sections=[{title:'Resumen financiero autorizado',rows:finance(f)}];schedule=f.payment_schedule||null;
-  if(snapshot.bank)sections.push({title:'Referencia bancaria de la solicitud',rows:pairs([['Banco',snapshot.bank.bank_name],['Tarjeta',snapshot.bank.card_last4?'**** '+snapshot.bank.card_last4:null],['CLABE',snapshot.bank.clabe_last4?'************** '+snapshot.bank.clabe_last4:null]])});
+  if(snapshot.bank)sections.push({title:'Referencia bancaria de la solicitud',rows:pairs([['Banco',snapshot.bank.bank_name],['Tarjeta',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.card_number:(snapshot.bank.card_last4?'**** '+snapshot.bank.card_last4:null)],['CLABE',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.clabe:(snapshot.bank.clabe_last4?'************** '+snapshot.bank.clabe_last4:null)]])});
   note='Autorización de la solicitud. No acredita depósito ni entrega de dinero.';break;
  case 'MEMBERSHIP_APPROVAL':
   sections=[{title:'Membresía solicitada',rows:pairs([['Empresa',f?.offering?.company_raw||f?.offering?.company],['Concepto',f?.offering?.concept]])},{title:'Plan autorizado',rows:finance(f)}];
@@ -59,7 +59,7 @@ export function syntheticSnapshot(type,program,config){
  if(!TITLES[type])throw Error('DOCUMENT_TYPE_NOT_SUPPORTED');
  const financial={product:{name:'Producto de ejemplo'},offering:{company_raw:'Empresa de ejemplo',concept:'Membresía de ejemplo'},authorized_price:12000,down_payment:2000,financed_amount:10000,price_source:'PRICE_CASH',financialResult:{fund:'Fondo de ejemplo',rate:0,administrativeFeePerPayment:0,lastPayment:2500,amount:10000,paymentCount:4,paymentPeriod:'QUINCENAL',interest:0,administrativeFeeTotal:0,total:10000,paymentPerPeriod:2500},payment_schedule:{rows:[1,2,3,4].map((n)=>({number:n,date:'2026-10-'+String(n*5).padStart(2,'0'),payment:2500,remaining_total:10000-n*2500}))}};
  return {...config,document_type:type,contract_version:'1',renderer_version:RENDERER_VERSION,event_id:'PREVIEW',identity:{full_name:'Persona de ejemplo',numero_control:'EJEMPLO',union_label:'Sindicato de ejemplo',category_label:'Categoría de ejemplo',unit:'Unidad de ejemplo',affiliate:Object.fromEntries(AFFILIATE_FIELDS.map(([key,label])=>[key,label+' de ejemplo']))},operation:{id:'PREVIEW',folio:'VISTA PREVIA',program,approved_at:'2026-09-28T12:00:00Z',financial,new_contribution_amount:400,previous_contribution_amount:200,process:'1',effective_from:'2026-10-30',request_type:'WITHDRAW',withdrawal_kind:'PARTIAL',requested_amount:500,authorized_amount:500,component:'CAPITAL',continue_saving:true},
-  bank:type==='LOAN_APPROVAL'?{bank_name:'BANCO DEMO',card_last4:'1234',clabe_last4:'5678'}:undefined,
+  bank:type==='LOAN_APPROVAL'?{bank_name:'BANCO DEMO',disclosure:'FULL_DEPOSIT',account_holder:'Titular de ejemplo',card_number:'1111222233334444',clabe:'111222333444555666',card_last4:'4444',clabe_last4:'5666'}:undefined,
   signers:(config.signers||[]).map((s,n)=>({...s,full_name:'Firmante de ejemplo '+(n+1),title:'Cargo de ejemplo',asset:null}))};
 }
 

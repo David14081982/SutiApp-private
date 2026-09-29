@@ -704,3 +704,17 @@ Owner explicitly classifies current Farma catalog as donations and current quant
 farma_private.requests owns only the new nonfinancial medicine-donation domain; it is not a copy of program_requests and cannot enter its Google/financial writers. farma_private.events is immutable operational history. CONTACT and SUBMIT derive get_effective_affiliate_id and use affiliates + the existing notification-phone writer. Private contact/product snapshots preserve the submitted record; they do not become mutable masters. MINE is self-only; QUEUE/INVENTORY/actions require backend Farma/catalog administration. Assisted administration uses the existing actor/subject permission intersection and session binding; it never grants more than both accounts already hold, and events retain the real actor. Atomic versioned delivery decrements stock exactly once; requests do not reserve or deduct stock. Archive hides the catalog item while preserving quantities/history.
 
 Existing request_push_subscriptions remains consent/device authority. farma_private.push_deliveries and push_attempts contain transport only, addressed to the active Farma module assignment; dispatch rechecks grants and identity. Payload has no medicine/contact details. Mariana receives only the farma module. Mi Historial renders the same donation authority. No production mocks, browser storage or Google fallback.
+
+### Authorization deposit PDF correction (H-SUTIAPP-AUTHORIZATION-PDF-003)
+
+The owner's latest explicit instruction supersedes last-four-only presentation for
+private loan authorizations. `loan_request_deposit_snapshots` remains the frozen deposit
+authority: bank, holder, 16-digit card and 18-digit CLABE. Current profile bank accounts
+are never substituted. These values enter only new documentary snapshots/PDFs; LIST
+metadata, logs and previews expose no real bank identifiers. Existing PDFs remain sealed.
+`REISSUE` appends a document revision with an idempotent UUID and the same final event,
+identity, money and historical signers, plus the chosen current template/layout. It reads
+full deposit data from that immutable request snapshot. No financial authorization repeats.
+Operator reads reuse source-domain read permission and existing module boundary; configuration
+and revision writes retain separate document permissions. Owner affiliate access is unchanged.
+Layout engine v3 adds full-bank bindings; v1/v2 sealed snapshots retain masked behavior.

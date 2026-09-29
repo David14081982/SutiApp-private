@@ -195,8 +195,12 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         setVersionId(id || '');
         if (!keepLayout) {
           const copy = structuredClone(result.versions.find(v => v.id === id)?.definition || result.initial);
-          copy.version = 'suti-layout-2';
-          copy.elements = copy.elements.filter(e => e.field !== 'document.note');
+          copy.version = 'suti-layout-3';
+          copy.elements = copy.elements.filter(e => e.field !== 'document.note').map(e => ['bank.card_last4', 'bank.clabe_last4'].includes(e.field) ? {
+            ...e,
+            field: e.field === 'bank.card_last4' ? 'bank.card_number' : 'bank.clabe',
+            format: 'TEXT'
+          } : e);
           setLayout(copy);
           setSelected(null);
           setPage(1);
@@ -337,7 +341,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
           missing: 'hide'
         } : {}),
         ...(kind === 'SIGNERS' ? {
-          columns: 2,
+          columns: Math.min(3, data.signer_count || 1),
           gap: 5,
           orientation: 'horizontal'
         } : {}),
@@ -734,7 +738,24 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         }
       }, showNames ? /*#__PURE__*/React.createElement("span", {
         className: "dl-element-label"
-      }, f?.label || 'Texto: ' + e.text) : text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
+      }, f?.label || 'Texto: ' + e.text) : e.kind === 'SIGNERS' ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(' + (e.orientation === 'vertical' ? 1 : e.columns) + ',1fr)',
+          gap: e.gap * zoom,
+          width: '100%',
+          alignSelf: 'start'
+        }
+      }, Array.from({
+        length: data.signer_count || 1
+      }, (_, n) => /*#__PURE__*/React.createElement("div", {
+        key: n,
+        style: {
+          fontSize: Math.min(e.size, 10) * 25.4 / 72 * zoom,
+          minHeight: 30 * zoom,
+          paddingTop: 16 * zoom
+        }
+      }, "Firma ", n + 1, /*#__PURE__*/React.createElement("br", null), "Nombre y cargo"))) : text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
         className: "dl-resize",
         role: "button",
         "aria-label": "Redimensionar elemento",
@@ -924,7 +945,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       })
     }), /*#__PURE__*/React.createElement("p", {
       className: "dl-help"
-    }, "Los firmantes provienen de la configuraci\xF3n vigente del documento.")), element.kind === 'PAYMENT_SCHEDULE' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Field, {
+    }, data.signer_count, " firmantes configurados \xB7 ", Math.ceil((data.signer_count || 1) / (element.orientation === 'vertical' ? 1 : element.columns)), " filas. Si no caben en el alto asignado, contin\xFAan en otra p\xE1gina.")), element.kind === 'PAYMENT_SCHEDULE' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Field, {
       label: "Filas por p\xE1gina",
       type: "number",
       min: "1",
@@ -1334,7 +1355,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         loading: true
       }),
       [viewer, setViewer] = useState(null),
-      [busy, setBusy] = useState(false);
+      [busy, setBusy] = useState(false),
+      revision = useRef(null);
     const load = () => {
       if (!operationId) return;
       setState(s => ({
@@ -1427,7 +1449,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         alignItems: 'center',
         flexWrap: 'wrap'
       }
-    }, /*#__PURE__*/React.createElement("span", null, TYPES[row.document_type], " \xB7 ", {
+    }, /*#__PURE__*/React.createElement("span", null, TYPES[row.document_type], " \xB7 v", row.business_version || 1, " \xB7 ", {
       PENDING: 'Pendiente',
       GENERATING: 'Preparando',
       READY: 'Disponible',
@@ -1435,7 +1457,28 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }[row.status]), row.status === 'READY' && /*#__PURE__*/React.createElement("button", {
       disabled: busy,
       onClick: () => open(row)
-    }, "Ver documento"), row.can_retry && /*#__PURE__*/React.createElement("button", {
+    }, "Ver documento"), row.can_reissue && /*#__PURE__*/React.createElement("button", {
+      disabled: busy,
+      onClick: async () => {
+        if (!window.confirm('Emitir una versión corregida con el diseño activo y los datos de depósito de esta solicitud. Se conservarán el PDF anterior, los importes autorizados y sus firmantes.')) return;
+        setBusy(true);
+        try {
+          if (!revision.current || revision.current.id !== row.id) revision.current = {
+            id: row.id,
+            revision_id: crypto.randomUUID()
+          };
+          await R().command('REISSUE', revision.current);
+          load();
+        } catch (e) {
+          setState(s => ({
+            ...s,
+            error: true
+          }));
+        } finally {
+          setBusy(false);
+        }
+      }
+    }, "Emitir versi\xF3n corregida"), row.can_retry && /*#__PURE__*/React.createElement("button", {
       disabled: busy,
       onClick: async () => {
         setBusy(true);
@@ -46182,6 +46225,102 @@ Object.assign(window, {
       [attr]: value
     }, meta.label);
   };
+
+  // Request-local entry point; the document repository and backend remain authoritative.
+  function RowAuthorizationPdf({
+    row
+  }) {
+    const [busy, setBusy] = React.useState(false),
+      [message, setMessage] = React.useState(''),
+      [viewer, setViewer] = React.useState(null),
+      generation = React.useRef(0);
+    React.useEffect(() => {
+      const initial = window.DocumentGenerationRepository?.context();
+      const changed = () => {
+        if (window.DocumentGenerationRepository?.context() !== initial) {
+          generation.current++;
+          setViewer(null);
+          setBusy(false);
+          setMessage('La sesión cambió. Vuelve a consultar el documento.');
+        }
+      };
+      const a = window.AffiliateAuth?.subscribe?.(changed),
+        b = window.AdminRepository?.subscribe?.(changed);
+      return () => {
+        generation.current++;
+        a?.();
+        b?.();
+      };
+    }, [row.id]);
+    async function open() {
+      if (busy) return;
+      const seq = ++generation.current;
+      setBusy(true);
+      setMessage('');
+      try {
+        const repository = window.DocumentGenerationRepository;
+        if (!repository) throw Error();
+        const records = await repository.list({
+          domain: 'program',
+          operation_id: row.id,
+          admin: true
+        });
+        if (seq !== generation.current) return;
+        const newest = records.slice().sort((a, b) => (b.business_version || 1) - (a.business_version || 1))[0];
+        if (!newest) {
+          setMessage('Esta solicitud aún no tiene una autorización PDF emitida.');
+          return;
+        }
+        if (newest.status !== 'READY') {
+          setMessage(newest.status === 'FAILED' ? 'La generación del PDF falló. Revisa Documentos y Firmas para reintentar.' : 'La autorización PDF se está preparando. Vuelve a consultar en un momento.');
+          return;
+        }
+        const access = await repository.access(newest.id, true);
+        if (seq === generation.current) setViewer(access.url);
+      } catch (_) {
+        if (seq === generation.current) setMessage('No se pudo abrir la autorización PDF. Revisa tu acceso e inténtalo de nuevo.');
+      } finally {
+        if (seq === generation.current) setBusy(false);
+      }
+    }
+    if (row.status !== 'approved') return null;
+    return h('span', {
+      onClick: e => e.stopPropagation(),
+      onKeyDown: e => e.stopPropagation(),
+      style: {
+        display: 'block',
+        marginTop: 7
+      }
+    }, h('button', {
+      type: 'button',
+      'data-authorization-pdf': row.id,
+      disabled: busy,
+      onClick: open,
+      style: {
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 9,
+        padding: '6px 9px',
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        fontFamily: 'inherit',
+        fontSize: 11,
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, busy ? 'Abriendo autorización…' : 'Ver autorización PDF'), message && h('span', {
+      role: 'status',
+      style: {
+        display: 'block',
+        fontSize: 11,
+        marginTop: 4
+      }
+    }, message), viewer && h(window.DocumentViewer, {
+      source: viewer,
+      mimeType: 'application/pdf',
+      title: 'Autorización PDF · ' + (row.folio || ''),
+      onClose: () => setViewer(null)
+    }));
+  }
   function ensureWorkbenchStyles() {
     if (document.getElementById('admin-financial-workbench-css')) return;
     const style = document.createElement('style');
@@ -47819,8 +47958,17 @@ Object.assign(window, {
       onClick: () => load(false)
     }, 'Reintentar')) : !visible.length ? h('div', {
       className: 'finwb-empty'
-    }, 'No hay solicitudes con estos filtros.') : visible.map(row => h('button', {
+    }, 'No hay solicitudes con estos filtros.') : visible.map(row => h('div', {
       key: row.id,
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: event => {
+        if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          setSelectedId(row.id);
+          setDetailOpen(true);
+        }
+      },
       className: 'finwb-row',
       'data-financial-queue-row': row.id,
       'aria-selected': row.id === selectedId,
@@ -47844,7 +47992,9 @@ Object.assign(window, {
       className: 'finwb-sub'
     }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type === 'quote' ? 'Cotización' : 'Sin plazo financiero')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
       className: 'finwb-stage'
-    }, stageLabel(row)), rowFeedback[row.id] && h('span', {
+    }, stageLabel(row)), h(RowAuthorizationPdf, {
+      row
+    }), rowFeedback[row.id] && h('span', {
       className: 'finwb-stage',
       'data-financial-inline-feedback': rowFeedback[row.id]
     }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', {
@@ -64277,6 +64427,102 @@ Object.assign(window, {
     REUPLOAD_REQUIRED: 'Requiere nueva carga',
     REJECTED: 'Rechazado'
   })[value] || humanCode(String(value || '').toLowerCase());
+
+  // Request-local entry point; the document repository and backend remain authoritative.
+  function RowAuthorizationPdf({
+    row
+  }) {
+    const [busy, setBusy] = React.useState(false),
+      [message, setMessage] = React.useState(''),
+      [viewer, setViewer] = React.useState(null),
+      generation = React.useRef(0);
+    React.useEffect(() => {
+      const initial = window.DocumentGenerationRepository?.context();
+      const changed = () => {
+        if (window.DocumentGenerationRepository?.context() !== initial) {
+          generation.current++;
+          setViewer(null);
+          setBusy(false);
+          setMessage('La sesión cambió. Vuelve a consultar el documento.');
+        }
+      };
+      const a = window.AffiliateAuth?.subscribe?.(changed),
+        b = window.AdminRepository?.subscribe?.(changed);
+      return () => {
+        generation.current++;
+        a?.();
+        b?.();
+      };
+    }, [row.id]);
+    async function open() {
+      if (busy) return;
+      const seq = ++generation.current;
+      setBusy(true);
+      setMessage('');
+      try {
+        const repository = window.DocumentGenerationRepository;
+        if (!repository) throw Error();
+        const records = await repository.list({
+          domain: 'program',
+          operation_id: row.id,
+          admin: true
+        });
+        if (seq !== generation.current) return;
+        const newest = records.slice().sort((a, b) => (b.business_version || 1) - (a.business_version || 1))[0];
+        if (!newest) {
+          setMessage('Esta solicitud aún no tiene una autorización PDF emitida.');
+          return;
+        }
+        if (newest.status !== 'READY') {
+          setMessage(newest.status === 'FAILED' ? 'La generación del PDF falló. Revisa Documentos y Firmas para reintentar.' : 'La autorización PDF se está preparando. Vuelve a consultar en un momento.');
+          return;
+        }
+        const access = await repository.access(newest.id, true);
+        if (seq === generation.current) setViewer(access.url);
+      } catch (_) {
+        if (seq === generation.current) setMessage('No se pudo abrir la autorización PDF. Revisa tu acceso e inténtalo de nuevo.');
+      } finally {
+        if (seq === generation.current) setBusy(false);
+      }
+    }
+    if (row.status !== 'approved') return null;
+    return h('span', {
+      onClick: e => e.stopPropagation(),
+      onKeyDown: e => e.stopPropagation(),
+      style: {
+        display: 'block',
+        marginTop: 7
+      }
+    }, h('button', {
+      type: 'button',
+      'data-authorization-pdf': row.id,
+      disabled: busy,
+      onClick: open,
+      style: {
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 9,
+        padding: '6px 9px',
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        fontFamily: 'inherit',
+        fontSize: 11,
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, busy ? 'Abriendo autorización…' : 'Ver autorización PDF'), message && h('span', {
+      role: 'status',
+      style: {
+        display: 'block',
+        fontSize: 11,
+        marginTop: 4
+      }
+    }, message), viewer && h(window.DocumentViewer, {
+      source: viewer,
+      mimeType: 'application/pdf',
+      title: 'Autorización PDF · ' + (row.folio || ''),
+      onClose: () => setViewer(null)
+    }));
+  }
   function useRequestsDesktop() {
     const query = () => window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
     const [desktop, setDesktop] = React.useState(query);
@@ -64431,6 +64677,8 @@ Object.assign(window, {
         className: 'reqwb-secondary'
       }, requestType(row.request_type) + ' · ' + dateTime(row.created_at))), h('td', null, h(StatusBadge, {
         status: row.status
+      }), h(RowAuthorizationPdf, {
+        row
       }), notice && h('div', {
         'data-request-inline-feedback': notice.phase,
         className: 'reqwb-inline ' + notice.phase
@@ -65058,7 +65306,9 @@ Object.assign(window, {
         fontWeight: 600,
         color: '#7C332E'
       }
-    }, exportErrorCopy(row.financial_export && row.financial_export.error_code)), h('select', {
+    }, exportErrorCopy(row.financial_export && row.financial_export.error_code)), h(RowAuthorizationPdf, {
+      row
+    }), h('select', {
       value: row.status,
       disabled: !app.admin.has('program_requests.write') || busy.value === row.id || row.financial_processing_status === 'handed_off',
       onChange: event => change(row, event.target.value),

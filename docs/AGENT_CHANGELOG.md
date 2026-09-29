@@ -3774,3 +3774,13 @@ Added Farma donation requests, private stock initialized from 50 current medicin
 - Prepared migration/recovery `20260928000700` to use the existing actor/subject permission intersection instead of rejecting every assisted session.
 - Inventory now enters a real loading state, request queue loading is deferred to its tab, and the unrelated role-preview banner is hidden during assisted administration.
 - PostgreSQL forward/recovery `ROLLBACK`, desktop/mobile browser flow, bundle compilation, authority hashes and zero-write checks passed. Owner explicitly authorized assisted Suti Farma; production migration applied and the real postflight returned 50 catalog and 50 inventory rows with no error or business-row changes.
+
+## H-SUTIAPP-AUTHORIZATION-PDF-003 — implementation candidate
+
+Full frozen deposit identifiers in private PDFs, scoped program-operator read access,
+approved-row PDF actions in Finance/Requests, additive documentary correction and
+three-column signer awareness. Existing core suite: 20 checks PASS, including real
+Chrome desktop/mobile actions, complete synthetic banking text, three signers/one page,
+permission/module denials, revision idempotency/history and recovery. No real PII
+fixtures or new permanent QA files. Visual reference prepared outside repo; active
+layout/reissue remains pending owner answer. See audits/H-SUTIAPP-AUTHORIZATION-PDF-003.md.

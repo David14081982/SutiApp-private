@@ -1,4 +1,4 @@
-import {validateLayout,fieldValue,formatField,TABLE_COLUMNS,layoutFields} from './layout.mjs';
+import {validateLayout,fieldValue,formatField,TABLE_COLUMNS,layoutFields,boundField} from './layout.mjs';
 
 // A positioning strategy inside the existing PDF renderer, not another generation pipeline.
 export async function drawLayout({snapshot,model,pdf,PDFLib,background,width,height,loadAsset,preview,draft=false}){
@@ -25,7 +25,7 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,width,hei
   for(const e of layout.elements.filter(e=>e.page===number)){
    try{
    if(e.kind==='TEXT'){drawText(base,e.text,e);continue;}
-   if(e.kind==='FIELD'){const value=formatField(fieldValue(snapshot,e.field,model),e.format,e.missing);if(value!==null)drawText(base,value,e);continue;}
+   if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null)drawText(base,value,e);continue;}
    let target=base,y=e.y,end=e.y+e.height;
    const continuation=()=>{target=page();y=m.top;end=height/mm-m.bottom-(legacy?7:0);};
    if(e.kind==='SIGNERS'){

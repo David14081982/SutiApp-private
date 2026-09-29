@@ -25,6 +25,8 @@ async function main(){
  create function admin_support_private.module_visible(uuid,text) returns boolean language sql as $$select exists(select 1 from (values ('requests','program_requests.read',array[]::text[])) modules(key,permission,section_keys) where key=$2)$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function public.has_admin_permission(p text) returns boolean language sql stable as $$select coalesce(current_setting('test.permissions',true),'[]')::jsonb ? p$$;
+ create function public.admin_request_module_boundary(uuid) returns boolean language sql stable as $$select current_setting('test.module_denied',true) is distinct from 'true'$$;
+ create function public.admin_module_boundary(text[]) returns boolean language sql stable as $$select current_setting('test.module_denied',true) is distinct from 'true'$$;
  create function public.get_effective_affiliate_id() returns uuid language sql stable as $$select auth.uid()$$;
  create table admin_assignments(permissions text[],constraint admin_assignments_permissions_check check(permissions<@array['authorization.read'::text]));
  create table admin_roles(id uuid primary key,code text);insert into admin_roles values('${uid}','principal_admin');create table admin_role_permissions(role_id uuid,permission text);
@@ -37,7 +39,7 @@ async function main(){
  create table program_catalog_items(program_key text);insert into program_catalog_items values('auto');
  create table program_requests(id uuid primary key,affiliate_id uuid,folio text,program_id text,membership_offering_id uuid,financial_approval_snapshot jsonb,financial_submission_snapshot jsonb,financial_profile_snapshot jsonb,terms_version_id uuid,terms_accepted boolean);
  create table program_request_admin_events(id uuid primary key,request_id uuid,actor_auth_user_id uuid,to_status text,from_status text,created_at timestamptz default now());
- create table loan_request_deposit_snapshots(request_id uuid,bank_name text,card_number text,clabe text);
+ create table loan_request_deposit_snapshots(request_id uuid,bank_name text,card_number text,clabe text,account_holder text);
  create table savings_audit_events(id bigint generated always as identity primary key,resource text,action text,after_data jsonb,usuario_contexto_affiliate_id uuid,actor_real_auth_user_id uuid,reason text);
  create table savings_requests(id uuid primary key,participant_id uuid);create table savings_participants(id uuid,affiliate_id uuid);
  create table savings_contribution_plans(enrollment_id uuid,source_request_id uuid,process_snapshot text,amount numeric,effective_from date,effective_to date);
@@ -48,6 +50,7 @@ async function main(){
  await db.exec(read('supabase/migrations/20260928000200_document_signer_assignment_order.sql'));
  await db.exec(read('supabase/migrations/20260928000300_document_layout_designer.sql'));
  await db.exec(read('supabase/migrations/20260928000400_document_layout_refinement.sql'));
+ await db.exec(read('supabase/migrations/20260928000500_document_deposit_authorization.sql'));
  await test('all private tables force RLS; no direct browser grants',async()=>{
   assert.equal(await scalar("select count(*)::integer v from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='document_private' and c.relkind='r' and c.relrowsecurity and c.relforcerowsecurity"),10);
   await actor(uid,permissions);await assert.rejects(q('select * from document_private.records'),/permission denied/);
@@ -75,7 +78,7 @@ async function main(){
    const fields=layouts.layoutFields(type),draft=layouts.initialLayout(type,renderConfig.template);
    assert.deepEqual(layouts.validateLayout(draft,type,renderConfig.template),[]);
    if(type!=='LOAN_APPROVAL')assert(!fields.some(f=>f.key.startsWith('bank.')));
-   assert(!fields.some(f=>f.key==='bank.account_holder'),'unsupported source never invented');
+   assert.equal(fields.some(f=>f.key==='bank.account_holder'),type==='LOAN_APPROVAL');
    await renderer.createRenderer(PDFLib)({...renderer.syntheticSnapshot(type,'auto',renderConfig),layout:{definition:draft}},async()=>templateBytes,{preview:true});
   }
   const invalid=structuredClone(design);invalid.elements[0].field='bank.account';assert(layouts.validateLayout(invalid,config.document_type,renderConfig.template).some(e=>e.includes('Campo no disponible')));
@@ -181,9 +184,9 @@ async function main(){
   for(const type of ['LOAN_APPROVAL','MEMBERSHIP_APPROVAL']){
    const program=type==='LOAN_APPROVAL'?'prestamo':'membership';await actor(uid,permissions);await call('SAVE_CONFIGURATION',{...config,program,document_type:type});await db.exec('reset role');
    const op=crypto.randomUUID();await q('insert into program_requests(id,affiliate_id,folio,program_id,membership_offering_id,financial_approval_snapshot,financial_submission_snapshot) values($1,$2,$3,$4,$5,$6,$7)',[op,uid,'SYNTHETIC-'+type,program,type==='MEMBERSHIP_APPROVAL'?crypto.randomUUID():null,type==='LOAN_APPROVAL'?JSON.stringify(synthetic.operation.financial):null,JSON.stringify(synthetic.operation.financial)]);
-   if(type==='LOAN_APPROVAL')await q('insert into loan_request_deposit_snapshots values($1,$2,$3,$4)',[op,'Banco sintético','1234567890123456','123456789012345678']);
+   if(type==='LOAN_APPROVAL')await q('insert into loan_request_deposit_snapshots(request_id,bank_name,card_number,clabe) values($1,$2,$3,$4)',[op,'Banco sintético','1234567890123456','123456789012345678']);
    await q("insert into program_request_admin_events values($1,$2,$3,'approved','in_review',now())",[crypto.randomUUID(),op,uid]);
-   const snapshot=await scalar('select document_snapshot v from document_private.records where operation_id=$1',[op]);assert.equal(snapshot.document_type,type);renderer.documentContract(snapshot);if(type==='LOAN_APPROVAL'){assert.equal(snapshot.bank.card_last4,'3456');assert(!JSON.stringify(snapshot).includes('1234567890123456'));}
+   const snapshot=await scalar('select document_snapshot v from document_private.records where operation_id=$1',[op]);assert.equal(snapshot.document_type,type);renderer.documentContract(snapshot);if(type==='LOAN_APPROVAL'){assert.equal(snapshot.bank.card_last4,'3456');assert.equal(snapshot.bank.card_number,'1234567890123456');assert.equal(snapshot.bank.clabe,'123456789012345678');assert.equal(snapshot.bank.disclosure,'FULL_DEPOSIT');}
   }
  });
  if(process.argv.includes('--browser'))await test('owner UI: tabs, dialogs, search, margins, assignments, upload and preview',async()=>{
@@ -240,7 +243,50 @@ async function main(){
   await page.getByRole('button',{name:/Plantillas\s*\d/}).click();await page.getByRole('button',{name:'Subir nueva plantilla',exact:true}).click();await page.locator('input[type=file]').setInputFiles({name:'synthetic.pdf',mimeType:'application/pdf',buffer:Buffer.from(templateBytes)});await page.getByLabel('Nombre de la plantilla').fill('Segundo membrete sintético');await page.getByRole('button',{name:'Guardar sin activar'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   await page.getByLabel('Margen superior').fill('45');assert.equal(await page.locator('.df-mrow__v').first().innerText(),'45 mm');await page.getByRole('button',{name:'Guardar como nueva versión'}).click();await page.getByRole('button',{name:'Guardar sin activar'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
   for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){await page.setViewportSize(viewport);assert(await page.locator('.df-kpis').isVisible());assert.equal(await page.locator('.df-kpi').count(),3);assert.equal(await page.locator('.df-panel--pl .df-side').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'no horizontal page overflow');}
+  await page.evaluate(()=>{window.Icon=()=>null;window.__authListeners=[];window.AffiliateAuth.subscribe=fn=>{__authListeners.push(fn);return()=>{__authListeners=__authListeners.filter(f=>f!==fn);};};window.__docCalls=[];window.__docRows=[];window.__docContext='one';window.DocumentGenerationRepository={context:()=>__docContext,list:async data=>{__docCalls.push(['list',data]);return __docRows;},access:async(id,admin)=>{__docCalls.push(['access',id,admin]);return {url:'https://document-test.invalid/authorization.pdf'};}};});
+  await page.addScriptTag({content:read('app/image-viewer.jsx')});
+  for(const screen of ['app/screens-admin-finanzas.jsx','app/screens-admin-requests.jsx']){
+   const source=read(screen),marker='function RowAuthorizationPdf({row})';assert(source.includes(marker));
+   await page.addScriptTag({content:source.replace(marker,'window.__RowAuthorizationPdf=RowAuthorizationPdf; '+marker)});
+   await page.evaluate(()=>{window.__pdfRoot=ReactDOM.createRoot(document.body.appendChild(document.createElement('div')));window.__parentClicks=0;window.__showPdfRow=status=>__pdfRoot.render(React.createElement('div',{onClick:()=>__parentClicks++},React.createElement(__RowAuthorizationPdf,{row:{id:'request-pdf',folio:'SYNTHETIC',status}})));__showPdfRow('submitted');});
+   assert.equal(await page.locator('[data-authorization-pdf]').count(),0);await page.evaluate(()=>__showPdfRow('approved'));const button=page.getByRole('button',{name:'Ver autorización PDF',exact:true});await button.waitFor();
+   assert.equal(await page.evaluate(()=>__docCalls.filter(c=>c[0]==='list').length),0,'demand only');await button.click();await page.getByText('Esta solicitud aún no tiene una autorización PDF emitida.',{exact:true}).waitFor();assert.equal(await page.evaluate(()=>__parentClicks),0);
+   await page.evaluate(()=>{__docRows=[{id:'old',status:'READY',business_version:1},{id:'new',status:'PENDING',business_version:2}];});await button.click();await page.getByText(/La autorización PDF se está preparando/).waitFor();assert.equal(await page.evaluate(()=>__docCalls.filter(c=>c[0]==='access').length),0,'do not silently open an obsolete revision');
+   await page.evaluate(()=>__docRows[1].status='READY');await button.click();await page.locator('[data-document-viewer="pdf"]').waitFor();assert.deepEqual(await page.evaluate(()=>__docCalls.at(-1)),['access','new',true]);assert.deepEqual(await page.evaluate(()=>__docCalls.find(c=>c[0]==='list')[1]),{domain:'program',operation_id:'request-pdf',admin:true});await page.getByRole('button',{name:'Cerrar visor'}).click();
+   await button.click();await page.locator('[data-document-viewer="pdf"]').waitFor();await page.evaluate(()=>{__docContext='changed';__authListeners.forEach(f=>f());});await page.locator('[data-document-viewer="pdf"]').waitFor({state:'hidden'});
+   await page.evaluate(()=>{__pdfRoot.unmount();__docCalls=[];__docRows=[];__docContext='one';});
+  }
+  await page.addScriptTag({content:read('app/private-resource-demand.js')});
+  await page.addScriptTag({content:read('app/screens-admin-finanzas.jsx').replace('function DesktopFinancialWorkbench(', 'window.__PdfWorkbench=DesktopFinancialWorkbench; function DesktopFinancialWorkbench(')});
+  await page.evaluate(()=>{window.AffiliateRepository={getProfilePhoto:async()=>null};window.AdminFinanceQueueRepository={enrich:async rows=>rows};const base={id:'ready-request',affiliate_id:'synthetic-affiliate',nombre:'Persona sintética',folio:'SYNTHETIC-ROW',numero_control:'001',program_id:'prestamo',requested_fund:'Fondo de ejemplo',created_at:new Date().toISOString(),ts:1,status:'approved',workflow_state:{stages:[]}};window.ProgramRequestRepository={listAdminFlowQueue:async()=>[base,{...base,id:'pending-request',status:'submitted'}],adminFlowDetail:async()=>base};window.__workRoot=ReactDOM.createRoot(document.body.appendChild(document.createElement('div')));__workRoot.render(React.createElement(__PdfWorkbench,{app:{admin:{has:()=>false}},onCount:()=>{}}));});
+  await page.locator('[data-financial-queue-row="ready-request"]').waitFor();assert.equal(await page.locator('[data-authorization-pdf]').count(),1);assert.equal(await page.locator('button button').count(),0);
+  for(const width of [390,1440]){await page.setViewportSize({width,height:1000});const row=page.locator('[data-financial-queue-row="ready-request"]');await row.getByRole('button',{name:'Ver autorización PDF',exact:true}).click();await row.getByText(/aún no tiene una autorización PDF/).waitFor();assert.equal(await page.locator('dialog[open]').count(),0);assert(await row.getByRole('button',{name:'Ver autorización PDF',exact:true}).isVisible());}
+  await page.evaluate(()=>__workRoot.unmount());
   assert.deepEqual(errors,[]);await browser.close();await db.exec('reset role');
+ });
+ await test('full frozen deposit identifiers, legacy masking and one-page three-signer authorization',async()=>{
+  const snapshot=renderer.syntheticSnapshot('LOAN_APPROVAL','prestamo',renderConfig),draft=layouts.initialLayout('LOAN_APPROVAL',renderConfig.template);
+  draft.elements=draft.elements.filter(e=>e.kind!=='SIGNERS');draft.pages=1;
+  draft.elements.forEach((e,n)=>Object.assign(e,{page:1,x:22,y:34+n*12,width:160,height:10}));
+  for(const [n,key] of ['bank.card_number','bank.clabe'].entries())draft.elements.push({id:'deposit_'+n,kind:'FIELD',field:key,page:1,x:22,y:130+n*12,width:160,height:10,font:'Helvetica',size:10,weight:'regular',align:'left',format:'TEXT',missing:'hide'});
+  draft.elements.push({id:'three_signers',kind:'SIGNERS',field:'signers',page:1,x:10,y:202,width:195,height:55,font:'Helvetica',size:10,weight:'regular',align:'center',columns:3,gap:5,orientation:'horizontal'});
+  snapshot.layout={definition:draft};snapshot.signers=Array.from({length:3},(_,n)=>({...snapshot.signers[0],full_name:'Responsable de ejemplo '+n,title:'Responsable institucional del programa',role:'Autoriza'}));
+  const out=await renderer.createRenderer(PDFLib)(snapshot,async()=>templateBytes,{preview:true});assert.equal(out.pages,1);
+  const pdf=await PDFLib.PDFDocument.load(out.bytes),contents=pdf.getPage(0).node.Contents().asArray().map(ref=>Buffer.from(PDFLib.decodePDFRawStream(pdf.context.lookup(ref)).decode()).toString()).join('\n');
+  for(const value of [snapshot.bank.card_number,snapshot.bank.clabe])assert(contents.toLowerCase().includes(Buffer.from(value).toString('hex')),'complete banking text reaches PDF');
+  const binding={field:'bank.clabe_last4',format:'MASKED_BANK_ACCOUNT',missing:'hide'};
+  assert.equal(layouts.boundField(snapshot,binding,{}),snapshot.bank.clabe);const old=structuredClone(snapshot);delete old.bank.disclosure;delete old.bank.card_number;delete old.bank.clabe;assert.equal(layouts.boundField(old,binding,{}),'**** 5666');
+ });
+ await test('program operators inherit source access and module boundaries without configuration grants',async()=>{
+  await actor(other,['program_requests.read']);assert((await call('LIST',{admin:true})).some(r=>r.id===recordId));assert.equal((await call('ACCESS',{admin:true,id:recordId})).id,recordId);await assert.rejects(call('DASHBOARD'),/PERMISSION_DENIED/);await assert.rejects(call('REISSUE',{id:recordId,revision_id:crypto.randomUUID()}),/PERMISSION_DENIED/);
+  await db.exec('reset role');await q("select set_config('test.module_denied','true',false)");await actor(other,['program_requests.read','document_generation.read']);assert.deepEqual(await call('LIST',{admin:true}),[]);await assert.rejects(call('ACCESS',{admin:true,id:recordId}),/ACCESS_DENIED/);
+  await db.exec('reset role');await q("select set_config('test.module_denied','false',false)");await actor(other,['document_generation.read']);assert.deepEqual(await call('LIST',{admin:true}),[]);
+ });
+ await test('documentary revisions preserve old PDF, identity, money and signers; retries never authorize again',async()=>{
+  await db.exec('reset role');const old=(await q('select * from document_private.records where id=$1',[recordId]))[0],events=await scalar('select count(*)::integer v from program_request_admin_events');
+  await actor(uid,permissions);const key=crypto.randomUUID(),a=await call('REISSUE',{id:recordId,revision_id:key}),b=await call('REISSUE',{id:recordId,revision_id:key});assert.deepEqual(a,b);assert.equal(a.business_version,2);await assert.rejects(call('REISSUE',{id:recordId,revision_id:crypto.randomUUID()}),/REVISION_ALREADY_EXISTS/);
+  const list=await call('LIST',{admin:true,operation_id:request});assert.equal(list.length,2);assert.equal(list.find(r=>r.id===recordId).can_reissue,false);assert.equal(list.find(r=>r.id===key).business_version,2);
+  await db.exec('reset role');const fresh=(await q('select * from document_private.records where id=$1',[key]))[0];assert.deepEqual(fresh.document_snapshot.identity,old.document_snapshot.identity);assert.deepEqual(fresh.document_snapshot.operation,old.document_snapshot.operation);assert.deepEqual(fresh.document_snapshot.signers,old.document_snapshot.signers);assert.deepEqual((await q('select * from document_private.records where id=$1',[recordId]))[0],old);assert.equal(await scalar('select count(*)::integer v from program_request_admin_events'),events);
  });
  await test('version replacement retains historical identity and template',async()=>{
   await actor(uid,permissions);const next=await call('SAVE_TEMPLATE',{previous_id:template.id,asset_id:asset.id,name:'Nueva versión',margins:{top:40,bottom:28,left:22,right:22},valid_from:'2020-01-01'});assert(next.version>=2);
@@ -248,7 +294,7 @@ async function main(){
   assert.equal((await scalar('select document_snapshot v from document_private.records where id=$1',[recordId])).template.id,template.id);await assert.rejects(q('delete from document_private.templates'),/IMMUTABLE/);
   await actor(uid,permissions);await assert.rejects(call('PREVIEW_CONFIG',{program:'auto',document_type:'PROGRAM_FINANCING_APPROVAL'}),/SIGNER_NOT_EFFECTIVE/);await db.exec('reset role');
  });
- await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records'),layoutCount=await scalar('select count(*)::integer v from document_private.layouts');await db.exec(read('supabase/recovery/20260928000400_document_layout_refinement.sql'));await db.exec(read('supabase/recovery/20260928000300_document_layout_designer.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.layouts'),layoutCount);await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
+ await test('recovery disables generation without deleting historical documents',async()=>{const count=await scalar('select count(*)::integer v from document_private.records'),layoutCount=await scalar('select count(*)::integer v from document_private.layouts');await db.exec(read('supabase/recovery/20260928000500_document_deposit_authorization.sql'));await db.exec(read('supabase/recovery/20260928000400_document_layout_refinement.sql'));await db.exec(read('supabase/recovery/20260928000300_document_layout_designer.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.layouts'),layoutCount);await db.exec(read('supabase/recovery/20260928000100_document_generation_core.sql'));assert.equal(await scalar('select count(*)::integer v from document_private.records'),count);assert.equal(await scalar('select enabled v from document_private.installation'),false);});
  console.log(JSON.stringify({status:'PASS',checks:checks.length,permanentQaPdfs:0,residualData:0,productionTouched:false}));
  }finally{if(activeBrowser)await activeBrowser.close();await db.close();}
 }

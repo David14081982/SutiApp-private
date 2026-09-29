@@ -1,5 +1,5 @@
 // The presentation extension of the seven existing snapshot contracts. No request values persist here.
-export const LAYOUT_VERSION='suti-layout-2';
+export const LAYOUT_VERSION='suti-layout-3';
 const f=(key,label,format='TEXT',required=false,group='Datos generales')=>({key,label,format,required,group,kind:'FIELD'});
 const financial=[f('operation.financial.financialResult.fund','Fondo','TEXT',false,'Financiamiento'),
  ...[['amount','Monto autorizado','MONEY',true],['paymentCount','Número de pagos','INTEGER',true],['paymentPeriod','Periodicidad','TEXT'],['rate','Tasa aplicada','PERCENT'],['interest','Total de intereses','MONEY'],['administrativeFeePerPayment','Cuota administrativa por pago','MONEY'],['administrativeFeeTotal','Cuota administrativa total','MONEY'],['total','Total autorizado','MONEY'],['paymentPerPeriod','Pago por periodo','MONEY'],['lastPayment','Último pago','MONEY']].map(([k,l,t,r])=>f('operation.financial.financialResult.'+k,l,t,r||false,'Financiamiento'))];
@@ -11,7 +11,7 @@ export function layoutFields(type,version=LAYOUT_VERSION){
  const add=(key,label,format='TEXT',required=false)=>fields.push(f(key,label,format,required,'Datos del documento'));
  if(['LOAN_APPROVAL','PROGRAM_FINANCING_APPROVAL','MEMBERSHIP_APPROVAL'].includes(type))fields.push(...financial);
  switch(type){
- case 'LOAN_APPROVAL': add('bank.bank_name','Banco');add('bank.card_last4','Tarjeta (últimos 4 dígitos)','MASKED_BANK_ACCOUNT');add('bank.clabe_last4','CLABE (últimos 4 dígitos)','MASKED_BANK_ACCOUNT');break;
+ case 'LOAN_APPROVAL': add('bank.bank_name','Banco');if(version===LAYOUT_VERSION){add('bank.card_number','Tarjeta de depósito completa');add('bank.clabe','CLABE completa');add('bank.account_holder','Titular de la cuenta');}else{add('bank.card_last4','Tarjeta (últimos 4 dígitos)','MASKED_BANK_ACCOUNT');add('bank.clabe_last4','CLABE (últimos 4 dígitos)','MASKED_BANK_ACCOUNT');}break;
  case 'PROGRAM_FINANCING_APPROVAL': for(const [k,l,t] of [['product.name','Producto','TEXT'],['authorized_price','Precio autorizado','MONEY'],['down_payment','Enganche','MONEY'],['financed_amount','Monto financiado','MONEY']])add('operation.financial.'+k,l,t,true);add('operation.financial.price_source','Origen del precio');add('operation.financial.financing_conditions.rate_source','Condiciones de financiamiento');break;
  case 'MEMBERSHIP_APPROVAL':add('operation.financial.offering.company','Empresa');add('operation.financial.offering.concept','Concepto');break;
  case 'SAVINGS_ENROLLMENT_APPROVAL':add('operation.new_contribution_amount','Aportación autorizada','MONEY',true);add('operation.process','Proceso y periodicidad','TEXT',true);add('operation.effective_from','Fecha efectiva','DATE',true);add('operation.reason','Observación registrada');add('operation.date_exception','Excepción de fecha autorizada');break;
@@ -49,13 +49,19 @@ export function formatField(value,format,missing='hide'){
  if(format==='INTEGER')return String(Math.trunc(Number(value)));
  throw Error('DOCUMENT_LAYOUT_FORMAT_INVALID');
 }
+// Only explicitly disclosed, frozen deposit snapshots can expand older layout bindings.
+export function boundField(snapshot,element,model){
+ const aliases={'bank.card_last4':'card_number','bank.clabe_last4':'clabe'};
+ if(snapshot.bank?.disclosure==='FULL_DEPOSIT'&&aliases[element.field])return formatField(snapshot.bank[aliases[element.field]],'TEXT',element.missing);
+ return formatField(fieldValue(snapshot,element.field,model),element.format,element.missing);
+}
 export const TABLE_COLUMNS=[{key:'number',label:'Pago',format:'INTEGER'},{key:'date',label:'Fecha',format:'DATE'},{key:'payment',label:'Importe',format:'MONEY'},{key:'remaining_total',label:'Saldo restante',format:'MONEY'}];
 // Strict allowlists prevent payload values, scripts, arbitrary source paths and unbounded rendering.
 export function validateLayout(layout,type,template,{draft=false}={}){
  const errors=[],fields=layoutFields(type,layout?.version),byKey=new Map(fields.map(x=>[x.key,x])),ids=new Set(),used=new Set();
  const fail=t=>{if(errors.length<30)errors.push(t);};
  if(!template?.id||!template.page_size)fail('Selecciona una plantilla existente.');
- if(!layout||!['suti-layout-1',LAYOUT_VERSION].includes(layout.version)||layout.unit!=='mm'||!Number.isInteger(layout.pages)||layout.pages<1||layout.pages>30||!Array.isArray(layout.elements)||layout.elements.length>200)return ['El diseño debe contener de 1 a 30 páginas y hasta 200 elementos.'];
+ if(!layout||!['suti-layout-1','suti-layout-2',LAYOUT_VERSION].includes(layout.version)||layout.unit!=='mm'||!Number.isInteger(layout.pages)||layout.pages<1||layout.pages>30||!Array.isArray(layout.elements)||layout.elements.length>200)return ['El diseño debe contener de 1 a 30 páginas y hasta 200 elementos.'];
  if(Object.keys(layout).some(k=>!['version','unit','pages','elements'].includes(k)))fail('El diseño sólo admite distribución y presentación.');
  const W=template?.page_size?.width*25.4/72,H=template?.page_size?.height*25.4/72,m=template?.margins;
  for(const e of layout.elements){

@@ -89,7 +89,7 @@ export function validateLayout(layout,type,template,{draft=false}={}){
 export function initialLayout(type,template){
  const W=template.page_size.width*25.4/72,H=template.page_size.height*25.4/72,m=template.margins,w=W-m.left-m.right;
  let y=m.top,page=1;const elements=[];
- for(const [n,d] of layoutFields(type).filter(x=>x.required).entries()){
+ for(const [n,d] of layoutFields(type).filter(x=>x.required||(type==='LOAN_APPROVAL'&&x.key==='payment_schedule')).entries()){
   const height=d.kind==='SIGNERS'?45:d.kind==='PAYMENT_SCHEDULE'?65:d.key==='document.note'?23:11;
   if(y+height>H-m.bottom){page++;y=m.top;}
   elements.push({id:'initial_'+n,kind:d.kind,field:d.key,page,x:m.left,y,width:w,height,font:'Helvetica',size:10,weight:'regular',align:'left',...(d.kind==='FIELD'?{format:d.format,missing:'hide'}:{}),...(d.kind==='SIGNERS'?{columns:2,gap:5,orientation:'horizontal'}:{}),...(d.kind==='PAYMENT_SCHEDULE'?{tableColumns:TABLE_COLUMNS.map(x=>x.key),header:true,rowsPerPage:10}:{})});y+=height+3;

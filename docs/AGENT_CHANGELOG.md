@@ -3799,3 +3799,7 @@ Chrome desktop/mobile actions, complete synthetic banking text, three signers/on
 permission/module denials, revision idempotency/history and recovery. No real PII
 fixtures or new permanent QA files. Visual reference prepared outside repo; active
 layout/reissue remains pending owner answer. See audits/H-SUTIAPP-AUTHORIZATION-PDF-003.md.
+
+## H-SUTIAPP-LOAN-DOCUMENT-SCHEDULE-001 (2026-09-29)
+
+Loan PDFs reuse the Viajes payment table/date rule with frozen approved amounts. Owner-approved exception preserves fixed advance maturity. Additive private documentary INSERT trigger; existing custom layouts, historical PDFs, financial writers and Google untouched. Seven calendar/integration groups plus seven renderer regression groups pass using in-memory data/PDFs. No permanent QA files or live QA rows. Details and release receipt: audits/H-SUTIAPP-LOAN-DOCUMENT-SCHEDULE-001.md.

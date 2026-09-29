@@ -731,3 +731,7 @@ full deposit data from that immutable request snapshot. No financial authorizati
 Operator reads reuse source-domain read permission and existing module boundary; configuration
 and revision writes retain separate document permissions. Owner affiliate access is unchanged.
 Layout engine v3 adds full-bank bindings; v1/v2 sealed snapshots retain masked behavior.
+
+### Loan documentary payment calendar (2026-09-29)
+
+Owner authorizes the Viajes payroll-date rule for loan PDFs, with the original request date in America/Hermosillo as anchor. Single-payment advances retain the maturity already sealed in administrativeFeeCalendar.dueDate. document_private.capture_loan_payment_schedule enriches only new documentary INSERTs from approved financialResult and profile snapshots, reusing unchanged generate_program_product_payment_schedule. Totals, count and regular installment remain approved values; no interest recalculation, financial write or Google change. The calendar is a frozen documentary derivative, never a repayment ledger. Revisions preserve an existing calendar; historical documents stay unchanged. Unresolvable inputs seal an explicit document error without rolling back approval. No live profile fallback.

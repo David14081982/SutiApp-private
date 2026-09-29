@@ -32,7 +32,9 @@ export function documentContract(snapshot){
   sections=[{title:'Producto y condiciones autorizadas',rows:pairs([['Producto',f.product.name],['Precio autorizado',money(required(f.authorized_price,'PRICE'))],['Enganche',money(required(f.down_payment,'DOWN_PAYMENT'))],['Monto financiado',money(required(f.financed_amount,'FINANCED_AMOUNT'))],['Origen del precio',f.price_source],['Condiciones de financiamiento',f.financing_conditions?.rate_source]])},{title:'Resumen financiero',rows:finance(f)}];
   schedule=required(f.payment_schedule,'PAYMENT_SCHEDULE');note='Se documentan las condiciones autorizadas de esta solicitud. Este documento no acredita entrega del bien ni pago realizado.';break;
  case 'LOAN_APPROVAL':
-  sections=[{title:'Resumen financiero autorizado',rows:finance(f)}];schedule=f.payment_schedule||null;
+  sections=[{title:'Resumen financiero autorizado',rows:finance(f)}];
+  if(snapshot.loan_payment_schedule?.error)throw Error(snapshot.loan_payment_schedule.error);
+  schedule=snapshot.loan_payment_schedule||f.payment_schedule||null;
   if(snapshot.bank)sections.push({title:'Referencia bancaria de la solicitud',rows:pairs([['Banco',snapshot.bank.bank_name],['Tarjeta',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.card_number:(snapshot.bank.card_last4?'**** '+snapshot.bank.card_last4:null)],['CLABE',snapshot.bank.disclosure==='FULL_DEPOSIT'?snapshot.bank.clabe:(snapshot.bank.clabe_last4?'************** '+snapshot.bank.clabe_last4:null)]])});
   note='Autorización de la solicitud. No acredita depósito ni entrega de dinero.';break;
  case 'MEMBERSHIP_APPROVAL':

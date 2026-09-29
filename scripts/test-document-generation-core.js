@@ -79,11 +79,72 @@ async function rendererRegression(renderer,layouts){
  });
  console.log(JSON.stringify({status:'PASS',scope:'document renderer only',checks:checks.length,permanentQaFilesAdded:0,qaResidualData:0,pdfsWritten:0}));
 }
+async function loanScheduleRegression(renderer,layouts,PGlite){
+ const db=new PGlite(),query=async(sql,args=[])=> (await db.query(sql,args)).rows;
+ const extract=(file,name)=>{const sql=read(file),start=sql.indexOf('create function public.'+name+'('),end=sql.indexOf('$$;',start);assert(start>=0&&end>start);return sql.slice(start,end+3);};
+ const migration='20260929000100_loan_document_schedule.sql';
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema document_private;
+  create table program_requests(id uuid primary key,affiliate_id uuid,created_at timestamptz,approved boolean default false);
+  create table document_private.records(id uuid primary key,operation_id uuid,affiliate_id uuid,document_type text,source_snapshot jsonb,document_snapshot jsonb);
+  grant usage on schema document_private to anon,authenticated,service_role;`);
+ await db.exec(extract('supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql','normalize_suti_financial_key'));
+ await db.exec(extract('supabase/migrations/20260831000500_universal_program_product_payment_simulator.sql','generate_program_product_payment_schedule'));
+ const input=(category='BASE',count=12)=>({document_type:'LOAN_APPROVAL',operation:{profile:{financial_employee_category:category},financial:{financialResult:{amount:900,paymentCount:count,total:1000,paymentPerPeriod:count===1?1000:83.33}}}});
+ const generate=async(source,date='2026-09-29')=>(await query('select document_private.loan_payment_schedule($1,$2) as value',[JSON.stringify(source),date]))[0].value;
+ const op=crypto.randomUUID();await query('insert into program_requests(id,affiliate_id,created_at) values($1,$2,$3)',[op,uid,'2026-09-30T02:00:00Z']);
+ const add=async(source,type='LOAN_APPROVAL',id=crypto.randomUUID())=>{await query('insert into document_private.records values($1,$2,$3,$4,$5,$5)',[id,op,uid,type,JSON.stringify(source)]);return (await query('select * from document_private.records where id=$1',[id]))[0];};
+ const historical=await add(input());const before=JSON.stringify(historical);
+ await test('additive calendar migration preserves history and denies browser/service execution',async()=>{
+  await db.exec(read('supabase/migrations/'+migration));assert.equal(JSON.stringify((await query('select * from document_private.records where id=$1',[historical.id]))[0]),before);
+  for(const role of ['anon','authenticated','service_role']){assert.equal((await query("select has_function_privilege($1,'document_private.loan_payment_schedule(jsonb,date)','execute') as allowed",[role]))[0].allowed,false);await db.exec('set role '+role);await assert.rejects(generate(input()),/permission denied/);await db.exec('reset role');}
+ });
+ await test('same Viajes generator: processes 1/3/JUB, +30 days, February and cent reconciliation',async()=>{
+  for(const [category,process] of [['BASE','1'],['SUPLENTES VARIABLES','3'],['JUBILADOS Y PENS.','JUB']]){
+   const source=input(category),frozen=JSON.stringify(source),s=await generate(source),expected=(await query('select public.generate_program_product_payment_schedule($1,$2,12,1000,83.33) as value',['2026-09-29',process]))[0].value;
+   assert.deepEqual(s.rows,expected.rows);assert.equal(s.rows.length,12);assert.equal(s.first_payment_date,process==='JUB'?'2026-11-05':'2026-10-30');assert.equal(s.rows.at(-1).payment,83.37);assert.equal(s.rows.at(-1).remaining_total,0);assert.equal(JSON.stringify(source),frozen);
+  }
+  const feb=await generate(input(),'2027-01-29');assert.equal(feb.first_payment_date,'2027-02-28');
+ });
+ await test('single-payment advances retain their authorized maturity instead of +30 days',async()=>{
+  const source=input('BASE',1);source.operation.financial.financialResult.administrativeFeeCalendar={dueDate:'2026-10-15'};
+  const s=await generate(source);assert.equal(s.first_payment_date,'2026-10-15');assert.equal(s.rows.length,1);assert.equal(s.rows[0].payment,1000);assert.equal(s.rows[0].remaining_total,0);assert.equal(s.version,'LOAN_DOCUMENT_FIXED_MATURITY_V1');
+  const ordinary=await generate(input('BASE',1));assert.equal(ordinary.first_payment_date,'2026-10-30');
+ });
+ await test('new documents freeze original request date/profile and revisions keep the calendar',async()=>{
+  const source=input(),row=await add(source),s=row.source_snapshot.loan_payment_schedule;assert.equal(s.anchor_date,'2026-09-29');assert.equal(s.first_payment_date,'2026-10-30');assert.deepEqual(row.source_snapshot.operation,source.operation);assert.deepEqual(row.document_snapshot,row.source_snapshot);
+  await query("update program_requests set created_at='2030-01-01' where id=$1",[op]);const revision=await add(row.source_snapshot);assert.deepEqual(revision.source_snapshot.loan_payment_schedule,s);
+  const missingConfigId=crypto.randomUUID();await query('insert into document_private.records values($1,$2,$3,$4,$5,null)',[missingConfigId,op,uid,'LOAN_APPROVAL',JSON.stringify(source)]);const pending=(await query('select * from document_private.records where id=$1',[missingConfigId]))[0];assert(pending.source_snapshot.loan_payment_schedule.rows.length);assert.equal(pending.document_snapshot,null);
+  await query("update program_requests set created_at='2026-09-30T02:00:00Z' where id=$1",[op]);
+ });
+ await test('missing/invalid calendar fails the PDF without rolling back business approval',async()=>{
+  const bad=input('UNRESOLVED');await db.exec('begin');await query('update program_requests set approved=true where id=$1',[op]);const row=await add(bad);await db.exec('commit');assert.equal((await query('select approved from program_requests where id=$1',[op]))[0].approved,true);
+  assert.equal(row.source_snapshot.loan_payment_schedule.error,'DOCUMENT_SCHEDULE_PROCESS_UNRESOLVED');
+  const config={template:{id:'example',asset:{mime:'application/pdf'},page_size:{width:612,height:792},margins:{top:34,bottom:28,left:22,right:22}},signers:[{role:'Autoriza'}]};
+  const snapshot=renderer.syntheticSnapshot('LOAN_APPROVAL','prestamo',config);snapshot.loan_payment_schedule=row.source_snapshot.loan_payment_schedule;
+  assert.throws(()=>renderer.documentContract(snapshot),/DOCUMENT_SCHEDULE_PROCESS_UNRESOLVED/);
+  const other=await add(input(),'MEMBERSHIP_APPROVAL');assert(!other.source_snapshot.loan_payment_schedule);
+ });
+ await test('loan system/custom PDFs display the same frozen table and keep preview parity',async()=>{
+  const config={template:{id:'example',asset:{mime:'application/pdf'},page_size:{width:612,height:792},margins:{top:34,bottom:28,left:22,right:22}},signers:[{role:'Autoriza'}]},snapshot=renderer.syntheticSnapshot('LOAN_APPROVAL','prestamo',config);
+  snapshot.loan_payment_schedule=await generate(input());snapshot.operation.financial=input().operation.financial;snapshot.signers[0].asset={mime:'image/png'};
+  const template=await PDFLib.PDFDocument.create();template.addPage([612,792]);const bytes=await template.save(),sig=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jH9sAAAAASUVORK5CYII=','base64'),load=async a=>a.mime==='image/png'?sig:bytes;
+  for(const custom of [false,true]){
+   if(custom){snapshot.layout={definition:layouts.initialLayout('LOAN_APPROVAL',config.template)};assert(snapshot.layout.definition.elements.some(e=>e.kind==='PAYMENT_SCHEDULE'));}
+   const frozen=JSON.stringify(snapshot),render=renderer.createRenderer(PDFLib),a=await render(snapshot,load),b=await render(snapshot,load,{preview:true});assert.equal(a.pages,b.pages);assert.equal(JSON.stringify(snapshot),frozen);
+   const doc=await PDFLib.PDFDocument.load(a.bytes),text=doc.getPages().flatMap(p=>p.node.Contents().asArray().flatMap(ref=>[...Buffer.from(PDFLib.decodePDFRawStream(doc.context.lookup(ref)).decode()).toString().matchAll(/<([0-9A-F]+)> Tj/g)].map(m=>Buffer.from(m[1],'hex').toString('latin1'))));assert(text.includes('$83.37'));assert(text.some(t=>t.includes(custom?'30 de octubre de 2026':'2026-10-30')));
+  }
+ });
+ await test('recovery disables future enrichment while preserving every document row',async()=>{
+  const before=await query('select * from document_private.records order by id');await db.exec(read('supabase/recovery/'+migration));assert.deepEqual(await query('select * from document_private.records order by id'),before);assert.equal((await query("select to_regprocedure('document_private.loan_payment_schedule(jsonb,date)') as value"))[0].value,null);
+ });
+ await db.close();console.log(JSON.stringify({status:'PASS',checks:checks.length,scope:'documentary loan calendar',qaResidualData:0,permanentQaFilesAdded:0,pdfsWritten:0}));
+}
 async function main(){
  const renderer=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/renderer.mjs')));
  const layouts=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout.mjs')));
  if(process.argv.includes('--render-only'))return rendererRegression(renderer,layouts);
  const {PGlite}=require(path.join(root,'.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
+ if(process.argv.includes('--loan-schedule-only'))return loanScheduleRegression(renderer,layouts,PGlite);
  const {handleLayout}=await import(pathToFileURL(path.join(root,'supabase/functions/document-generation/layout-service.mjs')));
  let activeBrowser;const db=new PGlite();const q=async(sql,args=[])=> (await db.query(sql,args)).rows;
  const scalar=async(sql,args=[])=>(await q(sql,args))[0]?.v;
@@ -339,7 +400,8 @@ async function main(){
  });
  await test('full frozen deposit identifiers, legacy masking and one-page three-signer authorization',async()=>{
   const snapshot=renderer.syntheticSnapshot('LOAN_APPROVAL','prestamo',renderConfig),draft=layouts.initialLayout('LOAN_APPROVAL',renderConfig.template);
-  draft.elements=draft.elements.filter(e=>e.kind!=='SIGNERS');draft.pages=1;
+  // Preserve this historical one-page field/signature fixture; schedules have their own pagination checks.
+  draft.elements=draft.elements.filter(e=>e.kind==='FIELD');draft.pages=1;
   draft.elements.forEach((e,n)=>Object.assign(e,{page:1,x:22,y:34+n*12,width:160,height:10}));
   for(const [n,key] of ['bank.card_number','bank.clabe'].entries())draft.elements.push({id:'deposit_'+n,kind:'FIELD',field:key,page:1,x:22,y:130+n*12,width:160,height:10,font:'Helvetica',size:10,weight:'regular',align:'left',format:'TEXT',missing:'hide'});
   draft.elements.push({id:'three_signers',kind:'SIGNERS',field:'signers',page:1,x:10,y:202,width:195,height:55,font:'Helvetica',size:10,weight:'regular',align:'center',columns:3,gap:5,orientation:'horizontal'});

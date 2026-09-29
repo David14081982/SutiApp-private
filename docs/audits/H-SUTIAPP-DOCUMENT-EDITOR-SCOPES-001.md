@@ -44,3 +44,33 @@ Next action: publish the already authorized change with backend-first readback a
 Response generated for Codex: YES.
 
 RESPONSE TO CODEX: Complete only this H's authorized release. Verify source hashes, private permissions, historic preservation, assignments and both published bundle hashes; record the release receipt. Do not start another H, reissue historical PDFs, change financial operations or download real signatures.
+
+## Authorized release receipt — 2026-09-29
+
+Code commit: 134cf2b89be4efaefa9f7cc4cf3a00c62b788c26, pushed to main without force. Edge document-generation v12 baseline matched all five base modules; v13 ACTIVE readback matched all five committed candidate modules exactly. Worker key unchanged.
+
+Migration 20260929000200 applied in one repeatable-read transaction with expected configuration/activation guards and tracking SHA256 bbf4e13f4895430050f5f4a83cd1ea76990ca3172391ab3ac714584ceb421f99. Thirteen SYSTEM scopes received named initial editable versions and general assignments; the existing custom Viajes layout was preserved. Each conversion has explicit OWNER_APPROVED_SYSTEM_CONVERSION provenance referencing the original configuration, existing creator, management migration and commit. No fabricated business approval.
+
+Transaction reconciliation PASS: complete-row hashes of existing records, program requests, configurations, financial funds, signers, assets and prior layout definitions remained identical. Postflight: 16 existing records, 14 general active scopes, 13 conversion audit entries and all 35 enabled/published financial funds resolve to the prestamo general design unless explicitly overridden. Principal-admin metadata used for provenance only; no passwords, auth user changes or impersonation session.
+
+Live security PASS: 10 private tables with forced RLS, browser persistence/worker denied, anonymous context/command denied, scoped helpers denied to browser, unauthenticated Edge HTTP 401, one active documentary cron and both original final-event triggers. Storage policies and secret values unchanged. No real document/signature downloads or production PDF generation performed by this H.
+
+GitHub Pages workflow 36619710739 and Membership Google contract 36619710847: success. https://sutiapp.com/SutiApp.html and the GitHub Pages mirror both return HTTP 200 with v304; both bundle hashes match the committed SHA256 above. Local browser functionality was verified with the existing isolated Chrome test; production authenticated editing was not simulated with an administrator identity.
+
+H-SUTIAPP-DOCUMENT-EDITOR-SCOPES-001 RESULT
+Status: PASS
+Files changed: 20 declared files (2 focal UI sources, 5 Edge modules, migration/recovery, existing core test, generated bundle/cachebuster, 3 governance/evidence documents, 5 derived registry files).
+Source-of-truth verdict: PASS
+Invariant verdict: PASS
+Build: PASS, 141 modules; only 2 frontend modules changed.
+Tests: PASS, core 23 groups; UI-inclusive run 24 groups; renderer 7; loan-calendar 7; architecture acceptance.
+Security: PASS, local authorization tests and live permission/HTTP readback.
+Legacy impact: NONE; finance/Google calculations and writes unchanged.
+Unexpected files changed: NONE in isolated worktree.
+Known limitations: initial complete designs use 2 editable pages; variable calendars may continue. Previous PDF files are not rewritten. Full live authenticated editing was not performed. Recovery disables generation until compatible prior UI/Edge are restored and an operator explicitly re-enables it.
+Evidence: this audit, committed test suite, migration tracking hash, Edge exact-source readback, workflow IDs, live bundle hashes and transaction reconciliation.
+Permanent QA files added: 0
+PDF QA files added: 0
+QA residual data: 0
+
+Final architect verdict: APPROVED. Release readback satisfied the prior condition. Owner decision required: NO. Next action: close this H; owner can edit/activate program/fund assignments in the published designer. No further implementation or historical reissue is authorized by this review.

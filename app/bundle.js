@@ -826,7 +826,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       className: "dl-center-y"
     }), layout.elements.filter(e => e.page === page).map(e => {
       const f = fields.find(f => f.key === e.field),
-        text = e.kind === 'TEXT' ? e.text : (e.label ? e.label + '\n' : '') + (f?.example || f?.label || '');
+        text = e.kind === 'TEXT' ? e.text : (e.label ? e.label + (e.labelPosition === 'inline' ? ': ' : '\n') : '') + (f?.example || f?.label || '');
       return /*#__PURE__*/React.createElement("div", {
         key: e.id,
         "data-element": e.id,
@@ -846,6 +846,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
             Courier: 'Courier New'
           }[e.font],
           fontWeight: e.weight === 'regular' ? 400 : 700,
+          color: e.color === 'brand' ? '#910022' : '#14213d',
           textAlign: e.align
         },
         onPointerDown: ev => start(ev, e),
@@ -895,11 +896,24 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       }, (_, n) => /*#__PURE__*/React.createElement("div", {
         key: n,
         style: {
-          fontSize: Math.min(e.size, 10) * 25.4 / 72 * zoom,
-          minHeight: 30 * zoom,
-          paddingTop: 16 * zoom
+          fontSize: e.size * 25.4 / 72 * zoom,
+          minHeight: 30 * zoom
         }
-      }, "Firma ", n + 1, /*#__PURE__*/React.createElement("br", null), "Nombre y cargo"))) : text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
+      }, /*#__PURE__*/React.createElement("svg", {
+        viewBox: "0 0 120 40",
+        "aria-label": 'Imagen de firma ' + (n + 1),
+        style: {
+          display: 'block',
+          maxWidth: '100%',
+          width: (e.signatureImages?.[n]?.width || 40) * zoom,
+          height: (e.signatureImages?.[n]?.height || 16) * zoom
+        }
+      }, /*#__PURE__*/React.createElement("path", {
+        d: "M 2 31 C 16 3 10 45 30 20 C 38 4 25 43 52 21 C 70 3 51 39 90 22 L 116 15 M 9 36 L 114 29",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "1"
+      })), "Firma ", n + 1, /*#__PURE__*/React.createElement("br", null), "Nombre y cargo"))) : text, e.id === selected && !noEdit && /*#__PURE__*/React.createElement("span", {
         className: "dl-resize",
         role: "button",
         "aria-label": "Redimensionar elemento",
@@ -992,6 +1006,20 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         size: Number(v)
       })
     }), /*#__PURE__*/React.createElement(Field, {
+      label: "Color del texto"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      "aria-label": "Color del texto",
+      disabled: noEdit,
+      value: element.color || 'ink',
+      onChange: e => patch({
+        color: e.target.value
+      })
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "ink"
+    }, "Texto institucional"), /*#__PURE__*/React.createElement("option", {
+      value: "brand"
+    }, "Guinda institucional"))), /*#__PURE__*/React.createElement(Field, {
       label: "Peso"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
@@ -1026,11 +1054,25 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       value: element.label || '',
       disabled: noEdit,
       maxLength: 120,
-      hint: "Opcional. Se imprime encima del valor.",
+      hint: "Opcional. Puede ir encima del valor o en la misma l\xEDnea.",
       onChange: v => patch({
         label: v
       })
     }), /*#__PURE__*/React.createElement(Field, {
+      label: "Posici\xF3n de etiqueta"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      "aria-label": "Posici\xF3n de etiqueta",
+      disabled: noEdit,
+      value: element.labelPosition || 'above',
+      onChange: e => patch({
+        labelPosition: e.target.value
+      })
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "above"
+    }, "Encima del valor"), /*#__PURE__*/React.createElement("option", {
+      value: "inline"
+    }, "En la misma l\xEDnea"))), /*#__PURE__*/React.createElement(Field, {
       label: "Dato vinculado"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
@@ -1082,6 +1124,23 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, "Mostrar \u201CNo aplica\u201D"), /*#__PURE__*/React.createElement("option", {
       value: "empty"
     }, "Dejar vac\xEDo")))), element.kind === 'SIGNERS' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Field, {
+      label: "T\xEDtulo del bloque de firmas",
+      value: element.heading || '',
+      maxLength: 120,
+      disabled: noEdit,
+      onChange: v => patch({
+        heading: v
+      })
+    }), layout.elements.some(e => e.kind === 'PAYMENT_SCHEDULE') && /*#__PURE__*/React.createElement("label", {
+      className: "dl-help"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      disabled: noEdit,
+      checked: !!element.followSchedule,
+      onChange: e => patch({
+        followSchedule: e.target.checked
+      })
+    }), " Mantener firmas despu\xE9s del calendario completo"), /*#__PURE__*/React.createElement(Field, {
       label: "Distribuci\xF3n"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
@@ -1105,6 +1164,39 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
         columns: Number(v),
         autoColumns: false
       })
+    }), /*#__PURE__*/React.createElement("p", {
+      className: "dl-help"
+    }, "Imagen de cada firma \xB7 el tama\xF1o de los textos se controla por separado. Se conserva la proporci\xF3n de la imagen."), Array.from({
+      length: data.signer_count || 1
+    }, (_, n) => {
+      const count = element.orientation === 'vertical' ? 1 : element.columns,
+        cw = (element.width - (count - 1) * element.gap) / count,
+        box = element.signatureImages?.[n] || {
+          width: Math.floor(cw * 10) / 10,
+          height: 16
+        };
+      return /*#__PURE__*/React.createElement("div", {
+        className: "dl-grid",
+        key: n
+      }, [['width', 'Ancho', 8, 200], ['height', 'Alto', 4, 60]].map(([key, label, min, max]) => /*#__PURE__*/React.createElement(Field, {
+        key: key,
+        label: label + ' imagen firma ' + (n + 1) + ' · mm',
+        type: "number",
+        step: "0.5",
+        min: min,
+        max: max,
+        value: box[key],
+        disabled: noEdit,
+        onChange: v => patch({
+          autoColumns: false,
+          signatureImages: Array.from({
+            length: data.signer_count || 1
+          }, (_, i) => i === n ? {
+            ...box,
+            [key]: Number(v)
+          } : element.signatureImages?.[i] || null)
+        })
+      })));
     }), /*#__PURE__*/React.createElement(Field, {
       label: "Espaciado \xB7 mm",
       type: "number",
@@ -1118,6 +1210,19 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }), /*#__PURE__*/React.createElement("p", {
       className: "dl-help"
     }, data.signer_count, " firmantes configurados \xB7 ", Math.ceil((data.signer_count || 1) / (element.orientation === 'vertical' ? 1 : element.columns)), " filas. Si no caben en el alto asignado, contin\xFAan en otra p\xE1gina.")), element.kind === 'PAYMENT_SCHEDULE' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Field, {
+      label: "Color del encabezado"
+    }, /*#__PURE__*/React.createElement("select", {
+      className: "df-sel",
+      disabled: noEdit,
+      value: element.headerColor || element.color || 'ink',
+      onChange: e => patch({
+        headerColor: e.target.value
+      })
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "ink"
+    }, "Texto institucional"), /*#__PURE__*/React.createElement("option", {
+      value: "brand"
+    }, "Guinda institucional"))), /*#__PURE__*/React.createElement(Field, {
       label: "Filas por p\xE1gina",
       type: "number",
       min: "1",

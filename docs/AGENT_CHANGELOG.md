@@ -3807,3 +3807,7 @@ Loan PDFs reuse the Viajes payment table/date rule with frozen approved amounts.
 ## H-SUTIAPP-DOCUMENT-EDITOR-SCOPES-001
 
 Named editable designs, shared by compatible programs and independently assigned by loan fund; one layout renderer for editor previews and PDFs; owner-requested loan disclaimer removed. Existing tabs, assets, signers, drag/resize, page controls and private access retained. New labels/data bindings, duplication, destinations and conflict protection. Additive private migration/recovery; no financial or Google writer. Evidence: audits/H-SUTIAPP-DOCUMENT-EDITOR-SCOPES-001.md.
+
+## H-SUTIAPP-PDF-REFERENCE-LAYOUT-001
+
+Restore the owner's loan PDF section hierarchy as an editable reference version instead of the starter grid. Owner selects column signatures with independent image width/height and unchanged text sizes. Existing renderer adds controlled inline labels, institutional colors and explicit signature-after-calendar behavior; other definitions retain defaults. Focal UI controls, ten renderer groups and 24 UI-inclusive contract groups pass. No new schema, authority, financial writer or real-document fixtures. Release evidence: audits/H-SUTIAPP-PDF-REFERENCE-LAYOUT-001.md.

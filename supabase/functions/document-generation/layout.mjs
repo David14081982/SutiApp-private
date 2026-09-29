@@ -68,7 +68,14 @@ export function validateLayout(layout,type,template,{draft=false}={}){
  const W=template?.page_size?.width*25.4/72,H=template?.page_size?.height*25.4/72,m=template?.margins;
  for(const e of layout.elements){
   if(!e||typeof e!=='object'){fail('Elemento inválido.');continue;}
-  const allowed=['id','kind','field','page','x','y','width','height','font','size','weight','align','format','missing','text','label','autoColumns','columns','gap','orientation','tableColumns','header','rowsPerPage'];
+  const allowed=['id','kind','field','page','x','y','width','height','font','size','weight','align','color','format','missing','text','label','labelPosition','autoColumns','signatureImages','followSchedule','heading','columns','gap','orientation','tableColumns','header','headerColor','rowsPerPage'];
+  if(e.heading!==undefined&&(e.kind!=='SIGNERS'||typeof e.heading!=='string'||e.heading.length>120))fail('Firmantes: título de hasta 120 caracteres.');
+  if(e.followSchedule!==undefined&&(e.kind!=='SIGNERS'||typeof e.followSchedule!=='boolean'))fail('Firmantes: posición posterior al calendario inválida.');
+  if(e.followSchedule){const schedule=layout.elements.find(x=>x.kind==='PAYMENT_SCHEDULE');if(!schedule||schedule.page>e.page||schedule.page===e.page&&layout.elements.indexOf(schedule)>layout.elements.indexOf(e))fail('Firmantes: coloca el calendario antes del bloque de firmas.');}
+  if(e.signatureImages!==undefined&&(e.kind!=='SIGNERS'||!Array.isArray(e.signatureImages)||e.signatureImages.length>100||e.signatureImages.some(s=>s!==null&&(!s||Object.keys(s).some(k=>!['width','height'].includes(k))||!Number.isFinite(s.width)||!Number.isFinite(s.height)||s.width<8||s.width>200||s.height<4||s.height>60))))fail('Firmantes: cada imagen admite ancho de 8 a 200 mm y alto de 4 a 60 mm.');
+  if(e.color!==undefined&&!['ink','brand'].includes(e.color))fail('Color de texto inválido.');
+  if(e.headerColor!==undefined&&(e.kind!=='PAYMENT_SCHEDULE'||!['ink','brand'].includes(e.headerColor)))fail('Color de encabezado inválido.');
+  if(e.labelPosition!==undefined&&(e.kind!=='FIELD'||!['above','inline'].includes(e.labelPosition)))fail('Posición de etiqueta inválida.');
   if(e.autoColumns!==undefined&&(e.kind!=='SIGNERS'||typeof e.autoColumns!=='boolean'))fail('Distribución de firmas inválida.');
   if(e.label!==undefined&&(e.kind!=='FIELD'||typeof e.label!=='string'||e.label.length>120))fail('La etiqueta debe ser un texto de hasta 120 caracteres.');
   if(Object.keys(e).some(k=>!allowed.includes(k)))fail('Un elemento contiene propiedades no permitidas.');

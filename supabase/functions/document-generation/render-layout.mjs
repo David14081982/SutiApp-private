@@ -18,19 +18,21 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuat
  function drawText(p,text,e,x=e.x,y=e.y,w=e.width,h=e.height,font=fontFor(e)){
   const lines=wrap(text,w*mm,e.size,font),lineHeight=e.size*1.25;
   if(lines.length*lineHeight>h*mm+.1)throw issue('DOCUMENT_LAYOUT_TEXT_OVERFLOW',e,lines.length*lineHeight/mm);
-  lines.forEach((line,n)=>{const length=font.widthOfTextAtSize(line,e.size),offset=e.align==='right'?w*mm-length:e.align==='center'?(w*mm-length)/2:0;p.drawText(line,{x:x*mm+offset,y:height-y*mm-e.size-n*lineHeight,size:e.size,font,color:ink});});return lines.length*lineHeight/mm;
+  lines.forEach((line,n)=>{const length=font.widthOfTextAtSize(line,e.size),offset=e.align==='right'?w*mm-length:e.align==='center'?(w*mm-length)/2:0;p.drawText(line,{x:x*mm+offset,y:height-y*mm-e.size-n*lineHeight,size:e.size,font,color:e.color==='brand'?brand:ink});});return lines.length*lineHeight/mm;
  }
  // Explicit page numbers never shift when an earlier dynamic block overflows.
- const configured=Array.from({length:layout.pages},()=>page());
+ const configured=Array.from({length:layout.pages},()=>page());let scheduleEnd=null;
  for(let number=1;number<=layout.pages;number++){
   const base=configured[number-1];
   for(const e of layout.elements.filter(e=>e.page===number)){
    try{
    if(e.kind==='TEXT'){drawText(base,e.text,e);continue;}
-   if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null&&value!=='')drawText(base,e.label?e.label+'\n'+value:value,e);continue;}
+   if(e.kind==='FIELD'){const value=boundField(snapshot,e,model);if(value!==null&&value!=='')drawText(base,e.label?e.label+(e.labelPosition==='inline'?': ':'\n')+value:value,e);continue;}
    let target=base,y=e.y,end=e.y+e.height;
    const continuation=()=>{target=page(true);y=m.top;end=height/mm-m.bottom-(legacy?7:0);};
    if(e.kind==='SIGNERS'){
+    if(e.followSchedule&&scheduleEnd){target=scheduleEnd.target;y=Math.max(target===base?e.y:m.top,scheduleEnd.y+6);end=height/mm-m.bottom;}
+    const headingHeight=e.heading?8:0;
     // Small horizontal groups use their full rectangle. In particular an older
     // two-column default must not orphan signer three when three columns fit.
     const preferred=e.orientation==='vertical'?1:e.autoColumns===false?Math.min(e.columns,snapshot.signers.length):snapshot.signers.length<=3?snapshot.signers.length:Math.min(e.columns,snapshot.signers.length),continuationHeight=height/mm-m.bottom-m.top-(legacy?7:0);
@@ -40,8 +42,9 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuat
      const cw=(e.width-(count-1)*e.gap)/count;if(cw<=0)continue;
      const rows=[];let valid=true;
      try{for(let n=0;n<snapshot.signers.length;n+=count){
-      const row=snapshot.signers.slice(n,n+count),heights=row.map(s=>26+[s.full_name,s.title,s.role].reduce((sum,t)=>sum+wrap(t,cw*mm,e.size,fontFor(e)).length*e.size*1.25/mm,0));
-      rows.push({row,h:Math.max(...heights)});
+      const row=snapshot.signers.slice(n,n+count),imageArea=Math.max(16,...row.map((s,k)=>e.signatureImages?.[n+k]?.height||16)),heights=row.map(s=>imageArea+10+[s.full_name,s.title,s.role].reduce((sum,t)=>sum+wrap(t,cw*mm,e.size,fontFor(e)).length*e.size*1.25/mm,0));
+      if(row.some((s,k)=>(e.signatureImages?.[n+k]?.width||cw)>cw+.01))throw issue('DOCUMENT_LAYOUT_SIGNATURE_TOO_WIDE',e);
+      rows.push({row,h:Math.max(...heights),imageArea,start:n});
      }}catch(error){if(error.message!=='DOCUMENT_LAYOUT_TEXT_TOO_WIDE')throw error;valid=false;}
      if(valid&&rows.every(r=>r.h<=Math.max(e.height,continuationHeight)))plans.push({cw,rows,total:rows.reduce((sum,r)=>sum+r.h,0)+(rows.length-1)*e.gap});
     }
@@ -52,21 +55,22 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuat
     const {cw,rows,total}=plan;
     // Keep the entire group together if it fits one continuation; otherwise
     // continue only pending rows. Every image/name/title/role remains indivisible.
-    if(total>e.height&&total<=continuationHeight)continuation();
-    for(const {row,h} of rows){
+    if(total+headingHeight>end-y&&total+headingHeight<=continuationHeight)continuation();
+    if(e.heading){if(y+headingHeight+rows[0].h>end)continuation();drawText(target,e.heading,{...e,size:11,weight:'bold',color:'brand',align:'left'},e.x,y,e.width,headingHeight);y+=headingHeight;}
+    for(const {row,h,imageArea,start} of rows){
      if(y+h>end)continuation();if(y+h>end)throw issue('DOCUMENT_LAYOUT_SIGNER_TOO_TALL',e);
      for(let k=0;k<row.length;k++){
-      const s=row[k],x=e.x+k*(cw+e.gap);
-      if(preview)drawText(target,'Firma de ejemplo',{...e,size:Math.min(e.size,9)},x,y+4,cw,12);
-      else{const bytes=await loadAsset(s.asset),image=s.asset.mime==='image/png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes),scale=Math.min(cw*mm/image.width,16*mm/image.height);target.drawImage(image,{x:x*mm,y:height-(y+16)*mm,width:image.width*scale,height:image.height*scale});}
-      target.drawLine({start:{x:x*mm,y:height-(y+18)*mm},end:{x:(x+cw)*mm,y:height-(y+18)*mm},thickness:.5,color:ink});
-      let yy=y+20;for(const text of [s.full_name,s.title,s.role])yy+=drawText(target,text,e,x,yy,cw,h)+1;
+      const s=row[k],x=e.x+k*(cw+e.gap),box=e.signatureImages?.[start+k],imageWidth=box?.width||cw,imageHeight=box?.height||16;
+      if(preview){if(box){const scale=Math.min(imageWidth*mm/120,imageHeight*mm/40);target.drawSvgPath('M 2 31 C 16 3 10 45 30 20 C 38 4 25 43 52 21 C 70 3 51 39 90 22 L 116 15 M 9 36 L 114 29',{x:x*mm,y:height-(y+imageArea)*mm+40*scale,scale,borderColor:ink,borderWidth:1});}else drawText(target,'Firma de ejemplo',{...e,size:Math.min(e.size,9)},x,y+4,cw,12);}
+      else{const bytes=await loadAsset(s.asset),image=s.asset.mime==='image/png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes),scale=Math.min(imageWidth*mm/image.width,imageHeight*mm/image.height);target.drawImage(image,{x:x*mm,y:height-(y+imageArea)*mm,width:image.width*scale,height:image.height*scale});}
+      target.drawLine({start:{x:x*mm,y:height-(y+imageArea+2)*mm},end:{x:(x+cw)*mm,y:height-(y+imageArea+2)*mm},thickness:.5,color:ink});
+      let yy=y+imageArea+4;for(const text of [s.full_name,s.title,s.role])yy+=drawText(target,text,e,x,yy,cw,h)+1;
      }y+=h+e.gap;
     }
    }else if(e.kind==='PAYMENT_SCHEDULE'&&model.schedule){
     const rows=model.schedule.rows;if(!Array.isArray(rows)||!rows.length)throw Error('DOCUMENT_SCHEDULE_EMPTY');
     const columns=e.tableColumns.map(k=>TABLE_COLUMNS.find(c=>c.key===k)),cw=e.width/columns.length,font=fontFor(e),line=e.size*1.25/mm;
-    const header=()=>{if(!e.header)return;const texts=columns.map(c=>wrap(c.label,(cw-2)*mm,e.size,fonts[e.font].bold)),h=Math.max(...texts.map(t=>t.length))*line+3;if(y+h+line+3>end)throw issue('DOCUMENT_LAYOUT_TABLE_ROW_TOO_TALL',e);columns.forEach((c,k)=>drawText(target,c.label,{...e,weight:'bold',align:'left'},e.x+k*cw,y,cw-2,h));y+=h;};
+    const header=()=>{if(!e.header)return;const texts=columns.map(c=>wrap(c.label,(cw-2)*mm,e.size,fonts[e.font].bold)),h=Math.max(...texts.map(t=>t.length))*line+3;if(y+h+line+3>end)throw issue('DOCUMENT_LAYOUT_TABLE_ROW_TOO_TALL',e);columns.forEach((c,k)=>drawText(target,c.label,{...e,weight:'bold',align:'left',color:e.headerColor||e.color},e.x+k*cw,y,cw-2,h));y+=h;};
     header();let used=0;
     for(const row of rows){
      if(!row||['number','date','payment'].some(k=>row[k]===null||row[k]===undefined||row[k]===''))throw Error('DOCUMENT_REQUIRED_SCHEDULE_ROW');
@@ -76,6 +80,7 @@ export async function drawLayout({snapshot,model,pdf,PDFLib,background,continuat
      if(y+h>end)throw issue('DOCUMENT_LAYOUT_TABLE_ROW_TOO_TALL',e);
      values.forEach((v,k)=>drawText(target,v,{...e,align:'left'},e.x+k*cw,y,cw-2,h));y+=h;used++;
     }
+    scheduleEnd={target,y};
    }
    }catch(error){if(error.layoutIssue)throw error;throw issue(/^DOCUMENT_LAYOUT_[A-Z_]+$/.test(error.message)?error.message:'DOCUMENT_LAYOUT_ELEMENT_INVALID',e);}
   }

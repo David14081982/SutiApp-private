@@ -73837,7 +73837,7 @@ Object.assign(window, {
     }
   }
   async function refreshConsumers() {
-    await load(true);
+    if (selectedProgram) await loadProgram(selectedProgram);else await load(true);
     if (window.catalogStore) await window.catalogStore.retry();
   }
   const store = {
@@ -73950,13 +73950,15 @@ Object.assign(window, {
     }
   };
   window.programCatalogAdminStore = store;
-  window.useProgramCatalogAdminStore = function () {
+  window.useProgramCatalogAdminStore = function (scopedProgram) {
     const epoch = window.PrivateResourceDemand.useContext();
     const [, render] = useState(0);
     useEffect(() => store.subscribe(() => render(n => n + 1)), []);
     useEffect(() => {
-      if (epoch !== null) store.retry();
-    }, [epoch]);
+      if (epoch !== null) {
+        if (scopedProgram) store.loadProgram(scopedProgram);else store.retry();
+      }
+    }, [epoch, scopedProgram]);
     return store;
   };
 })();
@@ -74064,18 +74066,13 @@ Object.assign(window, {
     header,
     scopedProgram
   }) {
-    const store = window.useProgramCatalogAdminStore(),
-      [program, setProgram] = useState(null),
+    const store = window.useProgramCatalogAdminStore(scopedProgram),
+      [program, setProgram] = useState(() => scopedProgram ? {
+        key: scopedProgram,
+        label: 'Suti Farma'
+      } : null),
       [editing, setEditing] = useState(null);
     const canWrite = app.admin.has('program_catalog.write');
-    useEffect(() => {
-      if (scopedProgram) store.loadProgram(scopedProgram).then(ok => {
-        if (ok) setProgram({
-          key: scopedProgram,
-          label: 'Suti Farma'
-        });
-      });
-    }, [scopedProgram]);
     useEffect(() => () => store.clearSelection(), []);
     if (store.state().phase === 'loading' && store.all().length === 0) return React.createElement('div', null, header({
       title: 'Programas · Productos',
@@ -74102,7 +74099,7 @@ Object.assign(window, {
       title: 'No pudimos cargar los productos',
       sub: 'No se usó Marketplace ni una fuente alternativa.',
       action: React.createElement(window.Btn, {
-        onClick: store.retry
+        onClick: () => scopedProgram ? store.loadProgram(scopedProgram) : store.retry()
       }, 'Reintentar')
     })));
     const programs = store.programs().filter(p => !scopedProgram || p.key === scopedProgram),

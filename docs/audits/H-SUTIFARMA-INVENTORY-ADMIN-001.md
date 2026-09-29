@@ -105,3 +105,21 @@ Legacy: NOT APPLICABLE
 Owner decision: YES — remote publication only
 Next action: publish exact reviewed commit after explicit authorization and verify deployed UI
 Response generated for Codex: NO — external publication authorization required
+
+## Corrective continuation — limited Farma account
+
+The owner supplied production evidence after publication: the Farma shell and scoped access loaded, but Inventario displayed `No pudimos cargar los productos`. Root cause: `useProgramCatalogAdminStore` started an unscoped all-program administrative read in parallel with the scoped Farma read. A module administrator limited to `farma` must never query the complete program catalog; the failing broad read could overwrite the successful scoped state. The same broad refresh also ran after a product save, and the generic retry repeated it.
+
+Corrective scope: `app/program-catalog-admin-store.jsx`, `app/screens-admin-program-products.jsx`, focal browser test, generated focal bundle/evidence/Registry and this audit. No database, permission, catalog row or source-of-truth change. The scoped screen must load, retry and refresh only `program_key='farma'`; the unrestricted Programas · Productos screen keeps its existing complete read.
+
+Risk: accidentally narrowing the total administrator screen or leaving a broad read after save. Tests must hold a simulated `module_admin` context with only `farma` throughout the real inventory render, then verify 50 products, add control, editor and public view. Recovery: revert the corrective frontend commit. Status: PASS to implement.
+
+### Corrective verification
+
+- The scoped hook now loads only `loadProgram('farma')` on initial access and context changes. It never launches the complete administrative catalog read.
+- Scoped retry repeats only the Farma read. Post-save refresh reloads the selected program; the unrestricted Programas · Productos surface retains its complete refresh.
+- Real Chrome at 1280×900 and 390×844 held a `module_admin` context limited to `farma`. Every `program_catalog_items` request after that context included `program_key=eq.farma`; 50 rows, summary, add control and editor loaded with zero browser errors and zero production writes.
+- Read-only production transaction under Mariana's actual Auth identity confirmed `program_catalog.read/write`, Farma update module, 50 catalog rows and 50 inventory rows. Writes: 0.
+- Isolated PostgreSQL twelve-scenario suite and focal build PASS. Final candidate bundle SHA256 `f3ad32c8ef689521b404079413800dc839beefa79cc51384504aeced290b56f0`.
+
+Corrective result: PASS. Source of truth, quantities, requests, permissions, schema and legacy remain unchanged. UI preservation: PASS; the existing Inventory/Solicitudes structure and all controls remain, while the erroneous fail-safe state is replaced by the authorized scoped data.

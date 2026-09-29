@@ -10,7 +10,7 @@
   const fetchProgram=key=>window.PrivateResourceDemand.run('admin-program:'+key,()=>window.ProgramCatalogRepository.listItems({admin:true,programKey:key,deferImages:true}));
   async function load(force){if(promise&&!force)return promise;const epoch=window.PrivateResourceDemand.context(),version=++loadVersion;phase='loading';error=null;emit();promise=(async()=>{try{const rows=await window.ProgramCatalogRepository.listItems({admin:true,includeAssets:false}),selected=selectedProgram,details=selected?await fetchProgram(selected):[];if(window.PrivateResourceDemand.context()!==epoch||version!==loadVersion)return store;const byId=new Map(details.map(row=>[row.id,row]));items=rows.map(row=>byId.get(row.id)||row);phase='loaded';}catch(e){if(window.PrivateResourceDemand.context()!==epoch||version!==loadVersion)return store;phase='error';error=e;}emit();return store;})();return promise;}
   async function loadProgram(key){const epoch=window.PrivateResourceDemand.context();selectedProgram=key;try{const rows=await fetchProgram(key);if(window.PrivateResourceDemand.context()!==epoch||selectedProgram!==key)return false;items=items.filter(x=>x.program_key!==key).concat(rows);phase='loaded';emit();return true;}catch(e){if(window.PrivateResourceDemand.context()!==epoch||selectedProgram!==key)return false;phase='error';error=e;emit();return false;}}
-  async function refreshConsumers(){await load(true);if(window.catalogStore)await window.catalogStore.retry();}
+  async function refreshConsumers(){if(selectedProgram)await loadProgram(selectedProgram);else await load(true);if(window.catalogStore)await window.catalogStore.retry();}
   const store={
     loadProgram,clearSelection:()=>{selectedProgram=null;},bootstrap:()=>load(false),retry:()=>{promise=null;return load(true);},state:()=>({phase,error}),all:()=>items.slice(),
     programs:()=>Array.from(new Set(items.map((x)=>x.program_key).concat(declaredEmptyPrograms))).sort((a,b)=>(labels[a]||a).localeCompare(labels[b]||b)).map((key)=>{const rows=items.filter((x)=>x.program_key===key);return{key,label:labels[key]||key,icon:icons[key]||'grid',count:rows.length,active:rows.filter((x)=>x.activo!==false).length,fixed:rows.filter((x)=>x.commercialMode==='PAYROLL_FIXED').length,quote:rows.filter((x)=>x.commercialMode==='PAYROLL_QUOTE').length,direct:rows.filter((x)=>x.commercialMode==='DIRECT_CONTACT').length,sold:rows.filter((x)=>x.sold===true).length};}),
@@ -23,5 +23,5 @@
     subscribe:(fn)=>{listeners.add(fn);return()=>listeners.delete(fn);}
   };
   window.programCatalogAdminStore=store;
-  window.useProgramCatalogAdminStore=function(){const epoch=window.PrivateResourceDemand.useContext();const[,render]=useState(0);useEffect(()=>store.subscribe(()=>render((n)=>n+1)),[]);useEffect(()=>{if(epoch!==null)store.retry();},[epoch]);return store;};
+  window.useProgramCatalogAdminStore=function(scopedProgram){const epoch=window.PrivateResourceDemand.useContext();const[,render]=useState(0);useEffect(()=>store.subscribe(()=>render((n)=>n+1)),[]);useEffect(()=>{if(epoch!==null){if(scopedProgram)store.loadProgram(scopedProgram);else store.retry();}},[epoch,scopedProgram]);return store;};
 })();

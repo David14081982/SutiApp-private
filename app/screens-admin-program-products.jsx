@@ -37,12 +37,11 @@
   }
 
   function ProgramProductsModule({app,onBack,header,scopedProgram}){
-    const store=window.useProgramCatalogAdminStore(),[program,setProgram]=useState(null),[editing,setEditing]=useState(null);
+    const store=window.useProgramCatalogAdminStore(scopedProgram),[program,setProgram]=useState(()=>scopedProgram?{key:scopedProgram,label:'Suti Farma'}:null),[editing,setEditing]=useState(null);
     const canWrite=app.admin.has('program_catalog.write');
-    useEffect(()=>{if(scopedProgram)store.loadProgram(scopedProgram).then(ok=>{if(ok)setProgram({key:scopedProgram,label:'Suti Farma'});});},[scopedProgram]);
     useEffect(()=>()=>store.clearSelection(),[]);
     if(store.state().phase==='loading'&&store.all().length===0)return React.createElement('div',null,header({title:'Programas · Productos',sub:'Cargando catálogo autoritativo',onBack}),React.createElement('div',{style:{padding:16}},React.createElement(window.Skeleton,{h:220,r:18})));
-    if(store.state().phase==='error')return React.createElement('div',null,header({title:'Programas · Productos',sub:'Fuente autoritativa no disponible',onBack}),React.createElement('div',{style:{padding:16}},React.createElement(window.EmptyState,{icon:'alert',title:'No pudimos cargar los productos',sub:'No se usó Marketplace ni una fuente alternativa.',action:React.createElement(window.Btn,{onClick:store.retry},'Reintentar')})));
+    if(store.state().phase==='error')return React.createElement('div',null,header({title:'Programas · Productos',sub:'Fuente autoritativa no disponible',onBack}),React.createElement('div',{style:{padding:16}},React.createElement(window.EmptyState,{icon:'alert',title:'No pudimos cargar los productos',sub:'No se usó Marketplace ni una fuente alternativa.',action:React.createElement(window.Btn,{onClick:()=>scopedProgram?store.loadProgram(scopedProgram):store.retry()},'Reintentar')})));
     const programs=store.programs().filter(p=>!scopedProgram||p.key===scopedProgram),rows=program?store.byProgram(program.key):[],farmaInventory=scopedProgram==='farma';
     return React.createElement('div',null,
       header({title:program?program.label:'Programas · Productos',sub:program?`${rows.length} productos · ${rows.filter((x)=>x.activo!==false).length} activos`:`${programs.length} programas · ${store.all().length} productos`,onBack:program&&!scopedProgram?()=>{store.clearSelection();setProgram(null);}:onBack}),

@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path'), cp = require('child_process'), assert = require('assert').strict;
 const { chromium } = require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const root = path.resolve(__dirname, '..'), read = f => fs.readFileSync(path.join(root, f), 'utf8');
-const evidence = path.join(root, 'docs/qa/evidence/finance-request-confirmation-20260908');
+const evidence = path.join(root, process.env.SUTIAPP_CONFIRMATION_EVIDENCE || 'docs/qa/evidence/finance-request-confirmation-20260908');
 async function main() {
   fs.mkdirSync(evidence, { recursive: true });
   const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
@@ -15,7 +15,8 @@ async function main() {
       await page.setContent('<style>:root{--surface:#fff;--surface-2:#edf0f5;--hairline:#e1e5ed;--ink:#172033;--ink-2:#364154;--ink-3:#657086;--guinda:#901040;--mono:monospace}*{box-sizing:border-box}body{font-family:Arial;background:#f3f5f9;margin:24px}#fixture{min-height:1800px}button,input,textarea,select{font-family:inherit}</style><div id="fixture"></div>');
       for (const file of ['app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-dom-18.3.1/react-dom.production.min.js']) await page.addScriptTag({ content: read(file) });
       await page.evaluate(({ variant, writable }) => {
-        window.Icon = () => null; window.money = n => '$' + n;
+        window.Icon = () => null; window.GeneratedDocuments = () => null; window.money = n => '$' + n;
+        window.AdminFinanceQueueRepository = { enrich: async rows => rows };
         window.AffiliateAuth = { getState: () => ({ phase: 'authenticated', session: { user: { id: 'fixture' }, access_token: 'fixture' }, affiliate: { id: 'fixture' } }), subscribe: () => () => {} };
         window.AdminRepository = { getState: () => ({ phase: 'authorized', assignment: { role: 'admin' } }), subscribe: () => () => {} };
         const steps = [{ id: 'received', label: 'Solicitud recibida', responsible: 'Administración', state: 'current' }, { id: 'approved', label: 'Autorización de la solicitud', responsible: 'Finanzas', state: 'upcoming', status_references: ['approved'] }, { id: 'rejected', label: 'Rechazada', state: 'upcoming', outcome: 'failure' }];
@@ -31,7 +32,7 @@ async function main() {
         window.confirm = text => { __confirmations.push(text); return true; };
         const writer = name => async (...args) => { __calls.push({ name, args }); throw Error('ISOLATED_WRITE_BOUNDARY'); };
         window.ProgramRequestRepository = { listAdminFlowQueue: async () => __rows, adminFlowDetail: async id => { if (__delay) await new Promise(resolve => setTimeout(resolve, __delay)); if (__failRead) throw Error('ISOLATED_READ'); return structuredClone(__rows.find(r => r.id === id)); }, newIdempotencyKey: () => 'fixture-key', recordAdminAction: writer('recordAdminAction'), transitionWorkflow: writer('transitionWorkflow'), approveProductPayment: writer('approveProductPayment') };
-        window.FinancialLegacyRepository = { approveRequest: writer('approveRequest'), handoffRequest: writer('handoffRequest') };
+        window.FinancialLegacyRepository = { reviewApproval: async id => ({ request_id: id, phase: 'READY' }), approveRequest: writer('approveRequest'), handoffRequest: writer('handoffRequest') };
         window.DocumentWorkflowRepository = { adminPreview: async () => ({ signedUrl: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="80"><rect width="100" height="80" fill="#eadfe5"/><path d="M30 15h40v50H30z" fill="white"/><path d="M38 25h24M38 35h24M38 45h18" stroke="#901040"/></svg>'), expiresIn: 300 }) };
         window.__app = { admin: { has: permission => permission === 'documents.read' || writable } }; window.__onCount = () => {};
       }, { variant, writable });

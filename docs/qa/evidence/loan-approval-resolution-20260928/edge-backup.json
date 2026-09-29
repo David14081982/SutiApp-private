@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "version": 57,
+  "verifyJwt": true,
+  "sha256": "756961675da3355bf04d95cf57626fc31d1272b7f89c009410de92d689c573de",
+  "bytes": 677574,
+  "dependenciesMatchPublishedBase": true,
+  "sourceMatchesReviewedManifest": true
+}

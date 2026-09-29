@@ -1,0 +1,33 @@
+{
+  "status": "AUTHORIZED_PREPARED",
+  "baseCommit": "611917fc997f702a612ece54e152b31d11d483b7",
+  "files": [
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "sha256": "130ed8acad359fd9c525531edb968fecd4a46d3c0bc21406e8543f5859e33667"
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "sha256": "b3de914d77e9f2011eb3663e8263466fca602591de68c52db647c4a370ea9e1a"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/index.ts",
+      "sha256": "81bbbdcd109145dcd69788be621f6b225e8ba8260871115ffff4ee917622f5ad"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "4033308e40846949b68e703d6276768e0752904da4e474071fa9d28fbb4d875b"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "50ba250f9aea2dbb389a2f9b094d822b4d0347c167c95396468b754a946dd217"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "7a2c05e4173f3d22aee089f67613bc47202a89c51e89123d5d82f40b6b7f629e"
+    }
+  ],
+  "unrelatedPublishedChunksPreserved": true,
+  "publishedPdfFeaturePreserved": true,
+  "workspaceSourcePreserved": true
+}

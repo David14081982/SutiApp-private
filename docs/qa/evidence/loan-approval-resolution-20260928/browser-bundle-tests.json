@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "changed criteria, no approval, double-click, preserved history, assistance 1440",
+    "changed criteria, no approval, double-click, preserved history, assistance 390",
+    "changed criteria, no approval, double-click, preserved history, assistance 320",
+    "permission has actionable state without writes",
+    "network has actionable state without writes",
+    "documents has actionable state without writes",
+    "approved has actionable state without writes",
+    "race never claims completion",
+    "readback-fail never claims completion",
+    "no new impersonation capability granted"
+  ],
+  "errors": [],
+  "productionWrites": 0
+}

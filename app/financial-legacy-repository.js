@@ -264,6 +264,7 @@
     return invoke({ action: 'handoff', request_id: String(requestId) });
   }
   async function approveRequest(requestId, comment) { return invoke({ action: 'approve', request_id: String(requestId), comment: String(comment || '') }); }
+  async function reviewApproval(requestId) { return invoke({ action: 'approvalReview', request_id: String(requestId) }); }
   async function openProgramPaymentSession(programItemId) {
     const result=await invoke({action:'programPaymentSessionOpen',program_item_id:String(programItemId)});
     if(!result||!['READY','QUOTE_REQUIRED','NOT_ELIGIBLE'].includes(result.status)||result.googleResolutionCount!==0)throw new Error('PROGRAM_PAYMENT_SESSION_CONTRACT_MISMATCH');
@@ -290,7 +291,7 @@
     return Object.freeze(Object.assign({},request,{workflow_state}));
   }
   window.FinancialLegacyRepository = Object.freeze({
-    invoke, handoffRequest, approveRequest,openProgramPaymentSession,quoteProgramPayment,confirmProgramPayment,
+    invoke, handoffRequest, approveRequest, reviewApproval,openProgramPaymentSession,quoteProgramPayment,confirmProgramPayment,
     resolveEligibility: () => invoke({ action: 'resolveEligibility' }),
     resolveAvailableFunds: () => invoke({ action: 'resolveAvailableFunds' }),
     resolveSimulation: (programId, amount, term) => invoke({ action: 'resolveSimulation', program_id: String(programId), amount: Number(amount), term: Number(term) }).then(assertFinancialSimulationResult),

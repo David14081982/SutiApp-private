@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "attempt": "IPv4 origin",
+  "source": "captured tool stderr",
+  "error": "DOCUMENT_PREVIEW_UNAVAILABLE",
+  "supersededBy": "global-local-final.json"
+}

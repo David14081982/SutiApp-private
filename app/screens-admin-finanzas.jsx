@@ -392,7 +392,17 @@
       h('button', { ref: closeRef, type: 'button', className: 'finwb-modal-close', onClick: onClose, 'aria-label': 'Cerrar detalle de solicitud' }, '×')), children);
   }
 
-  function FinancialActionDialog({ model, busy, error, onConfirm, onClose }) {
+  function approvalRecovery(error) {
+    const code = String(error && (error.code || error.message) || '');
+    if (/CONDITIONS_CHANGED|FINANCIAL_PROGRAM_NOT_ELIGIBLE/.test(code)) return { phase: 'NEW_REQUEST_REQUIRED', code, message: 'Las condiciones de esta solicitud ya no están vigentes. Es necesario cancelarla y presentar una nueva con las condiciones actuales.' };
+    if (/SIGNATURE_AND_TERMS_REQUIRED|REQUESTED_AMOUNT_TERM_CONTRACT_REQUIRED|FINANCIAL_SUBMISSION|REQUIRED_PRIVATE_DOCUMENT_MISSING|GUARANTOR_DOCUMENTS_NOT_AVAILABLE|REQUIRED_DOCUMENTS_MISSING/.test(code)) return { phase: 'NEW_REQUEST_REQUIRED', code, message: 'La solicitud enviada no contiene todos los requisitos válidos. Sus documentos, firma y condiciones se conservan como historial; una nueva solicitud permitirá completarlos y validarlos nuevamente.' };
+    if (/ADMIN_APPROVAL_REQUIRED|DENIED|42501|AUTH_/.test(code)) return { phase: 'BLOCKED', code, message: 'Tu sesión no tiene autorización para continuar. Un administrador con permisos de Finanzas debe realizar esta acción.' };
+    if (/NOT_APPROVABLE|TRANSITION_INVALID|IMMUTABLE|WORKFLOW_|READBACK/.test(code)) return { phase: 'REFRESH', code, message: 'El estado pudo cambiar. Actualiza la solicitud para comprobar el resultado antes de realizar otra acción.' };
+    if (/AFFILIATE_/.test(code)) return { phase: 'BLOCKED', code, message: 'El perfil del afiliado requiere revisión en Administración → Afiliados. Corrige allí los datos indicados antes de volver a verificar esta solicitud.' };
+    return { phase: 'RETRY', code, message: 'No se pudo verificar la solicitud. Comprueba la conexión y vuelve a revisar. Esta revisión no autoriza ni cancela solicitudes.' };
+  }
+
+  function FinancialActionDialog({ model, busy, error, onConfirm, onClose, resolution, onReview, onRenew, onAssist, onRefresh, canAssist }) {
     const ref = React.useRef(null), titleId = React.useId();
     useEffect(() => {
       const opener = document.activeElement, dialog = ref.current;
@@ -412,13 +422,23 @@
       },
       style: { width: 'min(520px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', border: '1px solid var(--hairline)', borderRadius: 22, padding: 24, background: 'var(--surface)', color: 'var(--ink)', boxShadow: '0 24px 80px #0005' } },
       h('style', null, '.finwb-action-dialog::backdrop{background:#17203366}.finwb-action-dialog button{min-height:44px;border:0;border-radius:12px;padding:10px 18px;font:750 14px var(--font, sans-serif);cursor:pointer}.finwb-action-dialog button:disabled{opacity:.55;cursor:wait}.finwb-action-dialog button:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}'),
-      h('h2', { id: titleId, style: { margin: '0 0 18px', fontSize: 23 } }, model.title),
-      h('dl', { className: 'finwb-kv' }, model.fields.map(([label, value]) => h('div', { key: label, style: { overflowWrap: 'anywhere' } }, h('dt', { style: { color: 'var(--ink-3)', fontSize: 12 } }, label), h('dd', { style: { margin: '4px 0 12px', fontWeight: 750 } }, value)))),
-      h('p', { style: { padding: 14, borderRadius: 14, background: model.warning ? '#FFF3DC' : 'var(--surface-2)', lineHeight: 1.5 } }, model.message),
+      h('h2', { id: titleId, style: { margin: '0 0 18px', fontSize: 23 } }, resolution && resolution.phase === 'CANCELLED' ? 'Solicitud cancelada' : resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? 'Resolver solicitud' : model.title),
+      h('dl', { className: 'finwb-kv' }, model.fields.map(([label, value]) => h('div', { key: label, style: { overflowWrap: 'anywhere' } }, h('dt', { style: { color: 'var(--ink-3)', fontSize: 12 } }, label), h('dd', { style: { margin: '4px 0 12px', fontWeight: 750 } }, label === 'Estado / etapa resultante' && resolution && ['NEW_REQUEST_REQUIRED','CANCELLED'].includes(resolution.phase) ? 'Cancelada · requiere nueva solicitud' : value)))),
+      (!resolution || resolution.phase === 'READY') && h('p', { style: { padding: 14, borderRadius: 14, background: model.warning ? '#FFF3DC' : 'var(--surface-2)', lineHeight: 1.5 } }, model.message),
       error && h('p', { role: 'alert', style: { color: '#A32921', lineHeight: 1.5 } }, error),
+      resolution && h('section', { 'data-approval-resolution': resolution.phase, role: 'status', style: { padding: 14, borderRadius: 14, background: '#FFF3DC', lineHeight: 1.5 } },
+        h('strong', null, resolution.phase === 'READY' ? 'Revisión completada' : resolution.phase === 'CANCELLED' ? 'Continúa con una nueva solicitud' : 'Cómo resolverlo'),
+        h('p', null, resolution.message || (resolution.phase === 'READY' ? 'Los requisitos comprobados permiten continuar. Se volverán a validar al autorizar.' : 'Las condiciones cambiaron. Debes cancelar esta solicitud y presentar una nueva con las condiciones actuales.')),
+        resolution.current && h('dl', { className: 'finwb-kv' }, [['Monto solicitado', moneyValue(resolution.submitted && resolution.submitted.amount)], ['Límite vigente', moneyValue(resolution.current.maxAmount)], ['Tasa vigente por periodo', resolution.current.rate + '%'], ['Plazo máximo vigente', resolution.current.maxTerm + ' pagos']].map(([label,value]) => h('div', { key: label }, h('dt', null, label), h('dd', { style: { margin: '3px 0 8px', fontWeight: 750 } }, value)))),
+        resolution.phase === 'NEW_REQUEST_REQUIRED' && h('p', null, 'Al confirmar la cancelación, se registrará el motivo y se conservarán el folio, los documentos y el historial. No se enviará una nueva solicitud automáticamente.'),
+        resolution.phase === 'CANCELLED' && h('p', null, canAssist ? 'Abre la atención asistida y selecciona Suti Préstamo. Elige un monto permitido y completa documentos, términos y firma para enviar una nueva solicitud.' : 'El afiliado puede entrar a Suti Préstamo y enviar una nueva solicitud. La atención asistida requiere el permiso correspondiente.')),
       h('div', { style: { display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 10, marginTop: 20 } },
         h('button', { type: 'button', className: 'finwb-secondary', autoFocus: true, disabled: busy, onClick: onClose }, 'Volver'),
-        h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onConfirm, style: model.warning ? { background: '#A32921' } : undefined }, busy ? 'Procesando…' : model.label)));
+        model.action === 'approveLoan' && (!resolution || ['READY','RETRY','BLOCKED'].includes(resolution.phase)) && h('button', { type: 'button', className: 'finwb-secondary', disabled: busy, onClick: onReview }, error ? 'Resolver solicitud' : 'Revisar solicitud'),
+        resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onRenew }, busy ? 'Verificando…' : 'Confirmar cancelación para nueva solicitud') :
+        resolution && resolution.phase === 'CANCELLED' ? canAssist && h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onAssist }, busy ? 'Abriendo…' : 'Abrir atención asistida') :
+        resolution && resolution.phase === 'REFRESH' ? h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onRefresh }, 'Actualizar solicitud') :
+        (!resolution || resolution.phase === 'READY') && h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onConfirm, style: model.warning ? { background: '#A32921' } : undefined }, busy ? 'Procesando…' : model.label)));
   }
 
   function FinancialAuthorizationResult({ result, onClose }) {
@@ -468,6 +488,8 @@
     const [action, setAction] = useState(''), [actionNote, setActionNote] = useState(''), [quoteAmount, setQuoteAmount] = useState(''), [quoteValidUntil, setQuoteValidUntil] = useState(''), [busy, setBusy] = useState(false), [feedback, setFeedback] = useState(null), [rowFeedback, setRowFeedback] = useState({}), [viewer, setViewer] = useState(null);
     const actionAttempts = React.useRef(new Map()), actionLock = React.useRef(false);
     const [confirmation, setConfirmation] = useState(null), [actionResult, setActionResult] = useState(null);
+    const [resolution, setResolution] = useState(null);
+    const resolutionAttempt = React.useRef(null);
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async (quiet) => { try { if (!quiet) setPhase('loading'); const source = await window.AdminFinanceQueueRepository.enrich(await window.ProgramRequestRepository.listAdminFlowQueue()); const scoped=initialAffiliateId?source.filter((row)=>row.affiliate_id===initialAffiliateId):source; setRows(scoped.slice()); setError(''); setPhase('loaded'); onCount(scoped.length); return scoped; } catch (_) { if (!quiet) setRows([]); setError('No fue posible cargar las solicitudes.'); setPhase('error'); onCount(0); return []; } }, [onCount,initialAffiliateId]);
     useEffect(() => { load(false); }, [load]);
@@ -489,13 +511,60 @@
     useEffect(() => { if (!actionOptions.some((item) => item.id === action)) setAction(actionOptions[0] && actionOptions[0].id || ''); }, [actionOptions, action]);
     const clearFilters = () => { setSearch(''); setStatusFilter('all'); setProgramFilter('all'); setStageFilter('all'); setAgeFilter('all'); setDateFilter(''); setSort('newest'); };
     const move = (delta) => { if (!visible.length) return; const next = Math.max(0, Math.min(visible.length - 1, (index < 0 ? 0 : index) + delta)); setSelectedId(visible[next].id); };
+    const inspectApproval = async () => {
+      try {
+        const result = await window.FinancialLegacyRepository.reviewApproval(detail.id);
+        const next = result.idempotent ? { phase: 'REFRESH', message: 'La solicitud ya tiene autorización. Actualiza para ver su estado.' } : result;
+        if (!['READY','NEW_REQUEST_REQUIRED','REFRESH'].includes(next.phase) || result.request_id !== detail.id) throw Error('APPROVAL_REVIEW_INVALID');
+        setResolution(next); return next;
+      } catch (failure) { const next = approvalRecovery(failure); setResolution(next); return next; }
+    };
+    const reviewApproval = async () => {
+      if (busy || actionLock.current) return;
+      actionLock.current = true; setBusy(true); setFeedback(null);
+      try { await inspectApproval(); } finally { actionLock.current = false; setBusy(false); }
+    };
+    const renewRequest = async () => {
+      if (busy || actionLock.current || !detail || resolution?.phase !== 'NEW_REQUEST_REQUIRED') return;
+      actionLock.current = true; setBusy(true); setFeedback(null);
+      const request = detail;
+      try {
+        // Always re-read first, including retries after an ambiguous response.
+        let fresh = await window.ProgramRequestRepository.adminFlowDetail(request.id);
+        if (fresh.status !== 'cancelled') {
+          const diagnosis = await inspectApproval();
+          if (diagnosis.phase !== 'NEW_REQUEST_REQUIRED') return;
+          const reason = diagnosis.code === 'CONDITIONS_CHANGED' || diagnosis.code === 'FINANCIAL_PROGRAM_NOT_ELIGIBLE'
+            ? 'Se cancela para presentar una nueva solicitud con las condiciones financieras vigentes. Las condiciones originales ya no permiten autorizar esta solicitud.'
+            : 'Se cancela para presentar una nueva solicitud y completar nuevamente los requisitos, documentos, términos y firma.';
+          if (!resolutionAttempt.current || resolutionAttempt.current.requestId !== request.id) resolutionAttempt.current = { requestId: request.id, key: window.ProgramRequestRepository.newIdempotencyKey() };
+          const event = await window.ProgramRequestRepository.recordAdminAction(request.id, 'CANCEL', reason, resolutionAttempt.current.key);
+          fresh = await window.ProgramRequestRepository.adminFlowDetail(request.id);
+          if (fresh.status !== 'cancelled' || !fresh.admin_events?.some(item => item.id === event.id)) throw Error('FINANCIAL_ACTION_READBACK_FAILED');
+        }
+        setDetail(fresh);
+        setResolution({ phase: 'CANCELLED', message: 'La cancelación quedó confirmada. La solicitud anterior se conserva en el historial; todavía no se ha creado una nueva.' });
+        window.dispatchEvent(new CustomEvent('suti:request-changed'));
+      } catch (failure) { setFeedback({ tone: 'error', text: 'No se pudo confirmar la cancelación. Actualiza la solicitud antes de continuar.' }); setResolution({ phase: 'REFRESH', message: humanActionError(failure) }); }
+      finally { actionLock.current = false; setBusy(false); }
+    };
+    const beginNewRequest = async () => {
+      if (busy || actionLock.current || resolution?.phase !== 'CANCELLED' || !app.admin.has('affiliates.impersonate')) return;
+      actionLock.current = true; setBusy(true); setFeedback(null);
+      try {
+        const fresh = await window.ProgramRequestRepository.adminFlowDetail(detail.id);
+        if (fresh.status !== 'cancelled') throw Error('FINANCIAL_ACTION_READBACK_FAILED');
+        await window.AdminRepository.startImpersonation(detail.affiliate_id, 'Nueva solicitud con condiciones actuales tras cancelación de ' + detail.folio);
+      } catch (_) { setFeedback({ tone: 'error', text: 'La solicitud anterior sigue cancelada. No se pudo abrir la atención asistida; verifica tu permiso y vuelve a intentarlo.' }); }
+      finally { actionLock.current = false; setBusy(false); }
+    };
     const save = async (advance, confirmed = false) => { if (!detail || !action || busy || actionLock.current) return; const targetBefore=nextStage(detail),currentBefore=currentStage(detail); if (actionNote.trim().length > 0 && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: 'La observación debe tener al menos 3 caracteres.' }); return; } if (action === 'note' && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: 'Escribe una observación de al menos 3 caracteres.' }); return; } if (['reject', 'cancel'].includes(action) && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: action === 'reject' ? 'Indica el motivo del rechazo.' : 'Indica el motivo de la cancelación.' }); return; } if (action==='quoteAdvance' && numberValue(quoteAmount)==null) { setFeedback({tone:'error',text:'Captura el monto de la cotización antes de aprobar la etapa.'}); return; }
       const finalApproval = ['advance','quoteAdvance','approveProduct','approveLoan'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
       if (!confirmed && action !== 'note') {
         const warning = ['reject','cancel'].includes(action);
         const label = action === 'reject' ? 'Rechazar solicitud' : action === 'cancel' ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
         const destination = action === 'reject' ? 'Rechazada' : action === 'cancel' ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
-        setFeedback(null);
+        setFeedback(null); setResolution(null);
         setConfirmation({ action, advance, warning, label, title: label === 'Aprobar etapa' ? '¿Aprobar esta etapa?' : '¿' + label + '?',
           fields: [['Solicitud', detail.folio], ['Afiliado', detail.nombre], ['Programa', programLabel(detail)],
             ...(detail.requested_amount != null ? [['Monto', moneyValue(detail.requested_amount)]] : []),
@@ -509,7 +578,7 @@
       actionLock.current = true;
       const currentId = detail.id, nextId = visible[index + 1] && visible[index + 1].id || visible[index - 1] && visible[index - 1].id || currentId; setBusy(true); setFeedback({ tone: 'saving', text: 'Procesando…' }); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'saving' }));
       const adminAction = { review: 'MARK_IN_REVIEW', cancel: 'CANCEL', note: 'COMMENT' }[action], fingerprint = [currentId, action, actionNote.trim(), quoteAmount, quoteValidUntil].join('|'); let persistedEvent = null;
-      try { const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey(); actionAttempts.current.set(fingerprint, actionId); if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId); else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') { const result=await window.ProgramRequestRepository.transitionWorkflow(currentId,action==='reject'?'REJECT':'ADVANCE',actionNote.trim(),actionId,action==='quoteAdvance'?{amount:quoteAmount,validUntil:quoteValidUntil}:null);persistedEvent=result.event; } else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId,actionNote.trim(),actionId); else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim()); else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
+      try { if (action === 'approveLoan') { const review = await inspectApproval(); if (review.phase !== 'READY') { setFeedback(null); setRowFeedback(all => Object.assign({}, all, { [currentId]: 'error' })); return; } } const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey(); actionAttempts.current.set(fingerprint, actionId); if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId); else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') { const result=await window.ProgramRequestRepository.transitionWorkflow(currentId,action==='reject'?'REJECT':'ADVANCE',actionNote.trim(),actionId,action==='quoteAdvance'?{amount:quoteAmount,validUntil:quoteValidUntil}:null);persistedEvent=result.event; } else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId,actionNote.trim(),actionId); else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim()); else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
         const refreshed = await load(true), verified = refreshed.find((row) => row.id === currentId), verifiedDetail=await window.ProgramRequestRepository.adminFlowDetail(currentId), verifiedCurrent=currentStage(verifiedDetail); let valid = Boolean(verified); if (action === 'review') valid=valid&&verified.status==='in_review'; else if (action === 'reject') valid=valid&&verified.status==='rejected'&&verifiedCurrent&&verifiedCurrent.outcome==='failure'; else if (action === 'cancel') valid=valid&&verified.status==='cancelled'; else if (['advance','quoteAdvance','approveProduct','approveLoan'].includes(action)) valid=valid&&targetBefore&&verifiedCurrent&&verifiedCurrent.id===targetBefore.id; else if (action === 'handoff') valid=valid&&verified.status==='approved'&&(verified.financial_processing_status==='handed_off'||verifiedDetail.google_sync&&['pending','processing','error'].includes(verifiedDetail.google_sync.phase)); if (valid && persistedEvent) valid=verifiedDetail.admin_events_available&&verifiedDetail.admin_events.some((event)=>event.id===persistedEvent.id); if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
         actionAttempts.current.delete(fingerprint); setDetail(verifiedDetail); setConfirmation(null);
         const authorized = finalApproval && verifiedDetail.status === 'approved' && detail.status !== 'approved';
@@ -518,7 +587,7 @@
         setFeedback({ tone: ['reject','cancel'].includes(action) ? 'warning' : 'success', text: title });
         window.dispatchEvent(new CustomEvent('suti:request-changed'));
  setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'success' })); setActionNote(''); setQuoteAmount(''); if (advance && nextId !== currentId) setSelectedId(nextId);
-      } catch (actionError) { setFeedback({ tone: 'error', text: humanActionError(actionError) + ' No se confirmó el cambio; puedes reintentar.' }); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'error' })); } finally { actionLock.current = false; setBusy(false); }
+      } catch (actionError) { setFeedback({ tone: 'error', text: humanActionError(actionError) }); if (action === 'approveLoan') setResolution(approvalRecovery(actionError)); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'error' })); } finally { actionLock.current = false; setBusy(false); }
     };
     const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
     const closeDetail = () => { if (busy || confirmation) return; setViewer(null); setDetailOpen(false); };
@@ -580,6 +649,10 @@
       return h(React.Fragment, null,
         h('div', { className: 'finwb-detail-scroll' },
           h('div', { className: 'finwb-detail-column finwb-detail-main' },
+          detail.program_id === 'prestamo' && detail.status === 'cancelled' && app.admin.has('affiliates.impersonate') && (detail.admin_events || []).some(event => event.action === 'CANCEL' && /^Se cancela para presentar una nueva solicitud/.test(event.comment || '')) && h('section', { className: 'finwb-card', 'data-approval-renewal-resume': 'true' },
+            h('h3', null, 'Nueva solicitud con condiciones actuales'),
+            h('p', null, 'Esta solicitud quedó cancelada. Puedes abrir la atención asistida para acompañar al afiliado en una nueva solicitud.'),
+            h('button', { className: 'finwb-primary', disabled: busy, onClick: () => { setResolution({ phase: 'CANCELLED', message: 'La solicitud anterior está cancelada. La nueva solicitud requiere completar y confirmar sus propios datos.' }); setConfirmation({ action: 'approveLoan', title: 'Nueva solicitud', fields: [['Solicitud anterior', detail.folio], ['Afiliado', detail.nombre]], message: '' }); } }, 'Continuar con nueva solicitud')),
           renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null),
           approval && renderConditions('Condiciones aprobadas', approval, true),
           renderProductPayment(productPayment),
@@ -622,7 +695,7 @@
               h('h2', { id: modalTitleId }, detailFullName(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected)),
               h('div', { className: 'finwb-sub' }, detailProgramLabel(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected) + ' · ' + requestTypeLabel(selected) + ' · ' + (index + 1) + ' de ' + visible.length)),
             badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
-        }, actionResult && h(FinancialAuthorizationResult, { result: actionResult, onClose: () => setActionResult(null) }), confirmation && h(FinancialActionDialog, { model: confirmation, busy, error: feedback && feedback.tone === 'error' ? feedback.text : null, onClose: () => { if (!actionLock.current) setConfirmation(null); }, onConfirm: () => save(confirmation.advance, true) }), renderDetail(), detailPhase !== 'loaded' && h('footer', { className: 'finwb-actionbar', 'data-financial-safe-action-bar': 'true' }, renderNavigation()))));
+        }, actionResult && h(FinancialAuthorizationResult, { result: actionResult, onClose: () => setActionResult(null) }), confirmation && h(FinancialActionDialog, { model: confirmation, busy, resolution, canAssist: app.admin.has('affiliates.impersonate'), onReview: reviewApproval, onRenew: renewRequest, onAssist: beginNewRequest, onRefresh: () => { setConfirmation(null); setResolution(null); setDetailNonce(n => n + 1); load(true); }, error: feedback && feedback.tone === 'error' ? feedback.text : null, onClose: () => { if (!actionLock.current) { setConfirmation(null); if (resolution?.phase === 'CANCELLED') load(true); setResolution(null); } }, onConfirm: () => save(confirmation.advance, true) }), renderDetail(), detailPhase !== 'loaded' && h('footer', { className: 'finwb-actionbar', 'data-financial-safe-action-bar': 'true' }, renderNavigation()))));
   }
 
   function EstadoBadge({ estado }) {

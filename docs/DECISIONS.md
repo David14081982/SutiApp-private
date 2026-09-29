@@ -1,4 +1,15 @@
 # Registro de decisiones arquitectónicas
+## Resolución guiada de autorizaciones — 2026-09-28
+
+H-LOAN-APPROVAL-GUIDED-RESOLUTION-001. El propietario elige expresamente exigir
+una nueva solicitud con las condiciones actuales cuando las condiciones de una
+solicitud anterior ya no permiten autorizarla. No se permite aprobarla conservando
+condiciones vencidas ni cambiar su captura. Finanzas puede revisar el bloqueo,
+confirmar su cancelación con motivo preparado y continuar en atención asistida
+con el permiso existente. La nueva solicitud requiere sus propios términos, firma
+y validaciones. La revisión previa no escribe datos ni sincroniza Google.
+
+
 
 ## Motivo opcional en Afiliados — H-AFFILIATES-OPTIONAL-REASON-001 — 2026-09-24
 

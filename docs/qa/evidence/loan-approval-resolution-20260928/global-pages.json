@@ -1,0 +1,10 @@
+{
+  "status": "FAIL",
+  "attempt": "initial",
+  "source": "captured tool stderr",
+  "errors": [
+    "E_PROGRAM_CATALOG_ITEM_ASSETS: BROKEN_SIGNED_URL IMAGE_TIMEOUT",
+    "E_PROGRAM_CATALOG_ITEM_ASSETS: BROKEN_IMAGE REAL_GALLERY_VIEWER"
+  ],
+  "supersededBy": "global-pages-retry.json"
+}

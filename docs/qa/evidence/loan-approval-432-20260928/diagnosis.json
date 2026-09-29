@@ -1,0 +1,267 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-09-29T00:00:13.811Z",
+  "scope": "DIAGNOSIS_ONLY",
+  "request": {
+    "folio": "SR-2026-000432",
+    "created_at": "2026-09-28 21:02:55.811644+00",
+    "status": "in_review",
+    "financial_processing_status": "pending",
+    "requested_amount": "50000.00",
+    "requested_term": "12.00",
+    "approved": false,
+    "criterion_identity": "SUPABASE_RULE:4b1e26a7-727c-46dd-a347-279c69ea7c7c",
+    "financial_result": {
+      "fund": "Caja de Ahorro",
+      "rate": 1.5,
+      "total": 59180,
+      "action": "quote",
+      "amount": 50000,
+      "source": "SUPABASE_FINANCIAL_CRITERIA",
+      "maxTerm": 24,
+      "program": "prestamo",
+      "criteria": {
+        "termLabel": "24 Qnas"
+      },
+      "interest": 9000,
+      "maxAmount": 50000,
+      "customTerm": {
+        "max": 24,
+        "min": 1,
+        "step": 1
+      },
+      "ratePeriod": "quincenal",
+      "eligibility": {
+        "status": "AVAILABLE",
+        "eligible": true
+      },
+      "resolved_at": "2026-09-28T21:02:55.734Z",
+      "termOptions": [
+        {
+          "term": 6,
+          "total": 54590,
+          "interest": 4500,
+          "paymentCount": 6,
+          "paymentPerPeriod": 9098.33,
+          "administrativeFeeTotal": 90,
+          "administrativeFeePerPayment": 15
+        },
+        {
+          "term": 12,
+          "total": 59180,
+          "interest": 9000,
+          "paymentCount": 12,
+          "paymentPerPeriod": 4931.67,
+          "administrativeFeeTotal": 180,
+          "administrativeFeePerPayment": 15
+        },
+        {
+          "term": 18,
+          "total": 63770,
+          "interest": 13500,
+          "paymentCount": 18,
+          "paymentPerPeriod": 3542.78,
+          "administrativeFeeTotal": 270,
+          "administrativeFeePerPayment": 15
+        },
+        {
+          "term": 24,
+          "total": 68360,
+          "interest": 18000,
+          "paymentCount": 24,
+          "paymentPerPeriod": 2848.33,
+          "administrativeFeeTotal": 360,
+          "administrativeFeePerPayment": 15
+        }
+      ],
+      "paymentCount": 12,
+      "paymentPeriod": "quincenal",
+      "paymentPerPeriod": 4931.67,
+      "administrativeFeeRule": "$15 por pago",
+      "administrativeFeeTotal": 180,
+      "administrativeFeeVersion": "LEGACY_EQUIVALENCE_2026-08-23",
+      "administrativeFeePerPayment": 15
+    },
+    "request_fingerprint": "bfe73e2326dec3d948f2ea2695f85da2"
+  },
+  "versions": [
+    {
+      "id": "26993b86-f660-413d-a6b2-a22d6f3efe78",
+      "version": 1,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-08-27 08:38:29.909412+00",
+      "published_at": "2026-08-27 08:38:29.909412+00",
+      "max_amount": "20000.00",
+      "rate_percent": "2.00000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": null
+    },
+    {
+      "id": "d2926f08-97a3-4498-a344-5de9b57bc439",
+      "version": 2,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-21 13:38:06.162858+00",
+      "published_at": "2026-09-21 13:38:11.951239+00",
+      "max_amount": "20000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "26993b86-f660-413d-a6b2-a22d6f3efe78"
+    },
+    {
+      "id": "817095c8-120a-45bb-9b3b-9cfc1260aad8",
+      "version": 3,
+      "lifecycle_status": "DRAFT",
+      "created_at": "2026-09-24 16:02:38.81419+00",
+      "published_at": null,
+      "max_amount": "40000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "d2926f08-97a3-4498-a344-5de9b57bc439"
+    },
+    {
+      "id": "d5c0e588-e83d-4708-a50a-767c5d4d791c",
+      "version": 4,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-24 16:04:28.138296+00",
+      "published_at": "2026-09-24 16:04:31.016756+00",
+      "max_amount": "40000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "d2926f08-97a3-4498-a344-5de9b57bc439"
+    },
+    {
+      "id": "ea0b91a7-e0d3-4286-ae2a-0c590d0bfc9a",
+      "version": 5,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-24 16:15:59.716819+00",
+      "published_at": "2026-09-24 16:16:01.605336+00",
+      "max_amount": "30000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "d5c0e588-e83d-4708-a50a-767c5d4d791c"
+    },
+    {
+      "id": "4b1e26a7-727c-46dd-a347-279c69ea7c7c",
+      "version": 6,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-28 20:22:52.645789+00",
+      "published_at": "2026-09-28 20:22:54.15154+00",
+      "max_amount": "50000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "ea0b91a7-e0d3-4286-ae2a-0c590d0bfc9a"
+    },
+    {
+      "id": "ac0db76e-63df-4582-94fb-e1e6ed679c84",
+      "version": 7,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-28 21:06:06.49137+00",
+      "published_at": "2026-09-28 21:06:08.99815+00",
+      "max_amount": "30000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "4b1e26a7-727c-46dd-a347-279c69ea7c7c"
+    },
+    {
+      "id": "41f6b4ff-df5c-4563-9bd4-da819453e840",
+      "version": 8,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-28 21:10:26.18431+00",
+      "published_at": "2026-09-28 21:10:27.85838+00",
+      "max_amount": "50000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "ac0db76e-63df-4582-94fb-e1e6ed679c84"
+    },
+    {
+      "id": "14808800-cd87-4b81-8b96-70e710c7983a",
+      "version": 9,
+      "lifecycle_status": "EXPIRED",
+      "created_at": "2026-09-28 21:12:52.086494+00",
+      "published_at": "2026-09-28 21:12:53.523895+00",
+      "max_amount": "50000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "41f6b4ff-df5c-4563-9bd4-da819453e840"
+    },
+    {
+      "id": "f5cb23d1-ab18-4538-9b2e-7ef7766cf811",
+      "version": 10,
+      "lifecycle_status": "PUBLISHED",
+      "created_at": "2026-09-28 21:15:14.655378+00",
+      "published_at": "2026-09-28 21:15:16.6801+00",
+      "max_amount": "30000.00",
+      "rate_percent": "1.50000000",
+      "max_term": 24,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "supersedes_rule_id": "41f6b4ff-df5c-4563-9bd4-da819453e840"
+    }
+  ],
+  "currentRules": [
+    {
+      "id": "prestamo--caja-de-ahorro--r10",
+      "fund": "Caja de Ahorro",
+      "rate": 1.5,
+      "union": "SUTISSSTESON",
+      "rule_id": "f5cb23d1-ab18-4538-9b2e-7ef7766cf811",
+      "category": "Base",
+      "max_term": 24,
+      "sheet_row": null,
+      "max_amount": 30000,
+      "program_id": "prestamo",
+      "term_label": "24 Qnas",
+      "rate_factor": 0.015,
+      "available_on": null,
+      "payment_count": 24,
+      "payment_period": "quincenal",
+      "review_signals": [],
+      "review_required": false,
+      "visibility_mode": "AUTO",
+      "lifecycle_status": "PUBLISHED",
+      "criterion_identity": "SUPABASE_RULE:f5cb23d1-ab18-4538-9b2e-7ef7766cf811",
+      "financial_union_code": "SUTISSSTESON",
+      "source_snapshot_hash": null,
+      "financial_employee_category_code": "BASE"
+    }
+  ],
+  "runtimeRuleCount": 146,
+  "deployedBundleSha256": "756961675da3355bf04d95cf57626fc31d1272b7f89c009410de92d689c573de",
+  "checks": {
+    "requestHasNoApproval": true,
+    "submittedRuleIsExpired": true,
+    "exactRuntimeMatchCountIsZero": true,
+    "currentRuleIsDifferent": true,
+    "currentLimitBelowRequestedAmount": true,
+    "deployedApprovalIdentityGuard": true,
+    "deployedGuardBeforeAdvanceRepairAndWriter": true,
+    "twelvePaymentsOutsideAdvanceRepair": true,
+    "requestUnchanged": true
+  },
+  "productionWrites": 0,
+  "approvalAttempts": 0,
+  "googleCalls": 0,
+  "limitations": [
+    "No real approval attempted",
+    "Later approval gates not exercised",
+    "No production repair performed"
+  ]
+}

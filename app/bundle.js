@@ -46853,12 +46853,51 @@ Object.assign(window, {
       'aria-label': 'Cerrar detalle de solicitud'
     }, '×')), children);
   }
+  function approvalRecovery(error) {
+    const code = String(error && (error.code || error.message) || '');
+    if (/CONDITIONS_CHANGED|FINANCIAL_PROGRAM_NOT_ELIGIBLE/.test(code)) return {
+      phase: 'NEW_REQUEST_REQUIRED',
+      code,
+      message: 'Las condiciones de esta solicitud ya no están vigentes. Es necesario cancelarla y presentar una nueva con las condiciones actuales.'
+    };
+    if (/SIGNATURE_AND_TERMS_REQUIRED|REQUESTED_AMOUNT_TERM_CONTRACT_REQUIRED|FINANCIAL_SUBMISSION|REQUIRED_PRIVATE_DOCUMENT_MISSING|GUARANTOR_DOCUMENTS_NOT_AVAILABLE|REQUIRED_DOCUMENTS_MISSING/.test(code)) return {
+      phase: 'NEW_REQUEST_REQUIRED',
+      code,
+      message: 'La solicitud enviada no contiene todos los requisitos válidos. Sus documentos, firma y condiciones se conservan como historial; una nueva solicitud permitirá completarlos y validarlos nuevamente.'
+    };
+    if (/ADMIN_APPROVAL_REQUIRED|DENIED|42501|AUTH_/.test(code)) return {
+      phase: 'BLOCKED',
+      code,
+      message: 'Tu sesión no tiene autorización para continuar. Un administrador con permisos de Finanzas debe realizar esta acción.'
+    };
+    if (/NOT_APPROVABLE|TRANSITION_INVALID|IMMUTABLE|WORKFLOW_|READBACK/.test(code)) return {
+      phase: 'REFRESH',
+      code,
+      message: 'El estado pudo cambiar. Actualiza la solicitud para comprobar el resultado antes de realizar otra acción.'
+    };
+    if (/AFFILIATE_/.test(code)) return {
+      phase: 'BLOCKED',
+      code,
+      message: 'El perfil del afiliado requiere revisión en Administración → Afiliados. Corrige allí los datos indicados antes de volver a verificar esta solicitud.'
+    };
+    return {
+      phase: 'RETRY',
+      code,
+      message: 'No se pudo verificar la solicitud. Comprueba la conexión y vuelve a revisar. Esta revisión no autoriza ni cancela solicitudes.'
+    };
+  }
   function FinancialActionDialog({
     model,
     busy,
     error,
     onConfirm,
-    onClose
+    onClose,
+    resolution,
+    onReview,
+    onRenew,
+    onAssist,
+    onRefresh,
+    canAssist
   }) {
     const ref = React.useRef(null),
       titleId = React.useId();
@@ -46917,7 +46956,7 @@ Object.assign(window, {
         margin: '0 0 18px',
         fontSize: 23
       }
-    }, model.title), h('dl', {
+    }, resolution && resolution.phase === 'CANCELLED' ? 'Solicitud cancelada' : resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? 'Resolver solicitud' : model.title), h('dl', {
       className: 'finwb-kv'
     }, model.fields.map(([label, value]) => h('div', {
       key: label,
@@ -46934,7 +46973,7 @@ Object.assign(window, {
         margin: '4px 0 12px',
         fontWeight: 750
       }
-    }, value)))), h('p', {
+    }, label === 'Estado / etapa resultante' && resolution && ['NEW_REQUEST_REQUIRED', 'CANCELLED'].includes(resolution.phase) ? 'Cancelada · requiere nueva solicitud' : value)))), (!resolution || resolution.phase === 'READY') && h('p', {
       style: {
         padding: 14,
         borderRadius: 14,
@@ -46947,7 +46986,25 @@ Object.assign(window, {
         color: '#A32921',
         lineHeight: 1.5
       }
-    }, error), h('div', {
+    }, error), resolution && h('section', {
+      'data-approval-resolution': resolution.phase,
+      role: 'status',
+      style: {
+        padding: 14,
+        borderRadius: 14,
+        background: '#FFF3DC',
+        lineHeight: 1.5
+      }
+    }, h('strong', null, resolution.phase === 'READY' ? 'Revisión completada' : resolution.phase === 'CANCELLED' ? 'Continúa con una nueva solicitud' : 'Cómo resolverlo'), h('p', null, resolution.message || (resolution.phase === 'READY' ? 'Los requisitos comprobados permiten continuar. Se volverán a validar al autorizar.' : 'Las condiciones cambiaron. Debes cancelar esta solicitud y presentar una nueva con las condiciones actuales.')), resolution.current && h('dl', {
+      className: 'finwb-kv'
+    }, [['Monto solicitado', moneyValue(resolution.submitted && resolution.submitted.amount)], ['Límite vigente', moneyValue(resolution.current.maxAmount)], ['Tasa vigente por periodo', resolution.current.rate + '%'], ['Plazo máximo vigente', resolution.current.maxTerm + ' pagos']].map(([label, value]) => h('div', {
+      key: label
+    }, h('dt', null, label), h('dd', {
+      style: {
+        margin: '3px 0 8px',
+        fontWeight: 750
+      }
+    }, value)))), resolution.phase === 'NEW_REQUEST_REQUIRED' && h('p', null, 'Al confirmar la cancelación, se registrará el motivo y se conservarán el folio, los documentos y el historial. No se enviará una nueva solicitud automáticamente.'), resolution.phase === 'CANCELLED' && h('p', null, canAssist ? 'Abre la atención asistida y selecciona Suti Préstamo. Elige un monto permitido y completa documentos, términos y firma para enviar una nueva solicitud.' : 'El afiliado puede entrar a Suti Préstamo y enviar una nueva solicitud. La atención asistida requiere el permiso correspondiente.')), h('div', {
       style: {
         display: 'flex',
         flexWrap: 'wrap',
@@ -46961,7 +47018,27 @@ Object.assign(window, {
       autoFocus: true,
       disabled: busy,
       onClick: onClose
-    }, 'Volver'), h('button', {
+    }, 'Volver'), model.action === 'approveLoan' && (!resolution || ['READY', 'RETRY', 'BLOCKED'].includes(resolution.phase)) && h('button', {
+      type: 'button',
+      className: 'finwb-secondary',
+      disabled: busy,
+      onClick: onReview
+    }, error ? 'Resolver solicitud' : 'Revisar solicitud'), resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onRenew
+    }, busy ? 'Verificando…' : 'Confirmar cancelación para nueva solicitud') : resolution && resolution.phase === 'CANCELLED' ? canAssist && h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onAssist
+    }, busy ? 'Abriendo…' : 'Abrir atención asistida') : resolution && resolution.phase === 'REFRESH' ? h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onRefresh
+    }, 'Actualizar solicitud') : (!resolution || resolution.phase === 'READY') && h('button', {
       type: 'button',
       className: 'finwb-primary',
       disabled: busy,
@@ -47145,6 +47222,8 @@ Object.assign(window, {
       actionLock = React.useRef(false);
     const [confirmation, setConfirmation] = useState(null),
       [actionResult, setActionResult] = useState(null);
+    const [resolution, setResolution] = useState(null);
+    const resolutionAttempt = React.useRef(null);
     useEffect(ensureWorkbenchStyles, []);
     const load = React.useCallback(async quiet => {
       try {
@@ -47274,6 +47353,94 @@ Object.assign(window, {
       const next = Math.max(0, Math.min(visible.length - 1, (index < 0 ? 0 : index) + delta));
       setSelectedId(visible[next].id);
     };
+    const inspectApproval = async () => {
+      try {
+        const result = await window.FinancialLegacyRepository.reviewApproval(detail.id);
+        const next = result.idempotent ? {
+          phase: 'REFRESH',
+          message: 'La solicitud ya tiene autorización. Actualiza para ver su estado.'
+        } : result;
+        if (!['READY', 'NEW_REQUEST_REQUIRED', 'REFRESH'].includes(next.phase) || result.request_id !== detail.id) throw Error('APPROVAL_REVIEW_INVALID');
+        setResolution(next);
+        return next;
+      } catch (failure) {
+        const next = approvalRecovery(failure);
+        setResolution(next);
+        return next;
+      }
+    };
+    const reviewApproval = async () => {
+      if (busy || actionLock.current) return;
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
+      try {
+        await inspectApproval();
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
+    };
+    const renewRequest = async () => {
+      if (busy || actionLock.current || !detail || resolution?.phase !== 'NEW_REQUEST_REQUIRED') return;
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
+      const request = detail;
+      try {
+        // Always re-read first, including retries after an ambiguous response.
+        let fresh = await window.ProgramRequestRepository.adminFlowDetail(request.id);
+        if (fresh.status !== 'cancelled') {
+          const diagnosis = await inspectApproval();
+          if (diagnosis.phase !== 'NEW_REQUEST_REQUIRED') return;
+          const reason = diagnosis.code === 'CONDITIONS_CHANGED' || diagnosis.code === 'FINANCIAL_PROGRAM_NOT_ELIGIBLE' ? 'Se cancela para presentar una nueva solicitud con las condiciones financieras vigentes. Las condiciones originales ya no permiten autorizar esta solicitud.' : 'Se cancela para presentar una nueva solicitud y completar nuevamente los requisitos, documentos, términos y firma.';
+          if (!resolutionAttempt.current || resolutionAttempt.current.requestId !== request.id) resolutionAttempt.current = {
+            requestId: request.id,
+            key: window.ProgramRequestRepository.newIdempotencyKey()
+          };
+          const event = await window.ProgramRequestRepository.recordAdminAction(request.id, 'CANCEL', reason, resolutionAttempt.current.key);
+          fresh = await window.ProgramRequestRepository.adminFlowDetail(request.id);
+          if (fresh.status !== 'cancelled' || !fresh.admin_events?.some(item => item.id === event.id)) throw Error('FINANCIAL_ACTION_READBACK_FAILED');
+        }
+        setDetail(fresh);
+        setResolution({
+          phase: 'CANCELLED',
+          message: 'La cancelación quedó confirmada. La solicitud anterior se conserva en el historial; todavía no se ha creado una nueva.'
+        });
+        window.dispatchEvent(new CustomEvent('suti:request-changed'));
+      } catch (failure) {
+        setFeedback({
+          tone: 'error',
+          text: 'No se pudo confirmar la cancelación. Actualiza la solicitud antes de continuar.'
+        });
+        setResolution({
+          phase: 'REFRESH',
+          message: humanActionError(failure)
+        });
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
+    };
+    const beginNewRequest = async () => {
+      if (busy || actionLock.current || resolution?.phase !== 'CANCELLED' || !app.admin.has('affiliates.impersonate')) return;
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
+      try {
+        const fresh = await window.ProgramRequestRepository.adminFlowDetail(detail.id);
+        if (fresh.status !== 'cancelled') throw Error('FINANCIAL_ACTION_READBACK_FAILED');
+        await window.AdminRepository.startImpersonation(detail.affiliate_id, 'Nueva solicitud con condiciones actuales tras cancelación de ' + detail.folio);
+      } catch (_) {
+        setFeedback({
+          tone: 'error',
+          text: 'La solicitud anterior sigue cancelada. No se pudo abrir la atención asistida; verifica tu permiso y vuelve a intentarlo.'
+        });
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
+    };
     const save = async (advance, confirmed = false) => {
       if (!detail || !action || busy || actionLock.current) return;
       const targetBefore = nextStage(detail),
@@ -47312,6 +47479,7 @@ Object.assign(window, {
         const label = action === 'reject' ? 'Rechazar solicitud' : action === 'cancel' ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
         const destination = action === 'reject' ? 'Rechazada' : action === 'cancel' ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
         setFeedback(null);
+        setResolution(null);
         setConfirmation({
           action,
           advance,
@@ -47342,6 +47510,16 @@ Object.assign(window, {
         fingerprint = [currentId, action, actionNote.trim(), quoteAmount, quoteValidUntil].join('|');
       let persistedEvent = null;
       try {
+        if (action === 'approveLoan') {
+          const review = await inspectApproval();
+          if (review.phase !== 'READY') {
+            setFeedback(null);
+            setRowFeedback(all => Object.assign({}, all, {
+              [currentId]: 'error'
+            }));
+            return;
+          }
+        }
         const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
         actionAttempts.current.set(fingerprint, actionId);
         if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') {
@@ -47387,8 +47565,9 @@ Object.assign(window, {
       } catch (actionError) {
         setFeedback({
           tone: 'error',
-          text: humanActionError(actionError) + ' No se confirmó el cambio; puedes reintentar.'
+          text: humanActionError(actionError)
         });
+        if (action === 'approveLoan') setResolution(approvalRecovery(actionError));
         setRowFeedback(all => Object.assign({}, all, {
           [currentId]: 'error'
         }));
@@ -47661,7 +47840,25 @@ Object.assign(window, {
         className: 'finwb-detail-scroll'
       }, h('div', {
         className: 'finwb-detail-column finwb-detail-main'
-      }, renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
+      }, detail.program_id === 'prestamo' && detail.status === 'cancelled' && app.admin.has('affiliates.impersonate') && (detail.admin_events || []).some(event => event.action === 'CANCEL' && /^Se cancela para presentar una nueva solicitud/.test(event.comment || '')) && h('section', {
+        className: 'finwb-card',
+        'data-approval-renewal-resume': 'true'
+      }, h('h3', null, 'Nueva solicitud con condiciones actuales'), h('p', null, 'Esta solicitud quedó cancelada. Puedes abrir la atención asistida para acompañar al afiliado en una nueva solicitud.'), h('button', {
+        className: 'finwb-primary',
+        disabled: busy,
+        onClick: () => {
+          setResolution({
+            phase: 'CANCELLED',
+            message: 'La solicitud anterior está cancelada. La nueva solicitud requiere completar y confirmar sus propios datos.'
+          });
+          setConfirmation({
+            action: 'approveLoan',
+            title: 'Nueva solicitud',
+            fields: [['Solicitud anterior', detail.folio], ['Afiliado', detail.nombre]],
+            message: ''
+          });
+        }
+      }, 'Continuar con nueva solicitud')), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
         className: 'finwb-detail-column finwb-detail-context'
       }, h('div', {
         className: 'finwb-card finwb-card-group'
@@ -48023,9 +48220,24 @@ Object.assign(window, {
     }), confirmation && h(FinancialActionDialog, {
       model: confirmation,
       busy,
+      resolution,
+      canAssist: app.admin.has('affiliates.impersonate'),
+      onReview: reviewApproval,
+      onRenew: renewRequest,
+      onAssist: beginNewRequest,
+      onRefresh: () => {
+        setConfirmation(null);
+        setResolution(null);
+        setDetailNonce(n => n + 1);
+        load(true);
+      },
       error: feedback && feedback.tone === 'error' ? feedback.text : null,
       onClose: () => {
-        if (!actionLock.current) setConfirmation(null);
+        if (!actionLock.current) {
+          setConfirmation(null);
+          if (resolution?.phase === 'CANCELLED') load(true);
+          setResolution(null);
+        }
       },
       onConfirm: () => save(confirmation.advance, true)
     }), renderDetail(), detailPhase !== 'loaded' && h('footer', {

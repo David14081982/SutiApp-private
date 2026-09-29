@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "otherChunksPreserved": true,
+  "bundleSha256": "7319c30162f8048c55b363910e64827aa67fc4be377a8822efb4d023907d3a05",
+  "originalSha256": "6a13594346f98e10ff1607f20dd2faa191efd9283f0e2526bd34feb129221a8a"
+}

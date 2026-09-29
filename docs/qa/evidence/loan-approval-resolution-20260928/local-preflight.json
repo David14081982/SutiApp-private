@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "mode": "local-edge-real-reads",
+  "phase": "NEW_REQUEST_REQUIRED",
+  "submittedAmount": 50000,
+  "currentLimit": 30000,
+  "anonymousDenied": true,
+  "requestUnchanged": true,
+  "approvalAttempts": 0,
+  "productionBusinessWrites": 0,
+  "calls": [
+    {
+      "route": "rpc/has_admin_permission",
+      "method": "POST"
+    },
+    {
+      "route": "rpc/has_admin_permission",
+      "method": "POST"
+    },
+    {
+      "route": "program_requests",
+      "method": "GET"
+    },
+    {
+      "route": "affiliates",
+      "method": "GET"
+    },
+    {
+      "route": "segmentation_catalog_entries",
+      "method": "GET"
+    },
+    {
+      "route": "rpc/get_financial_runtime_rules",
+      "method": "POST"
+    },
+    {
+      "route": "rpc/get_current_loan_term_policy",
+      "method": "POST"
+    },
+    {
+      "route": "financial_rules",
+      "method": "GET"
+    },
+    {
+      "route": "financial_rules",
+      "method": "GET"
+    },
+    {
+      "route": "rpc/has_admin_permission",
+      "method": "POST"
+    }
+  ]
+}

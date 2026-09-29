@@ -26,6 +26,7 @@ const ACTION_KEYS: Record<string, Set<string>> = {
   quote: new Set(["action", "program_id", "amount", "term"]),
   resolveSimulation: new Set(["action", "program_id", "amount", "term"]),
   approve: new Set(["action", "request_id", "comment"]),
+  approvalReview: new Set(["action", "request_id"]),
   handoff: new Set(["action", "request_id"]),
   syncRequest: new Set(["action", "request_id"]),
   syncRequestQueue: new Set(["action"]),
@@ -130,7 +131,7 @@ function validPayload(body: Record<string, unknown>) {
       Array.isArray(body.document_ids) && body.document_ids.length <= 50 && body.document_ids.every((id) => typeof id === "string" && UUID_PATTERN.test(id)) &&
       typeof body.idempotency_key === "string" && UUID_PATTERN.test(body.idempotency_key);
   }
-  if (action === "handoff" || action === "approve" || action === "syncRequest") {
+  if (action === "handoff" || action === "approve" || action === "approvalReview" || action === "syncRequest") {
     return typeof body.request_id === "string" && (body.comment === undefined ||
       typeof body.comment === "string" && body.comment.length <= 2000) &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.request_id);
@@ -911,7 +912,7 @@ function capturedAdvanceApprovalResult(rule: CriteriaRule, request: Record<strin
   return result;
 }
 
-async function approveRequest(body: Record<string, unknown>, supabaseUrl: string, authHeader: string, approvedBy: string) {
+async function approveRequest(body: Record<string, unknown>, supabaseUrl: string, authHeader: string, approvedBy: string, reviewOnly = false) {
   const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
     global: { headers: { Authorization: authHeader } }, auth: { persistSession: false },
   });
@@ -925,6 +926,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
   if (requestError) return { status: 500, body: { error: "REQUEST_LOOKUP_FAILED" } };
   if (!request || request.financial_processing_status == null) return { status: 404, body: { error: "FINANCIAL_REQUEST_NOT_FOUND" } };
   if (request.financial_approval_snapshot) return { status: 200, body: { data: { request_id: request.id, status: request.status, processing_status: request.financial_processing_status, idempotent: true } } };
+  if (!["requires_financial_processing", "in_review"].includes(request.status)) return { status: 409, body: { error: "FINANCIAL_REQUEST_NOT_APPROVABLE" } };
   if (!["prestamo", "caja", "nomina"].includes(request.program_id) || !["benefit", "quote", "interest"].includes(request.request_type)) {
     return { status: 409, body: { error: "NON_LOAN_REQUEST" } };
   }
@@ -956,7 +958,33 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     const termPolicy = await readTermPolicy(userClient);
     const criterionIdentity = request.financial_submission_snapshot?.criterion_identity;
     const selectedRules = rules.filter((rule) => rule.criterion_identity === criterionIdentity);
-    if (!criterionIdentity || selectedRules.length !== 1) throw new Error("CONDITIONS_CHANGED");
+    if (!criterionIdentity || selectedRules.length !== 1) {
+      if (reviewOnly && criterionIdentity) {
+        // Historical rule is read only to explain the replacement. It is never
+        // selected as an approval rule or used to reprice the submitted request.
+        let lookup = privileged.from("financial_rules").select("id,lineage_id");
+        lookup = criterionIdentity.startsWith("SUPABASE_RULE:")
+          ? lookup.eq("id", criterionIdentity.slice("SUPABASE_RULE:".length))
+          : lookup.eq("legacy_criterion_identity", criterionIdentity);
+        const { data: historical, error: historicalError } = await lookup.maybeSingle();
+        if (historicalError) return { status: 503, body: { error: "FINANCIAL_CRITERIA_UNAVAILABLE" } };
+        let current = null;
+        if (historical?.lineage_id) {
+          const { data: versions, error: versionError } = await privileged.from("financial_rules")
+            .select("id").eq("lineage_id", historical.lineage_id).in("lifecycle_status", ["PUBLISHED", "SCHEDULED"]);
+          if (versionError) return { status: 503, body: { error: "FINANCIAL_CRITERIA_UNAVAILABLE" } };
+          const matches = rules.filter(rule => (versions || []).some(version => version.id === rule.rule_id));
+          if (matches.length === 1) current = { maxAmount: matches[0].max_amount, rate: matches[0].rate,
+            maxTerm: matches[0].max_term, fund: matches[0].fund };
+        }
+        const submitted = request.financial_submission_snapshot?.financialResult;
+        return { status: 200, body: { data: { phase: "NEW_REQUEST_REQUIRED", code: "CONDITIONS_CHANGED",
+          request_id: request.id, submitted: submitted ? { amount: submitted.amount, rate: submitted.rate,
+            total: submitted.total, paymentCount: submitted.paymentCount, maxAmount: submitted.maxAmount } : null,
+          current } } };
+      }
+      throw new Error("CONDITIONS_CHANGED");
+    }
     const capturedAdvance = capturedAdvanceApprovalResult(selectedRules[0], request);
     result = capturedAdvance || await resolveQuote(privileged, rules, {
       numero_control: request.numero_control, financial_union: union,
@@ -1011,6 +1039,7 @@ async function approveRequest(body: Record<string, unknown>, supabaseUrl: string
     financialResult: result, approved_by: approvedBy, approved_at: new Date().toISOString(),
     google_export: { contract_version: EXPORT_CONTRACT_VERSION, row: googleRow, payload_sha256: payloadHash },
   };
+  if (reviewOnly) return { status: 200, body: { data: { request_id: request.id, phase: "READY" } } };
   const { data: updated, error: updateError } = await privileged.rpc("approve_financial_program_request", {
     p_request_id: request.id, p_snapshot: snapshot, p_approved_by: approvedBy,
     p_comment: typeof body.comment === "string" ? body.comment : "",
@@ -1192,6 +1221,11 @@ Deno.serve(async (req) => {
     const { error } = await supabase.rpc("request_program_request_google_sync", { p_request_id: body.request_id });
     if (error) return reply(403, { error: "REQUEST_SYNC_DENIED" }, origin || null);
     return reply(200, { data: { google_sync: await synchronizeRequestRegister(privilegedClient(supabaseUrl), String(body.request_id)) } }, origin || null);
+  }
+  if (body.action === "approvalReview") {
+    const review = await approveRequest(body, supabaseUrl, authHeader, userData.user.id, true);
+    // Do not attachRequestRegister: a preflight must never write or deliver.
+    return reply(review.status, review.body, origin || null);
   }
   if (body.action === "approve") {
     const approval = await approveRequest(body, supabaseUrl, authHeader, userData.user.id);

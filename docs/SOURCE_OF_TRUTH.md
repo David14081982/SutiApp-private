@@ -1,4 +1,17 @@
 # Fuentes de verdad
+## Resolución guiada de autorización — 2026-09-28
+
+`approvalReview` reutiliza las lecturas y controles del aprobador financiero, sin
+invocar su writer ni sincronizar Google. El criterio histórico sólo explica la
+sustitución; nunca se usa para aprobar. Condiciones vencidas requieren una nueva
+solicitud por decisión del propietario. La cancelación usa exclusivamente
+`record_program_request_admin_action`, con permisos, actor, motivo e idempotencia
+existentes. La asistencia reutiliza `start_affiliate_impersonation`; no concede
+permisos nuevos ni copia documentos o firma a otra solicitud. Los snapshots de la
+solicitud cancelada permanecen intactos. No hay nueva autoridad ni fallback.
+
+
+
 
 
 ## Caja de Ahorro: solicitudes de ingreso con cero meses - 2026-09-23

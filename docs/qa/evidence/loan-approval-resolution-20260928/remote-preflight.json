@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "mode": "deployed",
+  "phase": "NEW_REQUEST_REQUIRED",
+  "submittedAmount": 50000,
+  "currentLimit": 30000,
+  "anonymousDenied": true,
+  "requestUnchanged": true,
+  "approvalAttempts": 0,
+  "productionBusinessWrites": 0,
+  "calls": []
+}

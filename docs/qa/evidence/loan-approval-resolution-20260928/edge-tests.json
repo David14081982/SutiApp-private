@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "expired rule explains current limit without approving",
+    "normal approval cannot bypass expired conditions",
+    "permission denied before privileged reads",
+    "ready preflight never writes",
+    "normal approval preserves existing writer",
+    "signature guard preserved",
+    "documents never bypassed",
+    "cancelled request cannot approve",
+    "already-approved response is idempotent",
+    "failed authority read never invents comparison",
+    "preflight excludes Google delivery"
+  ],
+  "productionWrites": 0
+}

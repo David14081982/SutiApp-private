@@ -18,7 +18,8 @@ async function main(){
    await page.route('**/rest/v1/rpc/**',route=>{const name=new URL(route.request().url()).pathname.split('/').pop();if(/^(admin_set_savings|savings_runtime_submit|apply_savings)/.test(name)){blockedWrites++;return route.abort();}return route.continue();});
    await page.goto(base+'#/admin/menu',{waitUntil:'domcontentloaded'});await page.locator('input[type=email]').fill(env.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(env.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
    await page.locator('[data-admin-module=savings]').waitFor({timeout:60000});await page.locator('[data-admin-module=savings]').click();
-   await page.getByPlaceholder('Buscar por nombre o folio',{exact:true}).fill('12603');
+   await page.getByRole('tab',{name:'Ahorradores',exact:true}).click();
+   try{await page.getByPlaceholder('Buscar por nombre o folio',{exact:true}).fill('12603');}catch(e){await page.screenshot({path:path.join(root,'.tmp/savings-individual-withdrawal/live-navigation.png'),fullPage:true});console.error(JSON.stringify({pageErrors:errors,headings:await page.getByRole('heading').allTextContents()}));throw e;}
    const person=page.locator('.svp').getByText('DIAZ AVILEZ ARCE ALEJANDRO',{exact:true});await person.first().click();
    const card=page.locator('[data-individual-withdrawal="12603"]');await card.getByRole('button',{name:'Habilitar retiro',exact:true}).click({timeout:60000});
    assert(await card.getByLabel('Motivo',{exact:true}).isVisible());assert(await card.getByLabel(/Habilitado hasta/).isVisible());assert.equal(await card.locator('select').count(),0);

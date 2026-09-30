@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "productionBusinessWrites": 0,
+  "authenticatedReader": true,
+  "exactFolio": true,
+  "accountReady": true,
+  "canConfigure": true,
+  "anonymousDenied": true,
+  "deployedBundleSha256": "17b32feb06db0be4d485f26268f2a0703378fb1b9cdd15692c71f4a2081efbf2",
+  "realAccountNavigation": true,
+  "individualFormNoPeriod": true,
+  "cancelWithoutWrite": true,
+  "pageErrors": []
+}

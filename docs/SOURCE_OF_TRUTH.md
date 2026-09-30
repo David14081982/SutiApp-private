@@ -742,7 +742,7 @@ Owner authorizes a single editable layout used by designer, preview and issuance
 
 # Retiro individual desde expediente — H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001
 
-Candidato local del 2026-09-30; migración no aplicada ni frontend publicado.
+Migration 20260930000100 installed; frontend published and verified on sutiapp.com, commit ee6ddc7.
 La habilitación individual usa únicamente `savings_action_availability`, con
 `action_code=WITHDRAW`, `scope_type=PARTICIPANT` y Folio exacto resuelto por backend.
 `savings_audit_events` conserva actor real, contexto, participante, motivo,
@@ -751,5 +751,4 @@ vigencia e idempotencia. El nuevo reader/writer requiere los permisos existentes
 El expediente no necesita crear un periodo de rendimiento: habilitar disponibilidad
 no genera rendimientos, solicitudes, reservas ni pagos. Los escritores de solicitud,
 aprobación, entrega y sus controles siguen intactos. No hay almacenamiento local,
-mock, Google o copia alternativa como autoridad. Pruebas exclusivamente aisladas;
-producción sólo se inspeccionó mediante lecturas. Ver auditoría de la H.
+mock, Google o copia alternativa como autoridad. Writes tested in isolation; installation preserved all data. Authenticated and anonymous reads verified in production. See the task audit.

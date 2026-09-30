@@ -163,3 +163,50 @@ Release is isolated from current published main 857e96ab3eb6c7ba962d9f68eceec5a7
 and two dedicated chunks added. Compiled browser suite passed on this exact release.
 Evidence: apply.json, installed-rpc.json, release-package.json.
 Publication and deployed-browser verification follow the authorized commit.
+
+
+## Final production result ? 2026-09-30
+
+This is the current status and supersedes the local candidate history above.
+
+H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001 RESULT
+Status: PASS ? installed, committed, published and verified in production.
+Files changed: declared individual Savings sources, additive migration/recovery, focal
+bundle/cachebusters, build/verification scripts, metadata fixture, governance/evidence
+and derived architecture registry.
+Source-of-truth verdict: PASS; existing availability and audit remain authoritative.
+Invariant verdict: PASS; identical hashes in all 12 protected tables during installation.
+Build: PASS; 28-file public artifact, compiled browser tests and actual Pages workflow.
+Tests: PASS; SQL, source/compiled browser, existing panel/runtime/control regressions;
+full architecture registry suite; deployed hash and real account navigation.
+Security: PASS; real authenticated read/configure context; anonymous reader denied;
+SQL tests validate writer permissions, identity, versions and idempotency.
+Legacy impact: none; existing financial functions and Google untouched.
+Unexpected files changed: none; isolated release retains 139 unrelated published chunks
+and the original dirty workspace remains intact.
+Known limitations: no physical-device testing; real availability/request/payment writes
+were deliberately not performed as QA. Existing request and payment checks still apply.
+Evidence: deployment.json, production.json, apply.json, installed-rpc.json,
+release-package.json and existing isolated regression reports.
+
+Commit ee6ddc7c2ff969635881d7096d45aa1b29bb82d1 deployed successfully in workflow
+36763291837. Browser on https://sutiapp.com/ used the real administrator and the
+affected account: Ahorro > Ahorradores > account > Habilitar retiro. Motivo and
+vigencia appear without a period or person selector; cancel performed no write.
+The initial navigation test mistakenly remained on the existing default Pendientes
+tab. Correcting the test to open Ahorradores passed without an application change.
+
+SUTIAPP ARCHITECT REVIEW
+Task: authorized individual withdrawal release.
+Verdict: APPROVED.
+Critical findings: none unresolved; deployed byte hash matches the tested release.
+Source of truth: single existing authority. Architecture: additive account-only RPCs.
+Security: backend permissions and exact identity enforced. Data: preserved. Legacy: unchanged.
+Owner decision: NO.
+Next action: close this authorized release; no new task is authorized by this review.
+Response generated for Codex: YES.
+
+RESPONSE TO CODEX
+Approve and close H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001. Report the published commit
+and the account-level path. Retain all evidence and the unrelated dirty workspace.
+Do not create a real withdrawal or change any financial data as part of verification.

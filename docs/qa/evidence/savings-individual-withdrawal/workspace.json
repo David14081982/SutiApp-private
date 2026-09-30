@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "changedTracked": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/savings-panel-admin.jsx",
+    "app/savings-runtime-admin.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "scripts/build-bundle.js",
+    "sw.js"
+  ],
+  "newPaths": [
+    "app/savings-panel-admin.jsx",
+    "app/savings-runtime-admin.jsx",
+    "app/savings-individual-withdrawal-repository.js",
+    "app/savings-individual-withdrawal.jsx",
+    "docs/qa/evidence/savings-individual-withdrawal/",
+    "scripts/build-savings-individual-withdrawal.js",
+    "scripts/fixtures/savings-individual-withdrawal-schema.json",
+    "scripts/package-savings-individual-withdrawal.js",
+    "scripts/release-savings-individual-withdrawal.js",
+    "scripts/savings-individual-withdrawal-inspect.js",
+    "scripts/test-savings-individual-withdrawal-browser.js",
+    "scripts/test-savings-individual-withdrawal-regressions.js",
+    "scripts/test-savings-individual-withdrawal-workspace.js",
+    "scripts/test-savings-individual-withdrawal.js",
+    "scripts/verify-savings-individual-withdrawal-live.js",
+    "supabase/migrations/20260930000100_savings_individual_withdrawal.sql",
+    "supabase/recovery/20260930000100_savings_individual_withdrawal.sql"
+  ],
+  "unexpected": [],
+  "unrelatedDirtyWorkspacePreserved": true,
+  "cachebustersOnly": true
+}

@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "bundle": false,
+  "network": "BLOCKED",
+  "checks": [
+    "zero-period flow",
+    "fixed account and draft preserved on repeated entry",
+    "idempotent retry",
+    "duplicate-click lock",
+    "readback failure retains key and draft",
+    "read/config permission distinction",
+    "late response cannot cross accounts",
+    "direct existing withdrawal request",
+    "historical/native account navigation and external back",
+    "responsive 320/430/1440",
+    "no browser errors"
+  ],
+  "productionWrites": 0
+}

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "base": "857e96ab3eb6c7ba962d9f68eceec5a79da50fed",
+  "changed": [
+    "savings-panel-admin.jsx",
+    "savings-runtime-admin.jsx"
+  ],
+  "added": [
+    "savings-individual-withdrawal-repository.js",
+    "savings-individual-withdrawal.jsx"
+  ],
+  "preservedPublishedChunks": 139,
+  "bundleSha256": "17b32feb06db0be4d485f26268f2a0703378fb1b9cdd15692c71f4a2081efbf2",
+  "normalizedBundleSha256": "17b32feb06db0be4d485f26268f2a0703378fb1b9cdd15692c71f4a2081efbf2",
+  "generatedCachebustersOnly": true
+}

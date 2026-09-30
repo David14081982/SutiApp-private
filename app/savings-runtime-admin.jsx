@@ -75,10 +75,10 @@
     h(Notice,{command}),h(Btn,{tone:'primary',disabled:busy||!form.reason||!form.confirmed||(form.reason==='OTRO'&&form.justification.trim().length<3),onClick:()=>command.run('authorizeWithdrawal',{requestId:row.id,command:{...form,justification:form.justification.trim(),fingerprint:data.fingerprint}},'Excepción autorizada para esta solicitud.')},'Confirmar autorización excepcional')),
    !form&&h(Notice,{command}));
  }
- function RequestForm({draft,setDraft,disabled}){
+ function RequestForm({draft,setDraft,disabled,fixedFolio=false}){
   const update=(key,value)=>setDraft(old=>({...old,[key]:value}));
   const contribution=['JOIN','CHANGE_AMOUNT'].includes(draft.type),withdrawal=draft.type==='WITHDRAW';
-  return h(React.Fragment,null,h(Field,{label:'Folio exacto del ahorrador',value:draft.folio,onChange:v=>update('folio',v),disabled,autoComplete:'off'}),
+  return h(React.Fragment,null,h(Field,{label:'Folio exacto del ahorrador',value:draft.folio,onChange:v=>update('folio',v),disabled,readOnly:fixedFolio,autoComplete:'off'}),
    h(Select,{label:'Operación',value:draft.type,onChange:v=>update('type',v),disabled,options:Object.entries(types).filter(([code])=>code!=='EXTRAORDINARY_WITHDRAWAL')}),
    contribution&&h(Field,{label:'Nueva aportación por descuento',type:'number',value:draft.new_amount,onChange:v=>update('new_amount',v),disabled}),
    draft.type==='JOIN'&&h(Select,{label:'Tipo de descuento',value:draft.process,onChange:v=>update('process',v),disabled,options:[['','Selecciona una opción'],['PROCESS_1','Quincenal · Clave 1'],['PROCESS_3','Quincenal · Suplente variable'],['JUB','Mensual · Jubilado o pensionado']]}),
@@ -89,7 +89,7 @@
    contribution&&h('p',{className:'svp-note'},'La fecha de aplicación se calculará con el plazo y el calendario de descuentos de esa persona.'),
    h(Notes,{value:draft.observation,onChange:v=>update('observation',v),disabled}));
  }
- function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange}){
+ function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
   const [filter,setFilter]=useState(folio||initialNavigation?.filter||''),[query,setQuery]=useState(folio||initialNavigation?.query||''),[limit,setLimit]=useState(initialNavigation?.limit||8),[draft,setDraft]=useState(null),[action,setAction]=useState(null);
   const [category,setCategory]=useState(initialNavigation?.category||'ALL'),[statusFilter,setStatusFilter]=useState(initialNavigation?.statusFilter||(expanded&&!folio?'pending':'all'));
   const [focusedRequest,setFocusedRequest]=useState(requestId);
@@ -99,6 +99,9 @@
   const [state,reload]=useRemote(()=>window.SavingsPanelRepository.runtimeRequests(query||undefined),[query]);
   const command=useCommand(async()=>{setDraft(null);setAction(null);reload();if(onSaved)await onSaved();});
   const data=state.data,allRows=(data&&data.requests||[]).map(row=>({...row,request_code:row.folio,folio:row.saver_folio,type:row.request_type,amount:row.requested_amount,new_amount:row.new_contribution_amount,effective_date:row.effective_from})),blocked=command.busy||state.loading||!!state.error;
+  const handledIntent=useRef(0),withdrawalField=useRef(null);
+  useEffect(()=>{if(withdrawalIntent&&withdrawalIntent!==handledIntent.current&&folio&&data&&data.can_create&&!blocked){handledIntent.current=withdrawalIntent;if(draft&&draft.type==='WITHDRAW'&&draft.folio===folio)return;if((draft||action)&&!window.confirm('Hay una captura abierta. ¿Quieres descartarla para registrar el retiro?'))return;setAction(null);setFocusedRequest(null);setDraft({folio,type:'WITHDRAW',amount:'',new_amount:'',continue_saving:true,process:'',observation:''});command.clear();}},[withdrawalIntent,folio,data,blocked]);
+  useEffect(()=>{if(draft&&draft.type==='WITHDRAW'&&withdrawalIntent&&withdrawalField.current){const el=withdrawalField.current.querySelector('input[type=number]');if(el){el.focus();el.scrollIntoView({block:'center',behavior:'smooth'});}}},[!!draft,withdrawalIntent]);
   const needsAttention=row=>['SUBMITTED','UNDER_REVIEW'].includes(row.status)||(row.status==='APPROVED'&&['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type));
   const rows=allRows.filter(row=>(category==='ALL'||row.type===category)&&(statusFilter==='all'||needsAttention(row)));
   // A request deep link always reveals its current state after readback, even after approval.
@@ -122,7 +125,7 @@
    expanded&&!folio&&data&&!state.loading&&!state.error&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' solicitudes de nuevo ingreso pendientes en esta consulta.'),
    focusedRequest&&folio&&!draft&&!action&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>setFocusedRequest(null)},'Ver todas las solicitudes de esta persona'),
    data&&data.can_create&&!draft&&!action&&h('div',{className:'svp-actions'},h(Btn,{tone:'primary',disabled:blocked,onClick:()=>{setDraft({folio:query,type:'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar nueva solicitud')),
-   draft&&h('div',null,h(RequestForm,{draft,setDraft:changeDraft,disabled:blocked}),h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setDraft(null);command.clear();}},'Cancelar captura'),h(Btn,{tone:'primary',disabled:blocked||!valid,onClick:submit},'Guardar solicitud'))),
+   draft&&h('div',{ref:withdrawalField},h(RequestForm,{draft,setDraft:changeDraft,disabled:blocked,fixedFolio:!!folio&&!!withdrawalIntent}),h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setDraft(null);command.clear();}},'Cancelar captura'),h(Btn,{tone:'primary',disabled:blocked||!valid,onClick:submit},'Guardar solicitud'))),
    data&&!state.loading&&!state.error&&!visibleRows.length&&h('p',{className:'svp-note'},requestId?'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.':statusFilter==='pending'?'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.':'No hay operaciones registradas para esta consulta.'),
    visibleRows.map(row=>h('article',{key:row.id,className:'svp-audit',ref:requestId===row.id?focus:null,tabIndex:requestId===row.id?-1:undefined,'data-request-id':row.id},h('b',null,row.name||'Folio '+row.folio),h('p',{className:'svp-note'},'Folio '+row.folio+' · '+(types[row.type]||'Operación de ahorro')+' · '+(states[row.status]||'Por revisar')),
     h(window.GeneratedDocuments,{domain:'savings',operationId:row.id,admin:true}),

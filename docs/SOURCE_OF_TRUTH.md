@@ -739,3 +739,17 @@ Owner authorizes the Viajes payroll-date rule for loan PDFs, with the original r
 ### Editable document scope (2026-09-29)
 
 Owner authorizes a single editable layout used by designer, preview and issuance. document_private.layouts remains the versioned presentation authority; layout_activations now assigns compatible document types across programs and normalized fund names. Financial_funds supplies selector labels only. The approved financialResult.fund selects the exact fund assignment, then an explicitly assigned general design of the same program; explicit unassignment blocks inheritance. No assignment from another program is inferred. New events require a matching design; missing assignments fail only the document. Explicit retries can resolve a newly configured layout while keeping frozen business inputs. Existing PDFs/snapshots remain unchanged. Template is pinned per layout; global default applies only while preparing a new draft. Labels/positions/signature columns are presentation, never financial values.
+
+# Retiro individual desde expediente — H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001
+
+Candidato local del 2026-09-30; migración no aplicada ni frontend publicado.
+La habilitación individual usa únicamente `savings_action_availability`, con
+`action_code=WITHDRAW`, `scope_type=PARTICIPANT` y Folio exacto resuelto por backend.
+`savings_audit_events` conserva actor real, contexto, participante, motivo,
+vigencia e idempotencia. El nuevo reader/writer requiere los permisos existentes
+`savings.read`/`savings.config`; no cambia grants de tablas ni permisos globales.
+El expediente no necesita crear un periodo de rendimiento: habilitar disponibilidad
+no genera rendimientos, solicitudes, reservas ni pagos. Los escritores de solicitud,
+aprobación, entrega y sus controles siguen intactos. No hay almacenamiento local,
+mock, Google o copia alternativa como autoridad. Pruebas exclusivamente aisladas;
+producción sólo se inspeccionó mediante lecturas. Ver auditoría de la H.

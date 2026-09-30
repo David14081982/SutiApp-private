@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "migration": "20260930000100",
+  "sha256": "9b4885ef96d344caadcbee627b06645705275a88bcc96b92836c866a6fd68ca9",
+  "dataUnchangedWithinTransaction": true,
+  "evidence": [
+    {
+      "evidence": {
+        "after": [
+          {
+            "total": 993,
+            "resource": "affiliates",
+            "fingerprint": "dcabd8409df17fa13c07770ea06c2503"
+          },
+          {
+            "total": 0,
+            "resource": "savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 690,
+            "resource": "savings_audit_events",
+            "fingerprint": "c9e755f3db3f0d8fc877d7eddec5d6f8"
+          },
+          {
+            "total": 333,
+            "resource": "savings_contribution_plans",
+            "fingerprint": "15bec7bfb9b5dcbba62a27e4c3f81149"
+          },
+          {
+            "total": 351,
+            "resource": "savings_enrollments",
+            "fingerprint": "685c6c03a4aac0ba91010500b0efcf53"
+          },
+          {
+            "total": 0,
+            "resource": "savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 351,
+            "resource": "savings_participants",
+            "fingerprint": "f4f9f6aaf55e7e86920512adde552791"
+          },
+          {
+            "total": 23,
+            "resource": "savings_requests",
+            "fingerprint": "15220e97ca01ad5ac16c32d780e9c35d"
+          },
+          {
+            "total": 844,
+            "resource": "savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "total": 0,
+            "resource": "savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 0,
+            "resource": "savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 0,
+            "resource": "savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          }
+        ],
+        "before": [
+          {
+            "total": 993,
+            "resource": "affiliates",
+            "fingerprint": "dcabd8409df17fa13c07770ea06c2503"
+          },
+          {
+            "total": 0,
+            "resource": "savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 690,
+            "resource": "savings_audit_events",
+            "fingerprint": "c9e755f3db3f0d8fc877d7eddec5d6f8"
+          },
+          {
+            "total": 333,
+            "resource": "savings_contribution_plans",
+            "fingerprint": "15bec7bfb9b5dcbba62a27e4c3f81149"
+          },
+          {
+            "total": 351,
+            "resource": "savings_enrollments",
+            "fingerprint": "685c6c03a4aac0ba91010500b0efcf53"
+          },
+          {
+            "total": 0,
+            "resource": "savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 351,
+            "resource": "savings_participants",
+            "fingerprint": "f4f9f6aaf55e7e86920512adde552791"
+          },
+          {
+            "total": 23,
+            "resource": "savings_requests",
+            "fingerprint": "15220e97ca01ad5ac16c32d780e9c35d"
+          },
+          {
+            "total": 844,
+            "resource": "savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "total": 0,
+            "resource": "savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 0,
+            "resource": "savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "total": 0,
+            "resource": "savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          }
+        ]
+      }
+    }
+  ],
+  "security": [
+    {
+      "proname": "admin_set_savings_individual_withdrawal",
+      "prosecdef": true,
+      "config": "search_path=\"\"",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "proname": "get_admin_savings_individual_withdrawal",
+      "prosecdef": true,
+      "config": "search_path=\"\"",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    }
+  ],
+  "productionBusinessWrites": 0
+}

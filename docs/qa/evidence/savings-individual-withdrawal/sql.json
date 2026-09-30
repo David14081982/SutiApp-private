@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "environment": "isolated PostgreSQL/WASM",
+  "productionWrites": 0,
+  "checks": [
+    "zero yield periods: individual enable; exact Folio; other account closed",
+    "idempotency and payload/actor mismatch",
+    "stale version and past/missing date rejected",
+    "permissions: read-only/config-only/anonymous; no direct table access",
+    "audit atomicity: failure leaves no availability",
+    "disable only target, preserve audit actor/context and history",
+    "existing global precedence and individual expiry unchanged",
+    "identity, archived account and certification block",
+    "recovery retains all rows and existing functions unchanged"
+  ],
+  "limits": "Auth permission provider simulated; actual live availability/identity functions and column/check contracts used. No live test transactions."
+}

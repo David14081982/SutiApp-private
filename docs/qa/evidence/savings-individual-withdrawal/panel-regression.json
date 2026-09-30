@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "engine": "Chromium desktop emulation",
+  "physical_devices": false,
+  "network": "BLOCKED",
+  "viewports": [
+    390,
+    768,
+    1440
+  ],
+  "checks": [
+    "three primary destinations",
+    "server paging/search arguments",
+    "search focus preserved",
+    "keyboard opens person",
+    "long name and large amount no overflow",
+    "six dates/show more",
+    "multiple withdrawal source list",
+    "read-only view/explicit correction sheet",
+    "optional observation/no-op disabled",
+    "save then reload detail",
+    "discount correction and reset",
+    "review/reopen",
+    "filtered context restored",
+    "empty/error/retry",
+    "responsive geometry",
+    "no page errors"
+  ]
+}

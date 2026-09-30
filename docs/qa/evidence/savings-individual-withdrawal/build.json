@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "changed": [
+    "savings-panel-admin.jsx",
+    "savings-runtime-admin.jsx"
+  ],
+  "added": [
+    "savings-individual-withdrawal-repository.js",
+    "savings-individual-withdrawal.jsx"
+  ],
+  "preservedChunks": 139,
+  "sha256": "2d21d3d6cbf15285a1ecf4cf0b1562d9ce4f57dce07ae562226b1832f757eb5f"
+}

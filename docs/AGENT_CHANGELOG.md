@@ -3811,3 +3811,17 @@ Named editable designs, shared by compatible programs and independently assigned
 ## H-SUTIAPP-PDF-REFERENCE-LAYOUT-001
 
 Restore the owner's loan PDF section hierarchy as an editable reference version instead of the starter grid. Owner selects column signatures with independent image width/height and unchanged text sizes. Existing renderer adds controlled inline labels, institutional colors and explicit signature-after-calendar behavior; other definitions retain defaults. Focal UI controls, ten renderer groups and 24 UI-inclusive contract groups pass. No new schema, authority, financial writer or real-document fixtures. Release evidence: audits/H-SUTIAPP-PDF-REFERENCE-LAYOUT-001.md.
+
+# 2026-09-30 — H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001 — candidato local verificado
+
+Control visible de retiro individual en expedientes históricos y nativos. Persona
+fija, motivo y vencimiento; estado confirmado por relectura y acceso directo al
+formulario existente de retiro. No requiere periodos ni cambia saldos/rendimientos.
+Dos RPC aditivas preparadas, configuración y auditoría en autoridades existentes;
+ninguna migración aplicada, autorización real creada ni publicación ejecutada.
+PostgreSQL aislado: identidad, permisos, reintentos, vigencia, atomicidad de auditoría,
+precedencia y recovery conservando historia PASS. Chromium fuente/bundle y regresiones
+de operaciones, panel y configuración PASS. Build completo 143 módulos; bundle focal
+conserva 139 chunks ajenos byte a byte. Evidencia y límites en
+`docs/audits/H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001.md` y
+`docs/qa/evidence/savings-individual-withdrawal/`.

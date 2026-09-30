@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "productionBusinessWrites": 0,
+  "authenticatedReader": true,
+  "exactFolio": true,
+  "accountReady": true,
+  "canConfigure": true,
+  "anonymousDenied": true
+}

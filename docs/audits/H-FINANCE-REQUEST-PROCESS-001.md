@@ -169,3 +169,31 @@ directamente de la petición confirmada en esta conversación.
 ## Release backend applied - 2026-10-02
 
 Owner authorized publication. Migration 20261002000100 applied transactionally; all 251 request projections match their applicant category. Prior fields, OID/ACL/owner and fingerprints of affiliates/program_requests are unchanged. Business writes: 0. Public artifact build PASS (28 files); candidate bundle 310/worker 242. Frontend publication and live browser verification follow this commit.
+
+
+## FINAL RELEASE RESULT - supersedes local/pending status above
+
+H-FINANCE-REQUEST-PROCESS-001 RESULT
+Status: PASS - applied, published and verified 2026-10-02.
+Files changed: authorized cell, focal compiled module, generated cachebusters, SQL/recovery, focal tests and delivery evidence; derived architecture registry updated.
+Source-of-truth verdict: SAFE; requesting affiliate current category by FK.
+Invariant verdict: PASS; all 251 prior projections identical except added category.
+Build: PASS; exact public artifact SHA256 65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23 on custom domain and Pages.
+Tests: isolated SQL/browser PASS; deployment Auth/request contract checks PASS; live UI PASS for first/next request, reload, service worker blocked and controlled.
+Security: OID/ACL/owner and existing backend gates preserved; zero frontend secrets added.
+Legacy impact: zero business DML, zero financial actions and zero Google changes.
+Unexpected files changed: none in release; unrelated workspace work preserved.
+Known limitations: physical device testing not performed; no remaining blocker for this change.
+Evidence: release-apply.json, release-production.json, release-browser.json, release-completion.json.
+Runtime commit: 48f190934d73aed1502d8ec885e5d8695735acb0.
+Deployment: https://github.com/David14081982/SutiApp-private/actions/runs/37035392188 (success).
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-FINANCE-REQUEST-PROCESS-001 publication.
+Verdict: APPROVED. Critical findings: none remaining.
+Source of truth / architecture / security / data / legacy: preserved as proven above.
+Owner decision: NO. Next action: report completion; no further H authorized.
+Response generated for Codex: YES.
+RESPONSE TO CODEX: Close this H as published PASS; inform the owner and preserve unrelated work.
+
+Final evidence-only commit uses [skip ci]; runtime artifact remains the verified deployment. Registry mapping is unchanged by this final documentation; its file freshness may be stale until next safe generation.

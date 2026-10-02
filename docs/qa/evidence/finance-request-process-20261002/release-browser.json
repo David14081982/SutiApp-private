@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "serviceWorkers": "block",
+      "initial": {
+        "first": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        },
+        "second": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        }
+      },
+      "refresh": {
+        "first": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        },
+        "second": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        }
+      },
+      "blockedWrites": 0,
+      "consoleErrors": 0,
+      "bundle": "app/bundle.js?v=310",
+      "controlled": false
+    },
+    {
+      "serviceWorkers": "allow",
+      "initial": {
+        "first": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        },
+        "second": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        }
+      },
+      "refresh": {
+        "first": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        },
+        "second": {
+          "valid": true,
+          "oldLabel": false,
+          "categoryPresent": true
+        }
+      },
+      "blockedWrites": 0,
+      "consoleErrors": 0,
+      "bundle": "app/bundle.js?v=310",
+      "controlled": true
+    }
+  ],
+  "businessWrites": 0,
+  "realDataScreenshotsSaved": false
+}

@@ -3920,3 +3920,6 @@ Publication completed: H-REQUEST-PUSH-REOPEN-001 PASS. Runtime commit c1249f4efb
 ## H-FINANCE-REQUEST-PROCESS-001 - authorized release
 
 Finanzas request detail displays Proceso from the requesting affiliate financial_employee_category_code. Additive RPC projection preserves all gates and fields; no business data writes. SQL/recovery and browser isolated checks PASS. Owner authorized application and publication on 2026-10-02. Release evidence is retained in the owner workspace.
+
+
+H-FINANCE-REQUEST-PROCESS-001 publication PASS: migration 20261002000100, 251 requests verified, bundle 310/worker 242 live. Runtime 48f1909; Pages workflow 37035392188 success. Live applicant category/navigation/reload with and without SW PASS, business writes 0. Architect review APPROVED.

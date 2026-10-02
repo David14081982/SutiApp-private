@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "commit": "48f190934d73aed1502d8ec885e5d8695735acb0",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/37035392188",
+  "migration": "20261002000100",
+  "requestsVerified": 251,
+  "publishedBundle": 310,
+  "publishedWorker": 242,
+  "businessWrites": 0,
+  "architectVerdict": "APPROVED",
+  "globalImageRegression": "NOT APPLICABLE: focal cell and generated cachebusters only"
+}

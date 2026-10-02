@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "rows": [
+    {
+      "origin": "https://sutiapp.com/SutiApp.html",
+      "bundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "bundleVersion": 310,
+      "workerVersion": 242
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/SutiApp.html",
+      "bundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "bundleVersion": 310,
+      "workerVersion": 242
+    }
+  ],
+  "backendExact": true
+}

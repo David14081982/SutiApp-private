@@ -17536,347 +17536,68 @@ Object.assign(window, {
 /* @@file savings-request-form.jsx */
 (function(){
 /* Functional Savings actions inside the existing Savings sheet. */
-(function () {
-  'use strict';
-
-  const h = React.createElement,
-    {
-      useState,
-      useRef
-    } = React;
-  function SavingsRequestForm({
-    type,
-    dashboard,
-    onSaved,
-    onClose
-  }) {
-    const [amount, setAmount] = useState(''),
-      [continuing, setContinuing] = useState(true),
-      [reason, setReason] = useState(''),
-      [reviewed, setReviewed] = useState(false),
-      [busy, setBusy] = useState(false),
-      [error, setError] = useState(''),
-      [done, setDone] = useState(null);
-    const attempt = useRef(),
-      lock = useRef(false),
-      available = dashboard.balances && dashboard.balances.available;
-    const money = n => typeof n === 'number' ? new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(n) : 'Por confirmar';
-    const valid = /^\d+(\.\d{1,2})?$/.test(amount),
-      isWithdrawal = type === 'WITHDRAW',
-      isStop = type === 'TERMINATE';
-    const number = valid ? Number(amount) : null;
-    const [quote, setQuote] = useState(null),
-      [quoteError, setQuoteError] = useState('');
-    React.useEffect(() => {
-      if (type !== 'JOIN' || !valid || number < 200) {
-        setQuote(null);
-        return;
-      }
-      let alive = true;
-      setQuote(null);
-      setQuoteError('');
-      const timer = setTimeout(() => {
-        Promise.resolve().then(() => window.SavingsRepository.getJoinContext(number)).then(v => {
-          if (alive) setQuote(v);
-        }).catch(() => {
-          if (alive) setQuoteError('No se pudieron consultar las fechas. Cambia el importe o vuelve a abrir la solicitud para reintentar.');
-        });
-      }, 250);
-      return () => {
-        alive = false;
-        clearTimeout(timer);
-      };
-    }, [type, amount]);
-    const allowed = type === 'JOIN' ? Boolean((dashboard.join_context && dashboard.join_context.can_join || dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions.JOIN) && quote && quote.can_join && quote.amount === number) : dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions[type];
-    const ready = allowed && (isStop || valid && number > 0 && (isWithdrawal ? typeof available === 'number' && number <= available : number >= 200));
-    function change(fn, value) {
-      fn(value);
-      setReviewed(false);
-      attempt.current = null;
-      setError('');
-    }
-    async function submit(event) {
-      event.preventDefault();
-      if (!ready || lock.current) return;
-      if (!reviewed) {
-        setReviewed(true);
-        return;
-      }
-      const payload = {
-        requestType: type,
-        amount: isWithdrawal ? number : isStop ? 0 : null,
-        newContributionAmount: !isWithdrawal && !isStop ? number : null,
-        component: isWithdrawal ? 'BOTH' : null,
-        continueSaving: isStop ? false : isWithdrawal ? number < available ? true : continuing : true,
-        reason
-      };
-      const serial = JSON.stringify(payload);
-      if (!attempt.current || attempt.current.serial !== serial) attempt.current = {
-        serial,
-        key: crypto.randomUUID()
-      };
-      lock.current = true;
-      setBusy(true);
-      setError('');
-      try {
-        const result = await window.SavingsRepository.submitRequest({
-          ...payload,
-          idempotencyKey: attempt.current.key
-        });
-        setDone(result);
-        await onSaved();
-      } catch (e) {
-        const raw = String(e && e.message || '');
-        setError(/CLOSED|DISABLED|NOT_AVAILABLE|ACTION/.test(raw) ? 'Esta opción ya no está habilitada. Actualiza tu ahorro.' : /BALANCE|AMOUNT|AVAILABLE/.test(raw) ? 'Revisa el importe y el saldo disponible antes de enviar.' : /PRIVATE|PUBLISHED/.test(raw) ? 'El programa está en revisión. Aún no se reciben solicitudes desde esta pantalla.' : /PENDING|EXISTS/.test(raw) ? 'Ya tienes una solicitud pendiente de este tipo. Revisa su estado.' : 'No se pudo confirmar el envío. Conservamos tu captura para que puedas reintentar.');
-      } finally {
-        lock.current = false;
-        setBusy(false);
-      }
-    }
-    if (done) return h('div', {
-      role: 'status'
-    }, h('p', null, 'Solicitud registrada. Puedes consultar su estado en tu ahorro.'), type === 'JOIN' && h('p', null, 'Primer descuento previsto: ' + joinDate(done.effective_from) + '. La encargada revisar? tu solicitud.'), h('p', null, done.folio || done.request && done.request.folio || ''), h('button', {
-      className: 'sav-primary',
-      onClick: onClose
-    }, 'Entendido'));
-    return h('form', {
-      onSubmit: submit
-    }, isWithdrawal && h('p', null, 'Saldo disponible: ', h('strong', null, money(available))), !isStop && h('label', {
-      style: {
-        display: 'grid',
-        gap: 8,
-        margin: '12px 0'
-      }
-    }, isWithdrawal ? 'Importe a retirar' : 'Monto de cada descuento', h('input', {
-      type: 'text',
-      inputMode: 'decimal',
-      value: amount,
-      onChange: e => change(setAmount, e.target.value),
-      disabled: busy,
-      'aria-label': isWithdrawal ? 'Importe a retirar' : 'Monto de cada descuento',
-      style: {
-        padding: 12,
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        font: 'inherit'
-      }
-    })), isWithdrawal && number !== null && typeof available === 'number' && (number < available ? h('p', null, 'Es un retiro parcial. Seguirás ahorrando con el mismo monto y el resto permanecerá en tu ahorro.') : number === available && h('label', {
-      style: {
-        display: 'grid',
-        gap: 8
-      }
-    }, 'Después de retirar todo', h('select', {
-      value: continuing ? 'yes' : 'no',
-      disabled: busy,
-      onChange: e => change(setContinuing, e.target.value === 'yes'),
-      style: {
-        padding: 12,
-        border: '1px solid var(--line)',
-        borderRadius: 12
-      }
-    }, h('option', {
-      value: 'yes'
-    }, 'Continuar ahorrando'), h('option', {
-      value: 'no'
-    }, 'Dejar de ahorrar')))), isStop && h('p', null, 'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'), !isWithdrawal && !isStop && h('p', null, 'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'), type === 'JOIN' && h('div', {
-      'data-savings-join-preview': ''
-    }, quoteError && h('p', {
-      role: 'alert'
-    }, quoteError), valid && number >= 200 && !quote && !quoteError && h('p', null, 'Consultando fechas?'), quote && h(React.Fragment, null, h('p', null, 'Descuento ' + (quote.frequency === 'MONTHLY' ? 'mensual, el d?a 5.' : 'quincenal, los d?as 15 y 30; en febrero, 15 y 28.')), h('p', null, 'Fecha de registro prevista: ' + joinDate(quote.registration_date)), h('p', null, 'Primer descuento previsto: ' + joinDate(quote.first_discount_on)), !quote.can_join && h('p', {
-      role: 'alert'
-    }, joinReason(quote.reason)), h(SavingsJoinSchedule, {
-      rows: quote.upcoming
-    }))), h('label', {
-      style: {
-        display: 'grid',
-        gap: 8,
-        margin: '12px 0'
-      }
-    }, 'Observaciones (opcional)', h('textarea', {
-      value: reason,
-      maxLength: 1000,
-      disabled: busy,
-      onChange: e => change(setReason, e.target.value),
-      style: {
-        padding: 12,
-        border: '1px solid var(--line)',
-        borderRadius: 12,
-        font: 'inherit'
-      }
-    })), reviewed && h('p', {
-      role: 'status'
-    }, 'Revisa los datos. Al confirmar se registrará la solicitud; no se reserva ni se entrega dinero en este paso.'), error && h('p', {
-      role: 'alert'
-    }, error), h('button', {
-      type: 'submit',
-      className: 'sav-primary',
-      disabled: !ready || busy
-    }, busy ? 'Enviando…' : reviewed ? 'Confirmar solicitud' : 'Revisar solicitud'));
+(function(){
+ 'use strict';const h=React.createElement,{useState,useRef}=React;
+ function SavingsRequestForm({type,dashboard,onSaved,onClose}){
+  const [amount,setAmount]=useState(''),[continuing,setContinuing]=useState(true),[reason,setReason]=useState(''),[reviewed,setReviewed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(null);
+  const attempt=useRef(),lock=useRef(false),available=dashboard.balances&&dashboard.balances.available;
+  const money=n=>typeof n==='number'?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n):'Por confirmar';
+  const valid=/^\d+(\.\d{1,2})?$/.test(amount),isWithdrawal=type==='WITHDRAW',isStop=type==='TERMINATE';
+  const number=valid?Number(amount):null;
+  const [quote,setQuote]=useState(null),[quoteError,setQuoteError]=useState('');
+  const automaticJoin=type==='JOIN'&&quote?.auto_join_enabled===true;
+  React.useEffect(()=>{if(type!=='JOIN'||!valid||number<200){setQuote(null);return;}let alive=true;setQuote(null);setQuoteError('');const timer=setTimeout(()=>{Promise.resolve().then(()=>window.SavingsRepository.getJoinContext(number)).then(v=>{if(alive)setQuote(v);}).catch(()=>{if(alive)setQuoteError('No se pudieron consultar las fechas. Cambia el importe o vuelve a abrir la solicitud para reintentar.');});},250);return()=>{alive=false;clearTimeout(timer);};},[type,amount]);
+  const allowed=type==='JOIN'?Boolean((dashboard.join_context&&dashboard.join_context.can_join||dashboard.write_capabilities&&dashboard.write_capabilities.requests&&dashboard.actions&&dashboard.actions.JOIN)&&quote&&quote.can_join&&quote.amount===number):dashboard.write_capabilities&&dashboard.write_capabilities.requests&&dashboard.actions&&dashboard.actions[type];
+  const ready=allowed&&(isStop||valid&&number>0&&(isWithdrawal?typeof available==='number'&&number<=available:number>=200));
+  function change(fn,value){fn(value);setReviewed(false);attempt.current=null;setError('');}
+  async function submit(event){event.preventDefault();if(!ready||lock.current)return;if(!reviewed){setReviewed(true);return;}
+   const payload={requestType:type,amount:isWithdrawal?number:isStop?0:null,newContributionAmount:!isWithdrawal&&!isStop?number:null,
+    component:isWithdrawal?'BOTH':null,continueSaving:isStop?false:isWithdrawal?(number<available?true:continuing):true,reason};
+   const serial=JSON.stringify(payload);if(!attempt.current||attempt.current.serial!==serial)attempt.current={serial,key:crypto.randomUUID()};
+   lock.current=true;setBusy(true);setError('');try{const result=await window.SavingsRepository.submitRequest({...payload,idempotencyKey:attempt.current.key});setDone(result);await onSaved();}
+   catch(e){const raw=String(e&&e.message||'');setError(/CLOSED|DISABLED|NOT_AVAILABLE|ACTION/.test(raw)?'Esta opción ya no está habilitada. Actualiza tu ahorro.':/BALANCE|AMOUNT|AVAILABLE/.test(raw)?'Revisa el importe y el saldo disponible antes de enviar.':/PRIVATE|PUBLISHED/.test(raw)?'El programa está en revisión. Aún no se reciben solicitudes desde esta pantalla.':/PENDING|EXISTS/.test(raw)?'Ya tienes una solicitud pendiente de este tipo. Revisa su estado.':'No se pudo confirmar el envío. Conservamos tu captura para que puedas reintentar.');}
+   finally{lock.current=false;setBusy(false);}
   }
-  function SavingsRequestHistory({
-    requests
-  }) {
-    const names = {
-      JOIN: 'Ingreso al ahorro',
-      WITHDRAW: 'Retiro de ahorro',
-      CHANGE_AMOUNT: 'Cambio de monto',
-      TERMINATE: 'Dejar de ahorrar',
-      EXTRAORDINARY_WITHDRAWAL: 'Retiro especial'
-    };
-    const states = {
-      SUBMITTED: 'Recibida',
-      UNDER_REVIEW: 'En revisi?n',
-      APPROVED: 'Aprobada',
-      APPLIED: 'Aplicada',
-      SETTLED: 'Pagada',
-      CANCELLED: 'Cancelada',
-      REJECTED: 'Rechazada'
-    };
-    return h('div', {
-      'data-savings-request-history': ''
-    }, (requests || []).map(r => h('div', {
-      className: 'sav-tx',
-      key: r.id
-    }, h('div', null, h('b', null, names[r.request_type] || 'Solicitud de ahorro'), h(window.GeneratedDocuments, {
-      domain: 'savings',
-      operationId: r.id
-    }), h('span', null, r.folio + ' ? ' + (states[r.status] || 'Por confirmar')), r.effective_from && h('span', null, 'Fecha prevista: ' + new Date(r.effective_from + 'T12:00:00').toLocaleDateString('es-MX'))), h('strong', null, r.new_contribution_amount || r.requested_amount ? new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(r.new_contribution_amount || r.requested_amount) : ''))));
-  }
-  function useSavingsBeneficiaries(identityKey, revision) {
-    const [state, setState] = useState({
-        phase: 'loading'
-      }),
-      [retry, setRetry] = useState(0);
-    React.useEffect(() => {
-      let alive = true;
-      setState({
-        phase: 'loading',
-        identityKey
-      });
-      Promise.resolve().then(() => window.SavingsRepository.getBeneficiaries()).then(data => {
-        if (alive) setState({
-          phase: 'ready',
-          data,
-          identityKey
-        });
-      }).catch(e => {
-        if (alive) setState({
-          phase: 'error',
-          identityKey,
-          error: /IDENTITY|AFFILIATE/.test(String(e.message)) ? 'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.' : 'No fue posible consultar tus beneficiarios. Intenta de nuevo.'
-        });
-      });
-      return () => {
-        alive = false;
-      };
-    }, [identityKey, revision, retry]);
-    return {
-      ...(state.identityKey === identityKey ? state : {
-        phase: 'loading'
-      }),
-      retry: () => setRetry(v => v + 1)
-    };
-  }
-  function SavingsBeneficiarySignatures({
-    signatures
-  }) {
-    const [image, setImage] = useState(''),
-      [error, setError] = useState(''),
-      [busy, setBusy] = useState(false);
-    const mounted = useRef(true);
-    React.useEffect(() => {
-      mounted.current = true;
-      return () => {
-        mounted.current = false;
-      };
-    }, []);
-    async function open(path) {
-      setError('');
-      setBusy(true);
-      setImage('');
-      try {
-        const url = await window.SavingsRepository.getBeneficiarySignature(path);
-        if (mounted.current) setImage(url);
-      } catch (e) {
-        if (mounted.current) setError('No se pudo abrir la firma. Intenta de nuevo.');
-      } finally {
-        if (mounted.current) setBusy(false);
-      }
-    }
-    const files = (signatures || []).filter(s => s.status === 'STORED' && s.path),
-      missing = (signatures || []).filter(s => s.status !== 'STORED').length;
-    return h('div', {
-      'data-beneficiary-signatures': ''
-    }, files.map((s, i) => h('button', {
-      type: 'button',
-      className: 'sav-retry',
-      key: s.path,
-      disabled: busy,
-      onClick: () => open(s.path),
-      style: {
-        margin: '8px 8px 8px 0'
-      }
-    }, 'Ver firma' + (files.length > 1 ? ' ' + (i + 1) : ''))), missing > 0 && h('p', null, 'Hay ' + missing + ' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'), busy && h('p', {
-      role: 'status'
-    }, 'Abriendo firma…'), error && h('p', {
-      role: 'alert'
-    }, error), image && h('div', null, h('img', {
-      src: image,
-      alt: 'Firma de autorización de beneficiarios',
-      style: {
-        display: 'block',
-        maxWidth: '100%',
-        background: '#fff',
-        border: '1px solid var(--line)',
-        borderRadius: 12
-      },
-      onError: () => {
-        setImage('');
-        setError('La firma no se pudo mostrar. Vuelve a abrirla.');
-      }
-    }), h('button', {
-      type: 'button',
-      className: 'sav-retry',
-      onClick: () => setImage('')
-    }, 'Cerrar firma')));
-  }
-  function SavingsBeneficiarySignaturePad({
-    value,
-    onChange
-  }) {
-    const wrap = useRef(null),
-      change = useRef(onChange),
-      [revision, setRevision] = useState(0);
-    change.current = onChange;
-    React.useEffect(() => {
-      let width = wrap.current.clientWidth;
-      const observer = new ResizeObserver(() => {
-        const next = wrap.current.clientWidth;
-        if (next !== width) {
-          width = next;
-          change.current('');
-          setRevision(v => v + 1);
-        }
-      });
-      observer.observe(wrap.current);
-      return () => observer.disconnect();
-    }, []);
-    return h('div', {
-      ref: wrap
-    }, h(window.SignaturePad, {
-      key: revision,
-      value,
-      onChange,
-      label: 'Firma de autorización'
-    }));
-  }
-  const BENEFICIARY_CSS = `
+  if(done)return h('div',{role:'status'},h('p',null,type==='JOIN'&&done.automatic_join===true?'Ya formas parte de Caja de Ahorro. Tu plan quedó registrado.':'Solicitud registrada. Puedes consultar su estado en tu ahorro.'),type==='JOIN'&&h('p',null,'Primer descuento previsto: '+joinDate(done.effective_from)+'.'+(done.automatic_join===true?' No necesitas esperar una aprobación administrativa.':' Consulta el seguimiento de tu ingreso.')),h('p',null,done.folio||done.request&&done.request.folio||''),h('button',{className:'sav-primary',onClick:onClose},'Entendido'));
+  return h('form',{onSubmit:submit},isWithdrawal&&h('p',null,'Saldo disponible: ',h('strong',null,money(available))),
+   !isStop&&h('label',{style:{display:'grid',gap:8,margin:'12px 0'}},isWithdrawal?'Importe a retirar':'Monto de cada descuento',h('input',{type:'text',inputMode:'decimal',value:amount,onChange:e=>change(setAmount,e.target.value),disabled:busy,'aria-label':isWithdrawal?'Importe a retirar':'Monto de cada descuento',style:{padding:12,border:'1px solid var(--line)',borderRadius:12,font:'inherit'}})),
+   isWithdrawal&&number!==null&&typeof available==='number'&&(number<available?h('p',null,'Es un retiro parcial. Seguirás ahorrando con el mismo monto y el resto permanecerá en tu ahorro.'):number===available&&h('label',{style:{display:'grid',gap:8}},'Después de retirar todo',h('select',{value:continuing?'yes':'no',disabled:busy,onChange:e=>change(setContinuing,e.target.value==='yes'),style:{padding:12,border:'1px solid var(--line)',borderRadius:12}},h('option',{value:'yes'},'Continuar ahorrando'),h('option',{value:'no'},'Dejar de ahorrar')))),
+   isStop&&h('p',null,'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'),
+   !isWithdrawal&&!isStop&&h('p',null,'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'),
+   type==='JOIN'&&h('div',{'data-savings-join-preview':''},quoteError&&h('p',{role:'alert'},quoteError),valid&&number>=200&&!quote&&!quoteError&&h('p',null,'Consultando fechas…'),quote&&h(React.Fragment,null,h('p',null,'Descuento '+(quote.frequency==='MONTHLY'?'mensual, el día 5.':'quincenal, los días 15 y 30; en febrero, 15 y 28.')),h('p',null,'Fecha de registro prevista: '+joinDate(quote.registration_date)),h('p',null,'Primer descuento previsto: '+joinDate(quote.first_discount_on)),automaticJoin&&h('p',null,'Al confirmar, el sistema validará tu ingreso y registrará tu plan sin aprobación administrativa.'),!quote.can_join&&h('p',{role:'alert'},joinReason(quote.reason)),h(SavingsJoinSchedule,{rows:quote.upcoming}))),
+   h('label',{style:{display:'grid',gap:8,margin:'12px 0'}},'Observaciones (opcional)',h('textarea',{value:reason,maxLength:1000,disabled:busy,onChange:e=>change(setReason,e.target.value),style:{padding:12,border:'1px solid var(--line)',borderRadius:12,font:'inherit'}})),
+   reviewed&&h('p',{role:'status'},automaticJoin?'Revisa tu aportación y las fechas. Al confirmar quedará registrado tu ingreso y su plan de descuentos. Las fechas previstas no son dinero recibido.':'Revisa los datos. Al confirmar se registrará la solicitud; no se reserva ni se entrega dinero en este paso.'),
+   error&&h('p',{role:'alert'},error),h('button',{type:'submit',className:'sav-primary',disabled:!ready||busy},busy?'Enviando…':automaticJoin?(reviewed?'Confirmar ingreso':'Revisar ingreso'):reviewed?'Confirmar solicitud':'Revisar solicitud'));
+ }
+ function SavingsRequestHistory({requests}){
+  const names={JOIN:'Ingreso al ahorro',WITHDRAW:'Retiro de ahorro',CHANGE_AMOUNT:'Cambio de monto',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
+  const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisi?n',APPROVED:'Aprobada',APPLIED:'Aplicada',SETTLED:'Pagada',CANCELLED:'Cancelada',REJECTED:'Rechazada'};
+  return h('div',{'data-savings-request-history':''},(requests||[]).map(r=>h('div',{className:'sav-tx',key:r.id},h('div',null,h('b',null,names[r.request_type]||'Solicitud de ahorro'),h(window.GeneratedDocuments,{domain:'savings',operationId:r.id}),h('span',null,r.folio+' ? '+(states[r.status]||'Por confirmar')),r.effective_from&&h('span',null,'Fecha prevista: '+new Date(r.effective_from+'T12:00:00').toLocaleDateString('es-MX'))),h('strong',null,r.new_contribution_amount||r.requested_amount?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.new_contribution_amount||r.requested_amount):''))));
+ }
+ function useSavingsBeneficiaries(identityKey,revision){
+  const [state,setState]=useState({phase:'loading'}),[retry,setRetry]=useState(0);
+  React.useEffect(()=>{let alive=true;setState({phase:'loading',identityKey});
+   Promise.resolve().then(()=>window.SavingsRepository.getBeneficiaries()).then(data=>{if(alive)setState({phase:'ready',data,identityKey});})
+    .catch(e=>{if(alive)setState({phase:'error',identityKey,error:/IDENTITY|AFFILIATE/.test(String(e.message))?'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.':'No fue posible consultar tus beneficiarios. Intenta de nuevo.'});});
+   return()=>{alive=false;};
+  },[identityKey,revision,retry]);
+  return {...(state.identityKey===identityKey?state:{phase:'loading'}),retry:()=>setRetry(v=>v+1)};
+ }
+ function SavingsBeneficiarySignatures({signatures}){
+  const [image,setImage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const mounted=useRef(true);React.useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+  async function open(path){setError('');setBusy(true);setImage('');try{const url=await window.SavingsRepository.getBeneficiarySignature(path);if(mounted.current)setImage(url);}catch(e){if(mounted.current)setError('No se pudo abrir la firma. Intenta de nuevo.');}finally{if(mounted.current)setBusy(false);}}
+  const files=(signatures||[]).filter(s=>s.status==='STORED'&&s.path),missing=(signatures||[]).filter(s=>s.status!=='STORED').length;
+  return h('div',{'data-beneficiary-signatures':''},files.map((s,i)=>h('button',{type:'button',className:'sav-retry',key:s.path,disabled:busy,onClick:()=>open(s.path),style:{margin:'8px 8px 8px 0'}},'Ver firma'+(files.length>1?' '+(i+1):''))),
+   missing>0&&h('p',null,'Hay '+missing+' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'),
+   busy&&h('p',{role:'status'},'Abriendo firma…'),error&&h('p',{role:'alert'},error),image&&h('div',null,h('img',{src:image,alt:'Firma de autorización de beneficiarios',style:{display:'block',maxWidth:'100%',background:'#fff',border:'1px solid var(--line)',borderRadius:12},onError:()=>{setImage('');setError('La firma no se pudo mostrar. Vuelve a abrirla.');}}),h('button',{type:'button',className:'sav-retry',onClick:()=>setImage('')},'Cerrar firma')));
+ }
+ function SavingsBeneficiarySignaturePad({value,onChange}){
+  const wrap=useRef(null),change=useRef(onChange),[revision,setRevision]=useState(0);change.current=onChange;
+  React.useEffect(()=>{let width=wrap.current.clientWidth;const observer=new ResizeObserver(()=>{const next=wrap.current.clientWidth;if(next!==width){width=next;change.current('');setRevision(v=>v+1);}});observer.observe(wrap.current);return()=>observer.disconnect();},[]);
+  return h('div',{ref:wrap},h(window.SignaturePad,{key:revision,value,onChange,label:'Firma de autorización'}));
+ }
+ const BENEFICIARY_CSS = `
 .ben-v2{--guinda:#910022;--guinda-600:#7e0020;--guinda-50:#fbeef1;--guinda-100:#f3d6de;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--ink:#14213d;--ink-2:#5a6378;--ink-3:#97a0b3;--ink-4:#c4cad6;--surface:#fff;--surface-2:#eef1f6;--bg:#f2f3f5;--hairline:#e6eaf1;--line:rgba(20,33,61,.08);--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--neo-md:0 14px 30px -12px rgba(20,33,61,.2),0 4px 10px -2px rgba(20,33,61,.06);--neo-inset:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);--glow:0 10px 26px -6px rgba(209,31,58,.55);--ok:#13794A;--ok-bg:#E7F6ED;--bad:#C0341D;--bad-bg:#FDEAEA;--warn:#8A5A00;--warn-bg:#FDF3DC;--font:'Nunito',system-ui,sans-serif;--mono:'Spline Sans Mono',ui-monospace,monospace}
 .ben-v2 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .ben-v2 body{margin:0;font-family:var(--font);background:#d9dee8;color:var(--ink);display:grid;place-items:start center;min-height:100dvh;padding:24px 0}
@@ -18041,37 +17762,16 @@ Object.assign(window, {
 @media (prefers-reduced-motion:reduce){.ben-v2 *{transition:none!important;animation:none!important}}
 
 `;
-  const BEN_COLORS = ['#910022', '#1B6CA8', '#13794A', '#8A5A00', '#6A3FA0', '#B3261E'];
-  const benColor = i => BEN_COLORS[i % BEN_COLORS.length];
-  const benMoney = n => n == null || !Number.isFinite(n) ? 'No disponible' : new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN'
-  }).format(n);
-  const benProjection = (balance, pct) => balance == null ? null : balance * Number(pct) / 100;
-  const benTotal = rows => rows.reduce((n, r) => n + Math.round((Number(r.percentage) || 0) * 100), 0);
-  const benIcon = (name, size = 18) => name === 'edit' ? h('svg', {
-    width: size,
-    height: size,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2.1,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    'aria-hidden': true
-  }, h('path', {
-    d: 'M4 20h4L20 8a2.8 2.8 0 0 0-4-4L4 16v4Z'
-  }), h('path', {
-    d: 'm14.5 5.5 4 4'
-  })) : h(window.Icon, {
-    name,
-    size,
-    'aria-hidden': true
-  });
-  const benInitials = name => name.trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '—';
-  // Styles copied from the approved HTML, scoped to this flow. Sizing follows the
-  // existing text-scale preference; the standalone phone frame is not reproduced.
-  const BEN_RESPONSIVE = `
+ const BEN_COLORS=['#910022','#1B6CA8','#13794A','#8A5A00','#6A3FA0','#B3261E'];
+ const benColor=i=>BEN_COLORS[i%BEN_COLORS.length];
+ const benMoney=n=>n==null||!Number.isFinite(n)?'No disponible':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+ const benProjection=(balance,pct)=>balance==null?null:balance*Number(pct)/100;
+ const benTotal=rows=>rows.reduce((n,r)=>n+Math.round((Number(r.percentage)||0)*100),0);
+ const benIcon=(name,size=18)=>name==='edit'?h('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.1,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true},h('path',{d:'M4 20h4L20 8a2.8 2.8 0 0 0-4-4L4 16v4Z'}),h('path',{d:'m14.5 5.5 4 4'})):h(window.Icon,{name,size,'aria-hidden':true});
+ const benInitials=name=>name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'—';
+ // Styles copied from the approved HTML, scoped to this flow. Sizing follows the
+ // existing text-scale preference; the standalone phone frame is not reproduced.
+ const BEN_RESPONSIVE=`
  .ben-v2{position:absolute;inset:0;z-index:20;width:100%;height:100%;max-width:none;border-radius:0;box-shadow:none;background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
  .ben-v2 .top{padding-top:calc(15px + env(safe-area-inset-top))}.ben-v2 .scroll{min-height:0;overscroll-behavior:contain}.ben-v2 .pad{padding-bottom:24px}.ben-v2 .bar{gap:8px;flex-wrap:wrap}.ben-v2 .bar .btn{flex:1;min-width:0}
  .ben-v2 button,.ben-v2 input[type=range]{min-height:44px}.ben-v2 .top button,.ben-v2 .icobtn{min-width:44px;min-height:44px}.ben-v2 .btn{height:auto;min-height:52px;padding:12px;white-space:normal;line-height:1.35}.ben-v2 .tag{min-height:44px}
@@ -18084,891 +17784,114 @@ Object.assign(window, {
  @media(min-width:700px){.ben-v2 .scroll>.pad,.ben-v2 .doc,.ben-v2>.bar,.ben-v2>.top,.ben-v2 .sheet{width:min(100%,560px);margin-left:auto;margin-right:auto}.ben-v2>.top{width:100%;padding-left:max(18px,calc((100% - 524px)/2));padding-right:max(18px,calc((100% - 524px)/2))}}
  @media(prefers-reduced-motion:reduce){.ben-v2 *{animation:none!important;transition:none!important}}
  `;
-  function BenDistribution({
-    rows,
-    hero = false
-  }) {
-    const remaining = Math.max(0, 10000 - benTotal(rows)) / 100;
-    return h(React.Fragment, null, h('div', {
-      className: hero ? 'rail' : 'split',
-      'aria-hidden': true
-    }, rows.map((r, i) => h('i', {
-      key: i,
-      style: {
-        flexGrow: Math.max(0, Number(r.percentage) || 0),
-        flexBasis: 0,
-        background: hero ? undefined : benColor(i)
-      }
-    })), remaining > 0 && h('i', {
-      className: 'rest',
-      style: {
-        flexGrow: remaining,
-        flexBasis: 0,
-        background: hero ? undefined : '#dfe4ee'
-      }
-    })), !hero && h('div', {
-      className: 'legend'
-    }, rows.map((r, i) => h('span', {
-      key: i
-    }, h('b', {
-      style: {
-        background: benColor(i)
-      }
-    }), (r.full_name.trim().split(/\s+/)[0] || 'Sin nombre') + ' · ' + (Number(r.percentage) || 0) + '%')), remaining > 0 && h('span', null, 'Sin asignar · ' + remaining + '%')));
+ function BenDistribution({rows,hero=false}){
+  const remaining=Math.max(0,10000-benTotal(rows))/100;
+  return h(React.Fragment,null,h('div',{className:hero?'rail':'split','aria-hidden':true},rows.map((r,i)=>h('i',{key:i,style:{flexGrow:Math.max(0,Number(r.percentage)||0),flexBasis:0,background:hero?undefined:benColor(i)}})),remaining>0&&h('i',{className:'rest',style:{flexGrow:remaining,flexBasis:0,background:hero?undefined:'#dfe4ee'}})),!hero&&h('div',{className:'legend'},rows.map((r,i)=>h('span',{key:i},h('b',{style:{background:benColor(i)}}),(r.full_name.trim().split(/\s+/)[0]||'Sin nombre')+' · '+(Number(r.percentage)||0)+'%')),remaining>0&&h('span',null,'Sin asignar · '+remaining+'%')));
+ }
+ function BenSheet({title,onClose,children}){
+  const ref=useRef(null),close=useRef(onClose);close.current=onClose;
+  React.useEffect(()=>{const previous=document.activeElement,el=ref.current,overlay=el.parentElement;const siblings=[...overlay.parentElement.children].filter(node=>node!==overlay).map(node=>[node,node.inert]);siblings.forEach(([node])=>{node.inert=true;});el.focus();return()=>{siblings.forEach(([node,inert])=>{node.inert=inert;});if(previous&&previous.isConnected)previous.focus();};},[]);
+  function keyboard(e){if(e.key==='Escape'){e.stopPropagation();close.current();}if(e.key==='Tab'){const controls=[...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter(x=>x.getClientRects().length);if(!controls.length){e.preventDefault();return;}const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===ref.current)){e.preventDefault();first.focus();}}}
+  return h('div',{className:'sheetpad open',onMouseDown:e=>{if(e.target===e.currentTarget)close.current();}},h('section',{className:'sheet',role:'dialog','aria-modal':true,'aria-label':title,tabIndex:-1,ref,onKeyDown:keyboard},h('div',{className:'grab'}),h('div',{className:'sheet-head'},h('h2',{className:'stit',style:{margin:0}},title),h('button',{type:'button',className:'icobtn','aria-label':'Cerrar',onClick:onClose},benIcon('close'))),children));
+ }
+ function BenRow({row,index,balance,onClick,signatureText}){
+  return h(onClick?'button':'div',{type:onClick?'button':undefined,className:'prow',onClick},h('span',{className:'edge',style:{background:benColor(index)}}),h('span',{className:'av',style:{background:benColor(index)}},benInitials(row.full_name)),h('span',{style:{flex:1,minWidth:90}},h('span',{className:'pname'},row.full_name),h('span',{className:'prel'},row.relationship||'Parentesco por confirmar',signatureText&&h('span',{className:'firm'},signatureText))),h('span',{className:'pamt'},h('span',{className:'n',style:{color:benColor(index)}},Number(row.percentage)+'%'),h('span',{className:'m'},benMoney(benProjection(balance,row.percentage)))),onClick&&benIcon('chevR'));
+ }
+ function SavingsBeneficiariesExperience({state,balanceView,onClose,onSaved}){
+  const [editing,setEditing]=useState(false),[detail,setDetail]=useState(null),ref=useRef(null);
+  React.useEffect(()=>{const previous=document.activeElement;ref.current?.focus();return()=>{if(previous&&previous.isConnected)previous.focus();};},[editing]);
+  const data=state.data,rows=data?data.beneficiaries:[],balance=balanceView.value;
+  const signatures=data?data.signatures:[],stored=signatures.filter(s=>s.status==='STORED'&&s.path).length;
+  // The RPC exposes version documents, not a per-person signature mapping.
+  const signatureText=stored?'Firma de designación disponible':'Falta firma';
+  if(editing)return h(SavingsBeneficiariesForm,{beneficiaries:editing.beneficiaries,versionId:editing.version_id,balance,onSaved,onClose:()=>setEditing(false)});
+  const remaining=(10000-benTotal(rows))/100;
+  return h('section',{className:'ben-v2',ref,tabIndex:-1,'aria-label':'Beneficiarios','data-beneficiaries-v2':'summary'},h('style',null,BENEFICIARY_CSS+BEN_RESPONSIVE),h('header',{className:'top'},h('button',{type:'button',onClick:onClose,'aria-label':'Volver a Ahorro'},benIcon('arrowL')),h('div',null,h('h1',null,'Beneficiarios'),h('div',{className:'sub'},'Quién cobra tu ahorro'))),
+   h('main',{className:'scroll'},h('div',{className:'doc'},h('div',{className:'seal'},h('svg',{width:150,height:150,viewBox:'0 0 100 100',fill:'none',stroke:'#fff',strokeWidth:1.6,'aria-hidden':true},h('circle',{cx:50,cy:50,r:46}),h('circle',{cx:50,cy:50,r:37}),h('path',{d:'M50 13v74M13 50h74'}))),h('div',{className:'k'},'TU AHORRO ACTUAL'),h('div',{className:'money','data-beneficiaries-balance':balance==null?'':balance},balanceView.label),h('div',{className:'note'},'Estimación con tu saldo actual y los porcentajes que tú decidas.'),state.phase==='ready'&&h(React.Fragment,null,h(BenDistribution,{rows,hero:true}),h('div',{className:'veredicto'},benIcon(remaining===0?'check':'info'),remaining===0?'Repartido al 100% entre '+rows.length+(rows.length===1?' persona':' personas'):'Falta repartir '+remaining+'% · '+benMoney(benProjection(balance,remaining))))),
+    h('div',{className:'pad'},state.phase==='loading'&&h('p',{role:'status'},'Consultando tus beneficiarios…'),state.phase==='error'&&h('div',null,h('p',{role:'alert'},state.error),h('button',{className:'btn pri block',onClick:state.retry},'Reintentar')),
+     state.phase==='ready'&&h(React.Fragment,null,h('div',{className:'sh'},h('b',null,'QUIÉN COBRA Y CUÁNTO'),h('s',null,'proyección actual')),rows.length?h('div',{className:'list','data-savings-beneficiaries':''},rows.map((row,index)=>h(BenRow,{key:row.id,row,index,balance,signatureText,onClick:()=>setDetail({row,index})}))):h('div',{className:'empty'},h('div',{className:'ic'},benIcon('users',26)),h('b',null,'Nadie designado todavía'),h('s',null,'No hay beneficiarios registrados.')),
+      data.pending_count>0&&h('div',{className:'state warn',role:'status',style:{marginTop:16}},'Hay registros anteriores pendientes de revisión que no forman parte de tu distribución vigente.'),h('div',{className:'foot'},benIcon('info',14),h('span',null,'Los importes son proyecciones sobre el saldo actual, no cantidades futuras garantizadas. El cambio sustituye la designación vigente y conserva su historia.'))))),
+   state.phase==='ready'&&data.can_edit&&h('footer',{className:'bar'},h('button',{className:'btn pri block',onClick:()=>setEditing(data)},benIcon('edit'),'Cambiar beneficiarios')),
+   detail&&h(BenSheet,{title:detail.row.full_name,onClose:()=>setDetail(null)},h('div',{className:'prel'},detail.row.relationship||'Parentesco por confirmar'),h('div',{className:'detail-grid'},h('div',null,h('small',null,'LE CORRESPONDE'),h('strong',{style:{color:benColor(detail.index)}},Number(detail.row.percentage)+'%')),h('div',null,h('small',null,'RECIBIRÍA HOY · ESTIMACIÓN'),h('strong',null,benMoney(benProjection(balance,detail.row.percentage))))),h('div',{className:'state '+(stored?'ok':'warn')},signatureText),h('p',null,'Documentos de firma de esta designación. No acreditan la aceptación individual del beneficiario.'),h(SavingsBeneficiarySignatures,{signatures}),h('button',{className:'btn sec block',onClick:()=>setDetail(null)},'Cerrar detalle')));
+ }
+ function SavingsBeneficiariesForm({beneficiaries,versionId,onSaved,onClose,balance}){
+  const [rows,setRows]=useState(()=>beneficiaries?.length?beneficiaries.map(x=>({full_name:x.full_name,relationship:x.relationship||'',percentage:String(x.percentage)})):[{full_name:'',relationship:'',percentage:'100'}]);
+  const [busy,setBusy]=useState(false),[review,setReview]=useState(false),[error,setError]=useState(''),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[signatureRevision,setSignatureRevision]=useState(0),[saved,setSaved]=useState(false);
+  const [remove,setRemove]=useState(null),[signing,setSigning]=useState(false),[cancel,setCancel]=useState(false),[stroke,setStroke]=useState('');
+  const heading=useRef(null),scroll=useRef(null);
+  React.useEffect(()=>{heading.current?.focus();scroll.current?.scrollTo(0,0);},[review,saved]);
+  const lock=useRef(false),attempt=useRef();
+  function reset(){setReview(false);setError('');setSignature('');setAccepted(false);setSignatureRevision(v=>v+1);attempt.current=null;}
+  const update=(i,k,v)=>{setRows(a=>a.map((r,n)=>n===i?{...r,[k]:v}:r));reset();};
+  const cents=rows.reduce((n,r)=>n+Math.round(Number(r.percentage)*100),0);
+  const valid=rows.length>0&&rows.length<=20&&cents===10000&&rows.every(r=>r.full_name.trim().length>=3&&r.full_name.trim().length<=180&&(!r.relationship.trim()||r.relationship.trim().length>=2&&r.relationship.trim().length<=80)&&/^\d+(\.\d{1,2})?$/.test(r.percentage)&&Number(r.percentage)>0&&Number(r.percentage)<=100);
+  async function submit(e){e.preventDefault();if(e.nativeEvent&&e.nativeEvent.submitter&&e.nativeEvent.submitter.getAttribute('data-beneficiary-submit')!=='true')return;if(lock.current||!valid||saved)return;if(!review){setReview(true);return;}if(!signature||!accepted)return;
+   lock.current=true;setBusy(true);setError('');if(!attempt.current)attempt.current=crypto.randomUUID();
+   try{await window.SavingsRepository.replaceBeneficiaries(rows.map(r=>({full_name:r.full_name.trim(),relationship:r.relationship.trim()||null,percentage:Number(r.percentage)})),attempt.current,{signature,accepted,versionId});setSaved(true);onSaved();}
+   catch(e){setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message))?'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.':/OVER_100|INVALID/.test(String(e.message))?'Revisa nombres y porcentajes. El total no puede superar el 100 %.':'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');}
+   finally{lock.current=false;setBusy(false);}
   }
-  function BenSheet({
-    title,
-    onClose,
-    children
-  }) {
-    const ref = useRef(null),
-      close = useRef(onClose);
-    close.current = onClose;
-    React.useEffect(() => {
-      const previous = document.activeElement,
-        el = ref.current,
-        overlay = el.parentElement;
-      const siblings = [...overlay.parentElement.children].filter(node => node !== overlay).map(node => [node, node.inert]);
-      siblings.forEach(([node]) => {
-        node.inert = true;
-      });
-      el.focus();
-      return () => {
-        siblings.forEach(([node, inert]) => {
-          node.inert = inert;
-        });
-        if (previous && previous.isConnected) previous.focus();
-      };
-    }, []);
-    function keyboard(e) {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        close.current();
-      }
-      if (e.key === 'Tab') {
-        const controls = [...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter(x => x.getClientRects().length);
-        if (!controls.length) {
-          e.preventDefault();
-          return;
-        }
-        const first = controls[0],
-          last = controls[controls.length - 1];
-        if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === ref.current)) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-    return h('div', {
-      className: 'sheetpad open',
-      onMouseDown: e => {
-        if (e.target === e.currentTarget) close.current();
-      }
-    }, h('section', {
-      className: 'sheet',
-      role: 'dialog',
-      'aria-modal': true,
-      'aria-label': title,
-      tabIndex: -1,
-      ref,
-      onKeyDown: keyboard
-    }, h('div', {
-      className: 'grab'
-    }), h('div', {
-      className: 'sheet-head'
-    }, h('h2', {
-      className: 'stit',
-      style: {
-        margin: 0
-      }
-    }, title), h('button', {
-      type: 'button',
-      className: 'icobtn',
-      'aria-label': 'Cerrar',
-      onClick: onClose
-    }, benIcon('close'))), children));
-  }
-  function BenRow({
-    row,
-    index,
-    balance,
-    onClick,
-    signatureText
-  }) {
-    return h(onClick ? 'button' : 'div', {
-      type: onClick ? 'button' : undefined,
-      className: 'prow',
-      onClick
-    }, h('span', {
-      className: 'edge',
-      style: {
-        background: benColor(index)
-      }
-    }), h('span', {
-      className: 'av',
-      style: {
-        background: benColor(index)
-      }
-    }, benInitials(row.full_name)), h('span', {
-      style: {
-        flex: 1,
-        minWidth: 90
-      }
-    }, h('span', {
-      className: 'pname'
-    }, row.full_name), h('span', {
-      className: 'prel'
-    }, row.relationship || 'Parentesco por confirmar', signatureText && h('span', {
-      className: 'firm'
-    }, signatureText))), h('span', {
-      className: 'pamt'
-    }, h('span', {
-      className: 'n',
-      style: {
-        color: benColor(index)
-      }
-    }, Number(row.percentage) + '%'), h('span', {
-      className: 'm'
-    }, benMoney(benProjection(balance, row.percentage)))), onClick && benIcon('chevR'));
-  }
-  function SavingsBeneficiariesExperience({
-    state,
-    balanceView,
-    onClose,
-    onSaved
-  }) {
-    const [editing, setEditing] = useState(false),
-      [detail, setDetail] = useState(null),
-      ref = useRef(null);
-    React.useEffect(() => {
-      const previous = document.activeElement;
-      ref.current?.focus();
-      return () => {
-        if (previous && previous.isConnected) previous.focus();
-      };
-    }, [editing]);
-    const data = state.data,
-      rows = data ? data.beneficiaries : [],
-      balance = balanceView.value;
-    const signatures = data ? data.signatures : [],
-      stored = signatures.filter(s => s.status === 'STORED' && s.path).length;
-    // The RPC exposes version documents, not a per-person signature mapping.
-    const signatureText = stored ? 'Firma de designación disponible' : 'Falta firma';
-    if (editing) return h(SavingsBeneficiariesForm, {
-      beneficiaries: editing.beneficiaries,
-      versionId: editing.version_id,
-      balance,
-      onSaved,
-      onClose: () => setEditing(false)
-    });
-    const remaining = (10000 - benTotal(rows)) / 100;
-    return h('section', {
-      className: 'ben-v2',
-      ref,
-      tabIndex: -1,
-      'aria-label': 'Beneficiarios',
-      'data-beneficiaries-v2': 'summary'
-    }, h('style', null, BENEFICIARY_CSS + BEN_RESPONSIVE), h('header', {
-      className: 'top'
-    }, h('button', {
-      type: 'button',
-      onClick: onClose,
-      'aria-label': 'Volver a Ahorro'
-    }, benIcon('arrowL')), h('div', null, h('h1', null, 'Beneficiarios'), h('div', {
-      className: 'sub'
-    }, 'Quién cobra tu ahorro'))), h('main', {
-      className: 'scroll'
-    }, h('div', {
-      className: 'doc'
-    }, h('div', {
-      className: 'seal'
-    }, h('svg', {
-      width: 150,
-      height: 150,
-      viewBox: '0 0 100 100',
-      fill: 'none',
-      stroke: '#fff',
-      strokeWidth: 1.6,
-      'aria-hidden': true
-    }, h('circle', {
-      cx: 50,
-      cy: 50,
-      r: 46
-    }), h('circle', {
-      cx: 50,
-      cy: 50,
-      r: 37
-    }), h('path', {
-      d: 'M50 13v74M13 50h74'
-    }))), h('div', {
-      className: 'k'
-    }, 'TU AHORRO ACTUAL'), h('div', {
-      className: 'money',
-      'data-beneficiaries-balance': balance == null ? '' : balance
-    }, balanceView.label), h('div', {
-      className: 'note'
-    }, 'Estimación con tu saldo actual y los porcentajes que tú decidas.'), state.phase === 'ready' && h(React.Fragment, null, h(BenDistribution, {
-      rows,
-      hero: true
-    }), h('div', {
-      className: 'veredicto'
-    }, benIcon(remaining === 0 ? 'check' : 'info'), remaining === 0 ? 'Repartido al 100% entre ' + rows.length + (rows.length === 1 ? ' persona' : ' personas') : 'Falta repartir ' + remaining + '% · ' + benMoney(benProjection(balance, remaining))))), h('div', {
-      className: 'pad'
-    }, state.phase === 'loading' && h('p', {
-      role: 'status'
-    }, 'Consultando tus beneficiarios…'), state.phase === 'error' && h('div', null, h('p', {
-      role: 'alert'
-    }, state.error), h('button', {
-      className: 'btn pri block',
-      onClick: state.retry
-    }, 'Reintentar')), state.phase === 'ready' && h(React.Fragment, null, h('div', {
-      className: 'sh'
-    }, h('b', null, 'QUIÉN COBRA Y CUÁNTO'), h('s', null, 'proyección actual')), rows.length ? h('div', {
-      className: 'list',
-      'data-savings-beneficiaries': ''
-    }, rows.map((row, index) => h(BenRow, {
-      key: row.id,
-      row,
-      index,
-      balance,
-      signatureText,
-      onClick: () => setDetail({
-        row,
-        index
-      })
-    }))) : h('div', {
-      className: 'empty'
-    }, h('div', {
-      className: 'ic'
-    }, benIcon('users', 26)), h('b', null, 'Nadie designado todavía'), h('s', null, 'No hay beneficiarios registrados.')), data.pending_count > 0 && h('div', {
-      className: 'state warn',
-      role: 'status',
-      style: {
-        marginTop: 16
-      }
-    }, 'Hay registros anteriores pendientes de revisión que no forman parte de tu distribución vigente.'), h('div', {
-      className: 'foot'
-    }, benIcon('info', 14), h('span', null, 'Los importes son proyecciones sobre el saldo actual, no cantidades futuras garantizadas. El cambio sustituye la designación vigente y conserva su historia.'))))), state.phase === 'ready' && data.can_edit && h('footer', {
-      className: 'bar'
-    }, h('button', {
-      className: 'btn pri block',
-      onClick: () => setEditing(data)
-    }, benIcon('edit'), 'Cambiar beneficiarios')), detail && h(BenSheet, {
-      title: detail.row.full_name,
-      onClose: () => setDetail(null)
-    }, h('div', {
-      className: 'prel'
-    }, detail.row.relationship || 'Parentesco por confirmar'), h('div', {
-      className: 'detail-grid'
-    }, h('div', null, h('small', null, 'LE CORRESPONDE'), h('strong', {
-      style: {
-        color: benColor(detail.index)
-      }
-    }, Number(detail.row.percentage) + '%')), h('div', null, h('small', null, 'RECIBIRÍA HOY · ESTIMACIÓN'), h('strong', null, benMoney(benProjection(balance, detail.row.percentage))))), h('div', {
-      className: 'state ' + (stored ? 'ok' : 'warn')
-    }, signatureText), h('p', null, 'Documentos de firma de esta designación. No acreditan la aceptación individual del beneficiario.'), h(SavingsBeneficiarySignatures, {
-      signatures
-    }), h('button', {
-      className: 'btn sec block',
-      onClick: () => setDetail(null)
-    }, 'Cerrar detalle')));
-  }
-  function SavingsBeneficiariesForm({
-    beneficiaries,
-    versionId,
-    onSaved,
-    onClose,
-    balance
-  }) {
-    const [rows, setRows] = useState(() => beneficiaries?.length ? beneficiaries.map(x => ({
-      full_name: x.full_name,
-      relationship: x.relationship || '',
-      percentage: String(x.percentage)
-    })) : [{
-      full_name: '',
-      relationship: '',
-      percentage: '100'
-    }]);
-    const [busy, setBusy] = useState(false),
-      [review, setReview] = useState(false),
-      [error, setError] = useState(''),
-      [signature, setSignature] = useState(''),
-      [accepted, setAccepted] = useState(false),
-      [signatureRevision, setSignatureRevision] = useState(0),
-      [saved, setSaved] = useState(false);
-    const [remove, setRemove] = useState(null),
-      [signing, setSigning] = useState(false),
-      [cancel, setCancel] = useState(false),
-      [stroke, setStroke] = useState('');
-    const heading = useRef(null),
-      scroll = useRef(null);
-    React.useEffect(() => {
-      heading.current?.focus();
-      scroll.current?.scrollTo(0, 0);
-    }, [review, saved]);
-    const lock = useRef(false),
-      attempt = useRef();
-    function reset() {
-      setReview(false);
-      setError('');
-      setSignature('');
-      setAccepted(false);
-      setSignatureRevision(v => v + 1);
-      attempt.current = null;
-    }
-    const update = (i, k, v) => {
-      setRows(a => a.map((r, n) => n === i ? {
-        ...r,
-        [k]: v
-      } : r));
-      reset();
-    };
-    const cents = rows.reduce((n, r) => n + Math.round(Number(r.percentage) * 100), 0);
-    const valid = rows.length > 0 && rows.length <= 20 && cents === 10000 && rows.every(r => r.full_name.trim().length >= 3 && r.full_name.trim().length <= 180 && (!r.relationship.trim() || r.relationship.trim().length >= 2 && r.relationship.trim().length <= 80) && /^\d+(\.\d{1,2})?$/.test(r.percentage) && Number(r.percentage) > 0 && Number(r.percentage) <= 100);
-    async function submit(e) {
-      e.preventDefault();
-      if (e.nativeEvent && e.nativeEvent.submitter && e.nativeEvent.submitter.getAttribute('data-beneficiary-submit') !== 'true') return;
-      if (lock.current || !valid || saved) return;
-      if (!review) {
-        setReview(true);
-        return;
-      }
-      if (!signature || !accepted) return;
-      lock.current = true;
-      setBusy(true);
-      setError('');
-      if (!attempt.current) attempt.current = crypto.randomUUID();
-      try {
-        await window.SavingsRepository.replaceBeneficiaries(rows.map(r => ({
-          full_name: r.full_name.trim(),
-          relationship: r.relationship.trim() || null,
-          percentage: Number(r.percentage)
-        })), attempt.current, {
-          signature,
-          accepted,
-          versionId
-        });
-        setSaved(true);
-        onSaved();
-      } catch (e) {
-        setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message)) ? 'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.' : /OVER_100|INVALID/.test(String(e.message)) ? 'Revisa nombres y porcentajes. El total no puede superar el 100 %.' : 'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');
-      } finally {
-        lock.current = false;
-        setBusy(false);
-      }
-    }
-    const remaining = Number.isFinite(cents) ? (10000 - cents) / 100 : 100;
-    const signButton = () => h('button', {
-      type: 'button',
-      className: 'sign tocable ' + (signature ? '' : 'pend'),
-      disabled: busy || !valid,
-      onClick: () => {
-        setStroke('');
-        setSigning(true);
-      }
-    }, h('span', {
-      className: 'thumb'
-    }, signature ? h('img', {
-      src: signature,
-      alt: 'Firma de autorización capturada'
-    }) : benIcon('edit', 22)), h('span', {
-      style: {
-        flex: 1
-      }
-    }, h('b', null, signature ? 'Firma capturada' : 'Firmar aquí'), h('s', null, signature ? 'Toca para volver a firmar' : 'Una firma autoriza toda la designación')), benIcon('chevR'));
-    return h('section', {
-      className: 'ben-v2',
-      'data-beneficiaries-v2': saved ? 'saved' : review ? 'review' : 'editor'
-    }, h('style', null, BENEFICIARY_CSS + BEN_RESPONSIVE), h('header', {
-      className: 'top'
-    }, h('button', {
-      type: 'button',
-      disabled: busy,
-      onClick: () => review ? setReview(false) : setCancel(true),
-      'aria-label': 'Regresar'
-    }, benIcon('arrowL')), h('div', null, h('h1', {
-      ref: heading,
-      tabIndex: -1
-    }, saved ? 'Cambio registrado' : review ? 'Revisa el cambio' : 'Cambiar beneficiarios'), h('div', {
-      className: 'sub'
-    }, 'Reparto de ' + benMoney(balance)))), h('form', {
-      onSubmit: submit,
-      'data-beneficiaries-form': '',
-      style: {
-        display: 'contents'
-      }
-    }, h('main', {
-      className: 'scroll',
-      ref: scroll
-    }, h('div', {
-      className: 'pad',
-      style: {
-        paddingTop: 16
-      }
-    }, saved ? h('div', {
-      className: 'empty',
-      role: 'status'
-    }, h('div', {
-      className: 'ic'
-    }, benIcon('check', 26)), h('b', null, 'Tus beneficiarios quedaron guardados'), h('s', null, 'La firma y el consentimiento quedaron registrados con la nueva designación.')) : h(React.Fragment, null, h('div', {
-      className: 'hero'
-    }, h('div', {
-      className: 'k'
-    }, 'REPARTO ASIGNADO'), h('div', {
-      className: 'money',
-      style: {
-        fontSize: 'calc(27px * var(--text-scale,1))',
-        color: remaining === 0 ? 'var(--ok)' : remaining < 0 ? 'var(--bad)' : 'var(--ink)'
-      }
-    }, (Number.isFinite(cents) ? cents / 100 : 0) + '%'), h('div', {
-      className: 'note'
-    }, 'de 100% · ' + benMoney(benProjection(balance, Math.min(100, cents / 100)))), h(BenDistribution, {
-      rows
-    })), h('div', {
-      className: 'status ' + (remaining === 0 ? 'ok' : remaining < 0 ? 'bad' : 'warn'),
-      role: remaining < 0 ? 'alert' : 'status',
-      'aria-live': 'polite'
-    }, h('span', {
-      className: 'ic'
-    }, benIcon(remaining === 0 ? 'check' : 'info')), h('div', null, h('b', null, remaining === 0 ? 'Reparto completo · 100%' : remaining < 0 ? 'Te pasaste por ' + -remaining + '%' : 'Falta repartir ' + remaining + '%'), h('s', null, remaining < 0 ? 'La suma de los porcentajes no puede superar el 100 %.' : remaining > 0 ? benMoney(benProjection(balance, remaining)) + ' por asignar. Completa el reparto antes de revisar.' : 'Revisa nombres y porcentajes antes de confirmar.'))), review ? h(React.Fragment, null, h('div', {
-      className: 'list'
-    }, rows.map((row, index) => h(BenRow, {
-      key: index,
-      row,
-      index,
-      balance
-    })), h('div', {
-      className: 'revtot'
-    }, h('span', null, 'Total repartido'), h('b', null, '100%'))), h('div', {
-      className: 'state warn',
-      style: {
-        marginTop: 16
-      }
-    }, benIcon('info'), h('div', null, h('b', null, 'Sustituye la designación anterior'), h('s', null, 'La distribución vigente será reemplazada. Su registro histórico se conserva.'))), signButton(), h('label', {
-      className: 'consent'
-    }, h('input', {
-      type: 'checkbox',
-      checked: accepted,
-      disabled: busy || !signature,
-      onChange: e => {
-        setAccepted(e.target.checked);
-        attempt.current = null;
-      }
-    }), 'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')) : h(React.Fragment, null, rows.length >= 2 && h('button', {
-      type: 'button',
-      className: 'smart nuevo',
-      onClick: () => {
-        const base = Math.floor(10000 / rows.length);
-        setRows(a => a.map((r, i) => ({
-          ...r,
-          percentage: String((i === a.length - 1 ? 10000 - base * (a.length - 1) : base) / 100)
-        })));
-        reset();
-      }
-    }, h('span', {
-      className: 'sheen'
-    }), h('span', {
-      className: 'ic'
-    }, benIcon('users', 20)), h('span', null, h('b', null, 'Repartir en partes iguales'), h('s', null, 'Reparto exacto del 100%'))), rows.map((r, i) => h('fieldset', {
-      className: 'ed',
-      key: i,
-      disabled: busy
-    }, h('div', {
-      className: 'edhead'
-    }, h('span', {
-      className: 'n',
-      style: {
-        background: benColor(i)
-      }
-    }, i + 1), h('b', null, r.full_name || 'Beneficiario ' + (i + 1)), h('button', {
-      type: 'button',
-      className: 'icobtn danger',
-      'aria-label': 'Quitar beneficiario ' + (i + 1),
-      onClick: () => setRemove(i)
-    }, benIcon('trash'))), h('label', null, h('span', {
-      className: 'lab'
-    }, 'Nombre completo'), h('input', {
-      className: 'field',
-      value: r.full_name,
-      maxLength: 180,
-      placeholder: 'Nombre como aparece en su identificación',
-      autoComplete: 'off',
-      onChange: e => update(i, 'full_name', e.target.value)
-    })), h('span', {
-      className: 'lab'
-    }, 'PARENTESCO'), h('div', {
-      className: 'chips',
-      role: 'group',
-      'aria-label': 'Parentesco de beneficiario ' + (i + 1)
-    }, ['Cónyuge', 'Hijo(a)', 'Madre', 'Padre', 'Hermano(a)', 'Otro'].map(p => h('button', {
-      type: 'button',
-      className: 'tag',
-      key: p,
-      'aria-pressed': r.relationship === p,
-      onClick: () => update(i, 'relationship', r.relationship === p ? '' : p)
-    }, p))), r.relationship && !['Cónyuge', 'Hijo(a)', 'Madre', 'Padre', 'Hermano(a)', 'Otro'].includes(r.relationship) && h('p', {
-      className: 'prel'
-    }, 'Parentesco registrado: ' + r.relationship), h('span', {
-      className: 'lab'
-    }, 'LE CORRESPONDE'), h('div', {
-      className: 'pctrow'
-    }, h('button', {
-      type: 'button',
-      className: 'step',
-      'aria-label': 'Bajar 5 por ciento',
-      disabled: Number(r.percentage) <= 0,
-      onClick: () => update(i, 'percentage', String(Math.max(0, Math.round(((Number(r.percentage) || 0) - 5) * 100) / 100)))
-    }, '−5'), h('div', {
-      className: 'pctbox'
-    }, h('input', {
-      'aria-label': 'Porcentaje',
-      inputMode: 'decimal',
-      value: r.percentage,
-      maxLength: 6,
-      onChange: e => update(i, 'percentage', e.target.value.replace(',', '.'))
-    }), h('em', null, '%')), h('button', {
-      type: 'button',
-      className: 'step',
-      'aria-label': 'Subir 5 por ciento',
-      disabled: Number(r.percentage) >= 100,
-      onClick: () => update(i, 'percentage', String(Math.min(100, Math.round(((Number(r.percentage) || 0) + 5) * 100) / 100)))
-    }, '+5')), h('input', {
-      type: 'range',
-      className: 'rng',
-      min: 0,
-      max: 100,
-      step: 0.01,
-      value: Number(r.percentage) || 0,
-      'aria-label': 'Porcentaje con deslizador',
-      onChange: e => update(i, 'percentage', e.target.value)
-    }), h('div', {
-      className: 'money-hint'
-    }, 'Recibiría ', h('b', null, benMoney(benProjection(balance, r.percentage))), ' de tu ahorro actual · estimación'), remaining > 0 && h('div', {
-      className: 'quick'
-    }, h('button', {
-      type: 'button',
-      className: 'tag',
-      onClick: () => update(i, 'percentage', String(Math.round(((Number(r.percentage) || 0) + remaining) * 100) / 100))
-    }, 'Darle el ' + remaining + '% restante')), remove === i && h('div', {
-      className: 'confirm'
-    }, h('span', null, '¿Quitar a esta persona del reparto?'), h('button', {
-      type: 'button',
-      className: 'btn sm sec',
-      onClick: () => setRemove(null)
-    }, 'No'), h('button', {
-      type: 'button',
-      className: 'btn sm pri',
-      onClick: () => {
-        setRows(a => a.filter((_, n) => n !== i));
-        setRemove(null);
-        reset();
-      }
-    }, 'Quitar')))), h('button', {
-      type: 'button',
-      className: 'btn sec block',
-      disabled: busy || rows.length >= 20,
-      onClick: () => {
-        setRows(a => [...a, {
-          full_name: '',
-          relationship: '',
-          percentage: String(Math.max(0, remaining))
-        }]);
-        setRemove(null);
-        reset();
-      }
-    }, benIcon('plus'), rows.length >= 20 ? 'Máximo 20 beneficiarios' : 'Agregar beneficiario'), signButton()), h('div', {
-      className: 'foot'
-    }, benIcon('info', 14), h('span', null, 'Los importes son proyecciones sobre tu saldo actual. Se guardan porcentajes, no cantidades monetarias.')), error && h('p', {
-      role: 'alert'
-    }, error)))), h('footer', {
-      className: 'bar'
-    }, saved ? h('button', {
-      type: 'button',
-      className: 'btn pri block',
-      onClick: onClose
-    }, 'Entendido') : h(React.Fragment, null, h('button', {
-      type: 'button',
-      className: 'btn out',
-      disabled: busy,
-      onClick: () => review ? setReview(false) : setCancel(true)
-    }, review ? 'Volver a editar' : 'Cancelar'), review && !signature ? h('button', {
-      type: 'button',
-      className: 'btn pri',
-      disabled: busy || !valid,
-      onClick: () => {
-        setStroke('');
-        setSigning(true);
-      }
-    }, 'Confirmar y firmar') : h('button', {
-      type: 'submit',
-      'data-beneficiary-submit': 'true',
-      className: 'btn pri',
-      disabled: !valid || busy || review && (!signature || !accepted)
-    }, busy ? 'Guardando…' : review ? 'Confirmar beneficiarios' : 'Revisar cambios')))), signing && h(BenSheet, {
-      title: 'Firma de autorización',
-      onClose: () => {
-        setSigning(false);
-        setStroke('');
-      }
-    }, h('p', null, 'Traza tu firma con el dedo o el mouse. Autoriza la distribución completa; no representa la firma individual de cada beneficiario.'), h(SavingsBeneficiarySignaturePad, {
-      key: signatureRevision,
-      value: stroke,
-      onChange: setStroke
-    }), h('button', {
-      type: 'button',
-      className: 'btn pri block',
-      disabled: !stroke,
-      onClick: () => {
-        setSignature(stroke);
-        setAccepted(false);
-        attempt.current = null;
-        setSigning(false);
-        setStroke('');
-      }
-    }, 'Guardar firma')), cancel && h(BenSheet, {
-      title: '¿Descartar esta propuesta?',
-      onClose: () => setCancel(false)
-    }, h('p', null, 'La designación guardada seguirá vigente.'), h('button', {
-      type: 'button',
-      className: 'btn sec block',
-      onClick: () => setCancel(false)
-    }, 'Seguir editando'), h('button', {
-      type: 'button',
-      className: 'btn pri block',
-      style: {
-        marginTop: 12
-      },
-      onClick: onClose
-    }, 'Descartar cambios')));
-  }
-  window.useSavingsBeneficiaries = useSavingsBeneficiaries;
-  window.SavingsBeneficiarySignatures = SavingsBeneficiarySignatures;
-  window.SavingsBeneficiariesExperience = SavingsBeneficiariesExperience;
-  function joinDate(value) {
-    return value ? new Date(value + (String(value).length === 10 ? 'T12:00:00Z' : '')).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'America/Hermosillo'
-    }) : 'Por confirmar';
-  }
-  function joinReason(reason) {
-    return {
-      IDENTITY_REVIEW: 'La encargada debe revisar la vinculaci?n de tu Folio.',
-      OPENING_REVIEW: 'Tu registro anterior est? en revisi?n. La encargada debe confirmarlo antes de un nuevo ingreso.',
-      CATEGORY_REQUIRED: 'Falta confirmar tu tipo de trabajador para calcular las fechas. Comun?cate con la encargada.',
-      INTAKE_CLOSED: 'Por el momento no se reciben nuevos ingresos al ahorro.',
-      REQUEST_PENDING: 'Tu solicitud de ingreso est? pendiente de revisi?n.'
-    }[reason] || '';
-  }
-  function SavingsJoinSchedule({
-    rows
-  }) {
-    return h('details', {
-      'data-savings-join-schedule': ''
-    }, h('summary', null, 'Pr?ximos descuentos previstos'), h('p', null, 'Proyecci?n de un a?o. No es saldo recibido y no incluye rendimientos.'), (rows || []).map(r => h('div', {
-      className: 'sav-row',
-      key: r.contribution_date
-    }, h('span', null, joinDate(r.contribution_date)), h('b', null, new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(r.expected_amount)))));
-  }
-  function SavingsJoinAccess({
-    revision,
-    onJoin,
-    existing
-  }) {
-    const [context, setContext] = useState(null),
-      [error, setError] = useState(false),
-      [retry, setRetry] = useState(0);
-    React.useEffect(() => {
-      let alive = true;
-      setContext(null);
-      setError(false);
-      Promise.resolve().then(() => window.SavingsRepository.getJoinContext()).then(v => {
-        if (alive) setContext(v);
-      }).catch(() => {
-        if (alive) setError(true);
-      });
-      return () => {
-        alive = false;
-      };
-    }, [revision, retry]);
-    if (existing && (!context || !context.request && !context.can_join)) return error ? h('p', {
-      role: 'alert'
-    }, 'No se pudo consultar el registro de ingreso.', h('button', {
-      className: 'sav-retry',
-      onClick: () => setRetry(v => v + 1)
-    }, 'Reintentar')) : null;
-    const request = context && context.request,
-      states = {
-        SUBMITTED: 'Recibida',
-        UNDER_REVIEW: 'En revisi?n',
-        APPROVED: 'Aprobada',
-        REJECTED: 'Rechazada',
-        CANCELLED: 'Cancelada',
-        APPLIED: 'Aplicada'
-      };
-    const pending = request && ['SUBMITTED', 'UNDER_REVIEW'].includes(request.status);
-    if (request && ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'APPLIED'].includes(request.status)) return h('section', {
-      'data-savings-join-access': '',
-      'data-savings-join-pending': pending ? '' : undefined,
-      'data-savings-join-status': request.status,
-      'aria-label': 'Tu solicitud de ingreso',
-      style: {
-        margin: existing ? '12px 16px' : undefined,
-        padding: 16,
-        border: '1px solid #e4e4e8',
-        borderRadius: 17,
-        background: '#fff',
-        boxShadow: '0 3px 8px rgba(20,33,61,.05)',
-        color: 'var(--ink, #14213d)',
-        fontFamily: 'inherit',
-        textAlign: 'left',
-        flexShrink: 0,
-        maxHeight: existing ? '45vh' : undefined,
-        overflowY: 'auto',
-        boxSizing: 'border-box'
-      }
-    }, h('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        flexWrap: 'wrap'
-      }
-    }, h('h3', {
-      style: {
-        margin: 0,
-        flex: '1 1 140px',
-        fontSize: 14,
-        fontWeight: 800
-      }
-    }, 'Tu solicitud de ingreso'), h('span', {
-      style: {
-        padding: '5px 9px',
-        borderRadius: 999,
-        background: pending ? '#fff1d5' : '#edf8f1',
-        color: pending ? '#9a6813' : '#157f4a',
-        fontSize: 10,
-        fontWeight: 750
-      }
-    }, pending ? request.status === 'SUBMITTED' ? 'Recibida' : 'En revisi\u00f3n' : states[request.status])), h('p', {
-      style: {
-        margin: '10px 0 14px',
-        fontSize: 12,
-        lineHeight: 1.5,
-        color: 'var(--muted, #85858d)'
-      }
-    }, pending ? 'Tu solicitud est\u00e1 pendiente de aprobaci\u00f3n.' : request.status === 'APPROVED' ? 'Tu solicitud de ingreso fue aprobada.' : 'Tu solicitud de ingreso fue aplicada.'), h('div', {
-      style: {
-        padding: '12px 14px',
-        borderRadius: 12,
-        background: 'var(--pink, #f9edf2)'
-      }
-    }, h('span', {
-      style: {
-        display: 'block',
-        fontSize: 11,
-        color: 'var(--muted, #85858d)',
-        fontWeight: 650
-      }
-    }, 'Monto por descuento'), h('strong', {
-      style: {
-        display: 'block',
-        marginTop: 3,
-        fontSize: 24,
-        fontWeight: 800,
-        fontVariantNumeric: 'tabular-nums',
-        color: 'var(--wine, #a00042)'
-      }
-    }, new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(request.amount))), h('dl', {
-      style: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 12,
-        margin: '14px 0',
-        fontSize: 11
-      }
-    }, [['Registrada', joinDate(request.submitted_at)], ['Primer descuento previsto', joinDate(request.effective_from)]].map(([label, value]) => h('div', {
-      key: label
-    }, h('dt', {
-      style: {
-        color: 'var(--muted, #85858d)',
-        lineHeight: 1.4
-      }
-    }, label), h('dd', {
-      style: {
-        margin: '4px 0 0',
-        fontWeight: 750,
-        lineHeight: 1.4
-      }
-    }, value)))), h('details', {
-      'data-savings-join-schedule': '',
-      style: {
-        borderTop: '1px solid var(--line, #e4e4e8)',
-        paddingTop: 12,
-        fontSize: 12
-      }
-    }, h('summary', {
-      style: {
-        cursor: 'pointer',
-        color: 'var(--wine, #a00042)',
-        fontWeight: 750,
-        lineHeight: 1.5
-      }
-    }, 'Pr\u00f3ximos descuentos previstos'), h('p', {
-      style: {
-        fontSize: 11,
-        lineHeight: 1.5,
-        color: 'var(--muted, #85858d)'
-      }
-    }, 'Proyecci\u00f3n de un a\u00f1o. No es saldo recibido y no incluye rendimientos.'), (context.upcoming || []).map(r => h('div', {
-      className: 'sav-row',
-      key: r.contribution_date
-    }, h('span', null, joinDate(r.contribution_date)), h('b', null, new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(r.expected_amount))))));
-    return h('div', {
-      'data-savings-join-access': '',
-      style: existing ? {
-        margin: '12px 16px'
-      } : undefined
-    }, (!existing || context.can_join) && h('button', {
-      type: 'button',
-      className: 'sav-primary',
-      disabled: !context || !context.can_join,
-      onClick: () => onJoin(context)
-    }, 'Ingresar al ahorro'), !context && !error && !existing && h('p', {
-      role: 'status'
-    }, 'Consultando disponibilidad?'), error && h('p', {
-      role: 'alert'
-    }, 'No se pudo consultar el ingreso al ahorro. ', h('button', {
-      className: 'sav-retry',
-      onClick: () => setRetry(v => v + 1)
-    }, 'Reintentar')), context && joinReason(context.reason) && h('p', null, joinReason(context.reason)), request && h('div', {
-      style: {
-        textAlign: 'left'
-      }
-    }, h('h3', null, 'Tu solicitud de ingreso'), h('p', null, states[request.status] || 'Por confirmar'), h('p', null, 'Registrada: ' + joinDate(request.submitted_at)), h('p', null, 'Monto por descuento: ' + new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(request.amount)), h('p', null, 'Primer descuento previsto: ' + joinDate(request.effective_from)), h(SavingsJoinSchedule, {
-      rows: context.upcoming
-    })));
-  }
-  window.SavingsJoinAccess = SavingsJoinAccess;
-  window.SavingsRequestHistory = SavingsRequestHistory;
-  window.SavingsBeneficiariesForm = SavingsBeneficiariesForm;
-  window.SavingsRequestForm = SavingsRequestForm;
+  const remaining=Number.isFinite(cents)?(10000-cents)/100:100;
+  const signButton=()=>h('button',{type:'button',className:'sign tocable '+(signature?'':'pend'),disabled:busy||!valid,onClick:()=>{setStroke('');setSigning(true);}},h('span',{className:'thumb'},signature?h('img',{src:signature,alt:'Firma de autorización capturada'}):benIcon('edit',22)),h('span',{style:{flex:1}},h('b',null,signature?'Firma capturada':'Firmar aquí'),h('s',null,signature?'Toca para volver a firmar':'Una firma autoriza toda la designación')),benIcon('chevR'));
+  return h('section',{className:'ben-v2','data-beneficiaries-v2':saved?'saved':review?'review':'editor'},h('style',null,BENEFICIARY_CSS+BEN_RESPONSIVE),
+   h('header',{className:'top'},h('button',{type:'button',disabled:busy,onClick:()=>review?setReview(false):setCancel(true),'aria-label':'Regresar'},benIcon('arrowL')),h('div',null,h('h1',{ref:heading,tabIndex:-1},saved?'Cambio registrado':review?'Revisa el cambio':'Cambiar beneficiarios'),h('div',{className:'sub'},'Reparto de '+benMoney(balance)))),
+   h('form',{onSubmit:submit,'data-beneficiaries-form':'',style:{display:'contents'}},h('main',{className:'scroll',ref:scroll},h('div',{className:'pad',style:{paddingTop:16}},saved?h('div',{className:'empty',role:'status'},h('div',{className:'ic'},benIcon('check',26)),h('b',null,'Tus beneficiarios quedaron guardados'),h('s',null,'La firma y el consentimiento quedaron registrados con la nueva designación.')):h(React.Fragment,null,
+    h('div',{className:'hero'},h('div',{className:'k'},'REPARTO ASIGNADO'),h('div',{className:'money',style:{fontSize:'calc(27px * var(--text-scale,1))',color:remaining===0?'var(--ok)':remaining<0?'var(--bad)':'var(--ink)'}},(Number.isFinite(cents)?cents/100:0)+'%'),h('div',{className:'note'},'de 100% · '+benMoney(benProjection(balance,Math.min(100,cents/100)))),h(BenDistribution,{rows})),
+    h('div',{className:'status '+(remaining===0?'ok':remaining<0?'bad':'warn'),role:remaining<0?'alert':'status','aria-live':'polite'},h('span',{className:'ic'},benIcon(remaining===0?'check':'info')),h('div',null,h('b',null,remaining===0?'Reparto completo · 100%':remaining<0?'Te pasaste por '+(-remaining)+'%':'Falta repartir '+remaining+'%'),h('s',null,remaining<0?'La suma de los porcentajes no puede superar el 100 %.':remaining>0?benMoney(benProjection(balance,remaining))+' por asignar. Completa el reparto antes de revisar.':'Revisa nombres y porcentajes antes de confirmar.'))),
+    review?h(React.Fragment,null,h('div',{className:'list'},rows.map((row,index)=>h(BenRow,{key:index,row,index,balance})),h('div',{className:'revtot'},h('span',null,'Total repartido'),h('b',null,'100%'))),h('div',{className:'state warn',style:{marginTop:16}},benIcon('info'),h('div',null,h('b',null,'Sustituye la designación anterior'),h('s',null,'La distribución vigente será reemplazada. Su registro histórico se conserva.'))),signButton(),h('label',{className:'consent'},h('input',{type:'checkbox',checked:accepted,disabled:busy||!signature,onChange:e=>{setAccepted(e.target.checked);attempt.current=null;}}),'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')):
+    h(React.Fragment,null,rows.length>=2&&h('button',{type:'button',className:'smart nuevo',onClick:()=>{const base=Math.floor(10000/rows.length);setRows(a=>a.map((r,i)=>({...r,percentage:String((i===a.length-1?10000-base*(a.length-1):base)/100)})));reset();}},h('span',{className:'sheen'}),h('span',{className:'ic'},benIcon('users',20)),h('span',null,h('b',null,'Repartir en partes iguales'),h('s',null,'Reparto exacto del 100%'))),
+     rows.map((r,i)=>h('fieldset',{className:'ed',key:i,disabled:busy},h('div',{className:'edhead'},h('span',{className:'n',style:{background:benColor(i)}},i+1),h('b',null,r.full_name||'Beneficiario '+(i+1)),h('button',{type:'button',className:'icobtn danger','aria-label':'Quitar beneficiario '+(i+1),onClick:()=>setRemove(i)},benIcon('trash'))),
+      h('label',null,h('span',{className:'lab'},'Nombre completo'),h('input',{className:'field',value:r.full_name,maxLength:180,placeholder:'Nombre como aparece en su identificación',autoComplete:'off',onChange:e=>update(i,'full_name',e.target.value)})),
+      h('span',{className:'lab'},'PARENTESCO'),h('div',{className:'chips',role:'group','aria-label':'Parentesco de beneficiario '+(i+1)},['Cónyuge','Hijo(a)','Madre','Padre','Hermano(a)','Otro'].map(p=>h('button',{type:'button',className:'tag',key:p,'aria-pressed':r.relationship===p,onClick:()=>update(i,'relationship',r.relationship===p?'':p)},p))),
+      r.relationship&&!['Cónyuge','Hijo(a)','Madre','Padre','Hermano(a)','Otro'].includes(r.relationship)&&h('p',{className:'prel'},'Parentesco registrado: '+r.relationship),
+      h('span',{className:'lab'},'LE CORRESPONDE'),h('div',{className:'pctrow'},h('button',{type:'button',className:'step','aria-label':'Bajar 5 por ciento',disabled:Number(r.percentage)<=0,onClick:()=>update(i,'percentage',String(Math.max(0,Math.round(((Number(r.percentage)||0)-5)*100)/100)))},'−5'),h('div',{className:'pctbox'},h('input',{'aria-label':'Porcentaje',inputMode:'decimal',value:r.percentage,maxLength:6,onChange:e=>update(i,'percentage',e.target.value.replace(',','.'))}),h('em',null,'%')),h('button',{type:'button',className:'step','aria-label':'Subir 5 por ciento',disabled:Number(r.percentage)>=100,onClick:()=>update(i,'percentage',String(Math.min(100,Math.round(((Number(r.percentage)||0)+5)*100)/100)))},'+5')),
+      h('input',{type:'range',className:'rng',min:0,max:100,step:0.01,value:Number(r.percentage)||0,'aria-label':'Porcentaje con deslizador',onChange:e=>update(i,'percentage',e.target.value)}),h('div',{className:'money-hint'},'Recibiría ',h('b',null,benMoney(benProjection(balance,r.percentage))),' de tu ahorro actual · estimación'),
+      remaining>0&&h('div',{className:'quick'},h('button',{type:'button',className:'tag',onClick:()=>update(i,'percentage',String(Math.round(((Number(r.percentage)||0)+remaining)*100)/100))},'Darle el '+remaining+'% restante')),
+      remove===i&&h('div',{className:'confirm'},h('span',null,'¿Quitar a esta persona del reparto?'),h('button',{type:'button',className:'btn sm sec',onClick:()=>setRemove(null)},'No'),h('button',{type:'button',className:'btn sm pri',onClick:()=>{setRows(a=>a.filter((_,n)=>n!==i));setRemove(null);reset();}},'Quitar')))),
+     h('button',{type:'button',className:'btn sec block',disabled:busy||rows.length>=20,onClick:()=>{setRows(a=>[...a,{full_name:'',relationship:'',percentage:String(Math.max(0,remaining))}]);setRemove(null);reset();}},benIcon('plus'),rows.length>=20?'Máximo 20 beneficiarios':'Agregar beneficiario'),
+     signButton()),
+    h('div',{className:'foot'},benIcon('info',14),h('span',null,'Los importes son proyecciones sobre tu saldo actual. Se guardan porcentajes, no cantidades monetarias.')),
+    error&&h('p',{role:'alert'},error)))),
+    h('footer',{className:'bar'},saved?h('button',{type:'button',className:'btn pri block',onClick:onClose},'Entendido'):h(React.Fragment,null,h('button',{type:'button',className:'btn out',disabled:busy,onClick:()=>review?setReview(false):setCancel(true)},review?'Volver a editar':'Cancelar'),review&&!signature?h('button',{type:'button',className:'btn pri',disabled:busy||!valid,onClick:()=>{setStroke('');setSigning(true);}},'Confirmar y firmar'):h('button',{type:'submit','data-beneficiary-submit':'true',className:'btn pri',disabled:!valid||busy||review&&(!signature||!accepted)},busy?'Guardando…':review?'Confirmar beneficiarios':'Revisar cambios')))),
+   signing&&h(BenSheet,{title:'Firma de autorización',onClose:()=>{setSigning(false);setStroke('');}},h('p',null,'Traza tu firma con el dedo o el mouse. Autoriza la distribución completa; no representa la firma individual de cada beneficiario.'),h(SavingsBeneficiarySignaturePad,{key:signatureRevision,value:stroke,onChange:setStroke}),h('button',{type:'button',className:'btn pri block',disabled:!stroke,onClick:()=>{setSignature(stroke);setAccepted(false);attempt.current=null;setSigning(false);setStroke('');}},'Guardar firma')),
+   cancel&&h(BenSheet,{title:'¿Descartar esta propuesta?',onClose:()=>setCancel(false)},h('p',null,'La designación guardada seguirá vigente.'),h('button',{type:'button',className:'btn sec block',onClick:()=>setCancel(false)},'Seguir editando'),h('button',{type:'button',className:'btn pri block',style:{marginTop:12},onClick:onClose},'Descartar cambios')));
+ }
+ window.useSavingsBeneficiaries=useSavingsBeneficiaries;
+ window.SavingsBeneficiarySignatures=SavingsBeneficiarySignatures;
+ window.SavingsBeneficiariesExperience=SavingsBeneficiariesExperience;
+
+ function joinDate(value){return value?new Date(value+(String(value).length===10?'T12:00:00Z':'')).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Hermosillo'}):'Por confirmar';}
+ function joinReason(reason){return {IDENTITY_REVIEW:'La encargada debe revisar la vinculación de tu Folio.',OPENING_REVIEW:'Tu registro anterior está en revisión. La encargada debe confirmarlo antes de un nuevo ingreso.',CATEGORY_REQUIRED:'Falta confirmar tu tipo de trabajador para calcular las fechas. Comunícate con la encargada.',INTAKE_CLOSED:'Por el momento no se reciben nuevos ingresos al ahorro.',REQUEST_PENDING:'Hay un ingreso anterior pendiente de resolución. Consulta su seguimiento.'}[reason]||'';}
+ function SavingsJoinSchedule({rows}){return h('details',{'data-savings-join-schedule':''},h('summary',null,'Próximos descuentos previstos'),h('p',null,'Proyección de un año. No es saldo recibido y no incluye rendimientos.'),(rows||[]).map(r=>h('div',{className:'sav-row',key:r.contribution_date},h('span',null,joinDate(r.contribution_date)),h('b',null,new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.expected_amount)))));}
+ function SavingsJoinAccess({revision,onJoin,existing}){
+  const [context,setContext]=useState(null),[error,setError]=useState(false),[retry,setRetry]=useState(0);
+  React.useEffect(()=>{let alive=true;setContext(null);setError(false);Promise.resolve().then(()=>window.SavingsRepository.getJoinContext()).then(v=>{if(alive)setContext(v);}).catch(()=>{if(alive)setError(true);});return()=>{alive=false;};},[revision,retry]);
+  if(existing&&(!context||!context.request&&!context.can_join))return error?h('p',{role:'alert'},'No se pudo consultar el registro de ingreso.',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')):null;
+  const request=context&&context.request,states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Ingreso registrado',REJECTED:'Rechazada',CANCELLED:'Cancelada',APPLIED:'Aplicada'};
+  const pending=request&&['SUBMITTED','UNDER_REVIEW'].includes(request.status);
+  if(request&&['SUBMITTED','UNDER_REVIEW','APPROVED','APPLIED'].includes(request.status))return h('section',{'data-savings-join-access':'','data-savings-join-pending':pending?'':undefined,'data-savings-join-status':request.status,'aria-label':'Tu solicitud de ingreso',style:{margin:existing?'12px 16px':undefined,padding:16,border:'1px solid #e4e4e8',borderRadius:17,background:'#fff',boxShadow:'0 3px 8px rgba(20,33,61,.05)',color:'var(--ink, #14213d)',fontFamily:'inherit',textAlign:'left',flexShrink:0,maxHeight:existing?'45vh':undefined,overflowY:'auto',boxSizing:'border-box'}},
+   h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
+    h('h3',{style:{margin:0,flex:'1 1 140px',fontSize:14,fontWeight:800}},pending?'Seguimiento de tu ingreso':'Tu ingreso al ahorro'),
+    h('span',{style:{padding:'5px 9px',borderRadius:999,background:pending?'#fff1d5':'#edf8f1',color:pending?'#9a6813':'#157f4a',fontSize:10,fontWeight:750}},pending?(request.status==='SUBMITTED'?'Recibida':'En revisi\u00f3n'):states[request.status])),
+   h('p',{style:{margin:'10px 0 14px',fontSize:12,lineHeight:1.5,color:'var(--muted, #85858d)'}},pending?'Este ingreso anterior o asistido sigue pendiente de resolución. Su seguimiento se conserva.':'Tu ingreso quedó registrado. Consulta la fecha del primer descuento previsto.'),
+   h('div',{style:{padding:'12px 14px',borderRadius:12,background:'var(--pink, #f9edf2)'}},
+    h('span',{style:{display:'block',fontSize:11,color:'var(--muted, #85858d)',fontWeight:650}},'Monto por descuento'),
+    h('strong',{style:{display:'block',marginTop:3,fontSize:24,fontWeight:800,fontVariantNumeric:'tabular-nums',color:'var(--wine, #a00042)'}},new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(request.amount))),
+   h('dl',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,margin:'14px 0',fontSize:11}},
+    [['Registrada',joinDate(request.submitted_at)],['Primer descuento previsto',joinDate(request.effective_from)]].map(([label,value])=>h('div',{key:label},h('dt',{style:{color:'var(--muted, #85858d)',lineHeight:1.4}},label),h('dd',{style:{margin:'4px 0 0',fontWeight:750,lineHeight:1.4}},value)))),
+   h('details',{'data-savings-join-schedule':'',style:{borderTop:'1px solid var(--line, #e4e4e8)',paddingTop:12,fontSize:12}},
+    h('summary',{style:{cursor:'pointer',color:'var(--wine, #a00042)',fontWeight:750,lineHeight:1.5}},'Pr\u00f3ximos descuentos previstos'),
+    h('p',{style:{fontSize:11,lineHeight:1.5,color:'var(--muted, #85858d)'}},'Proyecci\u00f3n de un a\u00f1o. No es saldo recibido y no incluye rendimientos.'),
+    (context.upcoming||[]).map(r=>h('div',{className:'sav-row',key:r.contribution_date},h('span',null,joinDate(r.contribution_date)),h('b',null,new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.expected_amount))))));
+  return h('div',{'data-savings-join-access':'',style:existing?{margin:'12px 16px'}:undefined},
+   (!existing||context.can_join)&&h('button',{type:'button',className:'sav-primary',disabled:!context||!context.can_join,onClick:()=>onJoin(context)},'Ingresar al ahorro'),
+   !context&&!error&&!existing&&h('p',{role:'status'},'Consultando disponibilidad…'),error&&h('p',{role:'alert'},'No se pudo consultar el ingreso al ahorro. ',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')),
+   context&&joinReason(context.reason)&&h('p',null,joinReason(context.reason)),request&&h('div',{style:{textAlign:'left'}},h('h3',null,'Tu solicitud de ingreso'),h('p',null,states[request.status]||'Por confirmar'),h('p',null,'Registrada: '+joinDate(request.submitted_at)),h('p',null,'Monto por descuento: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(request.amount)),h('p',null,'Primer descuento previsto: '+joinDate(request.effective_from)),h(SavingsJoinSchedule,{rows:context.upcoming})));
+ }
+ window.SavingsJoinAccess=SavingsJoinAccess;
+ window.SavingsRequestHistory=SavingsRequestHistory;
+ window.SavingsBeneficiariesForm=SavingsBeneficiariesForm;
+ window.SavingsRequestForm=SavingsRequestForm;
 })();
 })();
 /* @@file screens-savings.jsx */
@@ -56959,13 +55882,43 @@ Object.assign(window, {
 /* Server-owned private Savings review. No local financial authority. */
 (function(){
  'use strict';
- async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
+ let revision=0;
+ const pending=new Map();
+ const contextKey=()=>{const state=window.AffiliateAuth&&window.AffiliateAuth.getState();const admin=window.AdminRepository&&window.AdminRepository.getState();return JSON.stringify([state&&state.session&&state.session.user&&state.session.user.id,state&&state.affiliate&&state.affiliate.id,admin&&admin.assignment]);};
+ function invalidate(){revision++;pending.clear();}
+ async function rpc(name,args,signal){
+  const context=contextKey(),write=!/^(get_|preview_)/.test(name);
+  if(write)invalidate();
+  try{
+   let request=window.SutiSupabase.getClient().rpc(name,args);
+   if(signal)request=request.abortSignal(signal);
+   const {data,error}=await request;
+   if(context!==contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+   if(error)throw error;return data;
+  }finally{if(write)invalidate();}
+ }
+ function workspace(name,args,signal){
+  const version=revision,key=JSON.stringify([contextKey(),version,name,args]);
+  if(!signal&&pending.has(key))return pending.get(key);
+  const promise=rpc(name,args,signal).then(data=>{if(version!==revision)throw Error('SAVINGS_DATA_CHANGED');return data;});
+  if(signal)return promise;
+  pending.set(key,promise);
+  const clear=()=>{if(pending.get(key)===promise)pending.delete(key);};
+  promise.then(clear,clear);return promise;
+ }
  async function settlement(action,requestId,command,key){
-  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('savings-settlement',{body:{action,request_id:requestId,command:command||{},key:key||null}});
+  const context=contextKey(),write=action!=='PREVIEW';if(write)invalidate();
+  let result;try{result=await window.SutiSupabase.getClient().functions.invoke('savings-settlement',{body:{action,request_id:requestId,command:command||{},key:key||null}});}finally{if(write)invalidate();}
+  if(context!==contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+  const {data,error}=result;
   if(error){let body;try{body=await error.context.clone().json();}catch(_){}throw Error(body&&body.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');}
   if(!data||data.error||!data.data)throw Error(data&&data.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');return data.data;
  }
  window.SavingsPanelRepository=Object.freeze({
+  contextKey,revision:()=>revision,invalidate,
+  summary:(options={})=>workspace('get_admin_savings_workspace_summary',{},options.signal),
+  people:(q={})=>workspace('get_admin_savings_workspace_people',{p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:q.limit||20},q.signal),
+  person:q=>workspace('get_admin_savings_workspace_person',{p_participant_id:q.participantId,p_history_offset:q.historyOffset||0,p_history_limit:q.historyLimit||10},q.signal),
   list:q=>rpc('get_admin_savings_panel',{p_tab:q.tab,p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:20}),
   detail:(id,offset=0,limit=6)=>rpc('get_admin_savings_panel_detail',{p_record_id:id,p_history_offset:offset,p_history_limit:limit}),
   affiliate:id=>rpc('get_admin_savings_panel_affiliate',{p_affiliate_id:id}),
@@ -57003,52 +55956,18 @@ Object.assign(window, {
 (function(){
 /* Presentational components reconstructed from the owner-supplied reference.
    No demo store, generated savers, financial calculations or persistence. */
-(function () {
-  const I = window.Icon;
-  const M = n => n == null ? 'Por confirmar' : typeof n !== 'number' || !Number.isFinite(n) ? 'Por revisar' : new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN'
-  }).format(n);
-  const MD = M;
-  const fmt = d => {
-    if (!d) return 'Sin fecha';
-    const date = new Date(d + 'T12:00:00Z');
-    return !/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(+date) || date.toISOString().slice(0, 10) !== d ? 'Fecha por revisar' : date.toLocaleDateString('es-MX', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC'
-    });
-  };
-  const estados = {
-    ahorrando: {
-      label: 'Ahorrando',
-      fg: '#13794A'
-    },
-    pausado: {
-      label: 'Sin descuento',
-      fg: '#9A6100'
-    },
-    baja: {
-      label: 'Dejó de ahorrar',
-      fg: '#C0341D'
-    },
-    revision: {
-      label: 'Por revisar',
-      fg: '#9A6100'
-    }
-  };
-  const St = () => ({
-    fmt,
-    estadoDe: a => estados[a.estado] || estados.revision,
-    ultimoDescuento: a => a.ultimo,
-    saldo: a => a.saldo
-  });
+(function(){
+ const I=window.Icon;
+ const M=n=>n==null?'Por confirmar':typeof n!=='number'||!Number.isFinite(n)?'Por revisar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+ const MD=M;
+ const fmt=d=>{if(!d)return 'Sin fecha';const date=new Date(d+'T12:00:00Z');return !/^\d{4}-\d{2}-\d{2}$/.test(d)||Number.isNaN(+date)||date.toISOString().slice(0,10)!==d?'Fecha por revisar':date.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});};
+ const estados={ahorrando:{label:'Ahorrando',fg:'#13794A'},pausado:{label:'Sin descuento',fg:'#9A6100'},baja:{label:'Dejó de ahorrar',fg:'#C0341D'},revision:{label:'Por revisar',fg:'#9A6100'}};
+ const St=()=>({fmt,estadoDe:a=>estados[a.estado]||estados.revision,ultimoDescuento:a=>a.ultimo,saldo:a=>a.saldo});
   function KPIs({
     k,
     onGo
   }) {
-    const cob = k.cobranza;
+    const cob = k.cobranza || {};
     return React.createElement('div', {
       style: {
         display: 'flex',
@@ -57085,7 +56004,7 @@ Object.assign(window, {
         letterSpacing: '.05em',
         opacity: .9
       }
-    }, 'AHORRO DE TODOS LOS AFILIADOS'), React.createElement('div', {
+    }, 'SALDO ACTUAL DEL PROGRAMA'), React.createElement('div', {
       style: {
         fontSize: 34,
         fontWeight: 900,
@@ -57107,11 +56026,11 @@ Object.assign(window, {
       name: 'users',
       size: 15,
       stroke: 2.2
-    }), k.activos + (k.current_summary ? ' ahorrando al día' : ' ahorrando al corte'), React.createElement('span', {
+    }), (k.activos == null ? 'Por confirmar' : k.activos) + ' con plan activo', React.createElement('span', {
       style: {
         opacity: .5
       }
-    }, '·'), k.afiliados + ' en el padrón')),
+    }, '·'), (k.afiliados == null ? 'Por confirmar' : k.afiliados) + ' afiliados en el padrón')),
     // apoyos
     React.createElement('div', {
       style: {
@@ -57120,7 +56039,7 @@ Object.assign(window, {
         gap: 10
       }
     }, React.createElement('button', {
-      onClick: () => onGo('cobranza'),
+      onClick: () => onGo('cobranza', k.prox),
       style: tile()
     }, head('calendar', 'PRÓXIMO DESCUENTO'), React.createElement('div', {
       style: {
@@ -57145,9 +56064,9 @@ Object.assign(window, {
         fontVariantNumeric: 'tabular-nums'
       }
     }, M(k.porRecibir))), React.createElement('button', {
-      onClick: () => onGo('cobranza'),
+      onClick: () => onGo('cobranza', cob.fecha),
       style: tile()
-    }, head('trending', 'ÚLTIMO PERIODO'), React.createElement('div', {
+    }, head('trending', 'ÚLTIMO PERIODO · '+fmt(cob.fecha)), React.createElement('div', {
       style: {
         fontSize: 20,
         fontWeight: 900,
@@ -57177,7 +56096,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontVariantNumeric: 'tabular-nums'
       }
-    }, cob.esperado == null ? 'Registrado: ' + MD(cob.recibido) : MD(cob.recibido) + ' de ' + MD(cob.esperado)))), React.createElement('div', {
+    }, cob.esperado==null?'Registrado: '+MD(cob.recibido):MD(cob.recibido) + ' de ' + MD(cob.esperado)))), React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -57271,23 +56190,20 @@ Object.assign(window, {
   function Row({
     a,
     onOpen,
-    right
+    right,
+    expanded,
+    controls
   }) {
     const s = St(),
-      e = s.estadoDe(a),
+      e = a.participant_id && a.estado === 'pausado' ? {...estados.pausado,label:'Sin aportación programada'} : s.estadoDe(a),
       ult = s.ultimoDescuento(a);
     return React.createElement('div', {
       onClick: onOpen,
       'data-savings-person-id': a.id,
+      'aria-expanded': expanded,
+      'aria-controls': controls,
       className: 'su-press svp-person',
-      role: 'button',
-      tabIndex: 0,
-      onKeyDown: e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpen();
-        }
-      },
+      role: 'button', tabIndex: 0, onKeyDown: e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();onOpen();}},
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -57322,8 +56238,7 @@ Object.assign(window, {
         fontSize: 13.5,
         fontWeight: 800,
         color: 'var(--ink)',
-        whiteSpace: 'normal',
-        overflowWrap: 'anywhere',
+        whiteSpace: 'normal', overflowWrap: 'anywhere',
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
@@ -57334,14 +56249,14 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 3
       }
-    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + M(a.aporte) + (a.proceso === 'JUB' ? ' mensual' : ['1', '3'].includes(a.proceso) ? ' quincenal' : ' · frecuencia por confirmar')), React.createElement('div', {
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + M(a.aporte) + (a.proceso === 'JUB' ? ' mensual' : ['1','3'].includes(a.proceso) ? ' quincenal' : ' · frecuencia por confirmar')), React.createElement('div', {
       style: {
         fontSize: 11.5,
         fontWeight: 700,
         color: ult ? 'var(--ink-3)' : '#C0341D',
         marginTop: 2
       }
-    }, ult ? 'Último descuento ' + s.fmt(ult) : 'Sin descuento registrado')), right || React.createElement('div', {
+    }, ult ? 'Última aportación ' + s.fmt(ult) : 'Sin aportación confirmada')), right || React.createElement('div', {
       style: {
         textAlign: 'right',
         flexShrink: 0
@@ -57363,7 +56278,7 @@ Object.assign(window, {
         marginTop: 3
       }
     }, e.label.toUpperCase())), React.createElement(I, {
-      name: 'chevR',
+      name: expanded === undefined ? 'chevR' : expanded ? 'chevU' : 'chevD',
       size: 17,
       stroke: 2.4,
       style: {
@@ -57474,16 +56389,8 @@ Object.assign(window, {
       }
     }, valor));
   }
-  window.SavingsPanelVisual = {
-    KPIs,
-    Row,
-    Titulo,
-    Tarjeta,
-    Fila,
-    M,
-    fmt,
-    estados
-  };
+
+window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
 })();
 })();
 /* @@file savings-certification-admin.jsx */
@@ -59084,7 +57991,7 @@ Object.assign(window, {
  const h=React.createElement,{useState,useEffect,useRef}=React,{Tarjeta,Fila,M,fmt}=window.SavingsPanelVisual;
  const validMoney=v=>v!==''&&v!=null&&/^\d+(?:\.\d{1,2})?$/.test(String(v))&&Number.isFinite(Number(v));
  const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'');
- const types={JOIN:'Nuevo ahorrador',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
+  const types={JOIN:'Ingreso al ahorro',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
  const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Aprobada',REJECTED:'Rechazada',SETTLED:'Pagada',APPLIED:'Aplicada',CANCELLED:'Cancelada',PENDING:'Pendiente'};
  const columns=[['capital_delivered','Capital entregado'],['yield_delivered','Rendimiento entregado'],['actual_received','Descuentos recibidos'],['yield_credited','Rendimiento abonado']];
  function explain(e){const s=String(e&&e.message||'');
@@ -59169,7 +58076,11 @@ Object.assign(window, {
    contribution&&h('p',{className:'svp-note'},'La fecha de aplicación se calculará con el plazo y el calendario de descuentos de esa persona.'),
    h(Notes,{value:draft.observation,onChange:v=>update('observation',v),disabled}));
  }
- function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
+  function RequestDocuments({requestId}){
+   const [opened,setOpened]=useState(false);
+   return h('details',{onToggle:event=>{if(event.target===event.currentTarget)setOpened(event.currentTarget.open);}},h('summary',{className:'svp-note'},'Documentos de esta operación'),opened&&h(window.GeneratedDocuments,{domain:'savings',operationId:requestId,admin:true}));
+  }
+  function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
   const [filter,setFilter]=useState(folio||initialNavigation?.filter||''),[query,setQuery]=useState(folio||initialNavigation?.query||''),[limit,setLimit]=useState(initialNavigation?.limit||8),[draft,setDraft]=useState(null),[action,setAction]=useState(null);
   const [category,setCategory]=useState(initialNavigation?.category||'ALL'),[statusFilter,setStatusFilter]=useState(initialNavigation?.statusFilter||(expanded&&!folio?'pending':'all'));
   const [focusedRequest,setFocusedRequest]=useState(requestId);
@@ -59199,18 +58110,18 @@ Object.assign(window, {
   }
   const valid=draft&&draft.folio!==''&&(draft.type==='TERMINATE'||(['JOIN','CHANGE_AMOUNT'].includes(draft.type)?validMoney(draft.new_amount):validMoney(draft.amount)))&&(draft.type!=='JOIN'||!!draft.process);
   return h(Tarjeta,{title:folio?'Solicitudes de esta persona':'Solicitudes de ahorro',icon:'receipt'},h(expanded?'div':'details',null,!expanded&&h('summary',{className:'svp-note'},'Abrir solicitudes nuevas y su seguimiento'),
-   h('p',{className:'svp-note'},folio?'Revisa y resuelve las solicitudes sin salir del expediente.':'Los nuevos ingresos requieren autorización. Abre una solicitud para revisar a la persona y tomar una decisión.'),
+    h('p',{className:'svp-note'},folio?'Consulta las operaciones de esta persona y actúa sólo cuando requieren una decisión.':data?.auto_join_enabled?'Los ingresos válidos de autoservicio se incorporan automáticamente. Aquí se atienden cambios, retiros y solicitudes anteriores que aún requieren una decisión.':'Consulta las operaciones que requieren una decisión y su seguimiento.'),
    !folio&&h(expanded?'details':React.Fragment,expanded?{className:'svp-request-search'}:null,expanded&&h('summary',{className:'svp-note'},'Buscar solicitudes por Folio'),h(Field,{label:'Buscar operaciones por Folio exacto',value:filter,disabled:blocked,onChange:setFilter,autoComplete:'off'}),h(Btn,{disabled:blocked,onClick:()=>{setQuery(filter);setLimit(8);command.clear();}},'Buscar operaciones')),h(Btn,{disabled:blocked,onClick:reload},'Actualizar operaciones'),h(Feedback,{state,reload}),
    expanded&&!focusedRequest&&h('div',{className:'svp-request-filters'},h(Select,{label:'Tipo de solicitud',value:category,disabled:blocked||!!draft||!!action,onChange:v=>{setCategory(v);setLimit(8);},options:[['ALL','Todas las solicitudes'],...Object.entries(types)]}),h(Select,{label:'Estado de las solicitudes',value:statusFilter,disabled:blocked||!!draft||!!action,onChange:v=>{setStatusFilter(v);setLimit(8);},options:[['pending','Pendientes de atención'],['all','Todos los estados']]})),
-   expanded&&!folio&&data&&!state.loading&&!state.error&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' solicitudes de nuevo ingreso pendientes en esta consulta.'),
+    expanded&&!folio&&data&&!state.loading&&!state.error&&allRows.some(r=>r.type==='JOIN'&&needsAttention(r))&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' ingreso(s) pendientes de resolución. Su historial y las autorizaciones de captura asistida se conservan.'),
    focusedRequest&&folio&&!draft&&!action&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>setFocusedRequest(null)},'Ver todas las solicitudes de esta persona'),
-   data&&data.can_create&&!draft&&!action&&h('div',{className:'svp-actions'},h(Btn,{tone:'primary',disabled:blocked,onClick:()=>{setDraft({folio:query,type:'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar nueva solicitud')),
+    data&&data.can_create&&!draft&&!action&&h('details',null,h('summary',{className:'svp-note'},'Registrar una operación asistida'),h('p',{className:'svp-note'},'Usa esta opción cuando necesitas capturar una operación por la persona. Conserva sus validaciones y autorizaciones.'),h(Btn,{tone:'outline',disabled:blocked,onClick:()=>{setDraft({folio:query,type:folio?'WITHDRAW':'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar operación')),
    draft&&h('div',{ref:withdrawalField},h(RequestForm,{draft,setDraft:changeDraft,disabled:blocked,fixedFolio:!!folio&&!!withdrawalIntent}),h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setDraft(null);command.clear();}},'Cancelar captura'),h(Btn,{tone:'primary',disabled:blocked||!valid,onClick:submit},'Guardar solicitud'))),
    data&&!state.loading&&!state.error&&!visibleRows.length&&h('p',{className:'svp-note'},requestId?'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.':statusFilter==='pending'?'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.':'No hay operaciones registradas para esta consulta.'),
    visibleRows.map(row=>h('article',{key:row.id,className:'svp-audit',ref:requestId===row.id?focus:null,tabIndex:requestId===row.id?-1:undefined,'data-request-id':row.id},h('b',null,row.name||'Folio '+row.folio),h('p',{className:'svp-note'},'Folio '+row.folio+' · '+(types[row.type]||'Operación de ahorro')+' · '+(states[row.status]||'Por revisar')),
-    h(window.GeneratedDocuments,{domain:'savings',operationId:row.id,admin:true}),
+     h(RequestDocuments,{requestId:row.id}),
     row.request_code&&h(Fila,{label:'Solicitud',valor:row.request_code}),row.amount!=null&&h(Fila,{label:'Importe solicitado',valor:M(row.amount)}),row.new_amount!=null&&h(Fila,{label:'Nueva aportación',valor:M(row.new_amount)}),['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type)&&h(Fila,{label:'Después del retiro',valor:row.continue_saving===true?'Continuará ahorrando':row.continue_saving===false?'Dejará de ahorrar':'Por confirmar'}),row.effective_date&&h(Fila,{label:'Fecha de aplicación',valor:fmt(row.effective_date)}),row.settlement_block_reason&&h('p',{className:'svp-note warn'},row.settlement_block_reason),
-    !draft&&!action&&onOpenPerson&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>onOpenPerson(row)},'Abrir expediente y revisar'),
+     !draft&&!action&&onOpenPerson&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>onOpenPerson(row)},'Ver persona y operación'),
     !onOpenPerson&&!draft&&!action&&h('div',{className:'svp-actions'},row.can_review===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'REVIEW')},'Revisar solicitud'),row.can_settle===true&&h(Btn,{tone:'primary',disabled:blocked,onClick:()=>select(row,'SETTLE')},'Registrar entrega'),row.can_cancel===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'CANCEL')},'Cancelar solicitud')),
     !onOpenPerson&&!draft&&!action&&row.requires_loan_verification===true&&h(WithdrawalCheck,{key:row.id+':'+row.status,row,disabled:blocked,onSettle:()=>select(row,'SETTLE')}),
     action&&action.row.id===row.id&&h('div',null,
@@ -59268,8 +58179,8 @@ Object.assign(window, {
  'use strict';
  const h=React.createElement,{useState,useEffect,useRef}=React,V=window.SavingsPanelVisual;
  const {KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados}=V;
- const tabs=[['padron','Ahorradores'],['pendientes','Pendientes'],['programa','Programa']];
- const programViews=[['cobranza','Descuentos del periodo'],['conciliacion','Conciliar por fecha'],['masivo','Confirmación por lote'],['reportes','Reportes'],['publicacion','Publicación'],['configuracion','Configuración']];
+ const tabs=[['resumen','Resumen'],['personas','Personas'],['atencion','Atención'],['programa','Programa']];
+ const programViews=[['conciliacion','Conciliar por fecha'],['reportes','Reportes'],['configuracion','Configuración']];
  const css=`.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .svp-work-heading{margin:24px 0 16px}.svp-work-heading h2{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.025em}.svp-context-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.svp-record-section{grid-column:1/-1;border:1px solid var(--hairline);border-radius:16px;background:#fff;min-width:0;overflow:hidden}.svp-record-section>summary{padding:18px 20px;font-size:16px;font-weight:850;cursor:pointer;min-height:52px;color:var(--ink)}.svp-record-section[open]>summary{border-bottom:1px solid var(--hairline);color:var(--guinda)}.svp-section-content{padding:16px;min-width:0}.svp-program-summary{margin:16px 0}.svp-program-summary>summary{padding:14px 0;font-weight:800;cursor:pointer}.svp-program-summary .svp-kpis{margin-top:14px}.svp-request-filters{display:grid;grid-template-columns:1fr 1fr;gap:16px}.svp .svp-note,.svp .svp-audit,.svp .svp-field{font-size:calc(14px * var(--text-scale,1))}.svp .svp-btn{font-size:calc(14px * var(--text-scale,1))!important;min-height:44px}.svp .svp-tabs button{font-size:calc(14px * var(--text-scale,1));min-height:46px}.svp .svp-tabs[role=tablist]{border-bottom:1px solid var(--hairline);padding-bottom:12px;gap:10px;margin-top:18px}.svp .svp-tabs[role=tablist] button{flex:1;border-radius:12px}.svp .svp-search{margin-bottom:20px;min-height:54px;border:1px solid var(--hairline-strong)}.svp-search .svp-btn{flex:none}.svp .svp-detail-grid{align-items:start}.svp .svp-notice{font-size:13px;flex-wrap:wrap}.svp .svp-record{padding:20px}.svp .svp-audit{padding:18px 0}.svp summary:focus-visible{outline:3px solid #456bc0;outline-offset:-3px}@container savings-panel (max-width:600px){.svp-request-filters{grid-template-columns:1fr;gap:0}.svp-section-content{padding:12px}.svp-context-nav>*{flex:1}.svp-work-heading h2{font-size:22px}.svp .svp-tabs[role=tablist]{gap:4px}.svp .svp-tabs[role=tablist] button{padding:10px 8px;white-space:normal}}
 `;
@@ -59319,10 +58230,10 @@ Object.assign(window, {
    return canWrite&&!r.identity_pending&&f.editable!==false?h('label',{className:'svp-field',key:f.key},f.label,h('input',{value:value==null?'':value,type:f.kind==='money'?'number':f.kind==='date'?'date':'text',step:f.kind==='money'?'.01':undefined,disabled:busy,onChange:e=>{if(r.status==='RESOLVED')setReviewStatus('IN_REVIEW');setDraft(x=>({...x,[f.key]:f.kind==='money'?(e.target.value===''?null:Number(e.target.value)):e.target.value}));command.current=null;}})):h(Fila,{key:f.key,label:f.label,valor:f.kind==='money'?M(value):value||'Sin dato'});
   }),canWrite&&h('label',{className:'svp-field'},'Observaciones (opcional)',h('textarea',{value:obs,disabled:busy,maxLength:4000,onChange:e=>{setObs(e.target.value);command.current=null;}})),canWrite&&h('label',{className:'svp-field'},'Resultado de la revisión',h('select',{'aria-label':'Resultado de la revisión',value:reviewStatus||r.status,disabled:busy||r.identity_pending,onChange:e=>{setReviewStatus(e.target.value);command.current=null;}},h('option',{value:'PENDING'},'Por revisar'),h('option',{value:'IN_REVIEW'},'En revisión'),h('option',{value:'RESOLVED'},'Revisada'))),err&&h('div',{role:'alert',className:'svp-error'},err),canWrite&&h(Btn,{tone:'primary full',onClick:save,disabled:busy||r.identity_pending||(!Object.keys(changes).length&&(!reviewStatus||reviewStatus===r.status)&&!obs.trim())},busy?'Guardando…':'Guardar revisión')));
  }
- function RecordSection({title,children,initialOpen=false,openRequest=0}){
+ function RecordSection({title,children,initialOpen=false,openRequest=0,unmountOnClose=false,beforeClose}){
   const [opened,setOpened]=useState(initialOpen),[visited,setVisited]=useState(initialOpen);
   useEffect(()=>{if(openRequest){setOpened(true);setVisited(true);}},[openRequest]);
-  return h('details',{className:'svp-record-section',open:opened,onToggle:e=>{setOpened(e.currentTarget.open);if(e.currentTarget.open)setVisited(true);}},h('summary',null,title),visited&&h('div',{className:'svp-section-content'},children));
+  return h('details',{className:'svp-record-section',open:opened,onToggle:e=>{if(e.target!==e.currentTarget)return;const next=e.currentTarget.open;if(!next&&opened&&beforeClose&&!beforeClose()){e.currentTarget.open=true;return;}setOpened(next);if(next)setVisited(true);}},h('summary',null,title),(unmountOnClose?opened:visited)&&h('div',{className:'svp-section-content'},children));
  }
  function Detail({id,onBack,onPrev,onNext,header,onChange,initialPeriod,initialSection,requestId,disabled=false,app}){
   const [state,reload]=useQuery(()=>window.SavingsPanelRepository.detail(id),[id]);const [extra,setExtra]=useState([]),[loadingMore,setLoadingMore]=useState(false),[extraError,setExtraError]=useState(''),[sheet,setSheet]=useState(null),[withdrawal,setWithdrawal]=useState(null),[note,setNote]=useState('');const generation=useRef(0);
@@ -59353,57 +58264,167 @@ Object.assign(window, {
   async function requestSaved(){setRequestRevision(v=>v+1);await onChange();}
   return h('div',null,header({title:row.nombre||'Expediente de ahorro',sub:'Folio '+row.folio,onBack}),h('div',{className:'svp-body',inert:disabled?'':undefined,'aria-busy':disabled},h('div',{className:'svp-actions',style:{marginTop:0,marginBottom:13}},h(Btn,{onClick:onPrev,disabled:!onPrev},'\u2039 Anterior'),h(Btn,{onClick:onNext,disabled:!onNext},'Siguiente \u203a')),h(window.SavingsIndividualWithdrawal,{key:row.folio,folio:row.folio,onRequest:()=>setWithdrawalIntent(v=>v+1)}),h('div',{className:'svp-detail-grid'},h(RecordSection,{title:'Saldo, descuentos y conciliación',initialOpen:initialSection!=='requests'},h(window.SavingsCertificationAdmin,{key:row.id,participantId:row.id,version:requestRevision,app,onSaved:onChange})),h(RecordSection,{title:'Solicitudes, retiros y cambios',initialOpen:initialSection==='requests',openRequest:withdrawalIntent},h(window.SavingsRequestsAdmin,{key:row.folio,folio:row.folio,requestId,expanded:true,onSaved:requestSaved,withdrawalIntent})))));
  }
- function SavingsPanelAdmin({app,onBack,header,initialAffiliateId}){
-  const [tab,setTab]=useState('pendientes'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[open,setOpen]=useState(null),[request,setRequest]=useState(null),[toolsOpen,setToolsOpen]=useState(false),[revision,setRevision]=useState(0),[nativeOffset,setNativeOffset]=useState(0);
-  const [requestNavigation,setRequestNavigation]=useState(null);
-  const root=useRef(),origin=useRef(),scroll=useRef([]),[navError,setNavError]=useState(''),navLock=useRef(false),navGeneration=useRef(0),[navBusy,setNavBusy]=useState(false);
-  useEffect(()=>()=>{navGeneration.current++;},[]);
-  // The server only knows padron/cobranza/solicitudes/revision; the list tab reads as padron.
-  const group=tab==='padron'?'padron':['pendientes','solicitudes','revision'].includes(tab)?'pendientes':'programa';
-  const serverTab=['padron','cobranza','solicitudes','revision'].includes(tab)?tab:'padron';
-  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.list({tab:serverTab,search:query,filter,offset}),[serverTab,query,filter,offset,revision]);
-  const [nativeState,reloadNative]=useQuery(()=>tab==='padron'?window.SavingsPanelRepository.nativeList({search:query,offset:nativeOffset,filter}):Promise.resolve(null),[tab,query,filter,nativeOffset,revision]);
-  useEffect(()=>{if(search===query)return;const t=setTimeout(()=>{setQuery(search);setOffset(0);setNativeOffset(0);},250);return()=>clearTimeout(t);},[search,query]);
-  useEffect(()=>{if(!initialAffiliateId)return;let alive=true;window.SavingsPanelRepository.affiliate(initialAffiliateId).then(async v=>{if(!alive)return;setTab('padron');setSearch(v.folio||'');setQuery(v.folio||'');if(v.records.length===1)setOpen({id:v.records[0].id,index:0,rows:v.records,offset:0,external:true});else if(v.records.length)setNavError('Hay varios registros con este Folio. Selecciona el que corresponde.');else{const page=await window.SavingsPanelRepository.nativeList({search:v.folio||'',offset:0,filter:'todos'});if(!alive)return;const matches=(page.items||[]).filter(row=>row.folio===v.folio).map(nativePerson);if(matches.length===1){const a=matches[0];setOpen({id:a.id,native:true,row:a,index:0,rows:matches,offset:0,total:1,external:true});}else setNavError(matches.length?'Hay varias cuentas con este Folio. Revisa la coincidencia antes de continuar.':'No hay expediente de Ahorro con el Folio exacto de esta persona.');}}).catch(e=>{if(alive)setNavError(explain(e));});return()=>{alive=false;};},[initialAffiliateId]);
-  function changeTab(t){setTab(t==='programa'?'cobranza':t);setOffset(0);setNativeOffset(0);setFilter('todos');setSearch('');setQuery('');}
-  function show(a,index,correct=false,native=false){origin.current=a.id;const list=[];let el=root.current;while(el){if(el.scrollHeight>el.clientHeight)list.push([el,el.scrollTop]);el=el.parentElement;}scroll.current=list;setOpen({id:a.id,native,row:a,index,rows:native?(nativeState.data.items||[]).map(nativePerson):state.data.rows,offset:native?nativeOffset:offset,total:native?nativeState.data.total:state.data.total,initialPeriod:correct?a.last_scheduled:null});list.forEach(([el])=>el.scrollTop=0);}
-  function back(){navGeneration.current++;navLock.current=false;setNavBusy(false);if(open&&open.external){onBack();return;}setOpen(null);requestAnimationFrame(()=>{scroll.current.forEach(([el,top])=>{if(el.isConnected)el.scrollTop=top;});const target=root.current&&(root.current.querySelector('[data-savings-person-id="'+CSS.escape(origin.current||'')+'"]')||root.current.querySelector('input'));if(target)target.focus({preventScroll:true});});}
-  async function next(direction){if(navLock.current)return;navLock.current=true;const generation=++navGeneration.current;setNavBusy(true);setNavError('');try{if(open.native){const position=open.index+direction;let rows=open.rows,index=position,pageOffset=open.offset,total=open.total;if(position<0||position>=rows.length){pageOffset=Math.max(0,open.offset+(direction>0?20:-20));const page=await window.SavingsPanelRepository.nativeList({search:query,offset:pageOffset,filter});if(generation!==navGeneration.current)return;rows=(page.items||[]).map(nativePerson);total=page.total;index=direction>0?0:rows.length-1;}const target=rows[index];if(target){origin.current=target.id;setNativeOffset(pageOffset);setOpen({id:target.id,native:true,row:target,rows,index,offset:pageOffset,total});}else{setNavError('No hay otra persona en esta consulta. Puedes volver a la lista para actualizarla.');}return;}const target=await window.SavingsPanelRepository.neighbor({id:open.id,tab:serverTab,search:query,filter,direction});if(generation!==navGeneration.current)return;if(target)setOpen({id:target.id,hasPrev:target.has_prev,hasNext:target.has_next,initialPeriod:null});else setOpen(previous=>({...previous,[direction>0?'hasNext':'hasPrev']:false}));}catch(e){if(generation===navGeneration.current)setNavError(explain(e));}finally{if(generation===navGeneration.current){navLock.current=false;setNavBusy(false);}}}
-
-  async function openRequest(row){
-   if(navLock.current)return;navLock.current=true;const generation=++navGeneration.current;setNavBusy(true);setNavError('');
-   try{
-    if(typeof row.folio!=='string'||!row.folio)throw Error('IDENTITY');
-    const [historical,native]=await Promise.all([window.SavingsPanelRepository.list({tab:'padron',search:row.folio,filter:'todos',offset:0}),window.SavingsPanelRepository.nativeList({search:row.folio,filter:'todos',offset:0})]);
-    if(generation!==navGeneration.current)return;
-    const matches=(historical.rows||[]).filter(a=>a.folio===row.folio),accounts=(native.items||[]).filter(a=>a.folio===row.folio).map(nativePerson);
-    if(matches.length+accounts.length>1||historical.total>20||native.total>20)throw Error('IDENTITY');
-    const person=matches[0]||accounts[0];origin.current=null;scroll.current=[];let el=root.current;while(el){if(el.scrollHeight>el.clientHeight)scroll.current.push([el,el.scrollTop]);el=el.parentElement;}
-    setOpen(person?{id:person.id,row:person,native:!matches.length,requestId:row.id,section:'requests'}:{requestOnly:true,row,requestId:row.id});
-    scroll.current.forEach(([el])=>el.scrollTop=0);
-   }catch(e){if(generation===navGeneration.current)setNavError(explain(e));}finally{if(generation===navGeneration.current){navLock.current=false;setNavBusy(false);}}
+ function useWorkspaceQuery(loader,deps,enabled=true){
+  const [state,setState]=useState({loading:enabled}),[attempt,retry]=useState(0);
+  const context=window.SavingsPanelRepository.contextKey(),epoch=window.SavingsPanelRepository.revision();
+  useEffect(()=>{if(!enabled)return;const controller=new AbortController();let active=true;setState({loading:true});
+   Promise.resolve().then(()=>loader(controller.signal)).then(data=>{if(active&&context===window.SavingsPanelRepository.contextKey()&&epoch===window.SavingsPanelRepository.revision())setState({data,loading:false,context,epoch});}).catch(error=>{if(active&&error.name!=='AbortError')setState({error:explain(error),loading:false,context,epoch});});
+   return()=>{active=false;controller.abort();};
+  },[...deps,attempt,enabled,context,epoch]);
+  return [state.context!=null&&(state.context!==context||state.epoch!==epoch)?{loading:true}:state,()=>retry(value=>value+1)];
+ }
+ function QueryStatus({state,retry}){
+  return state.loading?h(Loading):state.error?h('div',{role:'alert',className:'svp-error'},state.error,h(Btn,{onClick:retry},'Reintentar consulta')):null;
+ }
+ function InlinePerson({row,cache,revision,onSaved,onDirty,dirty,app,requestId,initialSection}){
+  const id=row.participant_id||row.id;
+  const currentContext=window.SavingsPanelRepository.contextKey(),currentEpoch=window.SavingsPanelRepository.revision();
+  const [state,reload]=useWorkspaceQuery(async signal=>{
+   const context=window.SavingsPanelRepository.contextKey(),epoch=window.SavingsPanelRepository.revision(),key=context+':'+id,stored=cache.current.get(key);
+   if(stored&&stored.revision===revision&&stored.epoch===epoch&&Date.now()-stored.at<30000)return stored.data;
+   const data=await window.SavingsPanelRepository.person({participantId:id,historyOffset:0,historyLimit:10,signal});
+   if(!signal.aborted&&context===window.SavingsPanelRepository.contextKey()&&epoch===window.SavingsPanelRepository.revision()){cache.current.set(key,{data,revision,epoch,at:Date.now()});while(cache.current.size>8)cache.current.delete(cache.current.keys().next().value);}
+   return data;
+  },[id,revision]);
+  const [extra,setExtra]=useState([]),[moreBusy,setMoreBusy]=useState(false),[moreError,setMoreError]=useState(''),[withdrawalIntent,setWithdrawalIntent]=useState(0);
+  const sequence=useRef(0),moreAbort=useRef(null);
+  useEffect(()=>{sequence.current++;moreAbort.current?.abort();setExtra([]);setMoreError('');setMoreBusy(false);return()=>{sequence.current++;moreAbort.current?.abort();};},[id,revision,currentContext,currentEpoch]);
+  async function saved(){onDirty(false);cache.current.clear();setExtra([]);if(onSaved)await onSaved();}
+  async function more(){if(moreBusy)return;const seq=sequence.current,controller=new AbortController();moreAbort.current=controller;setMoreBusy(true);setMoreError('');
+   try{const data=await window.SavingsPanelRepository.person({participantId:id,historyOffset:(state.data.history||[]).length+extra.length,historyLimit:20,signal:controller.signal});if(seq===sequence.current&&currentContext===window.SavingsPanelRepository.contextKey()&&currentEpoch===window.SavingsPanelRepository.revision())setExtra(previous=>previous.concat(data.history||[]));}
+   catch(error){if(seq===sequence.current&&error.name!=='AbortError')setMoreError(explain(error));}
+   finally{if(seq===sequence.current)setMoreBusy(false);}
   }
-  const heading=header||(({title,sub,onBack:backAction})=>h('header',{className:'svp-header'},h(Btn,{onClick:backAction,'aria-label':'Volver al administrador'},'‹'),h('div',null,h('h1',null,title),h('p',null,sub))));
-  const d=state.data,nativeData=nativeState.data,refresh=()=>{setRevision(n=>n+1);};
-  return h('div',{className:'svp',ref:root},h('style',null,css),open?h(React.Fragment,null,navError&&h('div',{role:'alert',className:'svp-error'},navError),navBusy&&h('p',{role:'status',className:'svp-note'},'Abriendo expediente…'),open.requestOnly?h('div',null,heading({title:open.row.name||'Solicitud de ingreso',sub:'Folio '+open.row.folio,onBack:back}),h('div',{className:'svp-body'},h('p',{className:'svp-note'},'Esta persona todavía no tiene un expediente en las listas de cuentas. Su solicitud conserva su identidad y autorización existentes.'),h(window.SavingsRequestsAdmin,{key:open.row.folio,folio:open.row.folio,requestId:open.requestId,expanded:true,onSaved:refresh}))):h(open.native?NativeDetail:Detail,{requestId:open.requestId,initialSection:open.section,disabled:navBusy,key:(open.native?'native:':'')+open.id,id:open.id,row:open.row,app,initialPeriod:open.initialPeriod,header:heading,onBack:back,onPrev:(open.hasPrev??(open.index>0||open.offset>0))?()=>next(-1):null,onNext:!open.external&&(open.hasNext??(open.offset+open.index+1<open.total))?()=>next(1):null,onChange:refresh})):h(React.Fragment,null,heading({title:'Ahorro',sub:d?d.kpis.padron+' ahorradores · '+(d.kpis.current_summary?'al día '+fmt(d.kpis.as_of):'corte '+fmt(String(d.cutoff).slice(0,10))):'Consultando información',onBack}),h('div',{className:'svp-body'},h('div',{className:'svp-notice'},h('span',null,d&&d.publication_mode==='PUBLISHED'?'Saldos publicados a los ahorradores':'Revisión privada · Sin publicar a los ahorradores'),h('div',{style:{display:'flex',gap:8,flexWrap:'wrap'}},h('span',null,'Personas · Solicitudes · Programa'))),
-   navError&&h('p',{role:'alert',className:'svp-note warn'},navError),group!=='padron'&&h('form',{className:'svp-search',onSubmit:e=>{e.preventDefault();setTab('padron');setFilter('todos');setOffset(0);setNativeOffset(0);setQuery(search);}},h(window.Icon,{name:'search',size:20}),h('input',{'aria-label':'Buscar ahorrador por nombre o Folio',placeholder:'Buscar ahorrador por nombre o Folio',value:search,onChange:e=>setSearch(e.target.value)}),h(Btn,{onClick:()=>{setTab('padron');setFilter('todos');setOffset(0);setNativeOffset(0);setQuery(search);}},'Buscar')),
-   !d&&state.loading?h(Loading):state.error?h('div',{role:'alert',className:'svp-error'},state.error,h(Btn,{onClick:reload},'Reintentar')):d&&h('div',{className:'svp-layout'},h('div',{style:{minWidth:0}},h('section',{'aria-label':'Resumen general del ahorro',className:'svp-kpis',style:{marginBottom:20}},h(KPIs,{k:d.kpis,onGo:changeTab})),h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([id,label])=>h('button',{key:id,role:'tab','aria-selected':group===id,onClick:()=>changeTab(id)},label))),
-    h('div',{className:'svp-work-heading'},h('h2',null,group==='padron'?'Encuentra a un ahorrador':group==='pendientes'?'¿Qué necesita atención?':'Control del programa'),h('p',{className:'svp-note'},group==='padron'?'Busca por nombre o Folio y continúa en su expediente.':group==='pendientes'?'Nuevos ingresos, retiros y cambios que requieren una decisión.':'Descuentos colectivos, reportes y configuración de Ahorro.')),
-    group==='pendientes'&&h('div',{className:'svp-context-nav'},[['pendientes','Solicitudes nuevas'],['revision','Expedientes por revisar'],['solicitudes','Archivo de solicitudes']].map(([id,label])=>h(Btn,{key:id,tone:tab===id?'primary':'',onClick:()=>changeTab(id)},label))),
-    group==='programa'&&h(React.Fragment,null,h('label',{className:'svp-field'},'Operación del programa',h('select',{'aria-label':'Operación del programa',value:tab,onChange:e=>changeTab(e.target.value)},programViews.map(([id,label])=>h('option',{key:id,value:id},label)))),h(Btn,{onClick:()=>setToolsOpen(true)},'Accesos y archivo')),
-    tab==='pendientes'&&h(window.SavingsRuntimeAdmin,{tab,app,onSaved:refresh,onOpenPerson:openRequest,initialNavigation:requestNavigation,onNavigationChange:setRequestNavigation}),
-    ['reportes','publicacion','configuracion'].includes(tab)&&h('div',{className:'svp-settings'},h(window.SavingsRuntimeAdmin,{key:tab,tab,app,onSaved:refresh})),
-    navBusy&&h('p',{role:'status'},'Abriendo expediente…'),
-    d.kpis.uncertified>0&&h('p',{className:'svp-note warn'},d.kpis.uncertified+' saldos siguen en revisión. El total incluye sus correcciones pendientes de confirmar.'),d.kpis.projection_pending>0&&h('p',{className:'svp-note'},d.kpis.projection_pending+' calendarios siguen pendientes de confirmar; sus importes previstos conservan la referencia del archivo.'),['pendientes','reportes','publicacion','configuracion'].includes(tab)?null:tab==='conciliacion'?h(window.SavingsReconciliationAdmin,{asOf:d.kpis.as_of,onSaved:refresh}):tab==='masivo'?h(window.SavingsBulkAdmin,{app,asOf:d.kpis.as_of,onSaved:refresh}):tab==='cobranza'?h(React.Fragment,null,h(Titulo,{sub:'Los descuentos registrados se conservan con su fecha e importe.'},'Periodo del '+fmt(d.kpis.cobranza.fecha)),h(Tarjeta,{title:'Último periodo registrado',icon:'receipt'},h(Fila,{label:'Importe registrado',valor:M(d.kpis.cobranza.recibido)}),h(Fila,{label:'Importe esperado',valor:M(d.kpis.cobranza.esperado)}),h('p',{className:'svp-note warn'},d.collection_status==='CONFIRMED'?'Los descuentos del periodo están confirmados.':d.collection_status==='ACTUAL_CONFIRMATION_PENDING'?'Falta confirmar los descuentos recibidos de este periodo en los expedientes.':d.collection_status==='NO_REGISTERED_PERIOD'?'Todavía no hay un periodo registrado.':'Falta confirmar la aportación que correspondía a cada persona en cada fecha. El porcentaje de cobro queda pendiente de esa revisión.')),d.kpis.pending_actual_count>0&&h('p',{className:'svp-note warn'},d.kpis.pending_actual_count+' descuentos por confirmar en los expedientes. Abre al ahorrador y revisa sus descuentos reales.'),h(Titulo,{sub:'Estos registros del archivo tienen un cero en la última fecha correspondiente a su categoría actual. Comprueba la categoría y el descuento de esa fecha.'},'Descuentos por verificar ('+d.total+')'),state.loading?h(Loading):d.rows.length?h('div',{className:'svp-stack'},d.rows.map((a,i)=>h('article',{className:'svp-record',key:a.id},h('h3',null,a.nombre),h('p',{className:'svp-note'},'Folio '+(a.folio||'SIN REGISTRO')+' · '+fmt(a.last_scheduled&&a.last_scheduled.fecha)),h('div',{className:'svp-actions'},h(Btn,{tone:'green',onClick:()=>show(a,i,true),disabled:!d.can_write},'Sí se descontó'),h(Btn,{onClick:()=>show(a,i)},'Ver expediente')))),offset>0&&h(Btn,{onClick:()=>setOffset(offset-20)},'Anteriores'),offset+20<d.total&&h(Btn,{onClick:()=>setOffset(offset+20)},'Ver más')):h(Empty,{title:'Sin registros en cero',text:'Esto no sustituye la comprobación de los descuentos recibidos.'})):h(React.Fragment,null,
-     h('label',{className:'svp-search'},h(window.Icon,{name:'search',size:18}),h('input',{'aria-label':'Buscar por nombre o folio',placeholder:'Buscar por nombre o folio',value:search,onChange:e=>setSearch(e.target.value)})),
-     h('div',{className:'svp-tabs','aria-label':'Filtros'},(tab==='padron'?[['todos','Todos'],['ahorrando','Ahorrando'],['pausado','Sin descuento'],['baja','Dejó de ahorrar']]:[['todos','Todos'],['pendientes','Por revisar'],['resueltas','Revisados']]).map(([v,label])=>h('button',{key:v,'aria-pressed':filter===v,onClick:()=>{setFilter(v);setOffset(0);setNativeOffset(0);}},label))),
-     h('div',{className:'svp-totals'},h('span',null,d.total+(tab==='solicitudes'?' solicitudes':' ahorrador(es)')),tab==='padron'&&h('span',null,M(d.saldo_total)+' en total')),
-     tab==='solicitudes'&&h('p',{className:'svp-note'},'Solicitudes importadas. Cada retiro conserva su fecha, importe y estado original. El contador indica cuántas faltan por revisar.'+(d.kpis.solicitudes_estado_pendiente?' Hay '+d.kpis.solicitudes_estado_pendiente+' con estado por confirmar.':'')),
-     state.loading?h(Loading):!d.rows.length?h(Empty,{title:query?'Sin resultados':tab==='revision'?'Sin incidencias':tab==='solicitudes'?'Sin solicitudes':'Sin ahorradores',text:query?'Prueba con otro nombre o Folio.':'No hay registros para este filtro.'}):h('div',{className:'svp-stack'},d.rows.map((a,i)=>tab==='solicitudes'?h(RequestCard,{key:a.id,r:a,onOpen:()=>setRequest(a.id)}):h('div',{key:a.id},h(Row,{a,onOpen:()=>show(a,i)}),tab==='revision'&&h('div',{className:'svp-note warn'},a.status==='RESOLVED'?'Revisado · Puedes reabrirlo desde el expediente.':a.identity_pending?'Cambio de Folio pendiente.':(a.identity.match_count!==1?a.identity.name+' · Verifica su Folio.':'Revisa descuentos, saldo y datos del expediente.'))))),
-     h('div',{className:'svp-actions'},offset>0&&h(Btn,{disabled:state.loading,onClick:()=>setOffset(Math.max(0,offset-20))},'Anteriores'),offset+20<d.total&&h(Btn,{disabled:state.loading,onClick:()=>setOffset(offset+20)},'Ver más ('+Math.min(20,d.total-offset-20)+')')),
-     tab==='padron'&&h('section',{'aria-label':'Nuevos ahorradores',style:{marginTop:18}},h(Titulo,{sub:'Altas registradas en el sistema. La búsqueda y los filtros también se aplican a esta lista.'},'Nuevos ahorradores'),nativeState.loading?h(Loading):nativeState.error?h('div',{role:'alert',className:'svp-error'},nativeState.error,h(Btn,{onClick:reloadNative},'Reintentar nuevos ahorradores')):nativeData&&h(React.Fragment,null,h('div',{className:'svp-totals'},h('span',null,nativeData.total+' alta(s) registradas'),nativeData.total>0&&h('span',null,'Mostrando '+(nativeOffset+1)+' al '+(nativeOffset+nativeData.items.length))),nativeData.items.length?h('div',{className:'svp-stack'},nativeData.items.map((row,index)=>{const person=nativePerson(row);return h(Row,{key:person.id,a:person,onOpen:()=>show(person,index,false,true)});})):h(Empty,{title:'Sin altas para esta consulta',text:query?'Prueba con otro nombre o Folio.':'No hay nuevos ahorradores con este filtro.'}),h('div',{className:'svp-actions'},nativeOffset>0&&h(Btn,{onClick:()=>setNativeOffset(Math.max(0,nativeOffset-20))},'Altas anteriores'),nativeOffset+20<nativeData.total&&h(Btn,{onClick:()=>setNativeOffset(nativeOffset+20)},'Ver más altas ('+Math.min(20,nativeData.total-nativeOffset-20)+')'))))))))),
-   request&&h(RequestSheet,{id:request,canWrite:d&&d.can_write,onClose:()=>setRequest(null),onSaved:refresh}),
-   toolsOpen&&h(Modal,{title:'Accesos y datos anteriores',onClose:()=>setToolsOpen(false)},h(window.SavingsAccessAdmin),h('p',{className:'svp-note'},'Consulta de datos originales y revisiones anteriores.'),h(window.SavingsReviewAdmin,{readOnly:true})));
+  const d=state.data,p=d?.person||row,b=d?.balance,history=[...(d?.history||[]),...extra],pending=d?.pending;
+  const financialProps=d?.record_id?{recordId:d.record_id}:{participantId:id};
+  const historyStates={RECEIVED:'Recibido',CORRECTED:'Corregido',NO_DEDUCTION:'Sin descuento confirmado',PENDING:'Pendiente de conciliación'};
+  return h('section',{id:'savings-person-'+id,'aria-label':'Detalle de '+row.nombre,className:'svp-inline-detail',onChangeCapture:()=>onDirty(true)},
+   h(QueryStatus,{state,retry:()=>{cache.current.clear();reload();}}),
+   d&&!state.loading&&!state.error&&h(React.Fragment,null,
+    h('div',{className:'svp-hero'},h('small',null,'SALDO ACTUAL'),h('strong',null,M(b?.total)),h('div',{className:'svp-mini'},h('div',null,'Capital',h('b',null,M(b?.capital))),h('div',null,'Rendimiento incluido',h('b',null,M(b?.yield_amount))))),
+    !b&&h('p',{role:'status',className:'svp-note warn'},'Esta cuenta aún no tiene un saldo confirmado. Consulta su ingreso o la incidencia antes de registrar movimientos.'),
+    b&&Number(b.held)>0&&h('p',{className:'svp-note'},'Disponible: '+M(b.available)+' · Retenido: '+M(b.held)),
+    h('div',{className:'svp-detail-grid'},
+     h(Tarjeta,{title:'Su ahorro',icon:'calendar'},
+      h(Fila,{label:p.proceso==='JUB'?'Aportación mensual':['1','3','PROCESS_1','PROCESS_3'].includes(p.proceso)?'Aportación quincenal':'Aportación · frecuencia por confirmar',valor:M(p.aporte)}),
+      h(Fila,{label:'Última aportación confirmada',valor:d.last_received?fmt(d.last_received):'Sin aportaciones confirmadas'}),
+      h(Fila,{label:'Próxima aportación prevista',valor:d.next_expected?fmt(d.next_expected.date)+' · '+M(d.next_expected.amount):'Sin próxima aportación programada'}),
+      h('p',{className:'svp-note'},'Información al '+fmt(d.today)+'. Las aportaciones previstas no aumentan el saldo.')),
+     pending?.count>0&&h(Tarjeta,{title:'Pendiente de conciliación',icon:'info'},
+      h('p',{className:'svp-note warn'},pending.count+' fecha(s) vencida(s) sin recibo confirmado. Esto no demuestra que faltó el descuento.'),
+      h(Fila,{label:'Primera fecha pendiente',valor:fmt(pending.first_date)}),
+      h(Fila,{label:'Importe previsto pendiente',valor:M(pending.expected_amount)})),
+     pending?.conflict_count>0&&h(Tarjeta,{title:'Requiere revisión',icon:'info'},h('p',{role:'alert',className:'svp-note warn'},pending.conflict_count+' registro(s) con diferencia entre el recibo y el movimiento financiero. Consulta la conciliación antes de actuar.')),
+     h('div',{className:'svp-wide'},h(Tarjeta,{title:'Historial de aportaciones',icon:'receipt'},
+      history.length?history.map((movement,index)=>h('article',{className:'svp-audit',key:movement.id||movement.date+':'+index},
+       h('div',{className:'svp-totals'},h('b',null,fmt(movement.date)),h('b',null,movement.status==='PENDING'?'Previsto: '+M(movement.expected):M(movement.amount))),
+       h('span',{className:movement.status==='PENDING'||movement.data_conflict?'svp-history-state is-pending':'svp-history-state'},movement.data_conflict?'Excepción: recibo y movimiento no coinciden':historyStates[movement.status]||'Por revisar'),
+       movement.includes_yield&&h('p',{className:'svp-note'},'Aportación y rendimiento incluidos en este importe.'),
+       movement.status==='CORRECTED'&&h('p',{className:'svp-note'},'Se conserva el registro anterior en la auditoría.'))):h(Empty,{title:'Sin aportaciones registradas',text:'Las aportaciones aparecerán al confirmarse. No se generan movimientos a partir de una previsión.'}),
+      history.length<d.history_total&&h(Btn,{tone:'full',disabled:moreBusy,onClick:more},moreBusy?'Consultando…':'Ver más aportaciones'),
+      moreError&&h('p',{role:'alert',className:'svp-error'},moreError))),
+     h(RecordSection,{title:'Cambios y retiros',initialOpen:initialSection==='requests',openRequest:withdrawalIntent,unmountOnClose:true,beforeClose:()=>{if(dirty&&!window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla?'))return false;onDirty(false);return true;}},
+      h(window.SavingsRequestsAdmin,{key:p.folio,folio:p.folio,requestId,expanded:true,onSaved:saved,withdrawalIntent}),
+      h(RecordSection,{title:'Habilitación de retiro individual'},h(window.SavingsIndividualWithdrawal,{folio:p.folio,onRequest:()=>setWithdrawalIntent(value=>value+1)}))),
+     h(RecordSection,{title:'Conciliación, correcciones y proyección'},
+      h(window.SavingsCertificationAdmin,{...financialProps,version:revision,app,onSaved:saved})),
+     d.record_id&&h(RecordSection,{title:'Auditoría y antecedentes'},h(LegacyPersonAudit,{recordId:d.record_id,onSaved:saved,app})))));
+ }
+ function LegacyPersonAudit({recordId,onSaved,app}){
+  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.detail(recordId),[recordId]),[sheet,setSheet]=useState(null),[request,setRequest]=useState(null);
+  const [dates,setDates]=useState([]),[dateBusy,setDateBusy]=useState(false),[dateError,setDateError]=useState('');
+  const dateSequence=useRef(0);
+  useEffect(()=>()=>{dateSequence.current++;},[recordId]);
+  const d=state.data,r=d?.record;
+  async function saved(){setSheet(null);setDates([]);reload();if(onSaved)await onSaved();}
+  async function moreDates(){if(dateBusy)return;const sequence=++dateSequence.current;setDateBusy(true);setDateError('');try{const page=await window.SavingsPanelRepository.detail(recordId,(d.dates||[]).length+dates.length,24);if(sequence===dateSequence.current)setDates(previous=>previous.concat(page.dates||[]));}catch(error){if(sequence===dateSequence.current)setDateError(explain(error));}finally{if(sequence===dateSequence.current)setDateBusy(false);}}
+  return h('div',null,h(QueryStatus,{state,retry:reload}),d&&!state.loading&&!state.error&&h(React.Fragment,null,
+   h('p',{className:'svp-note'},'Antecedentes conservados para auditoría. Revisar estos datos no registra dinero recibido ni cambia por sí solo el saldo actual.'),
+   h(Fila,{label:'Saldo de origen',valor:M(d.person?.source_saldo??d.person?.saldo)}),
+   h(Fila,{label:'Revisión histórica',valor:r.status==='RESOLVED'?'Revisada':r.status==='IN_REVIEW'?'En revisión':'Por revisar'}),
+   h(RecordSection,{title:'Corregir un antecedente por fecha'},h('p',{className:'svp-note'},'Una corrección de antecedentes queda en revisión. No confirma un recibo ni modifica por sí sola el saldo actual.'),[...(d.dates||[]),...dates].map(period=>h(Btn,{key:period.key,tone:'outline full',disabled:!d.can_write||d.person?.identity_pending,onClick:()=>setSheet({mode:'date',period})},fmt(period.fecha)+' · '+M(period.monto))),dates.length+(d.dates||[]).length<d.date_count&&h(Btn,{disabled:dateBusy,onClick:moreDates},dateBusy?'Consultando…':'Ver más fechas anteriores'),dateError&&h('p',{role:'alert',className:'svp-error'},dateError)),
+   h(RecordSection,{title:'Retiros anteriores'},h(window.SavingsWithdrawalList,{recordId,data:d.withdrawals,onRefresh:reload,onOpen:setRequest})),
+   h(RecordSection,{title:'Cambios registrados'},(r.history||[]).length?r.history.map(event=>h('article',{key:event.id,className:'svp-audit'},h('b',null,event.actor_name||'Cambio registrado'),h('p',null,new Date(event.at).toLocaleString('es-MX')),event.observation&&h('p',null,event.observation),h('details',null,h('summary',null,'Ver campos modificados'),h('p',null,'Estado: '+({PENDING:'Por revisar',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[event.before?.status]||'Sin estado')+' → '+({PENDING:'Por revisar',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[event.after?.status]||'Sin estado')),[...new Set([...Object.keys(event.before?.proposed_data||{}),...Object.keys(event.after?.proposed_data||{})])].filter(key=>JSON.stringify(event.after?.proposed_data?.[key])!==JSON.stringify(event.before?.proposed_data?.[key])).map(key=>h('p',{key},((r.field_defs||[]).find(field=>field.key===key)?.label||key)+': '+String(Object.prototype.hasOwnProperty.call(event.before?.proposed_data||{},key)?event.before.proposed_data[key]:r.source_data[key])+' → '+String(Object.prototype.hasOwnProperty.call(event.after?.proposed_data||{},key)?event.after.proposed_data[key]:r.source_data[key])))))):h('p',{className:'svp-note'},'Sin correcciones históricas.')),
+   h(RecordSection,{title:'Rendimientos e importes históricos'},(r.field_defs||[]).filter(field=>['DP','DQ','DR','DS','DT','DU','DV','DW'].includes(field.key)).map(field=>h(Fila,{key:field.key,label:field.label,valor:M(r.source_data[field.key])})),h('p',{className:'svp-note'},'Son antecedentes, no nuevos abonos de rendimiento.')),
+   d.can_write&&h('div',{className:'svp-actions'},h(Btn,{onClick:()=>setSheet({mode:'person'})},'Corregir antecedente'),h(Btn,{onClick:()=>setSheet({mode:'review'})},r.status==='RESOLVED'?'Reabrir revisión histórica':'Marcar antecedente revisado')),
+   sheet&&h(EditSheet,{data:d,...sheet,onClose:()=>setSheet(null),onSaved:saved}),request&&h(RequestSheet,{id:request,canWrite:d.can_write,onClose:()=>setRequest(null),onSaved:saved})));
+ }
+ function LegacyArchive({app,onSaved}){
+  const [tab,setTab]=useState('solicitudes'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[request,setRequest]=useState(null);
+  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.list({tab,search:query,filter,offset}),[tab,query,filter,offset]);
+  async function saved(){reload();if(onSaved)await onSaved();}
+  const d=state.data;
+  return h('div',null,h('p',{className:'svp-note'},'Consulta histórica de solicitudes y revisiones. Su estado describe la revisión del antecedente, no una tarea financiera actual.'),
+   h('label',{className:'svp-field'},'Antecedentes',h('select',{value:tab,onChange:e=>{setTab(e.target.value);setOffset(0);}},h('option',{value:'solicitudes'},'Solicitudes anteriores'),h('option',{value:'revision'},'Revisiones anteriores'))),
+   h('form',{className:'svp-search',onSubmit:e=>{e.preventDefault();setQuery(search);setOffset(0);}},h('input',{value:search,onChange:e=>setSearch(e.target.value),'aria-label':'Buscar antecedentes por Folio o nombre',placeholder:'Nombre o Folio'}),h(Btn,{onClick:()=>{setQuery(search);setOffset(0);}},'Buscar')),
+   h('div',{className:'svp-tabs','aria-label':'Estado de revisión histórica'},[['todos','Todos'],['pendientes','Por revisar'],['resueltas','Revisados']].map(([value,label])=>h('button',{key:value,'aria-pressed':filter===value,onClick:()=>{setFilter(value);setOffset(0);}},label))),
+   h(QueryStatus,{state,retry:reload}),d&&!state.loading&&!state.error&&h(React.Fragment,null,h('p',{className:'svp-note'},d.total+' antecedentes'),!d.rows.length?h(Empty,{title:'Sin antecedentes para esta consulta'}):d.rows.map(row=>tab==='solicitudes'?h(RequestCard,{key:row.id,r:row,onOpen:()=>setRequest(row.id)}):h(RecordSection,{key:row.id,title:(row.nombre||'Folio '+row.folio)+' · '+row.folio},h(LegacyPersonAudit,{recordId:row.id,app,onSaved:saved}))),
+    h('div',{className:'svp-actions'},offset>0&&h(Btn,{onClick:()=>setOffset(value=>Math.max(0,value-20))},'Anteriores'),offset+20<d.total&&h(Btn,{onClick:()=>setOffset(value=>value+20)},'Ver más antecedentes'))),
+   request&&h(RequestSheet,{id:request,canWrite:d?.can_write,onClose:()=>setRequest(null),onSaved:saved}));
+ }
+ function SavingsPanelAdmin({app,onBack,header,initialAffiliateId}){
+  const [tab,setTab]=useState(initialAffiliateId?'personas':'resumen'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[expanded,setExpanded]=useState(null);
+  const [attention,setAttention]=useState('incidencias'),[program,setProgram]=useState('conciliacion'),[period,setPeriod]=useState(null),[revision,setRevision]=useState(0),[navigationError,setNavigationError]=useState(''),[requestNavigation,setRequestNavigation]=useState(null),[requestOnly,setRequestOnly]=useState(null);
+  const [focusRequest,setFocusRequest]=useState(null),[dirty,setDirty]=useState(false),[showAttentionPeople,setShowAttentionPeople]=useState(false);
+  const cache=useRef(new Map()),root=useRef(null),requestSequence=useRef(0);
+  const [summary,reloadSummary]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.summary({signal}),[revision]);
+  const listing=tab==='personas'||tab==='atencion'&&attention==='incidencias'&&showAttentionPeople,listFilter=tab==='atencion'?'incidencias':filter;
+  const [people,reloadPeople]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.people({search:query,filter:listFilter,offset,limit:20,signal}),[query,listFilter,offset,revision],listing);
+  useEffect(()=>{if(search===query)return;const timer=setTimeout(()=>{setQuery(search);setOffset(0);},250);return()=>clearTimeout(timer);},[search,query]);
+  useEffect(()=>()=>{requestSequence.current++;cache.current.clear();},[]);
+  function mayLeave(){return !dirty||window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla y continuar?');}
+  function changeTab(value){if(!mayLeave())return;setDirty(false);setExpanded(null);setFocusRequest(null);setTab(value);setOffset(0);setNavigationError('');}
+  function togglePerson(row){if(!mayLeave())return;setDirty(false);setFocusRequest(null);setExpanded(previous=>previous===(row.participant_id||row.id)?null:row.participant_id||row.id);}
+  function changeSearch(value){if(dirty&&!mayLeave())return;setDirty(false);setExpanded(null);setSearch(value);}
+  function refresh(){cache.current.clear();setDirty(false);setRevision(value=>value+1);}
+  function reconcile(date){if(!mayLeave())return;setDirty(false);setExpanded(null);setPeriod(date||summary.data?.today||null);setProgram('conciliacion');setTab('programa');}
+  async function revealFolio(folio,requestId){
+   const seq=++requestSequence.current;setNavigationError('');
+   try{const result=await window.SavingsPanelRepository.people({search:folio,filter:'todos',offset:0,limit:20});if(seq!==requestSequence.current)return;
+    const matches=(result.rows||[]).filter(row=>row.folio===folio);
+    if(matches.length!==1){setRequestOnly(requestId?{folio,requestId}:null);setNavigationError(matches.length?'Hay varias coincidencias. Revisa la identidad antes de continuar.':'No hay una cuenta de ahorro disponible para este Folio.');return;}
+    setRequestOnly(null);setTab('personas');setSearch(folio);setQuery(folio);setFilter('todos');setOffset(0);setExpanded(matches[0].participant_id||matches[0].id);setFocusRequest(requestId||null);
+   }catch(error){if(seq===requestSequence.current)setNavigationError(explain(error));}
+  }
+  useEffect(()=>{if(!initialAffiliateId)return;let active=true;window.SavingsPanelRepository.affiliate(initialAffiliateId).then(data=>{if(active&&data.folio)revealFolio(data.folio);}).catch(error=>{if(active)setNavigationError(explain(error));});return()=>{active=false;requestSequence.current++;};},[initialAffiliateId]);
+  const heading=header||(({title,sub,onBack:back})=>h('header',{className:'svp-header'},h(Btn,{onClick:back,'aria-label':'Volver al administrador'},'‹'),h('div',null,h('h1',null,title),h('p',null,sub))));
+  const d=summary.data,k=d?.kpis,rows=people.data?.rows||[],total=people.data?.total;
+  const extraCss='.svp-inline-detail{padding:16px 12px 20px;margin:0 3px 12px;border:1px solid var(--hairline-strong);border-top:0;border-radius:0 0 16px 16px;background:var(--surface-2)}.svp-person[aria-expanded=true]{border-radius:15px 15px 0 0!important;box-shadow:inset 0 0 0 1px var(--hairline-strong)!important}.svp-history-state{display:inline-block;padding:5px 9px;border-radius:999px;background:#E4F5EC;color:#0E6B41;font-size:12px;font-weight:800}.svp-history-state.is-pending{background:#FDF2DC;color:#805600}.svp-wide{grid-column:1/-1}.svp-inline-detail .svp-hero{box-shadow:none}.svp-compact-summary{margin-bottom:18px}@container savings-panel (max-width:600px){.svp-inline-detail{padding:12px 8px}.svp-tabs[role=tablist]{flex-wrap:wrap}.svp .svp-tabs[role=tablist] button{flex:1 1 40%}}';
+  return h('div',{key:window.SavingsPanelRepository.contextKey(),className:'svp',ref:root},h('style',null,css+extraCss),
+   heading({title:'Ahorro',sub:d?'Información al '+fmt(d.today):'Administración del programa',onBack:()=>{if(mayLeave())onBack();}}),
+   h('div',{className:'svp-body'},
+    h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([value,label])=>h('button',{key:value,role:'tab','aria-selected':tab===value,onClick:()=>changeTab(value)},label))),
+    navigationError&&h('p',{role:'alert',className:'svp-error'},navigationError),
+    tab==='resumen'&&h(React.Fragment,null,h(Titulo,{sub:'Saldo, próximas aportaciones y pendientes que necesitan seguimiento.'},'Panorama del ahorro'),h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
+     h(KPIs,{k,onGo:(destination,date)=>reconcile(date)}),
+     h(Tarjeta,{title:'Atención del programa',icon:'info'},h(Fila,{label:'Aportaciones pendientes de conciliar',valor:d.attention?.pending_receipts??'Por confirmar'}),h(Fila,{label:'Diferencias entre recibos y movimientos',valor:d.attention?.receipt_conflicts??'Por confirmar'}),h(Fila,{label:'Solicitudes que requieren atención',valor:d.attention?.request_count??'Por confirmar'}),
+      h('p',{className:'svp-note'},'Los pendientes corresponden a fechas vencidas sin recibo confirmado. Consulta el periodo completo para revisarlos juntos.'),
+      h('div',{className:'svp-actions'},h(Btn,{onClick:()=>{setAttention('incidencias');changeTab('atencion');}},'Ver pendientes'),h(Btn,{onClick:()=>{setAttention('cambios');changeTab('atencion');}},'Ver cambios y retiros'))),
+     h('p',{className:'svp-note'},'Ahorradores: cuentas del programa. Planes activos: quienes tienen descuentos programados. Padrón: todos los afiliados. Un plan activo no confirma por sí solo los descuentos recibidos.'))),
+    tab==='atencion'&&h(React.Fragment,null,h(Titulo,{sub:'Actúa sobre una operación o una fecha pendiente; conserva el resto del programa en su curso normal.'},'Qué necesita atención'),
+     h('div',{className:'svp-context-nav'},[['incidencias','Pendientes de conciliación'],['cambios','Cambios y retiros']].map(([value,label])=>h(Btn,{key:value,tone:attention===value?'primary':'',onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setAttention(value);setOffset(0);}},label))),
+     attention==='incidencias'&&h(React.Fragment,null,h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
+      (d.attention?.periods||[]).map(item=>h(Tarjeta,{key:item.date,title:'Periodo del '+fmt(item.date),icon:'calendar'},h(Fila,{label:'Aportaciones pendientes de conciliación',valor:item.count}),h(Fila,{label:'Importe previsto de las pendientes',valor:M(item.expected_amount)}),h(Btn,{tone:'primary',onClick:()=>reconcile(item.date)},'Conciliar '+fmt(item.date)))),
+      !d.attention?.periods?.length&&h('p',{className:'svp-note'},'No hay periodos con aportaciones pendientes de conciliación.'),
+      d.attention?.receipt_conflicts>0&&h('p',{role:'alert',className:'svp-note warn'},d.attention.receipt_conflicts+' diferencia(s) entre recibos y movimientos requieren revisión.'),
+      h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setShowAttentionPeople(value=>!value);}},showAttentionPeople?'Ocultar personas':'Consultar incidencias por persona'))),
+     attention==='cambios'&&h(window.SavingsRuntimeAdmin,{tab:'pendientes',app,onSaved:refresh,onOpenPerson:row=>revealFolio(row.folio,row.id),initialNavigation:requestNavigation,onNavigationChange:setRequestNavigation}),
+     requestOnly&&h(RecordSection,{title:'Solicitud del Folio '+requestOnly.folio,initialOpen:true},h(window.SavingsRequestsAdmin,{folio:requestOnly.folio,requestId:requestOnly.requestId,expanded:true,onSaved:refresh}))),
+    listing&&h(React.Fragment,null,tab==='personas'&&h(Titulo,{sub:'Busca y consulta a la persona sin salir de esta lista.'},'Encuentra a un ahorrador'),
+     h('label',{className:'svp-search'},h(window.Icon,{name:'search',size:18}),h('input',{'aria-label':'Buscar por nombre o folio',placeholder:'Buscar por nombre o folio',value:search,onChange:event=>changeSearch(event.target.value)})),
+     tab==='personas'&&h('div',{className:'svp-tabs','aria-label':'Filtros'},[['todos','Todos'],['ahorrando','Ahorrando'],['pausado','Sin aportación programada'],['baja','Dejó de ahorrar']].map(([value,label])=>h('button',{key:value,'aria-pressed':filter===value,onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setFilter(value);setOffset(0);}},label))),
+     tab==='atencion'&&h('p',{className:'svp-note'},'No se incluyen ceros de antecedentes históricos. Una fecha pendiente requiere comprobar el recibo; no equivale a una falta de pago.'),
+     h(QueryStatus,{state:people,retry:reloadPeople}),people.data&&!people.loading&&!people.error&&h(React.Fragment,null,
+      h('div',{className:'svp-totals'},h('span',null,total+' persona(s) en esta consulta'),rows.length>0&&h('span',null,(offset+1)+'–'+(offset+rows.length))),
+      !rows.length?h(Empty,{title:query?'Sin coincidencias':tab==='atencion'?'Sin incidencias para esta consulta':'Sin ahorradores para este filtro'}):h('div',{className:'svp-stack'},rows.map(row=>{const id=row.participant_id||row.id,isOpen=expanded===id;return h('div',{key:id},h(Row,{a:row,onOpen:()=>togglePerson(row),expanded:isOpen,controls:'savings-person-'+id}),row.identity_conflict&&h('p',{role:'alert',className:'svp-note warn'},'Identidad por resolver. El Folio no tiene una coincidencia única válida; sus movimientos no se asignan a otra persona.'),isOpen&&h(InlinePerson,{key:id,row,cache,revision,onSaved:refresh,onDirty:setDirty,dirty,app,requestId:focusRequest,initialSection:focusRequest?'requests':undefined}));})),
+      h('div',{className:'svp-actions'},offset>0&&h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setOffset(value=>Math.max(0,value-20));}},'Anteriores'),offset+rows.length<total&&h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setOffset(value=>value+20);}},'Ver más personas')))),
+    tab==='programa'&&h(React.Fragment,null,h(Titulo,{sub:'Reglas, operaciones por periodo y consulta de antecedentes.'},'Programa'),
+     h('label',{className:'svp-field'},'Operación del programa',h('select',{value:program,onChange:event=>{if(mayLeave()){setDirty(false);setProgram(event.target.value);}}},programViews.map(([value,label])=>h('option',{key:value,value},label)))),
+     program==='conciliacion'?h(window.SavingsReconciliationAdmin,{key:period||d?.today||'periodo',asOf:period||d?.today,onSaved:refresh}):h('div',{className:'svp-settings'},h(window.SavingsRuntimeAdmin,{key:program,tab:program,app,onSaved:refresh})),
+     h('div',{className:'svp-detail-grid'},h(RecordSection,{title:'Auditoría y solicitudes anteriores'},h(LegacyArchive,{app,onSaved:refresh})),
+      h(RecordSection,{title:'Accesos al programa'},h(window.SavingsAccessAdmin)),
+      h(RecordSection,{title:'Certificación y publicación'},h('p',{className:'svp-note'},'Herramientas de regularización. No son confirmaciones rutinarias de aportaciones.'),h(window.SavingsRuntimeAdmin,{tab:'publicacion',app,onSaved:refresh}),h(window.SavingsBulkAdmin,{app,asOf:d?.today,onSaved:refresh})),
+      h(RecordSection,{title:'Consultar evidencia original'},h(window.SavingsReviewAdmin,{readOnly:true}))))));
  }
  window.SavingsPanelAdmin=SavingsPanelAdmin;
 })();

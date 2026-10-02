@@ -4,7 +4,7 @@
  const h=React.createElement,{useState,useEffect,useRef}=React,{Tarjeta,Fila,M,fmt}=window.SavingsPanelVisual;
  const validMoney=v=>v!==''&&v!=null&&/^\d+(?:\.\d{1,2})?$/.test(String(v))&&Number.isFinite(Number(v));
  const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'');
- const types={JOIN:'Nuevo ahorrador',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
+  const types={JOIN:'Ingreso al ahorro',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
  const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Aprobada',REJECTED:'Rechazada',SETTLED:'Pagada',APPLIED:'Aplicada',CANCELLED:'Cancelada',PENDING:'Pendiente'};
  const columns=[['capital_delivered','Capital entregado'],['yield_delivered','Rendimiento entregado'],['actual_received','Descuentos recibidos'],['yield_credited','Rendimiento abonado']];
  function explain(e){const s=String(e&&e.message||'');
@@ -89,7 +89,11 @@
    contribution&&h('p',{className:'svp-note'},'La fecha de aplicación se calculará con el plazo y el calendario de descuentos de esa persona.'),
    h(Notes,{value:draft.observation,onChange:v=>update('observation',v),disabled}));
  }
- function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
+  function RequestDocuments({requestId}){
+   const [opened,setOpened]=useState(false);
+   return h('details',{onToggle:event=>{if(event.target===event.currentTarget)setOpened(event.currentTarget.open);}},h('summary',{className:'svp-note'},'Documentos de esta operación'),opened&&h(window.GeneratedDocuments,{domain:'savings',operationId:requestId,admin:true}));
+  }
+  function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
   const [filter,setFilter]=useState(folio||initialNavigation?.filter||''),[query,setQuery]=useState(folio||initialNavigation?.query||''),[limit,setLimit]=useState(initialNavigation?.limit||8),[draft,setDraft]=useState(null),[action,setAction]=useState(null);
   const [category,setCategory]=useState(initialNavigation?.category||'ALL'),[statusFilter,setStatusFilter]=useState(initialNavigation?.statusFilter||(expanded&&!folio?'pending':'all'));
   const [focusedRequest,setFocusedRequest]=useState(requestId);
@@ -119,18 +123,18 @@
   }
   const valid=draft&&draft.folio!==''&&(draft.type==='TERMINATE'||(['JOIN','CHANGE_AMOUNT'].includes(draft.type)?validMoney(draft.new_amount):validMoney(draft.amount)))&&(draft.type!=='JOIN'||!!draft.process);
   return h(Tarjeta,{title:folio?'Solicitudes de esta persona':'Solicitudes de ahorro',icon:'receipt'},h(expanded?'div':'details',null,!expanded&&h('summary',{className:'svp-note'},'Abrir solicitudes nuevas y su seguimiento'),
-   h('p',{className:'svp-note'},folio?'Revisa y resuelve las solicitudes sin salir del expediente.':'Los nuevos ingresos requieren autorización. Abre una solicitud para revisar a la persona y tomar una decisión.'),
+    h('p',{className:'svp-note'},folio?'Consulta las operaciones de esta persona y actúa sólo cuando requieren una decisión.':data?.auto_join_enabled?'Los ingresos válidos de autoservicio se incorporan automáticamente. Aquí se atienden cambios, retiros y solicitudes anteriores que aún requieren una decisión.':'Consulta las operaciones que requieren una decisión y su seguimiento.'),
    !folio&&h(expanded?'details':React.Fragment,expanded?{className:'svp-request-search'}:null,expanded&&h('summary',{className:'svp-note'},'Buscar solicitudes por Folio'),h(Field,{label:'Buscar operaciones por Folio exacto',value:filter,disabled:blocked,onChange:setFilter,autoComplete:'off'}),h(Btn,{disabled:blocked,onClick:()=>{setQuery(filter);setLimit(8);command.clear();}},'Buscar operaciones')),h(Btn,{disabled:blocked,onClick:reload},'Actualizar operaciones'),h(Feedback,{state,reload}),
    expanded&&!focusedRequest&&h('div',{className:'svp-request-filters'},h(Select,{label:'Tipo de solicitud',value:category,disabled:blocked||!!draft||!!action,onChange:v=>{setCategory(v);setLimit(8);},options:[['ALL','Todas las solicitudes'],...Object.entries(types)]}),h(Select,{label:'Estado de las solicitudes',value:statusFilter,disabled:blocked||!!draft||!!action,onChange:v=>{setStatusFilter(v);setLimit(8);},options:[['pending','Pendientes de atención'],['all','Todos los estados']]})),
-   expanded&&!folio&&data&&!state.loading&&!state.error&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' solicitudes de nuevo ingreso pendientes en esta consulta.'),
+    expanded&&!folio&&data&&!state.loading&&!state.error&&allRows.some(r=>r.type==='JOIN'&&needsAttention(r))&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' ingreso(s) pendientes de resolución. Su historial y las autorizaciones de captura asistida se conservan.'),
    focusedRequest&&folio&&!draft&&!action&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>setFocusedRequest(null)},'Ver todas las solicitudes de esta persona'),
-   data&&data.can_create&&!draft&&!action&&h('div',{className:'svp-actions'},h(Btn,{tone:'primary',disabled:blocked,onClick:()=>{setDraft({folio:query,type:'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar nueva solicitud')),
+    data&&data.can_create&&!draft&&!action&&h('details',null,h('summary',{className:'svp-note'},'Registrar una operación asistida'),h('p',{className:'svp-note'},'Usa esta opción cuando necesitas capturar una operación por la persona. Conserva sus validaciones y autorizaciones.'),h(Btn,{tone:'outline',disabled:blocked,onClick:()=>{setDraft({folio:query,type:folio?'WITHDRAW':'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar operación')),
    draft&&h('div',{ref:withdrawalField},h(RequestForm,{draft,setDraft:changeDraft,disabled:blocked,fixedFolio:!!folio&&!!withdrawalIntent}),h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setDraft(null);command.clear();}},'Cancelar captura'),h(Btn,{tone:'primary',disabled:blocked||!valid,onClick:submit},'Guardar solicitud'))),
    data&&!state.loading&&!state.error&&!visibleRows.length&&h('p',{className:'svp-note'},requestId?'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.':statusFilter==='pending'?'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.':'No hay operaciones registradas para esta consulta.'),
    visibleRows.map(row=>h('article',{key:row.id,className:'svp-audit',ref:requestId===row.id?focus:null,tabIndex:requestId===row.id?-1:undefined,'data-request-id':row.id},h('b',null,row.name||'Folio '+row.folio),h('p',{className:'svp-note'},'Folio '+row.folio+' · '+(types[row.type]||'Operación de ahorro')+' · '+(states[row.status]||'Por revisar')),
-    h(window.GeneratedDocuments,{domain:'savings',operationId:row.id,admin:true}),
+     h(RequestDocuments,{requestId:row.id}),
     row.request_code&&h(Fila,{label:'Solicitud',valor:row.request_code}),row.amount!=null&&h(Fila,{label:'Importe solicitado',valor:M(row.amount)}),row.new_amount!=null&&h(Fila,{label:'Nueva aportación',valor:M(row.new_amount)}),['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type)&&h(Fila,{label:'Después del retiro',valor:row.continue_saving===true?'Continuará ahorrando':row.continue_saving===false?'Dejará de ahorrar':'Por confirmar'}),row.effective_date&&h(Fila,{label:'Fecha de aplicación',valor:fmt(row.effective_date)}),row.settlement_block_reason&&h('p',{className:'svp-note warn'},row.settlement_block_reason),
-    !draft&&!action&&onOpenPerson&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>onOpenPerson(row)},'Abrir expediente y revisar'),
+     !draft&&!action&&onOpenPerson&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>onOpenPerson(row)},'Ver persona y operación'),
     !onOpenPerson&&!draft&&!action&&h('div',{className:'svp-actions'},row.can_review===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'REVIEW')},'Revisar solicitud'),row.can_settle===true&&h(Btn,{tone:'primary',disabled:blocked,onClick:()=>select(row,'SETTLE')},'Registrar entrega'),row.can_cancel===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'CANCEL')},'Cancelar solicitud')),
     !onOpenPerson&&!draft&&!action&&row.requires_loan_verification===true&&h(WithdrawalCheck,{key:row.id+':'+row.status,row,disabled:blocked,onSettle:()=>select(row,'SETTLE')}),
     action&&action.row.id===row.id&&h('div',null,

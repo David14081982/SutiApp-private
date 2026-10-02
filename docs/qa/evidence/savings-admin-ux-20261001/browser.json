@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "data": "SYNTHETIC_ONLY",
+  "physical_devices": false,
+  "viewports": [
+    320,
+    430,
+    1440
+  ],
+  "checks": [
+    "initial: 1 summary, 0 people, 0 person, 0 requests",
+    "preserved list, keyboard accordion, 10 history entries, detail-only load",
+    "responsive 320/430/1440 without horizontal overflow; 320px tabs use two rows",
+    "one expanded person, context-scoped cache, cache expires after 30 seconds, conflict never called received",
+    "history pagination and session/context change clear all cached extra pages",
+    "switching person aborts the previous request",
+    "read errors show no invented balance and no legacy fallback; retry works",
+    "unified server paging and search preserve focus",
+    "real GeneratedDocuments mounts only when opened and clears polling on child or parent close",
+    "audit preserves removed/reset fields and before/after review status",
+    "attention groups pending receipts by date; exact date opens existing reconciliation",
+    "JOIN automatic copy requires backend capability; committed result confirms enrollment"
+  ],
+  "sourceHashes": {
+    "app/savings-panel-admin.jsx": "780ad2346cb6979e4dd18245f4fff9b477657695cbd359c2db3a440422b57ea9",
+    "app/savings-runtime-admin.jsx": "8d49d3d702e97ed7725deef42f94b6a38a1396503bd23aae2a934a7eaa533632",
+    "app/savings-panel-reference.jsx": "45bf219683caddbefd5b87c32bba3149c234633516a4109c586b025296ee4671",
+    "app/savings-request-form.jsx": "c48e61c9ba15ac4e9c3ac7310a1a229cbc72ff8644f91610b06292e61b19a149"
+  },
+  "files": [
+    "person-320.png",
+    "person-430.png",
+    "person-1440.png"
+  ],
+  "browser_errors": []
+}

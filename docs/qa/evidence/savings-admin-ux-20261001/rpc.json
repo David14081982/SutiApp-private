@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "mode": "rpc",
+  "productionBusinessWrites": 0,
+  "normalAuthenticatedLogin": true,
+  "anonymousDenied": true,
+  "peopleTotal": 353,
+  "initialRows": 20,
+  "pendingReceipts": 294,
+  "pendingPeriods": [
+    {
+      "date": "2026-09-30",
+      "count": 294,
+      "expected_amount": 231891.39
+    }
+  ],
+  "exactIdentity": true,
+  "listDetailBalanceAgreement": true,
+  "noFutureReceipt": true,
+  "noInventedPendingAmount": true,
+  "timingsMs": {
+    "get_admin_savings_workspace_summary": 2680,
+    "get_admin_savings_workspace_people": 172,
+    "get_admin_savings_workspace_person": 287
+  }
+}

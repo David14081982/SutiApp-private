@@ -3826,3 +3826,10 @@ de operaciones, panel y configuración PASS. Build completo 143 módulos; bundle
 conserva 139 chunks ajenos byte a byte. Evidencia y límites en
 `docs/audits/H-SAVINGS-INDIVIDUAL-WITHDRAWAL-UX-001.md` y
 `docs/qa/evidence/savings-individual-withdrawal/`.
+
+
+## H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001
+
+Implemented automatic validated self-service JOIN, unified administrative saver list, lazy inline history/detail and lazy request documents. New read-only workspace RPCs preserve historical certification and distinguish received/pending/future dates. Cross-review removed completed termination tasks and prevented uncertified participants from showing confirmed balances.
+
+Two migrations installed with exact function/ACL/owner backup and recovery exercised against the real schema in a rolled-back transaction. Transactional hashes confirm unchanged business rows in 17 protected tables, including documents: 353 participants, 333 plans, 844 transactions and total balance 2236214.89. Normal authenticated reads and anonymous denial passed. September 30 retains 294 missing receipts; no money was fabricated. Focused tests, browser/release proof and final limitations: docs/audits/H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001.md and docs/qa/evidence/savings-admin-ux-20261001/.

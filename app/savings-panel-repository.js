@@ -1,13 +1,43 @@
 /* Server-owned private Savings review. No local financial authority. */
 (function(){
  'use strict';
- async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
+ let revision=0;
+ const pending=new Map();
+ const contextKey=()=>{const state=window.AffiliateAuth&&window.AffiliateAuth.getState();const admin=window.AdminRepository&&window.AdminRepository.getState();return JSON.stringify([state&&state.session&&state.session.user&&state.session.user.id,state&&state.affiliate&&state.affiliate.id,admin&&admin.assignment]);};
+ function invalidate(){revision++;pending.clear();}
+ async function rpc(name,args,signal){
+  const context=contextKey(),write=!/^(get_|preview_)/.test(name);
+  if(write)invalidate();
+  try{
+   let request=window.SutiSupabase.getClient().rpc(name,args);
+   if(signal)request=request.abortSignal(signal);
+   const {data,error}=await request;
+   if(context!==contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+   if(error)throw error;return data;
+  }finally{if(write)invalidate();}
+ }
+ function workspace(name,args,signal){
+  const version=revision,key=JSON.stringify([contextKey(),version,name,args]);
+  if(!signal&&pending.has(key))return pending.get(key);
+  const promise=rpc(name,args,signal).then(data=>{if(version!==revision)throw Error('SAVINGS_DATA_CHANGED');return data;});
+  if(signal)return promise;
+  pending.set(key,promise);
+  const clear=()=>{if(pending.get(key)===promise)pending.delete(key);};
+  promise.then(clear,clear);return promise;
+ }
  async function settlement(action,requestId,command,key){
-  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('savings-settlement',{body:{action,request_id:requestId,command:command||{},key:key||null}});
+  const context=contextKey(),write=action!=='PREVIEW';if(write)invalidate();
+  let result;try{result=await window.SutiSupabase.getClient().functions.invoke('savings-settlement',{body:{action,request_id:requestId,command:command||{},key:key||null}});}finally{if(write)invalidate();}
+  if(context!==contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+  const {data,error}=result;
   if(error){let body;try{body=await error.context.clone().json();}catch(_){}throw Error(body&&body.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');}
   if(!data||data.error||!data.data)throw Error(data&&data.error||'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE');return data.data;
  }
  window.SavingsPanelRepository=Object.freeze({
+  contextKey,revision:()=>revision,invalidate,
+  summary:(options={})=>workspace('get_admin_savings_workspace_summary',{},options.signal),
+  people:(q={})=>workspace('get_admin_savings_workspace_people',{p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:q.limit||20},q.signal),
+  person:q=>workspace('get_admin_savings_workspace_person',{p_participant_id:q.participantId,p_history_offset:q.historyOffset||0,p_history_limit:q.historyLimit||10},q.signal),
   list:q=>rpc('get_admin_savings_panel',{p_tab:q.tab,p_search:q.search||'',p_filter:q.filter||'todos',p_offset:q.offset||0,p_limit:20}),
   detail:(id,offset=0,limit=6)=>rpc('get_admin_savings_panel_detail',{p_record_id:id,p_history_offset:offset,p_history_limit:limit}),
   affiliate:id=>rpc('get_admin_savings_panel_affiliate',{p_affiliate_id:id}),

@@ -752,3 +752,10 @@ El expediente no necesita crear un periodo de rendimiento: habilitar disponibili
 no genera rendimientos, solicitudes, reservas ni pagos. Los escritores de solicitud,
 aprobación, entrega y sus controles siguen intactos. No hay almacenamiento local,
 mock, Google o copia alternativa como autoridad. Writes tested in isolation; installation preserved all data. Authenticated and anonymous reads verified in production. See the task audit.
+
+
+## H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001
+
+Owner-approved automatic self-service JOIN reuses the existing enrollment/plan writer through a private helper. Identity, exact numero_control, calendar, request idempotency and audit remain authoritative. The actual authenticated affiliate is recorded as actor; no savings.approve grant is added. Existing pending or administratively captured JOINs retain review. No receipt, yield or cash is created by enrollment.
+
+The administrative workspace reads canonical participants, enrollments/plans, accepted certification snapshots before cutoff and current confirmed receipts/dated ledger after cutoff. Its history is a projection, never the balance authority. savings_participant_balance remains the balance source. Missing receipts stay pending; future schedules do not become income. Three permission-gated RPCs page one unified population and individual detail. The short, context/revision-scoped in-memory detail cache is disposable; no browser storage or fallback. A private RLS-closed definition backup supports recovery and contains no alternate business master.

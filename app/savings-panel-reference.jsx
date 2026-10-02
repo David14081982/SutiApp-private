@@ -11,7 +11,7 @@
     k,
     onGo
   }) {
-    const cob = k.cobranza;
+    const cob = k.cobranza || {};
     return React.createElement('div', {
       style: {
         display: 'flex',
@@ -48,7 +48,7 @@
         letterSpacing: '.05em',
         opacity: .9
       }
-    }, 'AHORRO DE TODOS LOS AFILIADOS'), React.createElement('div', {
+    }, 'SALDO ACTUAL DEL PROGRAMA'), React.createElement('div', {
       style: {
         fontSize: 34,
         fontWeight: 900,
@@ -70,11 +70,11 @@
       name: 'users',
       size: 15,
       stroke: 2.2
-    }), k.activos + (k.current_summary ? ' ahorrando al día' : ' ahorrando al corte'), React.createElement('span', {
+    }), (k.activos == null ? 'Por confirmar' : k.activos) + ' con plan activo', React.createElement('span', {
       style: {
         opacity: .5
       }
-    }, '·'), k.afiliados + ' en el padrón')),
+    }, '·'), (k.afiliados == null ? 'Por confirmar' : k.afiliados) + ' afiliados en el padrón')),
     // apoyos
     React.createElement('div', {
       style: {
@@ -83,7 +83,7 @@
         gap: 10
       }
     }, React.createElement('button', {
-      onClick: () => onGo('cobranza'),
+      onClick: () => onGo('cobranza', k.prox),
       style: tile()
     }, head('calendar', 'PRÓXIMO DESCUENTO'), React.createElement('div', {
       style: {
@@ -108,9 +108,9 @@
         fontVariantNumeric: 'tabular-nums'
       }
     }, M(k.porRecibir))), React.createElement('button', {
-      onClick: () => onGo('cobranza'),
+      onClick: () => onGo('cobranza', cob.fecha),
       style: tile()
-    }, head('trending', 'ÚLTIMO PERIODO'), React.createElement('div', {
+    }, head('trending', 'ÚLTIMO PERIODO · '+fmt(cob.fecha)), React.createElement('div', {
       style: {
         fontSize: 20,
         fontWeight: 900,
@@ -234,14 +234,18 @@
   function Row({
     a,
     onOpen,
-    right
+    right,
+    expanded,
+    controls
   }) {
     const s = St(),
-      e = s.estadoDe(a),
+      e = a.participant_id && a.estado === 'pausado' ? {...estados.pausado,label:'Sin aportación programada'} : s.estadoDe(a),
       ult = s.ultimoDescuento(a);
     return React.createElement('div', {
       onClick: onOpen,
       'data-savings-person-id': a.id,
+      'aria-expanded': expanded,
+      'aria-controls': controls,
       className: 'su-press svp-person',
       role: 'button', tabIndex: 0, onKeyDown: e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();onOpen();}},
       style: {
@@ -296,7 +300,7 @@
         color: ult ? 'var(--ink-3)' : '#C0341D',
         marginTop: 2
       }
-    }, ult ? 'Último descuento ' + s.fmt(ult) : 'Sin descuento registrado')), right || React.createElement('div', {
+    }, ult ? 'Última aportación ' + s.fmt(ult) : 'Sin aportación confirmada')), right || React.createElement('div', {
       style: {
         textAlign: 'right',
         flexShrink: 0
@@ -318,7 +322,7 @@
         marginTop: 3
       }
     }, e.label.toUpperCase())), React.createElement(I, {
-      name: 'chevR',
+      name: expanded === undefined ? 'chevR' : expanded ? 'chevU' : 'chevD',
       size: 17,
       stroke: 2.4,
       style: {

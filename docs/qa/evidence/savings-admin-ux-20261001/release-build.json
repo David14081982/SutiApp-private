@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "kind": "published-baseline-release",
+  "focal": [
+    "savings-panel-admin.jsx",
+    "savings-runtime-admin.jsx",
+    "savings-panel-reference.jsx",
+    "savings-request-form.jsx",
+    "savings-panel-repository.js"
+  ],
+  "preservedModules": 138,
+  "version": 307,
+  "sha256": "af153e96f47599aed10a11f6a651ed944dc4257d91d9c70c74c2e8b5855ddaf7",
+  "normalizedSha256": "af153e96f47599aed10a11f6a651ed944dc4257d91d9c70c74c2e8b5855ddaf7",
+  "serviceWorkerBehaviorChanged": false
+}

@@ -1293,3 +1293,10 @@ Owner explicitly authorized commit, push, deployment and sutiapp.com verificatio
 H-SUTIFARMA-DONATIONS-001: implement the approved donation flow surgically, preserving existing UI. Current Farma quantities are accepted immediately as opening stock; no manager confirmation process. Users see medicine/presentation and Solicitar [name], never stock quantities. Manager marianafrancoq32@gmail.com may add/edit/archive products, set stock, attend requests and receive push after device consent. Affiliate contact is reused; successful submission uses the existing confetti confirmation. Delivery quantity is determined during attention and decremented on delivery. Logical removal preserves past requests and imported provenance.
 
 This supersedes Farma's former financial/contact modality for new donation requests only. Dedicated private donation authority avoids triggering financial request/Google automation; existing financial/general requests and all legacy contracts remain untouched. Migration 20260928000600 and existing-role writer applied; no global administrator assignment. Exact definition backups and non-destructive operational recovery are included.
+
+
+## H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001
+
+2026-10-01: after the end-to-end audit, owner directs implementation of its recommendations and delivery of functional Savings. Valid voluntary self-service JOIN is automatic, including enrollment, contribution plan and scheduled first date under the existing rules. Only this unnecessary manual decision is removed. Existing requests are not bulk-approved; withdrawals, amount changes and termination retain legitimate decisions.
+
+Use Resumen, Personas, Atencion and Programa; preserve the approved saver-list visual base with one inline detail. Show actual balances, received contributions and missing evidence separately. Group reconciliation by period and keep correction/audit/configuration controls under secondary disclosure. Historical zero-review artifacts are not normal operating tasks. This decision does not certify September 30 receipts, alter yield rules, or invent union-office authority for extraordinary approvals.

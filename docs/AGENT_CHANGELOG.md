@@ -1,4 +1,36 @@
 # Bitácora de agentes
+## 2026-10-01 — H-SAVINGS-RH-REPORT-001
+
+Reporte RH se agrega después de Programa, conservando las cuatro secciones y sus
+controles. Selección mensual/anual, año, mes y días 5/15/28/30; descarga directa
+XLSX de Clave, Proceso, Folio, Nombre, Monto, Inicio y Final, sin Make ni correo.
+El anual conserva último importe positivo para proceso 1/JUB y una fila por
+quincena para proceso 3. Por decisión del propietario se excluyen todos los ceros,
+se usa nombre completo de Afiliados sin separar apellidos y se reconstruye historia
+verificable. El propietario confirmó AB/15-01-2026 como saldo inicial: no se exporta
+como descuento ni se altera su uso financiero. AR/30-06 excluye el rendimiento DT
+identificado; ninguna cifra exportada se escribe en la contabilidad.
+
+Autoridad: snapshot certificado hasta corte; planes canónicos fechados después;
+identidad por UUID y numero_control TEXT exacto. No se usan recibos ausentes como
+cancelaciones, ni propuestas pendientes ni CSV como fallback. No existe detalle
+por fecha de 2024/2025: esos periodos fallan explícitamente, sin dividir saldos.
+Lector aditivo `get_admin_savings_rh_report` con `savings.reports`; Edge específico
+`savings-rh-report` usa JWT real, nunca service_role. Migración 20261001000400 y Edge
+instalados: nueve tablas de negocio, funciones existentes y seguridad sin cambios.
+Forward/recovery y seguridad: 12 grupos aislados PASS. Excel real validado sólo
+en memoria para cuatro fechas y dos anuales: ZIP, siete columnas, Folio texto,
+Monto numérico positivo, sin fórmulas; anónimo 401. Navegador local: cinco tabs,
+conciliación de 295 filas conservada, escritorio/móvil sin desborde; descarga del
+navegador con fixture sintético PASS. No se guardaron reportes reales de nómina.
+
+QA permanente añadido: un archivo focal. Scripts privados/resultados/capturas
+únicamente en `.tmp/savings-rh-report` ignorado; ningún directorio QA nuevo.
+Bundle focal v308 y cache v240; cuatro diferencias preexistentes entre fuentes
+ajenas y bundle publicado se preservaron, sin introducirlas en esta entrega.
+La publicación frontend se verifica mediante el workflow de Pages y la comprobación
+posterior; no se ejecutaron suites globales ni operaciones financieras de prueba.
+
 ## 2026-10-01 — H-SAVINGS-AFFILIATE-NAMES-001 — producción PASS
 
 Conciliación ACCOUNT, selector de Programa y Solicitudes consultan el nombre

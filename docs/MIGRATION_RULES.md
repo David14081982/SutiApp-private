@@ -1,5 +1,17 @@
 # Reglas de migración
 
+## 20261001000400 — Reporte RH — APPLIED / VERIFIED
+
+RPC aditiva de lectura, STABLE SECURITY DEFINER/search_path vacío, grant sólo
+authenticated y validación auth.uid()/savings.reports en backend. Sin tablas,
+writers ni cambios de RLS. Edge `savings-rh-report` exporta con JWT del usuario.
+Aplicación transaccional verificó huellas iguales en nueve tablas de negocio y
+definiciones/owners/ACL de funciones previas; no hubo escrituras financieras.
+Recovery probado elimina sólo la nueva RPC; revertir primero frontend y retirar
+la Edge específica. Histórico reconstruido desde snapshot aceptado, excluyendo
+AB saldo inicial y rendimiento DT embebido en AR; no se modifica el histórico.
+Periodos sin detalle suficiente se rechazan. Evidencia temporal fuera del repo.
+
 ## 20261001000300 — nombres actuales de Afiliados en Ahorro — APPLIED / VERIFIED
 
 Tres sustituciones de presentación, protegidas por hashes exactos, en lectores

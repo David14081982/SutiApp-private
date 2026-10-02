@@ -55952,6 +55952,75 @@ Object.assign(window, {
  });
 })();
 })();
+/* @@file savings-individual-withdrawal-repository.js */
+(function(){
+/* Individual Admin Savings availability. No balances or local persistence. */
+(function(){
+ 'use strict';
+ async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
+ window.SavingsIndividualWithdrawalRepository=Object.freeze({
+  get:folio=>rpc('get_admin_savings_individual_withdrawal',{p_folio:folio}),
+  set:c=>rpc('admin_set_savings_individual_withdrawal',{p_folio:c.folio,p_enabled:c.enabled,p_until:c.until,p_reason:c.reason,p_version:c.version,p_key:c.key})
+ });
+})();
+})();
+/* @@file savings-individual-withdrawal.jsx */
+(function(){
+/* Account-scoped availability; the existing request and payment flows remain authoritative. */
+(function(){
+ 'use strict';
+ const h=React.createElement,{useState,useRef,useEffect}=React;
+ function message(e){const s=String(e&&e.message||'');
+  if(/CHANGED|IDEMPOTENCY_CONFLICT/.test(s))return 'La habilitación cambió. Actualiza su estado y revisa la decisión antes de confirmar.';
+  if(/DENIED|42501/.test(s))return 'Tu cuenta no tiene permiso para habilitar retiros.';
+  if(/DATE_INVALID/.test(s))return 'Selecciona hoy o una fecha posterior para el vencimiento.';
+  if(/NOT_READY|IDENTITY/.test(s))return 'Primero revisa la identidad y la certificación de esta cuenta.';
+  return 'No pudimos confirmar la habilitación. Conservamos tu captura; reintenta o actualiza el estado.';
+ }
+ function SavingsIndividualWithdrawal({folio,onRequest}){
+  const [state,setState]=useState({loading:true}),[form,setForm]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+  const generation=useRef(0),lock=useRef(false),attempt=useRef(null),formRef=useRef(null);
+  async function load(){const seq=++generation.current;setState({loading:true});setError('');
+   try{const data=await window.SavingsIndividualWithdrawalRepository.get(folio);if(generation.current===seq)setState({data});}
+   catch(e){if(generation.current===seq)setState({error:message(e)});}
+  }
+  useEffect(()=>{setForm(null);setNotice('');attempt.current=null;load();return()=>{generation.current++;};},[folio]);
+  useEffect(()=>{if(form&&formRef.current)formRef.current.focus();},[!!form]);
+  const data=state.data,blocked=busy||state.loading||!!state.error;
+  function open(enabled){attempt.current=null;setError('');setNotice('');setForm({enabled,until:enabled?data.suggested_until:'',reason:'',version:data.version});}
+  function edit(key,value){setForm(old=>({...old,[key]:value}));attempt.current=null;setError('');}
+  async function save(e){e.preventDefault();if(lock.current||blocked)return;lock.current=true;setBusy(true);setError('');setNotice('');
+   const seq=generation.current,values={folio,enabled:form.enabled,until:form.enabled?form.until:null,reason:form.reason.trim(),version:form.version};
+   if(!attempt.current)attempt.current={...values,key:crypto.randomUUID()};
+   try{await window.SavingsIndividualWithdrawalRepository.set(attempt.current);
+    const current=await window.SavingsIndividualWithdrawalRepository.get(folio);
+    if(generation.current!==seq)return;
+    setState({data:current});
+    if(current.enabled!==values.enabled||!current.ready){setError('El estado actual ya cambió. Revisa la habilitación antes de continuar.');return;}
+    attempt.current=null;setForm(null);setNotice(values.enabled?'Retiro habilitado para esta persona. Ya puedes registrar su solicitud.':'Retiro deshabilitado para esta persona. Las solicitudes existentes conservan su historial.');
+   }catch(e){if(generation.current===seq)setError(message(e));}
+   finally{lock.current=false;if(generation.current===seq)setBusy(false);}
+  }
+  const button=(label,onClick,disabled=false,primary=false)=>h('button',{type:'button',className:'svp-btn'+(primary?' primary':''),onClick,disabled},label);
+  const reasons={IDENTITY:'Primero revisa la identidad de este expediente.',CERTIFICATION:'Primero confirma el saldo de esta cuenta en “Saldo, descuentos y conciliación”.',ENROLLMENT:'Esta persona todavía no tiene una cuenta de ahorro confirmada.'};
+  return h(window.SavingsPanelVisual.Tarjeta,{title:'Retiro individual',icon:'download'},h('div',{'data-individual-withdrawal':folio},
+   h('p',{className:'svp-note'},'Habilita el retiro únicamente para esta persona. Después registra la solicitud y continúa con su revisión y entrega.'),
+   state.loading&&h('p',{role:'status'},'Consultando habilitación…'),
+   state.error&&h('div',{role:'alert',className:'svp-error'},state.error),
+   data&&h(React.Fragment,null,h('p',{className:'svp-note'},h('b',null,data.name||'Ahorrador'),' · Folio '+folio),
+    h('p',{role:'status',className:'svp-note'},!data.ready?reasons[data.block_reason]||'Revisa la cuenta antes de habilitar un retiro.':data.enabled?'Retiro habilitado'+(data.ends_at?' hasta '+new Date(new Date(data.ends_at).getTime()-1).toLocaleString('es-MX',{timeZone:'America/Hermosillo',dateStyle:'medium',timeStyle:'short'}):'')+'.':'Retiro no habilitado para esta persona.'),
+    data.ready&&!data.can_configure&&h('p',{className:'svp-note'},'Para cambiar esta habilitación se necesita permiso de configuración de Ahorro.'),
+    !form&&h('div',{className:'svp-actions'},data.can_configure&&button(data.enabled?'Deshabilitar retiro':'Habilitar retiro',()=>open(!data.enabled),blocked,!data.enabled),data.ready&&data.enabled&&data.can_create&&button('Registrar retiro',onRequest,blocked,true)),
+    form&&h('form',{onSubmit:save},h('p',{className:'svp-note'},form.enabled?'Se habilitará sólo el retiro de esta persona. Esta acción no entrega dinero ni genera rendimientos.':'Se cerrará el retiro sólo para esta persona, aunque exista una apertura general. No cancela solicitudes ni modifica saldos.'),
+     form.enabled&&h('label',{className:'svp-field'},'Habilitado hasta · fin del día en Hermosillo',h('input',{type:'date',required:true,min:data.today,value:form.until,disabled:busy,onChange:e=>edit('until',e.target.value)})),
+     h('label',{className:'svp-field'},'Motivo',h('textarea',{'aria-label':'Motivo',ref:formRef,required:true,minLength:3,maxLength:1000,value:form.reason,disabled:busy,onChange:e=>edit('reason',e.target.value)})),
+     h('div',{className:'svp-actions'},button('Cancelar',()=>{setForm(null);attempt.current=null;setError('');},busy),h('button',{type:'submit',className:'svp-btn primary',disabled:blocked||form.reason.trim().length<3||(form.enabled&&!form.until)},busy?'Guardando…':form.enabled?'Confirmar habilitación':'Confirmar deshabilitación')))),
+   error&&h('div',{role:'alert',className:'svp-error'},error),notice&&h('p',{role:'status',className:'svp-success'},notice),
+   button('Actualizar habilitación',()=>{setForm(null);attempt.current=null;setNotice('');load();},busy||state.loading)));
+ }
+ window.SavingsIndividualWithdrawal=SavingsIndividualWithdrawal;
+})();
+})();
 /* @@file savings-panel-reference.jsx */
 (function(){
 /* Presentational components reconstructed from the owner-supplied reference.
@@ -57914,75 +57983,6 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   window.SavingsReconciliationAdmin = SavingsReconciliationAdmin;
 })();
 })();
-/* @@file savings-individual-withdrawal-repository.js */
-(function(){
-/* Individual Admin Savings availability. No balances or local persistence. */
-(function(){
- 'use strict';
- async function rpc(name,args){const {data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(error)throw error;return data;}
- window.SavingsIndividualWithdrawalRepository=Object.freeze({
-  get:folio=>rpc('get_admin_savings_individual_withdrawal',{p_folio:folio}),
-  set:c=>rpc('admin_set_savings_individual_withdrawal',{p_folio:c.folio,p_enabled:c.enabled,p_until:c.until,p_reason:c.reason,p_version:c.version,p_key:c.key})
- });
-})();
-})();
-/* @@file savings-individual-withdrawal.jsx */
-(function(){
-/* Account-scoped availability; the existing request and payment flows remain authoritative. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useRef,useEffect}=React;
- function message(e){const s=String(e&&e.message||'');
-  if(/CHANGED|IDEMPOTENCY_CONFLICT/.test(s))return 'La habilitación cambió. Actualiza su estado y revisa la decisión antes de confirmar.';
-  if(/DENIED|42501/.test(s))return 'Tu cuenta no tiene permiso para habilitar retiros.';
-  if(/DATE_INVALID/.test(s))return 'Selecciona hoy o una fecha posterior para el vencimiento.';
-  if(/NOT_READY|IDENTITY/.test(s))return 'Primero revisa la identidad y la certificación de esta cuenta.';
-  return 'No pudimos confirmar la habilitación. Conservamos tu captura; reintenta o actualiza el estado.';
- }
- function SavingsIndividualWithdrawal({folio,onRequest}){
-  const [state,setState]=useState({loading:true}),[form,setForm]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-  const generation=useRef(0),lock=useRef(false),attempt=useRef(null),formRef=useRef(null);
-  async function load(){const seq=++generation.current;setState({loading:true});setError('');
-   try{const data=await window.SavingsIndividualWithdrawalRepository.get(folio);if(generation.current===seq)setState({data});}
-   catch(e){if(generation.current===seq)setState({error:message(e)});}
-  }
-  useEffect(()=>{setForm(null);setNotice('');attempt.current=null;load();return()=>{generation.current++;};},[folio]);
-  useEffect(()=>{if(form&&formRef.current)formRef.current.focus();},[!!form]);
-  const data=state.data,blocked=busy||state.loading||!!state.error;
-  function open(enabled){attempt.current=null;setError('');setNotice('');setForm({enabled,until:enabled?data.suggested_until:'',reason:'',version:data.version});}
-  function edit(key,value){setForm(old=>({...old,[key]:value}));attempt.current=null;setError('');}
-  async function save(e){e.preventDefault();if(lock.current||blocked)return;lock.current=true;setBusy(true);setError('');setNotice('');
-   const seq=generation.current,values={folio,enabled:form.enabled,until:form.enabled?form.until:null,reason:form.reason.trim(),version:form.version};
-   if(!attempt.current)attempt.current={...values,key:crypto.randomUUID()};
-   try{await window.SavingsIndividualWithdrawalRepository.set(attempt.current);
-    const current=await window.SavingsIndividualWithdrawalRepository.get(folio);
-    if(generation.current!==seq)return;
-    setState({data:current});
-    if(current.enabled!==values.enabled||!current.ready){setError('El estado actual ya cambió. Revisa la habilitación antes de continuar.');return;}
-    attempt.current=null;setForm(null);setNotice(values.enabled?'Retiro habilitado para esta persona. Ya puedes registrar su solicitud.':'Retiro deshabilitado para esta persona. Las solicitudes existentes conservan su historial.');
-   }catch(e){if(generation.current===seq)setError(message(e));}
-   finally{lock.current=false;if(generation.current===seq)setBusy(false);}
-  }
-  const button=(label,onClick,disabled=false,primary=false)=>h('button',{type:'button',className:'svp-btn'+(primary?' primary':''),onClick,disabled},label);
-  const reasons={IDENTITY:'Primero revisa la identidad de este expediente.',CERTIFICATION:'Primero confirma el saldo de esta cuenta en “Saldo, descuentos y conciliación”.',ENROLLMENT:'Esta persona todavía no tiene una cuenta de ahorro confirmada.'};
-  return h(window.SavingsPanelVisual.Tarjeta,{title:'Retiro individual',icon:'download'},h('div',{'data-individual-withdrawal':folio},
-   h('p',{className:'svp-note'},'Habilita el retiro únicamente para esta persona. Después registra la solicitud y continúa con su revisión y entrega.'),
-   state.loading&&h('p',{role:'status'},'Consultando habilitación…'),
-   state.error&&h('div',{role:'alert',className:'svp-error'},state.error),
-   data&&h(React.Fragment,null,h('p',{className:'svp-note'},h('b',null,data.name||'Ahorrador'),' · Folio '+folio),
-    h('p',{role:'status',className:'svp-note'},!data.ready?reasons[data.block_reason]||'Revisa la cuenta antes de habilitar un retiro.':data.enabled?'Retiro habilitado'+(data.ends_at?' hasta '+new Date(new Date(data.ends_at).getTime()-1).toLocaleString('es-MX',{timeZone:'America/Hermosillo',dateStyle:'medium',timeStyle:'short'}):'')+'.':'Retiro no habilitado para esta persona.'),
-    data.ready&&!data.can_configure&&h('p',{className:'svp-note'},'Para cambiar esta habilitación se necesita permiso de configuración de Ahorro.'),
-    !form&&h('div',{className:'svp-actions'},data.can_configure&&button(data.enabled?'Deshabilitar retiro':'Habilitar retiro',()=>open(!data.enabled),blocked,!data.enabled),data.ready&&data.enabled&&data.can_create&&button('Registrar retiro',onRequest,blocked,true)),
-    form&&h('form',{onSubmit:save},h('p',{className:'svp-note'},form.enabled?'Se habilitará sólo el retiro de esta persona. Esta acción no entrega dinero ni genera rendimientos.':'Se cerrará el retiro sólo para esta persona, aunque exista una apertura general. No cancela solicitudes ni modifica saldos.'),
-     form.enabled&&h('label',{className:'svp-field'},'Habilitado hasta · fin del día en Hermosillo',h('input',{type:'date',required:true,min:data.today,value:form.until,disabled:busy,onChange:e=>edit('until',e.target.value)})),
-     h('label',{className:'svp-field'},'Motivo',h('textarea',{'aria-label':'Motivo',ref:formRef,required:true,minLength:3,maxLength:1000,value:form.reason,disabled:busy,onChange:e=>edit('reason',e.target.value)})),
-     h('div',{className:'svp-actions'},button('Cancelar',()=>{setForm(null);attempt.current=null;setError('');},busy),h('button',{type:'submit',className:'svp-btn primary',disabled:blocked||form.reason.trim().length<3||(form.enabled&&!form.until)},busy?'Guardando…':form.enabled?'Confirmar habilitación':'Confirmar deshabilitación')))),
-   error&&h('div',{role:'alert',className:'svp-error'},error),notice&&h('p',{role:'status',className:'svp-success'},notice),
-   button('Actualizar habilitación',()=>{setForm(null);attempt.current=null;setNotice('');load();},busy||state.loading)));
- }
- window.SavingsIndividualWithdrawal=SavingsIndividualWithdrawal;
-})();
-})();
 /* @@file savings-runtime-admin.jsx */
 (function(){
 /* Savings-only operational forms. Supabase owns decisions, amounts, reports and publication. */
@@ -58172,6 +58172,151 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
  window.SavingsRuntimeAdmin=SavingsRuntimeAdmin;
 })();
 })();
+/* @@file savings-rh-repository.js */
+(function(){
+/* Payroll instructions export. No browser cache, financial writes or email. */
+(function(){
+ 'use strict';
+ const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+ function validate(value){
+  const {type,year,month,day}=value;
+  if(!['mensual','anual'].includes(type)||!Number.isInteger(year)||year<2000||year>2100)throw Error('SAVINGS_RH_SELECTION_INVALID');
+  if(type==='mensual'&&(!Number.isInteger(month)||month<1||month>12||![5,15,28,30].includes(day)||new Date(Date.UTC(year,month-1,day)).getUTCMonth()!==month-1))throw Error('SAVINGS_RH_DATE_INVALID');
+  return {type,year,month:type==='mensual'?month:null,day:type==='mensual'?day:null};
+ }
+ async function download(value,signal){
+  const selection=validate(value),context=window.SavingsPanelRepository.contextKey();
+  const result=await window.SutiSupabase.getClient().functions.invoke('savings-rh-report',{body:selection,signal});
+  if(signal?.aborted)throw new DOMException('Aborted','AbortError');
+  if(context!==window.SavingsPanelRepository.contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+  if(result.error){let detail;try{detail=await result.error.context.clone().json();}catch(_){}throw Error(detail?.error||'SAVINGS_RH_UNAVAILABLE');}
+  if(!(result.data instanceof Blob)||result.data.size<4)throw Error('SAVINGS_RH_FILE_INVALID');
+  const signature=new Uint8Array(await result.data.slice(0,4).arrayBuffer());
+  if(signature.join(',')!=='80,75,3,4')throw Error('SAVINGS_RH_FILE_INVALID');
+  if(signal?.aborted||context!==window.SavingsPanelRepository.contextKey())throw Error('SAVINGS_CONTEXT_CHANGED');
+  const file=new Blob([result.data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const href=URL.createObjectURL(file),link=document.createElement('a');
+  const date=selection.type==='anual'?String(selection.year):[selection.year,String(selection.month).padStart(2,'0'),String(selection.day).padStart(2,'0')].join('-');
+  link.href=href;link.download='Reporte_RH_'+selection.type+'_'+date+'.xlsx';link.rel='noopener';
+  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(href),1000);
+ }
+ window.SavingsRhRepository=Object.freeze({months,validate,download});
+})();
+})();
+/* @@file savings-rh-report.jsx */
+(function(){
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const css = '.svp-rh{margin-top:20px}.svp-rh-card{background:white;border:1px solid var(--hairline);border-radius:14px;padding:24px}.svp-rh fieldset{border:0;padding:0;margin:0 0 32px;min-width:0}.svp-rh fieldset:last-child{margin-bottom:0}.svp-rh legend{width:100%;padding:0;margin-bottom:12px;font-weight:800;font-size:14px}.svp-rh legend small{float:right;color:var(--ink-3);font-size:12px;font-weight:400}.svp-rh-options{display:flex;flex-wrap:wrap;gap:8px}.svp-rh-choice{position:relative;cursor:pointer}.svp-rh-choice input{position:absolute;opacity:0;width:1px;height:1px}.svp-rh-choice span{display:block;border:1px solid var(--hairline-strong);border-radius:999px;padding:10px 16px;font-size:14px;min-height:42px}.svp-rh-choice input:checked+span{background:var(--guinda-50);color:var(--guinda);border-color:var(--guinda)}.svp-rh-choice input:focus-visible+span{outline:2px solid var(--guinda);outline-offset:3px}.svp-rh fieldset:disabled{opacity:.55}.svp-rh-submit{display:block!important;width:min(100%,360px);margin:16px auto 0;background:var(--guinda)!important;color:white!important}.svp-rh-help{font-size:13px;color:var(--ink-2);line-height:1.5;margin:12px 0}@container savings-panel (max-width:450px){.svp-rh-card{padding:18px}.svp-rh-choice span{padding:10px 13px}}';
+  const messages = {
+    SAVINGS_RH_DATE_INVALID: 'La fecha seleccionada no existe. Revisa el mes y el día.',
+    SAVINGS_RH_SELECTION_INVALID: 'Selecciona un tipo y año válidos.',
+    SAVINGS_REPORT_DENIED: 'No tienes permiso para generar reportes de Ahorro.',
+    SAVINGS_RH_EMPTY: 'No hay instrucciones de descuento para el periodo seleccionado.',
+    SAVINGS_RH_HISTORY_UNAVAILABLE: 'No hay planes fechados suficientes para generar el periodo completo. No se sustituyen por saldos ni rendimientos históricos.',
+    SAVINGS_RH_IDENTITY_INVALID: 'Hay un Folio sin identidad o nombre válido en Afiliados. Revisa las incidencias antes de exportar.',
+    SAVINGS_RH_PLAN_CONFLICT: 'Hay planes de descuento incompletos o superpuestos. Revisa las incidencias antes de exportar.',
+    SAVINGS_RH_AMOUNT_INVALID: 'Hay un importe no válido. No se generó el archivo.',
+    SAVINGS_CONTEXT_CHANGED: 'Cambió la sesión. Vuelve a abrir Reporte RH.',
+    SAVINGS_RH_FILE_INVALID: 'No se recibió un Excel válido. Intenta nuevamente.'
+  };
+  function SavingsRhReport({
+    today
+  }) {
+    const date = today || new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Hermosillo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+    const currentYear = Number(date.slice(0, 4)),
+      [type, setType] = useState('mensual'),
+      [year, setYear] = useState(currentYear),
+      [month, setMonth] = useState(Number(date.slice(5, 7))),
+      [day, setDay] = useState(15);
+    const [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [success, setSuccess] = useState(false),
+      controller = useRef(null);
+    useEffect(() => () => controller.current?.abort(), []);
+    function change(setter, value) {
+      setter(value);
+      setError('');
+      setSuccess(false);
+    }
+    function choices(title, name, values, value, setter, disabled = false) {
+      return h('fieldset', {
+        disabled: busy || disabled
+      }, h('legend', null, title, h('small', null, disabled ? 'No aplica al anual' : 'Requerido')), h('div', {
+        className: 'svp-rh-options'
+      }, values.map(([key, label]) => h('label', {
+        key,
+        className: 'svp-rh-choice'
+      }, h('input', {
+        type: 'radio',
+        name: 'savings-rh-' + name,
+        value: key,
+        checked: value === key,
+        required: !disabled,
+        onChange: () => change(setter, key)
+      }), h('span', null, label)))));
+    }
+    async function submit(event) {
+      event.preventDefault();
+      if (controller.current) return;
+      const request = new AbortController();
+      controller.current = request;
+      setBusy(true);
+      setError('');
+      setSuccess(false);
+      try {
+        await window.SavingsRhRepository.download({
+          type,
+          year,
+          month,
+          day
+        }, request.signal);
+        if (!request.signal.aborted) setSuccess(true);
+      } catch (e) {
+        if (!request.signal.aborted) setError(messages[e.message] || 'No se pudo generar el reporte. Intenta nuevamente; si persiste, revisa tus permisos y la conexión.');
+      } finally {
+        controller.current = null;
+        if (!request.signal.aborted) setBusy(false);
+      }
+    }
+    return h('form', {
+      className: 'svp-rh',
+      onSubmit: submit,
+      'aria-label': 'Reporte RH',
+      'aria-busy': busy
+    }, h('style', null, css), h('div', {
+      className: 'svp-rh-card'
+    }, choices('Tipo reporte', 'type', [['mensual', 'mensual'], ['anual', 'anual']], type, setType), choices('Año', 'year', Array.from({
+      length: 5
+    }, (_, i) => [currentYear - 2 + i, String(currentYear - 2 + i)]), year, setYear), choices('Mes', 'month', window.SavingsRhRepository.months.map((name, i) => [i + 1, name]), month, setMonth, type === 'anual'), choices('Día', 'day', [5, 15, 28, 30].map(value => [value, String(value)]), day, setDay, type === 'anual')), h('p', {
+      className: 'svp-rh-help'
+    }, type === 'mensual' ? 'Descuentos de la fecha seleccionada. Se excluyen montos en cero, saldos iniciales y rendimientos.' : 'Proceso 1 y jubilados: último monto positivo del año. Proceso 3: una fila por quincena. Se excluyen saldos iniciales y rendimientos.'), error && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), success && h('p', {
+      role: 'status',
+      className: 'svp-success'
+    }, 'Archivo Excel generado. Revisa la carpeta de descargas.'), h('button', {
+      type: 'submit',
+      className: 'svp-btn svp-rh-submit',
+      disabled: busy
+    }, busy ? 'Generando reporte…' : 'Generar reporte'));
+  }
+  window.SavingsRhReport = SavingsRhReport;
+})();
+})();
 /* @@file savings-panel-admin.jsx */
 (function(){
 /* Admin Savings: responsive reference layout, Supabase queries and private review. */
@@ -58179,7 +58324,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
  'use strict';
  const h=React.createElement,{useState,useEffect,useRef}=React,V=window.SavingsPanelVisual;
  const {KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados}=V;
- const tabs=[['resumen','Resumen'],['personas','Personas'],['atencion','Atención'],['programa','Programa']];
+ const tabs=[['resumen','Resumen'],['personas','Personas'],['atencion','Atención'],['programa','Programa'],['rh','Reporte RH']];
  const programViews=[['conciliacion','Conciliar por fecha'],['reportes','Reportes'],['configuracion','Configuración']];
  const css=`.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .svp-work-heading{margin:24px 0 16px}.svp-work-heading h2{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.025em}.svp-context-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.svp-record-section{grid-column:1/-1;border:1px solid var(--hairline);border-radius:16px;background:#fff;min-width:0;overflow:hidden}.svp-record-section>summary{padding:18px 20px;font-size:16px;font-weight:850;cursor:pointer;min-height:52px;color:var(--ink)}.svp-record-section[open]>summary{border-bottom:1px solid var(--hairline);color:var(--guinda)}.svp-section-content{padding:16px;min-width:0}.svp-program-summary{margin:16px 0}.svp-program-summary>summary{padding:14px 0;font-weight:800;cursor:pointer}.svp-program-summary .svp-kpis{margin-top:14px}.svp-request-filters{display:grid;grid-template-columns:1fr 1fr;gap:16px}.svp .svp-note,.svp .svp-audit,.svp .svp-field{font-size:calc(14px * var(--text-scale,1))}.svp .svp-btn{font-size:calc(14px * var(--text-scale,1))!important;min-height:44px}.svp .svp-tabs button{font-size:calc(14px * var(--text-scale,1));min-height:46px}.svp .svp-tabs[role=tablist]{border-bottom:1px solid var(--hairline);padding-bottom:12px;gap:10px;margin-top:18px}.svp .svp-tabs[role=tablist] button{flex:1;border-radius:12px}.svp .svp-search{margin-bottom:20px;min-height:54px;border:1px solid var(--hairline-strong)}.svp-search .svp-btn{flex:none}.svp .svp-detail-grid{align-items:start}.svp .svp-notice{font-size:13px;flex-wrap:wrap}.svp .svp-record{padding:20px}.svp .svp-audit{padding:18px 0}.svp summary:focus-visible{outline:3px solid #456bc0;outline-offset:-3px}@container savings-panel (max-width:600px){.svp-request-filters{grid-template-columns:1fr;gap:0}.svp-section-content{padding:12px}.svp-context-nav>*{flex:1}.svp-work-heading h2{font-size:22px}.svp .svp-tabs[role=tablist]{gap:4px}.svp .svp-tabs[role=tablist] button{padding:10px 8px;white-space:normal}}
@@ -58395,6 +58540,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
    h('div',{className:'svp-body'},
     h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([value,label])=>h('button',{key:value,role:'tab','aria-selected':tab===value,onClick:()=>changeTab(value)},label))),
     navigationError&&h('p',{role:'alert',className:'svp-error'},navigationError),
+    tab==='rh'&&h(window.SavingsRhReport,{today:d?.today}),
     tab==='resumen'&&h(React.Fragment,null,h(Titulo,{sub:'Saldo, próximas aportaciones y pendientes que necesitan seguimiento.'},'Panorama del ahorro'),h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
      h(KPIs,{k,onGo:(destination,date)=>reconcile(date)}),
      h(Tarjeta,{title:'Atención del programa',icon:'info'},h(Fila,{label:'Aportaciones pendientes de conciliar',valor:d.attention?.pending_receipts??'Por confirmar'}),h(Fila,{label:'Diferencias entre recibos y movimientos',valor:d.attention?.receipt_conflicts??'Por confirmar'}),h(Fila,{label:'Solicitudes que requieren atención',valor:d.attention?.request_count??'Por confirmar'}),

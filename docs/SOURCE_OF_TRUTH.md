@@ -1,5 +1,24 @@
 # Fuentes de verdad
 
+## Reporte RH de Ahorro — 2026-10-01
+
+`get_admin_savings_rh_report` → Edge `savings-rh-report` → `SavingsRhRepository`
+produce un XLSX derivado, sin autoridad de escritura ni almacenamiento propio.
+Antes del corte usa exclusivamente `savings_balance_certifications.source_snapshot`
+aceptado y las fechas de `savings_review_records.field_defs`; después usa
+`savings_enrollments` y `savings_contribution_plans` canónicos y efectivos por fecha.
+Los nombres salen de Afiliados con UUID/control TEXT exactos y afiliado activo único.
+El CSV y Apps Script aportados son especificaciones, nunca fuentes runtime.
+
+Decisiones owner: excluir ceros; nombre completo sin separadores obligatorios;
+anual de instrucciones (último positivo para proceso 1/JUB, todas las quincenas de
+proceso 3), no suma de ahorro. AB/15-01-2026 es saldo inicial y se excluye sólo
+del reporte; AR/30-06 se presenta sin el rendimiento DT embebido. No se alteran
+saldos, cálculo de rendimientos, recibos ni retiros. No hay detalle por fecha para
+reconstruir 2024/2025 desde los totales anuales: falla explícita sin estimación.
+Permiso backend `savings.reports`, JWT real; sin grants nuevos sobre tablas,
+service_role en la Edge, Make, correo, caché persistente o fallback.
+
 ## H-SAVINGS-AFFILIATE-NAMES-001 — nombre administrativo actual
 
 Conciliación de cuentas, selector de Programa y Solicitudes proyectan

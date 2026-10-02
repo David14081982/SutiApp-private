@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "baselineCommit": "e07327a7b9c9c2939cc7c6db7d583242e259363c",
+  "baselineBundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+  "bundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+  "sourceSha256": "05eb80d5c39e90b3bed1a64bbc87e5516bc0035a0d30c6d8cd1ad7cf0a68cc93",
+  "bundleVersion": 310,
+  "workerVersion": 242,
+  "otherModulesIdentical": true,
+  "onlyAuthorizedCellChanged": true,
+  "baselineSqlSha256": "18034f64806628ddbbb2234a0e4f4d46b7e537607404157d951f1c601fd6b5a7",
+  "sqlApplied": false
+}

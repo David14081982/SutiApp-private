@@ -3915,3 +3915,8 @@ Publication authorized 2026-10-02. Packaged against current main 509a891ebe20092
 
 
 Publication completed: H-REQUEST-PUSH-REOPEN-001 PASS. Runtime commit c1249f4efb8db5a9df85edd08c514ddc56db3ba4; Pages workflow https://github.com/David14081982/SutiApp-private/actions/runs/36975822557 succeeded. Exact public bundle 309/worker 241, SHA256 3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b, verified on sutiapp.com and Pages. Final 20 lifecycle + 12 security, local and published global image/PDF regression PASS; zero business data changes or notification sends. Delivery review APPROVED; physical Android/iOS remains untested and previously lost binding may need explicit restore once. Release evidence in docs/qa/evidence/request-push-reopen-20261001/release-*.json.
+
+
+## H-FINANCE-REQUEST-PROCESS-001 - authorized release
+
+Finanzas request detail displays Proceso from the requesting affiliate financial_employee_category_code. Additive RPC projection preserves all gates and fields; no business data writes. SQL/recovery and browser isolated checks PASS. Owner authorized application and publication on 2026-10-02. Release evidence is retained in the owner workspace.

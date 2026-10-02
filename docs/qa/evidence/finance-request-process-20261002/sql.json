@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "only category added; existing fields, OID, ACL, owner, volatility, search_path and data unchanged",
+    "all six codes and null; current applicant FK, assisted request and other applicant isolated",
+    "anonymous, missing permission and wrong admin module denied",
+    "bank gate and missing request checks preserved",
+    "exact recovery and forward reapply verified; definition drift fails closed"
+  ],
+  "productionTouched": false
+}

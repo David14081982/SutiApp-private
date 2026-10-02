@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "migration": "20261002000100",
+  "receipt": [
+    {
+      "requests_verified": 251
+    }
+  ],
+  "definitionSha256": "2ddbaeac19c4eade88e5534de712b2d2267b3af67f3d1b4d86aa4df453bf3076",
+  "oidAclOwnerPreserved": true,
+  "allPriorFieldsIdentical": true,
+  "allApplicantCategoriesMatch": true,
+  "businessFingerprintsPreserved": true,
+  "businessWrites": 0
+}

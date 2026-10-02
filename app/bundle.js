@@ -47072,7 +47072,7 @@ Object.assign(window, {
         stroke: 2
       }), 'Solicitante'), h('div', {
         className: 'finwb-kv'
-      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Contexto'), h('strong', null, detail.impersonation_session_id ? 'Solicitud asistida · actor real preservado' : 'Solicitud propia'))), h(RequestBankReference, {
+      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Proceso'), h('strong', null, detail.affiliate?.financial_employee_category_code || 'No registrada'))), h(RequestBankReference, {
         reference: detail.deposit_reference
       })), h('section', {
         className: 'finwb-card'

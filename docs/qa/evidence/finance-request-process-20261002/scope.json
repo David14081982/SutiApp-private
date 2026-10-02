@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "screenOnlyAuthorizedCellChanged": true,
+  "allStylesControlsHandlersIdentical": true,
+  "otherBundleModulesIdentical": true,
+  "cachebustersOnly": true,
+  "sqlOnlyApplicantCategoryProjection": true,
+  "baselineDefinitionSha256": "18034f64806628ddbbb2234a0e4f4d46b7e537607404157d951f1c601fd6b5a7",
+  "globalImageRegression": "NOT APPLICABLE",
+  "productionTouched": false
+}

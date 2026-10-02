@@ -1,5 +1,16 @@
 # Reglas de migración
 
+## 20261001000300 — nombres actuales de Afiliados en Ahorro — APPLIED / VERIFIED
+
+Tres sustituciones de presentación, protegidas por hashes exactos, en lectores
+administrativos existentes; helper privado `STABLE SECURITY INVOKER`, sin grants
+API. Conserva firmas/OIDs/owners/ACL y políticas financieras. No crea tablas ni
+reescribe datos. Recovery invierte únicamente esas expresiones, rechaza deriva
+y elimina el helper sin `CASCADE`; forward/recovery probados en PostgreSQL aislado.
+Aplicación con timeout de lock 2s y statement 60s: huellas de 50 tablas idénticas,
+139 funciones ajenas y seguridad intactas. Lecturas y navegador productivos PASS.
+No se ejecutaron operaciones financieras sintéticas en producción.
+
 ## 20260928000700 — administración asistida Suti Farma — APPLIED / VERIFIED
 
 Reemplaza únicamente `farma_private.allowed(text)` para retirar la prohibición absoluta de sesiones asistidas. Conserva Auth, la intersección actor/sujeto de `has_admin_permission`, el límite de módulo `farma`/`program_products`, el vínculo de sesión y el actor real en auditoría. No modifica tablas, filas, inventario, solicitudes ni eventos. La definición previa queda en `farma_private.definition_backup`; recovery restaura su huella exacta. Forward, contexto real de la cuenta Farma y recovery pasaron juntos con `ROLLBACK`: 50 productos, lectura y capacidad de escritura acotada, cero persistencia. Aplicación productiva autorizada: huellas de catálogo e inventario idénticas, cero filas de negocio modificadas; postflight asistido devolvió 50 productos y 50 inventarios sin error.

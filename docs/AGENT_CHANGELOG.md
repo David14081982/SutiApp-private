@@ -1,4 +1,20 @@
 # Bitácora de agentes
+## 2026-10-01 — H-SAVINGS-AFFILIATE-NAMES-001 — producción PASS
+
+Conciliación ACCOUNT, selector de Programa y Solicitudes consultan el nombre
+completo de Afiliados mediante el UUID ya vinculado, control TEXT exacto y un
+único afiliado activo. No se copian nombres sobre participantes ni históricos.
+Migración `20261001000300` aplicada con recovery exacto y rechazo de deriva.
+Conservados los datos de 50 tablas, 139 funciones ajenas y OID/owner/ACL de los
+tres lectores. Recibos, retiros y sus políticas de identidad permanecen intactos.
+Prueba permanente aislada: 10 grupos PASS; integración/recovery privada: 7 PASS.
+Lecturas reales: 295/295 nombres en conciliación del 30/09, 353/353 en Programa
+y 25/25 solicitudes coinciden con Afiliados; todos los campos no nominales y
+la rama histórica son idénticos. Chrome publicado: búsqueda por apellido,
+controles, importes, estados y UUID de opciones PASS. Sin cambios frontend,
+bundle, Google o datos de negocio; build NOT REQUIRED. Un único test nuevo;
+comprobadores y resultados temporales sólo en `.tmp`, sin evidencia versionada.
+
 ## 2026-09-29 — H-SUTIAPP-DOCUMENT-LAYOUT-RENDER-FIX-001 — publicado PASS
 
 Corrección focal del renderer: tres firmas caben en las tres columnas del rectángulo

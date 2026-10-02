@@ -1,4 +1,15 @@
 # Fuentes de verdad
+
+## H-SAVINGS-AFFILIATE-NAMES-001 — nombre administrativo actual
+
+Conciliación de cuentas, selector de Programa y Solicitudes proyectan
+`affiliates.full_name` por el `affiliate_id` ya vinculado al participante, con
+`numero_control` TEXT exacto, afiliado no archivado y unicidad entre activos.
+El helper privado sólo presenta nombres: no reasigna identidades ni autoriza
+operaciones. Ambigüedad y ausencia de nombre producen etiquetas explícitas,
+sin fallback al nombre legacy. `savings_participants.display_name`, documentos,
+capturas y ramas históricas conservan sus valores originales; no son otra
+autoridad del nombre vigente. Permisos y guards de recibos/retiros no cambian.
 ## Resolución guiada de autorización — 2026-09-28
 
 `approvalReview` reutiliza las lecturas y controles del aprobador financiero, sin

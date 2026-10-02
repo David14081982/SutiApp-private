@@ -3832,4 +3832,29 @@ conserva 139 chunks ajenos byte a byte. Evidencia y límites en
 
 Implemented automatic validated self-service JOIN, unified administrative saver list, lazy inline history/detail and lazy request documents. New read-only workspace RPCs preserve historical certification and distinguish received/pending/future dates. Cross-review removed completed termination tasks and prevented uncertified participants from showing confirmed balances.
 
-Two migrations installed with exact function/ACL/owner backup and recovery exercised against the real schema in a rolled-back transaction. Transactional hashes confirm unchanged business rows in 17 protected tables, including documents: 353 participants, 333 plans, 844 transactions and total balance 2236214.89. Normal authenticated reads and anonymous denial passed. September 30 retains 294 missing receipts; no money was fabricated. Focused tests, browser/release proof and final limitations: docs/audits/H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001.md and docs/qa/evidence/savings-admin-ux-20261001/.
+Two migrations installed with exact function/ACL/owner backup and recovery exercised against the real schema in a rolled-back transaction. Transactional hashes confirm unchanged business rows in 17 protected tables, including documents: 353 participants, 333 plans, 844 transactions and total balance 2236214.89. Normal authenticated reads and anonymous denial passed. September 30 retains 294 missing receipts; no money was fabricated. Result: PASS / PRODUCTION, application commit f42bb4b21ee533ab8cb95b60f2f03fcbea7a03c1, final verification commit 64694c89207297be5af0bd5349f06d1586fca92d. Detailed validation remains in Git history; one-time artifacts were removed by the cleanup below. The separate extraordinary-approval authority limitation remains outside that implementation.
+
+
+## H-SAVINGS-ADMIN-UX-REPO-CLEANUP-001
+
+Owner-authorized artifact-only cleanup. Reviewed 41 files touched by the implementation and its closure (25 newly added). No new report/evidence directory. Runtime, UI, calculations, Supabase, business data and deployment remain untouched. Required production bundle/version files and architecture index are retained; the derived index only drops retired QA references.
+
+Classification of all 25 new files:
+
+| File(s) | Class / disposition | Reason |
+|---|---|---|
+| supabase/migrations/20261001000100_savings_auto_enrollment.sql; supabase/recovery/20261001000100_savings_auto_enrollment.sql | B / keep both | Installed policy and non-destructive recovery. |
+| supabase/migrations/20261001000200_savings_admin_workspace.sql; supabase/recovery/20261001000200_savings_admin_workspace.sql | B / keep both | Installed readers and matching recovery. |
+| scripts/test-savings-auto-enrollment.js | C / keep unchanged | Critical writer: unique enrollment/plan, identity/permissions, dates, idempotency, transactional rollback and history-preserving recovery. Memory-only; existing shared fixture retained. |
+| scripts/test-savings-admin-workspace.js | D / archive locally | Useful reader/history verification retired under the one-test maintenance budget; its coverage is not claimed redundant. |
+| scripts/test-savings-admin-workspace-repository.js | D / archive locally | Adapter simulation, lower priority than the transactional writer contract. |
+| scripts/test-savings-admin-workspace-browser.js | D / archive locally | Delivery-specific synthetic layout/browser harness, machine paths and screenshot/JSON generation. |
+| scripts/verify-savings-admin-ux-live.js | D / archive locally | One-release authenticated production verifier tied to the saved release clone. |
+| scripts/build-savings-admin-ux.js | D / archive locally | One-release focal packager tied to the original baseline. Active general build scripts remain unchanged. |
+| scripts/package-savings-admin-ux.js | D / archive locally | Copies this delivery's evidence and files; no active build/import consumer. |
+| scripts/release-savings-admin-ux.js | D / archive locally | One-time installation/preflight runner; required SQL/recovery files remain. |
+| docs/audits/H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001.md | E / archive locally | Closed implementation report; commit and this changelog preserve the result. |
+| docs/qa/evidence/savings-admin-ux-20261001/{apply.json,browser.json,build.json,delivery.json,local.json,preflight.json,production.json,release-build.json,rpc.json} | E / remove all nine from repository | One-time results, available in Git history and ignored local archive. |
+| docs/qa/evidence/savings-admin-ux-20261001/{person-320.png,person-430.png,person-1440.png} | E / remove all three from repository | Delivery screenshots; no runtime/contract use. |
+
+Result: PASS. Removed 7 one-time scripts and 13 evidence/report files; removed the H evidence directory. Permanent QA files from this H: 1; evidence directories: 0; versioned temporary results/screenshots/PDFs: 0. Files archived only in ignored .tmp/savings-admin-ux-cleanup-20261001; no temporary content staged. Validation: diff scope, protected-file SHA256 equality, retained test dependency existence and active-consumer search. Build NOT REQUIRED; no global or financial suites executed. Cleanup commit uses [skip ci] to prevent the push-triggered deployment/workflows.

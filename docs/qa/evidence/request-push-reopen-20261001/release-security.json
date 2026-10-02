@@ -1,0 +1,159 @@
+{
+  "suite": "security",
+  "status": "PASS",
+  "checkedAt": "2026-10-02T06:49:49.686Z",
+  "bundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+  "environment": "Chrome desktop mobile viewport; built Auth/Push/SW source and real IndexedDB; Auth RPC, Push provider and native permission simulated; no production writes or messages",
+  "cases": [
+    {
+      "name": "account_switch_during_pending_activation_never_binds_other_owner",
+      "result": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 0
+      }
+    },
+    {
+      "name": "logout_during_register_never_binds_other_owner",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 2,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "switch_during_register_never_binds_other_owner",
+      "result": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 2,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "impersonation_during_register_never_binds_other_owner",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 2,
+        "revokes": 0,
+        "asks": 0,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "logout",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 1,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "switch",
+      "result": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "impersonation",
+      "result": {
+        "phase": "unavailable",
+        "permission": "granted",
+        "binding": false,
+        "bindingValue": null,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "backend_revoked_not_auto_registered",
+      "result": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": true,
+        "bindingValue": {
+          "user_id": "11111111-1111-4111-8111-111111111111",
+          "subscription_id": "22222222-2222-4222-8222-222222222222",
+          "transport": "f564dd0447b7902b6d2f4ed2bfd2c76e9fd97c4ecab5da64bdba6eafebb3ed7f"
+        },
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "backend_expired_not_auto_registered",
+      "result": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": true,
+        "bindingValue": {
+          "user_id": "11111111-1111-4111-8111-111111111111",
+          "subscription_id": "22222222-2222-4222-8222-222222222222",
+          "transport": "f564dd0447b7902b6d2f4ed2bfd2c76e9fd97c4ecab5da64bdba6eafebb3ed7f"
+        },
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      }
+    },
+    {
+      "name": "worker_failed_display_retries_and_releases_dedup_reservation",
+      "displayedAfterFailure": 3
+    },
+    {
+      "name": "worker_interrupted_reservation_can_be_reclaimed",
+      "displayed": 4
+    },
+    {
+      "name": "worker_dedup_click_cross_binding_revocation",
+      "displayed": 4,
+      "openedCorrectRequest": true,
+      "otherBindingIgnored": true,
+      "revokedIgnored": true
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "builtAt": "2026-10-02T06:19:13.149Z",
+  "sourceSha256": "eb7aade903734a4da9f51e22c78688a6a27133ca3058d082eaef2ed4a5b083c3",
+  "bundleSha256": "86135327ac447203f079e1692e0f7e6a84105711c7f72dc4f9707654cd21f9d0",
+  "unrelatedModulesIdentical": true,
+  "swLogicIdentical": true,
+  "htmlOnlyCachebusters": true,
+  "bundleVersion": 309,
+  "workerVersion": 240,
+  "site": "C:\\Users\\david\\Downloads\\SutiApp\\tmp\\push-reopen-20261001\\site-309",
+  "productionDeployed": false
+}

@@ -1,0 +1,137 @@
+{
+  "checkedAt": "2026-10-02T06:16:29.591Z",
+  "environment": "Actual local Auth/Push source, Chrome, real IndexedDB; fake isolated permission, RPC and Push transport; no production access or writes",
+  "requestPushSha256": "bea480576cbbcf778147544db7193201047148441cd0ff66da1315580c705849",
+  "cases": [
+    {
+      "stage": "subscribe",
+      "before": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      },
+      "during": {
+        "returnedPhase": "error",
+        "authPhase": "error",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "registrations": 1,
+        "revokes": 0,
+        "asks": 1
+      },
+      "after": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 2
+      },
+      "authTrace": [
+        "loading",
+        "loading",
+        "authenticated",
+        "authenticated",
+        "error",
+        "loading",
+        "authenticated",
+        "authenticated"
+      ]
+    },
+    {
+      "stage": "register",
+      "before": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      },
+      "during": {
+        "returnedPhase": "error",
+        "authPhase": "error",
+        "binding": true,
+        "subscription": false,
+        "unsubscribes": 1,
+        "registrations": 2,
+        "revokes": 0,
+        "asks": 1
+      },
+      "after": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 3
+      },
+      "authTrace": [
+        "loading",
+        "loading",
+        "authenticated",
+        "authenticated",
+        "error",
+        "loading",
+        "authenticated",
+        "authenticated"
+      ]
+    },
+    {
+      "stage": "binding-write",
+      "before": {
+        "phase": "active",
+        "permission": "granted",
+        "binding": true,
+        "subscription": true,
+        "unsubscribes": 0,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 1
+      },
+      "during": {
+        "returnedPhase": "error",
+        "authPhase": "error",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "registrations": 2,
+        "revokes": 0,
+        "asks": 1
+      },
+      "after": {
+        "phase": "repair",
+        "permission": "granted",
+        "binding": false,
+        "subscription": false,
+        "unsubscribes": 1,
+        "revokes": 0,
+        "asks": 1,
+        "registrations": 2
+      },
+      "authTrace": [
+        "loading",
+        "loading",
+        "authenticated",
+        "authenticated",
+        "error",
+        "loading",
+        "authenticated",
+        "authenticated"
+      ]
+    }
+  ],
+  "errors": []
+}

@@ -16,8 +16,9 @@ async function initialize(page,options={}){
   await page.evaluate(options=>{
     window.__failure=options.failure||null;window.__backendStatus=true;window.__answer='granted';window.__asks=0;window.__unsubscribes=0;window.__revokes=0;window.__registrations=0;window.__subscribeCalls=0;
     window.__user='11111111-1111-4111-8111-111111111111';window.__impersonation=false;window.__permission=options.existing?'granted':'default';
-    window.__subid='22222222-2222-4222-8222-222222222222';window.__trace=[];
-    window.__endpoint='https://fcm.googleapis.com/test/isolated-persistence';
+    window.__subid=options.subid||'22222222-2222-4222-8222-222222222222';window.__trace=[];window.__statusChecks=[];
+    window.__endpoint=options.endpoint||'https://fcm.googleapis.com/test/isolated-persistence';
+    window.__backendBindings=options.backendBindings||(options.existing?[{id:__subid,owner:__user,endpoint:__endpoint,active:true}]:[]);
     const sub={toJSON:()=>({endpoint:__endpoint,keys:{p256dh:'A'.repeat(87),auth:'B'.repeat(22)}}),unsubscribe:async()=>{__unsubscribes++;window.__sub=null;return true;}};
     window.__sub=options.existing?sub:null;
     Object.defineProperty(Notification,'permission',{get:()=>__permission,configurable:true});
@@ -26,29 +27,50 @@ async function initialize(page,options={}){
     Object.defineProperty(navigator.serviceWorker,'ready',{value:Promise.resolve(reg),configurable:true});
     Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>reg,configurable:true});
     const session=()=>({user:{id:__user},access_token:'isolated-fixture-not-a-real-token'});
-    const client={auth:{getSession:async()=>__failure==='session'?{error:Error('ISOLATED_OFFLINE')}:{data:{session:session()}},onAuthStateChange:cb=>{window.__authCallback=cb;return{data:{subscription:{}}};},signOut:async()=>{__authCallback('SIGNED_OUT',null);return{};}},rpc:async name=>{
+    const client={auth:{getSession:async()=>__failure==='session'?{error:Error('ISOLATED_OFFLINE')}:{data:{session:session()}},onAuthStateChange:cb=>{window.__authCallback=cb;return{data:{subscription:{}}};},signOut:async()=>{__authCallback('SIGNED_OUT',null);return{};}},rpc:async(name,args)=>{
       if(name==='get_admin_access_context')return{data:{}};
       if(__failure==='rpc')return{error:Error('ISOLATED_OFFLINE')};
       if(name==='get_self_request_push_config')return{data:{enabled:true,public_key:'B'.repeat(87)}};
       if(name==='get_self_request_push_status'){
         if(window.__holdStatus){window.__holdStatus=false;return new Promise(resolve=>{window.__releaseStatus=()=>resolve({data:false});});}
-        return{data:__backendStatus};
+        __statusChecks.push(args.p_subscription_id);
+        return{data:__backendStatus&&__backendBindings.some(row=>row.id===args.p_subscription_id&&row.owner===__user&&row.active)};
       }
-      if(name==='register_self_request_push'){if(__failure==='register')return{error:Error('ISOLATED_OFFLINE')};__registrations++;return{data:__subid};}
-      if(name==='revoke_self_request_push'){__revokes++;return{data:true};}
+      if(name==='register_self_request_push'){
+        // The request keeps its original principal while the isolated response is held.
+        const owner=__user;
+        if(window.__holdRegister)await new Promise(resolve=>{window.__releaseRegister=resolve;});
+        if(__failure==='register')return{error:Error('ISOLATED_OFFLINE')};
+        let row=__backendBindings.find(value=>value.endpoint===args.p_endpoint&&value.owner===owner&&value.active);
+        if(!row){const index=__backendBindings.length;row={id:index?'22222222-2222-4222-8222-'+String(index).padStart(12,'0'):__subid,owner,endpoint:args.p_endpoint,active:true};__backendBindings.push(row);}
+        __registrations++;window.__subid=row.id;return{data:row.id};
+      }
+      if(name==='revoke_self_request_push'){__revokes++;const row=__backendBindings.find(value=>value.id===args.p_subscription_id&&value.owner===__user);if(row)row.active=false;return{data:!!row};}
       throw Error('UNEXPECTED_RPC:'+name);
     }};
     window.SutiSupabase={getClient:()=>client};
     window.AffiliateRepository={getCurrentAffiliate:async()=>{if(__failure==='affiliate')throw Error('ISOLATED_OFFLINE');return{id:'isolated-affiliate',auth_user_id:__user,auth_eligibility:'eligible',_impersonation:__impersonation?{actor:'isolated-actor'}:null};},getProfilePhoto:async()=>null,clearProfilePhotoCache:()=>{}};
     window.createAffiliateViewModel=value=>value;
-    window.__binding=()=>new Promise((resolve,reject)=>{
-      const open=indexedDB.open('sutiapp-request-push-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('device'),r=tx.objectStore('device').get('binding');let result;r.onsuccess=()=>{result=r.result;};tx.oncomplete=()=>{db.close();resolve(!!result);};tx.onerror=()=>reject(tx.error);};open.onerror=()=>reject(open.error);
+    window.__bindingValue=()=>new Promise((resolve,reject)=>{
+      const open=indexedDB.open('sutiapp-request-push-v1',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('device'),r=tx.objectStore('device').get('binding');let result;r.onsuccess=()=>{result=r.result;};tx.oncomplete=()=>{db.close();resolve(result||null);};tx.onerror=()=>reject(tx.error);};open.onerror=()=>reject(open.error);
     });
+    window.__binding=async()=>!!await __bindingValue();
+    window.__failAuthOnBindingWrite=()=>{
+      const originalPut=IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put=function(value,key){
+        const request=originalPut.apply(this,arguments);
+        if(key==='binding'){
+          IDBObjectStore.prototype.put=originalPut;
+          request.addEventListener('success',()=>{window.__failure='affiliate';window.__authFailureCompleted=AffiliateAuth.refreshContext();});
+        }
+        return request;
+      };
+    };
   },options);
   for(const name of ['affiliate-auth.js','request-push.js'])await page.addScriptTag({content:source(name)});
   await page.evaluate(async()=>{AffiliateAuth.subscribe(s=>__trace.push(s.phase));await AffiliateAuth.bootstrap();window.__root=ReactDOM.createRoot(document.getElementById('root'));__root.render(React.createElement(RequestPushInvitation));});
 }
-async function snapshot(page){return page.evaluate(async()=>({phase:(await RequestPush.state()).phase,permission:Notification.permission,binding:await __binding(),subscription:!!__sub,unsubscribes:__unsubscribes,revokes:__revokes,asks:__asks,registrations:__registrations}));}
+async function snapshot(page){return page.evaluate(async()=>({phase:(await RequestPush.state()).phase,permission:Notification.permission,binding:await __binding(),bindingValue:await __bindingValue(),subscription:!!__sub,unsubscribes:__unsubscribes,revokes:__revokes,asks:__asks,registrations:__registrations}));}
 async function enable(page){await page.getByRole('button',{name:'Activar notificaciones',exact:true}).click();await page.locator('[data-request-push="active"]').waitFor();}
 async function refresh(page){await page.evaluate(()=>window.dispatchEvent(new Event('focus')));}
 async function main(){
@@ -124,6 +146,44 @@ async function main(){
       await page.reload();await initialize(page);await page.evaluate(()=>{__permission='granted';__root.render(React.createElement(RequestPushInvitation,{startup:true}));});await refresh(page);
       const disabled=await snapshot(page);assert.equal(disabled.registrations,0);assert.equal(disabled.subscription,false);assert.equal(await page.locator('[data-request-push-startup]').count(),0);
       cases.push({name:'explicit_optout_not_reactivated_or_prompted_on_reopen',result:disabled});await context.close();
+      for(const mode of ['recovery','activation'])for(const stage of ['subscribe','register','binding-write']){
+        ({page,context}=await fresh());await page.locator('[data-request-push="ready"]').waitFor();
+        if(mode==='recovery')await enable(page);
+        else{await page.evaluate(()=>{__permission='granted';});await refresh(page);await page.locator('[data-request-push="repair"]').waitFor();}
+        const before=await snapshot(page);
+        await page.evaluate(({mode,stage})=>{
+          if(stage==='subscribe')window.__holdSubscribe=true;
+          if(stage==='register')window.__holdRegister=true;
+          if(stage==='binding-write')__failAuthOnBindingWrite();
+          if(mode==='recovery'){window.__sub=null;window.__endpoint+='-recovered';}
+          window.__pendingOperation=(mode==='recovery'?RequestPush.state():RequestPush.enable({public_key:'B'.repeat(87)})).catch(error=>({phase:'rejected',error:error.message}));
+        },{mode,stage});
+        if(stage!=='binding-write'){
+          const release=stage==='subscribe'?'__releaseSubscribe':'__releaseRegister';
+          await page.waitForFunction(name=>typeof window[name]==='function',release);
+          await page.evaluate(async()=>{__failure='affiliate';await AffiliateAuth.refreshContext();});
+          await page.evaluate(name=>window[name](),release);
+        }
+        const operation=await page.evaluate(async()=>{const result=await __pendingOperation;if(window.__authFailureCompleted)await __authFailureCompleted;return{result,authPhase:AffiliateAuth.getState().phase,authOwner:AffiliateAuth.getState().session.user.id};});
+        const during=await snapshot(page);assert.equal(operation.authPhase,'error');assert.equal(during.phase,'error');
+        assert.equal(during.subscription,true,mode+' '+stage+' preserves transport during transient Auth failure');assert.equal(during.unsubscribes,0);assert.equal(during.revokes,0);assert.equal(during.asks,before.asks);
+        if(mode==='recovery'||stage!=='subscribe'){
+          assert(during.binding,mode+' '+stage+' preserves completed binding');assert.equal(during.bindingValue.user_id,operation.authOwner);
+          if(stage!=='subscribe'){assert.equal(during.bindingValue.subscription_id,await page.evaluate(()=>__subid));if(mode==='recovery')assert.notEqual(during.bindingValue.subscription_id,before.bindingValue.subscription_id);}
+        }else assert.equal(during.binding,false,'No server registration was completed before the initial subscribe interruption');
+        await page.evaluate(async()=>{__failure=null;__holdSubscribe=false;__holdRegister=false;await AffiliateAuth.retry();});
+        if(mode==='activation'&&stage==='subscribe'){
+          await page.locator('[data-request-push="repair"]').waitFor();assert.equal(await page.evaluate(()=>__registrations),0);
+          await page.getByRole('button',{name:'Restablecer notificaciones',exact:true}).click();
+        }
+        await page.locator('[data-request-push="active"]').waitFor();const after=await snapshot(page);
+        assert.equal(after.asks,before.asks);assert.equal(after.registrations,mode==='recovery'?2:1);assert.equal(after.bindingValue.user_id,operation.authOwner);
+        if(stage!=='subscribe'){assert.equal(after.unsubscribes,0);assert.equal(after.bindingValue.subscription_id,during.bindingValue.subscription_id);}
+        const server=await page.evaluate(()=>({existing:true,subid:__subid,endpoint:__endpoint,backendBindings:__backendBindings}));
+        await page.reload();await initialize(page,server);await page.locator('[data-request-push="active"]').waitFor();
+        const reopened=await snapshot(page);assert.equal(reopened.asks,0);assert.equal(reopened.registrations,0);assert.equal(reopened.bindingValue.subscription_id,after.bindingValue.subscription_id);
+        cases.push({name:mode+'_transient_auth_during_'+stage,before,operation,during,after,reopened});await context.close();
+      }
     }else{
       {
         const {page,context}=await fresh();await page.locator('[data-request-push="ready"]').waitFor();
@@ -133,6 +193,19 @@ async function main(){
         await page.waitForFunction(()=>__unsubscribes>0);const result=await snapshot(page);
         assert.equal(result.registrations,0);assert.equal(result.binding,false);assert.equal(result.subscription,false);
         cases.push({name:'account_switch_during_pending_activation_never_binds_other_owner',result});await context.close();
+      }
+      for(const action of ['logout','switch','impersonation']){
+        const {page,context}=await fresh();await page.locator('[data-request-push="ready"]').waitFor();
+        await page.evaluate(()=>{__permission='granted';__holdRegister=true;window.__pendingOperation=RequestPush.enable({public_key:'B'.repeat(87)}).catch(error=>({error:error.message}));});
+        await page.waitForFunction(()=>typeof __releaseRegister==='function');
+        if(action==='logout')await page.evaluate(()=>AffiliateAuth.signOut());
+        if(action==='switch')await page.evaluate(async()=>{__user='66666666-6666-4666-8666-666666666666';await AffiliateAuth.refreshContext();});
+        if(action==='impersonation')await page.evaluate(async()=>{__impersonation=true;await AffiliateAuth.refreshContext();});
+        await page.evaluate(async()=>{__releaseRegister();await __pendingOperation;});
+        const result=await snapshot(page);assert.equal(result.binding,false);assert.equal(result.subscription,false);assert.equal(result.registrations,1);assert.equal(result.asks,0);
+        assert.equal(await page.evaluate(()=>__backendBindings.every(row=>row.owner==='11111111-1111-4111-8111-111111111111')),true);
+        if(action==='impersonation')assert.equal(result.phase,'unavailable');
+        cases.push({name:action+'_during_register_never_binds_other_owner',result});await context.close();
       }
       for(const action of ['logout','switch','impersonation']){
         const {page,context}=await fresh();await enable(page);

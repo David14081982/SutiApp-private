@@ -10,6 +10,13 @@
     open.onsuccess=()=>{const db=open.result,tx=db.transaction('device','readwrite');let value;const r=op(tx.objectStore('device'));if(r)r.onsuccess=()=>{value=r.result;};tx.oncomplete=()=>{db.close();resolve(value);};tx.onerror=()=>{db.close();reject(tx.error);};};
   });}
   function identity(){const s=window.AffiliateAuth.getState();return s.phase==='authenticated'&&s.session&&s.affiliate&&!s.affiliate._impersonation&&!s.impersonation&&s.affiliate.auth_user_id===s.session.user.id?s.session.user.id:null;}
+  // Cleanup guard only: a same-user revalidation failure is not a logout.
+  // Never use this to authorize an RPC or report notifications as active.
+  function retainsOwner(owner){
+    if(identity()===owner)return true;
+    const s=window.AffiliateAuth.getState();
+    return ['loading','error'].includes(s.phase)&&s.session&&s.session.user.id===owner&&!s.impersonation&&(!s.affiliate||(!s.affiliate._impersonation&&s.affiliate.auth_user_id===owner));
+  }
   const supported=()=>window.isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
   async function rpc(name,args){
     const controller=new AbortController(),query=window.SutiSupabase.getClient().rpc(name,args);let timer;
@@ -45,9 +52,9 @@
     const json=sub.toJSON(),transport=await fingerprint(sub);
     if(identity()!==owner)throw Error('PUSH_CONTEXT_CHANGED');
     const id=await rpc('register_self_request_push',{p_endpoint:json.endpoint,p_p256dh:json.keys.p256dh,p_auth:json.keys.auth,p_expiration_at:json.expirationTime?new Date(json.expirationTime).toISOString():null});
-    if(identity()!==owner){await sub.unsubscribe();throw Error('PUSH_CONTEXT_CHANGED');}
+    if(identity()!==owner&&!retainsOwner(owner)){await sub.unsubscribe();throw Error('PUSH_CONTEXT_CHANGED');}
     await device(s=>s.put({user_id:owner,subscription_id:id,transport},'binding'));
-    if(identity()!==owner){await clearDeviceInternal(false);throw Error('PUSH_CONTEXT_CHANGED');}
+    if(identity()!==owner){if(!retainsOwner(owner))await clearDeviceInternal(false);throw Error('PUSH_CONTEXT_CHANGED');}
   }
   async function readState(){
     const owner=identity();if(!owner)return unavailableState();
@@ -82,7 +89,7 @@
       // A network error leaves this same-owner transport retryable. Only an
       // identity transition requires immediate privacy teardown.
       try{await bind(sub,owner);await device(s=>s.delete('prompt:'+owner));return {phase:'active',config,owner};}
-      catch(e){if(identity()!==owner)await sub.unsubscribe();throw e;}
+      catch(e){if(!retainsOwner(owner))await sub.unsubscribe();throw e;}
     })).finally(changed);
   }
   function disable(){const owner=identity();return queue(async()=>{

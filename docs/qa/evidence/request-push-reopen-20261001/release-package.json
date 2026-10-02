@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "packagedAt": "2026-10-02T06:48:31.020Z",
+  "baseCommit": "509a891ebe200927df49c0a3967ee164edeea6cc",
+  "sourceSha256": "eb7aade903734a4da9f51e22c78688a6a27133ca3058d082eaef2ed4a5b083c3",
+  "bundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+  "bundleVersion": 309,
+  "workerVersion": 241,
+  "unrelatedPublishedModulesIdentical": true,
+  "workerLogicIdentical": true,
+  "htmlOnlyCachebusters": true,
+  "remoteSourceMatchedAuditedBaseline": true,
+  "productionDeployed": false
+}

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "checkedAt": "2026-10-02T06:18:44.698Z",
+  "origin": "https://sutiapp.com/SutiApp.html",
+  "bundleUrl": "https://sutiapp.com/app/bundle.js?v=308",
+  "bundleVersion": 308,
+  "workerVersion": 239,
+  "sourceSha256": "4f17032026b257f097948055ceb60459367a78f3eae11baef8ec8928f0d2d595",
+  "equalsPreChange": true,
+  "productionDeployed": false
+}

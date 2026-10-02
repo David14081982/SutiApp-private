@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-10-02T06:23:31.723Z",
+  "uiByteIdentical": true,
+  "unrelatedBundleModulesIdentical": true,
+  "workerAndHtmlOnlyCachebusters": true,
+  "bundleSha256": "86135327ac447203f079e1692e0f7e6a84105711c7f72dc4f9707654cd21f9d0",
+  "lifecycleScenarios": 20,
+  "securityScenarios": 12,
+  "nativePermissionRequestsOnlyOnGesture": true,
+  "productionDataChanges": 0,
+  "newAuthorities": 0,
+  "legacyChanges": 0
+}

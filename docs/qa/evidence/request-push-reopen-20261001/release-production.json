@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-02T06:55:15.639Z",
+  "readOnly": true,
+  "productionDeployed": true,
+  "rows": [
+    {
+      "origin": "https://sutiapp.com/SutiApp.html",
+      "resolvedOrigin": "https://sutiapp.com/SutiApp.html",
+      "bundleUrl": "https://sutiapp.com/app/bundle.js?v=309",
+      "bundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+      "pushSourceSha256": "eb7aade903734a4da9f51e22c78688a6a27133ca3058d082eaef2ed4a5b083c3",
+      "workerVersion": 241,
+      "workerSha256": "0789df8588b1325361975dbb344eaa6d9ef7f89c29c9369262c6fc1e9fa0c7be",
+      "status": "PASS"
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/SutiApp.html",
+      "resolvedOrigin": "https://sutiapp.com/SutiApp.html",
+      "bundleUrl": "https://sutiapp.com/app/bundle.js?v=309",
+      "bundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+      "pushSourceSha256": "eb7aade903734a4da9f51e22c78688a6a27133ca3058d082eaef2ed4a5b083c3",
+      "workerVersion": 241,
+      "workerSha256": "0789df8588b1325361975dbb344eaa6d9ef7f89c29c9369262c6fc1e9fa0c7be",
+      "status": "PASS"
+    }
+  ]
+}

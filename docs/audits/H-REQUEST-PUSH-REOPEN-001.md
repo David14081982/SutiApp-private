@@ -140,3 +140,26 @@ Archivos de entrega: `app/request-push.js`, `scripts/test-request-push-persisten
 ### Paquete final de entrega
 
 Base remota `509a891ebe200927df49c0a3967ee164edeea6cc`; bundle 309 / worker 241. SHA-256 bundle `3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b`. Fuente push identica a la correccion revisada; todos los otros chunks publicados preservados. Build publico PASS, lifecycle 20 PASS, security 12 PASS y regresion global local PASS sobre SHA exacto con assets legitimos y PDF. Evidencia release-package.json, release-lifecycle.json, release-security.json, release-global-local.json. Listo para commit/push autorizado; entrega remota se verificara despues del workflow.
+
+
+## H-REQUEST-PUSH-REOPEN-001 — PUBLICATION RESULT
+
+Este cierre sustituye el estado de entrega local anterior; conserva como historia las pruebas previas.
+
+```text
+Status: PASS — publicada y verificada.
+Files changed: exclusivamente delta push/test, bundle focal, cachebusters, informe, changelog y evidencia de esta H en checkout aislado.
+Source-of-truth verdict: SAFE, consentimiento backend sin cambios.
+Invariant verdict: PASS; identidad, opt-out y privacidad preservados.
+Build: PASS; bundle 309, worker 241; SHA 3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b.
+Tests: 20 lifecycle + 12 security; global local y Pages PASS sobre SHA exacto.
+Security: PASS para delta; CI Auth/backend y comprobacion publica PASS.
+Legacy impact: NOT APPLICABLE, cero cambios financieros/Google.
+Unexpected files changed: 0 en commit de entrega; workspace ajeno preservado.
+Known limitations: sin prueba fisica Android/iOS; vinculos previamente perdidos pueden requerir Restablecer una vez.
+Evidence: release-package.json, release-lifecycle.json, release-security.json, release-global-local.json, release-production.json, release-global-pages.json, release-ci.json, release-completion.json.
+```
+
+Commit runtime: `c1249f4efb8db5a9df85edd08c514ddc56db3ba4`. Workflow: https://github.com/David14081982/SutiApp-private/actions/runs/36975822557 — success. Sutiapp.com y Pages sirven exactamente el bundle y worker previstos. Imagen/PDF legitimos, Login/sello/perfil/Admin Afiliados, Membership/Prestamo/catalogo/Marketplace/galeria/fullscreen/refresh y comparacion con/sin worker PASS. Cero cambios de negocio y cero notificaciones enviadas.
+
+SUTIAPP ARCHITECT REVIEW (entrega): APPROVED. Fuente publicada identica a implementacion previamente revisada de forma independiente; paquete, alcance, CI y evidencia live contrastados. Source of truth SAFE; Architecture preservada; Security PASS; Data sin cambios; Legacy NOT APPLICABLE. Owner decision NO: Publicala ya autorizo esta entrega. Next action: comunicar publicacion, sin otra H. Response generated for Codex YES: cerrar entrega y comunicar limites; no reactivar dispositivos sin consentimiento.

@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "completedAt": "2026-10-02T06:58:19.685Z",
+  "commit": "c1249f4efb8db5a9df85edd08c514ddc56db3ba4",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/36975822557",
+  "productionDeployed": true,
+  "bundleVersion": 309,
+  "workerVersion": 241,
+  "bundleSha256": "3ff40ca532537a37524dc486a20244a1a9e57523b1ceab50db0f12bfe17bb82b",
+  "sourceSha256": "eb7aade903734a4da9f51e22c78688a6a27133ca3058d082eaef2ed4a5b083c3",
+  "lifecycle": 20,
+  "security": 12,
+  "localGlobalRegression": "PASS",
+  "productionGlobalRegression": "PASS",
+  "publicParity": "PASS",
+  "productionDataMutations": 0,
+  "externalNotificationsSent": 0,
+  "deliveryReview": "APPROVED",
+  "reviewBasis": "Published source exactly matches independently approved implementation; deployment, scoped package and live checks verified",
+  "physicalAndroidIosTested": false
+}

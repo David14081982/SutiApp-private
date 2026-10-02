@@ -1,0 +1,71 @@
+{
+  "databaseId": 36975822557,
+  "headSha": "c1249f4efb8db5a9df85edd08c514ddc56db3ba4",
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/David14081982/SutiApp-private/actions/runs/36975822557",
+  "jobs": [
+    {
+      "name": "deploy",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify Auth backend compatibility",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify critical request backend compatibility",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build public artifact",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure Pages",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Upload Pages artifact",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Deploy Pages",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify critical request production deployment",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}

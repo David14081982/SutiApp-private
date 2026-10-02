@@ -86,4 +86,27 @@ The workspace already contained unrelated changes. Release is assembled over rem
 
 ### Final delivery
 
-Independent `sutiapp-architect-reviewer`: APPROVED for this focal implementation. Review found and verified fixes for reset/removed history fields, before/after status and 320px tab layout. It explicitly distinguishes software delivery from missing financial evidence and the pre-existing extraordinary-approval limitation. Final publication verification remains pending in this preparation record.
+Independent `sutiapp-architect-reviewer`: APPROVED for this focal implementation. Review found and verified fixes for reset/removed history fields, before/after status and 320px tab layout. It explicitly distinguishes software delivery from missing financial evidence and the pre-existing extraordinary-approval limitation.
+
+Published commit: `f42bb4b21ee533ab8cb95b60f2f03fcbea7a03c1`. GitHub Pages run `36957400509`: SUCCESS. Production: https://sutiapp.com/ ; bundle v307, normalized SHA256 `af153e96f47599aed10a11f6a651ed944dc4257d91d9c70c74c2e8b5855ddaf7`.
+
+`node scripts/verify-savings-admin-ux-live.js production`: PASS against the exact public bundle. Real administrative login, initial single summary, 20-row paginated list, one inline-person request, cached reopen, mobile/desktop and navigation to Program passed without browser errors or business writes. Anonymous access to all three readers denied. This run measured summary 2,715 ms and individual detail 202 ms. Production contains the final context-remount guard and all reviewed UI fixes; `production.json` supersedes the earlier candidate hash in `local.json`.
+
+`python scripts/test-architecture-registry.py`: PASS in both the root workspace and isolated release, covering generation, freshness, stale detection, lookup, incremental add/remove, secret exclusion and determinism. Early runs during file edits reported STALE and were rerun after freezing sources. A temporary local disk-full condition interrupted Git staging; only two generated site copies were removed, preserving source and recovery backups, and commit/push completed normally.
+
+```text
+H-SAVINGS-ADMIN-UX-IMPLEMENTATION-001 RESULT
+Status: PASS
+Files changed: five Savings sources; two migrations and their recoveries; focal tests/build/release/verification scripts; governance/audit/evidence/derived registry; generated bundle and version references.
+Source-of-truth verdict: PASS; original authorities retained, no invented income or fallback.
+Invariant verdict: PASS for scoped implementation; financial rows and protected yield/legacy rules preserved.
+Build: PASS; five source/bundle chunks equivalent, 138 unrelated modules preserved, Pages deployment successful.
+Tests: PASS; isolated SQL/adapter/browser, actual-schema recovery, authenticated production readers and final public browser.
+Security: PASS for changed surfaces; private helpers, permission-gated readers, existing ACL/owners preserved.
+Legacy impact: existing financial rows, Google, yield rules and payout checks unchanged; authorized future JOIN policy changed.
+Unexpected files changed: none in the 39-file application release; unrelated root work retained.
+Known limitations: 294 missing September 30 receipts awaiting external evidence; previous two JOINs retain review; pre-existing extraordinary role/dual-approval restriction unresolved; summary approximately 2.7 seconds; browser viewports are emulated, no physical-device or financial production-write test.
+Evidence: docs/qa/evidence/savings-admin-ux-20261001/ and the commands/commit/workflow above.
+```
+
+This PASS accepts the scoped software delivery. It does not declare the entire savings domain financially reconciled or the separate extraordinary-withdrawal authority issue resolved. To close those limits, obtain actual receipt evidence and separately document the authoritative assignment of the required union offices before implementing the protected extraordinary flow.

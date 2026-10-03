@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-02T23:49:14Z",
+  "snapshot_only": true,
+  "metrics": [
+    {
+      "metric": "node_vmstat_pswpin",
+      "value": 0
+    },
+    {
+      "metric": "node_memory_SwapFree_bytes",
+      "value": 1073737728
+    },
+    {
+      "metric": "node_memory_SwapTotal_bytes",
+      "value": 1073737728
+    },
+    {
+      "metric": "node_memory_MemAvailable_bytes",
+      "value": 3007868928
+    },
+    {
+      "metric": "node_vmstat_pswpout",
+      "value": 0
+    },
+    {
+      "metric": "node_memory_MemTotal_bytes",
+      "value": 4009824256
+    }
+  ]
+}

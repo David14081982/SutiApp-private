@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-02T23:59:59.902Z",
+  "data": [
+    {
+      "version": "20261002000100",
+      "name": "finance_request_process"
+    },
+    {
+      "version": "20261001000400",
+      "name": "savings_rh_report"
+    },
+    {
+      "version": "20261001000300",
+      "name": "savings_affiliate_names"
+    },
+    {
+      "version": "20261001000200",
+      "name": "savings_admin_workspace"
+    },
+    {
+      "version": "20261001000100",
+      "name": "savings_auto_enrollment"
+    },
+    {
+      "version": "20260930000100",
+      "name": "savings_individual_withdrawal"
+    },
+    {
+      "version": "20260929000200",
+      "name": "document_layout_scopes"
+    },
+    {
+      "version": "20260929000100",
+      "name": "loan_document_schedule"
+    },
+    {
+      "version": "20260928000700",
+      "name": "sutifarma_assisted_admin"
+    },
+    {
+      "version": "20260928000600",
+      "name": "sutifarma_donations"
+    }
+  ]
+}

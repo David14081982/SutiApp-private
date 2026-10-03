@@ -1,0 +1,89 @@
+{
+  "stage": "before-performance",
+  "at": "2026-10-03T00:09:13.198Z",
+  "bundle": "app/bundle.js?v=310",
+  "businessWritesBlocked": 0,
+  "businessWritesPerformed": 0,
+  "consoleErrors": [],
+  "events": [
+    {
+      "phase": "startup",
+      "endpoint": "get_self_savings_if_changed",
+      "http": 200,
+      "decoded_bytes": 4711,
+      "response_body_bytes": 1895,
+      "total_ms": 762.466,
+      "sha256": "4d4932f41311f895b78c6c7759439f51bdfed2417acde30a9d2e93dcfc42dcfd"
+    },
+    {
+      "phase": "summary",
+      "endpoint": "get_admin_savings_workspace_summary",
+      "http": 200,
+      "decoded_bytes": 819,
+      "response_body_bytes": 1294,
+      "total_ms": 2857.268,
+      "sha256": "6deb4a59078e7826092b22cb44be711d11789baae78a5346b847808db18c4ade"
+    },
+    {
+      "phase": "people-page-1",
+      "endpoint": "get_admin_savings_workspace_people",
+      "http": 200,
+      "decoded_bytes": 19117,
+      "response_body_bytes": 4346,
+      "total_ms": 445.98,
+      "sha256": "4da8f73f702432200103a0e873fa6e1e2d92e6f84fb4e8b64dd66c76e2e85764",
+      "rows": 20
+    },
+    {
+      "phase": "people-page-2",
+      "endpoint": "get_admin_savings_workspace_people",
+      "http": 200,
+      "decoded_bytes": 19057,
+      "response_body_bytes": 4258,
+      "total_ms": 415.225,
+      "sha256": "460061d119eaff8073c36a90d078406851f6abebe1a0634f1087d3a9158d9330",
+      "rows": 20
+    },
+    {
+      "phase": "person-detail",
+      "endpoint": "get_admin_savings_workspace_person",
+      "http": 200,
+      "decoded_bytes": 3641,
+      "response_body_bytes": 1571,
+      "total_ms": 184.181,
+      "sha256": "b479b15a69058b59dee73dc147221307a12c1332cef144fa00b1c99d917f8763",
+      "history": 10
+    },
+    {
+      "phase": "search",
+      "endpoint": "get_admin_savings_workspace_people",
+      "http": 200,
+      "decoded_bytes": 19117,
+      "response_body_bytes": 4344,
+      "total_ms": 511.725,
+      "sha256": "4da8f73f702432200103a0e873fa6e1e2d92e6f84fb4e8b64dd66c76e2e85764",
+      "rows": 20
+    },
+    {
+      "phase": "search",
+      "endpoint": "get_admin_savings_workspace_people",
+      "http": 200,
+      "decoded_bytes": 1036,
+      "response_body_bytes": 1353,
+      "total_ms": 203.59,
+      "sha256": "6dbbd79b482bda5e67a7a1bd9380fd002abae3e54617f6abf2bdf79ed0ac2de2",
+      "rows": 1
+    },
+    {
+      "phase": "search",
+      "endpoint": "get_admin_savings_workspace_people",
+      "http": 200,
+      "decoded_bytes": 1035,
+      "response_body_bytes": 1352,
+      "total_ms": 168.66,
+      "sha256": "dfa6db613043c9ac1c9f67c82739192dd421381b5a63e8cad6ffbb2bb04b9dcf",
+      "rows": 1
+    }
+  ],
+  "personalDataSaved": false
+}

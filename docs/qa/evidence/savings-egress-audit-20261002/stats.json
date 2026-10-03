@@ -1,0 +1,16 @@
+{
+  "captured_at": "2026-10-02T23:47:21.407Z",
+  "data": [
+    {
+      "captured_at": "2026-10-02 23:47:21.829327+00",
+      "stats_reset": "2026-07-24 11:23:13.916197+00",
+      "xact_commit": 7083778,
+      "xact_rollback": 350812493,
+      "blks_read": 36218,
+      "blks_hit": 10102870505,
+      "temp_files": 91145,
+      "temp_bytes": 393814337115,
+      "deadlocks": 4
+    }
+  ]
+}

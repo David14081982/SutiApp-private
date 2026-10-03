@@ -1,0 +1,11 @@
+{
+  "command": "node scripts/test-savings-read-work.js",
+  "exit_code": 0,
+  "tests": 19,
+  "status": "PASS",
+  "scope": "Isolated client VM tests, no production writes; not a benchmark or proof of live conditional reuse",
+  "database_query_mode": "BEGIN READ ONLY; 15s statement timeout; 2s lock timeout",
+  "build": "NOT APPLICABLE; no product change",
+  "security": "FAIL: anonymous HTTP 200 with 354 rows",
+  "monthly_egress_reduction": "NOT VERIFIED"
+}

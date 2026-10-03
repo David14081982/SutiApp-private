@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-02T23:48:24.436Z",
+  "data": [
+    {
+      "indexname": "savings_legacy_evidence_pkey",
+      "indexdef": "CREATE UNIQUE INDEX savings_legacy_evidence_pkey ON public.savings_legacy_evidence USING btree (id)"
+    },
+    {
+      "indexname": "savings_legacy_evidence_import_batch_id_source_sheet_source_key",
+      "indexdef": "CREATE UNIQUE INDEX savings_legacy_evidence_import_batch_id_source_sheet_source_key ON public.savings_legacy_evidence USING btree (import_batch_id, source_sheet, source_column, source_row, record_type)"
+    },
+    {
+      "indexname": "savings_legacy_evidence_participant_type_source_idx",
+      "indexdef": "CREATE INDEX savings_legacy_evidence_participant_type_source_idx ON public.savings_legacy_evidence USING btree (participant_id, record_type, source_sheet, source_row DESC)"
+    }
+  ]
+}

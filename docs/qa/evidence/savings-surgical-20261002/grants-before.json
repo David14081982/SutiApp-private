@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-03T00:00:00.340Z",
+  "data": [
+    {
+      "signature": "savings_admin_current_summary(jsonb)",
+      "role": "anon",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_admin_current_summary(jsonb)",
+      "role": "authenticated",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_admin_current_summary(jsonb)",
+      "role": "service_role",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_admin_filtered_people(text,text,text,jsonb)",
+      "role": "anon",
+      "can_execute": false
+    },
+    {
+      "signature": "savings_admin_filtered_people(text,text,text,jsonb)",
+      "role": "authenticated",
+      "can_execute": false
+    },
+    {
+      "signature": "savings_admin_filtered_people(text,text,text,jsonb)",
+      "role": "service_role",
+      "can_execute": false
+    },
+    {
+      "signature": "savings_panel_before_current_summary(text,text,text,integer,integer,jsonb)",
+      "role": "anon",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_panel_before_current_summary(text,text,text,integer,integer,jsonb)",
+      "role": "authenticated",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_panel_before_current_summary(text,text,text,integer,integer,jsonb)",
+      "role": "service_role",
+      "can_execute": true
+    },
+    {
+      "signature": "savings_panel_people(uuid)",
+      "role": "anon",
+      "can_execute": false
+    },
+    {
+      "signature": "savings_panel_people(uuid)",
+      "role": "authenticated",
+      "can_execute": false
+    },
+    {
+      "signature": "savings_panel_people(uuid)",
+      "role": "service_role",
+      "can_execute": false
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "oid": 82783,
+      "signature": "get_admin_savings_panel_detail(uuid,integer,integer)",
+      "name": "get_admin_savings_panel_detail",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_savings_panel_detail(p_record_id uuid, p_history_limit integer DEFAULT 6, p_history_offset integer DEFAULT 0)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; person jsonb;\nbegin\n result:=public.savings_detail_before_current_summary(p_record_id,p_history_limit,p_history_offset);\n select a into person from public.savings_admin_filtered_people('padron','','todos')a where a->>'id'=p_record_id::text;\n return result||jsonb_build_object('source_person',result->'person','person',person,'publication_mode',(select mode from public.savings_publication_state where id),'as_of',public.savings_operation_today());\nend $function$\n",
+      "definition_md5": "b88b6bdcca5167a8e7c3d0aa6f17886f",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "security_definer": true
+    },
+    {
+      "oid": 43539,
+      "signature": "savings_detail_before_current_summary(uuid,integer,integer)",
+      "name": "savings_detail_before_current_summary",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_detail_before_current_summary(p_record_id uuid, p_history_limit integer DEFAULT 6, p_history_offset integer DEFAULT 0)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb;r public.savings_review_records;person jsonb;withdrawals jsonb;withdrawn_total numeric;begin\n if auth.uid() is null or not public.has_admin_permission('savings.read') then raise exception 'SAVINGS_PANEL_DENIED' using errcode='42501'; end if;\n if p_history_limit is null or p_history_limit not between 1 and 50 or p_history_offset is null or p_history_offset<0 then raise exception 'SAVINGS_PANEL_INVALID'; end if;\n select * into r from public.savings_review_records where id=p_record_id and source_sheet='Ahorro';\n if not found then raise exception 'SAVINGS_PANEL_NOT_FOUND';end if;\n select a into person from public.savings_panel_people(p_record_id) a;\n withdrawals:=public.get_admin_savings_review_withdrawals(p_record_id);\n select case when count(distinct w->'batch'->>'id')<=1\n  and count(*) filter(where w->'source_data'->>'H'='Completado')=count(public.savings_panel_number(w->'source_data'->'G')) filter(where w->'source_data'->>'H'='Completado')\n  then coalesce(sum(public.savings_panel_number(w->'source_data'->'G')) filter(where w->'source_data'->>'H'='Completado'),0) end\n into withdrawn_total from jsonb_array_elements(withdrawals->'records') w;\n with dates as materialized (\n  select f->>'key' key,left(f->>'label',10)::date fecha,f->>'label' label,r.source_data->(f->>'key') original,\n   case when person->>'identity_pending'='true' then r.source_data->(f->>'key') else (r.source_data||r.proposed_data)->(f->>'key') end monto,\n   coalesce(r.proposed_data ? (f->>'key') and r.proposed_data->(f->>'key') is distinct from r.source_data->(f->>'key'),false) corregido\n  from jsonb_array_elements(r.field_defs) f where f->>'label' ~ '^\\d{4}-\\d{2}-\\d{2}' and f->>'label' like '%Descuento registrado%'\n ), page as (select * from dates order by fecha desc,key offset p_history_offset limit p_history_limit)\n select jsonb_build_object('person',person,'record',public.get_admin_savings_review(p_record_id),'dates',coalesce((select jsonb_agg(to_jsonb(p)) from page p),'[]'::jsonb),'date_count',(select count(*) from dates),'withdrawals',withdrawals,'withdrawn_total',withdrawn_total,'can_write',public.savings_review_edit_allowed(),'can_identity',public.savings_review_identity_allowed()) into result;\n return result;\nend $function$\n",
+      "definition_md5": "90d91fcf5e1917bf137dabee416e16b3",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "security_definer": true
+    }
+  ]
+}

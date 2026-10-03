@@ -1,0 +1,62 @@
+[
+  {
+    "file": "anonymous-after.json",
+    "sha256": "d59c81bd9b5db9e378726df852e0a5563b619a66328ec8ead32504708e20ad1a"
+  },
+  {
+    "file": "architect-review.json",
+    "sha256": "b2904e215fbbb3b807469f7aef11f577edb8257f49b4b8c4f2005642793e49e8"
+  },
+  {
+    "file": "browser-before-performance.json",
+    "sha256": "02d0678bdc704c4e0c40749a0a587f3ec4c7e96e04a564d01efa652b99cc7734"
+  },
+  {
+    "file": "detail-functions-before.json",
+    "sha256": "171581f16e1c9362e0911a2ea1172ceee32e09084f776019544955cbab0f31a3"
+  },
+  {
+    "file": "functions-before.json",
+    "sha256": "667dbbb5640af6e483d1fd3b1690f75e313b443bdb9845c3df018c9dbc2d167f"
+  },
+  {
+    "file": "grants-before.json",
+    "sha256": "1ef9f43a862dca10de3f49e0b7caaf0bf16f645a59cf06eb995044091eafecaf"
+  },
+  {
+    "file": "installed-final.json",
+    "sha256": "276e5c03271b42af48fb4bfdf31880c0c692d3118ad287d89b8c34740571c8ef"
+  },
+  {
+    "file": "legitimate-before.json",
+    "sha256": "2f680482bc5293e1f3bbd865e4ee99f7a5dcd4c3ebcd5acee89dfbf615eb6f48"
+  },
+  {
+    "file": "nonadmin-after.json",
+    "sha256": "fca7faf96c419448fd351911c026004025a5560b26cca69e2db00850dfaa56a2"
+  },
+  {
+    "file": "registry-tests.json",
+    "sha256": "d18cd6c42aa4e098a917beb2b752744f745e172c562561fee3ba80a3ca4e066b"
+  },
+  {
+    "file": "scope-check.json",
+    "sha256": "c8e63d93e9fc4c9c8d82f57ef0da0c35f7898141dd4e3f577a284f2130aa1546"
+  },
+  {
+    "file": "security-apply.json",
+    "sha256": "34649d78e18a3d3e82d2894b6bc5a78719f1bb94c173fb6027213ce365352fbd"
+  },
+  {
+    "file": "summary-equivalence-benchmark.json",
+    "sha256": "bf47b0c0cb4c6dbae2805332373c1da8fa8691bcfbd2488bb3bcbe32ed7b2fd1"
+  },
+  {
+    "file": "verification.json",
+    "sha256": "5decf27937a95de50c58804723da03d00ae31124ba6f945529731732a885eba9"
+  },
+  {
+    "file": "versions-before.json",
+    "sha256": "4d0e62a1be5c7cceedfa37adce63dcae5b3bbf9ccd829f8c20f8f964c91830e7"
+  }
+]

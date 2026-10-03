@@ -1,0 +1,23 @@
+{
+  "isolated_security": {
+    "command": "node scripts/test-savings-summary-boundary.js",
+    "checks": 12,
+    "result": "PASS"
+  },
+  "isolated_summary_candidate": {
+    "command": "node .tmp/savings-surgical-20261002/test-summary-candidate.cjs",
+    "checks": 12,
+    "result": "PASS",
+    "limits": "synthetic financial dependencies, composition only"
+  },
+  "live_summary_candidate": {
+    "json_equal": true,
+    "original_mean_ms": 2568.0747499999998,
+    "candidate_mean_ms": 2509.6780000000003,
+    "reduction_percent": 2.273950553814663,
+    "decision": "NOT APPLIED: small noisy benefit does not justify changing the financial read path"
+  },
+  "frontend_and_financial_writers_changed": false,
+  "ddl_applied": "ACL-only 20261002000200",
+  "business_data_writes": 0
+}

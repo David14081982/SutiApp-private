@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-03T00:08:49.330Z",
+  "data": [
+    {
+      "evidence": {
+        "md5": "70b6cd0e349446eee3131029e5e7cec4",
+        "equal": true,
+        "samples": [
+          {
+            "ms": 2669.965,
+            "variant": "original",
+            "iteration": 1
+          },
+          {
+            "ms": 2437.481,
+            "variant": "candidate",
+            "iteration": 1
+          },
+          {
+            "ms": 2418.311,
+            "variant": "candidate",
+            "iteration": 2
+          },
+          {
+            "ms": 2526.112,
+            "variant": "original",
+            "iteration": 2
+          },
+          {
+            "ms": 2503.861,
+            "variant": "original",
+            "iteration": 3
+          },
+          {
+            "ms": 2613.927,
+            "variant": "candidate",
+            "iteration": 3
+          },
+          {
+            "ms": 2568.993,
+            "variant": "candidate",
+            "iteration": 4
+          },
+          {
+            "ms": 2572.361,
+            "variant": "original",
+            "iteration": 4
+          }
+        ],
+        "production_ddl": false,
+        "production_dml": false,
+        "json_text_bytes": 819
+      }
+    }
+  ]
+}

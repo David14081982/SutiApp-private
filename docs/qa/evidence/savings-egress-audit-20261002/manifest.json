@@ -1,0 +1,54 @@
+[
+  {
+    "file": "anonymous-http.json",
+    "sha256": "ca0cf21364993b64ad1b51f097a77eff27fa291d98bdbdca5f372edce6af3120"
+  },
+  {
+    "file": "anonymous_helper.json",
+    "sha256": "d6fca0dccbc8a867cbc3c52eed6211f5f343ad5c04318f802296ef0bd557a350"
+  },
+  {
+    "file": "functions.json",
+    "sha256": "d90896c9a394e1a11f35e25d29522fae46900cbabd8d34de7a2d2b5593beedd4"
+  },
+  {
+    "file": "indexes.json",
+    "sha256": "5810702ae0bb283ebb24d641b052335e3b585771e4d27c7e83988803200c3cd0"
+  },
+  {
+    "file": "metrics-summary.json",
+    "sha256": "4a0ce6a716591fd2f676777ece580fea81df061a2152d5e828f2c88633227d80"
+  },
+  {
+    "file": "publication-build.json",
+    "sha256": "cbcb2122dd0be364831fc93ebb5ce59db8995ee0a48684c03c12414a4026aa36"
+  },
+  {
+    "file": "publication.json",
+    "sha256": "4d1f9e97c910ee17f555240fccaca54952daf2b143250691f896eb08ec4b4bdf"
+  },
+  {
+    "file": "rls.json",
+    "sha256": "4913d8d7a82a01dccda59a9821d85d39182912927b9e3a1cea683a652f6a44df"
+  },
+  {
+    "file": "savings-log-aggregates.json",
+    "sha256": "ac207805017d967ad7c6c3fb4c0fd1cca046a92488f858bc078694bbee28cc3b"
+  },
+  {
+    "file": "statements.json",
+    "sha256": "8c3a36b77457e1537fe86f86b4f3e61d5728e3dfae28bfd91039e13185644129"
+  },
+  {
+    "file": "statement_info.json",
+    "sha256": "a6037d88ae20fc4389a1a819c6366d40713a01bf0a2a800e7737a9811fc27225"
+  },
+  {
+    "file": "stats.json",
+    "sha256": "f9fc04d041d5b69a13124810cac6243ecf3f45f20e8a65c36f214274cf083cc8"
+  },
+  {
+    "file": "verification.json",
+    "sha256": "8ade8a58a2fc5721644022301d0ac5646366b0dccd9b3292e5a48c91df70a6a9"
+  }
+]

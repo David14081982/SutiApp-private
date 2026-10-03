@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-03T00:08:01.216Z",
+  "data": [
+    {
+      "receipt": {
+        "status": "PASS",
+        "protected_tables": 16,
+        "authorized_payloads": {
+          "panel": {
+            "md5": "1573029a25e8bf250bbd5855a2f785e3",
+            "bytes": 24364
+          },
+          "detail": {
+            "md5": "63de3ac278ff091e0477a46c00e7f43f",
+            "bytes": 19272
+          },
+          "neighbor": {
+            "md5": "d221f5a7b9cb6f1772a5d93ee0d0a3d3",
+            "bytes": 82
+          },
+          "workspace_people": {
+            "md5": "3841dbcb6d7741fa0164673d954eb5bb",
+            "bytes": 19117
+          },
+          "workspace_summary": {
+            "md5": "70b6cd0e349446eee3131029e5e7cec4",
+            "bytes": 819
+          }
+        },
+        "business_rows_unchanged": true,
+        "unchanged_function_bodies": true
+      }
+    }
+  ]
+}

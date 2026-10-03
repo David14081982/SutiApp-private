@@ -1,0 +1,75 @@
+{
+  "captured_at": "2026-10-02T23:47:22.591Z",
+  "data": [
+    {
+      "endpoint": "self_conditional",
+      "calls": "14615",
+      "total_ms": "2208501.91",
+      "mean_ms": "151.11",
+      "rows": "14262",
+      "shared_hits": "29618023",
+      "shared_reads": "1465",
+      "temp_blocks_written": "0"
+    },
+    {
+      "endpoint": "panel",
+      "calls": "677",
+      "total_ms": "1938590.45",
+      "mean_ms": "2863.50",
+      "rows": "577",
+      "shared_hits": "35092976",
+      "shared_reads": "669",
+      "temp_blocks_written": "0"
+    },
+    {
+      "endpoint": "self_other",
+      "calls": "4883",
+      "total_ms": "1836408.51",
+      "mean_ms": "376.08",
+      "rows": "3827",
+      "shared_hits": "15768538",
+      "shared_reads": "133",
+      "temp_blocks_written": "0"
+    },
+    {
+      "endpoint": "panel_detail",
+      "calls": "170",
+      "total_ms": "398866.58",
+      "mean_ms": "2346.27",
+      "rows": "108",
+      "shared_hits": "5361478",
+      "shared_reads": "19",
+      "temp_blocks_written": "0"
+    },
+    {
+      "endpoint": "workspace_summary",
+      "calls": "41",
+      "total_ms": "105138.96",
+      "mean_ms": "2564.36",
+      "rows": "36",
+      "shared_hits": "3212202",
+      "shared_reads": "0",
+      "temp_blocks_written": "504"
+    },
+    {
+      "endpoint": "workspace_people",
+      "calls": "39",
+      "total_ms": "5940.20",
+      "mean_ms": "152.31",
+      "rows": "38",
+      "shared_hits": "379777",
+      "shared_reads": "0",
+      "temp_blocks_written": "956"
+    },
+    {
+      "endpoint": "workspace_person",
+      "calls": "19",
+      "total_ms": "747.84",
+      "mean_ms": "39.36",
+      "rows": "18",
+      "shared_hits": "73103",
+      "shared_reads": "0",
+      "temp_blocks_written": "128"
+    }
+  ]
+}

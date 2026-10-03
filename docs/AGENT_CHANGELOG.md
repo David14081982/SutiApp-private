@@ -3923,3 +3923,14 @@ Finanzas request detail displays Proceso from the requesting affiliate financial
 
 
 H-FINANCE-REQUEST-PROCESS-001 publication PASS: migration 20261002000100, 251 requests verified, bundle 310/worker 242 live. Runtime 48f1909; Pages workflow 37035392188 success. Live applicant category/navigation/reload with and without SW PASS, business writes 0. Architect review APPROVED.
+
+
+## 2026-10-02 ? H-SAVINGS-EGRESS-READONLY-AUDIT-001
+
+Read-only production audit completed; system verdict FAIL due to anonymous access to savings_admin_current_summary: public browser key, no user session, HTTP 200, 354 rows / 399232 decoded bytes. Only counts/field names retained. Admin paging, single projection and 30-day horizon remain installed. Historical 47.8% self-flow byte saving is not current: PUBLISHED v2 returns cacheable=false. No comparable billed-egress series obtained. Existing client VM suite 19/19 PASS. No product, DB, permission, financial or Google writes. Report: [audit](audits/H-SAVINGS-EGRESS-READONLY-AUDIT-001.md); sanitized evidence: docs/qa/evidence/savings-egress-audit-20261002/. Architect verdict NEEDS_FIX; no remediation applied.
+
+## 2026-10-02 ? H-SAVINGS-SURGICAL-REMEDIATION-001
+
+Owner authorized surgical correction. Applied/tracked 20261002000200: restored owner-only EXECUTE on two private Savings helpers recreated in September. Anonymous API now 401 with no rows (previous summary exposed 354 rows / 399232 bytes). Complete authorized JSON for panel/summary/list/detail/neighbour, all public function bodies/owners/OIDs and unrelated ACLs, and 16 protected-table hashes stayed identical inside the apply transaction. Isolated ACL/recovery/drift suite 12/12 PASS; real ordinary affiliate admin-denials/self-reader and published admin browser flow PASS. No frontend, financial, Google or business-data changes. Summary candidate full JSON equivalent but only 2.27% noisy timing benefit: deliberately not installed; self-cache remains fresh. Report: [surgical repair](audits/H-SAVINGS-SURGICAL-REMEDIATION-001.md); evidence docs/qa/evidence/savings-surgical-20261002/. No billed-egress reduction claim.
+
+H-SAVINGS-SURGICAL-REMEDIATION-001 final closure: independent architect APPROVED; full Registry acceptance suite PASS; scoped hashes/credential scan PASS, no unexpected or product-source changes. Existing dirty workspace retained. No next H auto-authorized.

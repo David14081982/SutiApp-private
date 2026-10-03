@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-03T00:08:43.855Z",
+  "out": [
+    {
+      "function": "savings_admin_current_summary",
+      "http": 401,
+      "body_bytes": 116,
+      "code": "42501",
+      "has_rows": false
+    },
+    {
+      "function": "savings_panel_before_current_summary",
+      "http": 401,
+      "body_bytes": 123,
+      "code": "42501",
+      "has_rows": false
+    },
+    {
+      "function": "get_admin_savings_workspace_summary",
+      "http": 401,
+      "body_bytes": 122,
+      "code": "42501",
+      "has_rows": false
+    }
+  ]
+}

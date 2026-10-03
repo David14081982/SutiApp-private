@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-03T00:11:26.393Z",
+  "data": [
+    {
+      "signature": "savings_admin_current_summary(jsonb)",
+      "definition_md5": "2c604445c1a9f9fffca2ae2f65edac26",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false
+    },
+    {
+      "signature": "savings_panel_before_current_summary(text,text,text,integer,integer,jsonb)",
+      "definition_md5": "25f57c2bff9d381caf00444f99c837e2",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": false,
+      "service_execute": false
+    }
+  ],
+  "versions": [
+    {
+      "version": "20261002000200",
+      "name": "savings_private_summary_acl"
+    }
+  ]
+}

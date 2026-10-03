@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "changed": [
+    "docs/audits/H-SAVINGS-SURGICAL-REMEDIATION-001.md",
+    "docs/qa/evidence/savings-surgical-20261002/anonymous-after.json",
+    "docs/qa/evidence/savings-surgical-20261002/browser-before-performance.json",
+    "docs/qa/evidence/savings-surgical-20261002/detail-functions-before.json",
+    "docs/qa/evidence/savings-surgical-20261002/functions-before.json",
+    "docs/qa/evidence/savings-surgical-20261002/grants-before.json",
+    "docs/qa/evidence/savings-surgical-20261002/installed-final.json",
+    "docs/qa/evidence/savings-surgical-20261002/legitimate-before.json",
+    "docs/qa/evidence/savings-surgical-20261002/nonadmin-after.json",
+    "docs/qa/evidence/savings-surgical-20261002/security-apply.json",
+    "docs/qa/evidence/savings-surgical-20261002/summary-equivalence-benchmark.json",
+    "docs/qa/evidence/savings-surgical-20261002/verification.json",
+    "docs/qa/evidence/savings-surgical-20261002/versions-before.json",
+    "scripts/fixtures/savings-summary-boundary-20261002.json",
+    "scripts/test-savings-summary-boundary.js",
+    "supabase/migrations/20261002000200_savings_private_summary_acl.sql",
+    "supabase/recovery/20261002000200_savings_private_summary_acl.sql"
+  ],
+  "unexpected": []
+}

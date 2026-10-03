@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "data": "SYNTHETIC_ONLY",
+  "network": "BLOCKED",
+  "checks": [
+    "due automatic provenance and future not credited; separate actions",
+    "future zero, empty/negative/precision validation, exact RPC version and idempotent retry, no receipt/balance write",
+    "stale instruction requires explicit read and preserves draft with fresh instruction version",
+    "due correction uses canonical writer/version and returned balance, manual provenance after correction",
+    "date rollover invalidates future draft; no reinterpretation as receipt",
+    "changed plan amount remains unknown, never falls back to base amount",
+    "readonly controls, stale person response rejection and repository session guard",
+    "imported canonical account resolves participant identity; never repurposes historical overlay",
+    "Personas uses returned balance/last applied date and provenance; no pending card after application; editor preserved across 3 viewports",
+    "self upcoming shows effective zero and unknown plan change without substituting base amount; current balance unchanged"
+  ],
+  "viewports": [
+    320,
+    430,
+    1440
+  ],
+  "browser_errors": [],
+  "source_hashes": {
+    "app/savings-certification-admin.jsx": "14483d876d904649154631158a85e2804f876a328abce2a8f5185221082c2793",
+    "app/savings-panel-admin.jsx": "df6005532810da9a98f8a88f5f0e2ef07e45770df343b675f9446f6ff92eab8c",
+    "app/savings-panel-repository.js": "b07b8f6848e6eb03d69c3ec50baf77a385b8ef274d9f8c44d9c28c18df412677",
+    "app/screens-savings.jsx": "2c625962bd1170355bc36c67e4e8e1d34e40b43cb0588ecbd431e2781f4d511f"
+  }
+}

@@ -68,5 +68,6 @@
   nativeFinancial:(participantId,until=null)=>rpc('get_admin_savings_account',{p_participant_id:participantId,p_until:until}),
   nativeList:q=>rpc('get_admin_savings_native_accounts',{p_search:q.search||'',p_offset:q.offset||0,p_limit:20,p_filter:q.filter||'todos'}),
   nativeReceipt:c=>rpc('admin_confirm_savings_account_receipt',{p_participant_id:c.participantId,p_enrollment_id:c.enrollmentId,p_date:c.date,p_actual:c.actual,p_version:c.version,p_observation:c.observation||null,p_client_action_id:c.key}),
+  scheduledContribution:c=>rpc('admin_set_savings_scheduled_contribution',{p_participant_id:c.participantId,p_enrollment_id:c.enrollmentId,p_date:c.date,p_amount:c.amount,p_version:c.version,p_observation:c.observation||null,p_client_action_id:c.key}),
  });
 })();

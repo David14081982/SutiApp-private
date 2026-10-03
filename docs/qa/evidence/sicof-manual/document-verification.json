@@ -12,13 +12,13 @@
   "artifacts": [
     {
       "file": "docs/manuales/Manual_de_uso_SICOF.pdf",
-      "sha256": "62a962deea7e6e51963d6ef96e89303a549386f91d98319d27c445400aeca955",
-      "bytes": 137491
+      "sha256": "101d89e4b6a530369f56f555a5017590add73eae34cf291c0136c96ae19572b5",
+      "bytes": 137925
     },
     {
       "file": "docs/manuales/Manual_de_uso_SICOF.docx",
-      "sha256": "05245fe9c40191e0018b0dedc384ab4b70347b43c6d57cb03e088a828f8fce96",
-      "bytes": 56556
+      "sha256": "d502668839be14f39da4ed05a207cca059e3f94485cbb1863035d3df4ea01eab",
+      "bytes": 56800
     }
   ],
   "checks": [

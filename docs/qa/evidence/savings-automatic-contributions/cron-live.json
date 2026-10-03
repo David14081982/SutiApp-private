@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:50:18.809Z",
+  "readOnly": true,
+  "actualSchedulerObserved": true,
+  "execution": {
+    "jobname": "savings-automatic-contributions",
+    "schedule": "*/5 * * * *",
+    "active": true,
+    "status": "succeeded",
+    "start_time": "2026-10-03 22:50:00.190617+00",
+    "end_time": "2026-10-03 22:50:00.402727+00"
+  },
+  "runs": [
+    {
+      "started_at": "2026-10-03 22:50:00.207908+00",
+      "finished_at": "2026-10-03 22:50:00.400445+00",
+      "summary": {
+        "as_of": "2026-10-03",
+        "failed": 0,
+        "status": "COMPLETE",
+        "applied": 0,
+        "existing": 0,
+        "remaining": 0,
+        "batch_limit": 500,
+        "error_codes": []
+      }
+    }
+  ],
+  "noDuplicateContributions": true
+}

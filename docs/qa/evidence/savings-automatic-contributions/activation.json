@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:46:38.205Z",
+  "version": "20261003000400",
+  "candidateSha": "b0c07911648d52b7778d94a0cbe60b527d4b6ab9613715dc28cfeb29cc47a0f4",
+  "evidence": {
+    "run": {
+      "as_of": "2026-10-03",
+      "failed": 0,
+      "status": "COMPLETE",
+      "applied": 294,
+      "existing": 0,
+      "remaining": 0,
+      "batch_limit": 500,
+      "error_codes": []
+    },
+    "newReceipts": 294,
+    "targetDelta": 300,
+    "newAuditEvents": 295,
+    "newTransactions": 294,
+    "oldRowsPreserved": true,
+    "targetYieldUnchanged": true
+  },
+  "automaticActor": "SYSTEM",
+  "manualPolicyAuthorization": true,
+  "startsOn": "2026-09-30"
+}

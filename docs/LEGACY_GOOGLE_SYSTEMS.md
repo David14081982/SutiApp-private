@@ -128,3 +128,8 @@ The previous reader also passes real post-publication verification with the same
 row and overdue-loan counts. Unavailable data must be
 explicit and must never trigger a second financial source or inferred income.
 See `audits/H-SICOF-GOOGLE-RELEASE.md` for the current verified deployment state.
+
+
+## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
+
+La nueva decisión operativa de Ahorro aplica únicamente al dominio Supabase canónico: se abona al vencimiento el importe programado vigente o su excepción explícita. No se escriben Google Sheets, Apps Script, fórmulas, triggers, préstamos ni el histórico Excel. Las políticas financieras de rendimiento existentes permanecen. La pantalla no fabrica saldos sumando previsiones. Los datos históricos/cierres protegidos no se alteran para resolver pendientes.

@@ -1,0 +1,82 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:25:54.686Z",
+  "readOnly": true,
+  "financialWrites": 0,
+  "functions": 147,
+  "tables": 13,
+  "state": [
+    {
+      "today": "2026-10-03",
+      "publication": "PUBLISHED",
+      "migration_collision": false,
+      "cron_available": true
+    }
+  ],
+  "due": [
+    {
+      "contribution_date": "2026-09-30",
+      "rows": 295,
+      "actual": 1,
+      "pending": 294
+    }
+  ],
+  "cronJobs": 4,
+  "savingsJobs": [],
+  "targetFound": true,
+  "targetPendingCount": 1,
+  "baselineFingerprints": [
+    {
+      "resource": "savings_participants",
+      "rows": 354
+    },
+    {
+      "resource": "savings_enrollments",
+      "rows": 352
+    },
+    {
+      "resource": "savings_contribution_plans",
+      "rows": 334
+    },
+    {
+      "resource": "savings_contribution_overrides",
+      "rows": 296
+    },
+    {
+      "resource": "savings_transactions",
+      "rows": 844
+    },
+    {
+      "resource": "savings_balance_certifications",
+      "rows": 328
+    },
+    {
+      "resource": "savings_audit_events",
+      "rows": 694
+    },
+    {
+      "resource": "savings_yield_allocations",
+      "rows": 0
+    },
+    {
+      "resource": "savings_yield_periods",
+      "rows": 0
+    },
+    {
+      "resource": "savings_withdrawal_openings",
+      "rows": 0
+    },
+    {
+      "resource": "savings_holds",
+      "rows": 0
+    },
+    {
+      "resource": "savings_requests",
+      "rows": 26
+    },
+    {
+      "resource": "savings_publication_state",
+      "rows": 1
+    }
+  ]
+}

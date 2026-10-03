@@ -18936,7 +18936,7 @@ Object.assign(window, {
     }, 'Dejar de ahorrar'), (!enrollment || enrollment.status === 'Dejó de ahorrar') && dashboard.actions && dashboard.actions.JOIN && h('button', {
       className: 'sav-primary',
       onClick: () => setSheet('JOIN')
-    }, 'Volver a ahorrar')), canWriteRequests && h('details', null, h('summary', null, 'Próximos descuentos previstos'), h('p', null, 'Son una previsión. Se suman a tu saldo cuando se confirma el descuento real.'), (dashboard.upcoming || []).map(r => detailRow(shortDate(r.contribution_date), moneyOrDash(r.expected_amount))))), sheet === 'HISTORY' && h(Sheet, {
+    }, 'Volver a ahorrar')), canWriteRequests && h('details', null, h('summary', null, 'Próximos descuentos previstos'), h('p', null, 'Se abonan automáticamente al llegar su fecha, salvo una excepción que requiera revisión. Los importes futuros aún no forman parte de tu saldo.'), (dashboard.upcoming || []).map(r => detailRow(shortDate(r.contribution_date), r.scheduled_status === 'PLAN_CHANGED' || r.scheduled_amount == null ? 'Revisar programación' : moneyOrDash(r.scheduled_amount))))), sheet === 'HISTORY' && h(Sheet, {
       title: 'Historial',
       code: 'history',
       onClose: () => setSheet('')
@@ -56635,6 +56635,7 @@ Object.assign(window, {
   nativeFinancial:(participantId,until=null)=>rpc('get_admin_savings_account',{p_participant_id:participantId,p_until:until}),
   nativeList:q=>rpc('get_admin_savings_native_accounts',{p_search:q.search||'',p_offset:q.offset||0,p_limit:20,p_filter:q.filter||'todos'}),
   nativeReceipt:c=>rpc('admin_confirm_savings_account_receipt',{p_participant_id:c.participantId,p_enrollment_id:c.enrollmentId,p_date:c.date,p_actual:c.actual,p_version:c.version,p_observation:c.observation||null,p_client_action_id:c.key}),
+  scheduledContribution:c=>rpc('admin_set_savings_scheduled_contribution',{p_participant_id:c.participantId,p_enrollment_id:c.enrollmentId,p_date:c.date,p_amount:c.amount,p_version:c.version,p_observation:c.observation||null,p_client_action_id:c.key}),
  });
 })();
 })();
@@ -57180,6 +57181,8 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     if (/ALREADY_CONFIRMED/.test(s)) return 'El saldo ya fue confirmado. Actualiza los datos para consultarlo.';
     if (/DIFFERENCE|BALANCE_MISMATCH|COMPONENT/.test(s)) return 'Revisa los importes: capital y rendimiento deben coincidir con el saldo revisado.';
     if (/PLAN_FIELDS/.test(s)) return 'Revisa la aportación y el primer descuento después del corte. La fecha debe corresponder al calendario de esa persona.';
+    if (/SCHEDULE_INSTRUCTION_INVALID/.test(s)) return 'No se pudo guardar la instrucción. Actualiza el calendario y revisa la fecha y el importe: sólo se pueden modificar aportaciones futuras.';
+    if (/FUTURE_REQUIRED|SCHEDULED_DATE/.test(s)) return 'La fecha ya no admite una modificación programada. Actualiza el calendario y revisa la aportación aplicada antes de corregirla.';
     if (/FUTURE/.test(s)) return 'Sólo se pueden registrar como recibidos los descuentos que ya hayan ocurrido.';
     if (/DATE/.test(s)) return 'Revisa las fechas del ahorro y el intervalo de la proyección.';
     if (/FIELDS|AMOUNT|MONEY/.test(s)) return 'Completa las fechas e importes; usa cantidades sin negativos y con un máximo de dos decimales.';
@@ -57369,16 +57372,14 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
         setData(result);
         if (reset || !draftDirty.current) setDraft(defaults(result));
         if (refreshCapture) {
-          setEdit(previous => {
-            if (!previous) return previous;
-            const current = (result.schedule || []).find(row => row.date === previous.date && row.enrollment_id === previous.enrollmentId);
-            return current ? {
-              ...previous,
-              version: current.version
-            } : previous;
+          const current = edit && (result.schedule || []).find(row => row.date === edit.date && row.enrollment_id === edit.enrollmentId),
+            expired = edit && (!current || edit.mode === 'scheduled' && (current.future !== true || current.can_edit_scheduled !== true));
+          setEdit(previous => !previous ? previous : expired ? null : {
+            ...previous,
+            version: previous.mode === 'scheduled' ? current.scheduled_version : current.version
           });
           setError('');
-          setNotice('Datos actualizados. Compara lo registrado con tu captura antes de guardar.');
+          setNotice(expired ? 'El calendario cambió. Revisa la fecha y abre de nuevo la opción disponible; no se guardó tu captura.' : 'Datos actualizados. Compara lo registrado con tu captura antes de guardar.');
         }
       } catch (e) {
         if (mounted.current && identity.current === id && seq === loadSequence.current) setLoadError(message(e));
@@ -57483,6 +57484,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       p = ctx && ctx.person || {},
       schedule = data && data.schedule || [],
       blocked = busy || loading || !!loadError;
+    const accountId = participantId || data && (data.participant_id || data.certificate && data.certificate.participant_id);
     const proposal = split(p),
       proposed = !!(proposal && draft && draft.capital === proposal.capital && draft.yield === proposal.yield);
     const allowed = data && data.can_confirm === true,
@@ -57764,7 +57766,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       }
     }, 'Descuentos reales y proyección'), h('p', {
       className: 'svp-note'
-    }, 'Sólo los descuentos confirmados aumentan el saldo. Las fechas pendientes y futuras son una previsión, sin rendimientos nuevos.'), h(Field, {
+    }, 'Las aportaciones programadas se abonan automáticamente al llegar su fecha, salvo una excepción que requiera revisión. Puedes modificar un importe futuro o corregir una aportación aplicada. Las fechas futuras aún no forman parte del saldo ni generan rendimientos nuevos.'), h(Field, {
       label: 'Proyectar hasta',
       type: 'date',
       value: horizon,
@@ -57785,25 +57787,54 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       valor: M(data.projected_total)
     }), data.unconfirmed_dates > 0 && h('p', {
       className: 'svp-note warn'
-    }, data.unconfirmed_dates + ' fecha(s) vencida(s) pendiente(s) de comprobar.'), !schedule.length && h('p', {
+    }, data.unconfirmed_dates + ' fecha(s) vencida(s) aún sin aportación aplicada. Actualiza el expediente y revisa las excepciones si el pendiente continúa; no significa que faltó el descuento.'), !schedule.length && h('p', {
       className: 'svp-note'
     }, 'No hay descuentos programados para el intervalo consultado.'), schedule.slice(0, limit).map(row => h('div', {
       key: (row.enrollment_id || '') + ':' + row.date,
-      className: 'svp-audit'
+      className: 'svp-audit',
+      'data-contribution-date': row.date
     }, h('b', null, fmt(row.date)), h(Fila, {
-      label: 'Descuento previsto',
+      label: 'Importe del plan',
       valor: M(row.expected)
     }), h(Fila, {
-      label: row.confirmed ? 'Descuento confirmado' : 'Descuento recibido',
-      valor: row.confirmed ? M(row.actual) : 'Pendiente de comprobar'
-    }), row.future === true && h('p', {
+      label: 'Importe programado para esta fecha',
+      valor: row.scheduled_status === 'PLAN_CHANGED' || row.scheduled_amount == null ? 'Revisar programación' : M(row.scheduled_amount)
+    }), h(Fila, {
+      label: row.confirmed ? 'Aportación aplicada' : 'Aportación recibida',
+      valor: row.confirmed ? M(row.actual) : row.future === true ? 'Aún no vence' : 'Pendiente de aplicación o revisión'
+    }), row.scheduled_status === 'PLAN_CHANGED' && h('p', {
+      className: 'svp-note warn'
+    }, 'El plan cambió después de indicar este importe. Revisa y guarda la programación vigente antes de su aplicación.'), row.scheduled_source === 'MANUAL_INSTRUCTION' && h('p', {
       className: 'svp-note'
-    }, 'Fecha futura. Aún no se puede registrar un descuento recibido.'), data.can_write && row.future === false && (!edit || edit.date !== row.date || edit.enrollmentId !== row.enrollment_id) && h(Btn, {
+    }, 'Esta fecha tiene un importe indicado por un encargado; el importe habitual del plan se conserva.'), row.entry_source === 'SYSTEM_SCHEDULE' && h('p', {
+      className: 'svp-note'
+    }, 'Aplicación automática del importe programado.'), row.entry_source === 'MANUAL' && h('p', {
+      className: 'svp-note'
+    }, 'Aportación registrada o corregida por un encargado autorizado.'), row.future === true && h('p', {
+      className: 'svp-note'
+    }, 'Fecha futura. El importe se abonará al llegar esta fecha; modificarlo ahora no cambia el saldo actual.'), data.can_write && row.future === true && row.can_edit_scheduled === true && accountId && row.enrollment_id && (!edit || edit.date !== row.date || edit.enrollmentId !== row.enrollment_id) && h(Btn, {
       tone: 'outline',
       disabled: blocked,
       onClick: () => {
         setAdjust(null);
         setEdit({
+          mode: 'scheduled',
+          date: row.date,
+          enrollmentId: row.enrollment_id,
+          actual: text(row.scheduled_amount),
+          observation: '',
+          version: row.scheduled_version
+        });
+        retry.current = null;
+        setError('');
+      }
+    }, 'Modificar importe programado'), data.can_write && row.future === false && (!edit || edit.date !== row.date || edit.enrollmentId !== row.enrollment_id) && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => {
+        setAdjust(null);
+        setEdit({
+          mode: 'receipt',
           date: row.date,
           enrollmentId: row.enrollment_id,
           actual: row.confirmed ? text(row.actual) : '',
@@ -57813,15 +57844,15 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
         retry.current = null;
         setError('');
       }
-    }, row.confirmed ? 'Corregir descuento recibido' : 'Registrar descuento recibido'), edit && edit.date === row.date && edit.enrollmentId === row.enrollment_id && h('div', null, h(Field, {
-      label: 'Importe realmente recibido',
+    }, row.confirmed ? 'Corregir aportación aplicada' : 'Registrar aportación pendiente'), edit && edit.date === row.date && edit.enrollmentId === row.enrollment_id && h('div', null, h(Field, {
+      label: edit.mode === 'scheduled' ? 'Importe programado para esta fecha' : 'Importe realmente recibido',
       type: 'number',
       value: edit.actual,
       disabled: blocked,
       onChange: v => updateReceipt('actual', v)
     }), h('p', {
       className: 'svp-note'
-    }, 'Captura 0 si comprobaste que no hubo descuento. Una casilla vacía queda pendiente.'), h(Notes, {
+    }, edit.mode === 'scheduled' ? 'Esta instrucción sólo afecta a esta fecha. Captura 0 si no debe haber aportación; una casilla vacía no se guarda. No se abonará dinero anticipadamente.' : 'Captura 0 si comprobaste que no hubo descuento. Una casilla vacía queda pendiente.'), h(Notes, {
       value: edit.observation,
       disabled: blocked,
       onChange: v => updateReceipt('observation', v)
@@ -57837,7 +57868,17 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }, 'Cancelar captura'), h(Btn, {
       tone: 'primary',
       disabled: blocked || !money(edit.actual),
-      onClick: () => run(participantId ? 'nativeReceipt' : 'receipt', {
+      onClick: () => edit.mode === 'scheduled' ? run('scheduledContribution', {
+        participantId: accountId,
+        enrollmentId: edit.enrollmentId,
+        date: edit.date,
+        amount: Number(edit.actual),
+        version: edit.version,
+        observation: edit.observation
+      }, () => {
+        setEdit(null);
+        setNotice('Importe programado guardado para esa fecha. El saldo actual no cambió.');
+      }) : run(participantId ? 'nativeReceipt' : 'receipt', {
         ...(participantId ? {
           participantId,
           enrollmentId: edit.enrollmentId
@@ -57848,9 +57889,9 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
         observation: edit.observation
       }, () => {
         setEdit(null);
-        setNotice('Descuento guardado. El saldo y la proyección se actualizaron.');
+        setNotice('Aportación guardada. El saldo y la proyección se actualizaron.');
       })
-    }, 'Guardar descuento'))))), schedule.length > limit && h(Btn, {
+    }, edit.mode === 'scheduled' ? 'Guardar importe programado' : 'Guardar aportación'))))), schedule.length > limit && h(Btn, {
       tone: 'full',
       disabled: blocked,
       onClick: () => setLimit(n => n + 12)
@@ -57859,7 +57900,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }, h('summary', null, 'Ver cambios del saldo'), data.history.map((event, i) => h('div', {
       className: 'svp-audit',
       key: event.id || i
-    }, h('b', null, event.actor_name || 'Cambio registrado'), h('small', null, event.at || event.created_at ? new Date(event.at || event.created_at).toLocaleString('es-MX') : 'Fecha no disponible'), event.observation && h('p', null, event.observation)))), app && (participantId || data.certificate && data.certificate.participant_id) && h(Retirement, {
+    }, h('b', null, event.actor_name || event.actor || 'Cambio registrado'), h('small', null, event.at || event.created_at ? new Date(event.at || event.created_at).toLocaleString('es-MX') : 'Fecha no disponible'), event.observation && h('p', null, event.observation)))), app && (participantId || data.certificate && data.certificate.participant_id) && h(Retirement, {
       participantId: participantId || data.certificate.participant_id,
       app,
       onSaved: async () => {
@@ -59129,7 +59170,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   }
   const d=state.data,p=d?.person||row,b=d?.balance,history=[...(d?.history||[]),...extra],pending=d?.pending;
   const financialProps=d?.record_id?{recordId:d.record_id}:{participantId:id};
-  const historyStates={RECEIVED:'Recibido',CORRECTED:'Corregido',NO_DEDUCTION:'Sin descuento confirmado',PENDING:'Pendiente de conciliación'};
+  const historyStates={RECEIVED:'Aplicada',CORRECTED:'Corregida',NO_DEDUCTION:'Sin aportación registrada',PENDING:'Pendiente de aplicación o revisión'};
   return h('section',{id:'savings-person-'+id,'aria-label':'Detalle de '+row.nombre,className:'svp-inline-detail',onChangeCapture:()=>onDirty(true)},
    h(QueryStatus,{state,retry:()=>{cache.current.clear();reload();}}),
    d&&!state.loading&&!state.error&&h(React.Fragment,null,
@@ -59139,11 +59180,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     h('div',{className:'svp-detail-grid'},
      h(Tarjeta,{title:'Su ahorro',icon:'calendar'},
       h(Fila,{label:p.proceso==='JUB'?'Aportación mensual':['1','3','PROCESS_1','PROCESS_3'].includes(p.proceso)?'Aportación quincenal':'Aportación · frecuencia por confirmar',valor:M(p.aporte)}),
-      h(Fila,{label:'Última aportación confirmada',valor:d.last_received?fmt(d.last_received):'Sin aportaciones confirmadas'}),
-      h(Fila,{label:'Próxima aportación prevista',valor:d.next_expected?fmt(d.next_expected.date)+' · '+M(d.next_expected.amount):'Sin próxima aportación programada'}),
-      h('p',{className:'svp-note'},'Información al '+fmt(d.today)+'. Las aportaciones previstas no aumentan el saldo.')),
-     pending?.count>0&&h(Tarjeta,{title:'Pendiente de conciliación',icon:'info'},
-      h('p',{className:'svp-note warn'},pending.count+' fecha(s) vencida(s) sin recibo confirmado. Esto no demuestra que faltó el descuento.'),
+      h(Fila,{label:'Última aportación aplicada',valor:d.last_received?fmt(d.last_received):'Sin aportaciones aplicadas'}),
+      h(Fila,{label:'Próxima aportación programada',valor:d.next_expected?fmt(d.next_expected.date)+' · '+(d.next_expected.scheduled_status==='PLAN_CHANGED'||d.next_expected.amount==null?'Revisar programación':M(d.next_expected.amount)):'Sin próxima aportación programada'}),
+      h('p',{className:'svp-note'},'Información al '+fmt(d.today)+'. Las aportaciones programadas se aplican automáticamente al llegar su fecha. Las futuras aún no aumentan el saldo.')),
+     pending?.count>0&&h(Tarjeta,{title:'Pendiente de aplicación o revisión',icon:'info'},
+      h('p',{className:'svp-note warn'},pending.count+' fecha(s) vencida(s) aún sin aportación aplicada. Actualiza y revisa las excepciones si continúa el pendiente. Esto no demuestra que faltó el descuento.'),
       h(Fila,{label:'Primera fecha pendiente',valor:fmt(pending.first_date)}),
       h(Fila,{label:'Importe previsto pendiente',valor:M(pending.expected_amount)})),
      pending?.conflict_count>0&&h(Tarjeta,{title:'Requiere revisión',icon:'info'},h('p',{role:'alert',className:'svp-note warn'},pending.conflict_count+' registro(s) con diferencia entre el recibo y el movimiento financiero. Consulta la conciliación antes de actuar.')),
@@ -59151,14 +59192,16 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       history.length?history.map((movement,index)=>h('article',{className:'svp-audit',key:movement.id||movement.date+':'+index},
        h('div',{className:'svp-totals'},h('b',null,fmt(movement.date)),h('b',null,movement.status==='PENDING'?'Previsto: '+M(movement.expected):M(movement.amount))),
        h('span',{className:movement.status==='PENDING'||movement.data_conflict?'svp-history-state is-pending':'svp-history-state'},movement.data_conflict?'Excepción: recibo y movimiento no coinciden':historyStates[movement.status]||'Por revisar'),
+       movement.entry_source==='SYSTEM_SCHEDULE'&&h('p',{className:'svp-note'},movement.actor_label||'Aplicación automática'),
+       movement.entry_source==='MANUAL'&&h('p',{className:'svp-note'},movement.actor_label||'Encargado autorizado'),
        movement.includes_yield&&h('p',{className:'svp-note'},'Aportación y rendimiento incluidos en este importe.'),
-       movement.status==='CORRECTED'&&h('p',{className:'svp-note'},'Se conserva el registro anterior en la auditoría.'))):h(Empty,{title:'Sin aportaciones registradas',text:'Las aportaciones aparecerán al confirmarse. No se generan movimientos a partir de una previsión.'}),
+       movement.status==='CORRECTED'&&h('p',{className:'svp-note'},'Se conserva el registro anterior en la auditoría.'))):h(Empty,{title:'Sin aportaciones registradas',text:'Las aportaciones programadas aparecerán al aplicarse en su fecha. Las futuras aún no forman parte del saldo.'}),
       history.length<d.history_total&&h(Btn,{tone:'full',disabled:moreBusy,onClick:more},moreBusy?'Consultando…':'Ver más aportaciones'),
       moreError&&h('p',{role:'alert',className:'svp-error'},moreError))),
      h(RecordSection,{title:'Cambios y retiros',initialOpen:initialSection==='requests',openRequest:withdrawalIntent,unmountOnClose:true,beforeClose:()=>{if(dirty&&!window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla?'))return false;onDirty(false);return true;}},
       h(window.SavingsRequestsAdmin,{key:p.folio,folio:p.folio,requestId,expanded:true,onSaved:saved,withdrawalIntent}),
       h(RecordSection,{title:'Habilitación de retiro individual'},h(window.SavingsIndividualWithdrawal,{folio:p.folio,onRequest:()=>setWithdrawalIntent(value=>value+1)}))),
-     h(RecordSection,{title:'Conciliación, correcciones y proyección'},
+     h(RecordSection,{title:'Aportaciones, correcciones y proyección'},
       h(window.SavingsCertificationAdmin,{...financialProps,version:revision,app,onSaved:saved})),
      d.record_id&&h(RecordSection,{title:'Auditoría y antecedentes'},h(LegacyPersonAudit,{recordId:d.record_id,onSaved:saved,app})))));
  }
@@ -59230,15 +59273,15 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     tab==='rh'&&h(window.SavingsRhReport,{today:d?.today}),
     tab==='resumen'&&h(React.Fragment,null,h(Titulo,{sub:'Saldo, próximas aportaciones y pendientes que necesitan seguimiento.'},'Panorama del ahorro'),h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
      h(KPIs,{k,onGo:(destination,date)=>reconcile(date)}),
-     h(Tarjeta,{title:'Atención del programa',icon:'info'},h(Fila,{label:'Aportaciones pendientes de conciliar',valor:d.attention?.pending_receipts??'Por confirmar'}),h(Fila,{label:'Diferencias entre recibos y movimientos',valor:d.attention?.receipt_conflicts??'Por confirmar'}),h(Fila,{label:'Solicitudes que requieren atención',valor:d.attention?.request_count??'Por confirmar'}),
-      h('p',{className:'svp-note'},'Los pendientes corresponden a fechas vencidas sin recibo confirmado. Consulta el periodo completo para revisarlos juntos.'),
+     h(Tarjeta,{title:'Atención del programa',icon:'info'},h(Fila,{label:'Aportaciones pendientes de aplicación o revisión',valor:d.attention?.pending_receipts??'Por confirmar'}),h(Fila,{label:'Diferencias entre recibos y movimientos',valor:d.attention?.receipt_conflicts??'Por confirmar'}),h(Fila,{label:'Solicitudes que requieren atención',valor:d.attention?.request_count??'Por confirmar'}),
+      h('p',{className:'svp-note'},'Las aportaciones se aplican automáticamente al llegar su fecha. Aquí aparecen las fechas vencidas aún sin aplicar; actualiza y revisa las excepciones si persisten. La conciliación por fecha permite revisar o corregir casos que lo necesiten.'),
       h('div',{className:'svp-actions'},h(Btn,{onClick:()=>{setAttention('incidencias');changeTab('atencion');}},'Ver pendientes'),h(Btn,{onClick:()=>{setAttention('cambios');changeTab('atencion');}},'Ver cambios y retiros'))),
-     h('p',{className:'svp-note'},'Ahorradores: cuentas del programa. Planes activos: quienes tienen descuentos programados. Padrón: todos los afiliados. Un plan activo no confirma por sí solo los descuentos recibidos.'))),
+     h('p',{className:'svp-note'},'Ahorradores: cuentas del programa. Planes activos: quienes tienen descuentos programados. Padrón: todos los afiliados. Los importes futuros no se abonan anticipadamente.'))),
     tab==='atencion'&&h(React.Fragment,null,h(Titulo,{sub:'Actúa sobre una operación o una fecha pendiente; conserva el resto del programa en su curso normal.'},'Qué necesita atención'),
-     h('div',{className:'svp-context-nav'},[['incidencias','Pendientes de conciliación'],['cambios','Cambios y retiros']].map(([value,label])=>h(Btn,{key:value,tone:attention===value?'primary':'',onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setAttention(value);setOffset(0);}},label))),
+     h('div',{className:'svp-context-nav'},[['incidencias','Pendientes y excepciones'],['cambios','Cambios y retiros']].map(([value,label])=>h(Btn,{key:value,tone:attention===value?'primary':'',onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setAttention(value);setOffset(0);}},label))),
      attention==='incidencias'&&h(React.Fragment,null,h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
-      (d.attention?.periods||[]).map(item=>h(Tarjeta,{key:item.date,title:'Periodo del '+fmt(item.date),icon:'calendar'},h(Fila,{label:'Aportaciones pendientes de conciliación',valor:item.count}),h(Fila,{label:'Importe previsto de las pendientes',valor:M(item.expected_amount)}),h(Btn,{tone:'primary',onClick:()=>reconcile(item.date)},'Conciliar '+fmt(item.date)))),
-      !d.attention?.periods?.length&&h('p',{className:'svp-note'},'No hay periodos con aportaciones pendientes de conciliación.'),
+      (d.attention?.periods||[]).map(item=>h(Tarjeta,{key:item.date,title:'Periodo del '+fmt(item.date),icon:'calendar'},h(Fila,{label:'Aportaciones pendientes de aplicación o revisión',valor:item.count}),h(Fila,{label:'Importe previsto de las pendientes',valor:M(item.expected_amount)}),h(Btn,{tone:'primary',onClick:()=>reconcile(item.date)},'Revisar '+fmt(item.date)))),
+      !d.attention?.periods?.length&&h('p',{className:'svp-note'},'No hay periodos con aportaciones pendientes de aplicación o revisión.'),
       d.attention?.receipt_conflicts>0&&h('p',{role:'alert',className:'svp-note warn'},d.attention.receipt_conflicts+' diferencia(s) entre recibos y movimientos requieren revisión.'),
       h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setShowAttentionPeople(value=>!value);}},showAttentionPeople?'Ocultar personas':'Consultar incidencias por persona'))),
      attention==='cambios'&&h(window.SavingsRuntimeAdmin,{tab:'pendientes',app,onSaved:refresh,onOpenPerson:row=>revealFolio(row.folio,row.id),initialNavigation:requestNavigation,onNavigationChange:setRequestNavigation}),
@@ -59246,7 +59289,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     listing&&h(React.Fragment,null,tab==='personas'&&h(Titulo,{sub:'Busca y consulta a la persona sin salir de esta lista.'},'Encuentra a un ahorrador'),
      h('label',{className:'svp-search'},h(window.Icon,{name:'search',size:18}),h('input',{'aria-label':'Buscar por nombre o folio',placeholder:'Buscar por nombre o folio',value:search,onChange:event=>changeSearch(event.target.value)})),
      tab==='personas'&&h('div',{className:'svp-tabs','aria-label':'Filtros'},[['todos','Todos'],['ahorrando','Ahorrando'],['pausado','Sin aportación programada'],['baja','Dejó de ahorrar']].map(([value,label])=>h('button',{key:value,'aria-pressed':filter===value,onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setFilter(value);setOffset(0);}},label))),
-     tab==='atencion'&&h('p',{className:'svp-note'},'No se incluyen ceros de antecedentes históricos. Una fecha pendiente requiere comprobar el recibo; no equivale a una falta de pago.'),
+     tab==='atencion'&&h('p',{className:'svp-note'},'No se incluyen ceros de antecedentes históricos. Una fecha pendiente requiere revisar por qué no se aplicó; no equivale a una falta de pago.'),
      h(QueryStatus,{state:people,retry:reloadPeople}),people.data&&!people.loading&&!people.error&&h(React.Fragment,null,
       h('div',{className:'svp-totals'},h('span',null,total+' persona(s) en esta consulta'),rows.length>0&&h('span',null,(offset+1)+'–'+(offset+rows.length))),
       !rows.length?h(Empty,{title:query?'Sin coincidencias':tab==='atencion'?'Sin incidencias para esta consulta':'Sin ahorradores para este filtro'}):h('div',{className:'svp-stack'},rows.map(row=>{const id=row.participant_id||row.id,isOpen=expanded===id;return h('div',{key:id},h(Row,{a:row,onOpen:()=>togglePerson(row),expanded:isOpen,controls:'savings-person-'+id}),row.identity_conflict&&h('p',{role:'alert',className:'svp-note warn'},'Identidad por resolver. El Folio no tiene una coincidencia única válida; sus movimientos no se asignan a otra persona.'),isOpen&&h(InlinePerson,{key:id,row,cache,revision,onSaved:refresh,onDirty:setDirty,dirty,app,requestId:focusRequest,initialSection:focusRequest?'requests':undefined}));})),

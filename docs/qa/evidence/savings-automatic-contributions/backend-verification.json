@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:46:51.678Z",
+  "date": "2026-09-30",
+  "accounts": 295,
+  "confirmed": 295,
+  "targetLastContribution": "2026-09-30",
+  "targetDelta": 300,
+  "targetPending": 0,
+  "yieldUnchanged": true,
+  "repeat": {
+    "as_of": "2026-10-03",
+    "failed": 0,
+    "status": "COMPLETE",
+    "applied": 0,
+    "existing": 0,
+    "remaining": 0,
+    "batch_limit": 500,
+    "error_codes": []
+  },
+  "noRepeatFinancialWrites": true,
+  "cron": {
+    "jobname": "savings-automatic-contributions",
+    "schedule": "*/5 * * * *",
+    "active": true,
+    "username": "postgres",
+    "command": "select savings_automatic_private.run_due()"
+  },
+  "futureAutomaticReceipts": 0
+}

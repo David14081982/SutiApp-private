@@ -77,7 +77,7 @@
         canWriteRequests && h('div',null,
           dashboard.actions && dashboard.actions.TERMINATE && h('button',{className:'sav-primary',onClick:()=>setSheet('TERMINATE')},'Dejar de ahorrar'),
           (!enrollment || enrollment.status==='Dejó de ahorrar') && dashboard.actions && dashboard.actions.JOIN && h('button',{className:'sav-primary',onClick:()=>setSheet('JOIN')},'Volver a ahorrar')),
-        canWriteRequests && h('details',null,h('summary',null,'Próximos descuentos previstos'),h('p',null,'Son una previsión. Se suman a tu saldo cuando se confirma el descuento real.'),(dashboard.upcoming||[]).map(r=>detailRow(shortDate(r.contribution_date),moneyOrDash(r.expected_amount))))),
+        canWriteRequests && h('details',null,h('summary',null,'Próximos descuentos previstos'),h('p',null,'Se abonan automáticamente al llegar su fecha, salvo una excepción que requiera revisión. Los importes futuros aún no forman parte de tu saldo.'),(dashboard.upcoming||[]).map(r=>detailRow(shortDate(r.contribution_date),r.scheduled_status==='PLAN_CHANGED'||r.scheduled_amount==null?'Revisar programación':moneyOrDash(r.scheduled_amount))))),
       sheet === 'HISTORY' && h(Sheet,{title:'Historial',code:'history',onClose:()=>setSheet('')},
         h('div',{className:'sav-sheet-list','data-savings-history':''},history.length?history.map(item=>transaction(item,false)):h('p',null,'Aún no hay movimientos para mostrar.')),
         canWriteRequests && h(React.Fragment,null,h('h3',null,'Mis solicitudes'),h(window.SavingsRequestHistory,{requests:dashboard.requests}))),

@@ -1,0 +1,116 @@
+{
+  "task": "H-SAVINGS-AUTO-CONTRIBUTIONS-001",
+  "status": "APPROVED",
+  "scope": "Independent PRE_DEPLOY review of the exact SQL migration/recovery candidate and guarded activation script. This is not evidence of production application, credited accounts, a live cron run, frontend publication or Git push.",
+  "reviewer": "/root/sicof_loan_contract",
+  "date": "2026-10-03",
+  "migrationSha256": "b0c07911648d52b7778d94a0cbe60b527d4b6ab9613715dc28cfeb29cc47a0f4",
+  "recoverySha256": "1f8a9149eb6e22814650d30cd05b0051fbecdafbb4ab9ecf3dce57ecb3d8c6e7",
+  "testSha256": "9e146a4f945ad9ae1466021133a611e66926f8ea61d45270e450b6157eb6a784",
+  "schemaFixtureSha256": "ea300c20f99e71270bfab4d3cefedb5fcbaefd7c333e0680d755735e72e50d21",
+  "releaseScriptInspectedSha256": "a91976746e76740c218762a5e91dc20777cd60e44979043ca055f040169800bb",
+  "authority": {
+    "authorization": "The owner-authorized policy recorded in H-SAVINGS-AUTO-CONTRIBUTIONS-001 permits recognition of due scheduled savings amounts unless a clerk has recorded an exception; the first authorized catch-up begins 2026-09-30. Parent explicitly authorized this review evidence.",
+    "singleBalanceSource": "public.savings_transactions and existing active holds. Scheduled plans/instructions are not an alternative balance.",
+    "expectedVersusActual": "expected_amount remains the canonical dated plan obligation; scheduled_amount is the dated instruction to recognize. RH retains its scheduled-report purpose; account history, SICOF and balances consume actual canonical postings.",
+    "provenance": "SYSTEM_SCHEDULE has a NULL human executor, explicit policy/plan/instruction origin and immutable audit. Policy authorization remains a real authenticated administrator action. Automatic recognition is not represented as independent bank verification.",
+    "google": "No Google/Apps Script/loan source or writer change. No historical Excel rewrite or yield credit is introduced."
+  },
+  "baselineVerification": {
+    "status": "PASS",
+    "source": "Read-only production metadata captured by parent in .tmp/savings-auto-contributions/functions.json, private-functions.json and tables.json; reviewer made no production request.",
+    "functionGuards": 13,
+    "tableGuards": 13,
+    "method": "Independently parsed the SQL embedded baseline arrays and compared every function hash/owner/ACL and complete table metadata with captured source. Inspected diffs of replaced readers, receipt core and the private operation writer.",
+    "result": "Exact baseline guards agree; protected original financial logic remains except the declared shared receipt extraction, first positive contribution anchor and pending-receipt barrier on total settlement."
+  },
+  "verifiedDesign": [
+    {
+      "subject": "Money, identity and corrections",
+      "sources": [
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:75",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:138"
+      ],
+      "result": "Public manual capability/signature preserved; private shared core retains exact active identity, certification cutoff, finalized yield decisions, receipt version, existing ledger agreement and held-capital guards. Actual zero remains authoritative. A later correction posts only the delta. Zero followed by a positive receipt obtains a real CONTRIBUTION anchor in the original semester."
+    },
+    {
+      "subject": "Future instructions and plan changes",
+      "sources": [
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:143",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:183"
+      ],
+      "result": "Instructions are private, versioned and nonmonetary until due. The selected plan must still cover the date and remain unique/canonical. The semantic hash protects amount/process/identity/start/source without invalidating an earlier covered date merely because the plan later ends. Changed or overlapping plans produce review, never substituted money."
+    },
+    {
+      "subject": "Idempotency, calendar and scheduler",
+      "sources": [
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:217",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:232"
+      ],
+      "result": "Private cron uses the existing Hermosillo calendar, an explicit activation floor and deterministic enrollment/date key. Existing receipts always win. Any previous ledger evidence without a receipt, including a reversed net-zero amount, blocks automatic creation. The worker serializes job/config/identity/enrollment, retains failed attempts and reports remaining work instead of a false complete result."
+    },
+    {
+      "subject": "Total withdrawal and pause",
+      "sources": [
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:217",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:795"
+      ],
+      "result": "The existing participant/enrollment lock protects a read-only pending-receipt barrier before total settlement. It does not create money or invert the config lock. A pause does not erase previously authorized due obligations. Initial never-activated policy preserves prior behavior. Existing fixed request amount, availability, loan attestation and period allocation checks remain; a stale total is not increased implicitly."
+    },
+    {
+      "subject": "Security and provenance",
+      "sources": [
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:32",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:65",
+        "supabase/migrations/20261003000400_savings_automatic_contributions.sql:817"
+      ],
+      "result": "New tables force RLS with no client/service grants. Private worker/core are not browser capabilities. New public RPCs require existing savings.config or savings.write permissions. Empty search_path, source/actor CHECK and null-safe idempotency prevent impersonating a human actor. Existing table/service boundaries are retained."
+    },
+    {
+      "subject": "Recovery",
+      "sources": [
+        "supabase/recovery/20261003000400_savings_automatic_contributions.sql:1"
+      ],
+      "result": "Both phases acquire job then config locks. Recovery unschedules only this job and pauses it. Any receipt, instruction, run or policy history prevents structural deletion; failed-only history is preserved too. A clean unused installation can restore exact definitions/ACL/owners under drift checks. No monetary deletion or broad reversal is attempted."
+    }
+  ],
+  "resolvedFindings": [
+    "Ambiguous overlapping plans must not be selected silently by the automatic writer.",
+    "A previous ledger with net zero must not be treated as a blank date and credited again.",
+    "Recovery must preserve failed runs and serialize both phases against workers and instructions.",
+    "Paused automation must not let a total withdrawal hide already authorized pending contributions.",
+    "Limited batches must expose remaining work; an existing cron name must not be overwritten.",
+    "An instruction valid for an earlier date must survive an ordinary later plan closure.",
+    "Release checks for exact counts, per-account changes, untouched history, unrelated enrollment dates and actor provenance belong before COMMIT and must fail closed on NULL."
+  ],
+  "verification": {
+    "sqlEvidence": "docs/qa/evidence/savings-automatic-contributions/sql-isolated.json",
+    "sqlResult": "PASS",
+    "sqlCheckGroups": 19,
+    "evidenceHashesMatchedActualFiles": true,
+    "independentCommands": [
+      "Read-only comparison of embedded migration guards against captured live metadata: PASS, 13 functions and 13 tables.",
+      "Read-only function diff inspection against public and private snapshots: PASS within declared scope.",
+      "node --check scripts/release-savings-automatic-contributions.js: PASS.",
+      "node --check scripts/test-savings-automatic-contributions.js: PASS.",
+      "node --check scripts/build-savings-automatic-contributions.js: PASS."
+    ],
+    "testAssessment": "Reviewed isolated test implementation and the recorded PASS evidence; checked its exact hashes independently. Tests exercise real candidate SQL with isolated schema/functions. This reviewer did not rerun the SQL suite or execute the release script.",
+    "concurrencyAssessment": "Inspected lock order and sequential manual-before-worker/worker-before-correction outcomes. Simultaneous PostgreSQL sessions were not exercised; no live concurrency claim is made."
+  },
+  "releaseScriptReview": {
+    "status": "APPROVED_BY_INSPECTION",
+    "file": "scripts/release-savings-automatic-contributions.js",
+    "result": "Candidate evidence/hash binding, installed metadata revalidation, job-before-config locks, exact authorized due set, 294 receipt/transaction counts and policy audit count, delta per affected account, protected historical rows and enrollment dates, NULL-safe ledger/audit validation are checked before committing. A second run is required to create no financial change. Secrets and row backups remain private.",
+    "notExecuted": true,
+    "limits": "Inspection of the stated hash only. Its future readback additions and any subsequent delta must be verified by the release owner. The script is a guarded execution plan, not proof that activation has occurred."
+  },
+  "openFindings": [],
+  "limits": [
+    "Auth, pg_cron transport and payout attestation are simulated in the isolated SQL suite; existing underlying permission/loan guards were preserved by source inspection.",
+    "Real scheduled execution, production permission/readback, authorized exact account deltas, zero-change repeated run, frontend behavior and publication remain release gates.",
+    "No reviewer production login, SQL operation, Google request or financial write occurred. Only this review JSON was added.",
+    "No approval is given to a different migration/recovery hash or to synthetic financial testing in production."
+  ],
+  "nextAction": "The root agent may perform the already owner-authorized guarded release for this exact candidate, retaining backups and checking every precommit invariant. Stop on drift or failed checks; preserve historical data. Record production verification separately before declaring H complete."
+}

@@ -359,3 +359,8 @@ Real admin/anonymous/origin checks and ordinary-session SQL denials are recorded
 separately from browser tests: SQL claims in a read-only transaction are not a
 claim that an ordinary-account HTTP login was tested. No credentials were created,
 reset or published for verification. See `audits/H-SICOF-LIVE-VERIFICATION.md`.
+
+
+## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
+
+La automatización de Ahorro ejecuta con cron privado; helpers y tablas de savings_automatic_private carecen de permisos para anon/authenticated/service_role. RLS y FORCE RLS activos. Sólo admin con savings.config configura la política; savings.write autoriza excepciones futuras y correcciones. Actor NULL identifica SYSTEM y no representa una confirmación humana. El historial expone procedencia real. Se conservan Folio exacto, corte certificado, periodos de rendimiento protegidos, saldo retenido, bloqueo, versión e idempotencia. Ningún secreto o privilegio elevado se distribuye al frontend.

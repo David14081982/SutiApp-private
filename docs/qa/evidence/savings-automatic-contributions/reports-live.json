@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:47:32.506Z",
+  "readOnly": true,
+  "financialWrites": 0,
+  "affectedParticipantsChecked": 294,
+  "allCanonicalSelfBalancesMatch": true,
+  "selfCoverage": "Canonical projection evaluated read-only with database owner; does not claim affected-user login.",
+  "sicofPeriodContributionDeltasMatch": true,
+  "yieldsAndWithdrawalsUnchanged": true,
+  "actualExcelDownload": true,
+  "headers": [
+    "2026 2DO SEMESTRE AHORRO",
+    "2026 REND. 2DO SEMESTRE"
+  ],
+  "futureColumnsAbsent": true,
+  "rowsChecked": 294,
+  "originalHistoricalSha256": "e9dc173869188990e23d71694a99af008d2b9190a301d1d71c90ff2764d18837",
+  "downloadSha256": "ae5cb46a2e366e0ae2f1c3eedc447090f0490a0ecb05209f57571b7043653c51",
+  "downloadBytes": 227755
+}

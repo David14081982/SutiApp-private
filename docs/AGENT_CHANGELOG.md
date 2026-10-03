@@ -3956,3 +3956,8 @@ Published Edge SICOF v4 for the owner-requested semester continuation of the ori
 Nine focal suites and independent review PASS. Live candidate and installed authenticated download verify 214 historical records, 354 current rows, exact headers, no future pair and unchanged original SHA. Twelve financial tables unchanged. No migration, Google, frontend, bundle, SW or shared helper changes; global image regression not applicable to this focal backend export. The root workspace's unrelated existing changes are excluded from the isolated publication package.
 
 Delivered a Spanish PDF manual (25 pages) and editable Word (24 sections), covering all eight tabs, controls, sources, loan columns, formulas, policy/simulation distinction, costs/liquidity, new export, withdrawals, current availability and limitations. PDF/Word content, pagination, privacy and independent documentary review PASS. Evidence and exact hashes are in the two focal audits and `docs/qa/evidence/sicof-continuous-report/` / `sicof-manual/`.
+
+
+## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
+
+Cambio focal de Ahorro autorizado: aplicación automática al vencimiento, excepciones futuras por fecha, corrección posterior por delta y procedencia SYSTEM/humana. Paquete aislado sobre f6bcc741 conserva RH y 145 chunks de bundle ajenos; v313 cambia sólo cuatro fuentes de Ahorro y cachebusters generados. No cambia assets, Auth, viewer, routing, lógica de sw.js ni el transporte compartido; regresión global de imágenes NOT APPLICABLE según AGENTS, con verificación focal de componentes y lecturas reales. Manual SICOF edición 1.1 actualizado. Resultado y evidencia verificable: docs/audits/H-SAVINGS-AUTO-CONTRIBUTIONS-001.md y docs/qa/evidence/savings-automatic-contributions/.

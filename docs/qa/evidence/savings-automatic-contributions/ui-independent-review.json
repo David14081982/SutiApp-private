@@ -1,0 +1,76 @@
+{
+  "status": "APPROVED",
+  "scope": "Independent focal candidate review: Savings UI, generated bundle, updated manual and publication support scripts. Not production activation or final H completion.",
+  "checkedAt": "2026-10-03T22:44:01.926Z",
+  "baseline": "f6bcc7411ddeb41a320e8ec074859bf234e29fff",
+  "reviewer": "savings_final_review",
+  "sourceHashes": {
+    "app/savings-certification-admin.jsx": "14483d876d904649154631158a85e2804f876a328abce2a8f5185221082c2793",
+    "app/savings-panel-admin.jsx": "df6005532810da9a98f8a88f5f0e2ef07e45770df343b675f9446f6ff92eab8c",
+    "app/savings-panel-repository.js": "b07b8f6848e6eb03d69c3ec50baf77a385b8ef274d9f8c44d9c28c18df412677",
+    "app/screens-savings.jsx": "2c625962bd1170355bc36c67e4e8e1d34e40b43cb0588ecbd431e2781f4d511f"
+  },
+  "bundleSha256": "07a8a5d6ea4ac9fb8de04ef84374970ff71a8c4a1e02b989dab02b78bb0b65c0",
+  "checks": {
+    "independentChromeRun": "PASS",
+    "syntheticOnly": true,
+    "networkBlocked": true,
+    "browserGroups": 10,
+    "viewports": [
+      320,
+      430,
+      1440
+    ],
+    "browserErrors": 0,
+    "allUnrelatedBundleChunksIdentical": true,
+    "preservedChunks": 145,
+    "serviceWorkerLogicUnchanged": true,
+    "repositoryTransportAndContextGuardsUnchanged": true,
+    "existingRhTabAndComponentPreserved": true,
+    "manualPdfAndWordOpened": true,
+    "manualPages": 25,
+    "manualContractPhrasesVerified": 9,
+    "readOnlyLiveGuardSelfTestCases": 13,
+    "supportScriptSyntax": "PASS"
+  },
+  "manual": {
+    "pdfSha256": "101d89e4b6a530369f56f555a5017590add73eae34cf291c0136c96ae19572b5",
+    "docxSha256": "d502668839be14f39da4ed05a207cca059e3f94485cbb1863035d3df4ea01eab",
+    "edition": "1.1",
+    "application": "v313"
+  },
+  "uiPreservation": {
+    "originalSections": [
+      "Summary",
+      "People and filters",
+      "Inline account and history",
+      "Requests and withdrawals",
+      "Account corrections and projections",
+      "Audit and prior history",
+      "Attention",
+      "Program",
+      "RH report",
+      "Self Savings"
+    ],
+    "missingSections": [],
+    "addedControls": [
+      "Future dated contribution amount editor"
+    ],
+    "navigationPreserved": true,
+    "visualStructurePreserved": true,
+    "unauthorizedRedesign": false,
+    "verdict": "PASS"
+  },
+  "sourceOfTruth": "Frontend consumes Supabase amounts and receipt provenance. A future instruction uses its own RPC and does not write a receipt or derive a balance. PLAN_CHANGED remains explicit instead of substituting the plan. Manual receipt corrections keep the canonical writer.",
+  "globalImageRegression": "NOT APPLICABLE: no shared transport, authentication, routing, asset or viewer change; sw.js has only generated cachebusters and unrelated bundle chunks are byte-identical.",
+  "importantFindings": [],
+  "limitations": [
+    "SQL/core/RLS/concurrency are reviewed separately by the backend reviewer.",
+    "No production login, data write, activation, push or deployment was performed by this reviewer.",
+    "Architecture Registry is stale due to declared candidate files; regenerate and verify the isolated final package before closing.",
+    "Manual artifacts were inspected in the root workspace; final packaging must preserve their verified hashes.",
+    "WORK_QUEUE_HISTORY.md is absent. This bounded review does not authorize another H or replace user authorization."
+  ],
+  "recommendedNextAction": "Complete the separately reviewed backend activation, preserve exact candidate hashes when packaging, regenerate the isolated architecture index, and verify live account, reports and production bundle before final commit/push closure.",
+  "ownerDecisionRequired": false
+}

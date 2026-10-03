@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "environment": "isolated PostgreSQL/WASM",
+  "productionWrites": 0,
+  "checks": [
+    "installation rejects exact function drift before changing schema",
+    "installation refuses an existing cron name and altered receipt schema",
+    "installation preserves OIDs/ACLs, has no financial effects, cron disabled policy; clean structural recovery",
+    "recovery with only failed runs preserves error evidence and is repeatable",
+    "manual overrides including zero take precedence; policy authenticates author separately",
+    "subsequent correction uses delta; system idempotency key cannot be replayed as manual",
+    "zero then positive has real CONTRIBUTION anchor and canonical semester origin",
+    "future instruction is versioned, zero-safe and creates no money; readers agree on effective scheduled amount",
+    "automatic provenance is shown honestly in account/workspace history",
+    "changed future plan never silently replaces instruction; new edit explicitly rebases",
+    "terminated backlog before cessation credits; plan expiry and monthly calendar do not fabricate dates",
+    "opening cutoff is protected and first actual certification date is preserved",
+    "held/delivered capital prevent unsafe correction; invalid identities and conflicts do not contaminate other accounts",
+    "final yield cutoff protects CREDITED and EXCLUDED, ordinary and early",
+    "total settlement refuses pending automatic due without changing request or money",
+    "overlapping plans and net-zero ledger without receipt require review, never fresh credit",
+    "bounded batch explicitly reports more pending and eventually reaches untouched accounts",
+    "backend grants, real actor checks and origin constraint deny direct client/system impersonation",
+    "recovery after postings stops job while preserving all money, instructions and audit"
+  ],
+  "hashes": {
+    "supabase/migrations/20261003000400_savings_automatic_contributions.sql": "b0c07911648d52b7778d94a0cbe60b527d4b6ab9613715dc28cfeb29cc47a0f4",
+    "supabase/recovery/20261003000400_savings_automatic_contributions.sql": "1f8a9149eb6e22814650d30cd05b0051fbecdafbb4ab9ecf3dce57ecb3d8c6e7",
+    "scripts/test-savings-automatic-contributions.js": "9e146a4f945ad9ae1466021133a611e66926f8ea61d45270e450b6157eb6a784",
+    "scripts/fixtures/savings-automatic-contributions-schema.json": "ea300c20f99e71270bfab4d3cefedb5fcbaefd7c333e0680d755735e72e50d21"
+  },
+  "limits": "Real catalog definitions/constraints/guards executed. Auth, payout evidence and pg_cron transport simulated. Actual simultaneous PostgreSQL sessions and scheduler wake require separate verification; no live synthetic transactions were executed."
+}

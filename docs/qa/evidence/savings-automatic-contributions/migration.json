@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:46:24.545Z",
+  "version": "20261003000400",
+  "candidateSha": "b0c07911648d52b7778d94a0cbe60b527d4b6ab9613715dc28cfeb29cc47a0f4",
+  "evidence": [
+    {
+      "evidence": {
+        "tables": 13,
+        "unchanged": true,
+        "policyDisabled": true
+      }
+    }
+  ],
+  "financialWrites": 0,
+  "existingFinancialDataUnchanged": true,
+  "defaultDisabled": true
+}

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:44:10.361Z",
+  "candidateSha": "b0c07911648d52b7778d94a0cbe60b527d4b6ab9613715dc28cfeb29cc47a0f4",
+  "protectedTables": 13,
+  "privateBackupSaved": true,
+  "functions": 153,
+  "pending": 294,
+  "existing": 1,
+  "eligible": {
+    "pending_enrollments": 294,
+    "not_approved": 0,
+    "invalid_status": 0
+  },
+  "financialWrites": 0
+}

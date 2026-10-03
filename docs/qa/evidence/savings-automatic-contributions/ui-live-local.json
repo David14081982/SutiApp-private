@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "scope": "SAVINGS_AUTOMATIC_CONTRIBUTIONS_READ_ONLY_UI",
+  "checkedAt": "2026-10-03T22:55:25.192Z",
+  "mode": "local",
+  "target": "http://localhost:8080",
+  "bundleSha256": "07a8a5d6ea4ac9fb8de04ef84374970ff71a8c4a1e02b989dab02b78bb0b65c0",
+  "checks": [
+    {
+      "name": "BUNDLE_AND_LOGIN",
+      "status": "PASS",
+      "bundleMatches": true,
+      "realAuthenticatedSession": true
+    },
+    {
+      "name": "ADMIN_SAVINGS_PERSON_AND_LEDGER_BALANCE",
+      "status": "PASS",
+      "exactIdentityMatched": true,
+      "lastContributionMatchesAuthorizedDueDate": true,
+      "capitalAndTotalIncreaseMatchPreflight": true,
+      "yieldUnchanged": true,
+      "domMatchesCanonicalReader": true,
+      "automaticReceiptVisible": true,
+      "noPendingDates": true
+    },
+    {
+      "name": "FUTURE_EDITOR_READ_ONLY",
+      "status": "PASS",
+      "editorOpenedAndCanceled": true,
+      "amountMatchesReader": true,
+      "versionPresent": true,
+      "saved": false
+    },
+    {
+      "name": "PRESERVED_RH_AND_RESPONSIVE_LAYOUT",
+      "status": "PASS",
+      "rhTabAndControlsPreserved": true,
+      "viewports": [
+        430,
+        1440
+      ],
+      "horizontalOverflow": false,
+      "noExportInvoked": true
+    }
+  ],
+  "network": [
+    {
+      "endpoint": "get_self_savings_if_changed",
+      "status": 200
+    },
+    {
+      "endpoint": "get_admin_savings_workspace_people",
+      "status": 200
+    },
+    {
+      "endpoint": "get_admin_savings_workspace_person",
+      "status": 200
+    },
+    {
+      "endpoint": "get_admin_savings_financial_account",
+      "status": 200
+    }
+  ],
+  "blockedBusinessWrites": 1,
+  "blockedRequests": [
+    {
+      "reason": "EDGE_WRITER_OR_UNAUDITED_ACTION",
+      "method": "POST",
+      "endpoint": "financial-legacy",
+      "action": "loanSessionOpen"
+    }
+  ],
+  "unexpectedBlockedWrites": 0,
+  "backgroundLoanBootstrap": {
+    "status": "BLOCKED",
+    "attempts": 1,
+    "reason": "Unrelated loanSessionOpen persists/replaces loan snapshots and is intentionally aborted. No writer exemption was granted."
+  },
+  "browserErrors": 0,
+  "fixtureResponses": 0,
+  "screenshots": 0,
+  "productionBusinessWrites": 0,
+  "serviceWorker": "BLOCKED_FOR_WRITE_GUARD",
+  "limitations": [
+    "Authentication may create the existing nonfinancial access-history event.",
+    "No amounts, folios, names, IDs, request bodies or response payloads are saved in this evidence.",
+    "Blocked diagnostics include technical endpoint/action names only, never URLs or payloads.",
+    "The background loan-session workflow is not certified by this focal Savings test; its snapshot writer stays blocked.",
+    "This verifies the web surface; the backend ledger and cron are verified separately."
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:12:32.212Z",
+  "baseline": "94158a6a7005cd113517e77a30212217414b41c5",
+  "edgeVersion": 4,
+  "frontendVersion": 312,
+  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+  "publicFilesUnchanged": 28,
+  "artifact": ".tmp/sicof/public-artifact-continuous-1791065551818",
+  "buildOutput": "{\"status\":\"PASS\",\"output\":\"C:\\\\Users\\\\david\\\\Downloads\\\\SutiApp\\\\.tmp\\\\sicof\\\\release\\\\.tmp\\\\sicof\\\\public-artifact-continuous-1791065551818\",\"files\":28}",
+  "financialWrites": 0,
+  "isolatedCheckout": true,
+  "unrelatedGovernancePreserved": true,
+  "files": [
+    "docs/AGENT_CHANGELOG.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "docs/audits/H-SICOF-CONTINUOUS-REPORT-001-REVIEW.md",
+    "docs/audits/H-SICOF-CONTINUOUS-REPORT-001.md",
+    "docs/audits/H-SICOF-MANUAL-001-REVIEW.md",
+    "docs/audits/H-SICOF-MANUAL-001.md",
+    "docs/manuales/Manual_de_uso_SICOF.docx",
+    "docs/manuales/Manual_de_uso_SICOF.pdf",
+    "docs/qa/evidence/sicof-continuous-report/candidate-live-read.json",
+    "docs/qa/evidence/sicof-continuous-report/edge-deployment.json",
+    "docs/qa/evidence/sicof-continuous-report/focal-tests.json",
+    "docs/qa/evidence/sicof-continuous-report/independent-review.json",
+    "docs/qa/evidence/sicof-continuous-report/production-download.json",
+    "docs/qa/evidence/sicof-continuous-report/publication-package.json",
+    "docs/qa/evidence/sicof-manual/document-generation.json",
+    "docs/qa/evidence/sicof-manual/document-verification.json",
+    "scripts/test-sicof-continuous-export.js",
+    "scripts/test-sicof-continuous-handler.js",
+    "scripts/test-sicof-continuous-report.js",
+    "scripts/test-sicof-exports.js",
+    "supabase/functions/sicof/exports.mjs",
+    "supabase/functions/sicof/handler.mjs",
+    "supabase/functions/sicof/projection.mjs"
+  ],
+  "hashes": [
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "sha256": "8320d3aa8284f0b497a8d265812ab8f095c3820106006f97d0fb1bb27bb2c0b9"
+    },
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "sha256": "acd6de07643e69a190c6dd1b8f9f94b42e7d0bb78645c46e1ee54550d26e6a16"
+    },
+    {
+      "file": "docs/audits/H-SICOF-CONTINUOUS-REPORT-001-REVIEW.md",
+      "sha256": "4812ee3669c6ea7513032a87d690ad35a3e6d31dfbff7828368b145512125298"
+    },
+    {
+      "file": "docs/audits/H-SICOF-CONTINUOUS-REPORT-001.md",
+      "sha256": "f8d340fade685d63a34bffaae7af82fd85711ec7e549cc9b020011bd2f19ad69"
+    },
+    {
+      "file": "docs/audits/H-SICOF-MANUAL-001-REVIEW.md",
+      "sha256": "25b3b19366d25fd0380ba9e92dd847a4145e9aec956bb5d8ee7e4b21633ee76c"
+    },
+    {
+      "file": "docs/audits/H-SICOF-MANUAL-001.md",
+      "sha256": "fcc6dca33188a8c74d19962e3406a561ba03c4941ff03aa7e78e1e2d84f88485"
+    },
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.docx",
+      "sha256": "05245fe9c40191e0018b0dedc384ab4b70347b43c6d57cb03e088a828f8fce96"
+    },
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.pdf",
+      "sha256": "62a962deea7e6e51963d6ef96e89303a549386f91d98319d27c445400aeca955"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-continuous-report/candidate-live-read.json",
+      "sha256": "6c59d03bf98222a072f315216d2e461178bc2703fcb49b313b77ed77ccab5fe2"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-continuous-report/edge-deployment.json",
+      "sha256": "f0983dfd0f875a0131ff1ef0cac6f529677c0f987d8b47b4c83396330a068470"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-continuous-report/focal-tests.json",
+      "sha256": "db6ed997ce9d9f3abd4d4915b4959080afb07c4801842df96e13841e025c4bd9"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-continuous-report/independent-review.json",
+      "sha256": "8b7bef2e8aaae37486e248a794152d6a8dc876bd088b582e559b4291b75748bd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-continuous-report/production-download.json",
+      "sha256": "2052990f3b7387b0d683d4d74e9cfc940bea5660c1df1248be79f1e02c80a753"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-manual/document-generation.json",
+      "sha256": "f823c180ac880ff6bc1c5aa69cad7525d51f305354568216a692dcffb6393743"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-manual/document-verification.json",
+      "sha256": "86d3ce356ef1b59f500d9a60253a6f0546bbbb799bb4ce54e436ef270f21d283"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-export.js",
+      "sha256": "77b7247c776b771d98ad36133d408ddcf8fbe67baf4ccf171c2aa0be6bc5fc55"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-handler.js",
+      "sha256": "6fb9ece0b2dafc88f61a54d328e4dba0bf5b2cd0f98a6a60ec249fed69450368"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-report.js",
+      "sha256": "e51919d4c7a3f7f547ff63edddf70ce5d3daa5565138dfb449153fe292db9351"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "82454a9372b4db866c39bffae34038429c89dba2eb7a4f779b46c153cbb1dafd"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "sha256": "30e4e2af1d065a4b4a9d1cb9b80e573e246139aac8430234c58e8b72f01d1779"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+    }
+  ],
+  "finalIndependentReviewIncluded": true
+}

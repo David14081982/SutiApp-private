@@ -121,9 +121,12 @@ const JSZip=require('../.tmp/sicof/deps/node_modules/jszip');
   const columns=Array.from({length:13},(_,i)=>({key:String.fromCharCode(65+i),label:v(2,i+1)}));
   const values=Object.fromEntries(Array.from({length:13},(_,i)=>[String.fromCharCode(65+i),v(3,i+1)]));values.A=String(values.A);
   const context={report:{columns,rows:[values],totals:{I:values.I,J:values.J,K:values.K,L:values.L,M:values.M}},participants:[{folio:values.A,name:'Isolated',composition:{periods:[{origin_key:'2026-S2',component:'CAPITAL',recognized:100,withdrawn:40,remaining:60,origin_state:'RECONCILED'}],movements:[{effective_date:'2026-10-03',type:'WITHDRAWAL',component:'CAPITAL',direction:'DEBIT',amount:40,origins:[{origin_key:'2026-S2',amount:40}]}]}}]};
+  context.continuous_report={schema_version:'SICOF_CONTINUOUS_SAVINGS_V1',cutoff:'2026-10-03',periods:[{key:'2026-S2',year:2026,semester:2,capital_header:'2026 2DO SEMESTRE AHORRO',yield_header:'2026 REND. 2DO SEMESTRE'}],rows:[]};
+  for(let r=3;r<=hist.rowCount;r++){if(v(r,1)==null||String(v(r,1))==='')continue;context.continuous_report.rows.push({folio:String(v(r,1)),name:v(r,2),source_row:r,historical_cells:Object.fromEntries(Array.from({length:13},(_,i)=>[String.fromCharCode(65+i),v(r,i+1)??null])),period_values:{'2026-S2':{capital:null,yield_amount:null,capital_state:'REVIEW_REQUIRED',yield_state:'REVIEW_REQUIRED'}},withdrawals:{},balances:{}});}
   file=await exportSicofReport({kind:'final_ahorro',context,templateBytes:template,ExcelJS});book=await load(file.bytes);
-  const preserved=book.worksheets[0];
+  const preserved=book.getWorksheet(hist.name);assert.equal(book.worksheets[0].name,'Informe acumulado');assert.equal(book.views[0].activeTab,0);
   for(let r=1;r<=hist.rowCount;r++)for(let c=1;c<=13;c++)assert.deepEqual(preserved.getCell(r,c).value,hist.getCell(r,c).value,'HISTORICAL_CELL_CHANGED');
+  for(const row of context.continuous_report.rows)for(let c=1;c<=13;c++){assert.deepEqual(book.getWorksheet('Informe acumulado').getCell(row.source_row,c).value,row.historical_cells[String.fromCharCode(64+c)],'ACCUMULATED_HISTORY_CHANGED');assert.deepEqual(book.getWorksheet('Informe acumulado').getCell(row.source_row,c).style,hist.getCell(row.source_row,c).style,'ACCUMULATED_HISTORY_STYLE_CHANGED');}
   assert.deepEqual(book.getWorksheet('Informe vigente').getCell('D3').style,hist.getCell('D3').style);
   assert.equal(book.getWorksheet('Periodos').getCell('G2').value,60);assert.equal(book.getWorksheet('Movimientos').getCell('G2').value,40);assert(book.getWorksheet('Movimientos').getCell('I2').value.includes('2026-S2'));
   const changed={...context,report:{...context.report,rows:[{...values,D:999999}]}};

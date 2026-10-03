@@ -239,19 +239,94 @@ function compositionTables(context) {
 }
 function cellValue(cell){const value=cell.value;return value&&typeof value==='object'&&'result'in value?value.result:value;}
 function equalCell(a,b){return a==null&&b==null||(finite(a)&&finite(b)?Math.abs(a-b)<1e-8:a===b);}
+function addContinuousFinal(workbook,historic,context,filters) {
+  const report=context.continuous_report,clone=value=>JSON.parse(JSON.stringify(value));
+  if(report?.schema_version!=='SICOF_CONTINUOUS_SAVINGS_V1'||!validDate(report.cutoff)||!Array.isArray(report.periods)||!Array.isArray(report.rows))throw Error('SICOF_EXPORT_CONTINUOUS_REQUIRED');
+  const expected=[];
+  for(let year=2026;year<=Number(report.cutoff.slice(0,4));year++)for(const semester of [1,2]){
+    if(year===2026&&semester===1)continue;
+    const start=year+(semester===1?'-01-01':'-07-01');if(start<=report.cutoff)expected.push(year+'-S'+semester);
+  }
+  if(13+expected.length*2>16384||expected.length!==report.periods.length)throw Error('SICOF_EXPORT_CONTINUOUS_PERIODS_INVALID');
+  report.periods.forEach((period,index)=>{
+    const ordinal=period.semester===1?'1ER':'2DO';
+    if(period.key!==expected[index]||period.key!==period.year+'-S'+period.semester||period.capital_header!==period.year+' '+ordinal+' SEMESTRE AHORRO'||period.yield_header!==period.year+' REND. '+ordinal+' SEMESTRE')throw Error('SICOF_EXPORT_CONTINUOUS_PERIODS_INVALID');
+  });
+  const originalRows=new Map();
+  for(let r=3;r<=historic.rowCount;r++){
+    const value=cellValue(historic.getCell(r,1));if(value==null||String(value)==='')continue;
+    const folio=String(value);if(originalRows.has(folio))throw Error('SICOF_EXPORT_TEMPLATE_DUPLICATE_IDENTITY');originalRows.set(folio,r);
+  }
+  const indexed=new Map();
+  for(const row of report.rows){
+    if(typeof row.folio!=='string'||!row.folio||indexed.has(row.folio))throw Error('SICOF_EXPORT_CONTINUOUS_IDENTITY_INVALID');indexed.set(row.folio,row);
+    const r=originalRows.get(row.folio);
+    if(r){
+      if(row.source_row!==r||!row.historical_cells||String(row.historical_cells.A)!==row.folio)throw Error('SICOF_EXPORT_CONTINUOUS_HISTORY_INVALID');
+      for(let c=1;c<=13;c++){
+        const key=String.fromCharCode(64+c),source=historic.getCell(r,c).value;
+        if(!Object.hasOwn(row.historical_cells,key))throw Error('SICOF_EXPORT_CONTINUOUS_HISTORY_INVALID');
+        // Cached zero formula results may be omitted by ExcelJS. The authenticated
+        // historical snapshot supplies their resolved values; never infer zero.
+        const formula=source&&typeof source==='object'&&('formula'in source||'sharedFormula'in source);
+        if((!formula||source.result!=null)&&!equalCell(row.historical_cells[key],formula?source.result:source))throw Error('SICOF_EXPORT_HISTORICAL_VALUES_CHANGED');
+      }
+    }else if(row.historical_cells!=null)throw Error('SICOF_EXPORT_CONTINUOUS_HISTORY_INVALID');
+    for(const period of report.periods){const values=row.period_values?.[period.key];if(!values)throw Error('SICOF_EXPORT_CONTINUOUS_VALUES_REQUIRED');
+      for(const [key,state]of [['capital','capital_state'],['yield_amount','yield_state']]){
+        if(!['VERIFIED','PARTIAL','REVIEW_REQUIRED','NO_ACCOUNT'].includes(values[state])||values[key]!=null&&!finite(values[key])||['REVIEW_REQUIRED','NO_ACCOUNT'].includes(values[state])&&values[key]!=null)throw Error('SICOF_EXPORT_CONTINUOUS_VALUES_INVALID');
+      }
+    }
+  }
+  for(const folio of originalRows.keys())if(!indexed.has(folio))throw Error('SICOF_EXPORT_CONTINUOUS_HISTORY_MISSING');
+  const ordered=[...originalRows.keys()].map(folio=>indexed.get(folio)).concat(report.rows.filter(row=>!originalRows.has(row.folio)));
+  // A continuous workbook retains every started semester. The existing period
+  // selector still controls Informe vigente, while this sheet filters people only.
+  const selected=ordered.filter(row=>(filters.folio==null||row.folio===filters.folio)&&(!filters.search||norm([row.folio,row.name,row.historical_cells?.B].join(' ')).includes(norm(filters.search))));
+  const sheet=workbook.addWorksheet('Informe acumulado',{pageSetup:clone(historic.pageSetup),properties:clone(historic.properties)});
+  for(let r=1;r<=2;r++)sheet.getRow(r).height=historic.getRow(r).height;
+  for(let c=1;c<=13;c++){sheet.getColumn(c).width=historic.getColumn(c).width;for(let r=1;r<=2;r++){const source=historic.getCell(r,c),dest=sheet.getCell(r,c);dest.value=source.value;dest.style=clone(source.style);}}
+  for(const merge of historic.model.merges||[]){const range=merge.match(/^[A-M]([12]):[A-M]([12])$/);if(range)sheet.mergeCells(merge);}
+  const hasPartial=selected.some(row=>report.periods.some(period=>['capital_state','yield_state'].some(key=>row.period_values[period.key][key]==='PARTIAL')));
+  if(report.periods.length){const cell=sheet.getCell('N1');cell.value='Acumulado registrado desde 2026-S2 al '+report.cutoff+'. Antes de retiros.'+(hasPartial?' ÁMBAR: evidencia parcial; no es un semestre completo.':'');cell.style=clone(historic.getCell('F1').style);cell.alignment={wrapText:true,vertical:'middle'};sheet.mergeCells('N1:O1');sheet.getRow(1).height=Math.max(72,historic.getRow(1).height||0);}
+  const stateNote=(values,component)=>{
+    const state=values[component==='capital'?'capital_state':'yield_state'],reasons=values[component==='capital'?'capital_reasons':'yield_reasons']||values.reasons||[];
+    return (state==='PARTIAL'?'ACUMULADO REGISTRADO PARCIAL: historia incompleta o recibos pendientes de confirmar; este importe confirmado no representa todo el semestre.':state==='VERIFIED'?'Acumulado registrado con evidencia suficiente, antes de retiros.':'POR CONCILIAR: no se presume un importe ni se inventa cero.')+' Corte: '+report.cutoff+(reasons.length?'\nRevisión: '+reasons.join('; '):'');
+  };
+  report.periods.forEach((period,index)=>{for(const [offset,key]of [[0,'capital_header'],[1,'yield_header']]){const c=14+index*2+offset,cell=sheet.getCell(2,c);sheet.getColumn(c).width=Math.max(24,historic.getColumn(offset?7:6).width||0);cell.style=clone(historic.getCell(2,offset?7:6).style);cell.value=period[key];cell.alignment={...cell.alignment,wrapText:true};}});
+  selected.forEach((row,index)=>{
+    const r=index+3,sourceRow=row.source_row||3;sheet.getRow(r).height=historic.getRow(sourceRow).height;
+    for(let c=1;c<=13;c++){const cell=sheet.getCell(r,c);cell.style=clone(historic.getCell(sourceRow,c).style);cell.value=row.historical_cells?row.historical_cells[String.fromCharCode(64+c)]??null:c===1?row.folio:c===2?row.name??null:null;}
+    report.periods.forEach((period,index)=>{const values=row.period_values[period.key];for(const [offset,key]of [[0,'capital'],[1,'yield_amount']]){const cell=sheet.getCell(r,14+index*2+offset),state=values[offset?'yield_state':'capital_state'];cell.style=clone(historic.getCell(sourceRow,offset?7:6).style);cell.numFmt=moneyFormat;cell.value=scalar(values[key]);cell.note=stateNote(values,key);if(state==='PARTIAL')cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE6A6'}};}});
+  });
+  const totalsRow=selected.length+3;for(let c=1;c<=13;c++)sheet.getCell(totalsRow,c).style=clone(historic.getCell(historic.rowCount,c).style);sheet.getCell(totalsRow,2).value='TOTALES';sheet.getRow(totalsRow).font={bold:true};
+  for(let c=3;c<=13;c++){const key=String.fromCharCode(64+c),values=selected.filter(row=>row.historical_cells).map(row=>row.historical_cells[key]).filter(value=>value!=null);sheet.getCell(totalsRow,c).value=values.length?scalar(sum(values)):null;sheet.getCell(totalsRow,c).numFmt=moneyFormat;}
+  report.periods.forEach((period,index)=>{for(const [offset,key]of [[0,'capital'],[1,'yield_amount']]){const cell=sheet.getCell(totalsRow,14+index*2+offset),partial=selected.some(row=>row.period_values[period.key][offset?'yield_state':'capital_state']==='PARTIAL');cell.value=scalar(sum(selected.map(row=>row.period_values[period.key][key])));cell.numFmt=moneyFormat;if(partial){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFE6A6'}};cell.note='Incluye acumulados parciales registrados; no es un total de semestre completo.';}}});
+  sheet.views=[{state:'frozen',xSplit:2,ySplit:2,tabSelected:true}];sheet.autoFilter={from:'A2',to:{row:Math.max(2,selected.length+2),column:13+report.periods.length*2}};
+  const prior=workbook.worksheets.filter(item=>item!==sheet);sheet.orderNo=0;prior.forEach((item,index)=>{item.orderNo=index+1;item.views=(item.views||[]).map(view=>({...view,tabSelected:false}));});workbook.views=[{...(workbook.views?.[0]||{}),activeTab:0,firstSheet:0}];
+  const withdrawalLabels={VERIFIED:'Verificado',PARTIAL:'Parcial: faltan antecedentes',REVIEW_REQUIRED:'Por conciliar',NO_ACCOUNT:'Sin cuenta conciliada'};
+  addTable(workbook,{name:'Retiros y saldo acumulado',columns:columns([['folio','Folio'],['name','Nombre'],['from','Inicio de retiros acumulados'],['through','Corte actual'],['withdrawn_capital','Capital retirado neto',true],['withdrawn_yield','Rendimiento retirado neto',true],['withdrawn_total','Total retirado neto',true],['capital','Capital actual',true],['yield_amount','Rendimiento actual',true],['total','Saldo actual',true],['held_capital','Capital retenido',true],['held_yield','Rendimiento retenido',true],['held','Retenido total',true],['available','Disponible actual',true],['review','Revisión'],['withdrawal_state','Cobertura de retiros'],['confirmed_withdrawn_capital','Capital retirado registrado (subtotal)',true],['confirmed_withdrawn_yield','Rendimiento retirado registrado (subtotal)',true],['confirmed_withdrawn_total','Total retirado registrado (subtotal)',true],['withdrawal_review','Revisión de retiros']]),rows:selected.map(row=>({folio:row.folio,name:row.name,from:row.withdrawals?.from??'2026-07-01',through:report.cutoff,withdrawn_capital:row.withdrawals?.capital,withdrawn_yield:row.withdrawals?.yield_amount,withdrawn_total:row.withdrawals?.total,...row.balances,review:(row.reasons||[]).join('; '),withdrawal_state:withdrawalLabels[row.withdrawals?.state]??'Por conciliar',confirmed_withdrawn_capital:row.withdrawals?.confirmed_capital,confirmed_withdrawn_yield:row.withdrawals?.confirmed_yield_amount,confirmed_withdrawn_total:row.withdrawals?.confirmed_total,withdrawal_review:(row.withdrawals?.reasons||[]).join('; ')}))});
+  return ['Informe acumulado es la hoja principal. A:M conservan los valores históricos originales y no se suman otra vez al saldo actual. Las personas nuevas no reciben valores históricos inventados.',
+    'Desde N se añaden pares semestrales iniciados, desde 2026-S2 al '+report.cutoff+'. AHORRO acumula aportaciones registradas antes de retiros; REND. incluye sólo rendimientos acreditados, nunca simulados. Se conservan correcciones y reversiones comprobadas.',
+    'ÁMBAR y comentarios identifican acumulados registrados parciales por historia incompleta o recibos pendientes de confirmar. Sólo se suman registros comprobados. POR CONCILIAR no es cero. Un saldo de apertura no demuestra aportaciones brutas de un semestre.',
+    'En Retiros y saldo acumulado, los subtotales registrados no sustituyen el total de retiros desde 2026-S2 cuando faltan antecedentes anteriores al inicio del registro. La cobertura y sus motivos se indican por separado.',
+    'La búsqueda selecciona personas en Informe acumulado. El selector de año/semestre no oculta su continuidad: Informe vigente y sus respaldos conservan el intervalo elegido. Retiros y saldo acumulado muestra el corte actual separado.',...(report.notes||[])];
+}
 async function currentFinal(workbook,templateBytes,context,filters) {
+  if(context.continuous_report?.schema_version!=='SICOF_CONTINUOUS_SAVINGS_V1')throw Error('SICOF_EXPORT_CONTINUOUS_REQUIRED');
   const original=bytesOf(templateBytes);
   if(!original)throw Error('SICOF_EXPORT_TEMPLATE_REQUIRED');
   await workbook.xlsx.load(original);
   const historic=workbook.worksheets[0];
   if(!historic||historic.getCell('A2').value!=='Folio'||historic.getCell('D2').value!=='RENDIMIENTO 2025')throw Error('SICOF_EXPORT_TEMPLATE_INVALID');
   const report=buildSicofExportTable('final_ahorro',{context,filters});
+  const historicalSnapshots=new Map((context.continuous_report?.rows||[]).filter(row=>row.historical_cells).map(row=>[row.folio,row.historical_cells]));
   const existing=new Map();
   for(let i=3;i<=historic.rowCount;i++){
     const folio=cellValue(historic.getCell(i,1));
     if(folio!=null&&String(folio)!==''){
       if(existing.has(String(folio)))throw Error('SICOF_EXPORT_TEMPLATE_DUPLICATE_IDENTITY');
-      existing.set(String(folio),[3,4,5].map(c=>cellValue(historic.getCell(i,c))));
+      existing.set(String(folio),[3,4,5].map(c=>{const cell=historic.getCell(i,c),value=cell.value,snapshot=historicalSnapshots.get(String(folio)),key=String.fromCharCode(64+c);return value&&typeof value==='object'&&('formula'in value||'sharedFormula'in value)&&value.result==null&&snapshot&&Object.hasOwn(snapshot,key)?snapshot[key]:cellValue(cell);}));
     }
   }
   const sheet=workbook.addWorksheet('Informe vigente',{pageSetup:{...historic.pageSetup},properties:{...historic.properties}});
@@ -281,7 +356,8 @@ async function currentFinal(workbook,templateBytes,context,filters) {
   addTable(workbook,{name:'Saldos y disponible',columns:columns([['folio','Folio'],['name','Nombre'],['cutoff','Fecha de corte del informe'],['cutoff_balance','Saldo al corte',true],['cutoff_available','Disponible al corte si está demostrado',true],['observed','Fecha de saldo actual'],['capital','Capital actual',true],['yield_amount','Rendimiento actual',true],['held_capital','Capital retenido actual',true],['held_yield','Rendimiento retenido actual',true],['available','Disponible actual',true],['report_review','Revisión del reporte']]),
     rows:report.rows.map(row=>{const balance=currentByFolio.get(row.A)||{};return{folio:row.A,name:row.B,cutoff:context.as_of??context.to,cutoff_balance:row.M,cutoff_available:row.available,observed:context.today,
       capital:balance.capital,yield_amount:balance.yield_amount,held_capital:balance.held_capital,held_yield:balance.held_yield,available:balance.available,report_review:(row.report_reviews||[]).join('; ')};})});
-  if(context.report.notes?.length)addTable(workbook,{name:'Notas del informe',columns:columns([['note','Alcance y reglas del reporte']]),rows:context.report.notes.map(note=>({note}))});
+  const continuousNotes=addContinuousFinal(workbook,historic,context,filters);
+  addTable(workbook,{name:'Notas del informe',columns:columns([['note','Alcance y reglas del reporte']]),rows:[...(context.report.notes||[]),...continuousNotes].map(note=>({note}))});
 }
 
 function acta(calculation,loans,context) {

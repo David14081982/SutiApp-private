@@ -1,0 +1,194 @@
+{
+  "status": "GENERATED",
+  "edition": "1.0",
+  "application": "v312",
+  "sections": 24,
+  "pages": 25,
+  "artifacts": [
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.pdf",
+      "bytes": 137491,
+      "sha256": "62a962deea7e6e51963d6ef96e89303a549386f91d98319d27c445400aeca955"
+    },
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.docx",
+      "bytes": 56556,
+      "sha256": "05245fe9c40191e0018b0dedc384ab4b70347b43c6d57cb03e088a828f8fce96"
+    }
+  ],
+  "pageSummary": [
+    {
+      "page": 1,
+      "characters": 1111,
+      "headings": []
+    },
+    {
+      "page": 2,
+      "characters": 1874,
+      "headings": [
+        "1. Empiece aquí"
+      ]
+    },
+    {
+      "page": 3,
+      "characters": 2057,
+      "headings": [
+        "2. Guía rápida de trabajo"
+      ]
+    },
+    {
+      "page": 4,
+      "characters": 2129,
+      "headings": [
+        "3. De dónde proviene cada cosa"
+      ]
+    },
+    {
+      "page": 5,
+      "characters": 1952,
+      "headings": [
+        "4. Cómo leer los importes"
+      ]
+    },
+    {
+      "page": 6,
+      "characters": 1932,
+      "headings": [
+        "5. Resumen: periodo, fuente y capital"
+      ]
+    },
+    {
+      "page": 7,
+      "characters": 1851,
+      "headings": [
+        "6. Rendimiento sobre rendimientos anteriores"
+      ]
+    },
+    {
+      "page": 8,
+      "characters": 2198,
+      "headings": [
+        "7. Reglas del escenario y permanencia"
+      ]
+    },
+    {
+      "page": 9,
+      "characters": 1822,
+      "headings": [
+        "8. Cómo se forma la bolsa y qué hacen los costos"
+      ]
+    },
+    {
+      "page": 10,
+      "characters": 2055,
+      "headings": [
+        "9. Base, promedio y porcentaje"
+      ]
+    },
+    {
+      "page": 11,
+      "characters": 2121,
+      "headings": [
+        "10. Liquidez: ¿alcanza el dinero?"
+      ]
+    },
+    {
+      "page": 12,
+      "characters": 2393,
+      "headings": [
+        "11. Reparto, escenarios y acciones que guardan"
+      ]
+    },
+    {
+      "page": 13,
+      "characters": 1545,
+      "headings": [
+        "12. Préstamos y pagos: leer los gráficos"
+      ]
+    },
+    {
+      "page": 14,
+      "characters": 1648,
+      "headings": [
+        "13. De una cuota al interés que se reparte"
+      ]
+    },
+    {
+      "page": 15,
+      "characters": 1682,
+      "headings": [
+        "14. Comparación de pagos e indicador en Solicitudes"
+      ]
+    },
+    {
+      "page": 16,
+      "characters": 1733,
+      "headings": [
+        "15. Atrasos, matriz y cumplimiento"
+      ]
+    },
+    {
+      "page": 17,
+      "characters": 2034,
+      "headings": [
+        "16. Descargar el informe continuo de ahorro"
+      ]
+    },
+    {
+      "page": 18,
+      "characters": 2408,
+      "headings": [
+        "17. Histórico, pendientes y hojas del Excel"
+      ]
+    },
+    {
+      "page": 19,
+      "characters": 1620,
+      "headings": [
+        "18. Informe vigente: columnas A:M y saldo"
+      ]
+    },
+    {
+      "page": 20,
+      "characters": 2101,
+      "headings": [
+        "19. Retiros, saldo restante y pantalla del ahorrador"
+      ]
+    },
+    {
+      "page": 21,
+      "characters": 1524,
+      "headings": [
+        "20. Identificar el periodo de un movimiento"
+      ]
+    },
+    {
+      "page": 22,
+      "characters": 1753,
+      "headings": [
+        "21. Archivos, actualización y mensajes"
+      ]
+    },
+    {
+      "page": 23,
+      "characters": 1780,
+      "headings": [
+        "22. De dónde viene cada columna de Google"
+      ]
+    },
+    {
+      "page": 24,
+      "characters": 2238,
+      "headings": [
+        "23. Mapa técnico para rastrear un dato"
+      ]
+    },
+    {
+      "page": 25,
+      "characters": 1804,
+      "headings": [
+        "24. Lista de revisión antes de proponer una tasa"
+      ]
+    }
+  ]
+}

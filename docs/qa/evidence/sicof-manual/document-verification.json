@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "sections": 24,
+  "pages": 25,
+  "pdfAndWordOpen": true,
+  "allSectionTitlesPresent": true,
+  "requestedHeadersPresent": true,
+  "allTextWithinPage": true,
+  "noSparseOrEmptyPages": true,
+  "historicalNamesAbsent": true,
+  "noFinancialWrites": true,
+  "artifacts": [
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.pdf",
+      "sha256": "62a962deea7e6e51963d6ef96e89303a549386f91d98319d27c445400aeca955",
+      "bytes": 137491
+    },
+    {
+      "file": "docs/manuales/Manual_de_uso_SICOF.docx",
+      "sha256": "05245fe9c40191e0018b0dedc384ab4b70347b43c6d57cb03e088a828f8fce96",
+      "bytes": 56556
+    }
+  ],
+  "checks": [
+    "PDF text and page bounds",
+    "DOCX paragraphs and tables",
+    "24 section titles in both formats",
+    "exact semester headers",
+    "actual sources and accumulation/withdrawal semantics",
+    "214 historical names excluded"
+  ]
+}

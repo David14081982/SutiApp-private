@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:10:09.117Z",
+  "edgeVersion": 4,
+  "verifyJwt": true,
+  "firstSheet": "Informe acumulado",
+  "selectedInterval": "2026-S1",
+  "continuousHeaders": [
+    "2026 2DO SEMESTRE AHORRO",
+    "2026 REND. 2DO SEMESTRE"
+  ],
+  "futureHeadersAbsent": true,
+  "worksheets": [
+    "Informe acumulado",
+    "Hoja1",
+    "Informe vigente",
+    "Periodos",
+    "Movimientos",
+    "Saldos y disponible",
+    "Retiros y saldo acumulado",
+    "Notas del informe",
+    "Fuentes y alcance"
+  ],
+  "bytes": 142425,
+  "sha256": "6a8fef90ef619087e1aca466c878e3e1af79ad96a07342aa67b62a8ac8a7b651",
+  "originalSha256": "e9dc173869188990e23d71694a99af008d2b9190a301d1d71c90ff2764d18837",
+  "protectedFinancialTablesUnchanged": 12,
+  "financialWrites": 0
+}

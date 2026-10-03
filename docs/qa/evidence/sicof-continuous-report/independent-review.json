@@ -1,0 +1,193 @@
+{
+  "task": "H-SICOF-CONTINUOUS-REPORT-001",
+  "status": "APPROVED",
+  "scope": "Independent final review of deployed Edge v4 and authenticated production download; Git documentary push is not claimed.",
+  "baseline_commit": "94158a6a7005cd113517e77a30212217414b41c5",
+  "at": "2026-10-03T22:12:38.572Z",
+  "reviewer": "sicof_loan_contract",
+  "files": [
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "sha256": "30e4e2af1d065a4b4a9d1cb9b80e573e246139aac8430234c58e8b72f01d1779"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-report.js",
+      "sha256": "e51919d4c7a3f7f547ff63edddf70ce5d3daa5565138dfb449153fe292db9351"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-export.js",
+      "sha256": "77b7247c776b771d98ad36133d408ddcf8fbe67baf4ccf171c2aa0be6bc5fc55"
+    },
+    {
+      "file": "scripts/test-sicof-continuous-handler.js",
+      "sha256": "6fb9ece0b2dafc88f61a54d328e4dba0bf5b2cd0f98a6a60ec249fed69450368"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "82454a9372b4db866c39bffae34038429c89dba2eb7a4f779b46c153cbb1dafd"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node scripts/test-sicof-continuous-report.js",
+      "exit_code": 0,
+      "status": "PASS",
+      "groups": 12
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-handler.js",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-export.js",
+      "exit_code": 0,
+      "status": "PASS",
+      "checks": 14,
+      "real_xlsx": true
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "exit_code": 0,
+      "status": "PASS",
+      "groups": 20,
+      "historical_rows": 214
+    },
+    {
+      "command": "node --check supabase/functions/sicof/projection.mjs",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "node --check supabase/functions/sicof/handler.mjs",
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    {
+      "command": "node --check supabase/functions/sicof/exports.mjs",
+      "exit_code": 0,
+      "status": "PASS"
+    }
+  ],
+  "closed_findings": [
+    {
+      "id": "CR-01",
+      "problem": "Late opening did not prove whole-period withdrawals; false zero possible.",
+      "resolution": "Unknown whole-period totals null; PARTIAL state, confirmed subtotals and review notes separate in actual XLSX."
+    },
+    {
+      "id": "CR-02",
+      "problem": "Unresolved reversal could be an unclassified withdrawal reversal.",
+      "resolution": "Unknown/cyclic original invalidates withdrawal net; REVIEW_REQUIRED without fabricated zero."
+    }
+  ],
+  "preservation": {
+    "projection_excluding_new_helper_identical": true,
+    "engine_identical": true,
+    "loan_source_identical": true,
+    "loan_calculation_identical": true,
+    "index_identical": true,
+    "sicof_ui_identical": true,
+    "sicof_repository_identical": true,
+    "sw_identical": true,
+    "gas_identical": true,
+    "original_template_download_exact": true,
+    "historical_cells_and_styles_preserved": true
+  },
+  "boundaries": {
+    "external_writes": 0,
+    "production_queries": 0,
+    "financial_writes": 0,
+    "runtime_changes_by_reviewer": 0,
+    "global_regression": "NOT APPLICABLE to this export-only delta; workspace app/bundle.js has pre-existing unrelated divergence and must not be packaged."
+  },
+  "gates_remaining": [
+    "Git documentary receipt remains pending; not claimed",
+    "Manual completion and delivery remain root scope; not claimed"
+  ],
+  "final_export_proof": {
+    "status": "PASS",
+    "at": "2026-10-03T22:08:53.191Z",
+    "command": "node scripts/test-sicof-continuous-export.js",
+    "checks": [
+      "new main worksheet is first and active in actual XLSX package",
+      "exact N/O headings visible cutoff note and no future 2027 semester",
+      "historical A:M values including cached zero and per-row styles preserved; new historical cells blank; folios exact",
+      "withdrawals and current balance separate without reducing accumulated contributions",
+      "partial known amounts explicitly annotated and highlighted; unknown accounts and totals not zero",
+      "incomplete withdrawal history retains unknown whole-period totals and separately labelled confirmed subtotals",
+      "all prior worksheets and original formulas remain available",
+      "person filtering preserves identity selected totals and all started semester columns",
+      "empty search is an explicit empty subset rather than historical data resurrection",
+      "cutoff boundary before extension and 2026-S2 2027-S1 2027-S2 rollover verified",
+      "original download remains exact bytes without calculator or ExcelJS",
+      "actual projection-to-XLSX integration preserves gross contributions current balances partial withdrawals and unresolved reversal",
+      "pending receipt leaves confirmed subtotal amber with accurate cause rather than inflating or discarding recorded contributions",
+      "missing DTO duplicate identity historical mutation missing history future period and invalid certainty rejected"
+    ],
+    "financialWrites": 0,
+    "googleWrites": 0,
+    "sourceFiles": [
+      {
+        "file": "supabase/functions/sicof/exports.mjs",
+        "sha256": "9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792"
+      },
+      {
+        "file": "scripts/test-sicof-continuous-export.js",
+        "sha256": "77b7247c776b771d98ad36133d408ddcf8fbe67baf4ccf171c2aa0be6bc5fc55"
+      }
+    ]
+  },
+  "review_document": "docs/audits/H-SICOF-CONTINUOUS-REPORT-001-REVIEW.md",
+  "review_document_sha256": "4812ee3669c6ea7513032a87d690ad35a3e6d31dfbff7828368b145512125298",
+  "partial_semantics_addendum": {
+    "status": "APPROVED",
+    "proof": "Only PRE_LEDGER_HISTORY_INCOMPLETE and/or CONTRIBUTION_RECEIPT_PENDING with real evidence can return partial registered subtotal. No evidence or conflicts remain null. Confirmed canonical NO_DEDUCTION zero is recorded evidence, not fabricated money. Totals retain PARTIAL; eligibility unchanged.",
+    "independent_commands": [
+      "node scripts/test-sicof-continuous-report.js: PASS 12 groups",
+      "node scripts/test-sicof-continuous-export.js: PASS 14 groups"
+    ]
+  },
+  "production_local_validation": {
+    "status": "PASS",
+    "read_only_local_download_validation": true,
+    "production_queries": 0,
+    "download_sha256": "6a8fef90ef619087e1aca466c878e3e1af79ad96a07342aa67b62a8ac8a7b651",
+    "active_sheet": "Informe acumulado",
+    "active_tab": 0,
+    "historical_AM_rows_preserved": 214,
+    "participants": 354,
+    "capital_partial": 326,
+    "capital_review": 28,
+    "yield_review": 354,
+    "partial_withdrawals_unknown_total": 328,
+    "future_columns_absent": true,
+    "identity_note": "Historical A retains its original scalar type; new folios remain strings. Comparison uses the exact imported identity string without numeric normalization."
+  },
+  "production_addendum": {
+    "status": "APPROVED",
+    "edge_version": 4,
+    "cloud_status": "ACTIVE",
+    "verify_jwt": true,
+    "evidence": [
+      "candidate-live-read.json",
+      "focal-tests.json",
+      "edge-deployment.json",
+      "production-download.json"
+    ],
+    "all_runtime_hashes_match": true,
+    "focal_commands_pass": 9,
+    "protected_financial_tables_unchanged": 12,
+    "financial_writes": 0,
+    "independent_local_download_checked": true,
+    "git_publication_claimed": false
+  }
+}

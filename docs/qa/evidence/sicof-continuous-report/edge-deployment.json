@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:09:36.604Z",
+  "previousVersion": 3,
+  "version": 4,
+  "cloudStatus": "ACTIVE",
+  "verifyJwt": true,
+  "files": [
+    {
+      "name": "index.ts",
+      "before": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade",
+      "sha256": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade"
+    },
+    {
+      "name": "engine.mjs",
+      "before": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5",
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "name": "loan-source.mjs",
+      "before": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6",
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+    },
+    {
+      "name": "loan-calculation.mjs",
+      "before": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f",
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "name": "projection.mjs",
+      "before": "7275111ff5c9b111bb0701163a373d7563bcc19ee34e087e16b3f6c6c6a9b63e",
+      "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+    },
+    {
+      "name": "exports.mjs",
+      "before": "654752790adf4e2920103d0f091c07e9cc3cbf3b403e7963beea784ffb054fc2",
+      "sha256": "9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792"
+    },
+    {
+      "name": "handler.mjs",
+      "before": "1a178a78e2d1349486792615f97f59ef4c519bbfaf649f51c942c785ab088272",
+      "sha256": "30e4e2af1d065a4b4a9d1cb9b80e573e246139aac8430234c58e8b72f01d1779"
+    }
+  ],
+  "financialWrites": 0
+}

@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T22:08:13.175Z",
+  "checks": [
+    {
+      "command": "node scripts/test-sicof-continuous-report.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"checks\":[\"exact historical union, leading zero Folio, immutable A:M and verified zero versus no account\",\"server date semester boundary and no future columns\",\"gross contributions ignore opening and withdrawals; refund remains withdrawal; canonical balances copied\",\"contribution corrections and reversals net in original contribution semester, including cross-year\",\"credited yield follows period origin and reversal; paid yield and prior-period credits do not change gross current yield\",\"certified actuals plus post-cutoff ledger only; partial subtotal distinct from absent evidence and no invented opening contribution\",\"historical/ledger overlap not double counted; linked correction and reversal remain deltas\",\"pending receipts preserve evidenced partial subtotal; no evidence and conflicting or changed source remain unknown\",\"pending receipts, conflicts, mixed historic yield, duplicate history and changed source remain explicit\",\"missing links, unknown adjustment origin, invalid dates and future movements\",\"native journal and input immutability; existing makeReports financial contract preserved\",\"full server context, dates, duplicate and exact textual identity guards\"],\"groups\":12,\"productionQueries\":0,\"financialWrites\":0}\n"
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-export.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"at\":\"2026-10-03T22:08:08.172Z\",\"command\":\"node scripts/test-sicof-continuous-export.js\",\"checks\":[\"new main worksheet is first and active in actual XLSX package\",\"exact N/O headings visible cutoff note and no future 2027 semester\",\"historical A:M values including cached zero and per-row styles preserved; new historical cells blank; folios exact\",\"withdrawals and current balance separate without reducing accumulated contributions\",\"partial known amounts explicitly annotated and highlighted; unknown accounts and totals not zero\",\"incomplete withdrawal history retains unknown whole-period totals and separately labelled confirmed subtotals\",\"all prior worksheets and original formulas remain available\",\"person filtering preserves identity selected totals and all started semester columns\",\"empty search is an explicit empty subset rather than historical data resurrection\",\"cutoff boundary before extension and 2026-S2 2027-S1 2027-S2 rollover verified\",\"original download remains exact bytes without calculator or ExcelJS\",\"actual projection-to-XLSX integration preserves gross contributions current balances partial withdrawals and unresolved reversal\",\"pending receipt leaves confirmed subtotal amber with accurate cause rather than inflating or discarding recorded contributions\",\"missing DTO duplicate identity historical mutation missing history future period and invalid certainty rejected\"],\"financialWrites\":0,\"googleWrites\":0,\"sourceFiles\":[{\"file\":\"supabase/functions/sicof/exports.mjs\",\"sha256\":\"9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792\"},{\"file\":\"scripts/test-sicof-continuous-export.js\",\"sha256\":\"77b7247c776b771d98ad36133d408ddcf8fbe67baf4ccf171c2aa0be6bc5fc55\"}]}\n"
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-handler.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "PASS continuous report handler: server cutoff, selected interval preserved, existing context reuse, multi-year bounded reads, historical history merge, latest ledger, permission/session/source drift rejected.\n"
+    },
+    {
+      "command": "node scripts/test-sicof-engine.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "PASS SICOF engine: sources, common-day weights, origin selection, withdrawal conservation, future exclusion, cost/reserve/liquidity, cent conservation, unknown versus proven tenure, anchors, minimum-disabled compatibility, review states, settings and fingerprints.\n"
+    },
+    {
+      "command": "node scripts/test-sicof-report-reversals.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"checks\":[\"partial/full withdrawal reversals are not contributions\",\"cross-period negative net payout\",\"linked contribution and yield reversals\",\"confirmed contribution adjustment\",\"manual adjustment separate\",\"missing/cyclic/mismatched/over-reversed links require review\",\"canonical saldo survives classification gaps\",\"future excluded beyond cutoff\",\"K-L=M\"],\"externalWrites\":0}\n"
+    },
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "PASS SICOF Edge isolated: auth before source, capability gates, no fallback, no financial writes, source fingerprint, historical export independent of Google, canonical period/withdrawal report, exact Folio and preserved historic exclusion.\n"
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"checks\":[\"real ExcelJS XLSX read/write\",\"CSV formula injection\",\"HTML escaping\",\"all filtered rows\",\"unknown is not zero\",\"eligibility Por verificar No Sí in CSV XLSX and formula detail\",\"formula criteria match Sí and preserve known zero plus cent allocations\",\"matrix duplicate ambiguity\",\"formula costs/reserve/retention/cent conservation\",\"Pagos source formulas and income reconciliation\",\"Desglose interval formulas and actual engine weighted withdrawals\",\"unknown or inconsistent basis is never inferred\",\"global formula basis preserved with filtered participants\",\"acta actual engine liquidity scenarios 10/25/50/100\",\"cash-covered collection-dependent shortfall and unknown liquidity\",\"acta bank declaration signature spaces and print\",\"historical exact bytes offline\",\"all original cells preserved\",\"new report styles and separate period withdrawals\",\"historical outcome mutation rejected\"],\"historicalRows\":214,\"externalWrites\":0}\n"
+    },
+    {
+      "command": "node scripts/test-sicof-loans.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"checks\":[\"exact source/identity\",\"typed values and dates\",\"N minus Z only with reconciled identities\",\"cent conservation\",\"zero is not collected\",\"future projected separately\",\"partial/overpayment unresolved\",\"duplicate excluded and flagged\",\"period/fund limits\",\"uniform status without punctuality\",\"OAuth isolation/no fallback\"],\"externalWrites\":0}\n"
+    },
+    {
+      "command": "node scripts/test-sicof-loan-projection.js",
+      "exitCode": 0,
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"checks\":[\"server cumulative exact cents\",\"partial and zero expected comparisons\",\"future excluded from missed/cumulative\",\"duplicate totals unknown not doubled\",\"invalid row interrupts cumulative\",\"exact owner identity\",\"current compliance not punctuality\"],\"externalWrites\":0}\n"
+    }
+  ],
+  "files": [
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "9fbc3b70731860df7a3cdcd1d22a4dfbefef20a778aab42d43b780fa1fcee792"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "sha256": "30e4e2af1d065a4b4a9d1cb9b80e573e246139aac8430234c58e8b72f01d1779"
+    }
+  ],
+  "financialWrites": 0
+}

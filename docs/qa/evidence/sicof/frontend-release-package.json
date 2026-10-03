@@ -1,0 +1,592 @@
+{
+  "status": "PASS",
+  "preparedAt": "2026-10-03T20:54:26.874Z",
+  "baselineCommit": "30a120e3cae13415a347f838e6d2fdeee64e98f8",
+  "originalApprovedBundleSha256": "fe8e56e0e87c9119a613548363e747acaff708284d3e6365385f2316c08e6484",
+  "baselineBundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "baselineChunks": 145,
+  "candidateChunks": 149,
+  "preservedPublishedChunks": 141,
+  "changed": [
+    "screens-admin.jsx",
+    "screens-admin-finanzas.jsx",
+    "screens-savings.jsx",
+    "savings-runtime-admin.jsx"
+  ],
+  "added": [
+    "sicof-repository.js",
+    "sicof-payment-behavior.jsx",
+    "sicof-admin.jsx",
+    "savings-period-breakdown.jsx"
+  ],
+  "sourceChecks": [
+    {
+      "file": "app/screens-admin.jsx",
+      "remoteNormalizedSha256": "1218a700cfbc5d83c5e8e2a46e1a4f9fbe51c70bbe6ce65a051493b321d5edd1",
+      "matchesApprovedPreintegration": true,
+      "compiler": "Babel React"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "remoteNormalizedSha256": "05eb80d5c39e90b3bed1a64bbc87e5516bc0035a0d30c6d8cd1ad7cf0a68cc93",
+      "matchesApprovedPreintegration": true,
+      "compiler": "Babel React"
+    },
+    {
+      "file": "app/screens-savings.jsx",
+      "remoteNormalizedSha256": "5f7f306af7d3faff6bd917b2a8577f2611d1fc2a9c2f089433c77bbf14eb78ef",
+      "matchesApprovedPreintegration": true,
+      "compiler": "Babel React"
+    },
+    {
+      "file": "app/savings-runtime-admin.jsx",
+      "remoteNormalizedSha256": "c6fbd6297423fc631351a52ec3a2e3c4d70e050f09a76cf3e4563dc5d374d30f",
+      "matchesApprovedPreintegration": true,
+      "compiler": "untransformed"
+    }
+  ],
+  "frozenFiles": [
+    {
+      "file": "app/screens-admin.jsx",
+      "sha256": "9ff8d778fd7de0464bcd0bcb41a98afd2d6d1e9ef2da359e306bd4c894b14d64"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "sha256": "a2d0c79a87985f9a1cfad356180d16c72be1eeac8c236723203056f7ab2b6988"
+    },
+    {
+      "file": "app/screens-savings.jsx",
+      "sha256": "443f8151a1776e33464a9101199b11a787b0ba1f213a1cf54f1f3ccf3d6079e6"
+    },
+    {
+      "file": "app/savings-runtime-admin.jsx",
+      "sha256": "ba27bdf4a1bd2b6765b976f685075d1424de355ec7968cad1a13495ac2cf3958"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "sha256": "25ce2019f5e95743033bebb1f350a310a1b77cfea26bd8348ef6afbcf558801b"
+    },
+    {
+      "file": "app/sicof-payment-behavior.jsx",
+      "sha256": "7396554c2e1a1b45c89d67e1d540db55bacc492eec937045f0936c008e5f5465"
+    },
+    {
+      "file": "app/sicof-admin.jsx",
+      "sha256": "9841bb9397ce0baa1d742dc1db9dd8049f4cacf11002b11ad71afd5a30801cd9"
+    },
+    {
+      "file": "app/savings-period-breakdown.jsx",
+      "sha256": "63942da992ad8c989256cdf46f7a8a75adfa589c102d7473776c49e5c4998617"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "4a4be8561222e617c22a71a69688deabc0cebdb29faec2b34785780d53be12d4"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "fe8e56e0e87c9119a613548363e747acaff708284d3e6365385f2316c08e6484"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "961c0aa41cdadf292bbb52a85fd650e8acbd4d3a32f578ca24ac73a82c1aa2e8"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "e893cf2d29cbc9798a289ef7ae238a233ca15bfa6eb5fded4fdabf3044c143e3"
+    }
+  ],
+  "remoteDeltaFromApprovedBaseline": {
+    "added": [
+      "savings-rh-repository.js",
+      "savings-rh-report.jsx"
+    ],
+    "changed": [
+      "document-layout-designer.jsx",
+      "screens-admin-document-generation.jsx",
+      "screens-farma.jsx",
+      "screens-admin-finanzas.jsx",
+      "savings-panel-admin.jsx",
+      "screens-admin-requests.jsx",
+      "screens-admin-access.jsx",
+      "program-catalog-admin-store.jsx",
+      "screens-admin-program-products.jsx"
+    ]
+  },
+  "sourceCompiler": {
+    "screens-admin.jsx": true,
+    "screens-admin-finanzas.jsx": true,
+    "screens-savings.jsx": true,
+    "savings-runtime-admin.jsx": false
+  },
+  "bundleVersion": 311,
+  "workerVersion": 243,
+  "generatedCachebustersOnly": true,
+  "publicWorkflowUnchanged": true,
+  "published": false,
+  "backendGate": "Await parent BACKEND_PASS and fresh real production metadata before Pages build/push",
+  "files": [
+    "app/screens-admin.jsx",
+    "app/screens-admin-finanzas.jsx",
+    "app/screens-savings.jsx",
+    "app/savings-runtime-admin.jsx",
+    "app/sicof-repository.js",
+    "app/sicof-payment-behavior.jsx",
+    "app/sicof-admin.jsx",
+    "app/savings-period-breakdown.jsx",
+    "scripts/build-bundle.js",
+    "app/bundle.js",
+    "SutiApp.html",
+    "sw.js",
+    "scripts/package-sicof-release.js",
+    "scripts/test-sicof-release.js",
+    "scripts/verify-sicof-ui-live.js",
+    "scripts/test-sicof-ui-browser.js",
+    "scripts/test-sicof-integration-browser.js",
+    "scripts/test-sicof-attribution-browser.js",
+    "docs/audits/H-SICOF-FRONTEND-RELEASE.md",
+    "docs/audits/H-SICOF-FRONTEND-INDEPENDENT-REVIEW.md",
+    "docs/audits/H-SICOF-RELEASE-001.md",
+    "docs/audits/H-SICOF-RELEASE-001-ARCHITECT-REVIEW.md",
+    "docs/qa/evidence/sicof/ui-contract.json",
+    "docs/qa/evidence/sicof/source-manifest.json",
+    "supabase/migrations/20261003000100_savings_period_composition.sql",
+    "supabase/migrations/20261003000200_sicof_workspace.sql",
+    "supabase/migrations/20261003000300_sicof_context_read_performance.sql",
+    "supabase/recovery/20261003000100_savings_period_composition.sql",
+    "supabase/recovery/20261003000200_sicof_workspace.sql",
+    "supabase/recovery/20261003000300_sicof_context_read_performance.sql",
+    "supabase/functions/sicof/engine.mjs",
+    "supabase/functions/sicof/exports.mjs",
+    "supabase/functions/sicof/handler.mjs",
+    "supabase/functions/sicof/index.ts",
+    "supabase/functions/sicof/loan-calculation.mjs",
+    "supabase/functions/sicof/loan-source.mjs",
+    "supabase/functions/sicof/projection.mjs",
+    "google-apps-script/financial-handoff/Code.gs",
+    "google-apps-script/financial-handoff/README.md",
+    "scripts/test-sicof-engine.js",
+    "scripts/test-sicof-edge.js",
+    "scripts/test-sicof-loans.js",
+    "scripts/test-sicof-loan-receiver.js",
+    "scripts/test-sicof-loan-projection.js",
+    "scripts/test-sicof-report-reversals.js",
+    "scripts/test-sicof-exports.js",
+    "scripts/test-savings-period-composition.js",
+    "scripts/test-sicof-workspace.js",
+    "scripts/test-sicof-context-performance.js",
+    "scripts/fixtures/sicof-context-performance-schema.json",
+    "scripts/fixtures/savings-period-composition-schema.json",
+    "scripts/fixtures/sicof-workspace-schema.json",
+    "docs/audits/H-SICOF-001.md",
+    "docs/audits/H-SICOF-PERIOD-COMPOSITION.md",
+    "docs/audits/H-SICOF-001-ARCHITECT-REVIEW.md",
+    "scripts/release-sicof-backend.js",
+    "scripts/release-sicof-google.js",
+    "scripts/verify-sicof-live.js",
+    "docs/qa/evidence/sicof-release/preflight.json",
+    "docs/qa/evidence/sicof-release/migrations.json",
+    "docs/qa/evidence/sicof-release/context-migration.json",
+    "docs/qa/evidence/sicof-release/historical-import.json",
+    "docs/qa/evidence/sicof-release/historical-download.json",
+    "docs/qa/evidence/sicof-release/edge-bundle.json",
+    "docs/qa/evidence/sicof-release/edge-deploy.json",
+    "docs/qa/evidence/sicof-release/edge-status.json",
+    "docs/qa/evidence/sicof-release/edge-surface.json",
+    "docs/qa/evidence/sicof-release/source-deltas.json",
+    "docs/qa/evidence/sicof-release/ui-live.json",
+    "docs/qa/evidence/sicof-release/ui-live-local.json",
+    "docs/qa/evidence/sicof-release/ui-live-admin.json",
+    "docs/qa/evidence/sicof-release/ui-live-self.json",
+    "docs/qa/evidence/sicof/context-performance.json",
+    "docs/qa/evidence/sicof/context-performance-installed.json",
+    "docs/qa/evidence/sicof/live-pre.json",
+    "docs/qa/evidence/sicof/live-post.json",
+    "docs/qa/evidence/sicof/live-script-versions.json",
+    "docs/qa/evidence/sicof/production-conservation.json",
+    "docs/qa/evidence/sicof/google-release-backup.json",
+    "docs/qa/evidence/sicof/google-release-deployment.json",
+    "docs/qa/evidence/sicof/google-release-diagnosis.json",
+    "docs/qa/evidence/sicof/google-release-rollback.json",
+    "docs/qa/evidence/sicof/google-release-optimization.json",
+    "docs/qa/evidence/sicof/google-release-verification.json",
+    "docs/qa/evidence/sicof/google-release-sicof-real-read.json",
+    "docs/qa/evidence/screen-permissions-20260924/production-metadata.json",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/DECISIONS.md",
+    "docs/MIGRATION_RULES.md",
+    "docs/LEGACY_GOOGLE_SYSTEMS.md",
+    "docs/SECURITY_RULES.md",
+    "docs/architecture/architecture-overrides.json",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "docs/qa/evidence/sicof-release/source-deltas.json",
+    "docs/qa/evidence/sicof/frontend-release-live-baseline.json",
+    "docs/qa/evidence/sicof/frontend-release-package.json",
+    "docs/qa/evidence/sicof/frontend-release-verification.json",
+    "docs/qa/evidence/sicof/frontend-release-build.json",
+    "docs/qa/evidence/sicof/frontend-release-contracts.json",
+    "docs/qa/evidence/sicof/frontend-release-global-local.json",
+    "docs/qa/evidence/sicof/frontend-release-governance.json"
+  ],
+  "approvedBackendDeltas": [
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "originalSha256": "9a219c501b11dc9f6de98fb8fe369da75f53c1eb77bd6eab8b60107b4eaacd73",
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6",
+      "reason": "Fixed sanitized transport stages to diagnose real source read failure; no rows, secrets, source change or fallback."
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "originalSha256": "fc5a8d2b1499f49fcdad8df5cd75daa0817dcefd6eeaecdf500de87e57e7a067",
+      "sha256": "dafdc732e9cb69adfd755986ed41de7a7f91d5c43ff73a19beabf7cdae170927",
+      "reason": "Memoize identical date formatting within one SICOF read only after real 45-second receiver timeout; retain exact source, timezone, double-read consistency, output fingerprint and all legacy writers."
+    }
+  ],
+  "packageFiles": [
+    {
+      "file": "app/screens-admin.jsx",
+      "sha256": "9ff8d778fd7de0464bcd0bcb41a98afd2d6d1e9ef2da359e306bd4c894b14d64"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "sha256": "a2d0c79a87985f9a1cfad356180d16c72be1eeac8c236723203056f7ab2b6988"
+    },
+    {
+      "file": "app/screens-savings.jsx",
+      "sha256": "443f8151a1776e33464a9101199b11a787b0ba1f213a1cf54f1f3ccf3d6079e6"
+    },
+    {
+      "file": "app/savings-runtime-admin.jsx",
+      "sha256": "ba27bdf4a1bd2b6765b976f685075d1424de355ec7968cad1a13495ac2cf3958"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "sha256": "25ce2019f5e95743033bebb1f350a310a1b77cfea26bd8348ef6afbcf558801b"
+    },
+    {
+      "file": "app/sicof-payment-behavior.jsx",
+      "sha256": "7396554c2e1a1b45c89d67e1d540db55bacc492eec937045f0936c008e5f5465"
+    },
+    {
+      "file": "app/sicof-admin.jsx",
+      "sha256": "9841bb9397ce0baa1d742dc1db9dd8049f4cacf11002b11ad71afd5a30801cd9"
+    },
+    {
+      "file": "app/savings-period-breakdown.jsx",
+      "sha256": "63942da992ad8c989256cdf46f7a8a75adfa589c102d7473776c49e5c4998617"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "8294ea98698e8bd9616e4f40e27db53929fbe674e57386c59d0b9bed6d3424e8"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "31925317ef201bffbb0ff606459f2f538e849274a0fa1f3e5c98e1f4acdcd68f"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "e893cf2d29cbc9798a289ef7ae238a233ca15bfa6eb5fded4fdabf3044c143e3"
+    },
+    {
+      "file": "scripts/package-sicof-release.js",
+      "sha256": "31cea12f13228464e2252ace45b946c7410241fce40c4b429b235b25e1e2d91d"
+    },
+    {
+      "file": "scripts/test-sicof-release.js",
+      "sha256": "6e794700764a3f7c5f618f59351adaff09024c07ff976e735777aa39f2a88765"
+    },
+    {
+      "file": "scripts/verify-sicof-ui-live.js",
+      "sha256": "306b72757527370b63d4b46f5af3c715bd9b7c1133d582e2f2d3100aa0767eb0"
+    },
+    {
+      "file": "scripts/test-sicof-ui-browser.js",
+      "sha256": "08eafc67aeef74fc1d7d407ec659603c09abd8acf89cf1f40fa1cd8130efdd03"
+    },
+    {
+      "file": "scripts/test-sicof-integration-browser.js",
+      "sha256": "3e1f107530c7938bb91f211c362b95ad1212187f3a91440750a64066f3e9d533"
+    },
+    {
+      "file": "scripts/test-sicof-attribution-browser.js",
+      "sha256": "78a3a08129494b12ef56e49c73316932486827934dc1b80596877cbe4e8c8fc7"
+    },
+    {
+      "file": "docs/audits/H-SICOF-FRONTEND-RELEASE.md",
+      "sha256": "3a8bc7d4c834cc3c1fbea3b5b5208f51a1b66479a13999fbc36d3f30ec32393b"
+    },
+    {
+      "file": "docs/audits/H-SICOF-FRONTEND-INDEPENDENT-REVIEW.md",
+      "sha256": "def1aee6136d367ae4d3a1f3658ec3ca5e4d7848ded6e3c705ab6faaef0b38df"
+    },
+    {
+      "file": "docs/audits/H-SICOF-RELEASE-001.md",
+      "sha256": "9e126bd1974b391ef84d33b66fa152e578f191b0185d07c7ab09d05ee9978637"
+    },
+    {
+      "file": "docs/audits/H-SICOF-RELEASE-001-ARCHITECT-REVIEW.md",
+      "sha256": "d287ac302f0e90d6d24338755c2e8cd333c98aaec1d3e583d53610e56f886498"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/ui-contract.json",
+      "sha256": "ff65ee0ddc223b13a6f0ee6981b0bbe735eec71e34d558dc37ae59e73465d541"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/source-manifest.json",
+      "sha256": "369ebd74161a03f862150336e8c72a576f90944935375c74b8302cd11bd3e138"
+    },
+    {
+      "file": "supabase/migrations/20261003000100_savings_period_composition.sql",
+      "sha256": "93d23971e59fbf27e2217efe9c9af7eaccf9eac3433775a8651f215d8a33541e"
+    },
+    {
+      "file": "supabase/migrations/20261003000200_sicof_workspace.sql",
+      "sha256": "c79b80b33832383096822142d959bb3e1ba2d99b40ace49919663ffba4fcc330"
+    },
+    {
+      "file": "supabase/migrations/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f"
+    },
+    {
+      "file": "supabase/recovery/20261003000100_savings_period_composition.sql",
+      "sha256": "b72df1aa9a76c03b414714c5d4e5303be702d53da34f747ba54383546b9bc02b"
+    },
+    {
+      "file": "supabase/recovery/20261003000200_sicof_workspace.sql",
+      "sha256": "0822d6e5a87aebca4f22b3050a736c2c5048b3c89081c69a77a84f1883c43b99"
+    },
+    {
+      "file": "supabase/recovery/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "425b818bd2ef8d9993d22df73606e2cb6030ca13c4655b47f3e8d0a56caf2ba8"
+    },
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "sha256": "f89dca285b0b17d5333e3c78aa179e8e632a98e81d9f4d72fdad831c50ea8a75"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "1a0d931d7f43d211b21ee89c1e995176248172211e364164750b972c96d23f1b"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "sha256": "1a178a78e2d1349486792615f97f59ef4c519bbfaf649f51c942c785ab088272"
+    },
+    {
+      "file": "supabase/functions/sicof/index.ts",
+      "sha256": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "7275111ff5c9b111bb0701163a373d7563bcc19ee34e087e16b3f6c6c6a9b63e"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "sha256": "dafdc732e9cb69adfd755986ed41de7a7f91d5c43ff73a19beabf7cdae170927"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/README.md",
+      "sha256": "9bbd611c18823e29f1ecf3796ec28df1de89eca7c69f73734a1975161ba72a94"
+    },
+    {
+      "file": "scripts/test-sicof-engine.js",
+      "sha256": "483a2e894c08fec0ce33f0046b1f0f5a1ae3a875cfbb61b83590a7ec3dd74f18"
+    },
+    {
+      "file": "scripts/test-sicof-edge.js",
+      "sha256": "b38388ee0f408cbd0306c55bb7642f519cfea612de8be6fb447f13ce813524a6"
+    },
+    {
+      "file": "scripts/test-sicof-loans.js",
+      "sha256": "47c40c5b055852957ebb06fe10595b5695e35ed944fb50347f7463edf09c1445"
+    },
+    {
+      "file": "scripts/test-sicof-loan-receiver.js",
+      "sha256": "894561bdd05ea4c2c9c14fd6ecfbdb51274d0bd428befc9aa92c75acc4a89c74"
+    },
+    {
+      "file": "scripts/test-sicof-loan-projection.js",
+      "sha256": "e9cc9944444e61fba6ac1fc500e9378e51da89fc3bea6c843a2d1f188fd3130c"
+    },
+    {
+      "file": "scripts/test-sicof-report-reversals.js",
+      "sha256": "cde82d88ee4a0dbcba62c5e0f343485adcb9bd3e82c614447ff82e057ef746f9"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "5389bfe898e47a61eabb5003237b8dcf5ff62e53141c69868b133eefac35772b"
+    },
+    {
+      "file": "scripts/test-savings-period-composition.js",
+      "sha256": "bee4578251a3de9e3bdb219ff8e941388bbc30ff86054b31487945f41f49cf4a"
+    },
+    {
+      "file": "scripts/test-sicof-workspace.js",
+      "sha256": "279e855afc2ef996e1d675c18346c7e14a83dbab7dc732560e8bae7270281e26"
+    },
+    {
+      "file": "scripts/test-sicof-context-performance.js",
+      "sha256": "ad5e317bb9367c5a11ecec0199c043b156395ce80d52b49f6ad16292e6e87b18"
+    },
+    {
+      "file": "scripts/fixtures/sicof-context-performance-schema.json",
+      "sha256": "0fc1c6db34db77e0e1f6ef89ebe0b26691854121d28527b092dad0ee674f9301"
+    },
+    {
+      "file": "scripts/fixtures/savings-period-composition-schema.json",
+      "sha256": "08e53a626034fb7e4d68adddef9824b596413f510a657d1ee3f6da02f272eda3"
+    },
+    {
+      "file": "scripts/fixtures/sicof-workspace-schema.json",
+      "sha256": "2834bf1fb8986f8e24861beacf3827d6bf389b86dfe59d091c19fe4add4ffbc6"
+    },
+    {
+      "file": "docs/audits/H-SICOF-001.md",
+      "sha256": "060f0bb0bd64ff1e441a145b6347cc720bb45fb8f1e8526a8e51d9d812ed2c99"
+    },
+    {
+      "file": "docs/audits/H-SICOF-PERIOD-COMPOSITION.md",
+      "sha256": "11ff0f8e79fd6f792eb70f0538f8c0169d12b7be54e2a5ef9c345f7b30b13b72"
+    },
+    {
+      "file": "docs/audits/H-SICOF-001-ARCHITECT-REVIEW.md",
+      "sha256": "772f109f3e9d2ebacd765816be0fe992ba65994d01a156f8d2f112231dd40aff"
+    },
+    {
+      "file": "scripts/release-sicof-backend.js",
+      "sha256": "cdb0626ee81a656a40f2be83be219fdc762e46426a167562b43a9991ae695dad"
+    },
+    {
+      "file": "scripts/release-sicof-google.js",
+      "sha256": "4d6d246fb3c72b5d085929a2040396eef47674211159119f8b4d8d51ed01de3a"
+    },
+    {
+      "file": "scripts/verify-sicof-live.js",
+      "sha256": "6909bc2c1a0d253ccf80e268147a8cb67e505b74a514e09c7e9e8dfe04d565af"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/preflight.json",
+      "sha256": "7c7a148d5e18a6aee603f444690cd9e074114dd3052cb95f09d2d67d09b31572"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/migrations.json",
+      "sha256": "621a27d60ab12d2bae4072f87c1b63cb14bd016164fba076594858e90d95c2f2"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/context-migration.json",
+      "sha256": "3ab2a824529265a50c4f0b47145fffe53e9f33b33aad4838e572b61363e0fb1f"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/historical-import.json",
+      "sha256": "2ca21bb67a376c377b66a0e721e7f726996b5dc9e4347c4ffe5b60b2903f35dd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/historical-download.json",
+      "sha256": "4b28ec91af7e83f2f0bd2352d3afa5d3d8170049983ad435a8fa9af7fda9d59e"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-bundle.json",
+      "sha256": "dc8d2d992505c873eb9dd65886a1f0245130a19646bb4109907e84376136f743"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-deploy.json",
+      "sha256": "ced0b331c5a8f18326291b51ac5ed945493279f491a17fc4078595f56eac614e"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-status.json",
+      "sha256": "94fbb01822a1966aae7ba2acfa6d429b9952ccd43d2f4f048b044c620e723c4c"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-surface.json",
+      "sha256": "bb5acebe2c597a536f4ad306ddea3cc39e5b23640f924e8f1b581c3317644fd8"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/source-deltas.json",
+      "sha256": "db3286dfae20afe114dee787c60c3a878829afad01aea61c322fc9faaa381268"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live.json",
+      "sha256": "ea5790658f1c13f60343f062fda00a906fdcb0c7909b42e96dc0a4026af5a2bd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-local.json",
+      "sha256": "ea5790658f1c13f60343f062fda00a906fdcb0c7909b42e96dc0a4026af5a2bd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-admin.json",
+      "sha256": "ea01ba2ec2576f3b5c313de7cc869f74fb9bfe328531733c7d85f087dd70a678"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-self.json",
+      "sha256": "4c2cf3673ea5c73e0a2a7010f0e4c1d399e723ac916c1218ee195e2ad5affc99"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/context-performance.json",
+      "sha256": "f507b6db47afc4024176d3576a5e942b54a513291a7bd863d151c7b5e29f5bfd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/context-performance-installed.json",
+      "sha256": "b98152be000022745e00a686aa744c0e15e50232a675948b5a2bd5d42a8b668c"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/live-pre.json",
+      "sha256": "3de6560871aba2838211aa3c7d6dfb9d12f8904ff5e8739d3c64c3e9e30f67f0"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/live-post.json",
+      "sha256": "a5de851bf3af985ea75733ada0f466469a697667cf6617250948a3dcc21dcc14"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/live-script-versions.json",
+      "sha256": "46ccae4e7f3248fbcf640bf278bcea7bc75983ec63ecc813d34884c2338b7086"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/production-conservation.json",
+      "sha256": "75ceb24acf2388b886981e1df9ae5551120a81da847e168f7a857839e6905556"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-backup.json",
+      "sha256": "dacd50a83d3f926054b55e7dd844dc7a6268f015bf5fdf3e8becca0824473c10"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-deployment.json",
+      "sha256": "f41afb4510bc2a84678413665dd4199ff2f43e8362adcf63d87dadec3dd3ab27"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-diagnosis.json",
+      "sha256": "a22256482855a085302230a9911d451f94785f58b7d2ad643e38abc61f293806"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-rollback.json",
+      "sha256": "5b6f0b177794693bce8fd98bd1d74e18b1960289bfbb484beb395ec08c070908"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-optimization.json",
+      "sha256": "6f76b8af50b3a88ee1f0659103ceaefe344b70ef60d5c5fdda5579c0a6a90d80"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-verification.json",
+      "sha256": "b20720fc717fc1e43695c61ecc4e36733d4dc87e6df5a4597ffa89de932d2528"
+    },
+    {
+      "file": "docs/qa/evidence/sicof/google-release-sicof-real-read.json",
+      "sha256": "2728a4b2dfd187780646d0e5df254438b65761199fa16c1e9ad21511e1348c4a"
+    }
+  ]
+}

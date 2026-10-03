@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "mode": "diagnose",
+  "active_version": 18,
+  "created_version": 18,
+  "created_source_matches_candidate": true,
+  "head_matches_original": true,
+  "active_matches_original": false,
+  "file_checks": [
+    {
+      "name": "appsscript",
+      "type": "JSON",
+      "created_matches": true
+    },
+    {
+      "name": "Code",
+      "type": "SERVER_JS",
+      "created_matches": true
+    }
+  ],
+  "sheet_writes": 0
+}

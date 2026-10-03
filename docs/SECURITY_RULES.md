@@ -347,3 +347,15 @@ read capability plus the source-domain permission. Signature image read/write
 are separate. Restrictive Storage isolation overrides broad existing policies.
 Two-minute URLs are minted after authorization; no browser service secrets.
 Recovery retains private historical objects and their isolation.
+
+## H-SICOF-RELEASE-001 — private admin workspace
+
+SICOF uses the existing authenticated administrator session and module/domain
+permissions; it adds no screen password. The new private schemas force RLS and
+deny direct browser access. RPCs and the JWT-verified Edge enforce real actor,
+session and effective context before reading data or using server-side Google
+credentials. Excel bytes and imported rows remain private historical reference.
+Real admin/anonymous/origin checks and ordinary-session SQL denials are recorded
+separately from browser tests: SQL claims in a read-only transaction are not a
+claim that an ordinary-account HTTP login was tested. No credentials were created,
+reset or published for verification. See `audits/H-SICOF-LIVE-VERIFICATION.md`.

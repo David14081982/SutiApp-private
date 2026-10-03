@@ -1,0 +1,28 @@
+{
+  "status": "APPROVED",
+  "scope": "H-SICOF-RELEASE-001 necessary activation corrections",
+  "files": [
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "originalSha256": "9a219c501b11dc9f6de98fb8fe369da75f53c1eb77bd6eab8b60107b4eaacd73",
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6",
+      "reason": "Fixed sanitized transport stages to diagnose real source read failure; no rows, secrets, source change or fallback."
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "originalSha256": "fc5a8d2b1499f49fcdad8df5cd75daa0817dcefd6eeaecdf500de87e57e7a067",
+      "sha256": "dafdc732e9cb69adfd755986ed41de7a7f91d5c43ff73a19beabf7cdae170927",
+      "reason": "Memoize identical date formatting within one SICOF read only after real 45-second receiver timeout; retain exact source, timezone, double-read consistency, output fingerprint and all legacy writers."
+    }
+  ],
+  "additions": [
+    {"file":"supabase/migrations/20261003000300_sicof_context_read_performance.sql","sha256":"d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f"},
+    {"file":"supabase/recovery/20261003000300_sicof_context_read_performance.sql","sha256":"425b818bd2ef8d9993d22df73606e2cb6030ca13c4655b47f3e8d0a56caf2ba8"},
+    {"file":"scripts/test-sicof-context-performance.js","sha256":"ad5e317bb9367c5a11ecec0199c043b156395ce80d52b49f6ad16292e6e87b18"},
+    {"file":"scripts/fixtures/sicof-context-performance-schema.json","sha256":"0fc1c6db34db77e0e1f6ef89ebe0b26691854121d28527b092dad0ee674f9301"}
+  ],
+  "updatedTests": [
+    {"file":"scripts/test-sicof-loans.js","sha256":"47c40c5b055852957ebb06fe10595b5695e35ed944fb50347f7463edf09c1445"},
+    {"file":"scripts/test-sicof-loan-receiver.js","sha256":"894561bdd05ea4c2c9c14fd6ecfbdb51274d0bd428befc9aa92c75acc4a89c74"}
+  ]
+}

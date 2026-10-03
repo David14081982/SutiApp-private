@@ -1,0 +1,365 @@
+{
+  "task": "H-SICOF-001",
+  "scope": "Final UI preservation audit and bounded UI implementation",
+  "status": "PASS",
+  "audit_date": "2026-10-03",
+  "production_writes": 0,
+  "contains_personal_data": false,
+  "baseline": [
+    "Sicof-main/index.html",
+    "Sicof-main/Codigo.gs"
+  ],
+  "implementation": [
+    "app/sicof-admin.jsx",
+    "app/sicof-payment-behavior.jsx"
+  ],
+  "ownership": "This evidence covers UI contracts and isolated browser verification. Backend export, security, SQL and deployment verdicts belong to their separate evidence.",
+  "coverage": [
+    {
+      "area": "Navigation and access",
+      "baseline": "index.html:363-397,2196",
+      "current": "SicofAdmin and TABS; shared Admin route verified by integration suite",
+      "controls": [
+        "All seven original tabs",
+        "Additional final savings report",
+        "Reorder tabs by drag or accessible arrows",
+        "Backend presentation preferences",
+        "No extra password"
+      ],
+      "evidence": "Admin-restricted access, sidebar entry, no password inputs, eight working tabs, reordered preference persisted"
+    },
+    {
+      "area": "Calculation parameters",
+      "baseline": "index.html:418-510",
+      "current": "Workbench.parameters",
+      "controls": [
+        "Caja / additional selected funds / all",
+        "Caja always included for selected funds",
+        "Fund collected/projected/review amounts",
+        "Distribution percent",
+        "Average-by-days / final balance",
+        "Start / cutoff",
+        "Minimum months",
+        "Fixed anchor date",
+        "Exclude terminated",
+        "Exclude insufficient permanence",
+        "Consecutive missed installments and count",
+        "Arrears affects withdrawal / yield",
+        "Retention all / debt only",
+        "Annual-rate warning"
+      ],
+      "evidence": "Inputs trigger latest backend calculation; comparison saves full settings, costs, bank and fingerprint"
+    },
+    {
+      "area": "Summary and comparison",
+      "baseline": "index.html:398-416,515-558",
+      "current": "Workbench.summary / scenarios",
+      "controls": [
+        "Executive explanation",
+        "Period and annual rate",
+        "Collected interest",
+        "Uncollected projected interest",
+        "Net projected pool",
+        "Conditional projected percentage on confirmed base",
+        "Pool/reserve/base/eligible/excluded/review totals",
+        "Reconciliation",
+        "Alerts",
+        "Save/restore/delete/clear scenarios"
+      ],
+      "evidence": "Scenario table retains source, funds, share, method, dates, permanence, rate, annual rate, base, payout, eligible count and saved date"
+    },
+    {
+      "area": "Distribution",
+      "baseline": "index.html:566-619",
+      "current": "Workbench.distribution / saverDetail",
+      "controls": [
+        "Educational formulas",
+        "Individual example selector",
+        "Name/folio search",
+        "Sortable participant table",
+        "CSV",
+        "Formula Excel",
+        "Participant detail"
+      ],
+      "evidence": "Backend computation steps and amounts shown; no frontend yield calculation; selected person opens full detail"
+    },
+    {
+      "area": "Liquidity",
+      "baseline": "index.html:623-657",
+      "current": "Workbench.liquidity / Donut",
+      "controls": [
+        "Declared bank amount",
+        "Declared by",
+        "Declaration date",
+        "Gross obligation",
+        "Retained",
+        "Deliverable obligation",
+        "Cash",
+        "Contractual portfolio pending recovery",
+        "10/25/50/100-percent scenarios",
+        "Cash coverage / collection-dependent / shortfall / review result",
+        "Backing composition"
+      ],
+      "evidence": "Null share creates no zero-valued arc and explicitly says Proporción por conciliar; amounts remain unknown when source is unknown"
+    },
+    {
+      "area": "Loans and costs",
+      "baseline": "index.html:660-698",
+      "current": "Workbench.loanPayments / costSection",
+      "controls": [
+        "Recovered/pending by fund stacked chart",
+        "Cumulative recovery by date",
+        "Cost concept/amount/source",
+        "Pool or reserve costs",
+        "Estimated/committed/paid classification",
+        "Cost date",
+        "Add/remove",
+        "Cost total and rate effect",
+        "Printable approved-scenario export"
+      ],
+      "evidence": "Charts consume backend series; costs and bank edits trigger server calculation; no frontend allocation"
+    },
+    {
+      "area": "Payment ledger",
+      "baseline": "index.html:700-731",
+      "current": "Workbench.loanPayments",
+      "controls": [
+        "Funds all/none/subset",
+        "Name/folio/loan-ID search",
+        "Date range",
+        "Filtered count/paid/capital/interest/admin fee/audit count",
+        "Sortable ledger",
+        "Full export",
+        "Payment click opens identified loan"
+      ],
+      "evidence": "Filtered snapshot totals tested 50 to 20; null component remains unknown; export receives same filter values; unknown-date source rows retained for review"
+    },
+    {
+      "area": "Arrears",
+      "baseline": "index.html:735-774",
+      "current": "Workbench.arrears",
+      "controls": [
+        "Funds all/none/subset",
+        "Name/folio/ID search",
+        "Severity filter",
+        "Filtered count/amount/average/severe count",
+        "Contractual total/paid/outstanding/progress/severity",
+        "Excel",
+        "Loan detail"
+      ],
+      "evidence": "Authoritative SALDO ATRASADO selection; severity-filter totals tested; no arrears classification inferred solely from unverified frontend amounts"
+    },
+    {
+      "area": "Loan matrix",
+      "baseline": "index.html:778-801,1521",
+      "current": "Workbench.matrix",
+      "controls": [
+        "Funds all/none/subset",
+        "Year",
+        "Name/folio/ID search",
+        "Loan metadata",
+        "Four amounts for every date",
+        "Filtered counts and totals",
+        "Per-date footer",
+        "Consolidated Excel",
+        "Excel by fund",
+        "Loan detail"
+      ],
+      "evidence": "All original source fields retained with truthful semantic labels; 19 metadata columns plus quota/capital/interest/admin fee per date. Duplicated loan/date yields Por revisar, never first-row selection. Year excludes loans without that year and retains unknown dates for audit"
+    },
+    {
+      "area": "Loan detail and Finance indicator",
+      "baseline": "index.html:1422-1517,2022-2042",
+      "current": "SicofLoanContent / SicofLoanDetail / SicofPaymentBehavior",
+      "controls": [
+        "Principal",
+        "Total",
+        "Quincenal rate",
+        "Term",
+        "Paid",
+        "Contractual remaining",
+        "Progress",
+        "Arrears",
+        "Discount dates",
+        "Actual history chart/table",
+        "Expected-vs-paid chart/table",
+        "Cumulative comparison and debt area",
+        "Comparison counts",
+        "Finance affiliate behavior badge and detail"
+      ],
+      "evidence": "Server supplies cumulative/expected/difference/progress; percent 5 renders5%; unknown values remain unknown. Finance badge click does not open request; repeated affiliates batch once"
+    },
+    {
+      "area": "Compliance",
+      "baseline": "index.html:805-815",
+      "current": "Workbench.compliance",
+      "controls": [
+        "Rule",
+        "Requirement",
+        "How applied",
+        "Status"
+      ],
+      "evidence": "Backend returns policy evidence and unresolved classifications. No fabricated employment/retirement condition"
+    },
+    {
+      "area": "Savings report and historical periods",
+      "baseline": "User-supplied final savings workbook; added user request",
+      "current": "Workbench.savingsReport / saverDetail; final_ahorro export",
+      "controls": [
+        "Year and semester",
+        "Person search",
+        "Capital/yield recognized separately",
+        "Withdrawal by component/origin",
+        "Remaining by source period",
+        "Global canonical availability with as-of date",
+        "Current final Excel",
+        "Original historical Excel"
+      ],
+      "evidence": "Semester always has explicit year. Current and original reports remain downloadable independently of failed loan-source calculation. Original data is not re-credited as a new ledger balance"
+    },
+    {
+      "area": "Previous yield participation",
+      "baseline": "Added user policy selection",
+      "current": "Workbench.parameters yieldMode/capitalBasis/yieldPeriods",
+      "controls": [
+        "All eligible capital / current-period contributions",
+        "Do not compound past yield",
+        "Compound previous semester",
+        "Compound selected closed origins"
+      ],
+      "evidence": "Only verified prior origins can be selected; historical origin is preserved and unknown opening attribution is not invented"
+    },
+    {
+      "area": "Withdrawal and origin attribution",
+      "baseline": "Existing savings withdrawal flow plus added user requirement",
+      "current": "SicofAttribution and real SavingsWithdrawalOrigins/SavingsPeriodBalances integration",
+      "controls": [
+        "Fresh canonical composition",
+        "Explicit capital/yield origin slices",
+        "Exact amount conservation",
+        "Opening classification requires full evidenced distribution",
+        "Unknown opening is a valid withdrawal source",
+        "Reason/evidence",
+        "Version/idempotency",
+        "Cancel",
+        "Refresh after stale state"
+      ],
+      "evidence": "No ledger credit/debit created by attribution. Integration checks canonical balance after withdrawal, source-period balances, unchanged annual reference cards and preserved Savings actions"
+    },
+    {
+      "area": "Text editing",
+      "baseline": "index.html:378,2164",
+      "current": "TEXTS/CAPTIONS/CaptionContext/savePreferences",
+      "controls": [
+        "Titles",
+        "Notes",
+        "Metric captions",
+        "Parameter labels/help",
+        "Chart titles/series",
+        "Tab order"
+      ],
+      "evidence": "Only overrides persisted; per-string serialized limit500 and total20,000 validated before save. No localStorage"
+    },
+    {
+      "area": "Failure and context behavior",
+      "baseline": "Repository migration requirement",
+      "current": "Workbench load/calculate/operation; behavior context hooks",
+      "controls": [
+        "Source unavailable banner",
+        "Explicit errors and retry",
+        "No fallback balances",
+        "Debounced latest-result guard",
+        "Auth-context private-state removal",
+        "Escape/focus-managed dialogs"
+      ],
+      "evidence": "Stale calculation rejected; source failure clears stale calculated amounts; auth change removes private UI"
+    }
+  ],
+  "intentional_corrections": [
+    {
+      "original": "Hidden cutoff select",
+      "decision": "Was display:none in original; active cutoff remains the visible period-end input, not a removed user option"
+    },
+    {
+      "original": "Bank blank estimated silently and portfolio described as guaranteed",
+      "decision": "Undeclared bank balance is unknown; portfolio is contractual collection pending, not guaranteed cash"
+    },
+    {
+      "original": "Future recoveries could fund the current distribution",
+      "decision": "Collected pool and conditional projected pool/rate shown separately; projection uses confirmed base and is explicitly not an accrual or guarantee"
+    },
+    {
+      "original": "Mislabeled original metadata dates and amounts",
+      "decision": "Codigo.gs:234-240 maps metadata6 to transfer,7 to discount,11 to interest/admin charges,12 to principal plus interest. UI displays correct meanings. Authorization date is not invented"
+    },
+    {
+      "original": "Duplicate payment rows could become a chosen first/last row",
+      "decision": "Ambiguous identities/dates stay under review; no arbitrary choice, derived totals unknown"
+    },
+    {
+      "original": "Local browser preferences and saved scenarios",
+      "decision": "Backend persistence under existing Admin permissions; no additional module password or browser authority"
+    }
+  ],
+  "verification": [
+    {
+      "command": "node scripts/test-sicof-ui-browser.js",
+      "status": "PASS",
+      "evidence": ".tmp/sicof/ui-isolated/browser.json",
+      "viewports": [
+        320,
+        430,
+        1440
+      ],
+      "network": "BLOCKED"
+    },
+    {
+      "command": "node scripts/test-sicof-integration-browser.js",
+      "status": "PASS",
+      "evidence": ".tmp/sicof/ui-integration/browser.json",
+      "network": "BLOCKED"
+    },
+    {
+      "command": "node scripts/test-sicof-attribution-browser.js",
+      "status": "PASS",
+      "evidence": ".tmp/sicof/ui-attribution/browser.json",
+      "network": "BLOCKED"
+    },
+    {
+      "command": "node scripts/test-admin-finance-queue-identity-browser.js",
+      "status": "PASS",
+      "evidence": "docs/qa/evidence/finance-queue-identity-20260909/browser-result.json"
+    },
+    {
+      "command": "node scripts/test-savings-individual-withdrawal-browser.js",
+      "status": "PASS",
+      "evidence": "docs/qa/evidence/savings-individual-withdrawal/"
+    },
+    {
+      "command": "vm.Script syntax parse of both new JSX source files",
+      "status": "PASS"
+    }
+  ],
+  "export_contracts": {
+    "frontend": [
+      "csv",
+      "reparto_formulado",
+      "pagos",
+      "atrasos",
+      "matriz",
+      "matriz_fondos",
+      "final_ahorro",
+      "acta"
+    ],
+    "reviewed_backend": "supabase/functions/sicof/exports.mjs",
+    "formula_workbook": "Parámetros / Reparto formulado / Desglose / Pagos restored by export owner; calculations and cell formula validation have independent export evidence",
+    "acta": "Full liquidity scenarios, declaration, signatures and print control restored by export owner",
+    "source_unavailable": "final_ahorro can run without calculation fingerprint; financial simulation exports require current fingerprint"
+  },
+  "limitations": [
+    "Browser tests use synthetic data only in isolated test harnesses; they do not demonstrate live deployment or mutate financial data.",
+    "Historical source fields or origin evidence that do not exist stay explicitly unknown; UI does not invent authorization dates, pensioner status or a score calibrated to credit risk.",
+    "Amounts/rates/retention/loan schedules/policy eligibility remain backend authority. Frontend only formats, filters and sums already supplied snapshot amounts in cents for visible-filter totals.",
+    "Final generated bundle and global local/GitHub regression evidence are owned by the parent integration task."
+  ]
+}

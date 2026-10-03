@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('assert/strict');
+(async()=>{
+  const {makeReports}=await import('../supabase/functions/sicof/projection.mjs');
+  const tx=(id,type,direction,amount,date,patch={})=>({id,transaction_type:type,component:'CAPITAL',direction,amount,effective_date:date,...patch});
+  const context=(transactions,capital,yieldAmount=0,patch={})=>({from:'2026-06-01',to:'2026-06-30',as_of:'2026-06-30',today:'2026-06-30',report:null,participants:[{id:'p1',folio:'00123',name:'Isolated',certified_as_of:'2026-01-01',transactions,
+    composition:{complete:true,as_of_balance:{capital,yield_amount:yieldAmount},balances:{capital,yield_amount:yieldAmount,available:capital+yieldAmount,held_capital:0,held_yield:0},periods:[],movements:transactions.map(t=>({transaction_id:t.id,type:t.transaction_type,...t}))}}],...patch});
+  const result=ctx=>makeReports(ctx).finalReport.rows[0];
+  const withdrawal=tx('w','WITHDRAWAL','DEBIT',40,'2026-06-15');
+  let r=result(context([withdrawal,tx('r','REVERSAL','CREDIT',20,'2026-06-16',{reversal_of_transaction_id:'w'})],80));
+  assert.equal(r.F,0);assert.equal(r.G,0);assert.equal(r.L,20);assert.equal(r.K,100);assert.equal(r.M,80);assert.equal(r.withdrawal_debits,40);assert.equal(r.withdrawal_reversals,20);assert.equal(r.origin_state,'CHECKED');
+  r=result(context([withdrawal,tx('r','REVERSAL','CREDIT',40,'2026-06-16',{reversal_of_transaction_id:'w'})],100));
+  assert.equal(r.L,0);assert.equal(r.F,0);assert.equal(r.K-r.L,r.M);
+  r=result(context([withdrawal,tx('r','REVERSAL','CREDIT',20,'2026-07-16',{reversal_of_transaction_id:'w'})],80,0,{from:'2026-07-01',to:'2026-07-31',as_of:'2026-07-31',today:'2026-07-31'}));
+  assert.equal(r.L,-20);assert.equal(r.F,0);assert.equal(r.K,60);assert.equal(r.M,80);assert.equal(r.K-r.L,r.M);
+  const contribution=tx('c','CONTRIBUTION','CREDIT',100,'2026-06-01',{contribution_date:'2026-06-01',enrollment_id:'e1'});
+  r=result(context([contribution,tx('r','REVERSAL','DEBIT',30,'2026-06-16',{reversal_of_transaction_id:'c'})],70));
+  assert.equal(r.F,70);assert.equal(r.L,0);assert.equal(r.M,70);
+  r=result(context([contribution,tx('a','ADJUSTMENT','DEBIT',10,'2026-06-16',{contribution_date:'2026-06-01',enrollment_id:'e1'})],90));assert.equal(r.F,90);
+  r=result(context([tx('a','ADJUSTMENT','CREDIT',10,'2026-06-16')],110));assert.equal(r.F,0);assert.equal(r.M,110);
+  r=result(context([tx('y','YIELD_CREDIT','CREDIT',20,'2026-06-01',{component:'YIELD'}),tx('r','REVERSAL','DEBIT',5,'2026-06-16',{component:'YIELD',reversal_of_transaction_id:'y'})],0,15));
+  assert.equal(r.G,15);assert.equal(r.L,0);assert.equal(r.M,15);
+  r=result(context([tx('r','REVERSAL','CREDIT',20,'2026-06-16',{reversal_of_transaction_id:'missing'})],80));
+  assert.equal(r.F,null);assert.equal(r.G,null);assert.equal(r.L,null);assert.equal(r.K,null);assert.equal(r.M,80);assert(r.report_reviews.includes('REVERSAL_ORIGINAL_NOT_AVAILABLE'));assert.equal(r.origin_state,'REVIEW_REQUIRED');
+  r=result(context([withdrawal,tx('r','REVERSAL','CREDIT',20,'2026-06-16',{component:'YIELD',reversal_of_transaction_id:'w'})],60,20));assert.equal(r.L,null);assert(r.report_reviews.includes('REVERSAL_LINK_INCONSISTENT'));
+  r=result(context([tx('r1','REVERSAL','CREDIT',20,'2026-06-16',{reversal_of_transaction_id:'r2'}),tx('r2','REVERSAL','DEBIT',20,'2026-06-16',{reversal_of_transaction_id:'r1'})],100));assert.equal(r.K,null);assert(r.report_reviews.includes('REVERSAL_LINK_CYCLE'));
+  r=result(context([withdrawal,tx('r1','REVERSAL','CREDIT',30,'2026-06-16',{reversal_of_transaction_id:'w'}),tx('r2','REVERSAL','CREDIT',30,'2026-06-17',{reversal_of_transaction_id:'w'})],120));assert.equal(r.L,null);assert.equal(r.M,120);
+  r=result(context([tx('c','CONTRIBUTION','CREDIT',100,'2026-06-01'),tx('r','REVERSAL','DEBIT',30,'2026-06-16',{reversal_of_transaction_id:'c'})],70));assert.equal(r.F,null);assert(r.report_reviews.includes('CONTRIBUTION_ORIGIN_UNPROVEN'));
+  const future=tx('f','WITHDRAWAL','DEBIT',10,'2026-07-15');r=result(context([future],100,0,{to:'2026-12-31'}));assert.equal(r.L,0);assert.equal(r.M,100);
+  console.log(JSON.stringify({status:'PASS',checks:['partial/full withdrawal reversals are not contributions','cross-period negative net payout','linked contribution and yield reversals','confirmed contribution adjustment','manual adjustment separate','missing/cyclic/mismatched/over-reversed links require review','canonical saldo survives classification gaps','future excluded beyond cutoff','K-L=M'],externalWrites:0}));
+})().catch(e=>{console.error(e);process.exitCode=1;});

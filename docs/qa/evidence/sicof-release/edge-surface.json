@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "allowed origin",
+      "origin": "https://sutiapp.com",
+      "http": 204
+    },
+    {
+      "check": "allowed origin",
+      "origin": "https://david14081982.github.io",
+      "http": 204
+    },
+    {
+      "check": "allowed origin",
+      "origin": "http://localhost:8080",
+      "http": 204
+    },
+    {
+      "check": "anonymous denied",
+      "http": 401
+    },
+    {
+      "check": "real auth and exact command validation",
+      "http": 409,
+      "error": "SICOF_COMMAND_INVALID"
+    },
+    {
+      "check": "foreign origin denied",
+      "http": 403
+    }
+  ],
+  "financialWrites": 0
+}

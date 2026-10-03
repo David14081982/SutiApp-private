@@ -112,3 +112,19 @@ Se conserva `initial_row` de envíos existentes y su hash; posteriores estados
 actualizan únicamente Y mediante el receptor vigente. No hay backfill ni cambios
 a Apps Script, E–I, AH+, fórmulas, montos, intereses, reglas o programas distintos.
 Evidencia: `docs/qa/evidence/membership-google-company-z-20260910/`.
+
+## H-SICOF-RELEASE-001 — fixed financial reader
+
+The owner authorized publication of `read_sicof_financial` in the existing
+financial-handoff receiver. It reads only workbook
+`1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80`, sheet ID `1245291756`,
+`HISTORIAL P V2`. Existing writers and the prior loan-status reader remain
+unchanged. No cells, formulas, triggers, amortizations or properties were edited.
+Version 19 is active after an equivalent per-request date-format optimization;
+the real new Edge BEHAVIOR read passes. Version 18 was previously confirmed by
+repeated fresh deployment/content reads; an initial
+stale API readback and the recovery attempt are preserved in the release audit.
+The previous reader also passes real post-publication verification with the same
+row and overdue-loan counts. Unavailable data must be
+explicit and must never trigger a second financial source or inferred income.
+See `audits/H-SICOF-GOOGLE-RELEASE.md` for the current verified deployment state.

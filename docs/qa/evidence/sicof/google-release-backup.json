@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "version": 17,
+  "source_sha256": "950532930d9b97a8438078aff116cdd984892c632d855181bfa96aa6b3da9f66",
+  "candidate_sha256": "55af7d30a38af2440d0ca550466b7a2ce73e8e44052eff4d63a545ae6d89519d",
+  "private_backup": ".tmp/sicof/google-release-20261003/before.json",
+  "legacy_inverse_exact": true,
+  "head_equals_active": true,
+  "manifest_unchanged": true,
+  "credential_checks": [
+    {
+      "name": "GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_ID",
+      "matched": true
+    },
+    {
+      "name": "GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_SECRET",
+      "matched": true
+    },
+    {
+      "name": "GOOGLE_REQUEST_SYNC_OAUTH_REFRESH_TOKEN",
+      "matched": true
+    },
+    {
+      "name": "FINANCIAL_LEGACY_API_URL",
+      "matched": true
+    },
+    {
+      "name": "FINANCIAL_LEGACY_API_TOKEN",
+      "present": true,
+      "unchanged": true
+    }
+  ],
+  "prior_reader": {
+    "status": "PASS",
+    "scanned_rows": 18534,
+    "overdue_loans": 51,
+    "read_only": true
+  },
+  "denial": {
+    "status": "PASS",
+    "invalid_secret_denied": true
+  },
+  "recovery_prepared": true,
+  "sheet_writes": 0
+}

@@ -1,0 +1,26 @@
+'use strict';
+const assert=require('assert/strict');
+(async()=>{
+  const {decorateLoans,behaviorFor}=await import('../supabase/functions/sicof/projection.mjs');
+  const p=(patch={})=>({source_row:2,date:'2026-01-15',paid:10,expected:10,future:false,issues:[],...patch});
+  const loan=(patch={})=>({folio:'00123',id:'008',status:'AL CORRIENTE',behavior:'CURRENT',arrears:0,schedule:[p()],...patch});
+  const source=loans=>({observed_at:'2026-06-30T12:00:00Z',loans});
+  let result=decorateLoans(source([loan({schedule:[p(),p({source_row:3,date:'2026-01-30',paid:5}),p({source_row:4,date:'2026-02-15',paid:0}),p({source_row:5,date:'2026-07-15',paid:0,future:true})]})])).loans[0];
+  assert.deepEqual(result.schedule.map(r=>r.cumulative_paid),[10,15,15,null]);assert.deepEqual(result.schedule.map(r=>r.cumulative_expected),[10,20,30,null]);
+  assert.deepEqual(result.schedule.map(r=>r.comparison_state),['complete','partial','unpaid','future']);assert.equal(result.schedule[1].difference,-5);
+  assert.equal(result.comparison_summary.find(s=>s.label==='Sin pago').value,1);assert.equal(result.comparison_summary.find(s=>s.label==='Futuras').value,1);
+  result=decorateLoans(source([loan({schedule:[p({issues:['AMBIGUOUS_LOAN_DATE_ROWS']}),p({source_row:3,issues:['AMBIGUOUS_LOAN_DATE_ROWS']}),p({source_row:4,date:'2026-01-30'})]})])).loans[0];
+  assert(result.schedule.every(r=>r.cumulative_paid===null&&r.cumulative_expected===null));assert.equal(result.comparison_complete,false);assert.equal(result.schedule[0].comparison_state,'review');
+  result=decorateLoans(source([loan({schedule:[p({date:null,paid:null}),p({date:'2026-01-30'})]})])).loans[0];assert.equal(result.schedule[1].cumulative_paid,null);
+  assert.equal(behaviorFor({folio:'00123'},source([loan()])).status,'CURRENT');
+  assert.equal(behaviorFor({folio:'123'},source([loan()])).status,'NO_HISTORY');
+  assert.equal(behaviorFor({folio:null},source([loan()])).status,'REVIEW');
+  assert.equal(behaviorFor({folio:'00123'},source([loan({folio:null})])).status,'REVIEW');
+  assert.equal(behaviorFor({folio:'00123'},source([loan({status:'SALDO ATRASADO',behavior:'OVERDUE'})])).status,'ARREARS');
+  assert.equal(behaviorFor({folio:'00123'},source([loan({status:null,behavior:'REVIEW_REQUIRED'})])).status,'REVIEW');
+  assert.equal(behaviorFor({folio:'00123'},source([loan()])).score,null);
+  result=decorateLoans(source([loan({total:100,paid:40})])).loans[0];assert.equal(result.progress_percent,40);assert.equal(result.remaining_contractual,60);
+  result=decorateLoans(source([loan({total:100,paid:120})])).loans[0];assert.equal(result.progress_percent,120);assert.equal(result.remaining_contractual,0);
+  result=decorateLoans(source([loan({total:100,paid:40,behavior:'REVIEW_REQUIRED'})])).loans[0];assert.equal(result.progress_percent,null);assert.equal(result.remaining_contractual,null);
+  console.log(JSON.stringify({status:'PASS',checks:['server cumulative exact cents','partial and zero expected comparisons','future excluded from missed/cumulative','duplicate totals unknown not doubled','invalid row interrupts cumulative','exact owner identity','current compliance not punctuality'],externalWrites:0}));
+})().catch(e=>{console.error(e);process.exitCode=1;});

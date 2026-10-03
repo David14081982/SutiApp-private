@@ -364,3 +364,19 @@ worker dispatch and capability catalog. Existing business rows are unchanged.
 Recovery disables generation and restores the captured module visibility function
 only if its applied hash still matches; preserves all historical documentary data
 and private assets. Verified against isolated PostgreSQL before live application.
+
+## H-SICOF-RELEASE-001 — 2026-10-03
+
+Owner-authorized migrations `20261003000100_savings_period_composition` and
+`20261003000200_sicof_workspace` are APPLIED. One guarded transaction preserved
+twelve protected financial tables and existing function OIDs, owners and ACLs.
+Private captured definitions support recovery without deleting period attribution,
+scenario or historical-report evidence. The private Excel import preserves the
+original bytes and 214 rows; it creates no account credit. Do not rerun the two
+migrations to reconcile Git. The additional correction `20261003000300` is also
+APPLIED: it changes only the new context reader, preserves the same full JSON and
+source-review rules, and reduces a real 354-participant read from 21.3 to 4.24
+seconds. Its guarded transaction preserved twenty existing financial/private
+tables and legacy function definitions. Exact recovery retains the backup and
+all historical data. Installation evidence and current release gates are recorded in
+`audits/H-SICOF-RELEASE-001.md`.

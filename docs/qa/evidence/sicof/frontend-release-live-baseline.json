@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "capturedAt": "2026-10-03T20:12:17.289Z",
+  "baselineCommit": "30a120e3cae13415a347f838e6d2fdeee64e98f8",
+  "baselineBundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+  "rows": [
+    {
+      "origin": "https://sutiapp.com/SutiApp.html",
+      "bundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "normalizedBundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "bundleVersion": "310"
+    },
+    {
+      "origin": "https://david14081982.github.io/SutiApp-private/SutiApp.html",
+      "bundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "normalizedBundleSha256": "65de47766b3aa10b5ae4ae82bae2bcd44ce7ef07bbd7257041144dc0771f5a23",
+      "bundleVersion": "310"
+    }
+  ],
+  "productionWrites": 0
+}

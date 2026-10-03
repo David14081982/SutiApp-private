@@ -1,0 +1,10 @@
+{
+  "status": "FAIL",
+  "reason": "INITIAL_METADATA_READBACK_INVALIDATED_BY_LATER_FRESH_READ",
+  "deployment_restoration_confirmed": false,
+  "resolution": "SICOF v18 confirmed by three fresh reads; approved HEAD aligned; see google-release-deployment.json",
+  "restored_version": 17,
+  "same_deployment": true,
+  "head_restored": true,
+  "sheet_writes": 0
+}

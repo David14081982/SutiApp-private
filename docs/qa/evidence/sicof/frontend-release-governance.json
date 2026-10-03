@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "generatedFrom": "isolated current release checkout",
+  "sections": [
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "headings": [
+        "## H-SICOF-001 / H-SICOF-RELEASE-001 — authorized activation"
+      ],
+      "preservedRemotePrefix": true
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "headings": [
+        "## 2026-10-03 — H-SICOF-001 local candidate",
+        "## 2026-10-03 — H-SICOF-RELEASE-001 authorized activation"
+      ],
+      "preservedRemotePrefix": true
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "headings": [
+        "## H-SICOF-RELEASE-001 — explicit activation authorization"
+      ],
+      "preservedRemotePrefix": true
+    },
+    {
+      "file": "docs/MIGRATION_RULES.md",
+      "headings": [
+        "## H-SICOF-RELEASE-001 — 2026-10-03"
+      ],
+      "preservedRemotePrefix": true
+    },
+    {
+      "file": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "headings": [
+        "## H-SICOF-RELEASE-001 — fixed financial reader"
+      ],
+      "preservedRemotePrefix": true
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "headings": [
+        "## H-SICOF-RELEASE-001 — private admin workspace"
+      ],
+      "preservedRemotePrefix": true
+    }
+  ],
+  "ownOverrideNodes": [
+    "SicofAdminModule",
+    "SicofRepository",
+    "sicof",
+    "SavingsPeriodBalances",
+    "SicofPaymentBehavior"
+  ],
+  "ownRelationships": 5,
+  "unrelatedNormativeSectionsPreserved": true,
+  "unrelatedSemanticOverridesPreserved": true,
+  "registryCopiedFromDirtyRoot": false,
+  "productionWrites": 0
+}

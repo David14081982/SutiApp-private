@@ -27,7 +27,9 @@
   // ─────────────────────────────────────────────────────────────
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
+  // H-SICOF-001 integration: existing session and backend module boundary.
   const MODULES = [
+    { id:'sicof',label:'Sicof',icon:'trending',desc:'Rendimientos, periodos y comportamiento de pagos',ready:true,registration:{version:'20261003000200',totalOnly:false,boundary:'SICOF authenticated simulation and canonical savings reports; no financial posting',readPermissions:['savings.read','savings.reports'],writePermissions:['savings.config'],sections:[],backendEvidence:'supabase/migrations/20261003000200_sicof_workspace.sql',isolatedTest:'scripts/test-sicof-workspace.js'} },
     { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
     { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
@@ -72,6 +74,7 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    sicof:'savings.read',
     farma:'program_catalog.read',document_generation:'document_generation.config.read',login_history:'authorization.read',
     votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
     administrators:'authorization.read',screen_permissions:'authorization.read',impersonation:'affiliates.impersonate',
@@ -81,7 +84,7 @@
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin','document_generation'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','fondos','flujos','inversion'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','sicof','fondos','flujos','inversion'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','farma','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['votaciones','votaciones_nominal','sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
@@ -533,6 +536,7 @@
     else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
+    else if(view==='sicof')body=React.createElement(window.SicofAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sindicato')body=React.createElement(window.SindicatoModule,{app,onBack:()=>setView('menu'),header:headerFn,onOpenEditor:(id,context)=>{setViewContext(Object.assign({},context,{from:'sindicato'}));setView(id);}});

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "receipt": [
+    {
+      "id": "3b71fa61-e937-4949-bcbc-70f35b2ee992",
+      "sha256": "e9dc173869188990e23d71694a99af008d2b9190a301d1d71c90ff2764d18837",
+      "row_count": 214,
+      "classification": "HISTORICAL_REPORT_REFERENCE",
+      "bytes": 32837
+    }
+  ],
+  "templateSha256": "e9dc173869188990e23d71694a99af008d2b9190a301d1d71c90ff2764d18837",
+  "financialTablesUnchanged": true,
+  "financialWrites": 0
+}

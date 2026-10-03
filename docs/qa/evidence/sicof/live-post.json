@@ -1,0 +1,144 @@
+{
+  "status": "PASS",
+  "mode": "LIVE_READ_ONLY_POST",
+  "at": "2026-10-03T20:34:42.618Z",
+  "businessWrites": 0,
+  "syntheticRows": 0,
+  "credentialsLogged": false,
+  "checks": [
+    {
+      "name": "existing admin session has the backend read permission",
+      "status": "PASS"
+    },
+    {
+      "name": "existing self readers authenticate and expose only their own account",
+      "status": "PASS"
+    },
+    {
+      "name": "seven canonical tables and every original self field remain identical to pre-deployment",
+      "status": "PASS"
+    },
+    {
+      "name": "private schemas, tables and functions are closed; RLS forced and service writers remain service-only",
+      "status": "PASS"
+    },
+    {
+      "name": "ordinary existing session is denied by SQL backend in READ ONLY with authenticated role",
+      "status": "PASS"
+    },
+    {
+      "name": "SICOF context admin access and anonymous denial work through PostgREST",
+      "status": "PASS"
+    },
+    {
+      "name": "same canonical composition reaches admin and self without exposing administrative journal",
+      "status": "PASS"
+    },
+    {
+      "name": "private Excel download preserves original bytes and all 214 historical rows",
+      "status": "PASS"
+    },
+    {
+      "name": "loan behavior reader resolves only exact existing applicants and exposes no savings data",
+      "status": "PASS"
+    },
+    {
+      "name": "deployed Edge LOAD, exact behavior and Excel export operate with real admin session and deny anon",
+      "status": "PASS"
+    }
+  ],
+  "ledgerBefore": [
+    {
+      "resource": "savings_transactions",
+      "count": 844,
+      "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+    },
+    {
+      "resource": "savings_requests",
+      "count": 26,
+      "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+    },
+    {
+      "resource": "savings_participants",
+      "count": 354,
+      "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+    },
+    {
+      "resource": "savings_enrollments",
+      "count": 352,
+      "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+    },
+    {
+      "resource": "savings_holds",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_periods",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_allocations",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "ordinaryAuthenticatedCoverage": false,
+  "limitations": [
+    "No existing ordinary-user credentials were available; ordinary-user authenticated denial not executed. No account or password was created/changed."
+  ],
+  "selfAccountsWithSavings": 1,
+  "self": {
+    "H005_TEST": {
+      "previousDtoHash": "06cc3415a7ce19686d7a5f41982cf57db817582061af8780dda675e3092f7285",
+      "previousBalanceHash": "b528607562f4087446d65195a4764239dab5b3e09842cd696b519aa0ec184ecc",
+      "hasParticipant": true
+    }
+  },
+  "privateTables": 9,
+  "ordinarySqlCoverage": true,
+  "ordinarySqlAssertions": 5,
+  "participants": 354,
+  "selfProjectionsCompared": 354,
+  "historicalRows": 214,
+  "historicalSha256": "e9dc173869188990e23d71694a99af008d2b9190a301d1d71c90ff2764d18837",
+  "behaviorSubjects": 3,
+  "ledgerAfter": [
+    {
+      "resource": "savings_transactions",
+      "count": 844,
+      "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+    },
+    {
+      "resource": "savings_requests",
+      "count": 26,
+      "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+    },
+    {
+      "resource": "savings_participants",
+      "count": 354,
+      "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+    },
+    {
+      "resource": "savings_enrollments",
+      "count": 352,
+      "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+    },
+    {
+      "resource": "savings_holds",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_periods",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_allocations",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ]
+}

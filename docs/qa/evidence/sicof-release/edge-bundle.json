@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "mode": "edge-bundle",
+  "version": 1,
+  "cloudStatus": "ACTIVE",
+  "verifyJwt": true,
+  "sourceFiles": [
+    "engine.mjs",
+    "exports.mjs",
+    "handler.mjs",
+    "index.ts",
+    "loan-calculation.mjs",
+    "loan-source.mjs",
+    "projection.mjs"
+  ],
+  "financialWrites": 0
+}

@@ -1,0 +1,270 @@
+{
+  "production_rows": false,
+  "source": "read-only live schema capture 2026-10-03",
+  "reader": {
+    "definition": "CREATE OR REPLACE FUNCTION sicof_private.context(p_from date, p_to date)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare p public.savings_participants%rowtype; e public.savings_enrollments%rowtype; c public.savings_balance_certifications%rowtype;\n people jsonb:='[]'; person jsonb; tx jsonb; composition jsonb; history jsonb; periods jsonb; existing_preview jsonb:='[]';\n reasons jsonb; policy_reasons jsonb; source_review jsonb; identity_ok boolean; certified boolean; expected_count integer; actual_count integer;\n present date:=public.savings_operation_today(); as_of date; result jsonb; yr public.savings_yield_periods%rowtype;\nbegin\n if p_from is null or p_to is null or p_to<p_from or p_to>p_from+1098 or p_from<date '2000-01-01'\n  or p_to>present+366 then raise exception 'SICOF_RANGE_INVALID';end if;\n as_of:=least(p_to,present);\n for p in select * from public.savings_participants order by legacy_folio,id loop\n  identity_ok:=p.identity_status='RESOLVED' and exists(select 1 from public.affiliates a where a.id=p.affiliate_id and a.numero_control=p.legacy_folio and not coalesce(a.is_archived,false))\n   and (select count(*) from public.affiliates a where a.numero_control=p.legacy_folio and not coalesce(a.is_archived,false))=1;\n  certified:=p.certification_status='CERTIFIED' and p.data_classification='CANONICAL';\n  select * into c from public.savings_balance_certifications where participant_id=p.id;\n  select * into e from public.savings_enrollments where participant_id=p.id and data_classification='CANONICAL'\n   and (enrollment_started_at at time zone 'America/Hermosillo')::date<=as_of order by sequence_number desc limit 1;\n  composition:=null;history:='[]';tx:='[]';reasons:='[]';policy_reasons:='[]';source_review:=null;expected_count:=0;actual_count:=0;\n  if not identity_ok then reasons:=reasons||'\"IDENTITY_REVIEW_REQUIRED\"'::jsonb;end if;\n  if not certified then reasons:=reasons||'\"CERTIFICATION_REQUIRED\"'::jsonb;end if;\n  if identity_ok and certified then\n   if exists(select 1 from public.savings_transactions t where t.participant_id=p.id and (t.data_classification<>'CANONICAL' or t.effective_date>present)) then\n    reasons:=reasons||'\"NONCANONICAL_MOVEMENTS\"'::jsonb;\n   else composition:=savings_period_private.composition(p.id,as_of);end if;\n   select coalesce(jsonb_agg(jsonb_build_object('id',t.id,'enrollment_id',t.enrollment_id,'component',t.component,'direction',t.direction,'amount',t.amount,\n    'effective_date',t.effective_date,'contribution_date',t.contribution_date,'transaction_type',t.transaction_type,'reversal_of_transaction_id',t.reversal_of_transaction_id,\n    'origins',(select jsonb_agg(jsonb_build_object('origin_key',o.origin_key,'amount',o.amount) order by o.origin_key)\n     from savings_period_private.origins(p.id,as_of)o where o.transaction_id=t.id)) order by t.effective_date,t.id),'[]') into tx\n   from public.savings_transactions t where t.participant_id=p.id and t.data_classification='CANONICAL' and t.effective_date<=as_of;\n   select coalesce(jsonb_agg(to_jsonb(h) order by h.date,h.id),'[]') into history\n    from public.savings_workspace_history(p.id)h where h.date between p_from and as_of;\n   if e.id is null then reasons:=reasons||'\"ENROLLMENT_UNVERIFIED\"'::jsonb;\n   elsif greatest(p_from,e.first_expected_contribution_date)<=as_of then\n    select count(*) into expected_count from public.generate_savings_schedule(e.id,greatest(p_from,e.first_expected_contribution_date),as_of);\n    select count(*) into actual_count from public.generate_savings_schedule(e.id,greatest(p_from,e.first_expected_contribution_date),as_of)s\n     where exists(select 1 from jsonb_array_elements(history)h where (h->>'date')::date=s.contribution_date\n      and h->>'amount' is not null and h->>'expected' is not null and h->>'data_conflict'='false' and h->>'includes_yield'='false');\n   end if;\n   if expected_count<>actual_count then reasons:=reasons||'\"CONTRIBUTION_EVIDENCE_INCOMPLETE\"'::jsonb;end if;\n   if exists(select 1 from jsonb_array_elements(history)h where h->>'data_conflict'='true') then reasons:=reasons||'\"CONTRIBUTION_CONFLICT\"'::jsonb;end if;\n   if exists(select 1 from jsonb_array_elements(history)h where h->>'includes_yield'='true') then reasons:=reasons||'\"MIXED_CAPITAL_YIELD_HISTORY\"'::jsonb;end if;\n   if exists(select 1 from jsonb_array_elements(history)h where h->>'source'='CERTIFIED_HISTORY' and h->>'expected' is null) then reasons:=reasons||'\"HISTORICAL_EXPECTATION_UNVERIFIED\"'::jsonb;end if;\n   if e.id is not null and ((e.enrollment_started_at at time zone 'America/Hermosillo')::date+interval '6 months')::date>as_of then policy_reasons:=policy_reasons||'\"MINIMUM_TENURE\"'::jsonb;end if;\n   if e.id is not null and (e.status not in ('ACTIVE','TERMINATION_PENDING','TERMINATED') or (e.terminated_at at time zone 'America/Hermosillo')::date<=as_of)\n    then policy_reasons:=policy_reasons||'\"INACTIVE_ENROLLMENT\"'::jsonb;end if;\n   if exists(select 1 from jsonb_array_elements(history)h where (h->>'amount')::numeric<(h->>'expected')::numeric) then policy_reasons:=policy_reasons||'\"SHORT_CONTRIBUTION\"'::jsonb;end if;\n   if p.import_batch_id is not null and p.historical_yield_reconciled_through is null then reasons:=reasons||'\"HISTORICAL_YIELD_UNRECONCILED\"'::jsonb;\n   elsif as_of<=p.historical_yield_reconciled_through then policy_reasons:=policy_reasons||'\"PERIOD_ALREADY_RECONCILED\"'::jsonb;\n   elsif p_from<=p.historical_yield_reconciled_through then reasons:=reasons||'\"HISTORICAL_PERIOD_OVERLAP\"'::jsonb;end if;\n   if exists(select 1 from public.savings_holds h where h.participant_id=p.id and h.status='ACTIVE') then reasons:=reasons||'\"HOLD_REVIEW_REQUIRED\"'::jsonb;end if;\n   if exists(select 1 from public.savings_requests r where r.participant_id=p.id and r.enrollment_id=e.id and r.status='SETTLED'\n    and (r.settled_at at time zone 'America/Hermosillo')::date between p_from and as_of\n    and (r.request_type='EXTRAORDINARY_WITHDRAWAL' or (r.settled_at at time zone 'America/Hermosillo')::date<((e.enrollment_started_at at time zone 'America/Hermosillo')::date+interval '6 months')::date))\n    then policy_reasons:=policy_reasons||'\"EARLY_OR_EXTRAORDINARY_WITHDRAWAL\"'::jsonb;end if;\n   if c.id is not null then\n    source_review:=public.get_admin_savings_financial_account(c.record_id,null);\n    if source_review->>'source_changed'='true' or source_review#>>'{context,source_update,pending}'='true' then reasons:=reasons||'\"SOURCE_REVIEW_REQUIRED\"'::jsonb;end if;\n   end if;\n  end if;\n  person:=jsonb_build_object('id',p.id,'affiliate_id',p.affiliate_id,'folio',p.legacy_folio,\n   'name',case when identity_ok then (select full_name from public.affiliates where id=p.affiliate_id) else p.display_name end,\n   'identity_resolved',identity_ok,'certified',certified,'certified_as_of',c.cutoff_on,'historical_yield_reconciled_through',p.historical_yield_reconciled_through,\n   'enrollment',case when e.id is null then null else jsonb_build_object('id',e.id,'status',e.status,'enrollment_started_at',e.enrollment_started_at,\n    'first_actual_contribution_date',e.first_actual_contribution_date,'first_expected_contribution_date',e.first_expected_contribution_date,\n    'terminated_at',e.terminated_at,'process',e.process_snapshot,'frequency',case when e.process_snapshot='JUB' then 'MONTHLY' else 'TWICE_MONTHLY' end) end,\n   'transactions',tx,'composition',composition,'history',history,\n   'eligibility',jsonb_build_object('complete',jsonb_array_length(reasons)=0,'reasons',reasons,'policy_reasons',policy_reasons,\n    'status',case when jsonb_array_length(reasons)>0 then 'REVIEW_REQUIRED' when jsonb_array_length(policy_reasons)>0 then 'EXCLUDED_BY_CURRENT_POLICY' else 'EVIDENCE_READY' end,\n    'expected_count',expected_count,'proved_count',actual_count));\n  people:=people||jsonb_build_array(person);\n end loop;\n select coalesce(jsonb_agg(to_jsonb(y) order by period_year,semester),'[]') into periods from public.savings_yield_periods y;\n for yr in select * from public.savings_yield_periods where starts_on<=p_to and ends_on>=p_from loop\n  existing_preview:=existing_preview||jsonb_build_array(public.preview_savings_period_yield(yr.id));\n end loop;\n result:=jsonb_build_object('participants',people,'periods',periods,'existing_period_previews',existing_preview,'from',p_from,'to',p_to,'as_of',as_of,'today',present);\n return result||jsonb_build_object('fingerprint',md5(result::text));\nend $function$\n",
+    "md5": "7f30423c12286a4b5d4db89723ab212a",
+    "owner": "postgres",
+    "acl": "{postgres=X/postgres}"
+  },
+  "columns": [
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "source_sha256",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "source_name",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "observed_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "expected_records",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_batches",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "observation_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "clock_timestamp()"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "client_action_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "column_name": "record_version",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "record_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "source_sha",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "observed_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "source_total",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "changes",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_source_observations",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "clock_timestamp()"
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "savings_review_batches",
+      "contype": "c",
+      "conname": "savings_review_batches_expected_records_check",
+      "definition": "CHECK ((expected_records > 0))"
+    },
+    {
+      "table_name": "savings_review_batches",
+      "contype": "p",
+      "conname": "savings_review_batches_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_review_batches",
+      "contype": "c",
+      "conname": "savings_review_batches_source_sha256_check",
+      "definition": "CHECK ((source_sha256 ~ '^[a-f0-9]{64}$'::text))"
+    },
+    {
+      "table_name": "savings_review_batches",
+      "contype": "u",
+      "conname": "savings_review_batches_source_sha256_key",
+      "definition": "UNIQUE (source_sha256)"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "contype": "u",
+      "conname": "savings_source_acceptances_client_action_id_key",
+      "definition": "UNIQUE (client_action_id)"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "contype": "u",
+      "conname": "savings_source_acceptances_observation_id_key",
+      "definition": "UNIQUE (observation_id)"
+    },
+    {
+      "table_name": "savings_source_acceptances",
+      "contype": "p",
+      "conname": "savings_source_acceptances_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "contype": "c",
+      "conname": "savings_source_observations_changes_check",
+      "definition": "CHECK ((jsonb_typeof(changes) = 'array'::text))"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "contype": "p",
+      "conname": "savings_source_observations_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "contype": "u",
+      "conname": "savings_source_observations_record_id_source_sha_key",
+      "definition": "UNIQUE (record_id, source_sha)"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "contype": "c",
+      "conname": "savings_source_observations_source_sha_check",
+      "definition": "CHECK ((source_sha ~ '^[a-f0-9]{64}$'::text))"
+    },
+    {
+      "table_name": "savings_source_observations",
+      "contype": "c",
+      "conname": "savings_source_observations_source_total_check",
+      "definition": "CHECK ((source_total >= (0)::numeric))"
+    }
+  ],
+  "definitions": [
+    {
+      "name": "savings_account_before_runtime",
+      "signature": "savings_account_before_runtime(uuid,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_account_before_runtime(p_record_id uuid, p_until date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare c public.savings_balance_certifications%rowtype; ctx jsonb; schedule jsonb; end_date date; bal jsonb;\nbegin\n if auth.uid() is null or not public.has_admin_permission('savings.read') then raise exception 'SAVINGS_READ_DENIED' using errcode='42501'; end if;\n ctx:=public.savings_certification_context(p_record_id);\n select * into c from public.savings_balance_certifications where record_id=p_record_id;\n if not found then return jsonb_build_object('certified',false,'context',ctx,'today',public.savings_operation_today(),'can_confirm',public.has_admin_permission('savings.approve')); end if;\n end_date:=coalesce(p_until,greatest(public.savings_operation_today(),c.cutoff_on)+366);\n if end_date<c.cutoff_on or end_date>greatest(public.savings_operation_today(),c.cutoff_on)+1098 then raise exception 'SAVINGS_PROJECTION_RANGE_INVALID'; end if;\n select to_jsonb(b) into bal from public.savings_participant_balance(c.participant_id) b;\n select coalesce(jsonb_agg(jsonb_build_object('date',s.contribution_date,'expected',s.expected_amount,'actual',o.actual_amount,'version',coalesce(o.version_number,0),'confirmed',o.id is not null,'future',s.contribution_date>public.savings_operation_today()) order by s.contribution_date),'[]') into schedule\n from public.generate_savings_schedule(c.enrollment_id,c.cutoff_on+1,end_date) s\n left join lateral(select * from public.savings_contribution_overrides where enrollment_id=c.enrollment_id and contribution_date=s.contribution_date order by version_number desc limit 1)o on true;\n return jsonb_build_object('certified',true,'context',ctx,'certificate',to_jsonb(c)-array['command','source_snapshot','client_action_id'],'balance',bal,'schedule',schedule,\n 'source_changed',(ctx->'snapshot'->'related') is distinct from (c.source_snapshot->'related'),\n 'can_write',public.has_admin_permission('savings.write'),'can_confirm',public.has_admin_permission('savings.approve'),'publication','PRIVATE','today',public.savings_operation_today(),\n 'balance_version',(select coalesce(max(id),0) from public.savings_audit_events where participant_id=c.participant_id),\n 'projected_total',public.savings_panel_number(bal->'total')+coalesce((select sum((x->>'expected')::numeric) from jsonb_array_elements(schedule)x where x->>'future'='true'),0),\n 'unconfirmed_dates',(select count(*) from jsonb_array_elements(schedule)x where x->>'future'='false' and x->>'confirmed'='false'),\n 'history',coalesce((select jsonb_agg(jsonb_build_object('id',a.id,'at',a.created_at,'action',a.action,'observation',a.reason,'before',a.before_data,'after',a.after_data,'actor',coalesce(f.full_name,'Encargado autorizado')) order by a.id desc)\n from public.savings_audit_events a left join public.affiliates f on f.auth_user_id=a.actor_real_auth_user_id where a.participant_id=c.participant_id),'[]'));\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_context_before_source_refresh",
+      "signature": "savings_context_before_source_refresh(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_context_before_source_refresh(p_record_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare r public.savings_review_records%rowtype; b public.savings_review_batches%rowtype;\n person jsonb; identity jsonb; links jsonb; related jsonb;\nbegin\n select * into r from public.savings_review_records where id=p_record_id and source_sheet='Ahorro';\n if not found then raise exception 'SAVINGS_RECORD_REQUIRED'; end if;\n select * into b from public.savings_review_batches where id=r.batch_id;\n select value into person from public.savings_panel_people(p_record_id) value;\n -- S is the currently approved amount; R is the original enrollment amount.\n person:=person||jsonb_build_object('aporte',case when r.proposed_data ? 'R' then public.savings_panel_number(r.proposed_data->'R') else coalesce(public.savings_panel_number(r.source_data->'S'),public.savings_panel_number(r.source_data->'R')) end,'plan_fin',public.savings_panel_date((r.source_data||r.proposed_data)->>'Z'));\n select coalesce(jsonb_agg(jsonb_build_object('id',id,'control',numero_control,'archived',is_archived) order by id),'[]') into identity from public.affiliates where numero_control=r.source_folio;\n select coalesce(jsonb_agg(to_jsonb(p) order by p.id),'[]') into links from public.savings_participants p\n where legacy_folio=r.source_folio or affiliate_id in(select id from public.affiliates where numero_control=r.source_folio);\n select coalesce(jsonb_agg(jsonb_build_object('id',id,'version',version,'source',source_data,'proposal',proposed_data,'status',status) order by id),'[]') into related\n from public.savings_review_records where source_folio=r.source_folio;\n return jsonb_build_object('person',person,'record_status',r.status,'source_version',r.version,'cutoff_on',(b.observed_at at time zone 'America/Hermosillo')::date,\n 'snapshot',jsonb_build_object('batch_sha',b.source_sha256,'record_id',r.id,'source',r.source_data,'proposal',r.proposed_data,'related',related,'identity',identity,'participants',links,'historical_yield_through','2026-06-30'));\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_certification_context",
+      "signature": "savings_certification_context(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_certification_context(p_record_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; o public.savings_source_observations%rowtype; proposal jsonb; conflict boolean;\nbegin\n result:=public.savings_context_before_source_refresh(p_record_id);\n select * into o from public.savings_source_observations where record_id=p_record_id order by observed_at desc,id desc limit 1;\n if found then\n  select proposed_data into proposal from public.savings_review_records where id=p_record_id;\n  select exists(select 1 from jsonb_array_elements(o.changes)c where proposal ? (c->>'key') and proposal->(c->>'key') is distinct from c->'current') into conflict;\n  result:=result||jsonb_build_object('source_update',jsonb_build_object('id',o.id,'source_total',o.source_total,'observed_at',o.observed_at,'changes',o.changes,\n   'pending',not exists(select 1 from public.savings_source_acceptances where observation_id=o.id),'conflict',conflict),\n   'can_accept_source_update',public.savings_review_edit_allowed());\n  result:=jsonb_set(result,'{snapshot,source_observation}',jsonb_build_object('id',o.id,'sha',o.source_sha));\n end if;\n return result;\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_financial_before_accounts",
+      "signature": "savings_financial_before_accounts(uuid,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_financial_before_accounts(p_record_id uuid, p_until date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; snapshot jsonb;\nbegin\n result:=public.savings_account_before_runtime(p_record_id,p_until);\n if result->>'certified'='true' then\n  result:=jsonb_set(result,'{balance_version}',to_jsonb(public.savings_balance_review_version(p_record_id)));\n  select a.after_data->'source_snapshot' into snapshot from public.savings_audit_events a\n  where a.participant_id=(result#>>'{certificate,participant_id}')::uuid and a.action='ADJUST_CONFIRMED_BALANCE' order by id desc limit 1;\n  if snapshot is not null then result:=jsonb_set(result,'{source_changed}',to_jsonb((result#>'{context,snapshot,related}') is distinct from (snapshot->'related')));end if;\n end if;\n return result;\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "get_admin_savings_financial_account",
+      "signature": "get_admin_savings_financial_account(uuid,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_savings_financial_account(p_record_id uuid, p_until date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare base jsonb; account jsonb;\nbegin\n base:=public.savings_financial_before_accounts(p_record_id,p_until);\n if base->>'certified'='true' then\n  account:=public.get_admin_savings_account((base#>>'{certificate,participant_id}')::uuid,p_until);\n  base:=base||jsonb_build_object('schedule',account->'schedule','balance',account->'balance','latest_enrollment',account->'latest_enrollment',\n   'enrollments',account->'enrollments','projected_total',account->'projected_total','unconfirmed_dates',account->'unconfirmed_dates','history',account->'history','publication',account->'publication');\n end if;\n return base;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "get_admin_savings_account",
+      "signature": "get_admin_savings_account(uuid,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_savings_account(p_participant_id uuid, p_until date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare p public.savings_participants%rowtype; c public.savings_balance_certifications%rowtype; en public.savings_enrollments%rowtype;\n plan public.savings_contribution_plans%rowtype; bal jsonb; schedule jsonb; history jsonb; identity jsonb; until_date date; start_date date; mode text; current_status text;\nbegin\n if auth.uid() is null or not public.has_admin_permission('savings.read') then raise exception 'SAVINGS_READ_DENIED' using errcode='42501';end if;\n select * into p from public.savings_participants where id=p_participant_id and data_classification='CANONICAL';\n if not found then raise exception 'SAVINGS_CANONICAL_ACCOUNT_REQUIRED';end if;\n select * into c from public.savings_balance_certifications where participant_id=p.id;\n select * into en from public.savings_enrollments where participant_id=p.id and data_classification='CANONICAL' order by sequence_number desc limit 1;\n current_status:=public.savings_enrollment_effective_status(en.status,en.terminated_at,public.savings_operation_today());\n until_date:=coalesce(p_until,public.savings_operation_today()+366);\n if until_date>public.savings_operation_today()+1098 or until_date<coalesce(c.cutoff_on,(p.created_at at time zone 'America/Hermosillo')::date) then raise exception 'SAVINGS_PROJECTION_RANGE_INVALID';end if;\n select coalesce(c.cutoff_on+1,min(first_expected_contribution_date),public.savings_operation_today()) into start_date from public.savings_enrollments where participant_id=p.id and data_classification='CANONICAL';\n select * into plan from public.savings_contribution_plans where enrollment_id=en.id and data_classification='CANONICAL'\n  and (effective_to is null or effective_to>=public.savings_operation_today()) order by case when effective_from<=public.savings_operation_today() then 0 else 1 end,effective_from limit 1;\n select to_jsonb(b) into bal from public.savings_participant_balance(p.id)b;\n select coalesce(jsonb_agg(jsonb_build_object('enrollment_id',e.id,'date',s.contribution_date,'expected',s.expected_amount,\n  'actual',o.actual_amount,'version',coalesce(o.version_number,0),'confirmed',o.id is not null,'future',s.contribution_date>public.savings_operation_today()) order by s.contribution_date,e.sequence_number),'[]') into schedule\n from public.savings_enrollments e cross join lateral public.generate_savings_schedule(e.id,greatest(start_date,e.first_expected_contribution_date),until_date)s\n left join lateral(select * from public.savings_contribution_overrides where enrollment_id=e.id and contribution_date=s.contribution_date order by version_number desc limit 1)o on true\n where e.participant_id=p.id and e.data_classification='CANONICAL' and e.first_expected_contribution_date<=until_date;\n select coalesce(jsonb_agg(jsonb_build_object('id',a.id,'at',a.created_at,'action',a.action,'observation',a.reason,'before',a.before_data,'after',a.after_data,'actor','Encargado autorizado') order by a.id desc),'[]') into history\n from public.savings_audit_events a where a.participant_id=p.id;\n identity:=public.savings_review_identity(p.legacy_folio);\n select s.mode into mode from public.savings_publication_state s where id;\n return jsonb_build_object('participant_id',p.id,'certified',true,'native',c.id is null,\n  'context',jsonb_build_object('person',jsonb_build_object('folio',p.legacy_folio,'nombre',identity->>'name','aporte',plan.amount,'inicio',(select min(first_actual_contribution_date) from public.savings_enrollments where participant_id=p.id and data_classification='CANONICAL'),\n   'plan_inicio',(en.enrollment_started_at at time zone 'America/Hermosillo')::date,'estado',case when en.id is null then 'Por iniciar' when current_status='ACTIVE' then 'Ahorrando' when current_status='TERMINATED' then 'Dejo de ahorrar' else 'En revision' end,\n   'frecuencia',case when plan.process_snapshot='JUB' then 'MONTHLY' else 'TWICE_MONTHLY' end,'identity',identity),'cutoff_on',c.cutoff_on),\n  'balance',bal,'latest_enrollment',to_jsonb(en)||jsonb_build_object('status',current_status,'recorded_status',en.status),'schedule',schedule,'history',history,'today',public.savings_operation_today(),'publication',mode,\n  'enrollments',coalesce((select jsonb_agg(to_jsonb(e) order by sequence_number desc) from public.savings_enrollments e where participant_id=p.id and data_classification='CANONICAL'),'[]'),\n  'can_confirm',false,'can_write',public.has_admin_permission('savings.write') and (identity->>'match_count')::int=1 and (identity->>'active_match_count')::int=1\n   and exists(select 1 from public.affiliates a where a.id=p.affiliate_id and a.numero_control=p.legacy_folio and not coalesce(a.is_archived,false)),\n  'unconfirmed_dates',(select count(*) from jsonb_array_elements(schedule)x where x->>'future'='false' and x->>'confirmed'='false'),\n  'projected_total',(bal->>'total')::numeric+coalesce((select sum((x->>'expected')::numeric) from jsonb_array_elements(schedule)x where x->>'future'='true'),0),\n  'balance_version',md5(jsonb_build_array(p.id,bal,(select coalesce(max(id),0) from public.savings_audit_events where participant_id=p.id))::text));\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "16388"
+    }
+  ]
+}

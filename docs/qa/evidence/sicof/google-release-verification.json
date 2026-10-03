@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "version": 19,
+  "prior_reader": {
+    "status": "PASS",
+    "scanned_rows": 18534,
+    "overdue_loans": 51,
+    "read_only": true
+  },
+  "denial": {
+    "status": "PASS",
+    "invalid_secret_denied": true
+  },
+  "source_readback_exact": true,
+  "sicof_real_read": "PASS — google-release-sicof-real-read.json",
+  "sheet_writes": 0
+}

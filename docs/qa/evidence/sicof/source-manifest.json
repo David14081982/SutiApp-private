@@ -1,0 +1,102 @@
+{
+  "status": "PASS",
+  "candidatePublished": false,
+  "files": [
+    {
+      "file": "app/sicof-admin.jsx",
+      "sha256": "9841bb9397ce0baa1d742dc1db9dd8049f4cacf11002b11ad71afd5a30801cd9"
+    },
+    {
+      "file": "app/sicof-payment-behavior.jsx",
+      "sha256": "7396554c2e1a1b45c89d67e1d540db55bacc492eec937045f0936c008e5f5465"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "sha256": "25ce2019f5e95743033bebb1f350a310a1b77cfea26bd8348ef6afbcf558801b"
+    },
+    {
+      "file": "app/savings-period-breakdown.jsx",
+      "sha256": "63942da992ad8c989256cdf46f7a8a75adfa589c102d7473776c49e5c4998617"
+    },
+    {
+      "file": "app/screens-admin.jsx",
+      "sha256": "9ff8d778fd7de0464bcd0bcb41a98afd2d6d1e9ef2da359e306bd4c894b14d64"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "sha256": "a2d0c79a87985f9a1cfad356180d16c72be1eeac8c236723203056f7ab2b6988"
+    },
+    {
+      "file": "app/screens-savings.jsx",
+      "sha256": "443f8151a1776e33464a9101199b11a787b0ba1f213a1cf54f1f3ccf3d6079e6"
+    },
+    {
+      "file": "app/savings-runtime-admin.jsx",
+      "sha256": "ba27bdf4a1bd2b6765b976f685075d1424de355ec7968cad1a13495ac2cf3958"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "4a4be8561222e617c22a71a69688deabc0cebdb29faec2b34785780d53be12d4"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "fe8e56e0e87c9119a613548363e747acaff708284d3e6365385f2316c08e6484"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "961c0aa41cdadf292bbb52a85fd650e8acbd4d3a32f578ca24ac73a82c1aa2e8"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "e893cf2d29cbc9798a289ef7ae238a233ca15bfa6eb5fded4fdabf3044c143e3"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "sha256": "fc5a8d2b1499f49fcdad8df5cd75daa0817dcefd6eeaecdf500de87e57e7a067"
+    },
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "sha256": "f89dca285b0b17d5333e3c78aa179e8e632a98e81d9f4d72fdad831c50ea8a75"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "1a0d931d7f43d211b21ee89c1e995176248172211e364164750b972c96d23f1b"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "sha256": "1a178a78e2d1349486792615f97f59ef4c519bbfaf649f51c942c785ab088272"
+    },
+    {
+      "file": "supabase/functions/sicof/index.ts",
+      "sha256": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "sha256": "9a219c501b11dc9f6de98fb8fe369da75f53c1eb77bd6eab8b60107b4eaacd73"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "7275111ff5c9b111bb0701163a373d7563bcc19ee34e087e16b3f6c6c6a9b63e"
+    },
+    {
+      "file": "supabase/migrations/20261003000100_savings_period_composition.sql",
+      "sha256": "93d23971e59fbf27e2217efe9c9af7eaccf9eac3433775a8651f215d8a33541e"
+    },
+    {
+      "file": "supabase/migrations/20261003000200_sicof_workspace.sql",
+      "sha256": "c79b80b33832383096822142d959bb3e1ba2d99b40ace49919663ffba4fcc330"
+    },
+    {
+      "file": "supabase/recovery/20261003000100_savings_period_composition.sql",
+      "sha256": "b72df1aa9a76c03b414714c5d4e5303be702d53da34f747ba54383546b9bc02b"
+    },
+    {
+      "file": "supabase/recovery/20261003000200_sicof_workspace.sql",
+      "sha256": "0822d6e5a87aebca4f22b3050a736c2c5048b3c89081c69a77a84f1883c43b99"
+    }
+  ]
+}

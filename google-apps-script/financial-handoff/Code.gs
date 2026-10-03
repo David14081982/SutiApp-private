@@ -407,9 +407,49 @@ function readLoanStatus_(payload) {
     valueRanges:[project([0,1,2,3]),project([6]),project([23])],observed_at:new Date().toISOString()});
 }
 
+// SICOF is a separate, fixed read contract. Existing loan guard and all writers
+// remain unchanged. Exact display identity accompanies typed monetary values.
+function readSicofFinancial_(payload) {
+  const secret=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!secret||!constantTimeEqual_(payload.secret,secret))return failure_('UNAUTHORIZED');
+  if(Object.keys(payload).some(function(key){return !['action','secret','contract_version'].includes(key);})||payload.contract_version!=='SICOF_FINANCIAL_READ_V1')return failure_('INVALID_REQUEST');
+  const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID);
+  if(String(book.getId())!==HANDOFF_SPREADSHEET_ID)throw new Error('WORKBOOK_ID_MISMATCH');
+  const sheet=book.getSheetByName('HISTORIAL P V2');
+  if(!sheet||Number(sheet.getSheetId())!==1245291756||sheet.getLastRow()<2)return failure_('LOAN_SOURCE_UNAVAILABLE');
+  const count=sheet.getLastRow(),range=sheet.getRange(1,1,count,33);
+  const raw=range.getValues(),display=range.getDisplayValues();
+  // A source edit between the numeric read and exact-identity projection must
+  // be retried, never accepted as a mixed financial observation.
+  if(JSON.stringify(raw)!==JSON.stringify(range.getValues())||count!==sheet.getLastRow())return failure_('SICOF_SOURCE_CHANGED_DURING_READ');
+  const indexes=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,21,22,23,24,25,26,27,28,29,30,31,32];
+  const columns=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG'];
+  const dateColumns=[0,11,15,30,31,32],zone=book.getSpreadsheetTimeZone();
+  const formattedDates=new Map();
+  const headers=indexes.map(function(column){return display[0][column];});
+  const rows=[];
+  for(let i=1;i<raw.length;i++){
+    if(indexes.every(function(column){return raw[i][column]===''||raw[i][column]===null;}))continue;
+    rows.push({source_row:i+1,values:indexes.map(function(column){
+      const value=raw[i][column];
+      if(column===2||column===3)return String(display[i][column]);
+      if(dateColumns.includes(column)&&Object.prototype.toString.call(value)==='[object Date]'&&!isNaN(value.getTime())){
+        const timestamp=value.getTime();
+        if(!formattedDates.has(timestamp))formattedDates.set(timestamp,Utilities.formatDate(value,zone,'yyyy-MM-dd'));
+        return formattedDates.get(timestamp);
+      }
+      return value===''||value===undefined?null:value;
+    })});
+  }
+  return jsonResponse_({ok:true,action:'read_sicof_financial',contract_version:'SICOF_FINANCIAL_READ_V1',
+    workbook_id:HANDOFF_SPREADSHEET_ID,sheet_id:1245291756,sheet_name:'HISTORIAL P V2',columns:columns,headers:headers,rows:rows,
+    source_fingerprint:hexDigest_(JSON.stringify({headers:headers,rows:rows})),observed_at:new Date().toISOString()});
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
+    if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);
     if(payload.action==='read_loan_status')return readLoanStatus_(payload);
     if(payload.action==='sync_request')return receiveRequestSync_(payload);
     if(payload.action==='delete_request')return deleteRequest_(payload);

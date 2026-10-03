@@ -1,0 +1,10 @@
+{
+  "executedScriptSha256": "418f84041912502be962bc92380de84a6a90fd2ed4afac5e3eb6ac43eca4664a",
+  "currentScriptSha256": "6909bc2c1a0d253ccf80e268147a8cb67e505b74a514e09c7e9e8dfe04d565af",
+  "basis": "Reconstructed by removing only the two assertion blocks added after the successful live run; not captured at process start.",
+  "postRunAssertions": [
+    "installed complete context fingerprint checked separately in context-performance-installed.json",
+    "source READY and counts are verified by the root live UI script"
+  ],
+  "businessWrites": 0
+}

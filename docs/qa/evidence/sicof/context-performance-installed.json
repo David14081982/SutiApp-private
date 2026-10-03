@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "mode": "INSTALLED_READ_ONLY_EQUIVALENCE",
+  "before": {
+    "sample": 15,
+    "context_ms": 21267.408,
+    "equivalent": true,
+    "fingerprint": "f820d7148b4f199fecc2b9b935629de5",
+    "participants": 354,
+    "whole_json_md5": "ab8316772142d1612a07e34f9cffb49e"
+  },
+  "after": {
+    "context_ms": 4335.839,
+    "fingerprint": "f820d7148b4f199fecc2b9b935629de5",
+    "participants": 354,
+    "whole_json_md5": "ab8316772142d1612a07e34f9cffb49e"
+  },
+  "definitionMd5": "333c799b38198a06dc86b70aa323833f",
+  "financialWrites": 0
+}

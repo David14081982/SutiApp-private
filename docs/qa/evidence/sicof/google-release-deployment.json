@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "before_version": 17,
+  "version": 18,
+  "same_deployment": true,
+  "same_entrypoints": true,
+  "same_manifest": true,
+  "legacy_inverse_exact": true,
+  "stable_active_reads": 3,
+  "head_matches_active": true,
+  "source_sha256": "096eafd232b590658ce0b17312a26429d81282cb2568f0af035aaba76a4c9225",
+  "sheet_writes": 0
+}

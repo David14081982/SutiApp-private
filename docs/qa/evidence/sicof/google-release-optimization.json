@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "before_version": 18,
+  "version": 19,
+  "memo_inverse_exact": true,
+  "legacy_inverse_exact": true,
+  "same_manifest": true,
+  "same_deployment": true,
+  "double_read_retained": true,
+  "formatting_scope": "timestamp cache within one request only",
+  "formatter_fixture_before": 90006,
+  "formatter_fixture_after": 2,
+  "fixture_rows_identical": 15001,
+  "source_sha256": "413131bc96c4c52058fd3b63721a0c96ae4274da801f072948f8a0ebfdb2c028",
+  "code_sha256": "dafdc732e9cb69adfd755986ed41de7a7f91d5c43ff73a19beabf7cdae170927",
+  "sheet_writes": 0
+}

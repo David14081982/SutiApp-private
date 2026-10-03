@@ -1,0 +1,220 @@
+{
+  "status": "PASS",
+  "version": "20261003000300",
+  "migrationSha256": "d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f",
+  "protectedTables": 20,
+  "financialAndPrivateHistoryUnchanged": true,
+  "legacyDefinitionsUnchanged": true,
+  "existingOidsOwnersAclsPreserved": true,
+  "financialWrites": 0,
+  "evidence": [
+    {
+      "evidence": {
+        "after": [
+          {
+            "count": 0,
+            "resource": "public.savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 694,
+            "resource": "public.savings_audit_events",
+            "fingerprint": "690c60a6af9e8a223b2e4ee81a7fdfb3"
+          },
+          {
+            "count": 328,
+            "resource": "public.savings_balance_certifications",
+            "fingerprint": "83526ab5103fe44bae65b07752671cfd"
+          },
+          {
+            "count": 334,
+            "resource": "public.savings_contribution_plans",
+            "fingerprint": "cc706c6b9266aa5ed86dfe07b7babcf2"
+          },
+          {
+            "count": 352,
+            "resource": "public.savings_enrollments",
+            "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 354,
+            "resource": "public.savings_participants",
+            "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+          },
+          {
+            "count": 26,
+            "resource": "public.savings_requests",
+            "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+          },
+          {
+            "count": 844,
+            "resource": "public.savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_period_private.attribution_events",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_period_private.attribution_slices",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 2,
+            "resource": "savings_period_private.function_backup",
+            "fingerprint": "552e459fb75c95dbd7972bde6a535106"
+          },
+          {
+            "count": 1,
+            "resource": "sicof_private.historical_reports",
+            "fingerprint": "118b7e479022f4d745757ddfe2d91f99"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.preferences",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.scenario_events",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.scenarios",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 1,
+            "resource": "sicof_private.visibility_backup",
+            "fingerprint": "777c908e0c455bc1cfd5cf3a2f9c32c8"
+          }
+        ],
+        "before": [
+          {
+            "count": 0,
+            "resource": "public.savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 694,
+            "resource": "public.savings_audit_events",
+            "fingerprint": "690c60a6af9e8a223b2e4ee81a7fdfb3"
+          },
+          {
+            "count": 328,
+            "resource": "public.savings_balance_certifications",
+            "fingerprint": "83526ab5103fe44bae65b07752671cfd"
+          },
+          {
+            "count": 334,
+            "resource": "public.savings_contribution_plans",
+            "fingerprint": "cc706c6b9266aa5ed86dfe07b7babcf2"
+          },
+          {
+            "count": 352,
+            "resource": "public.savings_enrollments",
+            "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 354,
+            "resource": "public.savings_participants",
+            "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+          },
+          {
+            "count": 26,
+            "resource": "public.savings_requests",
+            "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+          },
+          {
+            "count": 844,
+            "resource": "public.savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "public.savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_period_private.attribution_events",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_period_private.attribution_slices",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 2,
+            "resource": "savings_period_private.function_backup",
+            "fingerprint": "552e459fb75c95dbd7972bde6a535106"
+          },
+          {
+            "count": 1,
+            "resource": "sicof_private.historical_reports",
+            "fingerprint": "118b7e479022f4d745757ddfe2d91f99"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.preferences",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.scenario_events",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "sicof_private.scenarios",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 1,
+            "resource": "sicof_private.visibility_backup",
+            "fingerprint": "777c908e0c455bc1cfd5cf3a2f9c32c8"
+          }
+        ]
+      }
+    }
+  ]
+}

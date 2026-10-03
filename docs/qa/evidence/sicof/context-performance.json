@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "before": {
+    "sample": 15,
+    "context_ms": 21267.408,
+    "equivalent": true,
+    "fingerprint": "f820d7148b4f199fecc2b9b935629de5",
+    "participants": 354,
+    "whole_json_md5": "ab8316772142d1612a07e34f9cffb49e"
+  },
+  "after": {
+    "context_ms": 4243.771,
+    "fingerprint": "f820d7148b4f199fecc2b9b935629de5",
+    "participants": 354,
+    "whole_json_md5": "ab8316772142d1612a07e34f9cffb49e"
+  },
+  "isolated": {
+    "status": "PASS",
+    "command": "node scripts/test-sicof-context-performance.js",
+    "checks": 12
+  },
+  "files": [
+    {
+      "file": "supabase/migrations/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f"
+    },
+    {
+      "file": "supabase/recovery/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "425b818bd2ef8d9993d22df73606e2cb6030ca13c4655b47f3e8d0a56caf2ba8"
+    },
+    {
+      "file": "scripts/test-sicof-context-performance.js",
+      "sha256": "ad5e317bb9367c5a11ecec0199c043b156395ce80d52b49f6ad16292e6e87b18"
+    },
+    {
+      "file": "scripts/fixtures/sicof-context-performance-schema.json",
+      "sha256": "0fc1c6db34db77e0e1f6ef89ebe0b26691854121d28527b092dad0ee674f9301"
+    }
+  ]
+}

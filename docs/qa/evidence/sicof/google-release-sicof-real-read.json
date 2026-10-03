@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "http_status": 200,
+  "action": "BEHAVIOR",
+  "authenticated_context_verified": true,
+  "subjects_returned": 1,
+  "source_fresh": true,
+  "observed_at": "2026-10-03T20:28:17.764Z",
+  "source_path": "SICOF Edge -> existing authenticated Apps Script read_sicof_financial -> fixed HISTORIAL P V2",
+  "anonymous_http_status": 401,
+  "timings": {
+    "context_ms": 659,
+    "behavior_ms": 22911
+  },
+  "financial_writes": 0,
+  "private_payload_only": true
+}

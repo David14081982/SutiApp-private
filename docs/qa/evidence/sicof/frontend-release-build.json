@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-03T20:54:42.804Z",
+  "baselineCommit": "30a120e3cae13415a347f838e6d2fdeee64e98f8",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "checks": [
+    {
+      "name": "current isolated HEAD is the verified published baseline",
+      "status": "PASS"
+    },
+    {
+      "name": "release has the recorded exact bundle hash and valid JavaScript",
+      "status": "PASS"
+    },
+    {
+      "name": "four approved source integrations and all four new modules match the frozen manifest",
+      "status": "PASS"
+    },
+    {
+      "name": "all unrelated current production chunks survive byte-for-byte including RH",
+      "status": "PASS"
+    },
+    {
+      "name": "service worker logic and HTML differ only in required versions",
+      "status": "PASS"
+    },
+    {
+      "name": "build registration adds only four modules and retains remote RH entries",
+      "status": "PASS"
+    },
+    {
+      "name": "workflow public allowlist and existing Auth/request deployment guards unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "only declared files changed and no workbook private backups or secrets enter release",
+      "status": "PASS"
+    },
+    {
+      "name": "unchanged Pages guard accepts real installed SICOF catalog metadata",
+      "status": "PASS"
+    }
+  ],
+  "backendRegistrationChecked": true,
+  "browserTestsRun": false,
+  "publicArtifact": null,
+  "productionWrites": 0,
+  "published": false
+}

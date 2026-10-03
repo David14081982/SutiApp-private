@@ -1,0 +1,141 @@
+{
+  "status": "PASS",
+  "versions": [
+    "20261003000100",
+    "20261003000200"
+  ],
+  "protectedFinancialTablesUnchanged": true,
+  "existingOidsOwnersAclsPreserved": true,
+  "authHelpersUnchanged": true,
+  "financialWrites": 0,
+  "evidence": [
+    {
+      "evidence": {
+        "after": [
+          {
+            "count": 0,
+            "resource": "savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 694,
+            "resource": "savings_audit_events",
+            "fingerprint": "ce4c939a49a17f6de02beb38e62d0e78"
+          },
+          {
+            "count": 328,
+            "resource": "savings_balance_certifications",
+            "fingerprint": "83526ab5103fe44bae65b07752671cfd"
+          },
+          {
+            "count": 334,
+            "resource": "savings_contribution_plans",
+            "fingerprint": "cc706c6b9266aa5ed86dfe07b7babcf2"
+          },
+          {
+            "count": 352,
+            "resource": "savings_enrollments",
+            "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+          },
+          {
+            "count": 0,
+            "resource": "savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 354,
+            "resource": "savings_participants",
+            "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+          },
+          {
+            "count": 26,
+            "resource": "savings_requests",
+            "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+          },
+          {
+            "count": 844,
+            "resource": "savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "count": 0,
+            "resource": "savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          }
+        ],
+        "before": [
+          {
+            "count": 0,
+            "resource": "savings_action_availability",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 694,
+            "resource": "savings_audit_events",
+            "fingerprint": "ce4c939a49a17f6de02beb38e62d0e78"
+          },
+          {
+            "count": 328,
+            "resource": "savings_balance_certifications",
+            "fingerprint": "83526ab5103fe44bae65b07752671cfd"
+          },
+          {
+            "count": 334,
+            "resource": "savings_contribution_plans",
+            "fingerprint": "cc706c6b9266aa5ed86dfe07b7babcf2"
+          },
+          {
+            "count": 352,
+            "resource": "savings_enrollments",
+            "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+          },
+          {
+            "count": 0,
+            "resource": "savings_holds",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 354,
+            "resource": "savings_participants",
+            "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+          },
+          {
+            "count": 26,
+            "resource": "savings_requests",
+            "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+          },
+          {
+            "count": 844,
+            "resource": "savings_transactions",
+            "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+          },
+          {
+            "count": 0,
+            "resource": "savings_withdrawal_openings",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_yield_allocations",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          {
+            "count": 0,
+            "resource": "savings_yield_periods",
+            "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+          }
+        ]
+      }
+    }
+  ]
+}

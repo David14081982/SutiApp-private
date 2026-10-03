@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-03T20:52:40.458Z",
+  "target": "http://localhost:8080",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "checks": [
+    {
+      "name": "candidate identity and actual login",
+      "status": "PASS",
+      "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+      "fixtureResponses": 0
+    },
+    {
+      "name": "self Savings period balance matches canonical self reader",
+      "status": "PASS",
+      "periodRows": 0,
+      "annualReferences": 0,
+      "canonicalAvailableMatches": true
+    }
+  ],
+  "network": [],
+  "blockedFinancialWrites": 0,
+  "browserErrors": 0,
+  "fixtures": 0,
+  "screenshots": 0,
+  "productionBusinessWrites": 0,
+  "limitations": [
+    "Authenticating may create the existing nonfinancial access-history event. No savings, loan, scenario or preference writer is invoked.",
+    "Data remains in browser/process memory; evidence contains only counts and contract results."
+  ]
+}

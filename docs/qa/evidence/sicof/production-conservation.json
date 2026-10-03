@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "checks": [
+    {
+      "table": "savings_transactions",
+      "rows": 844,
+      "unchanged": true
+    },
+    {
+      "table": "savings_requests",
+      "rows": 26,
+      "unchanged": true
+    },
+    {
+      "table": "savings_participants",
+      "rows": 354,
+      "unchanged": true
+    },
+    {
+      "table": "savings_enrollments",
+      "rows": 352,
+      "unchanged": true
+    },
+    {
+      "table": "savings_holds",
+      "rows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "savings_yield_periods",
+      "rows": 0,
+      "unchanged": true
+    },
+    {
+      "table": "savings_yield_allocations",
+      "rows": 0,
+      "unchanged": true
+    }
+  ],
+  "productionFinancialWritesByTask": 0
+}

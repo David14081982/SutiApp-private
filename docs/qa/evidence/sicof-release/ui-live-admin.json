@@ -1,0 +1,78 @@
+{
+  "status": "FAIL",
+  "checkedAt": "2026-10-03T20:50:10.606Z",
+  "stageCode": "LIVE_UI_SELF_SAVINGS_PERIOD_BALANCE_MATCHES_CANONICAL_SELF_READER",
+  "target": "http://localhost:8080",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "checks": [
+    {
+      "name": "candidate identity and actual login",
+      "status": "PASS",
+      "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+      "fixtureResponses": 0
+    },
+    {
+      "name": "real Admin SICOF load and server calculation",
+      "status": "PASS",
+      "sourceReady": true,
+      "sourceStatus": "READY",
+      "sourceObservedAt": "2026-10-03T20:47:28.141Z",
+      "loanCount": 2373,
+      "paymentCount": 5656,
+      "participants": 354,
+      "reportRows": 836,
+      "sourceTimestampPresent": true,
+      "rateResolved": false
+    },
+    {
+      "name": "all eight real SICOF panes and original controls",
+      "status": "PASS",
+      "panes": 8,
+      "reportControlsEnabled": true
+    },
+    {
+      "name": "real savings origin and global balance detail",
+      "status": "PASS",
+      "realReportDetail": true,
+      "noOriginClassificationWritten": true
+    },
+    {
+      "name": "real loan matrix and expected paid detail",
+      "status": "PASS",
+      "realHistory": true,
+      "expectedComparison": true
+    },
+    {
+      "name": "Finance behavior indicator from real applicant requests",
+      "status": "PASS",
+      "indicatorReady": true,
+      "opensOwnDetail": true,
+      "batches": 1
+    }
+  ],
+  "network": [
+    {
+      "action": "LOAD",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "CALCULATE",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "BEHAVIOR",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "BEHAVIOR",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "blockedFinancialWrites": 0,
+  "browserErrors": 0,
+  "productionBusinessWrites": 0
+}

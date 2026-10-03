@@ -1,0 +1,2340 @@
+{
+  "classification": "ISOLATED_SCHEMA_ONLY_FIXTURE",
+  "production_rows": false,
+  "definitions": [
+    {
+      "name": "reject_savings_history_mutation",
+      "signature": "reject_savings_history_mutation()",
+      "definition": "CREATE OR REPLACE FUNCTION public.reject_savings_history_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ begin raise exception 'SAVINGS_APPEND_ONLY_HISTORY' using errcode='55000'; end $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_effective_action",
+      "signature": "savings_effective_action(text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_effective_action(p_action_code text, p_participant_id uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare a public.savings_action_availability%rowtype; mode text;\r\nbegin\r\n select * into a from public.savings_action_availability\r\n where action_code=p_action_code and scope_type='PARTICIPANT' and participant_id=p_participant_id\r\n   and effective_from<=now() order by effective_from desc,created_at desc,id desc limit 1;\r\n if found and (a.effective_to is null or now()<a.effective_to) then return a.enabled; end if;\r\n select * into a from public.savings_action_availability\r\n where action_code=p_action_code and scope_type='GLOBAL' and effective_from<=now()\r\n order by effective_from desc,created_at desc,id desc limit 1;\r\n if found then return a.enabled and (a.effective_to is null or now()<a.effective_to); end if;\r\n if p_action_code='JOIN' then\r\n   select entry_mode into mode from public.savings_operation_settings order by created_at desc,id desc limit 1;\r\n   return coalesce(mode,'ALL_YEAR')='ALL_YEAR';\r\n end if;\r\n return false;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_participant_balance",
+      "signature": "savings_participant_balance(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_participant_balance(p_participant_id uuid)\n RETURNS TABLE(capital numeric, yield_amount numeric, total numeric, held_capital numeric, held_yield numeric, held numeric, available numeric)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  with ledger as(\n    select\n      coalesce(sum(case when component='CAPITAL' then case direction when 'CREDIT' then amount else -amount end else 0 end),0)::numeric as capital,\n      coalesce(sum(case when component='YIELD' then case direction when 'CREDIT' then amount else -amount end else 0 end),0)::numeric as yield_amount\n    from public.savings_transactions where participant_id=p_participant_id\n  ),holds as(\n    select\n      coalesce(sum(case when component='CAPITAL' then amount else 0 end),0)::numeric as held_capital,\n      coalesce(sum(case when component='YIELD' then amount else 0 end),0)::numeric as held_yield\n    from public.savings_holds where participant_id=p_participant_id and status='ACTIVE'\n  )\n  select ledger.capital,ledger.yield_amount,ledger.capital+ledger.yield_amount,\n    holds.held_capital,holds.held_yield,holds.held_capital+holds.held_yield,\n    greatest(ledger.capital+ledger.yield_amount-holds.held_capital-holds.held_yield,0)::numeric\n  from ledger cross join holds\n$function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "generate_savings_schedule",
+      "signature": "generate_savings_schedule(uuid,date,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.generate_savings_schedule(p_enrollment_id uuid, p_from date, p_to date)\n RETURNS TABLE(contribution_date date, expected_amount numeric, process_snapshot text, plan_id uuid)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nbegin\r\n if p_from is null or p_to is null or p_to<p_from or p_to>p_from+3660 then\r\n   raise exception 'SAVINGS_PROJECTION_RANGE_INVALID' using errcode='22023';\r\n end if;\r\n return query\r\n select d.day::date,p.amount,p.process_snapshot,p.id\r\n from public.savings_enrollments e\r\n cross join lateral generate_series(p_from::timestamp,p_to::timestamp,interval '1 day') d(day)\r\n join lateral (\r\n   select cp.* from public.savings_contribution_plans cp\r\n   where cp.enrollment_id=e.id and cp.effective_from<=d.day::date\r\n     and (cp.effective_to is null or cp.effective_to>=d.day::date)\r\n   order by cp.effective_from desc limit 1\r\n ) p on true\r\n where e.id=p_enrollment_id and d.day::date>=e.first_expected_contribution_date\r\n   and (e.terminated_at is null or d.day::date<(e.terminated_at at time zone 'America/Hermosillo')::date)\r\n   and public.savings_next_contribution_date(d.day::date,p.process_snapshot)=d.day::date\r\n order by d.day;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_next_contribution_date",
+      "signature": "savings_next_contribution_date(date,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_next_contribution_date(p_from date, p_process text)\n RETURNS date\n LANGUAGE plpgsql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\r\ndeclare d date;\r\nbegin\r\n if p_from is null or p_process is null or p_process not in ('JUB','PROCESS_1','PROCESS_3') then\r\n   raise exception 'SAVINGS_CALENDAR_INPUT_INVALID' using errcode='22023';\r\n end if;\r\n for i in 0..35 loop\r\n   d:=p_from+i;\r\n   if (p_process='JUB' and extract(day from d)=5)\r\n     or (p_process<>'JUB' and (extract(day from d)=15 or\r\n       (extract(month from d)=2 and extract(day from d)=28) or\r\n       (extract(month from d)<>2 and extract(day from d)=30))) then return d; end if;\r\n end loop;\r\n raise exception 'SAVINGS_CALENDAR_DATE_NOT_FOUND';\r\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_canonical_user_projection",
+      "signature": "savings_canonical_user_projection(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_canonical_user_projection(p_participant_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare p public.savings_participants%rowtype; e public.savings_enrollments%rowtype;\r\n c public.savings_balance_certifications%rowtype; r public.savings_review_records%rowtype;\r\n plan public.savings_contribution_plans%rowtype; d jsonb; accepted jsonb; related jsonb:='[]'; transition jsonb; bal jsonb; hist jsonb; annual jsonb;\r\n withdrawals jsonb; upcoming jsonb; actions jsonb; requests jsonb; changes jsonb;\r\n today date:=public.savings_operation_today(); published boolean; effective_status text;\r\nbegin\r\n select * into p from public.savings_participants where id=p_participant_id;\r\n if not found or p.identity_status<>'RESOLVED' or p.certification_status<>'CERTIFIED' or p.data_classification<>'CANONICAL'\r\n  or not exists(select 1 from public.affiliates a where a.id=p.affiliate_id and a.numero_control=p.legacy_folio and not coalesce(a.is_archived,false))\r\n  or (select count(*) from public.affiliates where numero_control=p.legacy_folio and not coalesce(is_archived,false))<>1 then\r\n  raise exception 'SAVINGS_EXACT_IDENTITY_REQUIRED' using errcode='55000';\r\n end if;\r\n select * into c from public.savings_balance_certifications where participant_id=p.id;\r\n if c.id is not null then\r\n  select * into r from public.savings_review_records where id=c.record_id;\r\n  select a.after_data->'source_snapshot' into accepted from public.savings_audit_events a where a.participant_id=p.id and a.action='ADJUST_CONFIRMED_BALANCE' order by a.id desc limit 1;\r\n  accepted:=coalesce(accepted,c.source_snapshot);related:=coalesce(accepted->'related','[]');\r\n  d:=(accepted->'source')||(accepted->'proposal');\r\n  if d->>'A' is distinct from p.legacy_folio then raise exception 'SAVINGS_EXACT_IDENTITY_REQUIRED';end if;\r\n elsif p.import_batch_id is not null then raise exception 'SAVINGS_CERTIFICATION_REQUIRED';\r\n end if;\r\n if exists(select 1 from public.savings_transactions where participant_id=p.id and (data_classification<>'CANONICAL' or effective_date>today)) then\r\n  raise exception 'SAVINGS_NONCANONICAL_MOVEMENTS' using errcode='55000';\r\n end if;\r\n select * into e from public.savings_enrollments where participant_id=p.id and data_classification='CANONICAL'\r\n  order by sequence_number desc limit 1;\r\n -- A future authorized cessation stops deductions only on its effective date.\r\n -- Keep stored history intact and derive today's state for every user action.\r\n effective_status:=case when (e.terminated_at at time zone 'America/Hermosillo')::date<=today then 'TERMINATED'\r\n  when e.status='TERMINATED' and (e.terminated_at at time zone 'America/Hermosillo')::date>today then 'ACTIVE' else e.status end;\r\n select * into plan from public.savings_contribution_plans where enrollment_id=e.id and data_classification='CANONICAL'\r\n  and effective_from<=today and (effective_to is null or effective_to>=today) order by effective_from desc limit 1;\r\n -- Before the first debit the accepted initial plan is still the person's plan.\r\n if plan.id is null and effective_status='ACTIVE' then\r\n  select * into plan from public.savings_contribution_plans where enrollment_id=e.id and data_classification='CANONICAL'\r\n   and effective_from>today order by effective_from limit 1;\r\n end if;\r\n select to_jsonb(b)||jsonb_build_object('yield',b.yield_amount,'canonical',true,'total_source','CERTIFIED_SAVINGS_TRANSACTIONS')\r\n  into bal from public.savings_participant_balance(p.id)b;\r\n if (bal->>'capital')::numeric<0 or (bal->>'yield_amount')::numeric<0 then raise exception 'SAVINGS_NEGATIVE_COMPONENT';end if;\r\n\r\n -- Closed source summaries retain their exact period. September receipts never\r\n -- appear under the old June subtotal. Opening credits are excluded throughout.\r\n with corrections as (\r\n  select sum(coalesce(public.savings_panel_number(d->(f->>'key')),0)-coalesce(public.savings_panel_number(accepted->'source'->(f->>'key')),0)) amount\r\n  from jsonb_array_elements(coalesce(r.field_defs,'[]'))f\r\n  where f->>'label' ~ '^\\d{4}-\\d{2}-\\d{2}' and f->>'label' like '%Descuento registrado%'\r\n   and left(f->>'label',10)::date between '2026-01-30'::date and '2026-06-30'::date\r\n ), historical as (\r\n  select 2025 as period_year,2 semester,'2025'::text as year,'2025'::text label,'Subtotal hasta 2025'::text subtotal_label,\r\n   public.savings_panel_number(d->'DP') capital,public.savings_panel_number(d->'DQ') yield_amount,true closed\r\n  union all select 2026,1,'2026','2026 - Enero a junio','Subtotal a junio 2026',\r\n   public.savings_panel_number(d->'DS')+coalesce((select amount from corrections),0),public.savings_panel_number(d->'DT'),true\r\n ), subsequent_history as (\r\n  select left(f->>'label',10)::date as day,public.savings_panel_number(d->(f->>'key')) amount\r\n  from jsonb_array_elements(coalesce(r.field_defs,'[]'))f where f->>'label' ~ '^\\d{4}-\\d{2}-\\d{2}'\r\n   and f->>'label' like '%Descuento registrado%' and left(f->>'label',10)::date>'2026-06-30'::date\r\n   and public.savings_panel_number(d->(f->>'key')) is not null\r\n ), new_money as (\r\n  select extract(year from day)::int period_year,case when extract(month from day)<=6 then 1 else 2 end semester,sum(amount) capital\r\n  from (\r\n   select day,amount from subsequent_history\r\n   union all\r\n   select contribution_date,case direction when 'CREDIT' then amount else -amount end from public.savings_transactions\r\n    where participant_id=p.id and data_classification='CANONICAL' and component='CAPITAL' and contribution_date is not null\r\n     and effective_date<=today and (c.id is null or contribution_date>c.cutoff_on)\r\n  ) q group by 1,2\r\n ), yields as (\r\n  select yp.period_year,yp.semester,a.approved_amount amount,yp.productive_enabled and a.status in ('CREDITED','EXCLUDED') closed\r\n  from public.savings_yield_allocations a join public.savings_yield_periods yp on yp.id=a.yield_period_id\r\n  where a.participant_id=p.id and a.status in ('CREDITED','EXCLUDED')\r\n   and (p.historical_yield_reconciled_through is null or yp.starts_on>p.historical_yield_reconciled_through)\r\n ), subsequent as (\r\n  select coalesce(n.period_year,y.period_year) period_year,coalesce(n.semester,y.semester) semester,\r\n   coalesce(n.capital,0) capital,y.amount yield_amount,coalesce(y.closed,false) closed\r\n  from new_money n full join yields y using(period_year,semester)\r\n ), periods as (\r\n  select * from historical where capital is not null or yield_amount is not null\r\n  union all\r\n  select period_year,semester,period_year::text||'-S'||semester,\r\n   period_year::text||case semester when 1 then ' - Enero a junio' else ' - Julio a diciembre' end,\r\n   'Subtotal registrado',capital,yield_amount,closed from subsequent\r\n ) select coalesce(jsonb_agg(jsonb_build_object('year',year,'label',label,'subtotal_label',subtotal_label,'closed',closed,\r\n   'capital',capital,'yield',yield_amount,'period_state',case when closed then 'CLOSED' else 'RECORDED' end)\r\n   order by period_year desc,semester desc),'[]') into annual from periods;\r\n\r\n with recorded as (\r\n  select r.id::text||':'||(f->>'key') id,left(f->>'label',10)::date effective_date,\r\n   public.savings_panel_number(d->(f->>'key')) amount,'HISTORICAL_RECORDED'::text source,\r\n   case when f->>'key'='AR' then 'CONTRIBUTION_WITH_INCLUDED_YIELD' else 'CONTRIBUTION' end transaction_type\r\n  from jsonb_array_elements(coalesce(r.field_defs,'[]'))f where f->>'label' ~ '^\\d{4}-\\d{2}-\\d{2}'\r\n   and f->>'label' like '%Descuento registrado%' and public.savings_panel_number(d->(f->>'key'))>0\r\n  union all\r\n  select o.id::text,o.contribution_date,o.actual_amount,'CONFIRMED_RECEIPT','CONTRIBUTION' from (\r\n   select distinct on(enrollment_id,contribution_date) o.* from public.savings_contribution_overrides o\r\n   join public.savings_enrollments en on en.id=o.enrollment_id where en.participant_id=p.id\r\n   and (c.id is null or o.contribution_date>c.cutoff_on) and o.contribution_date<=today\r\n   order by enrollment_id,contribution_date,version_number desc\r\n  )o\r\n ) select coalesce(jsonb_agg(to_jsonb(v) order by effective_date desc,id),'[]') into hist from recorded v;\r\n with w as (\r\n  select q.id::text id,public.savings_panel_date(v.d->>'D') effective_date,\r\n   public.savings_panel_number(v.d->'G') amount,v.d->>'E' withdrawal_kind,\r\n   v.d->>'F' continue_saving,v.d->>'H' status,'HISTORICAL_RECORDED'::text source\r\n  from public.savings_review_records q join jsonb_array_elements(related) a on a->>'id'=q.id::text\r\n  cross join lateral(select (a->'source')||(a->'proposal') d)v\r\n  where q.source_sheet='Solicitud de retiro' and q.source_folio=p.legacy_folio and v.d->>'A'=p.legacy_folio\r\n  union all\r\n  select q.id::text,(q.settled_at at time zone 'America/Hermosillo')::date,q.requested_amount,q.withdrawal_kind,q.continue_saving::text,q.status,'CANONICAL'\r\n  from public.savings_requests q where q.participant_id=p.id and q.data_classification='CANONICAL' and q.status='SETTLED'\r\n   and q.request_type in ('WITHDRAW','EXTRAORDINARY_WITHDRAWAL','TERMINATE')\r\n ) select coalesce(jsonb_agg(to_jsonb(w) order by effective_date desc,id),'[]') into withdrawals from w;\r\n select coalesce(jsonb_agg(jsonb_build_object('contribution_date',s.contribution_date,'expected_amount',s.expected_amount,\r\n  'process_snapshot',s.process_snapshot,'source','DATED_SAVINGS_PLAN') order by s.contribution_date),'[]') into upcoming\r\n  from public.generate_savings_schedule(e.id,today+1,(today+interval '12 months')::date)s where effective_status in ('ACTIVE','TERMINATION_PENDING');\r\n select coalesce(jsonb_agg(jsonb_build_object('id',q.id,'folio',q.folio,'request_type',q.request_type,'withdrawal_kind',q.withdrawal_kind,\r\n  'requested_amount',q.requested_amount,'new_contribution_amount',q.new_contribution_amount,'continue_saving',q.continue_saving,\r\n  'status',q.status,'effective_from',q.effective_from,'submitted_at',q.submitted_at,'settled_at',q.settled_at) order by q.submitted_at desc),'[]') into requests\r\n  from public.savings_requests q where q.participant_id=p.id and q.data_classification='CANONICAL';\r\n select coalesce(jsonb_agg(jsonb_build_object('id',q.id,'effective_date',public.savings_panel_date(v.d->>'B'),\r\n  'old_amount',public.savings_panel_number(v.d->'C'),'new_amount',public.savings_panel_number(v.d->'D'),\r\n  'applied',v.d->>'E','source','HISTORICAL_RECORDED') order by q.source_row desc),'[]') into changes\r\n  from public.savings_review_records q join jsonb_array_elements(related) a on a->>'id'=q.id::text\r\n  cross join lateral(select (a->'source')||(a->'proposal') d)v\r\n  where q.source_sheet='Solicitud Cambio ahorro' and q.source_folio=p.legacy_folio and v.d->>'A'=p.legacy_folio;\r\n select jsonb_build_object('event_id',ev.id,'previous_amount',ev.conversion_snapshot->'previous_amount','new_amount',ev.conversion_snapshot->'new_amount',\r\n  'effective_from',ev.effective_from,'first_discount_on',ev.conversion_snapshot->'first_discount_on',\r\n  'status',case when ev.effective_from>today then 'SCHEDULED' else 'ACTIVE' end) into transition\r\n from public.savings_process_change_events ev where ev.participant_id=p.id and ev.status='APPLIED'\r\n  and ev.conversion_snapshot->>'enrollment_id'=e.id::text and ev.conversion_snapshot->>'conversion_rule'='TWO_FORTNIGHTS_TO_ONE_MONTH'\r\n  and (ev.effective_from>today or plan.id::text=ev.conversion_snapshot->>'new_plan_id') order by ev.effective_from desc,ev.reviewed_at desc limit 1;\r\n select mode='PUBLISHED' into published from public.savings_publication_state where id;\r\n actions:=jsonb_build_object('JOIN',(e.id is null or effective_status='TERMINATED') and public.savings_effective_action('JOIN',p.id),'CHANGE_AMOUNT',coalesce(effective_status='ACTIVE',false) and public.savings_effective_action('CHANGE_AMOUNT',p.id),\r\n  'WITHDRAW',coalesce((bal->>'available')::numeric>0,false) and public.savings_effective_action('WITHDRAW',p.id),\r\n  'TERMINATE',coalesce(effective_status='ACTIVE',false));\r\n return jsonb_build_object('schema_version','SAVINGS_CERTIFIED_SELF_V1','authority','SUPABASE','projection','CERTIFIED_OPERATION',\r\n  'cutover_status',case when published then 'PUBLISHED' else 'PRIVATE_PREVIEW' end,'canonical_ledger_used',true,'yield_calculated',false,\r\n  'participant',jsonb_build_object('id',p.id,'legacy_folio',p.legacy_folio,'identity_status',p.identity_status,'participant_type',p.participant_type,'current_process',p.current_process),\r\n  'enrollment',case when e.id is null then null else jsonb_build_object('id',e.id,'status',case effective_status when 'ACTIVE' then 'Ahorrando' when 'TERMINATED' then 'Dejó de ahorrar' else 'En revisión' end,\r\n   'enrollment_started_at',e.first_actual_contribution_date,'plan_started_at',(e.enrollment_started_at at time zone 'America/Hermosillo')::date,\r\n   'current_contribution_amount',plan.amount,'frequency',case when plan.process_snapshot='JUB' then 'MONTHLY' when plan.process_snapshot in ('PROCESS_1','PROCESS_3') then 'TWICE_MONTHLY' end) end,\r\n  'balances',bal,'annual',annual,'history',hist,'upcoming',upcoming,'withdrawals',withdrawals,'requests',requests,'plan_changes',changes,'retirement_transition',transition,\r\n  'beneficiaries',coalesce((select jsonb_agg(jsonb_build_object('id',b.id,'full_name',b.full_name,'relationship',b.relationship,'percentage',b.percentage) order by b.id)\r\n   from public.savings_beneficiary_versions v join public.savings_beneficiaries b on b.version_id=v.id where v.participant_id=p.id and v.status='ACTIVE'),'[]'),\r\n  'actions',actions,'write_capabilities',jsonb_build_object('requests',published,'beneficiaries',published and coalesce(effective_status in ('ACTIVE','TERMINATION_PENDING'),false)));\r\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_runtime_assert_payout",
+      "signature": "savings_runtime_assert_payout(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_runtime_assert_payout(p_participant_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare envelope jsonb; check_result jsonb;\nbegin\n envelope:=nullif(current_setting('suti.savings_settlement_attestation',true),'')::jsonb;\n if envelope is null or envelope->>'participant_id' is distinct from p_participant_id::text or envelope->>'actor' is distinct from auth.uid()::text then raise exception 'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE' using errcode='55000';end if;\n check_result:=public.savings_settlement_check((envelope->>'request_id')::uuid,envelope->'observation');\n if check_result->>'code'<>'PASS' then raise exception '%',check_result->>'code';end if;\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_runtime_assert_identity",
+      "signature": "savings_runtime_assert_identity(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_runtime_assert_identity(p_participant_id uuid)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare p public.savings_participants%rowtype;\nbegin\n lock table public.affiliates in share mode;\n select * into p from public.savings_participants where id=p_participant_id for update;\n if p.id is null or p.identity_status<>'RESOLVED' or (select count(*) from public.affiliates where numero_control=p.legacy_folio)<>1\n or not exists(select 1 from public.affiliates where id=p.affiliate_id and numero_control=p.legacy_folio and not coalesce(is_archived,false)) then\n  raise exception 'SAVINGS_EXACT_IDENTITY_REQUIRED';\n end if;\n return p.affiliate_id;\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "admin_save_savings_operation",
+      "signature": "admin_save_savings_operation(jsonb,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.admin_save_savings_operation(p_command jsonb, p_client_action_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare k text:=p_command->>'kind'; r public.savings_requests%rowtype; prior public.savings_audit_events%rowtype;\n en public.savings_enrollments%rowtype; plan public.savings_contribution_plans%rowtype; af uuid; result jsonb; before_row jsonb;\n decision text:=upper(p_command->>'decision'); note text:=coalesce(p_command->>'observation',''); proc text; calculated date; effective date; participant uuid;\n bal record; capital numeric; yield_value numeric; component text; amount numeric;\nbegin\n if auth.uid() is null or not public.has_admin_permission(case when k='SUBMIT' then 'savings.write' else 'savings.approve' end) then raise exception 'SAVINGS_APPROVE_DENIED' using errcode='42501'; end if;\n if p_client_action_id is null or p_command is null or jsonb_typeof(p_command)<>'object' or k is null or k not in ('SUBMIT','REVIEW','SETTLE','CANCEL') or length(note)>1000 then raise exception 'SAVINGS_COMMAND_INVALID'; end if;\n if k='SUBMIT' then\n  select id into af from public.affiliates where numero_control=p_command->>'folio' and not coalesce(is_archived,false);\n  if af is null or (select count(*) from public.affiliates where numero_control=p_command->>'folio')<>1 then raise exception 'SAVINGS_EXACT_IDENTITY_REQUIRED'; end if;\n  return public.savings_runtime_submit(af,p_command,p_client_action_id,true);\n end if;\n perform pg_advisory_xact_lock(hashtextextended('savings-runtime:'||p_client_action_id,0));\n select * into prior from public.savings_audit_events where client_action_id=p_client_action_id;\n if found then\n  if prior.actor_real_auth_user_id<>auth.uid() or prior.resource<>'savings_runtime' or prior.after_data->'command' is distinct from p_command then raise exception 'SAVINGS_IDEMPOTENCY_CONFLICT'; end if;\n  return prior.after_data->'result';\n end if;\n select participant_id into participant from public.savings_requests where id=(p_command->>'request_id')::uuid;\n af:=public.savings_runtime_assert_identity(participant);\n select * into r from public.savings_requests where id=(p_command->>'request_id')::uuid for update;\n if r.id is null or r.data_classification<>'CANONICAL' or r.metadata->>'origin'<>'SAVINGS_RUNTIME_V1' then raise exception 'SAVINGS_OPERATIONAL_REQUEST_REQUIRED'; end if;\n if not exists(select 1 from public.savings_participants where id=r.participant_id and data_classification='CANONICAL' and certification_status='CERTIFIED') then raise exception 'SAVINGS_OPENING_CONFIRMATION_REQUIRED'; end if;\n before_row:=to_jsonb(r);\n select * into en from public.savings_enrollments where id=r.enrollment_id for update;\n if k='CANCEL' then\n  if r.status not in ('SUBMITTED','UNDER_REVIEW') and not (r.status='APPROVED' and r.request_type in ('WITHDRAW','EXTRAORDINARY_WITHDRAWAL')) then raise exception 'SAVINGS_REQUEST_NOT_CANCELABLE'; end if;\n  update public.savings_requests set status='CANCELLED',metadata=metadata||jsonb_build_object('cancellation',p_command,'cancelled_at',clock_timestamp()) where id=r.id returning * into r;\n elsif k='REVIEW' then\n  if decision is null or decision not in ('APPROVE','REJECT') or r.status not in ('SUBMITTED','UNDER_REVIEW') then raise exception 'SAVINGS_REQUEST_NOT_REVIEWABLE'; end if;\n  if decision='REJECT' and length(btrim(note))<3 then raise exception 'SAVINGS_REJECTION_REASON_REQUIRED'; end if;\n  if decision='APPROVE' then\n   if r.request_type='EXTRAORDINARY_WITHDRAWAL' then raise exception 'SAVINGS_DUAL_APPROVAL_REQUIRED' using errcode='42501'; end if;\n   if r.request_type in ('JOIN','CHANGE_AMOUNT') then\n    proc:=coalesce(nullif(p_command->>'process',''),r.metadata->>'process');\n    calculated:=case when r.request_type='JOIN' then public.savings_next_contribution_date((r.submitted_at at time zone 'America/Hermosillo')::date+30,proc)\n     else public.savings_next_enrollment_date(en.id,(r.submitted_at at time zone 'America/Hermosillo')::date+30) end;\n    effective:=coalesce(nullif(p_command->>'effective_date','')::date,calculated);\n    if effective<=public.savings_operation_today() or (r.request_type='JOIN' and public.savings_next_contribution_date(effective,proc)<>effective)\n     or (r.request_type='CHANGE_AMOUNT' and public.savings_next_enrollment_date(en.id,effective)<>effective) then raise exception 'SAVINGS_AUTHORIZED_DATE_INVALID'; end if;\n    if effective<>calculated and length(btrim(note))<3 then raise exception 'SAVINGS_DATE_EXCEPTION_REASON_REQUIRED'; end if;\n    if r.request_type='JOIN' then\n     if exists(select 1 from public.savings_enrollments where participant_id=r.participant_id and (status in ('REQUESTED','ACTIVE','TERMINATION_PENDING') or terminated_at>clock_timestamp())) then raise exception 'SAVINGS_ENROLLMENT_ALREADY_OPEN'; end if;\n     select * into en from public.savings_activate_join(r.id,proc,effective);\n    else\n     if not (en.status='ACTIVE' and (en.terminated_at is null or (en.terminated_at at time zone 'America/Hermosillo')::date>public.savings_operation_today()) or en.status in ('TERMINATED','TERMINATION_PENDING') and (en.terminated_at at time zone 'America/Hermosillo')::date>public.savings_operation_today()) then raise exception 'SAVINGS_ACTIVE_ENROLLMENT_REQUIRED'; end if;\n     perform 1 from public.savings_contribution_plans where enrollment_id=en.id for update;\n     if exists(select 1 from public.savings_contribution_plans where enrollment_id=en.id and effective_from>=effective)\n      or exists(select 1 from public.savings_contribution_overrides where enrollment_id=en.id and contribution_date>=effective)\n      or exists(select 1 from public.savings_transactions where enrollment_id=en.id and coalesce(contribution_date,effective_date)>=effective) then raise exception 'SAVINGS_FUTURE_PLAN_CONFLICT'; end if;\n     select * into plan from public.savings_contribution_plans where enrollment_id=en.id and effective_from<effective and (effective_to is null or effective_to>=effective) order by effective_from desc limit 1;\n     if plan.id is null or plan.data_classification<>'CANONICAL' then raise exception 'SAVINGS_ACTIVE_PLAN_REQUIRED'; end if;\n     proc:=plan.process_snapshot;\n     update public.savings_contribution_plans set effective_to=effective-1 where id=plan.id;\n    end if;\n    if r.request_type='CHANGE_AMOUNT' then\n    insert into public.savings_contribution_plans(enrollment_id,amount,process_snapshot,effective_from,effective_to,source_request_id,data_classification,created_by_auth_user_id)\n     values(en.id,r.new_contribution_amount,proc,effective,case when r.request_type='CHANGE_AMOUNT' then plan.effective_to end,r.id,'CANONICAL',auth.uid());\n    end if;\n   elsif r.request_type='TERMINATE' then\n    effective:=coalesce(nullif(p_command->>'effective_date','')::date,public.savings_operation_today()+1);\n    if effective<=public.savings_operation_today() then raise exception 'SAVINGS_AUTHORIZED_DATE_INVALID'; end if;\n    if effective<>public.savings_operation_today()+1 and length(btrim(note))<3 then raise exception 'SAVINGS_DATE_EXCEPTION_REASON_REQUIRED'; end if;\n    if exists(select 1 from public.savings_contribution_plans where enrollment_id=en.id and effective_from>=effective)\n     or exists(select 1 from public.savings_contribution_overrides where enrollment_id=en.id and contribution_date>=effective) then raise exception 'SAVINGS_FUTURE_PLAN_CONFLICT'; end if;\n    update public.savings_enrollments set status='TERMINATED',continue_saving=false,terminated_at=effective::timestamp at time zone 'America/Hermosillo' where id=en.id;\n   elsif r.request_type='WITHDRAW' then\n    select * into bal from public.savings_participant_balance(r.participant_id);\n    if r.requested_amount>bal.available then raise exception 'SAVINGS_AVAILABLE_BALANCE_EXCEEDED'; end if;\n   end if;\n  end if;\n  update public.savings_requests set status=case when decision='REJECT' then 'REJECTED' else 'APPROVED' end,reviewed_at=clock_timestamp(),reviewed_by_auth_user_id=auth.uid(),\n   enrollment_id=coalesce(en.id,enrollment_id),effective_from=coalesce(effective,effective_from),metadata=metadata||jsonb_build_object('review',p_command,'calculated_date',calculated,'authorized_date',effective)\n   where id=r.id returning * into r;\n else\n  if r.status<>'APPROVED' or r.request_type not in ('WITHDRAW','EXTRAORDINARY_WITHDRAWAL') then raise exception 'SAVINGS_REQUEST_NOT_SETTLEABLE'; end if;\n  if not public.savings_effective_action('WITHDRAW',r.participant_id) then raise exception 'SAVINGS_ACTION_DISABLED' using errcode='42501'; end if;\n  if jsonb_typeof(p_command->'capital') is distinct from 'number' or jsonb_typeof(p_command->'yield') is distinct from 'number' then raise exception 'SAVINGS_SETTLEMENT_INVALID'; end if;\n  capital:=(p_command->>'capital')::numeric;yield_value:=(p_command->>'yield')::numeric;\n  if capital<0 or yield_value<0 or capital<>round(capital,2) or yield_value<>round(yield_value,2) or capital+yield_value<>r.requested_amount then raise exception 'SAVINGS_SETTLEMENT_BREAKDOWN_MISMATCH'; end if;\n  select * into bal from public.savings_participant_balance(r.participant_id);\n  if capital>greatest(bal.capital-bal.held_capital,0) or yield_value>greatest(bal.yield_amount-bal.held_yield,0) then raise exception 'SAVINGS_AVAILABLE_BALANCE_EXCEEDED'; end if;\n  if r.request_type='EXTRAORDINARY_WITHDRAWAL' and yield_value<>0 then raise exception 'SAVINGS_EXTRAORDINARY_CAPITAL_ONLY'; end if;\n  if r.continue_saving=false and capital+yield_value<>bal.available then raise exception 'SAVINGS_TOTAL_WITHDRAWAL_AMOUNT_MISMATCH'; end if;\n  perform public.savings_runtime_assert_payout(r.participant_id);\n  foreach component in array array['CAPITAL','YIELD'] loop\n   amount:=case when component='CAPITAL' then capital else yield_value end;\n   if amount>0 then insert into public.savings_transactions(participant_id,enrollment_id,transaction_type,component,direction,amount,effective_date,idempotency_key,data_classification,created_by_auth_user_id)\n    values(r.participant_id,r.enrollment_id,'WITHDRAWAL',component,'DEBIT',amount,public.savings_operation_today(),'SAVINGS_RUNTIME_PAYMENT:'||r.id||':'||component,'CANONICAL',auth.uid()); end if;\n  end loop;\n  update public.savings_requests set status='SETTLED',settled_at=clock_timestamp(),requested_capital_amount=capital,requested_yield_amount=yield_value where id=r.id returning * into r;\n  if r.continue_saving=false then update public.savings_enrollments set status='TERMINATED',continue_saving=false,terminated_at=(public.savings_operation_today()+1)::timestamp at time zone 'America/Hermosillo' where id=r.enrollment_id; end if;\n end if;\n result:=to_jsonb(r);\n insert into public.savings_audit_events(actor_real_auth_user_id,usuario_contexto_affiliate_id,participant_id,resource,action,target_id,before_data,after_data,reason,client_action_id)\n values(auth.uid(),af,r.participant_id,'savings_runtime',case when k='REVIEW' then decision else k end,r.id::text,before_row,jsonb_build_object('command',p_command,'result',result),note,p_client_action_id);\n return result;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_panel_number",
+      "signature": "savings_panel_number(jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_panel_number(v jsonb)\n RETURNS numeric\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\n select case when jsonb_typeof(v)='number' then (v::text)::numeric end;\n$function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_panel_date",
+      "signature": "savings_panel_date(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_panel_date(v text)\n RETURNS date\n LANGUAGE plpgsql\n IMMUTABLE\n SET search_path TO ''\nAS $function$\ndeclare d date; begin\n if v ~ '^\\d{4}-\\d{2}-\\d{2}$' then d:=v::date;\n elsif v ~ '^\\d{1,2}/\\d{1,2}/\\d{4}$' then\n  d:=make_date(split_part(v,'/',3)::int,split_part(v,'/',2)::int,split_part(v,'/',1)::int);\n end if; return d;\n exception when datetime_field_overflow or invalid_datetime_format then return null;\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_exception_active",
+      "signature": "savings_exception_active(text,text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_exception_active(p_resource text, p_target text, p_participant uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n select jsonb_build_object('id',a.id,'actor',a.actor_real_auth_user_id,'created_at',a.created_at,'reason',a.reason,'authorization',a.after_data)\n from (select distinct on (participant_id) * from public.savings_audit_events\n where resource=p_resource and target_id=p_target and action='AUTHORIZE'\n and (participant_id=p_participant or (p_resource='savings_yield_override' and participant_id is null))\n order by participant_id,id desc) a\n where true\n and not exists(select 1 from public.savings_audit_events v where v.resource=p_resource and v.action='REVOKE' and v.target_id=a.id::text)\n order by (a.participant_id is not null) desc,a.id desc limit 1;\n$function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "savings_settlement_check",
+      "signature": "savings_settlement_check(uuid,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.savings_settlement_check(p_request_id uuid, p_observation jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare ctx jsonb; r public.savings_requests%rowtype; bal record; loan jsonb; overdue jsonb; override_event jsonb; fingerprint text; code text; eligible boolean;\nbegin\n ctx:=public.get_admin_savings_settlement_context(p_request_id);\n select * into r from public.savings_requests where id=p_request_id;\n if p_observation is null or p_observation->>'source' is distinct from '1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80:1245291756'\n or p_observation->>'folio' is distinct from ctx->>'folio' or jsonb_typeof(p_observation->'loans') is distinct from 'array'\n or coalesce((p_observation->>'scanned_rows')::integer,0)<1 or (p_observation->>'observed_at')::timestamptz is null\n or (p_observation->>'observed_at')::timestamptz<clock_timestamp()-interval '60 seconds'\n or (p_observation->>'observed_at')::timestamptz>clock_timestamp()+interval '5 seconds' then raise exception 'SAVINGS_LOAN_VERIFICATION_UNAVAILABLE';end if;\n for loan in select value from jsonb_array_elements(p_observation->'loans') loop\n  if nullif(loan->>'id','') is null or nullif(loan->>'fund','') is null or coalesce((loan->>'rows')::integer,0)<1\n   or coalesce(loan->>'status','') not in ('LIQUIDADO','PAGO DE MAS','LIQUIDADO O PAGO DE MAS','AL CORRIENTE','SALDO ATRASADO') then raise exception 'LOAN_STATUS_DATA_INCONSISTENCY';end if;\n end loop;\n if exists(select 1 from jsonb_array_elements(p_observation->'loans') l group by l->>'id' having count(*)>1) then raise exception 'LOAN_STATUS_DATA_INCONSISTENCY';end if;\n select coalesce(jsonb_agg(l order by l->>'id'),'[]') into overdue from jsonb_array_elements(p_observation->'loans') l where l->>'status'='SALDO ATRASADO';\n fingerprint:=md5(jsonb_build_array(ctx->>'affiliate_id',p_request_id,r.requested_amount,overdue)::text);\n override_event:=public.savings_exception_active('savings_withdrawal_override',p_request_id::text,r.participant_id);\n if override_event#>>'{authorization,fingerprint}' is distinct from fingerprint then override_event:=null;end if;\n select * into bal from public.savings_participant_balance(r.participant_id);\n eligible:=r.status='APPROVED' and (ctx->>'can_approve')::boolean\n and exists(select 1 from public.savings_participants where id=r.participant_id and certification_status='CERTIFIED' and data_classification='CANONICAL')\n and public.savings_effective_action('WITHDRAW',r.participant_id) and r.requested_amount>0 and r.requested_amount<=bal.available\n and (r.continue_saving or r.requested_amount=bal.available);\n code:=case when r.status<>'APPROVED' then 'SAVINGS_REQUEST_NOT_SETTLEABLE'\n when not (ctx->>'can_approve')::boolean then 'SAVINGS_APPROVE_DENIED'\n when eligible is not true then 'SAVINGS_SETTLEMENT_REQUIREMENTS_PENDING'\n when jsonb_array_length(overdue)>0 and override_event is null then 'WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN' else 'PASS' end;\n return jsonb_build_object('can_settle',code='PASS','code',code,'loans',p_observation->'loans','overdue_loans',overdue,\n 'fingerprint',fingerprint,'override',override_event,'can_override',(ctx->>'can_override')::boolean and r.status='APPROVED' and jsonb_array_length(overdue)>0,\n 'affiliate_id',ctx->'affiliate_id','participant_id',r.participant_id,'source',p_observation->>'source','observed_at',p_observation->>'observed_at');\nend $function$\n",
+      "acl": "{postgres=X/postgres}",
+      "owner": "16388"
+    },
+    {
+      "name": "get_admin_savings_settlement_context",
+      "signature": "get_admin_savings_settlement_context(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_admin_savings_settlement_context(p_request_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare r public.savings_requests%rowtype; af uuid; fol text;\nbegin\n if auth.uid() is null or not public.has_admin_permission('savings.read') then raise exception 'SAVINGS_READ_DENIED' using errcode='42501';end if;\n select * into r from public.savings_requests where id=p_request_id;\n if r.id is null or r.request_type<>'WITHDRAW' or r.data_classification<>'CANONICAL' or r.metadata->>'origin' is distinct from 'SAVINGS_RUNTIME_V1' then raise exception 'SAVINGS_OPERATIONAL_REQUEST_REQUIRED';end if;\n af:=public.savings_runtime_assert_identity(r.participant_id);\n select numero_control into fol from public.affiliates where id=af;\n return jsonb_build_object('actor',auth.uid(),'session',auth.jwt()->>'session_id','effective_affiliate',public.get_effective_affiliate_id(),\n 'affiliate_id',af,'participant_id',r.participant_id,'folio',fol,'request_status',r.status,\n 'can_approve',public.has_admin_permission('savings.approve'),'can_override',public.has_admin_permission('savings.withdrawal.override'));\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "16388"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "action_code",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "scope_type",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "enabled",
+      "type": "boolean",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "effective_from",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "effective_to",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "configured_by_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_action_availability",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "id",
+      "type": "bigint",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "resource",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "action",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "target_id",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "before_data",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "after_data",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": "''::text"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "client_action_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_audit_events",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "record_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "cutoff_on",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "source_version",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "source_snapshot",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "command",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "capital",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "yield_amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "observation",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "client_action_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "clock_timestamp()"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "version_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "full_name",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "relationship",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "percentage",
+      "type": "numeric(5,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "version_number",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'ACTIVE'::text"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "superseded_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "column_name": "origin",
+      "type": "text",
+      "required": true,
+      "default_value": "'SELF'::text"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "contribution_date",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "expected_amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "actual_amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "version_number",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "editor_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "client_action_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "process_snapshot",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "effective_from",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "effective_to",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "source_request_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "data_classification",
+      "type": "text",
+      "required": true,
+      "default_value": "'SHADOW'::text"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "import_batch_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "created_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "sequence_number",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "enrollment_started_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "requested_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "approved_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "first_expected_contribution_date",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "first_actual_contribution_date",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "terminated_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "continue_saving",
+      "type": "boolean",
+      "required": true,
+      "default_value": "true"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "process_snapshot",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "data_classification",
+      "type": "text",
+      "required": true,
+      "default_value": "'SHADOW'::text"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "import_batch_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_enrollments",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "component",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'ACTIVE'::text"
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "created_by_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_holds",
+      "column_name": "released_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "entry_mode",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "clock_timestamp()"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "column_name": "client_action_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "participant_type",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "legacy_folio",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "display_name",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "identity_status",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "certification_status",
+      "type": "text",
+      "required": true,
+      "default_value": "'PENDING_REVIEW'::text"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "current_process",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "process_source",
+      "type": "text",
+      "required": true,
+      "default_value": "'PENDING_REVIEW'::text"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "data_classification",
+      "type": "text",
+      "required": true,
+      "default_value": "'SHADOW'::text"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "legacy_reported_balance",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "legacy_balance_status",
+      "type": "text",
+      "required": true,
+      "default_value": "'PENDING_REVIEW'::text"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "import_batch_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "updated_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_participants",
+      "column_name": "historical_yield_reconciled_through",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "legacy_folio",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "old_process",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "new_process",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "effective_from",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "current_plan_snapshot",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "reviewed_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "column_name": "conversion_snapshot",
+      "type": "jsonb",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "id",
+      "type": "boolean",
+      "required": true,
+      "default_value": "true"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "mode",
+      "type": "text",
+      "required": true,
+      "default_value": "'PRIVATE'::text"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "version",
+      "type": "integer",
+      "required": true,
+      "default_value": "1"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "fingerprint",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "published_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_publication_state",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "folio",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "request_type",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "withdrawal_kind",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "component",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "requested_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "requested_capital_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "requested_yield_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "new_contribution_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "continue_saving",
+      "type": "boolean",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "supporting_document_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'SUBMITTED'::text"
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "effective_from",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "reason",
+      "type": "text",
+      "required": true,
+      "default_value": "''::text"
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "idempotency_key",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "submitted_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "reviewed_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "settled_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "data_classification",
+      "type": "text",
+      "required": true,
+      "default_value": "'SHADOW'::text"
+    },
+    {
+      "table_name": "savings_requests",
+      "column_name": "metadata",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "batch_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "source_sheet",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "source_row",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "source_folio",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "source_data",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "field_defs",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "raw_source",
+      "type": "jsonb",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "issues",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'[]'::jsonb"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "proposed_data",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'PENDING'::text"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "version",
+      "type": "integer",
+      "required": true,
+      "default_value": "0"
+    },
+    {
+      "table_name": "savings_review_records",
+      "column_name": "updated_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "enrollment_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "transaction_type",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "component",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "direction",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "effective_date",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "contribution_date",
+      "type": "date",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "expected_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "actual_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "difference_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "idempotency_key",
+      "type": "text",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "reversal_of_transaction_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "data_classification",
+      "type": "text",
+      "required": true,
+      "default_value": "'SHADOW'::text"
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "import_batch_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "source_evidence_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "created_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_transactions",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "yield_period_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "participant_id",
+      "type": "uuid",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "eligible",
+      "type": "boolean",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "exclusion_reason",
+      "type": "text",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "calculation_basis",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": "0"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "calculated_amount",
+      "type": "numeric(14,2)",
+      "required": true,
+      "default_value": "0"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "approved_amount",
+      "type": "numeric(14,2)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'PENDING_REVIEW'::text"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "approved_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "approved_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "id",
+      "type": "uuid",
+      "required": true,
+      "default_value": "extensions.gen_random_uuid()"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "period_year",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "semester",
+      "type": "integer",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "starts_on",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "ends_on",
+      "type": "date",
+      "required": true,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "rate",
+      "type": "numeric(9,6)",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "eligibility_policy",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "exclusion_policy",
+      "type": "jsonb",
+      "required": true,
+      "default_value": "'{}'::jsonb"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "status",
+      "type": "text",
+      "required": true,
+      "default_value": "'DRAFT'::text"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "productive_enabled",
+      "type": "boolean",
+      "required": true,
+      "default_value": "false"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "approved_by_auth_user_id",
+      "type": "uuid",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "approved_at",
+      "type": "timestamp with time zone",
+      "required": false,
+      "default_value": null
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "column_name": "created_at",
+      "type": "timestamp with time zone",
+      "required": true,
+      "default_value": "now()"
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "savings_review_records",
+      "contype": "u",
+      "conname": "savings_review_records_batch_id_source_sheet_source_row_key",
+      "definition": "UNIQUE (batch_id, source_sheet, source_row)"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_field_defs_check",
+      "definition": "CHECK ((jsonb_typeof(field_defs) = 'array'::text))"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_issues_check",
+      "definition": "CHECK ((jsonb_typeof(issues) = 'array'::text))"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "p",
+      "conname": "savings_review_records_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_proposed_data_check",
+      "definition": "CHECK ((jsonb_typeof(proposed_data) = 'object'::text))"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_source_data_check",
+      "definition": "CHECK ((jsonb_typeof(source_data) = 'object'::text))"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_source_row_check",
+      "definition": "CHECK ((source_row > 1))"
+    },
+    {
+      "table_name": "savings_review_records",
+      "contype": "c",
+      "conname": "savings_review_records_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['PENDING'::text, 'IN_REVIEW'::text, 'RESOLVED'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_balance_check",
+      "definition": "CHECK (((legacy_reported_balance IS NULL) OR (legacy_reported_balance >= (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_balance_status_check",
+      "definition": "CHECK ((legacy_balance_status = ANY (ARRAY['MATCH'::text, 'MISMATCH'::text, 'PENDING_REVIEW'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_cert_check",
+      "definition": "CHECK ((certification_status = ANY (ARRAY['PENDING_REVIEW'::text, 'CERTIFIED'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_class_check",
+      "definition": "CHECK ((data_classification = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text, 'CANONICAL'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_identity_check",
+      "definition": "CHECK ((identity_status = ANY (ARRAY['RESOLVED'::text, 'AMBIGUOUS'::text, 'ORPHAN'::text, 'NON_AFFILIATE'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_link_check",
+      "definition": "CHECK ((((identity_status = 'RESOLVED'::text) AND (affiliate_id IS NOT NULL) AND (participant_type = 'AFFILIATE'::text)) OR ((identity_status = ANY (ARRAY['AMBIGUOUS'::text, 'ORPHAN'::text])) AND (affiliate_id IS NULL) AND (participant_type = 'LEGACY_UNRESOLVED'::text)) OR ((identity_status = 'NON_AFFILIATE'::text) AND (affiliate_id IS NULL) AND (participant_type = 'NON_AFFILIATE'::text))))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_process_check",
+      "definition": "CHECK (((current_process IS NULL) OR (current_process = ANY (ARRAY['JUB'::text, 'PROCESS_1'::text, 'PROCESS_3'::text]))))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_process_source_check",
+      "definition": "CHECK ((process_source = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "c",
+      "conname": "savings_participant_type_check",
+      "definition": "CHECK ((participant_type = ANY (ARRAY['AFFILIATE'::text, 'NON_AFFILIATE'::text, 'LEGACY_UNRESOLVED'::text])))"
+    },
+    {
+      "table_name": "savings_participants",
+      "contype": "p",
+      "conname": "savings_participants_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_activation_check",
+      "definition": "CHECK (((status <> ALL (ARRAY['ACTIVE'::text, 'TERMINATION_PENDING'::text])) OR ((approved_at IS NOT NULL) AND (first_expected_contribution_date IS NOT NULL) AND (process_snapshot IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_class_check",
+      "definition": "CHECK ((data_classification = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text, 'CANONICAL'::text])))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_process_check",
+      "definition": "CHECK (((process_snapshot IS NULL) OR (process_snapshot = ANY (ARRAY['JUB'::text, 'PROCESS_1'::text, 'PROCESS_3'::text]))))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_sequence_check",
+      "definition": "CHECK ((sequence_number > 0))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['REQUESTED'::text, 'ACTIVE'::text, 'TERMINATION_PENDING'::text, 'TERMINATED'::text, 'REJECTED'::text])))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "c",
+      "conname": "savings_enrollment_termination_check",
+      "definition": "CHECK (((status <> 'TERMINATED'::text) OR (terminated_at IS NOT NULL)))"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "u",
+      "conname": "savings_enrollments_participant_id_sequence_number_key",
+      "definition": "UNIQUE (participant_id, sequence_number)"
+    },
+    {
+      "table_name": "savings_enrollments",
+      "contype": "p",
+      "conname": "savings_enrollments_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "contype": "p",
+      "conname": "savings_contribution_plans_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "contype": "c",
+      "conname": "savings_plan_amount_check",
+      "definition": "CHECK ((amount > (0)::numeric))"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "contype": "c",
+      "conname": "savings_plan_class_check",
+      "definition": "CHECK ((data_classification = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text, 'CANONICAL'::text])))"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "contype": "c",
+      "conname": "savings_plan_dates_check",
+      "definition": "CHECK (((effective_to IS NULL) OR (effective_to >= effective_from)))"
+    },
+    {
+      "table_name": "savings_contribution_plans",
+      "contype": "c",
+      "conname": "savings_plan_process_check",
+      "definition": "CHECK ((process_snapshot = ANY (ARRAY['JUB'::text, 'PROCESS_1'::text, 'PROCESS_3'::text])))"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "u",
+      "conname": "savings_contribution_override_enrollment_id_contribution_da_key",
+      "definition": "UNIQUE (enrollment_id, contribution_date, version_number)"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "u",
+      "conname": "savings_contribution_overrides_client_action_id_key",
+      "definition": "UNIQUE (client_action_id)"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "p",
+      "conname": "savings_contribution_overrides_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "c",
+      "conname": "savings_override_amount_check",
+      "definition": "CHECK (((expected_amount >= (0)::numeric) AND (actual_amount >= (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "c",
+      "conname": "savings_override_reason_check",
+      "definition": "CHECK ((length(reason) <= 1000))"
+    },
+    {
+      "table_name": "savings_contribution_overrides",
+      "contype": "c",
+      "conname": "savings_override_version_check",
+      "definition": "CHECK ((version_number > 0))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_actual_check",
+      "definition": "CHECK ((((expected_amount IS NULL) AND (actual_amount IS NULL) AND (difference_amount IS NULL)) OR ((expected_amount IS NOT NULL) AND (actual_amount IS NOT NULL) AND (difference_amount = (actual_amount - expected_amount)))))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_amount_check",
+      "definition": "CHECK ((amount > (0)::numeric))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_class_check",
+      "definition": "CHECK ((data_classification = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text, 'CANONICAL'::text])))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_component_check",
+      "definition": "CHECK ((component = ANY (ARRAY['CAPITAL'::text, 'YIELD'::text])))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_direction_check",
+      "definition": "CHECK ((direction = ANY (ARRAY['CREDIT'::text, 'DEBIT'::text])))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_reversal_check",
+      "definition": "CHECK (((transaction_type <> 'REVERSAL'::text) OR (reversal_of_transaction_id IS NOT NULL)))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "c",
+      "conname": "savings_transaction_type_check",
+      "definition": "CHECK ((transaction_type = ANY (ARRAY['CONTRIBUTION'::text, 'YIELD_CREDIT'::text, 'WITHDRAWAL'::text, 'REGULARIZATION'::text, 'ADJUSTMENT'::text, 'REVERSAL'::text, 'HOLD_SETTLEMENT'::text])))"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "u",
+      "conname": "savings_transactions_idempotency_key_key",
+      "definition": "UNIQUE (idempotency_key)"
+    },
+    {
+      "table_name": "savings_transactions",
+      "contype": "p",
+      "conname": "savings_transactions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "contype": "p",
+      "conname": "savings_action_availability_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "contype": "c",
+      "conname": "savings_action_code_check",
+      "definition": "CHECK ((action_code = ANY (ARRAY['JOIN'::text, 'CHANGE_AMOUNT'::text, 'WITHDRAW'::text, 'TERMINATE'::text])))"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "contype": "c",
+      "conname": "savings_action_dates_check",
+      "definition": "CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "contype": "c",
+      "conname": "savings_action_reason_check",
+      "definition": "CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 1000)))"
+    },
+    {
+      "table_name": "savings_action_availability",
+      "contype": "c",
+      "conname": "savings_action_scope_check",
+      "definition": "CHECK ((((scope_type = 'GLOBAL'::text) AND (participant_id IS NULL)) OR ((scope_type = 'PARTICIPANT'::text) AND (participant_id IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "contype": "c",
+      "conname": "savings_beneficiary_origin_check",
+      "definition": "CHECK (((origin = ANY (ARRAY['SELF'::text, 'GLIDE_IMPORT'::text])) AND ((origin = 'GLIDE_IMPORT'::text) OR (actor_real_auth_user_id IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "contype": "c",
+      "conname": "savings_beneficiary_version_check",
+      "definition": "CHECK ((version_number > 0))"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "contype": "c",
+      "conname": "savings_beneficiary_version_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'SUPERSEDED'::text])))"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "contype": "u",
+      "conname": "savings_beneficiary_versions_participant_id_version_number_key",
+      "definition": "UNIQUE (participant_id, version_number)"
+    },
+    {
+      "table_name": "savings_beneficiary_versions",
+      "contype": "p",
+      "conname": "savings_beneficiary_versions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "contype": "p",
+      "conname": "savings_beneficiaries_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "contype": "c",
+      "conname": "savings_beneficiary_name_check",
+      "definition": "CHECK (((length(btrim(full_name)) >= 3) AND (length(btrim(full_name)) <= 180)))"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "contype": "c",
+      "conname": "savings_beneficiary_percentage_check",
+      "definition": "CHECK (((percentage > (0)::numeric) AND (percentage <= (100)::numeric)))"
+    },
+    {
+      "table_name": "savings_beneficiaries",
+      "contype": "c",
+      "conname": "savings_beneficiary_relationship_check",
+      "definition": "CHECK (((length(btrim(relationship)) >= 2) AND (length(btrim(relationship)) <= 80)))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_actor_check",
+      "definition": "CHECK (((data_classification = 'LEGACY'::text) OR ((actor_real_auth_user_id IS NOT NULL) AND (usuario_contexto_affiliate_id IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_amount_check",
+      "definition": "CHECK (((COALESCE(requested_amount, (0)::numeric) >= (0)::numeric) AND (COALESCE(requested_capital_amount, (0)::numeric) >= (0)::numeric) AND (COALESCE(requested_yield_amount, (0)::numeric) >= (0)::numeric) AND (COALESCE(new_contribution_amount, (0)::numeric) >= (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_change_amount_check",
+      "definition": "CHECK (((request_type <> 'CHANGE_AMOUNT'::text) OR ((new_contribution_amount > (0)::numeric) AND (effective_from IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_class_check",
+      "definition": "CHECK ((data_classification = ANY (ARRAY['LEGACY'::text, 'SHADOW'::text, 'PENDING_REVIEW'::text, 'CANONICAL'::text])))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_component_check",
+      "definition": "CHECK (((component IS NULL) OR (component = ANY (ARRAY['CAPITAL'::text, 'YIELD'::text, 'BOTH'::text]))))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_extraordinary_doc_check",
+      "definition": "CHECK (((request_type <> 'EXTRAORDINARY_WITHDRAWAL'::text) OR ((supporting_document_id IS NOT NULL) AND (length(btrim(reason)) >= 3))))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_join_amount_check",
+      "definition": "CHECK (((request_type <> 'JOIN'::text) OR (new_contribution_amount > (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['SUBMITTED'::text, 'UNDER_REVIEW'::text, 'APPROVED'::text, 'REJECTED'::text, 'CANCELLED'::text, 'SETTLED'::text])))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_terminate_check",
+      "definition": "CHECK (((request_type <> 'TERMINATE'::text) OR (continue_saving = false)))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_type_check",
+      "definition": "CHECK ((request_type = ANY (ARRAY['JOIN'::text, 'CHANGE_AMOUNT'::text, 'WITHDRAW'::text, 'TERMINATE'::text, 'EXTRAORDINARY_WITHDRAWAL'::text])))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "c",
+      "conname": "savings_request_withdrawal_kind_check",
+      "definition": "CHECK (((withdrawal_kind IS NULL) OR (withdrawal_kind = ANY (ARRAY['PARTIAL'::text, 'TOTAL'::text, 'EXTRAORDINARY'::text]))))"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "u",
+      "conname": "savings_requests_actor_real_auth_user_id_idempotency_key_key",
+      "definition": "UNIQUE (actor_real_auth_user_id, idempotency_key)"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "u",
+      "conname": "savings_requests_folio_key",
+      "definition": "UNIQUE (folio)"
+    },
+    {
+      "table_name": "savings_requests",
+      "contype": "p",
+      "conname": "savings_requests_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_holds",
+      "contype": "c",
+      "conname": "savings_hold_amount_check",
+      "definition": "CHECK ((amount > (0)::numeric))"
+    },
+    {
+      "table_name": "savings_holds",
+      "contype": "c",
+      "conname": "savings_hold_component_check",
+      "definition": "CHECK ((component = ANY (ARRAY['CAPITAL'::text, 'YIELD'::text])))"
+    },
+    {
+      "table_name": "savings_holds",
+      "contype": "c",
+      "conname": "savings_hold_reason_check",
+      "definition": "CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 1000)))"
+    },
+    {
+      "table_name": "savings_holds",
+      "contype": "c",
+      "conname": "savings_hold_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['ACTIVE'::text, 'RELEASED'::text, 'SETTLED'::text])))"
+    },
+    {
+      "table_name": "savings_holds",
+      "contype": "p",
+      "conname": "savings_holds_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_dates_check",
+      "definition": "CHECK ((ends_on >= starts_on))"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_period_calendar_check",
+      "definition": "CHECK (((EXTRACT(year FROM starts_on) = (period_year)::numeric) AND (EXTRACT(year FROM ends_on) = (period_year)::numeric) AND ((EXTRACT(month FROM starts_on) >= ((((semester - 1) * 6) + 1))::numeric) AND (EXTRACT(month FROM starts_on) <= ((semester * 6))::numeric)) AND ((EXTRACT(month FROM ends_on) >= ((((semester - 1) * 6) + 1))::numeric) AND (EXTRACT(month FROM ends_on) <= ((semester * 6))::numeric))))"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "u",
+      "conname": "savings_yield_periods_period_year_semester_key",
+      "definition": "UNIQUE (period_year, semester)"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "p",
+      "conname": "savings_yield_periods_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_productive_rate_check",
+      "definition": "CHECK (((NOT productive_enabled) OR (rate IS NOT NULL)))"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_rate_check",
+      "definition": "CHECK (((rate IS NULL) OR (rate >= (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_semester_check",
+      "definition": "CHECK ((semester = ANY (ARRAY[1, 2])))"
+    },
+    {
+      "table_name": "savings_yield_periods",
+      "contype": "c",
+      "conname": "savings_yield_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'APPROVED'::text, 'CREDITED'::text, 'DISABLED'::text])))"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "contype": "c",
+      "conname": "savings_yield_allocation_amount_check",
+      "definition": "CHECK (((calculation_basis >= (0)::numeric) AND (calculated_amount >= (0)::numeric) AND (COALESCE(approved_amount, (0)::numeric) >= (0)::numeric)))"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "contype": "c",
+      "conname": "savings_yield_allocation_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['PENDING_REVIEW'::text, 'APPROVED'::text, 'EXCLUDED'::text, 'CREDITED'::text])))"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "contype": "p",
+      "conname": "savings_yield_allocations_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_yield_allocations",
+      "contype": "u",
+      "conname": "savings_yield_allocations_yield_period_id_participant_id_key",
+      "definition": "UNIQUE (yield_period_id, participant_id)"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "contype": "p",
+      "conname": "savings_process_change_events_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "contype": "c",
+      "conname": "savings_process_change_new_check",
+      "definition": "CHECK ((new_process = ANY (ARRAY['JUB'::text, 'PROCESS_1'::text, 'PROCESS_3'::text])))"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "contype": "c",
+      "conname": "savings_process_change_old_check",
+      "definition": "CHECK (((old_process IS NULL) OR (old_process = ANY (ARRAY['JUB'::text, 'PROCESS_1'::text, 'PROCESS_3'::text]))))"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "contype": "c",
+      "conname": "savings_process_change_reason_check",
+      "definition": "CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 1000)))"
+    },
+    {
+      "table_name": "savings_process_change_events",
+      "contype": "c",
+      "conname": "savings_process_change_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['SAVINGS_PROCESS_CHANGE_REVIEW_REQUIRED'::text, 'APPLIED'::text, 'DISMISSED'::text, 'NO_ACTIVE_ENROLLMENT'::text])))"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "contype": "u",
+      "conname": "savings_audit_events_client_action_id_key",
+      "definition": "UNIQUE (client_action_id)"
+    },
+    {
+      "table_name": "savings_audit_events",
+      "contype": "p",
+      "conname": "savings_audit_events_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "contype": "u",
+      "conname": "savings_operation_settings_client_action_id_key",
+      "definition": "UNIQUE (client_action_id)"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "contype": "c",
+      "conname": "savings_operation_settings_entry_mode_check",
+      "definition": "CHECK ((entry_mode = ANY (ARRAY['ALL_YEAR'::text, 'WINDOWS'::text])))"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "contype": "p",
+      "conname": "savings_operation_settings_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_operation_settings",
+      "contype": "c",
+      "conname": "savings_operation_settings_reason_check",
+      "definition": "CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 1000)))"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "c",
+      "conname": "savings_balance_certifications_capital_check",
+      "definition": "CHECK ((capital >= (0)::numeric))"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "u",
+      "conname": "savings_balance_certifications_client_action_id_key",
+      "definition": "UNIQUE (client_action_id)"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "u",
+      "conname": "savings_balance_certifications_participant_id_key",
+      "definition": "UNIQUE (participant_id)"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "p",
+      "conname": "savings_balance_certifications_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "u",
+      "conname": "savings_balance_certifications_record_id_key",
+      "definition": "UNIQUE (record_id)"
+    },
+    {
+      "table_name": "savings_balance_certifications",
+      "contype": "c",
+      "conname": "savings_balance_certifications_yield_amount_check",
+      "definition": "CHECK ((yield_amount >= (0)::numeric))"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "contype": "c",
+      "conname": "savings_publication_state_check",
+      "definition": "CHECK ((((mode = 'PRIVATE'::text) AND (published_at IS NULL)) OR ((mode = 'PUBLISHED'::text) AND (published_at IS NOT NULL) AND (actor_real_auth_user_id IS NOT NULL))))"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "contype": "c",
+      "conname": "savings_publication_state_id_check",
+      "definition": "CHECK (id)"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "contype": "c",
+      "conname": "savings_publication_state_mode_check",
+      "definition": "CHECK ((mode = ANY (ARRAY['PRIVATE'::text, 'PUBLISHED'::text])))"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "contype": "p",
+      "conname": "savings_publication_state_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "savings_publication_state",
+      "contype": "c",
+      "conname": "savings_publication_state_version_check",
+      "definition": "CHECK ((version > 0))"
+    }
+  ]
+}

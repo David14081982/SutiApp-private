@@ -1,0 +1,96 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-03T20:53:29.876Z",
+  "target": "http://localhost:8080",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "checks": [
+    {
+      "name": "candidate identity and actual login",
+      "status": "PASS",
+      "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+      "fixtureResponses": 0
+    },
+    {
+      "name": "real Admin SICOF load and server calculation",
+      "status": "PASS",
+      "sourceReady": true,
+      "sourceStatus": "READY",
+      "sourceObservedAt": "2026-10-03T20:47:28.141Z",
+      "loanCount": 2373,
+      "paymentCount": 5656,
+      "participants": 354,
+      "reportRows": 836,
+      "sourceTimestampPresent": true,
+      "rateResolved": false
+    },
+    {
+      "name": "all eight real SICOF panes and original controls",
+      "status": "PASS",
+      "panes": 8,
+      "reportControlsEnabled": true
+    },
+    {
+      "name": "real savings origin and global balance detail",
+      "status": "PASS",
+      "realReportDetail": true,
+      "noOriginClassificationWritten": true
+    },
+    {
+      "name": "real loan matrix and expected paid detail",
+      "status": "PASS",
+      "realHistory": true,
+      "expectedComparison": true
+    },
+    {
+      "name": "Finance behavior indicator from real applicant requests",
+      "status": "PASS",
+      "indicatorReady": true,
+      "opensOwnDetail": true,
+      "batches": 1
+    },
+    {
+      "name": "self Savings period balance matches canonical self reader",
+      "status": "PASS",
+      "periodRows": 0,
+      "annualReferences": 0,
+      "canonicalAvailableMatches": true
+    }
+  ],
+  "network": [
+    {
+      "action": "LOAD",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "CALCULATE",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "BEHAVIOR",
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "BEHAVIOR",
+      "status": 200,
+      "error": null
+    }
+  ],
+  "blockedFinancialWrites": 0,
+  "browserErrors": 0,
+  "fixtures": 0,
+  "screenshots": 0,
+  "productionBusinessWrites": 0,
+  "sourceProofs": [
+    "ui-live-admin.json",
+    "ui-live-self.json"
+  ],
+  "verificationScope": "Combined real read-only coverage on identical candidate: six administrative checks passed; only the verifier self-navigation was corrected and repeated independently without another Google query.",
+  "limitations": [
+    "The authorized self account has zero period rows and zero annual references; actual canonical availability and the empty period component were compared. Nonempty periods are covered by SQL equivalence over354 accounts and isolated UI tests.",
+    "Initial verifier failures were popup navigation, CDP body eviction, and direct hash navigation; the product was not changed.",
+    "Observed rateResolved=false remains explicit; no financial posting or policy change was made."
+  ]
+}

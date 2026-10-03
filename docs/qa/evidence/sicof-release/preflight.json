@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "functionContracts": 5,
+  "protectedTables": 12,
+  "requiredSecretNamesPresent": [
+    "GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_ID",
+    "GOOGLE_REQUEST_SYNC_OAUTH_CLIENT_SECRET",
+    "GOOGLE_REQUEST_SYNC_OAUTH_REFRESH_TOKEN",
+    "FINANCIAL_LEGACY_API_URL",
+    "FINANCIAL_LEGACY_API_TOKEN",
+    "ALLOWED_APP_ORIGINS"
+  ],
+  "edgeAbsent": true,
+  "versionCollisions": 0,
+  "candidateUnchanged": true,
+  "financialWrites": 0
+}

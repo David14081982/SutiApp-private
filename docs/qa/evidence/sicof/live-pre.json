@@ -1,0 +1,104 @@
+{
+  "status": "PASS",
+  "mode": "LIVE_READ_ONLY_PRE",
+  "at": "2026-10-03T20:12:06.093Z",
+  "businessWrites": 0,
+  "syntheticRows": 0,
+  "credentialsLogged": false,
+  "checks": [
+    {
+      "name": "existing admin and ordinary sessions retain distinct backend permissions",
+      "status": "PASS"
+    },
+    {
+      "name": "existing self readers authenticate and expose only their own account",
+      "status": "PASS"
+    }
+  ],
+  "ledgerBefore": [
+    {
+      "resource": "savings_transactions",
+      "count": 844,
+      "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+    },
+    {
+      "resource": "savings_requests",
+      "count": 26,
+      "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+    },
+    {
+      "resource": "savings_participants",
+      "count": 354,
+      "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+    },
+    {
+      "resource": "savings_enrollments",
+      "count": 352,
+      "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+    },
+    {
+      "resource": "savings_holds",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_periods",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_allocations",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ],
+  "ordinaryAuthenticatedCoverage": false,
+  "limitations": [
+    "No existing ordinary-user credentials were available; ordinary-user authenticated denial not executed. No account or password was created/changed."
+  ],
+  "selfAccountsWithSavings": 1,
+  "self": {
+    "H005_TEST": {
+      "previousDtoHash": "06cc3415a7ce19686d7a5f41982cf57db817582061af8780dda675e3092f7285",
+      "previousBalanceHash": "b528607562f4087446d65195a4764239dab5b3e09842cd696b519aa0ec184ecc",
+      "hasParticipant": true
+    }
+  },
+  "ledgerAfter": [
+    {
+      "resource": "savings_transactions",
+      "count": 844,
+      "fingerprint": "3df4c05a0e94d2ce12c88e85cc0f565b"
+    },
+    {
+      "resource": "savings_requests",
+      "count": 26,
+      "fingerprint": "5ebcdcfd49dc2eca6c5f9ebf8d7c6593"
+    },
+    {
+      "resource": "savings_participants",
+      "count": 354,
+      "fingerprint": "bbd52d3fdb6f851755e1066edd5f815c"
+    },
+    {
+      "resource": "savings_enrollments",
+      "count": 352,
+      "fingerprint": "ddedf87da7150f29fb030fc755be31f1"
+    },
+    {
+      "resource": "savings_holds",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_periods",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "resource": "savings_yield_allocations",
+      "count": 0,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  ]
+}

@@ -1,5 +1,25 @@
 # SutiApp Financial Handoff
 
+## Fixed SICOF financial read — local candidate 2026-10-03
+
+The separate `read_sicof_financial` action accepts only action, the existing server
+secret and `contract_version=SICOF_FINANCIAL_READ_V1`. It reads the same fixed
+HISTORIAL P V2 (1245291756), projects A:R/V:AG, and excludes other columns such as
+WhatsApp. The source uses typed numeric values and exact displayed ID/Folio; a
+second numeric read rejects a changing source. Dates are rendered in the workbook
+time zone. Source rows and a SHA-256 fingerprint accompany the observation.
+
+This does not modify `read_loan_status`, existing writers, formulas, triggers,
+OAuth credentials/scopes, deployment access or any source cell. No deployment
+is performed by adding this candidate. SICOF validates its administrative caller
+before invoking the server-only reader. It has no stored-data fallback.
+
+A is the amortization source date, not an independently verified receipt date.
+N includes administrative fee Z when the loan identities reconcile. SICOF splits
+interest/fee only for complete, consistent recorded B payments; partial payments,
+overpayments, duplicates or incomplete components remain explicit reconciliation
+issues. Zero B never creates collected interest. Future amounts are projections.
+
 ## Fixed loan-status read — 2026-09-21
 
 The same authenticated deployment accepts `read_loan_status` with

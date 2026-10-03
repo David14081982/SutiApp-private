@@ -1,8 +1,8 @@
 {
   "command": "node scripts/test-global-image-regression-production-live.js",
-  "checkedAt": "2026-10-03T21:07:43.897Z",
+  "checkedAt": "2026-10-03T21:24:31.321Z",
   "target": "GITHUB_PAGES_PRODUCTION",
-  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
   "status": "PASS",
   "initial": {
     "families": {
@@ -89,7 +89,7 @@
       "serviceWorkerControlled": true,
       "serviceWorkerScript": "sw.js",
       "cacheNames": [
-        "sutiapp-v243"
+        "sutiapp-v244"
       ]
     },
     "status": "PASS"
@@ -137,6 +137,6 @@
   "browserErrors": 0,
   "productionDataMutations": 0,
   "rawUrlsLogged": 0,
-  "verifiedBundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+  "verifiedBundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
   "editorialAuthority": "DEPLOYED"
 }

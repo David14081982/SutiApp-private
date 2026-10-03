@@ -1,13 +1,14 @@
 {
   "status": "PASS",
-  "checkedAt": "2026-10-03T21:22:16.097Z",
+  "checkedAt": "2026-10-03T21:05:56.405Z",
   "target": "https://sutiapp.com",
-  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+  "commit": "b1e562a83e85eabe5e271b0117bc705312a242aa",
+  "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
   "checks": [
     {
       "name": "candidate identity and actual login",
       "status": "PASS",
-      "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+      "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
       "fixtureResponses": 0
     },
     {
@@ -15,27 +16,24 @@
       "status": "PASS",
       "sourceReady": true,
       "sourceStatus": "READY",
-      "sourceObservedAt": "2026-10-03T21:20:27.164Z",
+      "sourceObservedAt": "2026-10-03T21:00:17.921Z",
       "loanCount": 2373,
       "paymentCount": 5656,
       "participants": 354,
       "reportRows": 836,
       "sourceTimestampPresent": true,
-      "engineVersion": "SICOF_2026_10_03_V2",
-      "unknownTenureFalseExclusions": 0,
       "rateResolved": false,
       "nqual": 0,
       "nexcl": 0,
       "reviewRows": 354,
       "reasonCounts": {
+        "No cumple 6 meses": 75,
         "ENROLLMENT_UNVERIFIED": 29,
-        "Fecha de inicio del ahorro pendiente de verificar": 29,
         "Saldo canónico no disponible": 26,
         "HISTORICAL_DAILY_BALANCE_UNPROVEN": 297,
         "CONTRIBUTION_EVIDENCE_INCOMPLETE": 294,
         "HISTORICAL_EXPECTATION_UNVERIFIED": 328,
         "Préstamos por conciliar": 272,
-        "No cumple 6 meses": 46,
         "Inscripción sin ahorro activo": 18,
         "Baja en el periodo": 18,
         "Descuentos no cubiertos dentro del periodo": 5,
@@ -72,14 +70,7 @@
       "name": "all eight real SICOF panes and original controls",
       "status": "PASS",
       "panes": 8,
-      "reportControlsEnabled": true,
-      "eligibilityCertaintyMatches": true,
-      "certainty": {
-        "review": 354,
-        "yes": 0,
-        "no": 0,
-        "unknownMonths": 29
-      }
+      "reportControlsEnabled": true
     },
     {
       "name": "real savings origin and global balance detail",
@@ -111,15 +102,23 @@
   "network": [
     {
       "action": "LOAD",
-      "status": 200
+      "status": 200,
+      "error": null
     },
     {
       "action": "CALCULATE",
-      "status": 200
+      "status": 200,
+      "error": null
     },
     {
       "action": "BEHAVIOR",
-      "status": 200
+      "status": 200,
+      "error": null
+    },
+    {
+      "action": "BEHAVIOR",
+      "status": 200,
+      "error": null
     }
   ],
   "blockedFinancialWrites": 0,
@@ -127,8 +126,19 @@
   "fixtures": 0,
   "screenshots": 0,
   "productionBusinessWrites": 0,
+  "sourceProofs": [
+    "ui-live-production-admin.json",
+    "ui-live-production-self.json"
+  ],
+  "verifiers": {
+    "adminSha256": "306b72757527370b63d4b46f5af3c715bd9b7c1133d582e2f2d3100aa0767eb0",
+    "selfSha256": "83419ae2e56056940cfda3f0644ce474a0bb86133f45aa392fd6f5b6dc0055fd",
+    "correction": "Only test navigation: open Ver app and await completed home context before Finanzas/Ahorrar. Product unchanged."
+  },
+  "verificationScope": "Combined real read-only coverage on the identical deployed bundle: six administrative checks plus independently repeated self navigation.",
   "limitations": [
-    "Authenticating may create the existing nonfinancial access-history event. No savings, loan, scenario or preference writer is invoked.",
-    "Data remains in browser/process memory; evidence contains only counts and contract results."
+    "Authorized self account has zero period rows and zero annual references; actual canonical availability and empty component match its real self reader.",
+    "Reason counts overlap between participants and must not be summed as independent people.",
+    "Default semester rate remains unresolved: no verified eligible basis. No policy, contribution, withdrawal or yield was changed."
   ]
 }

@@ -22,9 +22,9 @@ Status del alcance de revisión: PASS.
 
 ## ARCHITECT REVIEW
 
-Task reviewed: cierre de H-SICOF-RELEASE-001 publicado en `b1e562a83e85eabe5e271b0117bc705312a242aa`, frontend v311.
+Task reviewed: cierre de H-SICOF-RELEASE-001 en `371a9338a42ddeaf26afc9df2f3de7c417d87574`, frontend v312, Edge v3/motor V2. Se conserva el recorrido inicial publicado en `b1e562a83e85eabe5e271b0117bc705312a242aa`, frontend v311.
 
-Verdict: **NEEDS_FIX**. La publicación, las pantallas principales y la regresión global de v311 están comprobadas. Se detectó una ambigüedad concreta entre inscripción desconocida e incumplimiento de antigüedad. La corrección requiere revisión focal y evidencia de la nueva versión publicada; no se debe cerrar el release como totalmente aprobado antes de esos gates.
+Verdict: **APPROVED** para la activación autorizada de SICOF, después de comprobar la corrección publicada y todos sus gates reales. La ambigüedad detectada en v311 se corrigió en v312 y se mantiene documentada como hallazgo histórico. Esta aprobación no certifica una tasa financiera: la simulación inicial continúa sin base elegible verificable y requiere conciliación de información antes de determinar un porcentaje.
 
 Skills aplicadas: architecture navigator, architect reviewer, source-of-truth, legacy Google, Supabase security y pre/post-change verification. Se usó discovery dirigido porque el Registry raíz refleja cambios concurrentes de evidencias; la aceptación completa del Registry del commit aislado publicado sí cuenta con evidencia propia PASS. `WORK_QUEUE_HISTORY.md` no existe; la cola histórica no se usa para otorgar autorización o avance automático. La activación procede de la autorización explícita del propietario documentada en la H.
 
@@ -38,7 +38,7 @@ La revisión previa del paquete comprobó cuatro fragmentos focales sustituidos,
 
 La UI administradora mostró ocho pestañas, controles de reportes habilitados, detalle real del ahorro, préstamo y comparación esperado/pagado, además del indicador de comportamiento en Finanzas/Solicitudes. LOAD, CALCULATE y BEHAVIOR devolvieron HTTP 200. Fuente READY observada a las 21:00:17 UTC, 2,373 préstamos, 5,656 pagos del intervalo, 354 participantes y 836 renglones de reporte. Son conteos de objetos distintos; no deben compararse como si fueran el mismo universo.
 
-`global-production.json`, a las 21:07:43 UTC, confirma PASS en GitHub Pages con el SHA-256 exacto de v311. Se verificaron 194 assets de app, 226 de catálogo, Login, perfil, Admin, documentos, Membership, Préstamo, Marketplace, fullscreen, PDF legítimo, refresh y comparación con/sin SW. Cero errores browser, mutaciones de datos productivos o URLs privadas registradas. Esta evidencia corresponde a v311; no sustituye la verificación de una versión posterior corregida.
+`global-production-v311.json`, a las 21:07:43 UTC, conserva el PASS inicial en GitHub Pages con el SHA-256 exacto de v311. Se verificaron 194 assets de app, 226 de catálogo, Login, perfil, Admin, documentos, Membership, Préstamo, Marketplace, fullscreen, PDF legítimo, refresh y comparación con/sin SW. Cero errores browser, mutaciones de datos productivos o URLs privadas registradas. Esa evidencia histórica no se utiliza como sustituto de la verificación final v312 descrita más adelante.
 
 Limitación real de self: la cuenta existente utilizada tiene cero filas de periodos y cero referencias anuales. El saldo disponible y el estado vacío sí se comprobaron en producción. No se afirma demostración browser de una cuenta real con varios periodos; esa cobertura adicional procede de equivalencia SQL sobre 354 participantes y pruebas UI aisladas. No se crearon cuentas, movimientos ni impersonaciones para obtenerla.
 
@@ -70,15 +70,15 @@ Los principales motivos son evidencia incompleta para reconstruir la base y veri
 | Saldo canónico no disponible | 26 | No hay saldo utilizable para esa cuenta en el contexto. No debe sustituirse por cero. |
 | `SOURCE_REVIEW_REQUIRED` | 2 | La fuente necesita aceptación/conciliación del cambio detectado. |
 
-Las marcas **se solapan**: una persona puede tener varias; no se suman como poblaciones independientes. Otros motivos aparecen 75 veces para antigüedad, 18 para inscripción inactiva, 18 para baja y cinco para descuentos insuficientes. Todas esas filas permanecen en revisión; no se deben presentar los conteos como 75/18/18/5 exclusiones definitivas. El motivo de antigüedad presenta además el defecto específico descrito abajo.
+Las marcas **se solapan**: una persona puede tener varias; no se suman como poblaciones independientes. En v311 el motivo de antigüedad aparecía 75 veces; la corrección final separa **29 fechas desconocidas** de **46 casos con fecha conocida que no alcanzan el mínimo en el escenario**. Otros motivos aparecen 18 veces para inscripción inactiva, 18 para baja y cinco para descuentos insuficientes. Todas esas filas permanecen en revisión por el conjunto de comprobaciones pendiente: los conteos no representan exclusiones definitivas. El error previo de antigüedad y su resolución se conservan abajo.
 
 `rate-basis-facts.json` confirma 328 certificaciones con corte 2026-09-06, y 297 aperturas certificadas posteriores al inicio 2026-07-01. `basisFor` no atribuye retroactivamente ese saldo a todos los días del semestre. Cambiar la simulación de promedio a saldo final puede eliminar ese motivo particular, pero no completa la historia de aportaciones, las expectativas ni los préstamos por conciliar. Por ello no se puede prometer que cambiar un selector resolverá la tasa.
 
 Las alertas DATE_SEMANTICS, UNALLOCATED_PAYMENTS, FUTURE_CUTOFF, POLICY_SCENARIO, SAVINGS_REVIEW y NO_VERIFIED_BASIS son coherentes con esas limitaciones. La fecha de amortización de Google no acredita la fecha real de recepción ni la puntualidad; cuotas, capital, interés, gasto administrativo y proyección se mantienen separados. El motor conserva `status:SIMULATION`, `can_post:false` y `can_certify_cash_income:false`. No hay tasa aprobada ni rendimientos acreditados por esta activación.
 
-### Hallazgo que impide afirmar ausencia de confusión
+### Hallazgo histórico de v311, corregido y verificado en v312
 
-Los agregados del motor distinguen revisión y exclusión correctamente, pero hay dos detalles de representación:
+Los agregados del motor v311 distinguían revisión y exclusión correctamente, pero había dos detalles de representación:
 
 1. `engine.mjs` calcula `completedMonths` como 0 cuando falta la fecha de inicio y después añade `No cumple 6 meses`. Con inscripción desconocida la antigüedad no está demostrada; no es una antigüedad demostrada de cero meses.
 2. En `app/sicof-admin.jsx`, la columna `Califica` usa el booleano `ok` y el formato genérico `Sí/No`. Una fila `review_required:true, ok:false` aparece como `No`, sin una distinción explícita en esa celda frente a una exclusión confirmada.
@@ -108,7 +108,7 @@ El dinero no se acreditó ni la cuenta pasó al agregado de excluidos. Sin embar
 
 Los deltas de motor/exportadores fueron implementados por `savings_contract`; los de UI por `sicof_ui_contract`. Este reviewer no escribió esa corrección y contrastó cada diff contra b1e562.
 
-Resultado focal previo al despliegue: **APPROVED**. Se completaron la revisión del código y las suites finales de motor, exportación, Edge, sintaxis y UI. El gate técnico de esta corrección queda satisfecho; no equivale todavía a APPROVED del cierre de la H.
+Resultado focal previo al despliegue: **APPROVED**. Se completaron la revisión del código y las suites finales de motor, exportación, Edge, sintaxis y UI. Esa revisión permitió desplegar la corrección bajo la autorización vigente; el cierre sólo se aprobó tras las comprobaciones reales posteriores indicadas abajo.
 
 - Motor V2: una fecha ausente devuelve `months:null`; si la permanencia está activa, la fila pasa a revisión con `Fecha de inicio del ahorro pendiente de verificar`. Una fecha existente y corta conserva `No cumple 6 meses`; el anclaje no inventa una fecha ausente. Desactivar el mínimo conserva la regla anterior y no elimina otros motivos fuente pendientes.
 - CSV, XLSX simple, Desglose y Reparto formulado usan `Por verificar / No / Sí`. Los literales de IF y SUMIF cambian juntos a `Sí`, manteniendo coherencia con las celdas y los resultados monetarios. La ruta de descarga de los bytes históricos originales no cambia.
@@ -128,39 +128,74 @@ Hashes del delta revisado:
 
 Suites finalizadas por los implementadores y contrastadas con los archivos revisados: `node scripts/test-sicof-engine.js` PASS; `node scripts/test-sicof-exports.js` PASS, 20 grupos, incluyendo los tres estados en CSV/XLSX/formulado y las 214 filas/bytes históricos intactos; `node scripts/test-sicof-edge.js` PASS; sintaxis/diff PASS. UI: `node scripts/test-sicof-ui-browser.js`, 26 comprobaciones PASS. Las aserciones independientes propias del reviewer son la equivalencia de 24 escenarios, estado desconocido y conservación del bundle descritas arriba; no se presenta la ejecución de las suites por otro agente como propia.
 
-El agente principal confirmó estos hashes y resultados antes de sellar y desplegar la corrección. Quedan las comprobaciones reales del nuevo despliegue antes del dictamen final. La evidencia v311 no se atribuye retroactivamente a v312.
+El agente principal confirmó estos hashes y resultados antes de sellar y desplegar la corrección. La evidencia v311 no se atribuye retroactivamente a v312.
+
+### Cierre real de la corrección publicada
+
+Se inspeccionaron `eligibility-backend-tests.json`, `eligibility-ui-browser.json`, `eligibility-release-package.json`, `eligibility-release-build.json`, `eligibility-frontend-publication.json`, `eligibility-ui-production.json` y `global-production.json`. La comprobación propia del nuevo paquete obtuvo 45 hashes coincidentes, 42 archivos presentes todos declarados y exactamente 28 archivos públicos sin Excel ni secretos. El artefacto inspeccionado fue `.tmp/sicof/release/.tmp/sicof/public-artifact-eligibility-1791062210877`.
+
+La publicación correctiva tiene commit `371a9338a42ddeaf26afc9df2f3de7c417d87574`, workflow `37154649780` exitoso y frontend v312 en ambos dominios con SHA-256 `de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a`. Los hashes del motor, exportadores y pruebas incluidos en el commit coinciden con los revisados; Edge v3 está ACTIVE con JWT verificado. La evidencia de publicación conserva Registry FRESH antes del commit.
+
+`eligibility-ui-production.json`, a las 21:22:16 UTC, pasa las siete etapas completas del mismo bundle. La consulta real usa `SICOF_2026_10_03_V2`, fuente READY y cero falsas exclusiones de antigüedad desconocida. La tabla real coincide exactamente con el backend: 354 `Por verificar`, cero `Sí`, cero `No`, y 29 meses `Por verificar`. Hay 46 motivos de antigüedad insuficiente con fecha conocida en el escenario; no se declaran por ello exclusiones definitivas. Finanzas/BEHAVIOR y Ahorro propio pasan; LOAD, CALCULATE y BEHAVIOR devuelven 200. Cero errores browser, fixtures o escrituras de negocio. El límite de self vacío se mantiene explícito.
+
+`global-production.json`, a las 21:24:31 UTC, registra PASS en GitHub Pages sobre **el SHA final exacto de v312**. Login/sello, perfil, Admin Afiliados, imágenes, documentos, Membership, Préstamo, catálogo/galería, Marketplace, fullscreen, PDF legítimo, refresh y comparación con/sin SW están cubiertos. El worker controlado corresponde a `sutiapp-v244`; la comparación sin worker también pasa. Cero errores browser, escrituras de datos productivos o URLs privadas registradas. El PDF suplementario legítimo resuelve la ausencia de PDF en la cuenta principal; no se convirtió `NOT_APPLICABLE_CURRENT_ACCOUNT` en PASS sin evidencia.
+
+El reviewer ejecutó una última aserción independiente sobre los archivos de evidencia y los contenidos del commit: identidad de publicación/hash, estados de cada gate, versión Edge/motor, conteos/etiquetas de UI, condiciones de self, PDF/SW y hashes de motor/exportadores/pruebas. Resultado sanitizado:
+
+```json
+{
+  "status": "PASS",
+  "scope": "independent final gate consistency",
+  "at": "2026-10-03T21:26:01.678Z",
+  "commit": "371a9338a42ddeaf26afc9df2f3de7c417d87574",
+  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+  "edgeVersion": 3,
+  "engineVersion": "SICOF_2026_10_03_V2",
+  "uiStages": 7,
+  "globalFinal": true,
+  "unknownTenureFalseExclusions": 0,
+  "rateResolved": false,
+  "review": 354,
+  "eligible": 0,
+  "excluded": 0,
+  "unknownMonths": 29,
+  "selfLiveScope": "EMPTY_REAL_CANONICAL_STATE",
+  "sourceWrites": 0,
+  "externalWrites": 0
+}
+```
 
 ### Gates de cierre
 
 | Gate | Estado observado |
 | --- | --- |
-| Commit/workflow/bundle publicado en ambos hosts | PASS, b1e562 / v311 / SHA exacto. |
-| UI administradora real | PASS, seis pasos reales y fuente READY. |
-| UI self publicada | PASS con límite de estado vacío, evidencia específica del mismo bundle. |
-| Regresión global local del artefacto | PASS, evidencia de la revisión frontend previa. |
-| Regresión global posterior a publicación v311 | PASS, `global-production.json` con SHA exacto. Una corrección publicada posterior requiere su propia evidencia. |
-| Interpretación de datos pendientes en fila | NEEDS_FIX: antigüedad desconocida y columna Califica. |
+| Commit/workflow/bundle final publicado en ambos hosts | PASS, 371a933 / v312 / SHA final exacto. |
+| UI administradora real final | PASS, seis pasos reales, fuente READY, motor V2 y estados de certeza coincidentes. |
+| UI self publicada final | PASS con límite de estado vacío, evidencia específica del mismo bundle v312. |
+| Regresión global local del artefacto v311 | PASS, revisión frontend previa; el cambio focal v312 añade sus suites UI/integración/atribución y la regresión global publicada final. |
+| Regresión global posterior a publicación v312 | PASS, `global-production.json` con SHA final exacto; resultado v311 conservado aparte. |
+| Interpretación de datos pendientes en fila | PASS: antigüedad y Califica pendientes muestran Por verificar; cero falsas exclusiones. |
 | Tasa aprobada / acreditación de rendimiento | No corresponde a esta activación; ninguna ejecutada o afirmada. |
 
-Owner decision required: **NO** para las correcciones técnicas y la comprobación pendiente. No se propone una nueva regla de ahorro ni reclasificar históricos.
+Owner decision required: **NO** para cerrar la activación ya autorizada. No se propone una nueva regla de ahorro ni reclasificar históricos; la conciliación necesaria para determinar una tasa no se ejecuta ni se aprueba mediante este dictamen.
 
 ## RESPONSE TO CODEX
 
-No cierres H-SICOF-RELEASE-001. Conserva los resultados reales publicados y los intentos fallidos previos. Corrige de manera focal la antigüedad desconocida para que no genere una declaración de incumplimiento, y presenta las filas pendientes como `Por revisar` en la columna de elegibilidad, diferenciadas de exclusiones comprobadas. No cambies aportaciones, fechas históricas, saldos, políticas ni habilites una acreditación automática. Añade una prueba que contraste fecha ausente, antigüedad demostrada insuficiente y elegibilidad verificable. Ejecuta la regresión global requerida sobre el bundle final publicado, con assets legítimos, PDF, refresh y comparación con/sin SW, y guarda su SHA. Repite los checks focales afectados por cualquier corrección y solicita la revisión de cierre con evidencia de esos gates. Explica al propietario que la tasa está pendiente de conciliar datos, no que todos los ahorradores incumplieron. No avances a otra H.
+Se aprueba el cierre de la activación H-SICOF-RELEASE-001 con el frontend v312, Edge v3/motor V2 y las evidencias indicadas. Conserva los intentos fallidos y el hallazgo v311 como historia, sin reemplazarlos por el resultado final. Incorpora únicamente el recibo documental de cierre y sus derivados al paquete aislado; no cambies runtime ni repitas despliegues financieros. Comunica al propietario que SICOF está publicado y que la tasa permanece sin resolver por evidencia pendiente: 354 cuentas en revisión no son 354 incumplimientos ni una tasa 0%. Mantén explícitos los límites de self real vacío y denegación ordinaria SQL sin credenciales HTTP. No acredites rendimientos, reclasifiques historia ni inicies otra H o un cambio de política de forma automática. Este reviewer no sustituye la autorización del propietario ni afirma autorización de avance por un orquestador.
 
 ## H-SICOF-RELEASE-001-FINAL-REVIEW RESULT
 
-Status: FAIL por defecto corregible de semántica; global v311 PASS y verificación de la corrección posterior pendiente.
+Status: PASS de activación autorizada y corrección final publicada; tasa inicial pendiente de evidencia suficiente.
 
 Files changed: únicamente este documento.
 
 Source-of-truth verdict: PASS en las autoridades y conservación contrastadas; falta de evidencia permanece explícita.
 
-Invariant verdict: pendiente corregir texto de antigüedad desconocida; no se observó escritura financiera ni tasa inventada.
+Invariant verdict: PASS, texto y estados corregidos y comprobados; ninguna tasa inventada ni escritura financiera de prueba.
 
-Build: bundle publicado coincide con el artefacto previamente revisado y workflow success.
+Build: PASS, bundle v312 publicado coincide con el artefacto revisado y workflow success; 148 fragmentos previos intactos en la corrección.
 
-Tests: UI real administradora/self y global producción v311 PASS con límites; reproducción sintética demuestra el defecto; verificación de la corrección posterior pendiente.
+Tests: PASS, suites focales, comparación independiente de 24 escenarios, UI real administradora/self y global producción final v312. El defecto anterior queda reproducido y su corrección demostrada.
 
 Security: evidencia backend/SQL y privada revisada con límite explícito de ausencia de credenciales ordinarias.
 
@@ -168,7 +203,7 @@ Legacy impact: ninguno durante esta revisión; evaluación del cambio Google pro
 
 Unexpected files changed: ninguno por este reviewer.
 
-Known limitations: antigüedad/columna de elegibilidad, tasa sin base verificable, self real vacío y gates propios de la corrección posterior.
+Known limitations: tasa inicial sin base verificable, razones de revisión solapadas, cuenta self real vacía, denegación ordinaria SQL sin login HTTP ordinario. No equivalen a gates de activación sin ejecutar ni a permiso para inventar datos.
 
 Evidence: archivos y reproducción indicados arriba.
 
@@ -176,13 +211,13 @@ Evidence: archivos y reproducción indicados arriba.
 
 Task: cierre publicado de H-SICOF-RELEASE-001.
 
-Verdict: NEEDS_FIX.
+Verdict: APPROVED.
 
-Critical findings: certeza incorrecta de antigüedad cuando falta inscripción; filas pendientes muestran Califica No. UI/global v311 ya PASS; falta cerrar la corrección posterior con evidencia propia.
+Critical findings: los defectos de certeza de v311 se corrigieron y verificaron en v312. No hay defecto técnico de cierre pendiente en el alcance. La tasa sigue sin resolverse por la información disponible.
 
 Source of truth: autoridades preservadas; no sustituir evidencia faltante por cero o incumplimiento.
 
-Architecture: publicación focal preservada; Registry aislado aceptado.
+Architecture: publicación focal preservada, 148 fragmentos ajenos intactos en el correctivo y Registry aislado actualizado.
 
 Security: backend real y SQL revisados, sin afirmar login ordinario no ejecutado.
 
@@ -192,6 +227,6 @@ Legacy: sin escrituras por el reviewer.
 
 Owner decision: NO.
 
-Next action: corrección focal de semántica y cierre de gates con evidencia real.
+Next action: archivar el recibo documental de cierre y entregar los resultados con sus límites; no iniciar otra H automáticamente.
 
 Response generated for Codex: YES.

@@ -2,9 +2,9 @@
 
 Task reviewed: H-SAVINGS-AUTO-CONTRIBUTIONS-001.
 
-Verdict: **APPROVED — candidato y aplicación del backend verificados; publicación frontend y cierre integral pendientes.**
+Verdict: **APPROVED — implementación, aplicación del backend, publicación y comprobación productiva verificadas.**
 
-Fecha: 2026-10-03. Revisión independiente de `/root/savings_final_review`, complementada por la revisión SQL independiente de `/root/sicof_loan_contract`. Este documento no declara terminada la H ni acredita un push o una publicación todavía no comprobados.
+Fecha: 2026-10-03; cierre contrastado después de las evidencias de 23:00 UTC. Revisión independiente de `/root/savings_final_review`, complementada por la revisión SQL independiente de `/root/sicof_loan_contract`. La entrega funcional y su commit/push están comprobados. La incorporación posterior de esta evidencia de cierre no cambia el producto.
 
 ## Solicitud y autoridad
 
@@ -24,6 +24,8 @@ Supabase mantiene la única autoridad monetaria: `savings_transactions` y retenc
 | `docs/qa/evidence/savings-automatic-contributions/cron-live.json` | Despertar real de cron 22:50 UTC correlacionado con su ejecución privada: succeeded/COMPLETE, cero errores, cero pendientes y cero abonos duplicados. |
 | `docs/qa/evidence/savings-automatic-contributions/reports-live.json` | 294 participantes cotejados en proyección canónica propia, SICOF y descarga real Excel; deltas semestrales correctos, rendimiento/retiros intactos, columnas N/O correctas y futuras ausentes. Histórico original con SHA intacto. |
 | `docs/qa/evidence/savings-automatic-contributions/ui-live-local.json` | Build local exacto con backend real: sesión, saldo/última aportación, procedencia automática, cero pendientes, editor futuro abierto/cancelado, RH y responsive PASS. Cero escrituras de negocio ejecutadas. |
+| `docs/qa/evidence/savings-automatic-contributions/ui-live-production.json` | Las mismas cuatro etapas PASS sobre GitHub Pages a las 22:59:58 UTC, sesión real y lectores HTTP 200; bundle exacto, saldo/fecha reales y cero escrituras de negocio. |
+| `docs/qa/evidence/savings-automatic-contributions/deployment.json` | Commit y main remoto `ee52b318db554247ecf8cfbdfff514c4e584e795`; incluye el anterior `f6bcc741`. Pages `37160232239` y contrato Google `37160232201` terminados success; sitio público v313 con hash exacto. |
 | `docs/qa/evidence/savings-automatic-contributions/ui-independent-review.json` | Chrome ejecutado independientemente contra fuentes del checkout aislado: 10 grupos PASS, 320/430/1440 px, sin red ni errores; preservación de UI y manual comprobada. |
 | `docs/qa/evidence/savings-automatic-contributions/build.json` del checkout aislado | Cuatro chunks focales modificados, 145 ajenos idénticos, RH preservado, bundle v313 y sólo cachebusters del service worker. |
 | `docs/qa/evidence/sicof-manual/document-generation.json` y `document-verification.json` | PDF/Word edición 1.1/v313, 25 páginas y 24 secciones; lectura independiente adicional verifica nueve expresiones contractuales en ambos archivos. |
@@ -76,33 +78,37 @@ Regresión global de imágenes: **NOT APPLICABLE** según la excepción expresa 
 
 El harness de lectura real mantiene bloqueada la acción de arranque ajena `financial-legacy/loanSessionOpen`, que persiste snapshots de préstamos. La corrección del harness sólo registra el endpoint/acción técnicos y clasifica ese intento esperado después de abortarlo: no permite la escritura ni sustituye una respuesta. Toda escritura inesperada sigue haciendo fallar la prueba. La autoevaluación independiente de 17 casos PASS comprueba expresamente que `loanSessionOpen` permanece bloqueado y que `loanSessionConfirm` o una aportación no se clasifican como la excepción esperada. La lectura local final registra un intento de arranque abortado, cero bloqueos inesperados, cero errores del navegador y cero escrituras de negocio. Esta prueba no certifica el flujo de préstamos.
 
-El Registry está pendiente de regeneración sobre el paquete final aislado. `WORK_QUEUE.md` existe y pertenece al plan maestro de préstamos, cuyo avance no se autoriza por esta H. `WORK_QUEUE_HISTORY.md` no existe. Esta revisión no inicia otra H ni altera decisiones de ese plan.
+Después del empaquetado se comprobó independientemente el checkout aislado limpio, HEAD y tracking `origin/main` en `ee52b318db554247ecf8cfbdfff514c4e584e795`, padre `f6bcc741`, 48 archivos dentro del alcance declarado y `python scripts/generate-architecture-registry.py check` con resultado FRESH. Las huellas de producto coinciden con las revisadas. El manifiesto privado conserva el snapshot inicial de empaquetado y agrega las huellas finales de commit; la actualización de esta revisión explica su diferencia documental, sin deriva de producto.
 
-## Important findings y límites pendientes
+`WORK_QUEUE.md` existe y pertenece al plan maestro de préstamos, cuyo avance no se autoriza por esta H. `WORK_QUEUE_HISTORY.md` no existe. Esta revisión no inicia otra H ni altera decisiones de ese plan.
 
-No se detectan defectos abiertos en el candidato revisado ni inconsistencias en la evidencia de activación. Permanecen pasos de publicación de esta misma H, no nuevas decisiones de negocio:
+## Important findings y límites del cierre
 
-1. Empaquetar conservando las huellas revisadas, verificar alcance/artefacto público y regenerar/checkear el Registry.
-2. Ejecutar commit/push autorizado y comprobar despliegue, hash del bundle y pantalla productiva real. No declarar realizado antes de disponer de evidencia.
+No se detectan defectos abiertos en la entrega revisada ni inconsistencias entre aplicación, lecturas canónicas, reportes, artefacto publicado y prueba productiva. El objetivo funcional solicitado está satisfecho; commit/push y publicación están acreditados. Los límites de las pruebas se mantienen explícitos:
 
-Las lecturas reales locales/reportes y el despertar programado de cron ya están comprobados mediante las evidencias adicionales de 22:47–22:55 UTC indicadas arriba. No cambió el producto después de la revisión focal: sólo el diagnóstico y clasificación del harness.
+1. No se ejecutó una prueba de carga con sesiones PostgreSQL simultáneas. La suite cubrió secuencias y restricciones; la revisión independiente examinó el orden de bloqueos.
+2. Las pruebas productivas no guardaron excepciones o correcciones sintéticas. Esas escrituras se ejercitaron en el entorno aislado; en producción se abrió y canceló el editor sin guardar.
+3. El harness productivo bloquea service workers para interceptar cada solicitud y aborta el arranque ajeno `loanSessionOpen`. No certifica ese flujo de préstamos ni una comparación con/sin worker. Esto no amplía el alcance focal ni invalida las lecturas de Ahorro.
+4. Las proyecciones propias se cotejaron con lectura de base de datos, sin suplantar ni iniciar sesión como cada ahorrador. Las partes históricas cuyo desglose es parcial continúan identificadas; no se fabricaron periodos anteriores al corte.
+
+Las lecturas locales/productivas, reportes y despertar programado de cron están comprobados mediante las evidencias de 22:47–23:00 UTC. No cambió el producto después de la revisión focal: sólo el diagnóstico/clasificación del harness y los documentos de evidencia. La revisión final no exige repetir operaciones financieras ni modificar datos productivos.
 
 ## RESPONSE TO CODEX
 
-Aprobados el candidato y el backend aplicado de H-SAVINGS-AUTO-CONTRIBUTIONS-001 con las huellas y límites descritos. Continúa dentro de la misma H con las verificaciones pendientes y la publicación ya autorizada por el propietario. No modifiques SQL/datos para acomodar un test ni publiques archivos ajenos del workspace. Ante un fallo, corrige dentro del alcance y vuelve a verificar. Actualiza esta revisión con evidencia de publicación antes del cierre integral; no avances a otra H.
+Aprobada H-SAVINGS-AUTO-CONTRIBUTIONS-001 con las huellas, evidencias y límites descritos. Conserva la operación activada y los respaldos privados. Incorpora únicamente los documentos finales de evidencia y su índice derivado al commit/push documental autorizado, comprobando que el artefacto público continúa idéntico; no ejecutes más mutaciones productivas ni repitas pruebas financieras sin un cambio o fallo nuevo. Informa al propietario el resultado y los commits. No inicies otra H ni modifiques trabajo ajeno.
 
 ## SUTIAPP ARCHITECT REVIEW
 
 Task: H-SAVINGS-AUTO-CONTRIBUTIONS-001.
 
-Verdict: APPROVED para candidato/backend; cierre de publicación pendiente.
+Verdict: APPROVED.
 
 Critical findings: Ninguno abierto en lo revisado.
 
-Source of truth: PASS. Architecture: PASS para candidato focal; Registry final pendiente. Security: PASS según revisión SQL y frontend. Data: PASS para aplicación/lectura backend comprobada. Legacy: Sin escritura Google/préstamos/Excel histórico en esta H.
+Source of truth: PASS. Architecture: PASS; Registry FRESH del commit funcional. Security: PASS según revisión SQL y frontend. Data: PASS para aplicación, lectura backend y reportes comprobados. Legacy: Sin escritura Google/préstamos/Excel histórico en esta H.
 
 Owner decision: NO.
 
-Next action: Completar la verificación y publicación autorizadas de esta misma H, y actualizar el cierre con evidencia.
+Next action: Sellar únicamente la evidencia documental final, conservar la operación y comunicar el cierre; sin más trabajo productivo ni avance de otra H.
 
 Response generated for Codex: YES.

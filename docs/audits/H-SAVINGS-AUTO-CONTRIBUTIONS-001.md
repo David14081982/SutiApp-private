@@ -75,3 +75,27 @@ La consulta posterior reconoce 295/295 fechas de cuenta para 30/09; en la cuenta
 El contexto SICOF y la descarga real de Excel se comprobaron para los 294 participantes afectados: incremento correcto en 2026-S2, rendimientos/retiros idénticos, encabezados N/O exactos, columnas futuras ausentes e histórico original con SHA intacto. Las proyecciones canónicas propias se evaluaron en lectura y sus saldos coinciden con el ledger; esto no equivale a iniciar sesión como cada afiliado. Evidencia: migration.json, activation.json, backend-verification.json, cron-live.json y reports-live.json. Datos personales y backups permanecen en .tmp privado.
 
 El verificador navegador impide toda escritura de negocio. El arranque general intenta `financial-legacy:loanSessionOpen`, que genera un snapshot de elegibilidad de préstamos; se mantiene abortado expresamente durante esta prueba focal y se identifica como actividad ajena bloqueada. No se permite esa escritura para obtener un resultado limpio ni se declara una prueba del flujo normal de préstamos. La prueba de Ahorro comprueba datos canónicos, última fecha, procedencia, editor futuro, RH y tamaños 430/1440 sin guardados. El primer FAIL del harness correspondió a exigir cero intentos de cualquier dominio; el diagnóstico permitió distinguir ese intento bloqueado sin relajar la prohibición de escritores financieros.
+
+## H-SAVINGS-AUTO-CONTRIBUTIONS-001 RESULT
+
+Status: PASS.
+
+Files changed: 48 archivos focales del commit `ee52b318db554247ecf8cfbdfff514c4e584e795`: cuatro fuentes de Ahorro, bundle/cachebusters derivados, migración/recovery 004, scripts/fixture de prueba y activación, evidencia, manual PDF/Word y secciones normativas/Registry. Las fuentes del checkout general ajenas a esta H no se publicaron ni sobrescribieron. Los archivos documentales posteriores sólo agregan evidencia de producción/cierre.
+
+Source-of-truth verdict: PASS; ledger canónico Supabase, plan/instrucción como orden fechada, recibo + movimiento al vencimiento. SICOF no crea una segunda autoridad.
+
+Invariant verdict: PASS; importe/identidad/fecha exactos, corte y rendimientos protegidos, cero futuro, delta por corrección, sin duplicados, historia previa/antigüedad certificada preservadas.
+
+Build: PASS; v313 hash `07a8a5d6ea4ac9fb8de04ef84374970ff71a8c4a1e02b989dab02b78bb0b65c0`, 145 chunks ajenos conservados, RH intacto, Pages excluye archivos privados. Registry FRESH del paquete.
+
+Tests: PASS; 19 grupos SQL aislados, 10 grupos UI aislados, 17 casos del bloqueo de escrituras, cuatro etapas UI reales tanto local como producción, 294 proyecciones personales/composiciones/reportes, descarga real Excel, repetición sin dinero nuevo y cron real succeeded. Manual PDF/Word verificado: 25 páginas y encabezados/fuentes correctos.
+
+Security: PASS; actor SYSTEM explícito, admin real para política, grants/RLS/capacidades y permisos de clientes protegidos. Pruebas productivas no guardan cambios de negocio ni exponen PII en evidencia. No se simuló seguridad mediante la UI.
+
+Legacy impact: Google/Apps Script/Préstamos/Excel original sin escritura. RH conserva reporte de instrucciones. El único cambio financiero de esta H fue el reconocimiento canónico de los vencimientos autorizados y su infraestructura futura.
+
+Unexpected files changed: ninguno en la entrega aislada; `git diff --check` PASS y allowlist de commit aplicada. El workspace general conserva sus cambios ajenos.
+
+Known limitations: no prueba de carga con sesiones PostgreSQL simultáneas; se verificaron secuencias, restricciones y orden de locks. El test UI focal bloquea el escritor ajeno loanSessionOpen y no certifica el flujo normal de préstamos ni compara service worker en ese flujo. Regresión global de imágenes NOT APPLICABLE por alcance focal. Las partes históricas parciales del semestre siguen identificadas como parciales: los abonos de 30/09 no inventan el desglose anterior al corte.
+
+Evidence: `docs/qa/evidence/savings-automatic-contributions/`, manuales en `docs/manuales/`. Commit/push `ee52b31` a main incluye también el commit pendiente del informe continuo `f6bcc741`. Pages run `37160232239` y contrato Google `37160232201`: success. Hash publicado coincide exactamente; UI productiva PASS el 03/10/2026 22:59 UTC. Las verificaciones de saldos y reportes no dependen sólo de textos de pantalla.

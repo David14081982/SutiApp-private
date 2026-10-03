@@ -375,8 +375,8 @@ scenario or historical-report evidence. The private Excel import preserves the
 original bytes and 214 rows; it creates no account credit. Do not rerun the two
 migrations to reconcile Git. The additional correction `20261003000300` is also
 APPLIED: it changes only the new context reader, preserves the same full JSON and
-source-review rules, and reduces a real 354-participant read from 21.3 to 4.24
+source-review rules, and reduces a real 354-participant read from 21.3 to 4.34
 seconds. Its guarded transaction preserved twenty existing financial/private
 tables and legacy function definitions. Exact recovery retains the backup and
-all historical data. Installation evidence and current release gates are recorded in
+all historical data. Installation evidence and final release results are recorded in
 `audits/H-SICOF-RELEASE-001.md`.

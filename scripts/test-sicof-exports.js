@@ -55,6 +55,32 @@ const JSZip=require('../.tmp/sicof/deps/node_modules/jszip');
   const engineLoans={...loans,loans:[{folio:'0009',fund:'Caja de Ahorro',total:200,paid:0,behavior:'CURRENT',status:'AL CORRIENTE'}],funds:[],payments:[payment({interest:10}),payment({date:'2026-06-30',paid:0,capital:null,interest:null,audit:'PROJECTED',projected_interest:4}),loans.payments[1],payment({fund:'Other',interest:50})]};
   const options={settings,costs:[{id:'banked',concept:'Already banked',amount:1,source:'pool',status:'paid',date:'2026-06-01'},{id:'future',concept:'Committed',amount:.5,source:'reserve',status:'committed',date:'2026-07-01'}],bank:{amount:100,declaredBy:'Synthetic administrator',date:'2026-06-30'}};
   const actual=calculateSicof(engineContext,engineLoans,options);
+  const eligibilityContext={...engineContext,participants:[
+    {...person('unknown',[movement('e1',100,'2026-01-01')],100),enrollment:{status:'ACTIVE'}},
+    {...person('short',[movement('e2',100,'2026-01-01')],100),enrollment:{status:'ACTIVE',enrollment_started_at:'2026-05-01'}},
+    person('known',[movement('e3',100,'2026-01-01')],100)
+  ]};
+  const eligibilityCalculation=calculateSicof(eligibilityContext,engineLoans,{settings});
+  assert.deepEqual(eligibilityCalculation.rows.map(r=>r.rend),[null,0,9]);
+  assert.deepEqual(buildSicofExportTable('reparto',{calculation:eligibilityCalculation}).rows.map(r=>r.eligibility),['Por verificar','No','Sí']);
+  const eligibilityCsv=new TextDecoder().decode((await exportSicofReport({kind:'csv',calculation:eligibilityCalculation})).bytes);
+  const eligibilityCsvRows=eligibilityCsv.split('\r\n').slice(1);['Por verificar','No','Sí'].forEach((label,i)=>assert(eligibilityCsvRows[i].includes('"'+label+'"')));
+  const eligibilityBook=await load((await exportSicofReport({kind:'reparto',calculation:eligibilityCalculation,ExcelJS})).bytes);
+  assert.deepEqual([2,3,4].map(n=>eligibilityBook.getWorksheet('Reparto').getCell(n,7).value),['Por verificar','No','Sí']);
+  assert.equal(eligibilityBook.getWorksheet('Reparto').getCell('H2').value,'POR CONCILIAR');assert.equal(eligibilityBook.getWorksheet('Reparto').getCell('H3').value,0);
+  const eligibilityFormulaFile=await exportSicofReport({kind:'reparto_formulado',calculation:eligibilityCalculation,loans:engineLoans,ExcelJS});
+  const eligibilityFormulas=await load(eligibilityFormulaFile.bytes);
+  const eligibilityReparto=eligibilityFormulas.getWorksheet('Reparto formulado'),eligibilityDetail=eligibilityFormulas.getWorksheet('Desglose'),eligibilityParams=eligibilityFormulas.getWorksheet('Parámetros');
+  assert.deepEqual([2,3,4].map(n=>eligibilityReparto.getCell(n,3).value),['Por verificar','No','Sí']);
+  assert.deepEqual([2,3,4].map(n=>eligibilityDetail.getCell(n,8).value),['Por verificar','No','Sí']);
+  assert.equal(eligibilityReparto.getCell('I2').value,'POR CONCILIAR');assert.equal(eligibilityReparto.getCell('I4').value.result,9);
+  // ExcelJS omits a cached numeric zero when reading its object model; inspect
+  // the actual workbook cell to prove that a known rejection still exports 0.
+  const eligibilityXml=await(await JSZip.loadAsync(eligibilityFormulaFile.bytes)).file('xl/worksheets/sheet1.xml').async('string');
+  assert.match(eligibilityXml,/<c r="I3"[^>]*>[\s\S]*?<v>0<\/v><\/c>/);
+  assert(eligibilityReparto.getCell('I4').value.formula.includes('="Sí"'));assert(eligibilityParams.getCell('B12').value.formula.includes('"Sí"'));
+  const includedBasis=[2,3,4].reduce((sum,n)=>sum+(eligibilityDetail.getCell(n,8).value==='Sí'?eligibilityDetail.getCell(n,9).value.result:0),0);
+  assert.equal(includedBasis,eligibilityCalculation.base);assert.equal(eligibilityParams.getCell('B12').value.result,includedBasis);
   const actualExport=await exportSicofReport({kind:'reparto_formulado',calculation:actual,loans:engineLoans,ExcelJS}),actualBook=await load(actualExport.bytes);
   const detail=actualBook.getWorksheet('Desglose'),actualParams=actualBook.getWorksheet('Parámetros'),actualReparto=actualBook.getWorksheet('Reparto formulado');
   assert.equal(detail.rowCount,5);assert.equal(detail.getCell('F2').value,90);assert.equal(detail.getCell('F3').value,30);assert.equal(detail.getCell('F4').value,61);
@@ -103,5 +129,5 @@ const JSZip=require('../.tmp/sicof/deps/node_modules/jszip');
   const changed={...context,report:{...context.report,rows:[{...values,D:999999}]}};
   await assert.rejects(()=>exportSicofReport({kind:'final_ahorro',context:changed,templateBytes:template,ExcelJS}),/SICOF_EXPORT_HISTORICAL_VALUES_CHANGED/);
   assert.equal(sha(fs.readFileSync('C:/Users/david/Downloads/Reporte Final Ahorro JC (3 reglas) .xlsx')),sha(template));
-  console.log(JSON.stringify({status:'PASS',checks:['real ExcelJS XLSX read/write','CSV formula injection','HTML escaping','all filtered rows','unknown is not zero','matrix duplicate ambiguity','formula costs/reserve/retention/cent conservation','Pagos source formulas and income reconciliation','Desglose interval formulas and actual engine weighted withdrawals','unknown or inconsistent basis is never inferred','global formula basis preserved with filtered participants','acta actual engine liquidity scenarios 10/25/50/100','cash-covered collection-dependent shortfall and unknown liquidity','acta bank declaration signature spaces and print','historical exact bytes offline','all original cells preserved','new report styles and separate period withdrawals','historical outcome mutation rejected'],historicalRows:hist.rowCount-3,externalWrites:0}));
+  console.log(JSON.stringify({status:'PASS',checks:['real ExcelJS XLSX read/write','CSV formula injection','HTML escaping','all filtered rows','unknown is not zero','eligibility Por verificar No Sí in CSV XLSX and formula detail','formula criteria match Sí and preserve known zero plus cent allocations','matrix duplicate ambiguity','formula costs/reserve/retention/cent conservation','Pagos source formulas and income reconciliation','Desglose interval formulas and actual engine weighted withdrawals','unknown or inconsistent basis is never inferred','global formula basis preserved with filtered participants','acta actual engine liquidity scenarios 10/25/50/100','cash-covered collection-dependent shortfall and unknown liquidity','acta bank declaration signature spaces and print','historical exact bytes offline','all original cells preserved','new report styles and separate period withdrawals','historical outcome mutation rejected'],historicalRows:hist.rowCount-3,externalWrites:0}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

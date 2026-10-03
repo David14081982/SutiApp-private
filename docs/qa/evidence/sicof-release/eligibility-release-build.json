@@ -1,0 +1,92 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T21:16:51.458Z",
+  "baselineCommit": "b1e562a83e85eabe5e271b0117bc705312a242aa",
+  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+  "bundleVersion": 312,
+  "workerVersion": 244,
+  "publicFiles": [
+    ".nojekyll",
+    "app/affiliate-repository.js",
+    "app/bundle.js",
+    "app/financial-legacy-repository.js",
+    "app/payroll-declaration-repository.js",
+    "app/supabase-client.js",
+    "app/supabase-config.js",
+    "app/text-size.css",
+    "app/vendor/pdfjs-5.4.149/LICENSE",
+    "app/vendor/pdfjs-5.4.149/pdf.min.mjs",
+    "app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs",
+    "app/vendor/react-18.3.1/LICENSE",
+    "app/vendor/react-18.3.1/react.production.min.js",
+    "app/vendor/react-dom-18.3.1/LICENSE",
+    "app/vendor/react-dom-18.3.1/react-dom.production.min.js",
+    "app/vendor/supabase-js-2.112.3/LICENSE",
+    "app/vendor/supabase-js-2.112.3/supabase.min.js",
+    "assets/branding/credencial-puno.png",
+    "assets/branding/home-header-collapsed.webp",
+    "icon-180.png",
+    "icon-192.png",
+    "icon-512.png",
+    "icon-maskable-512.png",
+    "icon-notification-badge.png",
+    "index.html",
+    "manifest.webmanifest",
+    "SutiApp.html",
+    "sw.js"
+  ],
+  "publicFileCount": 28,
+  "preservedChunks": 148,
+  "changedChunks": [
+    "sicof-admin.jsx"
+  ],
+  "generatedCachebustersOnly": true,
+  "officialBuildOutput": "{\"status\":\"PASS\",\"output\":\"C:\\\\Users\\\\david\\\\Downloads\\\\SutiApp\\\\.tmp\\\\sicof\\\\release\\\\.tmp\\\\sicof\\\\public-artifact-eligibility-1791062210877\",\"files\":28}",
+  "artifact": ".tmp/sicof/public-artifact-eligibility-1791062210877",
+  "governance": [
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## H-SICOF-001 / H-SICOF-RELEASE-001 — authorized activation"
+      ]
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## 2026-10-03 — H-SICOF-001 local candidate",
+        "## 2026-10-03 — H-SICOF-RELEASE-001 authorized activation"
+      ]
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## H-SICOF-RELEASE-001 — explicit activation authorization"
+      ]
+    },
+    {
+      "file": "docs/MIGRATION_RULES.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## H-SICOF-RELEASE-001 — 2026-10-03"
+      ]
+    },
+    {
+      "file": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## H-SICOF-RELEASE-001 — fixed financial reader"
+      ]
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "unrelatedSectionsPreserved": true,
+      "headings": [
+        "## H-SICOF-RELEASE-001 — private admin workspace"
+      ]
+    }
+  ],
+  "financialWrites": 0
+}

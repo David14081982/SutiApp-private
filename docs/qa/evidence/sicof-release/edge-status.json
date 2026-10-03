@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "installed": false,
-  "version": null,
-  "cloudStatus": null,
-  "verifyJwt": null
+  "installed": true,
+  "version": 3,
+  "cloudStatus": "ACTIVE",
+  "verifyJwt": true
 }

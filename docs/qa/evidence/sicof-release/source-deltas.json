@@ -13,16 +13,85 @@
       "originalSha256": "fc5a8d2b1499f49fcdad8df5cd75daa0817dcefd6eeaecdf500de87e57e7a067",
       "sha256": "dafdc732e9cb69adfd755986ed41de7a7f91d5c43ff73a19beabf7cdae170927",
       "reason": "Memoize identical date formatting within one SICOF read only after real 45-second receiver timeout; retain exact source, timezone, double-read consistency, output fingerprint and all legacy writers."
+    },
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "originalSha256": "f89dca285b0b17d5333e3c78aa179e8e632a98e81d9f4d72fdad831c50ea8a75",
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5",
+      "reason": "Independently reviewed eligibility certainty correction: missing tenure remains unknown; review rows display Por verificar in UI and exports. Existing financial authority and verified allocations preserved."
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "originalSha256": "1a0d931d7f43d211b21ee89c1e995176248172211e364164750b972c96d23f1b",
+      "sha256": "654752790adf4e2920103d0f091c07e9cc3cbf3b403e7963beea784ffb054fc2",
+      "reason": "Independently reviewed eligibility certainty correction: missing tenure remains unknown; review rows display Por verificar in UI and exports. Existing financial authority and verified allocations preserved."
+    },
+    {
+      "file": "app/sicof-admin.jsx",
+      "originalSha256": "9841bb9397ce0baa1d742dc1db9dd8049f4cacf11002b11ad71afd5a30801cd9",
+      "sha256": "3d9aa781b5507f75498dfc75658cbd82bb24cc792a21eb4f691e1c40be3d2a09",
+      "reason": "Independently reviewed eligibility certainty correction: missing tenure remains unknown; review rows display Por verificar in UI and exports. Existing financial authority and verified allocations preserved."
+    },
+    {
+      "file": "app/bundle.js",
+      "originalSha256": "fe8e56e0e87c9119a613548363e747acaff708284d3e6365385f2316c08e6484",
+      "sha256": "54b0397c33a76111889adf9e69646da0a1b650cfdb368f38654adb0b334c30eb",
+      "classification": "GENERATED_ARTIFACT",
+      "reason": "Reviewed root candidate regeneration/version changes for SICOF eligibility only. These root artifacts are NOT the deployable web package; production uses the separate isolated-release hash preserving current main."
+    },
+    {
+      "file": "SutiApp.html",
+      "originalSha256": "961c0aa41cdadf292bbb52a85fd650e8acbd4d3a32f578ca24ac73a82c1aa2e8",
+      "sha256": "c4347f58687ee5c2d50923c048a82390555c207406d9b37e3e3ca82edec7ea03",
+      "classification": "GENERATED_ARTIFACT",
+      "reason": "Reviewed root candidate regeneration/version changes for SICOF eligibility only. These root artifacts are NOT the deployable web package; production uses the separate isolated-release hash preserving current main."
+    },
+    {
+      "file": "sw.js",
+      "originalSha256": "e893cf2d29cbc9798a289ef7ae238a233ca15bfa6eb5fded4fdabf3044c143e3",
+      "sha256": "a8ecb73d66d52b7b331f17fadc14da06b6c33c0b6a17372f399161ad662794a4",
+      "classification": "GENERATED_ARTIFACT",
+      "reason": "Reviewed root candidate regeneration/version changes for SICOF eligibility only. These root artifacts are NOT the deployable web package; production uses the separate isolated-release hash preserving current main."
     }
   ],
   "additions": [
-    {"file":"supabase/migrations/20261003000300_sicof_context_read_performance.sql","sha256":"d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f"},
-    {"file":"supabase/recovery/20261003000300_sicof_context_read_performance.sql","sha256":"425b818bd2ef8d9993d22df73606e2cb6030ca13c4655b47f3e8d0a56caf2ba8"},
-    {"file":"scripts/test-sicof-context-performance.js","sha256":"ad5e317bb9367c5a11ecec0199c043b156395ce80d52b49f6ad16292e6e87b18"},
-    {"file":"scripts/fixtures/sicof-context-performance-schema.json","sha256":"0fc1c6db34db77e0e1f6ef89ebe0b26691854121d28527b092dad0ee674f9301"}
+    {
+      "file": "supabase/migrations/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "d14ff8c8940d2c45278e5e9575ca826c4d71db0c58f502a514388330bcf07a4f"
+    },
+    {
+      "file": "supabase/recovery/20261003000300_sicof_context_read_performance.sql",
+      "sha256": "425b818bd2ef8d9993d22df73606e2cb6030ca13c4655b47f3e8d0a56caf2ba8"
+    },
+    {
+      "file": "scripts/test-sicof-context-performance.js",
+      "sha256": "ad5e317bb9367c5a11ecec0199c043b156395ce80d52b49f6ad16292e6e87b18"
+    },
+    {
+      "file": "scripts/fixtures/sicof-context-performance-schema.json",
+      "sha256": "0fc1c6db34db77e0e1f6ef89ebe0b26691854121d28527b092dad0ee674f9301"
+    }
   ],
   "updatedTests": [
-    {"file":"scripts/test-sicof-loans.js","sha256":"47c40c5b055852957ebb06fe10595b5695e35ed944fb50347f7463edf09c1445"},
-    {"file":"scripts/test-sicof-loan-receiver.js","sha256":"894561bdd05ea4c2c9c14fd6ecfbdb51274d0bd428befc9aa92c75acc4a89c74"}
+    {
+      "file": "scripts/test-sicof-loans.js",
+      "sha256": "47c40c5b055852957ebb06fe10595b5695e35ed944fb50347f7463edf09c1445"
+    },
+    {
+      "file": "scripts/test-sicof-loan-receiver.js",
+      "sha256": "894561bdd05ea4c2c9c14fd6ecfbdb51274d0bd428befc9aa92c75acc4a89c74"
+    },
+    {
+      "file": "scripts/test-sicof-engine.js",
+      "sha256": "4a177f9058a8e70ab1f2fb07d6dbfeaa59f49054c4c0f515a11b328a4182d9fe"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "31e18453f10428edbfa26d9284aa37fedb118d7f47e4948092a99472b9d814a9"
+    },
+    {
+      "file": "scripts/test-sicof-ui-browser.js",
+      "sha256": "4c9347eaaea229ea629b627d5528d0dcb41176bac671dc886e390ad223f76c43"
+    }
   ]
 }

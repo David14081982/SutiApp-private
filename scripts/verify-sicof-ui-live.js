@@ -26,7 +26,7 @@ async function main(){
     let action;try{action=JSON.parse(options?.body||'{}').action;}catch(_){}
     response.clone().json().then(value=>{const d=value.data;if(value.error){window.__sicofLiveCapture[action]={error:'BACKEND_ERROR'};return;}
      window.__sicofLiveCapture[action]=action==='LOAD'?{source:d.source,loanCount:d.loans?.length,paymentCount:d.payments?.length,participantCount:d.participants?.length,reportCount:d.report?.rows?.length}:
-      action==='CALCULATE'?{fingerprint:d.fingerprint,pool:d.pool,rate:d.rate,nqual:d.nqual,nexcl:d.nexcl,reviewRows:(d.rows||[]).filter(row=>row.status==='REVIEW_REQUIRED'||row.review_required).length,reasonCounts:(d.rows||[]).reduce((counts,row)=>{for(const reason of String(row.motivo||'').split('; ').filter(Boolean))counts[reason]=(counts[reason]||0)+1;return counts;},{}),alerts:(d.alerts||[]).map(alert=>({code:alert.code,severity:alert.severity}))}:{received:true};
+      action==='CALCULATE'?{engineVersion:d.engine_version,fingerprint:d.fingerprint,pool:d.pool,rate:d.rate,nqual:d.nqual,nexcl:d.nexcl,reviewRows:(d.rows||[]).filter(row=>row.status==='REVIEW_REQUIRED'||row.review_required).length,unknownMonths:(d.rows||[]).filter(row=>row.months==null).length,unknownMonthsFalselyExcluded:(d.rows||[]).filter(row=>row.months==null&&String(row.motivo||'').includes('No cumple 6 meses')).length,reasonCounts:(d.rows||[]).reduce((counts,row)=>{for(const reason of String(row.motivo||'').split('; ').filter(Boolean))counts[reason]=(counts[reason]||0)+1;return counts;},{}),alerts:(d.alerts||[]).map(alert=>({code:alert.code,severity:alert.severity}))}:{received:true};
     }).catch(()=>{window.__sicofLiveCapture[action]={error:'RESPONSE_CAPTURE_FAILED'};});
    }
    return response;
@@ -68,19 +68,25 @@ async function main(){
    assert(loaded.source?.status==='READY','LOAN_SOURCE_NOT_READY');
    assert(Number.isInteger(loaded.participantCount)&&Number.isInteger(loaded.reportCount),'ACTUAL_SAVINGS_REPORT_MISSING');
    assert(typeof calculated.fingerprint==='string','SERVER_CALCULATION_MISSING');
+   assert.equal(calculated.engineVersion,'SICOF_2026_10_03_V2','CORRECTED_ENGINE_NOT_INSTALLED');
+   assert.equal(calculated.unknownMonthsFalselyExcluded,0,'UNKNOWN_TENURE_FALSE_EXCLUSION');
    assert(await page.locator('[data-admin-view="sicof"] input[type=password]').count()===0,'EXTRA_PASSWORD_GATE');
    const actual=await page.locator('.sicof-metric').filter({has:page.getByText('Bolsa a repartir',{exact:true})}).locator('strong').textContent();
    assert(actual===money(calculated.pool),'SERVER_POOL_DISPLAY_MISMATCH');
-   return {sourceReady:true,sourceStatus:loaded.source.status,sourceObservedAt:loaded.source.observed_at,loanCount:loaded.loanCount,paymentCount:loaded.paymentCount,participants:loaded.participantCount,reportRows:loaded.reportCount,sourceTimestampPresent:!!loaded.source.observed_at,rateResolved:calculated.rate!=null,nqual:calculated.nqual,nexcl:calculated.nexcl,reviewRows:calculated.reviewRows,reasonCounts:calculated.reasonCounts,alerts:calculated.alerts};
+   return {sourceReady:true,sourceStatus:loaded.source.status,sourceObservedAt:loaded.source.observed_at,loanCount:loaded.loanCount,paymentCount:loaded.paymentCount,participants:loaded.participantCount,reportRows:loaded.reportCount,sourceTimestampPresent:!!loaded.source.observed_at,engineVersion:calculated.engineVersion,unknownTenureFalseExclusions:calculated.unknownMonthsFalselyExcluded,rateResolved:calculated.rate!=null,nqual:calculated.nqual,nexcl:calculated.nexcl,reviewRows:calculated.reviewRows,reasonCounts:calculated.reasonCounts,alerts:calculated.alerts};
   });
   await stage('all eight real SICOF panes and original controls',async()=>{
    for(const tab of ['Resumen','Liquidez','Reparto por ahorrador','Préstamos y pagos','Atrasos','Reporte préstamos','Cumplimiento','Informe final de ahorro']){
     await page.getByRole('tab',{name:tab,exact:true}).click();assert(await page.getByRole('tabpanel').isVisible(),'PANE_HIDDEN');
    }
+   await page.getByRole('tab',{name:'Reparto por ahorrador',exact:true}).click();
+   const certainty=await page.evaluate(()=>{const table=document.querySelector('.sicof-table'),heads=[...table.querySelectorAll('th')].map(el=>el.textContent.trim()),q=heads.findIndex(text=>text.startsWith('Califica')),m=heads.findIndex(text=>text.startsWith('Meses'));if(q<0||m<0)return null;const counts={review:0,yes:0,no:0,unknownMonths:0};for(const tr of table.querySelectorAll('tbody tr')){const cells=tr.querySelectorAll('td'),value=cells[q]?.textContent.trim();if(value==='Por verificar')counts.review++;else if(value==='Sí')counts.yes++;else if(value==='No')counts.no++;if(cells[m]?.textContent.trim()==='Por verificar')counts.unknownMonths++;}return counts;});
+   assert.deepEqual(certainty,{review:live.CALCULATE.reviewRows,yes:live.CALCULATE.nqual,no:live.CALCULATE.nexcl,unknownMonths:live.CALCULATE.unknownMonths},'ELIGIBILITY_CERTAINTY_DISPLAY_MISMATCH');
+   await page.getByRole('tab',{name:'Informe final de ahorro',exact:true}).click();
    await page.getByLabel('Año del ahorro',{exact:true}).waitFor();await page.getByLabel('Semestre del ahorro',{exact:true}).waitFor();
    assert(await page.getByRole('button',{name:'↓ Descargar informe final de ahorro',exact:true}).isEnabled(),'CURRENT_REPORT_DISABLED');
    assert(await page.getByRole('button',{name:'↓ Descargar Excel histórico original',exact:true}).isEnabled(),'HISTORICAL_REPORT_DISABLED');
-   return {panes:8,reportControlsEnabled:true};
+   return {panes:8,reportControlsEnabled:true,eligibilityCertaintyMatches:true,certainty};
   });
   await stage('real savings origin and global balance detail',async()=>{
    assert(live.LOAD.reportCount>0,'NO_REAL_REPORT_ROWS');await page.locator('.sicof-table tbody tr[data-clickable="true"]').first().click();
@@ -105,7 +111,9 @@ async function main(){
   await stage('self Savings period balance matches canonical self reader',async()=>{
    const affiliateView=await page.evaluate(()=>!!window.AffiliateAuth?.getState().affiliateView);
    if(!affiliateView)return {status:'NOT APPLICABLE',reason:'Existing authorized test account has administrative access only; no account or impersonation created.'};
+   if(selfOnly){await page.locator('[data-app-tab="admin"]').click();await page.locator('[data-admin-desktop-sidebar]').waitFor();}
    const dismiss=page.getByRole('button',{name:'Ahora no',exact:true});if(await dismiss.isVisible())await dismiss.click();
+   const viewApp=page.locator('[data-admin-view-app]').first();if(await viewApp.isVisible()){await viewApp.click();await page.locator('[data-app-tab="home"][aria-current="page"]').waitFor();}
    await page.locator('[data-app-tab="financiera"]').click();
    await page.locator('[data-finance-summary-action="ahorro"]').click();
    await page.locator('[data-savings-screen]').waitFor({timeout:60000});

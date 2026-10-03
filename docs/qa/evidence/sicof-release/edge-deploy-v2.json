@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "mode": "edge-bundle",
-  "version": 3,
+  "mode": "edge-deploy",
+  "version": 2,
   "cloudStatus": "ACTIVE",
   "installed": true,
   "verifyJwt": true,

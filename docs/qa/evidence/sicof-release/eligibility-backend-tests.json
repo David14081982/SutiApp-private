@@ -1,0 +1,82 @@
+{
+  "status": "PASS",
+  "scope": "H-SICOF-RELEASE-001 eligibility certainty",
+  "environment": "isolated synthetic calculations and in-memory exports; no Auth or deployment",
+  "engineVersion": "SICOF_2026_10_03_V2",
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "authLogins": 0,
+  "deployments": 0,
+  "changedFiles": [
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "654752790adf4e2920103d0f091c07e9cc3cbf3b403e7963beea784ffb054fc2"
+    },
+    {
+      "file": "scripts/test-sicof-engine.js",
+      "sha256": "4a177f9058a8e70ab1f2fb07d6dbfeaa59f49054c4c0f515a11b328a4182d9fe"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "31e18453f10428edbfa26d9284aa37fedb118d7f47e4948092a99472b9d814a9"
+    }
+  ],
+  "checks": [
+    {
+      "command": "node scripts/test-sicof-engine.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "scriptSha256": "4a177f9058a8e70ab1f2fb07d6dbfeaa59f49054c4c0f515a11b328a4182d9fe",
+      "coverage": [
+        "missing date with upstream complete or ENROLLMENT_UNVERIFIED remains unknown",
+        "minimum active requires verified start and never invents 0 months",
+        "minimum disabled preserves existing eligibility and amounts",
+        "real 0 and 1 months remain measured exclusions",
+        "anchors preserve unknown and measured 5/6-month boundaries",
+        "verified 17-month account and six-month anchor preserve amount and cent allocation",
+        "existing source, basis, withdrawal, costs, liquidity and fingerprint checks"
+      ]
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "groups": 20,
+      "scriptSha256": "31e18453f10428edbfa26d9284aa37fedb118d7f47e4948092a99472b9d814a9",
+      "coverage": [
+        "Por verificar / No / Sí states in CSV, XLSX, formulated distribution and interval detail",
+        "IF and SUMIF criteria exactly match the Sí label",
+        "unknown money remains POR CONCILIAR while measured rejection retains cached zero",
+        "known allocations, cent rounding and formula basis preserved",
+        "214 historical rows and original workbook bytes unchanged"
+      ]
+    },
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "scriptSha256": "b38388ee0f408cbd0306c55bb7642f519cfea612de8be6fb447f13ce813524a6",
+      "scriptChanged": false,
+      "coverage": [
+        "auth, capabilities, source fingerprint, report and original historical export regression"
+      ]
+    },
+    {
+      "command": "node --check on all four changed files",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "command": "git diff --check -- supabase/functions/sicof/engine.mjs supabase/functions/sicof/exports.mjs scripts/test-sicof-engine.js scripts/test-sicof-exports.js",
+      "status": "PASS",
+      "exitCode": 0
+    }
+  ],
+  "limitations": [
+    "No production verification performed by this focal subtask; deployment and published UI verification belong to the root release."
+  ]
+}

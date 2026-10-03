@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "productionWrites": 0,
+  "checks": [
+    "fresh canonical composition and backend permission",
+    "opening requires complete explicit origin and evidence",
+    "future semester rejected",
+    "sum must equal unchanged transaction",
+    "network retry retains key and draft",
+    "stale version requires fresh reload and new review",
+    "withdrawal can preserve unknown OPENING origin",
+    "no ledger credit/debit creation",
+    "cancel preserves source",
+    "no browser errors"
+  ]
+}

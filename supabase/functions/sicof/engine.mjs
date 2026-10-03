@@ -1,6 +1,6 @@
 // SICOF simulations are derived reports. This module cannot post transactions,
 // authorize a withdrawal, change an eligibility exception or credit yield.
-export const ENGINE_VERSION = 'SICOF_2026_10_03_V1';
+export const ENGINE_VERSION = 'SICOF_2026_10_03_V2';
 const DAY = 86400000;
 export function date(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw Error('SICOF_DATE_INVALID');
@@ -42,7 +42,8 @@ export function validateSettings(input) {
   return s;
 }
 function completedMonths(from, to) {
-  if (!from || from > to) return 0;
+  if (!from) return null;
+  if (from > to) return 0;
   date(from);
   const a = from.split('-').map(Number), b = to.split('-').map(Number);
   return Math.max(0,(b[0]-a[0])*12+b[1]-a[1]-(b[2]<a[2]?1:0));
@@ -152,7 +153,8 @@ export function calculateSicof(context, loanAnalysis, input) {
     let run=0,maxMissQ=0;
     for (const h of hist) {run=h.amount===0&&h.expected>0?run+(en.frequency==='MONTHLY'?2:1):0;maxMissQ=Math.max(maxMissQ,run);}
     if (s.exterm&&(en.terminated_at||'').slice(0,10)&&en.terminated_at.slice(0,10)<=s.periodFin) reasons.push('Baja en el periodo');
-    if (s.exmin&&months<s.minm) reasons.push('No cumple '+s.minm+' meses');
+    if (s.exmin&&months===null) review.push('Fecha de inicio del ahorro pendiente de verificar');
+    else if (s.exmin&&months<s.minm) reasons.push('No cumple '+s.minm+' meses');
     if (s.exConsec&&maxMissQ>=s.consecN) reasons.push('Quincenas consecutivas sin descuento');
     if (s.loanEffect==='rendimiento'&&overdue) reasons.push('Préstamo con saldo atrasado');
     const balance=p.composition?.as_of_balance||p.composition?.balances||p.balance||{};

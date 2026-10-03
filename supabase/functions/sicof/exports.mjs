@@ -3,6 +3,7 @@
 const encoder = new TextEncoder();
 const moneyFormat = '"$"#,##0.00;[Red]-"$"#,##0.00';
 const pending = 'POR CONCILIAR';
+const eligibilityLabel = row => row.review_required ? 'Por verificar' : row.ok ? 'Sí' : 'No';
 const finite = v => typeof v === 'number' && Number.isFinite(v);
 const cents = v => { if (!finite(v)) throw Error('SICOF_EXPORT_AMOUNT_INVALID'); return Math.round((v+Math.sign(v)*Number.EPSILON)*100); };
 const round = v => cents(v)/100;
@@ -48,7 +49,7 @@ function matches(row,filters,withDate=false) {
 }
 const columns = defs => defs.map(([key,label,money=false])=>({key,label,money}));
 const paymentColumns = columns([['date','Fecha de amortización'],['folio','Folio'],['name','Nombre'],['loan_id','Préstamo'],['fund','Fondo'],['paid','Cuota registrada',true],['expected','Cuota programada',true],['capital','Capital conciliado',true],['interest','Interés conciliado sin gasto administrativo',true],['fee','Gasto administrativo conciliado',true],['projected_interest','Interés proyectado',true],['audit','Estado de conciliación'],['issues','Incidencias'],['source_row','Fila fuente']]);
-const allocationColumns = columns([['f','Folio'],['n','Nombre'],['capital','Capital',true],['previous_yield','Rendimientos anteriores',true],['endbal','Saldo elegible final',true],['avgbal','Saldo elegible promedio',true],['ok','Califica'],['rend','Rendimiento simulado',true],['total','Total simulado',true],['retenido','Retención simulada',true],['entregable','Entregable simulado',true],['available','Disponible canónico actual',true],['motivo','Regla / revisión']]);
+const allocationColumns = columns([['f','Folio'],['n','Nombre'],['capital','Capital',true],['previous_yield','Rendimientos anteriores',true],['endbal','Saldo elegible final',true],['avgbal','Saldo elegible promedio',true],['eligibility','Califica'],['rend','Rendimiento simulado',true],['total','Total simulado',true],['retenido','Retención simulada',true],['entregable','Entregable simulado',true],['available','Disponible canónico actual',true],['motivo','Regla / revisión']]);
 
 export function buildSicofExportTable(kind,{calculation,context,loans,filters={}}) {
   filters=validateFilters(filters);
@@ -63,7 +64,7 @@ export function buildSicofExportTable(kind,{calculation,context,loans,filters={}
   }
   if (kind==='reparto'||kind==='reparto_formulado') {
     if (!Array.isArray(calculation?.rows)) throw Error('SICOF_EXPORT_CALCULATION_REQUIRED');
-    return {name:'Reparto',columns:allocationColumns,rows:calculation.rows.filter(r=>matches(r,filters))};
+    return {name:'Reparto',columns:allocationColumns,rows:calculation.rows.filter(r=>matches(r,filters)).map(r=>({...r,eligibility:eligibilityLabel(r)}))};
   }
   if (kind==='final_ahorro') {
     const report=context?.report;
@@ -157,12 +158,12 @@ function addFormulaEvidence(workbook,calculation,loans) {
       steps.forEach((step,i)=>{
         const n=detail.rowCount+1,last=i===steps.length-1,part=s.method==='avg'?step.balance_days/days:last?step.balance:0;
         detail.addRow([row.f,row.n,step.date,step.amount,{formula:i?`ROUND(E${n-1}+D${n},2)`:`D${n}`,result:step.balance},step.days,
-          {formula:`E${n}*F${n}`,result:step.balance_days},row.ok?'SI':'NO',
+          {formula:`E${n}*F${n}`,result:step.balance_days},eligibilityLabel(row),
           {formula:s.method==='avg'?`G${n}/${days}`:last?`E${n}`:'0',result:part},row.calculation_explanation||'']);
       });
     }else{
       if(row.ok)verified=false;
-      detail.addRow([row.f,row.n,pending,pending,pending,pending,pending,pending,pending,row.calculation_explanation||'Intervalos no disponibles; la base no se reconstruye.']);
+      detail.addRow([row.f,row.n,pending,pending,pending,pending,pending,eligibilityLabel(row),pending,row.calculation_explanation||'Intervalos no disponibles; la base no se reconstruye.']);
     }
     ranges.set(row.f,{first,last:detail.rowCount,valid,basis});
   }
@@ -183,8 +184,8 @@ function addFormulaReparto(workbook,calculation,filters,loans) {
     const reviewed=r.rend==null||r.total==null||r.retenido==null||r.entregable==null||basis==null||!range?.valid||!evidence.verified;
     const adjustment=reviewed?null:round(r.rend-(r.ok&&finite(rate)?round(basis*rate):0));
     if(!reviewed&&(!sameMoney(r.total,r.capital+r.previous_yield+r.rend)||!sameMoney(r.entregable,r.total-r.retenido)||Math.abs(adjustment)>.010001))throw Error('SICOF_EXPORT_RESULT_MISMATCH');
-    sheet.addRow([r.f,r.n,reviewed?pending:r.ok?'SI':'NO',range?.valid?{formula:`SUM(Desglose!I${range.first}:I${range.last})`,result:basis}:pending,scalar(r.capital),scalar(r.previous_yield),rate==null||!evidence.verified?pending:{formula:"'Parámetros'!B14",result:rate},scalar(adjustment),
-      reviewed?pending:{formula:`IF(C${number}="SI",ROUND(D${number}*G${number},2)+H${number},0)`,result:r.rend},
+    sheet.addRow([r.f,r.n,eligibilityLabel(r),range?.valid?{formula:`SUM(Desglose!I${range.first}:I${range.last})`,result:basis}:pending,scalar(r.capital),scalar(r.previous_yield),rate==null||!evidence.verified?pending:{formula:"'Parámetros'!B14",result:rate},scalar(adjustment),
+      reviewed?pending:{formula:`IF(C${number}="Sí",ROUND(D${number}*G${number},2)+H${number},0)`,result:r.rend},
       reviewed?pending:{formula:`ROUND(E${number}+F${number}+I${number},2)`,result:r.total},scalar(r.retenido),
       reviewed?pending:{formula:`MAX(0,ROUND(J${number}-K${number},2))`,result:r.entregable},scalar(r.available),r.motivo||'']);
   });
@@ -211,7 +212,7 @@ function addFormulaReparto(workbook,calculation,filters,loans) {
     ['B9','MAX(0,ROUND(B8-B6,2))',spill],['B10','MAX(0,ROUND(B5-B7-B9,2))',pool],['B11','MAX(0,ROUND(B6-B8,2))',reserve]])params.getCell(cell).value={formula,result};
   params.getCell('B2').value={formula:`SUM(Pagos!O2:O${evidence.lastPayment})`,result:calculation.collected};
   params.getCell('B4').value={formula:`SUM(Pagos!P2:P${evidence.lastPayment})`,result:calculation.projected};
-  params.getCell('B12').value=evidence.verified?{formula:`SUMIF(Desglose!H2:H${evidence.lastDetail},"SI",Desglose!I2:I${evidence.lastDetail})`,result:calculation.base}:pending;
+  params.getCell('B12').value=evidence.verified?{formula:`SUMIF(Desglose!H2:H${evidence.lastDetail},"Sí",Desglose!I2:I${evidence.lastDetail})`,result:calculation.base}:pending;
   if(evidence.verified&&finite(calculation.distributed)){
     const expected=calculation.base>0?pool:0;
     if(!sameMoney(expected,calculation.distributed))throw Error('SICOF_EXPORT_RESULT_MISMATCH');

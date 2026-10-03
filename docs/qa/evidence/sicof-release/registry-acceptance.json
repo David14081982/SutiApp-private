@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "command": "python scripts/test-architecture-registry.py",
+  "checkout": ".tmp/sicof/release",
+  "commit": "b1e562a83e85eabe5e271b0117bc705312a242aa",
+  "exitCode": 0,
+  "output": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism",
+  "scope": "Complete acceptance suite on frozen, committed isolated production release. Earlier dirty-root freshness run was invalidated by concurrent evidence edits and is not represented as a pass."
+}

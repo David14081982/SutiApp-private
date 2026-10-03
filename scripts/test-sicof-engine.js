@@ -10,6 +10,32 @@ const assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),p
  const p=person('001',[tx('a',100,'2025-12-01')]);
  let r=calc(context([p]),loans,{settings:s});
  assert.equal(r.pool,9);assert.equal(r.reserve,1);assert.equal(r.rate,9);assert.equal(r.rows[0].rend,9);assert.equal(r.distributed,9);assert.equal(r.rows[0].total,109);assert.equal(r.certification.can_post,false);
+ const verifiedAllocation={rate:r.rate,distributed:r.distributed,rend:r.rows[0].rend,total:r.rows[0].total};
+ assert.equal(r.engine_version,'SICOF_2026_10_03_V2');assert.equal(r.rows[0].months,17);assert.equal(r.rows[0].review_required,false);
+ for(const eligibility of [{complete:true},{complete:false,reasons:['ENROLLMENT_UNVERIFIED']}]){
+  const unknown={...p,enrollment:{status:'ACTIVE'},eligibility};
+  for(const settings of [s,{...s,anchorOn:true,anchorDate:'2026-01-01'}]){
+   const result=calc(context([unknown]),loans,{settings}),row=result.rows[0];
+   assert.equal(row.months,null);assert.equal(row.ok,false);assert.equal(row.review_required,true);assert.equal(row.rend,null);
+   assert(row.motivo.includes('Fecha de inicio del ahorro pendiente de verificar'));assert(!row.motivo.includes('No cumple'));
+   assert.equal(result.reviewCount,1);assert.equal(result.nexcl,0);assert.equal(result.rate,null);
+  }
+ }
+ const noMinimum=calc(context([{...p,enrollment:{status:'ACTIVE'}}]),loans,{settings:{...s,exmin:false}});
+ assert.equal(noMinimum.rows[0].months,null);assert.equal(noMinimum.rows[0].ok,true);assert.equal(noMinimum.rows[0].review_required,false);
+ assert.deepEqual({rate:noMinimum.rate,distributed:noMinimum.distributed,rend:noMinimum.rows[0].rend,total:noMinimum.rows[0].total},verifiedAllocation);
+ const stillPending=calc(context([{...p,enrollment:{},eligibility:{complete:false,reasons:['ENROLLMENT_UNVERIFIED']}}]),loans,{settings:{...s,exmin:false}});
+ assert.equal(stillPending.rows[0].review_required,true);assert.equal(stillPending.rows[0].rend,null);
+ const shortTenure=calc(context([{...p,enrollment:{...p.enrollment,first_actual_contribution_date:'2026-05-01'}}]),loans,{settings:s});
+ assert.equal(shortTenure.rows[0].months,1);assert.equal(shortTenure.rows[0].review_required,false);assert.equal(shortTenure.rows[0].ok,false);
+ assert(shortTenure.rows[0].motivo.includes('No cumple 6 meses'));assert.equal(shortTenure.rows[0].rend,0);assert.equal(shortTenure.nexcl,1);
+ const zeroTenure=calc(context([{...p,enrollment:{...p.enrollment,enrollment_started_at:'2026-07-01'}}]),loans,{settings:s});
+ assert.equal(zeroTenure.rows[0].months,0);assert.equal(zeroTenure.rows[0].review_required,false);assert.equal(zeroTenure.rows[0].ok,false);
+ const anchoredShort=calc(context([p]),loans,{settings:{...s,anchorOn:true,anchorDate:'2026-01-01'}});
+ assert.equal(anchoredShort.rows[0].months,5);assert.equal(anchoredShort.rows[0].review_required,false);assert.equal(anchoredShort.rows[0].rend,0);
+ const anchoredSix=calc(context([p]),loans,{settings:{...s,anchorOn:true,anchorDate:'2025-12-30'}});
+ assert.equal(anchoredSix.rows[0].months,6);assert.equal(anchoredSix.rows[0].ok,true);
+ assert.deepEqual({rate:anchoredSix.rate,distributed:anchoredSix.distributed,rend:anchoredSix.rows[0].rend,total:anchoredSix.rows[0].total},verifiedAllocation);
  const a=basisFor(person('002',[tx('a',100,'2026-01-01'),tx('b',100,'2026-04-01'),tx('c',50,'2026-05-01','CAPITAL','DEBIT','WITHDRAWAL')]),{...s,method:'avg'});
  assert.equal(a.days,181);assert.equal(a.weight,1810000n+910000n-305000n);assert.equal(a.end,15000);assert.equal(a.average,2415000/181);
  const opening=person('003',[tx('o',3000,'2026-09-06','CAPITAL','CREDIT','REGULARIZATION')]);
@@ -49,5 +75,5 @@ const assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),p
  assert.equal(r.projectedNetPool,93.1);assert.equal(r.projectedRateOnConfirmedBase,93.1);assert.equal(r.pool,4);assert.equal(r.certification.can_post,false);
  r=calc(context([p]),withPortfolio,{settings:s,bank:{amount:2,declaredBy:'Admin sintético',date:'2026-06-30'},costs:[{id:'deficit',concept:'Costo pendiente',amount:5,source:'pool',status:'committed'}]});
  assert.equal(r.liquidity.cash,-3);assert.equal(r.liquidity.backing_complete,false);assert(r.liquidity.composition.every(x=>x.value===null));assert(r.alerts.some(a=>a.code==='CASH_DEFICIT'));assert.equal(r.liquidity.scenarios[3].shortfall,47);
- console.log('PASS SICOF engine: sources, common-day weights, origin selection, withdrawal conservation, future exclusion, cost/reserve/liquidity, cent conservation, review states, settings and fingerprints.');
+ console.log('PASS SICOF engine: sources, common-day weights, origin selection, withdrawal conservation, future exclusion, cost/reserve/liquidity, cent conservation, unknown versus proven tenure, anchors, minimum-disabled compatibility, review states, settings and fingerprints.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

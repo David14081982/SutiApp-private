@@ -48,6 +48,25 @@ async function main() {
     await page.getByRole('button', { name: 'Escenario sintético', exact: true }).waitFor();
     assert.equal(await page.evaluate(() => calls.find(item => item.kind === 'saveScenario').args.fingerprint), 'synthetic:6');
     await page.getByRole('tab', { name: 'Reparto por ahorrador', exact: true }).click();
+    await page.evaluate(() => { window.originalPeople = people; people = [...people,
+      { ...people[0], f: 'TEST-EXCLUDED', n: 'EXCLUSION COMPROBADA', ok: false, review_required: false, months: 0, motivo: 'No cumple 6 meses', rend: 0 },
+      { ...people[0], f: 'TEST-REVIEW', n: 'EVIDENCIA PENDIENTE', ok: false, review_required: true, months: null, motivo: 'ENROLLMENT_UNVERIFIED', rend: null }
+    ]; });
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    const reviewRow = page.getByRole('row').filter({ has: page.getByRole('cell', { name: 'TEST-REVIEW', exact: true }) });
+    await reviewRow.waitFor();
+    assert.equal(await reviewRow.getByRole('cell', { name: 'Por verificar', exact: true }).count(), 2);
+    assert.equal(await reviewRow.getByRole('cell', { name: 'No', exact: true }).count(), 0);
+    const excludedRow = page.getByRole('row').filter({ has: page.getByRole('cell', { name: 'TEST-EXCLUDED', exact: true }) });
+    assert.equal(await excludedRow.getByRole('cell', { name: 'No', exact: true }).count(), 1);
+    assert.equal(await excludedRow.getByRole('cell').nth(3).textContent(), '0');
+    assert.equal(await page.getByRole('row').filter({ has: page.getByRole('cell', { name: 'TEST-01', exact: true }) }).getByRole('cell', { name: 'Sí', exact: true }).count(), 1);
+    await reviewRow.click();
+    await page.getByRole('dialog').getByText('Califica: Por verificar · Permanencia: Por verificar', { exact: true }).waitFor();
+    assert.equal(await page.getByRole('dialog').locator('.sicof-metric').filter({ has: page.getByText('Rendimiento', { exact: true }) }).locator('strong').textContent(), '—');
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => { people = originalPeople; }); await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await reviewRow.waitFor({ state: 'detached' });
     await page.getByRole('button', { name: '↓ Excel formulado', exact: true }).click();
     assert.equal(await page.evaluate(() => calls.find(item => item.kind === 'export').exportKind), 'reparto_formulado');
     await page.getByText('PERSONA SINTÉTICA', { exact: true }).last().click();
@@ -153,6 +172,7 @@ async function main() {
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     assert.deepEqual(errors, []);
     const proof = { status: 'PASS', network: 'BLOCKED', productionWrites: 0, checks: ['all original tabs and additional period report', 'saver transaction opens authorized classification and preserves detail on cancel', 'scenario full command and fingerprint', 'exports preserve backend fingerprint and filters', 'cost and bank drafts trigger backend calculation', 'loan charts and saver withdrawals visible', 'texts/tab order persisted via repository', 'late calculation rejection', 'source error removes stale amounts', 'savings/current and original reports remain downloadable during Google outage', 'matrix complete metadata and server percentage units', 'projection net pool and conditional percentage visible', 'payment/arrears/matrix totals reflect filters without reallocation', 'unknown components remain unknown in filtered totals', 'matrix year removes loans without dates in that year', 'report semester selects an explicit year', 'account global availability shown without summing periods', 'loan principal interest term remaining and progress preserved', 'duplicate-date matrix evidence never selects first payment', 'arrears uses authoritative status', 'context change clears private UI', 'behavior detail', 'responsive 320/430/1440', 'no browser errors'] };
+    proof.checks.push('eligibility preserves verified yes verified no and pending review in table and modal', 'unknown months stay unknown while verified zero months remain zero');
     fs.writeFileSync(path.join(evidence, 'browser.json'), JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof));
   } finally { await browser.close(); }
 }

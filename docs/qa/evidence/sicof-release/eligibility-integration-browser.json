@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "productionWrites": 0,
+  "checks": [
+    "real Admin sidebar route",
+    "module-restricted and denied access",
+    "real Finance queue layout preserved",
+    "one behavior batch for repeated affiliates",
+    "behavior modal click does not open request",
+    "queue responsive 320/430/1440",
+    "existing settlement requires exact period/component allocation",
+    "over-allocation blocked",
+    "idempotent retry preserves allocation version",
+    "canonical total after withdrawal",
+    "annual references preserved",
+    "withdrawals reflect source periods",
+    "self savings actions and detail navigation preserved"
+  ]
+}

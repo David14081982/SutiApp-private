@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "checkedAt": "2026-10-03T21:05:29.079Z",
-  "target": "https://sutiapp.com",
+  "checkedAt": "2026-10-03T20:52:40.458Z",
+  "target": "http://localhost:8080",
   "bundleSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
   "checks": [
     {

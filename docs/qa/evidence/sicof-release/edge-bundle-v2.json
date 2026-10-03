@@ -1,9 +1,8 @@
 {
   "status": "PASS",
   "mode": "edge-bundle",
-  "version": 3,
+  "version": 1,
   "cloudStatus": "ACTIVE",
-  "installed": true,
   "verifyJwt": true,
   "sourceFiles": [
     "engine.mjs",

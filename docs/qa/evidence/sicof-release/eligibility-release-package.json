@@ -1,0 +1,245 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T21:16:51.509Z",
+  "baselineCommit": "b1e562a83e85eabe5e271b0117bc705312a242aa",
+  "bundleSha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+  "files": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/sicof-admin.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/DECISIONS.md",
+    "docs/LEGACY_GOOGLE_SYSTEMS.md",
+    "docs/MIGRATION_RULES.md",
+    "docs/SECURITY_RULES.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "docs/audits/H-SICOF-FRONTEND-RELEASE.md",
+    "docs/audits/H-SICOF-RELEASE-001-FINAL-REVIEW.md",
+    "docs/audits/H-SICOF-RELEASE-001.md",
+    "docs/qa/evidence/sicof-release/edge-bundle-v2.json",
+    "docs/qa/evidence/sicof-release/edge-bundle.json",
+    "docs/qa/evidence/sicof-release/edge-deploy-v2.json",
+    "docs/qa/evidence/sicof-release/edge-deploy.json",
+    "docs/qa/evidence/sicof-release/edge-status-v2.json",
+    "docs/qa/evidence/sicof-release/edge-status.json",
+    "docs/qa/evidence/sicof-release/eligibility-attribution-browser.json",
+    "docs/qa/evidence/sicof-release/eligibility-backend-tests.json",
+    "docs/qa/evidence/sicof-release/eligibility-frontend-candidate.json",
+    "docs/qa/evidence/sicof-release/eligibility-integration-browser.json",
+    "docs/qa/evidence/sicof-release/eligibility-release-build.json",
+    "docs/qa/evidence/sicof-release/eligibility-release-package.json",
+    "docs/qa/evidence/sicof-release/eligibility-ui-browser.json",
+    "docs/qa/evidence/sicof-release/frontend-publication.json",
+    "docs/qa/evidence/sicof-release/global-production-v311.json",
+    "docs/qa/evidence/sicof-release/global-production.json",
+    "docs/qa/evidence/sicof-release/rate-basis-facts.json",
+    "docs/qa/evidence/sicof-release/registry-acceptance.json",
+    "docs/qa/evidence/sicof-release/source-deltas.json",
+    "docs/qa/evidence/sicof-release/ui-live-admin.json",
+    "docs/qa/evidence/sicof-release/ui-live-local-self.json",
+    "docs/qa/evidence/sicof-release/ui-live-local.json",
+    "docs/qa/evidence/sicof-release/ui-live-production-admin.json",
+    "docs/qa/evidence/sicof-release/ui-live-production-self.json",
+    "docs/qa/evidence/sicof-release/ui-live-production.json",
+    "docs/qa/evidence/sicof-release/ui-live-self.json",
+    "docs/qa/evidence/sicof-release/ui-live.json",
+    "scripts/test-sicof-engine.js",
+    "scripts/test-sicof-exports.js",
+    "scripts/test-sicof-ui-browser.js",
+    "scripts/verify-sicof-ui-live.js",
+    "supabase/functions/sicof/engine.mjs",
+    "supabase/functions/sicof/exports.mjs",
+    "sw.js"
+  ],
+  "hashes": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "1ea421c32eada311ba3bad1bdd8647a4a2a51fb988609f4718b3eb50c553a811"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a"
+    },
+    {
+      "file": "app/sicof-admin.jsx",
+      "sha256": "3d9aa781b5507f75498dfc75658cbd82bb24cc792a21eb4f691e1c40be3d2a09"
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "sha256": "51a1af0edf49c97a309e76c0de0c363ddd1a6e2557b577b5e8aa204c45737da5"
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "sha256": "0a8cf4b569ca066ef50281ccc228bdcaac9db66501610158245afa3df901c54a"
+    },
+    {
+      "file": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "sha256": "37ead01f71997eac08eacf90fa3a3dea444fa9ace3f8fa62ad164780bc98a7c2"
+    },
+    {
+      "file": "docs/MIGRATION_RULES.md",
+      "sha256": "5af270a85bbcb09834259471072685dc3fc2905b4762b35f7c4e76c5cd8dad61"
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "sha256": "774a25188c0c803f729dcd3f1018a9ff4e5c1c1ac32acf7691d777df24905862"
+    },
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "sha256": "ecb9d89ca8c452bd93dfd1f8fb4227592894167e9bcbcea7e29919e23f23f058"
+    },
+    {
+      "file": "docs/audits/H-SICOF-FRONTEND-RELEASE.md",
+      "sha256": "12f3e220ca5e37e03238d3519b9807558c4e029f25e98b3ac1445df44a486825"
+    },
+    {
+      "file": "docs/audits/H-SICOF-RELEASE-001-FINAL-REVIEW.md",
+      "sha256": "7d4f74ad1433f85460419d484331eaf89d3ef3507427fc4e41a74cb34ffe7d99"
+    },
+    {
+      "file": "docs/audits/H-SICOF-RELEASE-001.md",
+      "sha256": "41b834129d3dfdb8d9e4fd1e087e4324b46d4fb1ce7889f829043b58e71d459b"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-bundle-v2.json",
+      "sha256": "dc8d2d992505c873eb9dd65886a1f0245130a19646bb4109907e84376136f743"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-bundle.json",
+      "sha256": "e43a955d97a1d90cb3861a7e2320f6ce763073b3b798b1e5e2460d9723280a07"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-deploy-v2.json",
+      "sha256": "ced0b331c5a8f18326291b51ac5ed945493279f491a17fc4078595f56eac614e"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-deploy.json",
+      "sha256": "7fa584ecfa5a3b128da2c9b99530eb1cc94195a7d0b64d77c8d1e70c8798e8ab"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-status-v2.json",
+      "sha256": "94fbb01822a1966aae7ba2acfa6d429b9952ccd43d2f4f048b044c620e723c4c"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/edge-status.json",
+      "sha256": "daaf98e0ef0d9b65cfabcc3bf0fb0a5be7e1b18b968107ac5c4695f102bbc673"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-attribution-browser.json",
+      "sha256": "97aa9434f46ed60c4ae35bae4d6e25566f98989d38e05d37d789e45bc85e7051"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-backend-tests.json",
+      "sha256": "b8862f480769b8bbdb91b9aec4a237046455238ce2a589f8c3eed21d51a054b0"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-frontend-candidate.json",
+      "sha256": "4fbe9b0eca75337bfcd5334566cce2d6334e7b91c00bff94acefa46e58054efe"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-integration-browser.json",
+      "sha256": "8b86c2b4e70fb0c75cf6253beb455f10f0b1a218b9201af18e5ffe311ddebcaf"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-release-build.json",
+      "sha256": "7d15d6464c8ac004a15205dd2ea4c9cfb90e9adde468b96ede22f85993c1d2c5"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/eligibility-ui-browser.json",
+      "sha256": "95ee8f570ad93f41d8b4f98e0fbeae647e7e14a30c7b496401b7f15a75299fc2"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/frontend-publication.json",
+      "sha256": "375fb7f383cb58764f9dc50771e8e50b2d939bf981564fb540a1bbdd3a2335f3"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/global-production-v311.json",
+      "sha256": "30b409f32db78e433c46919ed1c257c5020ca5a9d8da2d4388e7acbcae1f1f3e"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/global-production.json",
+      "sha256": "30b409f32db78e433c46919ed1c257c5020ca5a9d8da2d4388e7acbcae1f1f3e"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/rate-basis-facts.json",
+      "sha256": "ee05b37e1916dfd013c3931cbb2b78a3eabfbf9941f760bc113b25993d62c511"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/registry-acceptance.json",
+      "sha256": "ea468aab0c9a58d43af29963967a2c786f7485c9269c91345f047c8ef241aa55"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/source-deltas.json",
+      "sha256": "a48930339a4393300415bd3485cde96ab086a17cee6119cdbf9dac2efedbdee2"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-admin.json",
+      "sha256": "ea01ba2ec2576f3b5c313de7cc869f74fb9bfe328531733c7d85f087dd70a678"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-local-self.json",
+      "sha256": "4c2cf3673ea5c73e0a2a7010f0e4c1d399e723ac916c1218ee195e2ad5affc99"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-local.json",
+      "sha256": "32a0ed5f23c22ba5d4946e8878b3197e549afa414d6479ef8aa0683140accbe0"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-production-admin.json",
+      "sha256": "e58066fb108cd2991711b6db6169031ece3848c727ea58420fede2f9787432cd"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-production-self.json",
+      "sha256": "acb932deb7f4e8687e798c5e085caa6fa5c1b9d15c38efb58d0a3e02b87cc460"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-production.json",
+      "sha256": "39171520d03f4ffa9907a756dd187257e3d8a7d5286969f0b0571acec8dc9621"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live-self.json",
+      "sha256": "acb932deb7f4e8687e798c5e085caa6fa5c1b9d15c38efb58d0a3e02b87cc460"
+    },
+    {
+      "file": "docs/qa/evidence/sicof-release/ui-live.json",
+      "sha256": "39171520d03f4ffa9907a756dd187257e3d8a7d5286969f0b0571acec8dc9621"
+    },
+    {
+      "file": "scripts/test-sicof-engine.js",
+      "sha256": "4a177f9058a8e70ab1f2fb07d6dbfeaa59f49054c4c0f515a11b328a4182d9fe"
+    },
+    {
+      "file": "scripts/test-sicof-exports.js",
+      "sha256": "31e18453f10428edbfa26d9284aa37fedb118d7f47e4948092a99472b9d814a9"
+    },
+    {
+      "file": "scripts/test-sicof-ui-browser.js",
+      "sha256": "4c9347eaaea229ea629b627d5528d0dcb41176bac671dc886e390ad223f76c43"
+    },
+    {
+      "file": "scripts/verify-sicof-ui-live.js",
+      "sha256": "18e03e2349956de923b22b549dc7d563e7d6afd44d0317e42f867a77a53a1016"
+    },
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "654752790adf4e2920103d0f091c07e9cc3cbf3b403e7963beea784ffb054fc2"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "a8ecb73d66d52b7b331f17fadc14da06b6c33c0b6a17372f399161ad662794a4"
+    }
+  ],
+  "preservedPublishedChunks": 148,
+  "registryPendingRegeneration": true,
+  "published": false,
+  "financialWrites": 0
+}

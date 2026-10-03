@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T20:57:17.154Z",
+  "scope": "read-only facts underlying default average-balance scenario; no rate invented",
+  "semesterStart": "2026-07-01",
+  "rule": "basisFor rejects historical average when certified regularization occurs after period start",
+  "facts": [
+    {
+      "certified_records": 328,
+      "earliest_certified_cutoff": "2026-09-06",
+      "latest_certified_cutoff": "2026-09-06",
+      "certified_openings_after_semester_start": 297
+    }
+  ],
+  "financialWrites": 0
+}

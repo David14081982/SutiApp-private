@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "at": "2026-10-03T21:11:45.222Z",
+  "baselineCommit": "b1e562a83e85eabe5e271b0117bc705312a242aa",
+  "bundleVersion": 312,
+  "workerVersion": 244,
+  "records": [
+    {
+      "label": "root",
+      "beforeSha256": "fe8e56e0e87c9119a613548363e747acaff708284d3e6365385f2316c08e6484",
+      "sha256": "54b0397c33a76111889adf9e69646da0a1b650cfdb368f38654adb0b334c30eb",
+      "chunks": 147,
+      "changedChunks": [
+        "sicof-admin.jsx"
+      ],
+      "preservedChunks": 146
+    },
+    {
+      "label": "release",
+      "beforeSha256": "6ab062c6a110588bf33073fe6c5f4707d80bfa320db5980572cc9ca2242af2ea",
+      "sha256": "de642fb5b24c986c0b1c116c0dce8c8b12f2383fb086d68681ee47ef65b31d6a",
+      "chunks": 149,
+      "changedChunks": [
+        "sicof-admin.jsx"
+      ],
+      "preservedChunks": 148
+    }
+  ],
+  "sourceSha256": "3d9aa781b5507f75498dfc75658cbd82bb24cc792a21eb4f691e1c40be3d2a09",
+  "testSha256": "4c9347eaaea229ea629b627d5528d0dcb41176bac671dc886e390ad223f76c43",
+  "published": false,
+  "financialWrites": 0
+}

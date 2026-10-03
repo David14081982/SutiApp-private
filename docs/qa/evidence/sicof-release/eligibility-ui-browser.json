@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "network": "BLOCKED",
+  "productionWrites": 0,
+  "checks": [
+    "all original tabs and additional period report",
+    "saver transaction opens authorized classification and preserves detail on cancel",
+    "scenario full command and fingerprint",
+    "exports preserve backend fingerprint and filters",
+    "cost and bank drafts trigger backend calculation",
+    "loan charts and saver withdrawals visible",
+    "texts/tab order persisted via repository",
+    "late calculation rejection",
+    "source error removes stale amounts",
+    "savings/current and original reports remain downloadable during Google outage",
+    "matrix complete metadata and server percentage units",
+    "projection net pool and conditional percentage visible",
+    "payment/arrears/matrix totals reflect filters without reallocation",
+    "unknown components remain unknown in filtered totals",
+    "matrix year removes loans without dates in that year",
+    "report semester selects an explicit year",
+    "account global availability shown without summing periods",
+    "loan principal interest term remaining and progress preserved",
+    "duplicate-date matrix evidence never selects first payment",
+    "arrears uses authoritative status",
+    "context change clears private UI",
+    "behavior detail",
+    "responsive 320/430/1440",
+    "no browser errors",
+    "eligibility preserves verified yes verified no and pending review in table and modal",
+    "unknown months stay unknown while verified zero months remain zero"
+  ]
+}

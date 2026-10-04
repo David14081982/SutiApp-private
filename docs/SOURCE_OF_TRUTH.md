@@ -821,3 +821,14 @@ all original UI detail is reconstructed. Calculation/export authority and source
 revalidation remain unchanged. The Google reader is identical to its previous GAS
 implementation; the unsuccessful direct Sheets experiment was not published.
 See `audits/H-FINANCE-READ-PERFORMANCE-001.md` and its aggregate evidence.
+
+## H-SICOF-RESPONSE-LATENCY-001 — copia privada autorizada, pendiente de activación
+
+El propietario autorizó reutilizar durante un máximo de cinco minutos la observación de préstamos obtenida del lector vigente de `Sutiapp Final / HISTORIAL P V2`. Google conserva la autoridad; `sicof_source_private.observation` es una copia derivada única, sin edición financiera independiente. Esta excepción acotada sustituye la lectura Google en cada consulta SICOF, no las autoridades de Ahorro ni sus lectores canónicos, que siguen consultándose en Supabase.
+
+La vigencia termina exactamente en `observed_at + 300 segundos`, según la observación de origen. Una copia vencida no alimenta cálculos ni exportaciones. Las actualizaciones reemplazan íntegramente la fuente, incluidos borrados; una misma huella puede renovar su observación sin crear otra versión financiera. Los intentos, fallos y lecturas no prolongan la vigencia. Identidad, permisos, contexto y huellas del escenario siguen revalidándose. El trabajo periódico compartido previsto es cada cuatro minutos, con actualización manual bajo el mismo bloqueo. La fecha mostrada identifica la observación, no garantiza detección instantánea de cambios externos.
+
+Estado de esta adenda: migración `20261003000600` aplicada; corrección de cadencia `20261003000700`, configuración del worker y activación/publicación pendientes. El job periódico no debe descartar su turno por una observación reciente; el reload manual conserva su cooldown de 60 segundos y ambos comparten la lease. Véase `audits/H-SICOF-RESPONSE-LATENCY-001.md` para la evidencia de cada etapa.
+
+
+Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.

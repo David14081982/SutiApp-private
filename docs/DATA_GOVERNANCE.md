@@ -83,3 +83,12 @@ La eliminación solicitada por el propietario retira el banner de lectores brows
 ## H-SUTIAPP-PRODUCTION-SOURCE-REINTEGRATION-001 — 2026-09-20
 
 PRIVATE_BACKUP_REQUIRED: the old .tmp/beneficiaries-20260918 source CSV, signatures, plans, inventory and before/ backup remain outside Git and are not moved. The 98 pending rows are not automatically activated or repaired. History must survive rollback: beneficiary recovery revokes new writing capabilities rather than deleting distributions/provenance/files. Source reintegration does not authorize another import or any tracking/data repair.
+
+## H-SICOF-RESPONSE-LATENCY-001 — retención de observación derivada
+
+Contrato autorizado; migración 006 aplicada, corrección de cadencia 007 y activación pendientes. La copia privada de préstamos conserva únicamente la observación completa activa y su metadata de vigencia, versión, intento, éxito, error controlado y lease. El reemplazo es atómico y completo; no acumula versiones retiradas ni resucita filas eliminadas en Google. No copia el ledger de Ahorro, no acredita dinero y no sustituye el Excel histórico privado.
+
+Un fallo puede conservar físicamente la última observación para diagnóstico, pero al cumplir 300 segundos desde `observed_at` deja de estar disponible para cálculos y XLSX. Retenerla no renueva su validez. La recuperación puede eliminar esta copia desechable después de detener su job y restaurar explícitamente el lector anterior; no elimina movimientos, periodos, escenarios ni historia financiera. Los payloads, datos personales y secretos no se incorporan a Git, capturas públicas o registros de diagnóstico.
+
+
+Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.

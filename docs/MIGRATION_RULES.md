@@ -398,3 +398,14 @@ validated the conditional response, and protected 23 existing tables and 185 fun
 contracts (only the two declared reader bodies changed). Recovery restores both
 definitions and removes only this migration's helper and metadata backup. Do not
 rerun installed migrations. Evidence: `qa/evidence/finance-read-performance.json`.
+
+## H-SICOF-RESPONSE-LATENCY-001 — 006 aplicada; 007 y activación pendientes
+
+`20261003000600_sicof_source_cache.sql` es aditiva: crea un schema privado, una tabla singleton, metadata, tres RPC de servicio y el invocador privado del worker. No reemplaza lectores/writers financieros existentes ni modifica saldos o historia. Rechaza nombres ya instalados y requiere infraestructura Vault/pg_net existente. La instalación no agenda cron ni crea secretos; configuración, despliegue Edge, primado y activación del job `sicof-source-refresh` cada cuatro minutos son pasos separados y verificados.
+
+La aplicación 006 conservó 23 tablas protegidas y 182 contratos de funciones existentes según su evidencia focal. Las pruebas aisladas cubren permisos, vigencia exacta, concurrencia, errores, reemplazos, borrados y recuperación. Recovery desprograma únicamente este job y elimina explícitamente sus objetos aditivos sin CASCADE, después de restaurar el lector anterior; no restaura ni borra datos financieros. No reejecutar 006 para reconciliar Git.
+
+La corrección propuesta `20261003000700_sicof_source_refresh_cadence.sql` reemplaza sólo `service_sicof_source_claim(boolean)` bajo guarda exacta de definición, owner y ACL, conservando OID y observaciones. El job normal no omite turnos por edad reciente; force=true conserva cooldown de 60 segundos y ambas ramas mantienen lease atómica de 90 segundos. Recovery contiene y restaura literalmente la definición 006 verificada. Cadencia 007, secretos, cron y publicación todavía pendientes al redactar esta adenda.
+
+
+Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.

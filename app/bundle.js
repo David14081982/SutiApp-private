@@ -272,6 +272,11 @@
     return { ...data, workspace: { ...workspace, report }, result };
   }
   const h = React.createElement;
+  function readWithDeadline(promise, milliseconds) {
+    let timer;
+    const deadline = new Promise((_, reject) => { timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds); });
+    return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+  }
   const TABS = [{ id: 'resumen', label: 'Resumen' }, { id: 'liquidez', label: 'Liquidez' }, { id: 'reparto', label: 'Reparto por ahorrador' }, { id: 'prestamos', label: 'Préstamos y pagos' }, { id: 'atrasos', label: 'Atrasos' }, { id: 'reporte', label: 'Reporte préstamos' }, { id: 'cumplimiento', label: 'Cumplimiento' }, { id: 'ahorro', label: 'Informe final de ahorro' }];
   const TEXTS = {
     title: 'Simulador de Rendimiento', subtitle: 'Compara escenarios, revisa sus reglas y conserva el detalle de cada periodo.',
@@ -374,6 +379,8 @@
   }
   function errorText(error) {
     const value = String(error && (error.code || error.message) || '');
+    if (/TIMEOUT/.test(value)) return 'La consulta no respondió a tiempo. Puedes reintentar; no se hacen reintentos automáticos.';
+    if (/SOURCE_CACHE/.test(value)) return 'La copia de préstamos necesita actualizarse. Revisa su fecha y usa Actualizar desde Google.';
     if (/DENIED|AUTH|42501/.test(value)) return 'La sesión o los permisos cambiaron. Vuelve a consultar con una cuenta autorizada.';
     if (/STALE|FINGERPRINT|CHANGED|VERSION/.test(value)) return 'Cambió la información del escenario. Actualiza el cálculo antes de continuar.';
     if (/VALIDATION|INVALID|RANGE|DATE/.test(value)) return 'Revisa las fechas y los importes del escenario.';
@@ -485,6 +492,15 @@
     const [data, setData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [loadError, setLoadError] = React.useState(''), [revision, setRevision] = React.useState(0);
     const [storedResult, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
     const [appliedKey, setAppliedKey] = React.useState(null);
+    const [sourceClock, setSourceClock] = React.useState(Date.now);
+    const sourceExpiry = Date.parse(data?.source?.expires_at || '');
+    const sourceExpired = Number.isFinite(sourceExpiry) && sourceClock >= sourceExpiry;
+    React.useEffect(() => {
+      setSourceClock(Date.now());
+      if (!Number.isFinite(sourceExpiry)) return;
+      const timer = setTimeout(() => setSourceClock(Date.now()), Math.max(0, sourceExpiry - Date.now()) + 10);
+      return () => clearTimeout(timer);
+    }, [sourceExpiry]);
     const draftKey = JSON.stringify({ settings, costs, bank });
     const draftPending = appliedKey !== null && draftKey !== appliedKey;
     const result = draftPending ? null : storedResult;
@@ -493,18 +509,20 @@
     const [paymentFilter, setPaymentFilter] = React.useState({ funds: null, q: '', from: '', to: '' }), [arrearsFilter, setArrearsFilter] = React.useState({ funds: null, q: '', severity: '' }), [matrixFilter, setMatrixFilter] = React.useState({ funds: null, q: '', year: '' }), [reportFilter, setReportFilter] = React.useState({ q: '', year: '', semester: '' });
     const [costDraft, setCostDraft] = React.useState({ concept: '', amount: '', source: 'pool', status: 'estimated', date: '' });
     const live = React.useRef(true), loadSequence = React.useRef(0), initialized = React.useRef(false), drag = React.useRef(null), busyRef = React.useRef(false), requestBusy = React.useRef(false);
+    const refreshSource = React.useRef(false);
     const repo = () => window.SicofRepository;
     const valid = () => live.current && window.SicofView.contextKey() === identity;
     const canConfigure = Boolean(app.admin && app.admin.has('savings.config'));
     const copy = key => texts[key] || TEXTS[key];
     const caption = value => { if (typeof value !== 'string') return value; if (CAPTION_KEYS[value]) return copy(CAPTION_KEYS[value]); const prefix = Object.keys(CAPTION_KEYS).find(text => text.endsWith(' ') && value.startsWith(text)); return prefix ? copy(CAPTION_KEYS[prefix]) + value.slice(prefix.length) : value; };
     React.useEffect(() => () => { live.current = false; loadSequence.current++; }, []);
-    function refresh() { if (!requestBusy.current && !busyRef.current) { requestBusy.current = true; setRevision(value => value + 1); } }
+    function refresh(forceSource = false) { if (!requestBusy.current && !busyRef.current) { refreshSource.current = forceSource === true; requestBusy.current = true; setRevision(value => value + 1); } }
     React.useEffect(() => {
       const sequence = ++loadSequence.current; setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
       requestBusy.current = true; setCalculation('loading'); setCalculationError('');
       const command = { settings, costs, bank }, commandKey = JSON.stringify(command);
-      const timer = setTimeout(() => Promise.resolve().then(() => repo().workspace({ ...command, compact: true })).then(expandWorkspace).then(response => {
+      const forceSource = refreshSource.current; refreshSource.current = false;
+      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => repo().workspace({ ...command, compact: true, ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 25000).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
         setData(value); setPhase('ready');
@@ -530,7 +548,7 @@
     }
     function exportHistorical() { operation('export:historical', () => repo().exportReport('final_ahorro', { filters: { historical: true } }), () => setNotice({ message: 'Informe histórico descargado con sus valores originales.' })); }
     function exportFile(kind, filters) { if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; } if (!result || calculation !== 'ready') return; operation('export:' + kind, () => repo().exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint }), () => setNotice({ message: 'Informe generado con el escenario consultado.' })); }
-    function saveScenario() { if (!result) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
+    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
     function savePreferences(nextTexts, nextOrder) { const invalid = preferenceError(nextTexts, nextOrder); if (invalid) { setNotice({ level: 'error', message: invalid }); return; } const overrides = textOverrides(nextTexts); operation('preferences', () => repo().savePreferences({ texts: overrides, tabOrder: nextOrder }), () => { setTexts(overrides); setOrder(nextOrder); setEditing(null); setNotice({ message: 'Presentación guardada.' }); }); }
     function moveTab(id, target) { if (busyRef.current || id === target) return; const next = order.filter(item => item !== id); next.splice(next.indexOf(target), 0, id); savePreferences(texts, next); }
     function addCost(event) {
@@ -543,7 +561,7 @@
     const fundOptions = (data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
     const rows = result && result.rows || [], loans = data && data.loans || [], payments = data && data.payments || [], periods = data && data.periods || [], report = data && data.report || {};
     const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
-    const exportBusy = Boolean(busy) || calculation !== 'ready' || !result;
+    const exportBusy = Boolean(busy) || calculation !== 'ready' || !result || sourceExpired;
     const input = (key, type, extra) => h('input', Object.assign({ type: type || 'number', value: settings[key], 'aria-label': key, onChange: event => change(key, type === 'date' || type === 'text' ? event.target.value : event.target.value === '' ? '' : Number(event.target.value)) }, extra));
     const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
     const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
@@ -661,9 +679,11 @@
     const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
     return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
       h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Información consultada: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX') : 'Fecha no informada'))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: refresh }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => refresh(true) }, 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: refresh }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
         h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
         data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
+        data?.source?.refreshing && h('div', { className: 'sicof-status', role: 'status' }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'),
+        sourceExpired && phase === 'ready' && h('div', { className: 'sicof-status error', role: 'alert' }, 'Esta consulta superó los cinco minutos de vigencia. Pulsa Actualizar para obtener la versión disponible antes de calcular o descargar.'),
         phase === 'loading' && h('div', { className: 'sicof-status', role: 'status' }, 'Consultando ahorro y pagos registrados…'),
         phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
         calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),

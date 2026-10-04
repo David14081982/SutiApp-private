@@ -1,5 +1,6 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import {dispatchSicof} from './handler.mjs';
+import {dispatchSicofSourceRefreshJob,sourceCacheState} from './source-cache.mjs';
 const origins=(Deno.env.get('ALLOWED_APP_ORIGINS')||'').split(',').map(v=>v.trim()).filter(Boolean);
 Deno.serve(async (request:Request)=>{
   const origin=request.headers.get('origin')||'',headers:Record<string,string>={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
@@ -12,14 +13,17 @@ Deno.serve(async (request:Request)=>{
   if(!authorization.startsWith('Bearer '))return json(401,{error:'SICOF_AUTH_REQUIRED'});
   try {
     const raw=await request.text();if(raw.length>200000)throw Error('SICOF_COMMAND_INVALID');
-    const data=await dispatchSicof(JSON.parse(raw),authorization,{
+    const body=JSON.parse(raw),dependencies={
       env:(key:string)=>Deno.env.get(key),loadExcelJS:async()=>(await import('npm:exceljs@4.4.0')).default,
       createUserClient:(auth:string)=>createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:auth}},auth:{persistSession:false}}),
       createServiceClient:()=>createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}})
-    });
+    };
+    const data=body?.action==='REFRESH_SOURCE_JOB'?
+      await dispatchSicofSourceRefreshJob(body,request,dependencies):await dispatchSicof(body,authorization,dependencies);
     return json(200,data);
   } catch(error) {
     const message=error instanceof Error?error.message:'',safe=/^(SICOF|SAVINGS)_[A-Z_]+$/.test(message)?message:'SICOF_UNAVAILABLE';
-    return json(safe.includes('AUTH_REQUIRED')?401:safe.includes('DENIED')?403:409,{error:safe});
+    const sourceState=error instanceof Error&&'sourceState' in error?sourceCacheState(error.sourceState):null;
+    return json(safe.includes('AUTH_REQUIRED')?401:safe.includes('DENIED')?403:409,{error:safe,...(sourceState?{source:sourceState}:{})});
   }
 });

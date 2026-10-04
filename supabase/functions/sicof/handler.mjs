@@ -1,10 +1,11 @@
 import {readSicofLoanSource} from './loan-source.mjs';
+import {readCachedSicofSource,refreshCachedSicofSource,requireCurrentSicofSource} from './source-cache.mjs';
 import {analyzeSicofLoans} from './loan-calculation.mjs';
-import {calculateSicof,validateSettings,date,fingerprint} from './engine.mjs';
+import {calculateSicof,validateSettings,validateCalculationInputs,ENGINE_VERSION,date,fingerprint} from './engine.mjs';
 import {decorateLoans,behaviorFor,makeReports,workspaceView,buildContinuousSavingsReport,compactWorkspace} from './projection.mjs';
 import {exportSicofReport} from './exports.mjs';
 const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v);
-const fields={LOAD:['from','to'],WORKSPACE:['settings','costs','bank','compact'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to']};
+const fields={LOAD:['from','to'],WORKSPACE:['settings','costs','bank','compact','refresh_source'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to']};
 async function rpc(client,name,args) {const r=await client.rpc(name,args);if(r.error)throw Error(r.error.message||'SICOF_RPC_FAILED');return r.data;}
 function requireContext(context,actor) {if(!context||context.actor!==actor||!context.session)throw Error('SICOF_CONTEXT_CHANGED');return context;}
 function decodeBytes(base64){return Uint8Array.from(atob(base64.replace(/\s/g,'')),c=>c.charCodeAt(0));}
@@ -56,11 +57,12 @@ export async function dispatchSicof(body,authorization,dependencies) {
   const actor=auth.data.user.id;
   if(!body||!Object.prototype.hasOwnProperty.call(fields,body.action)||Object.keys(body).some(k=>k!=='action'&&!fields[body.action].includes(k)))throw Error('SICOF_COMMAND_INVALID');
   if('compact' in body&&typeof body.compact!=='boolean')throw Error('SICOF_COMMAND_INVALID');
-  const sourceReader=dependencies.sourceReader||readSicofLoanSource;
+  if('refresh_source' in body&&typeof body.refresh_source!=='boolean')throw Error('SICOF_COMMAND_INVALID');
+  const sourceReader=dependencies.sourceReader||(()=>readCachedSicofSource(dependencies));
   if(body.action==='BEHAVIOR'){
     if(!Array.isArray(body.affiliate_ids)||body.affiliate_ids.length<1||body.affiliate_ids.length>100||body.affiliate_ids.some(id=>!uuid(id)))throw Error('SICOF_SUBJECTS_INVALID');
     const context=await rpc(user,'get_admin_sicof_behavior_context',{p_affiliate_ids:body.affiliate_ids});requireContext(context.context,actor);
-    const source=await sourceReader(env),analysis=decorateLoans(analyzeSicofLoans(source,{from:'1900-01-01',to:context.today,as_of:context.today}));
+    const source=await (dependencies.sourceReader||readSicofLoanSource)(env),analysis=decorateLoans(analyzeSicofLoans(source,{from:'1900-01-01',to:context.today,as_of:context.today}));
     const fresh=await rpc(user,'get_admin_sicof_behavior_context',{p_affiliate_ids:body.affiliate_ids});
     if(JSON.stringify(fresh)!==JSON.stringify(context))throw Error('SICOF_CONTEXT_CHANGED');
     return {context:context.context,data:Object.fromEntries(context.subjects.map(subject=>[subject.affiliate_id,behaviorFor(subject,analysis)]))};
@@ -78,6 +80,9 @@ export async function dispatchSicof(body,authorization,dependencies) {
     const year=String(body.filters.year),semester=String(body.filters.semester||'');from=year+(semester==='2'?'-07-01':'-01-01');to=year+(semester==='1'?'-06-30':'-12-31');
   }
   const ctx=await rpc(user,'get_admin_sicof_context',{p_from:from,p_to:to});requireContext(ctx.context,actor);
+  // Only an already authorized SICOF consultation can request a shared refresh.
+  // The claim decides whether a refresh is already running or in cooldown.
+  if(body.action==='WORKSPACE'&&body.refresh_source)await refreshCachedSicofSource(dependencies,true);
   if(body.action==='SAVE_PREFERENCES'){
     if(!ctx.can_configure)throw Error('SICOF_ADMIN_DENIED');
     return {context:ctx.context,data:await rpc(user,'admin_save_sicof_preferences',{p_value:{labels:body.texts,tab_order:body.tabOrder},p_key:body.key||crypto.randomUUID()})};
@@ -87,6 +92,13 @@ export async function dispatchSicof(body,authorization,dependencies) {
     return {context:ctx.context,data:await rpc(user,'admin_archive_sicof_scenario',{p_scenario_id:body.id,p_key:body.key||crypto.randomUUID()})};
   }
   if(body.action==='EXPORT'&&!ctx.can_export)throw Error('SICOF_EXPORT_DENIED');
+  if(body.action==='SAVE_SCENARIO'&&(!ctx.can_configure||!uuid(body.key)))throw Error('SICOF_ADMIN_DENIED');
+  const sourceResponse=(data,source)=>{
+    // Recheck after calculation, compaction or XLSX/base64 creation. No second
+    // source query: an observation that expires during CPU work is not returned.
+    requireCurrentSicofSource(source,dependencies);
+    return {context:ctx.context,data};
+  };
   async function exportResult(calculation,analysis,source){
     let templateBytes;
     if(body.kind==='final_ahorro'){
@@ -100,33 +112,49 @@ export async function dispatchSicof(body,authorization,dependencies) {
     const continuous=body.kind==='final_ahorro'&&!body.filters?.historical?
       buildContinuousSavingsReport(await readContinuousReportContext(user,ctx,actor)):null;
     const excel=ExcelJS||await dependencies.loadExcelJS();
-    const exported=await exportSicofReport({kind:body.kind,calculation,context:{...ctx,historical_report:ctx.report,report:reports?.finalReport,continuous_report:continuous},loans:analysis,source:body.kind==='base_calculo'?source:undefined,filters:body.filters||{},templateBytes,ExcelJS:excel});
-    return {context:ctx.context,data:{base64:encodeBytes(new Uint8Array(exported.bytes)),content_type:exported.contentType,filename:exported.filename}};
+    const exportContext=body.kind==='base_calculo'?{}:{...ctx,historical_report:ctx.report,report:reports?.finalReport,continuous_report:continuous};
+    const exported=await exportSicofReport({kind:body.kind,calculation,context:exportContext,loans:analysis,source:body.kind==='base_calculo'?source:undefined,filters:body.filters||{},templateBytes,ExcelJS:excel});
+    return sourceResponse({base64:encodeBytes(new Uint8Array(exported.bytes)),content_type:exported.contentType,filename:exported.filename},source);
   }
   // Savings reports remain available independently of the loan-source outage.
   if(body.action==='EXPORT'&&body.kind==='final_ahorro')return exportResult(null,null);
+  if(body.action==='EXPORT'&&body.kind==='base_calculo'){
+    if(!settings)throw Error('SICOF_SETTINGS_REQUIRED');
+    const inputs=validateCalculationInputs({settings,costs:body.costs,bank:body.bank});
+    const source=await sourceReader(env);
+    // The existing fingerprint seals inputs and the current live context plus
+    // the shared source observation within the authorized five-minute lifetime,
+    // not the derived distribution. Reconstruct it identically without building
+    // loan histories, participant allocations or reports for a raw A:O export.
+    const currentFingerprint=await fingerprint({engine:ENGINE_VERSION,...inputs,context:ctx.fingerprint,loans:source.source_fingerprint});
+    if(body.fingerprint!==currentFingerprint)throw Error('SICOF_SOURCE_CHANGED');
+    return exportResult({...inputs,engine_version:ENGINE_VERSION,fingerprint:currentFingerprint},{source_fingerprint:source.source_fingerprint},source);
+  }
   let analysis,source;
   try {source=await sourceReader(env);analysis=decorateLoans(analyzeSicofLoans(source,{from,to,as_of:ctx.today}));}
   catch(error){
     if(!['LOAD','WORKSPACE'].includes(body.action))throw error;
     const workspace=workspaceView(ctx,null);
-    const data={workspace,result:null,calculation_error:'SICOF_LOAN_SOURCE_UNAVAILABLE'};
+    if(error?.sourceState)workspace.source={...workspace.source,...error.sourceState,status:'UNAVAILABLE'};
+    const data={workspace,result:null,calculation_error:error?.sourceState?error.message:'SICOF_LOAN_SOURCE_UNAVAILABLE'};
     return {context:ctx.context,data:body.action==='WORKSPACE'?(body.compact?compactWorkspace(data):data):workspace};
   }
-  if(body.action==='LOAD')return {context:ctx.context,data:workspaceView(ctx,analysis)};
+  const workspace=()=>{const view=workspaceView(ctx,analysis);if(source.cache_meta)view.source={...view.source,...source.cache_meta,status:source.cache_meta.state};return view;};
+  if(body.action==='LOAD')return sourceResponse(workspace(),source);
   if(!settings)throw Error('SICOF_SETTINGS_REQUIRED');
   const result=calculateSicof(ctx,analysis,{settings,costs:body.costs,bank:body.bank});
   result.fingerprint=await fingerprint({engine:result.engine_version,settings:result.settings,costs:result.costs,bank:result.bank,context:ctx.fingerprint,loans:analysis.source_fingerprint});
-  // One authorized observation supplies both UI and calculation. No source cache.
+  // One authorized observation supplies both UI and calculation. Supabase
+  // savings remain live; source metadata identifies the shared Google copy.
   if(body.action==='WORKSPACE'){
-    const data={workspace:workspaceView(ctx,analysis),result};
-    return {context:ctx.context,data:body.compact?compactWorkspace(data):data};
+    const data={workspace:workspace(),result};
+    return sourceResponse(body.compact?compactWorkspace(data):data,source);
   }
-  if(body.action==='CALCULATE')return {context:ctx.context,data:result};
+  if(body.action==='CALCULATE')return sourceResponse(result,source);
   if(body.fingerprint!==result.fingerprint)throw Error('SICOF_SOURCE_CHANGED');
   if(body.action==='EXPORT')return exportResult(result,analysis,source);
   if(body.action==='SAVE_SCENARIO'){
-    if(!ctx.can_configure||!uuid(body.key))throw Error('SICOF_ADMIN_DENIED');
+    requireCurrentSicofSource(source,dependencies);
     const data=await rpc(createServiceClient(),'service_save_sicof_scenario',{p_actor:actor,p_session:ctx.context.session,p_effective_affiliate:ctx.context.effective_affiliate,
       p_key:body.key,p_title:body.title||'Escenario '+from+' a '+to,p_parameters:{from,to,settings:result.settings,costs:result.costs,bank:result.bank},
       p_result:result,p_context_fingerprint:ctx.fingerprint,p_source_fingerprint:analysis.source_fingerprint});

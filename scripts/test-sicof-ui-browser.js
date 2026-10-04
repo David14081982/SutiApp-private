@@ -35,6 +35,8 @@ async function main() {
       window.SicofRepository.workspace = async args => {
         calls.push({ kind: 'workspace', args: structuredClone(args) });
         const workspace = await SicofRepository.load({ from: args.settings.periodIni, to: args.settings.periodFin });
+        if (window.cacheFixture) workspace.source = { ...workspace.source, ...window.cacheFixture };
+        if (window.workspaceTimeout) throw Error('SICOF_READ_TIMEOUT');
         const data = failSource ? { workspace, result: null, calculation_error: 'SICOF_LOAN_SOURCE_UNAVAILABLE' } : { workspace, result: await SicofRepository.calculate(args) };
         return JSON.parse(JSON.stringify(args.compact ? compactWorkspace(data) : data));
       };
@@ -200,6 +202,30 @@ async function main() {
     await page.evaluate(() => { window.failBaseExport = true; }); await baseButton.click();
     await page.getByRole('alert').getByText('Cambió la información del escenario. Actualiza el cálculo antes de continuar.', { exact: true }).waitFor();
     await page.evaluate(() => { window.failBaseExport = false; });
+    // Expiry is a local timer, not a new Google or workspace query.
+    await page.evaluate(() => { window.cacheFixture = { expires_at: new Date(Date.now() + 1200).toISOString(), refreshing: false, state: 'READY' }; });
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await page.getByText(/Vigencia máxima: 5 minutos/).waitFor();
+    const expiryCalls = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
+    await page.getByRole('alert').getByText(/Esta consulta superó los cinco minutos/).waitFor();
+    assert(await baseButton.isDisabled(), 'expired observation cannot export');
+    assert(await page.getByRole('button', { name: '+ Guardar escenario actual', exact: true }).isDisabled());
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), expiryCalls, 'expiry does not poll');
+    await page.evaluate(() => { cacheFixture.expires_at = new Date(Date.now() + 300000).toISOString(); });
+    await page.getByRole('button', { name: 'Actualizar desde Google', exact: true }).click();
+    await page.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent.includes('Descargar base del') && !button.disabled));
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').at(-1).args.refresh_source), true);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), expiryCalls + 1, 'manual refresh is one command');
+    await page.evaluate(() => { window.workspaceTimeout = true; });
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await page.getByRole('alert').getByText(/La consulta no respondió a tiempo/).waitFor();
+    const timeoutCalls = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), timeoutCalls, 'timeout has no automatic retry');
+    await page.evaluate(() => { window.workspaceTimeout = false; window.cacheFixture = null; });
+    await page.getByRole('button', { name: 'Reintentar', exact: true }).click();
+    await page.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent.includes('Descargar base del') && !button.disabled));
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').at(-1).args.refresh_source), undefined, 'ordinary refresh never rereads Google');
     for (const width of [320, 430, 1440]) {
       await page.setViewportSize({ width, height: 1100 });
       const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).position !== 'absolute').slice(0, 12).map(el => ({tag:el.tagName,cls:el.className,right:el.getBoundingClientRect().right})) })); assert(overflow.scroll <= width + 1, 'Page overflow: ' + JSON.stringify(overflow));
@@ -235,6 +261,7 @@ async function main() {
     assert.deepEqual(errors, []);
     const proof = { status: 'PASS', network: 'BLOCKED', productionWrites: 0, checks: ['all original tabs and additional period report', 'saver transaction opens authorized classification and preserves detail on cancel', 'scenario full command and fingerprint', 'exports preserve backend fingerprint and filters', 'cost and bank drafts require explicit combined calculation', 'loan charts and saver withdrawals visible', 'texts/tab order persisted via repository', 'drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry', 'source error removes stale amounts', 'savings/current and original reports remain downloadable during Google outage', 'matrix complete metadata and server percentage units', 'projection net pool and conditional percentage visible', 'payment/arrears/matrix totals reflect filters without reallocation', 'unknown components remain unknown in filtered totals', 'matrix year removes loans without dates in that year', 'report semester selects an explicit year', 'account global availability shown without summing periods', 'loan principal interest term remaining and progress preserved', 'duplicate-date matrix evidence never selects first payment', 'arrears uses authoritative status', 'context change clears private UI', 'behavior detail', 'responsive 320/430/1440', 'no browser errors'] };
     proof.checks.push('eligibility preserves verified yes verified no and pending review in table and modal', 'unknown months stay unknown while verified zero months remain zero', 'base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load', 'base XLSX excludes presentation filters and waits for unapplied changes', 'source-changed export displays explicit error');
+    proof.checks.push('source expiry disables export/save without polling', 'manual Google refresh sends one explicit command', 'ordinary apply/retry does not force source refresh', 'timeout displays error without automatic retries');
     fs.writeFileSync(path.join(evidence, 'browser.json'), JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof));
   } finally { await browser.close(); }
 }

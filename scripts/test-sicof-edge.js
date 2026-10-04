@@ -59,7 +59,8 @@ const assert=require('assert/strict');
  assert.equal(ctx.report.rows[0].cells.J,0);assert.equal(report.report.rows[0].semester,null);assert.equal(report.report.rows[0].available,null);
  assert.equal(report.report.balances[affiliate].available,85);assert.equal(report.report.balances[affiliate].as_of,ctx.today);
  await assert.rejects(()=>run({action:'EXPORT',kind:'final_ahorro',filters:{semester:'1'}}),/REPORT_FILTER_INVALID/);
- // New report uses the same authorized, fingerprint-checked path; no snapshot API.
+ // Raw report retains fresh authorized source/input fingerprint checks without
+ // rebuilding derived distributions; no snapshot API or extra source request.
  const ExcelJS=require('../.tmp/sicof/deps/node_modules/exceljs');let excelLoads=0;deps.loadExcelJS=async()=>{excelLoads++;return ExcelJS;};
  const current=await run({action:'CALCULATE',settings,costs:[],bank:{amount:null}});
  assert.equal(excelLoads,0,'non-export actions do not import ExcelJS');

@@ -1,0 +1,698 @@
+{
+  "task": "H-SICOF-RESPONSE-LATENCY-001",
+  "status": "PASS",
+  "baseline": "bbc0ba263fc246f7d0c441189d0c4d0c29f95a3c",
+  "contract": {
+    "ownerDecision": "Hasta 5 minutos: menos consultas.",
+    "source": "Existing fixed SutiApp Final / HISTORIAL P V2 Google reader",
+    "freshnessSeconds": 300,
+    "leaseSeconds": 90,
+    "manualCooldownSeconds": 60,
+    "scheduledMinutes": 4,
+    "storage": "One private derived observation, no independent financial writer",
+    "savings": "Live canonical Supabase context",
+    "export": "One HISTORIAL P V2 sheet, original A:O, applied fund(s) AND inclusive period"
+  },
+  "priorTechnicalSample": {
+    "version": 9,
+    "post200_ms": [
+      27659,
+      29392
+    ],
+    "cpu_ms": [
+      808,
+      823
+    ],
+    "scope": "Technical log sample; action unknown, not attributed to XLSX."
+  },
+  "sql": {
+    "status": "PASS",
+    "checks": [
+      "additive installation preserves financial rows/functions and schedules nothing",
+      "FORCE RLS and ACL deny browser roles and direct service table access",
+      "empty read, single flight, hidden lease and exact successful source replacement",
+      "TTL boundary is exactly 300 seconds and stale reads omit source",
+      "normal and forced refresh obey separate cooldowns",
+      "same fingerprint renews observation only; changed source removes deleted rows",
+      "failed refresh never extends expiry and sanitizes diagnostics",
+      "expired or replaced tokens cannot publish or clear a newer lease",
+      "invalid source contract shape and values cannot be published",
+      "expired future and regressing observations fail without overwriting",
+      "read does not renew timestamps and source remains unavailable after failed expiry",
+      "scheduled wrapper uses only scoped Vault secrets and fixed worker action",
+      "large normalized observation round trips without hidden row limits",
+      "007 preserves installed OIDs ACLs observations and all other function definitions",
+      "007 periodic claim cannot skip an out-of-phase refresh before five-minute expiry",
+      "007 normal and manual contenders share lease while manual cooldown remains 60s",
+      "007 expired worker cannot overwrite or clear a later scheduled lease",
+      "007 recovery restores the exact 006 claim without changing observations",
+      "recovery removes only additive cache and its named job"
+    ],
+    "sourceRows": 18000,
+    "externalRequests": 0,
+    "financialWrites": 0,
+    "concurrency": "atomic row-lock SQL; competing calls serialized by isolated PGlite",
+    "clock": "exact TTL tested through immutable private metadata helper; RPC freshness uses clock_timestamp",
+    "claim006Md5": "6904843462a6ecceb2512940303a616a",
+    "claim007Md5": "e0a4804a49c05dac578d311bf7aea108",
+    "exitCode": 0
+  },
+  "backend": {
+    "recorded_at": "2026-10-04T03:48:05.991Z",
+    "workspace": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\sicof\\release",
+    "recorded_by": "/root/sicof_speed_options",
+    "status": "PASS",
+    "provenance": "Reconstructed metadata for already executed local tests. Test stdout was observed through tool responses, not saved verbatim before this report. No test was rerun to create this file.",
+    "limitations": [
+      "No live Google or database queries by this agent.",
+      "No Edge production latency or memory conclusion follows from local Node timing/RSS.",
+      "Earlier engine/writer tests are explicitly labelled; final handler/cache revision tests were rerun after TTL guard changes.",
+      "File hashes identify files at report creation, not an immutable historical execution bundle."
+    ],
+    "tests": [
+      {
+        "command": "node scripts/test-sicof-source-cache-worker.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "final TTL guard revision",
+        "stdout_evidence": "PASS JSON observed in tool transcript; aggregate reconstructed here",
+        "checks": [
+          "live auth/context/capability before cache read",
+          "normal workspace/calculation/A:O export makes zero Google queries",
+          "source/context fingerprints preserved",
+          "strict expiry and bounded skew",
+          "expiry during calculation, compaction and real XLSX creation rejected without another query",
+          "expiry before scenario writer rejected",
+          "stale/empty/refreshing fail closed",
+          "shared lease permits one upstream read",
+          "failed refresh preserves observation metadata",
+          "late publish rejected without retry",
+          "job secret and empty Origin checked before RPC",
+          "authorized manual refresh shares claim",
+          "safe metadata/errors",
+          "no financial writers"
+        ],
+        "external_queries": 0,
+        "financial_writes": 0
+      },
+      {
+        "command": "node scripts/test-sicof-edge.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "final TTL guard revision",
+        "stdout_evidence": "PASS line observed in tool transcript",
+        "checks": [
+          "auth before source",
+          "capability gates",
+          "no fallback",
+          "no financial writes",
+          "source fingerprint",
+          "historical export independent of Google",
+          "canonical period/withdrawal report",
+          "exact Folio and historic exclusion"
+        ]
+      },
+      {
+        "command": "node scripts/test-sicof-export-fast-path.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "final TTL guard revision",
+        "stdout_evidence": "PASS JSON observed in tool transcript; aggregate reconstructed here",
+        "normalization_cases": 6,
+        "invalid_cases": 10,
+        "reference_engine_sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5",
+        "checks": [
+          "complete engine result byte-equivalent to pre-extraction engine",
+          "defaults/cost trimming/bank representation preserved",
+          "same canonical fingerprint",
+          "raw export cannot access participant/report or loan analysis fields",
+          "one context and one source read",
+          "source/context/settings/cost/bank drift rejected",
+          "authorization before source and lazy ExcelJS",
+          "invalid input rejected before source",
+          "one A:O workbook with original typed values"
+        ],
+        "external_queries": 0,
+        "financial_writes": 0
+      },
+      {
+        "command": "node scripts/test-sicof-continuous-handler.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "final TTL guard revision",
+        "stdout_evidence": "PASS line observed in tool transcript",
+        "checks": [
+          "server cutoff",
+          "selected interval preserved",
+          "existing context reuse",
+          "multi-year bounded reads",
+          "historical history merge",
+          "latest ledger",
+          "permission/session/source drift rejected"
+        ]
+      },
+      {
+        "command": "node scripts/test-sicof-engine.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "phase-one input-validation extraction, before cache integration",
+        "stdout_evidence": "Successful exit and PASS were observed earlier in the session; complete stdout was not retained in a file",
+        "scope_note": "engine.mjs has not changed since this run; subsequent cache/TTL changes affected handler and new source-cache module, covered by final-revision tests above"
+      },
+      {
+        "command": "node scripts/test-sicof-calculation-base-export.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "phase-one input-validation extraction, before cache integration",
+        "stdout_evidence": "PASS JSON observed in tool transcript; aggregate reconstructed here",
+        "scope_note": "XLSX writer module unchanged since this test; final cache integration covered by worker and fast-path tests above",
+        "fund_scenarios": [
+          {
+            "source": "caja",
+            "rows": 609
+          },
+          {
+            "source": "sel",
+            "rows": 611
+          },
+          {
+            "source": "todos",
+            "rows": 613
+          }
+        ],
+        "large_fixture": {
+          "source_rows": 18002,
+          "exported_rows": 18000,
+          "xlsx_bytes": 1026716,
+          "write_ms": 3956.9409000000005,
+          "node_peak_rss_kib": 566388,
+          "edge_quota_verified": false
+        },
+        "checks": [
+          "single HISTORIAL P V2 A:O sheet",
+          "inclusive applied period",
+          "all fund modes",
+          "raw typed scalars and source header order",
+          "no pagination truncation",
+          "no original source mutation",
+          "source fingerprint required",
+          "presentation filters rejected"
+        ],
+        "external_queries": 0,
+        "financial_writes": 0
+      },
+      {
+        "command": "node scripts/test-sicof-exports.js",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "phase-one input-validation extraction, before cache integration",
+        "stdout_evidence": "PASS JSON observed in tool transcript; aggregate reconstructed here",
+        "scope_note": "XLSX writer module unchanged since this run",
+        "historical_rows": 214,
+        "checks": [
+          "real ExcelJS read/write",
+          "CSV formula injection and HTML escaping",
+          "all filtered rows",
+          "unknown distinct from zero",
+          "eligibility and formula details",
+          "cost/reserve/retention cent conservation",
+          "source formulas and income reconciliation",
+          "weighted withdrawals",
+          "liquidity scenarios and bank declaration",
+          "historical exact bytes and preserved cells",
+          "separate period withdrawals",
+          "historical outcome mutation rejected"
+        ],
+        "external_writes": 0
+      },
+      {
+        "command": "git diff --check",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "final TTL guard revision",
+        "stdout_evidence": "No output and exit 0 observed"
+      },
+      {
+        "command": "node --check supabase/functions/sicof/source-cache.mjs",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "before final TTL guard extraction",
+        "stdout_evidence": "No output and exit 0 observed",
+        "scope_note": "Final module syntax subsequently loaded by final worker test"
+      },
+      {
+        "command": "node --check supabase/functions/sicof/handler.mjs",
+        "exit_code": 0,
+        "status": "PASS",
+        "phase": "before final TTL guard extraction",
+        "stdout_evidence": "No output and exit 0 observed",
+        "scope_note": "Final module syntax subsequently loaded by final worker/edge/fast-path/continuous tests"
+      }
+    ],
+    "current_file_sha256": {
+      "supabase/functions/sicof/engine.mjs": "12d0b041fdc454f4228b2db1b35cce0100c0a7933783f906c28ffac562913218",
+      "supabase/functions/sicof/handler.mjs": "ce694179427907049103328631dc1b5d400072e2ab5a26ad4ac02e8c7b75a1ef",
+      "supabase/functions/sicof/index.ts": "1cf91dbdc4c3c886e5604236cfa8aa8424f6b779fd44a716f29fbb4ff0dd4ae7",
+      "supabase/functions/sicof/source-cache.mjs": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268",
+      "supabase/functions/sicof/exports.mjs": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f",
+      "scripts/test-sicof-source-cache-worker.js": "2c291c6119b75595a7aba1ba8da645c3a12ff2f8bb0bf5f352d056ad1ce29e1f",
+      "scripts/test-sicof-export-fast-path.js": "9db8b1460280fc3c3f31d41cc91087c04c3bbf130088d04fb9ec36526259932b"
+    }
+  },
+  "ui": {
+    "status": "PASS",
+    "network": "BLOCKED",
+    "productionWrites": 0,
+    "checks": [
+      "all original tabs and additional period report",
+      "saver transaction opens authorized classification and preserves detail on cancel",
+      "scenario full command and fingerprint",
+      "exports preserve backend fingerprint and filters",
+      "cost and bank drafts require explicit combined calculation",
+      "loan charts and saver withdrawals visible",
+      "texts/tab order persisted via repository",
+      "drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry",
+      "source error removes stale amounts",
+      "savings/current and original reports remain downloadable during Google outage",
+      "matrix complete metadata and server percentage units",
+      "projection net pool and conditional percentage visible",
+      "payment/arrears/matrix totals reflect filters without reallocation",
+      "unknown components remain unknown in filtered totals",
+      "matrix year removes loans without dates in that year",
+      "report semester selects an explicit year",
+      "account global availability shown without summing periods",
+      "loan principal interest term remaining and progress preserved",
+      "duplicate-date matrix evidence never selects first payment",
+      "arrears uses authoritative status",
+      "context change clears private UI",
+      "behavior detail",
+      "responsive 320/430/1440",
+      "no browser errors",
+      "eligibility preserves verified yes verified no and pending review in table and modal",
+      "unknown months stay unknown while verified zero months remain zero",
+      "base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load",
+      "base XLSX excludes presentation filters and waits for unapplied changes",
+      "source-changed export displays explicit error",
+      "source expiry disables export/save without polling",
+      "manual Google refresh sends one explicit command",
+      "ordinary apply/retry does not force source refresh",
+      "timeout displays error without automatic retries"
+    ]
+  },
+  "additionalExecutedTests": [
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "status": "PASS",
+      "checks": "Public artifact allowlist and PWA"
+    },
+    {
+      "command": "node scripts/test-sicof-read-deadline.js",
+      "status": "PASS",
+      "checks": "Success, failure, hung response, late completion, separate normal/manual budgets"
+    },
+    {
+      "command": "node scripts/test-sicof-read-performance.js",
+      "status": "PASS",
+      "checks": "Real engine/decoder equivalence, details/fingerprints, compact schema validation"
+    },
+    {
+      "command": "node scripts/test-sicof-integration-browser.js",
+      "status": "PASS",
+      "checks": "Sidebar, roles, Finance queue/behavior, withdrawal provenance and self Savings; network blocked"
+    }
+  ],
+  "offlineRecordedResponse": {
+    "status": "PASS",
+    "sourceBytes": 10907937,
+    "networkRequests": 0,
+    "productionWrites": 0,
+    "screenshots": 0,
+    "scenarios": [
+      {
+        "mode": "normal",
+        "parseMs": 142.59999990463257,
+        "decodeMs": 203.5,
+        "counts": {
+          "loans": 2373,
+          "payments": 5656,
+          "reportRows": 841,
+          "resultRows": 354,
+          "scheduleRows": 18534,
+          "uniqueDates": 134
+        },
+        "calls": 1,
+        "mountToInvokeMs": 529.5999999046326,
+        "settledToReadyMs": 648.1000001430511,
+        "mountToReadyMs": 1177.7999999523163,
+        "longTasks": [
+          247,
+          203,
+          444
+        ],
+        "busy": false,
+        "alertCount": 0,
+        "metricCount": 12,
+        "populatedMetricCount": 10,
+        "exportEnabled": true,
+        "pageErrors": 0
+      },
+      {
+        "mode": "cpu4",
+        "parseMs": 300.90000009536743,
+        "decodeMs": 700.7999999523163,
+        "counts": {
+          "loans": 2373,
+          "payments": 5656,
+          "reportRows": 841,
+          "resultRows": 354,
+          "scheduleRows": 18534,
+          "uniqueDates": 134
+        },
+        "calls": 1,
+        "mountToInvokeMs": 1073.7000000476837,
+        "settledToReadyMs": 2219.100000143051,
+        "mountToReadyMs": 3292.9000000953674,
+        "longTasks": [
+          200,
+          435,
+          1784,
+          88
+        ],
+        "busy": false,
+        "alertCount": 0,
+        "metricCount": 12,
+        "populatedMetricCount": 10,
+        "exportEnabled": true,
+        "pageErrors": 0
+      },
+      {
+        "mode": "malformed",
+        "parseMs": 255.5,
+        "decodeMs": 447.2000000476837,
+        "counts": {
+          "loans": 2373,
+          "payments": 5656,
+          "reportRows": 841,
+          "resultRows": 354,
+          "scheduleRows": 18534,
+          "uniqueDates": 134
+        },
+        "calls": 1,
+        "mountToInvokeMs": 811.5,
+        "settledToReadyMs": 7.200000047683716,
+        "mountToReadyMs": 818.7999999523163,
+        "longTasks": [
+          89,
+          364,
+          117
+        ],
+        "busy": false,
+        "alertCount": 1,
+        "metricCount": 12,
+        "populatedMetricCount": 0,
+        "exportEnabled": false,
+        "pageErrors": 0
+      },
+      {
+        "mode": "wrongContext",
+        "parseMs": 209.90000009536743,
+        "decodeMs": 363.69999980926514,
+        "counts": {
+          "loans": 2373,
+          "payments": 5656,
+          "reportRows": 841,
+          "resultRows": 354,
+          "scheduleRows": 18534,
+          "uniqueDates": 134
+        },
+        "calls": 1,
+        "mountToInvokeMs": 736.3000001907349,
+        "settledToReadyMs": 7.299999952316284,
+        "mountToReadyMs": 743.6000001430511,
+        "longTasks": [
+          50,
+          439
+        ],
+        "busy": false,
+        "alertCount": 1,
+        "metricCount": 12,
+        "populatedMetricCount": 0,
+        "exportEnabled": false,
+        "pageErrors": 0
+      },
+      {
+        "mode": "pending",
+        "parseMs": 248.09999990463257,
+        "decodeMs": 401.60000014305115,
+        "counts": {
+          "loans": 2373,
+          "payments": 5656,
+          "reportRows": 841,
+          "resultRows": 354,
+          "scheduleRows": 18534,
+          "uniqueDates": 134
+        },
+        "calls": 1,
+        "mountToInvokeMs": 575.8999998569489,
+        "settledToReadyMs": null,
+        "mountToReadyMs": 1897.8999998569489,
+        "longTasks": [
+          50,
+          268,
+          51
+        ],
+        "busy": false,
+        "alertCount": 1,
+        "metricCount": 12,
+        "populatedMetricCount": 0,
+        "exportEnabled": false,
+        "pageErrors": 0,
+        "pendingEvidence": {
+          "stillBusy": true,
+          "alertVisible": false,
+          "calls": 1
+        }
+      }
+    ],
+    "notes": [
+      "Offline recorded response; no transfer/server/auth latency included",
+      "Pending rejection does not set the fulfilled-response timestamp; settledToReadyMs is not applicable"
+    ]
+  },
+  "build": {
+    "version": 320,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "0c9c521eb63e4896a03867689815f5ef10c695bafde3f7eb3649b7d3e7ee367a"
+  },
+  "migrations": [
+    {
+      "version": "20261003000600",
+      "status": "PASS",
+      "financial_writes": 0,
+      "ledger_unchanged": true,
+      "protected_tables": 23,
+      "protected_functions": 182,
+      "scheduled_jobs_added": 0,
+      "existing_functions_unchanged": true,
+      "table_security_constraints_indexes_triggers_unchanged": true
+    },
+    {
+      "version": "20261003000700",
+      "status": "PASS",
+      "financial_writes": 0,
+      "ledger_unchanged": true,
+      "protected_tables": 23,
+      "protected_functions": 182,
+      "scheduled_jobs_added": 0,
+      "existing_functions_unchanged": true,
+      "table_security_constraints_indexes_triggers_unchanged": true
+    }
+  ],
+  "configuration": {
+    "status": "PASS",
+    "vault_entries": 3,
+    "project_secret_added": true,
+    "existing_secrets_unchanged": true
+  },
+  "deployment": {
+    "status": "PASS",
+    "priorVersion": 10,
+    "version": 11,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "12d0b041fdc454f4228b2db1b35cce0100c0a7933783f906c28ffac562913218"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "ce694179427907049103328631dc1b5d400072e2ab5a26ad4ac02e8c7b75a1ef"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "1cf91dbdc4c3c886e5604236cfa8aa8424f6b779fd44a716f29fbb4ff0dd4ae7"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+      },
+      {
+        "file": "source-cache.mjs",
+        "sha256": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268"
+      }
+    ],
+    "productionFinancialReads": 0,
+    "financialWrites": 0
+  },
+  "initialObservation": {
+    "status": "PASS",
+    "requestId": 1329,
+    "meta": {
+      "state": "READY",
+      "version": 1,
+      "observed_at": "2026-10-04T03:45:53.817+00:00",
+      "expires_at": "2026-10-04T03:50:53.817+00:00",
+      "last_attempt_at": "2026-10-04T03:45:28.115361+00:00",
+      "last_success_at": "2026-10-04T03:45:57.689269+00:00",
+      "last_error": null,
+      "refreshing": false
+    },
+    "financialWrites": 0
+  },
+  "schedule": {
+    "status": "PASS",
+    "jobId": 7,
+    "schedule": "*/4 * * * *",
+    "maximumScheduledSourceReadsPerDay": 360
+  },
+  "live": {
+    "status": "PASS",
+    "workspace": {
+      "http": 200,
+      "total_ms": 8368,
+      "decoded_bytes": 10908158,
+      "sourceVersion": 1,
+      "observed_at": "2026-10-04T03:45:53.817+00:00",
+      "expires_at": "2026-10-04T03:50:53.817+00:00"
+    },
+    "export": {
+      "http": 200,
+      "total_ms": 7774,
+      "sheets": 1,
+      "columns": 15,
+      "dataRows": 1684,
+      "from": "2026-07-05",
+      "to": "2026-12-30",
+      "fund": "Caja de Ahorro",
+      "requestedFrom": "2026-07-01",
+      "requestedTo": "2026-12-31"
+    },
+    "requests": {
+      "login": 1,
+      "workspace": 1,
+      "export": 1
+    },
+    "googleReadsDuringConsultation": 0,
+    "financialWrites": 0,
+    "limitation": "One measured request per operation, not a latency guarantee or p95."
+  },
+  "protectedFiles": [
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "unchanged": true,
+      "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "unchanged": true,
+      "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "unchanged": true,
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "unchanged": true,
+      "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "unchanged": true,
+      "sha256": "b000c98ce6690968468a472d8f1d6f4b3963bc3266823ce8046100db463934d4"
+    },
+    {
+      "file": "app/savings-repository.js",
+      "unchanged": true,
+      "sha256": "9d697c710d72579dcb41eb5f275a6055ea8508bdf2b9ceefba9504de83f083bd"
+    },
+    {
+      "file": "app/sicof-payment-behavior.jsx",
+      "unchanged": true,
+      "sha256": "7396554c2e1a1b45c89d67e1d540db55bacc492eec937045f0936c008e5f5465"
+    }
+  ],
+  "review": {
+    "reviewer": "sicof_base_xlsx_review",
+    "verdict": "APPROVED",
+    "scope": "Independent post-close audit of 006/007, backend, final TTL guard, UI, permission/fingerprint and aggregate evidence; publication receipt retained privately"
+  },
+  "schedulerVerification": {
+    "status": "PASS",
+    "jobs": 1,
+    "schedule": "*/4 * * * *",
+    "active": true,
+    "last_job_status": "succeeded",
+    "meta": {
+      "state": "READY",
+      "version": 1,
+      "expires_at": "2026-10-04T03:57:27.596+00:00",
+      "last_error": null,
+      "refreshing": false,
+      "observed_at": "2026-10-04T03:52:27.596+00:00",
+      "last_attempt_at": "2026-10-04T03:52:01.38814+00:00",
+      "last_success_at": "2026-10-04T03:52:31.535989+00:00"
+    },
+    "automaticRefreshAdvancedObservation": true,
+    "verificationGoogleReads": 0,
+    "financialWrites": 0
+  },
+  "architecture": {
+    "status": "PASS",
+    "commands": [
+      "python scripts/generate-architecture-registry.py generate",
+      "python scripts/generate-architecture-registry.py check",
+      "python scripts/test-architecture-registry.py"
+    ],
+    "check": "FRESH",
+    "note": "Final operational receipts are followed by an incremental refresh of the two evidence/audit files."
+  },
+  "financialWrites": 0,
+  "googleSourceEdits": 0,
+  "sharedBrowserRepositoryEdits": 0,
+  "globalImageRegression": "NOT APPLICABLE: focal SICOF UI/backend/private source cache, unrelated bundle chunks identical, no shared repository/assets/Auth/routing/SW logic changes",
+  "limitations": [
+    "Measured 8.368s workspace and 7.774s XLSX are individual requests, not instant-loading or p95 guarantees.",
+    "Every four-minute refresh may observe changes up to the five-minute freshness limit; source failures or expired copies remain explicit.",
+    "Manual Google refresh still depends on the upstream read latency. In-flight lease prevents duplicates; failed/manual overlap may require another tick.",
+    "Browser wait deadlines do not cancel server execution; there is no automatic retry or polling.",
+    "Isolated concurrency tests serialize contenders in PGlite; real exclusion follows PostgreSQL row locks and lease tokens, not a multi-connection production race test.",
+    "BEHAVIOR used by Finance remains on its existing direct reader. This task optimizes SICOF workspace/calculation/export.",
+    "Freshness is revalidated before returning server data and independently before UI export/save; network transit itself cannot be made instantaneous."
+  ]
+}

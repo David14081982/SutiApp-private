@@ -3999,3 +3999,10 @@ browser interactions and Pages validation PASS. Focal bundle v319 preserves all
 unrelated chunks. Edge v9 ACTIVE; zero production financial reads/writes for tests.
 Independent reviewer APPROVED; no financial engine, permissions, Google transport
 or persisted data changes. Audit/evidence: H-SICOF-SOURCE-PERIOD-XLSX-001.
+
+
+## 2026-10-03 — H-SICOF-RESPONSE-LATENCY-001
+
+Owner authorized a private source observation valid for at most five minutes. SICOF now reuses that verified Google observation for workspace/calculation/XLSX while savings remains canonical/live. One shared four-minute refresh, manual reload, lease/token controls, strict expiry and explicit timestamps replace repeated upstream queries. Source changes retain fingerprint invalidation; stale/failed data never become an unlabelled fallback. Raw one-sheet A:O export preserves exact applied funds/dates and skips unnecessary financial recomputation.
+
+Additive migrations006/007 and exact recovery tested; both installations conserved23 financial tables/182 existing functions. Edgev11 JWT ACTIVE, initial actual job PASS, one cron enabled. Real workspace8.368s and XLSX7.774s (1,684 selected-period Caja rows, one15-column sheet): faster but not instantaneous or a latency guarantee. SQL19 groups, backend/financial equivalence, UI/integration/deadlines/Pages PASS. Focalv320 preserves unrelated chunks; independent review APPROVED. No financial/history/Google edits. Audit/evidence: H-SICOF-RESPONSE-LATENCY-001.

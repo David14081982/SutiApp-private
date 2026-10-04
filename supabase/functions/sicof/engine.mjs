@@ -112,8 +112,18 @@ function validateCosts(input) {
     return {id:c.id,concept:c.concept.trim(),amount:c.amount,source:enumValue(c.source,['pool','reserve']),status:enumValue(c.status,['estimated','committed','paid']),date:c.date?date(c.date):null};
   });
 }
-export function calculateSicof(context, loanAnalysis, input) {
+// Shared input validation for simulations and source-only exports. This does
+// not derive a balance or allocation; normalized values retain their existing
+// representation so both paths produce the same calculation fingerprint.
+export function validateCalculationInputs(input) {
   const s=validateSettings(input.settings), costs=validateCosts(input.costs||[]), bank=input.bank||{amount:null};
+  const declared=bank.amount==null||bank.amount===''?null:cents(bank.amount);
+  if (declared!=null&&(declared<0||!bank.declaredBy?.trim()||!bank.date)) throw Error('SICOF_BANK_DECLARATION_REQUIRED');
+  if (bank.date) date(bank.date);
+  return {settings:s,costs,bank};
+}
+export function calculateSicof(context, loanAnalysis, input) {
+  const {settings:s,costs,bank}=validateCalculationInputs(input);
   if (!context || !Array.isArray(context.participants) || !loanAnalysis || !Array.isArray(loanAnalysis.payments)) throw Error('SICOF_SOURCE_INVALID');
   const today=date(context.today), alerts=[];
   const addAlert=(code,text,severity='warning')=>alerts.push({code,text,severity});
@@ -184,8 +194,6 @@ export function calculateSicof(context, loanAnalysis, input) {
   if (reviewCount) addAlert('SAVINGS_REVIEW',reviewCount+' ahorradores tienen datos pendientes de conciliación. La tasa calculada usa únicamente bases verificables y es provisional.','error');
   if (!base) addAlert('NO_VERIFIED_BASIS','No hay base elegible verificable para calcular una tasa.','error');
   const declared=bank.amount==null||bank.amount===''?null:cents(bank.amount);
-  if (declared!=null&&(declared<0||!bank.declaredBy?.trim()||!bank.date)) throw Error('SICOF_BANK_DECLARATION_REQUIRED');
-  if (bank.date) date(bank.date);
   // A paid cost on/before the bank declaration is already reflected there.
   // It still affects profit but is not deducted from cash a second time.
   const futureCashCosts=sum(costs.filter(c=>c.status!=='paid'||!c.date||!bank.date||c.date>bank.date).map(c=>cents(c.amount)));

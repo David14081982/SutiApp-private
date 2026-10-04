@@ -142,3 +142,12 @@ values, identity, date semantics and source fingerprints. No fallback was added.
 ## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
 
 La nueva decisión operativa de Ahorro aplica únicamente al dominio Supabase canónico: se abona al vencimiento el importe programado vigente o su excepción explícita. No se escriben Google Sheets, Apps Script, fórmulas, triggers, préstamos ni el histórico Excel. Las políticas financieras de rendimiento existentes permanecen. La pantalla no fabrica saldos sumando previsiones. Los datos históricos/cierres protegidos no se alteran para resolver pendientes.
+
+## H-SICOF-RESPONSE-LATENCY-001 — frecuencia de lectura autorizada
+
+El propietario autorizó una copia privada con antigüedad máxima de cinco minutos exclusivamente para la fuente fija `HISTORIAL P V2` de `Sutiapp Final`. El lector autenticado existente conserva contrato, columnas, valores, fechas y huella. No se modifican Google Sheets, Apps Script, fórmulas, triggers, amortizaciones, writers ni credenciales OAuth compartidas.
+
+El candidato programa una lectura global cada cuatro minutos y permite actualización manual mediante la misma lease de 90 segundos y cooldown manual de 60 segundos; cada visita deja de disparar su propia lectura Google. El job periódico no descarta su turno por edad reciente de la copia. Las actualizaciones se validan antes de publicar y los resultados tardíos se rechazan. Si la fuente falla o vence, SICOF lo comunica sin recurrir a otro origen ni seguir calculando con la copia vencida. El intervalo programado no garantiza disponibilidad continua ante fallos o solapamientos. La migración 006 está aplicada; corrección de cadencia 007, configuración y publicación todavía pendientes.
+
+
+Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.

@@ -14,11 +14,11 @@ Verification: no network calls for local filter changes; browser-visible timing 
 ## Verification and release result
 
 H-SICOF-FILE-WORKFLOW-001 RESULT
-Status: PASS (implementation/build and Edge v14 verified; frontend publication PENDING post-push verification).
+Status: PASS (implementation, build, Edge v14 and published frontend v322 verified).
 Files changed: focal engine, simulation, generated Worker/client, file adapter/flow and Admin integration; bounded file handler/entrypoint; local ExcelJS vendor/license and build allowlist; focal tests; generated bundle v322/HTML/SW cachebusters; source/decision/manual/evidence/changelog and derived Registry.
 Source-of-truth verdict: PASS. Google loans and Supabase savings remain authoritative. FILE is an explicit, dated scenario derivative in private session memory; no financial writer, persistent browser balance, fallback or polling added.
 Invariant verdict: PASS. Full serialized engine and fingerprints match frozen c55ef8f in58 synthetic and13 full-size cases; independent reviewer also compared240 cases with cache eviction. Exact historical origins, withdrawals, cent allocation, policy exclusions, retentions and costs conserved.
-Build: PASS. Worker generation/hash check, focal bundle preserving every unrelated chunk, Pages allowlist and vendor integrity. Registry generation/freshness/incremental/determinism PASS; evidence-only delta refresh follows.
+Build: PASS. Worker generation/hash check, focal bundle preserving every unrelated chunk, Pages allowlist and vendor integrity. Registry generation/freshness/incremental/determinism PASS; final receipt changes refresh the derived index only.
 Tests: PASS. Financial/backend/export/cache regressions,10 file groups,17 simulation cases,8 simulation handler groups,8 complete file browser groups and9 real Worker browser groups. All eight original sections retained. Private synthetic screenshot inspected; existing responsive regressions320/430/1440 and initial file layout checks pass.
 Security: PASS. Backend checks precede source/file use; every permitted ZIP part has actual streamed expansion limits before ExcelJS; altered headers/rows/types/order, formulas, links, extra sheets/cells and oversized files reject. File/context hashes are reconstructed for server operations. Session changes clear worker and pending replies.
 Legacy impact: Implementation-only calculation/indexing; zero schema, financial/history, Google formulas or source writes. Full loan history remains separate from selected payment evidence. Local and server FILE fund/date selection match, including charts/metrics.
@@ -29,3 +29,6 @@ Evidence: ../qa/evidence/sicof-file-workflow.json; operational addendum ../manua
 The first live import rejected an uppercase Google fingerprint with SICOF_FILE_SOURCE_INVALID before processing. Corrected only hexadecimal shape validation to accept the original source contract's case; exact equality remains mandatory. Added uppercase import/revalidation test, deployed v14 and verified actual download/import. Two bounded live rounds in total, no automated retries or financial writes. Independent review defects (all ZIP parts bounded, FILE fund scope) were fixed and reverified before frontend publication.
 
 Rollback: restore focal frontend v321 and deploy previous SICOF Edge v12 from the retained private archive. No financial data rollback is needed. Global image regression NOT APPLICABLE under the focal generated-artifact exception.
+
+
+Publication receipt: implementation commit `2ea631f85065e326b09e07348bcad935f9d79e3d` pushed to main; Pages run37183422592 succeeded. GitHub Pages and https://sutiapp.com/ both serve v322 with exact reviewed bundle, Worker and ExcelJS SHA256 hashes (8 static requests, no financial read/write). Receipt embedded in `../qa/evidence/sicof-file-workflow.json`. Independent architect review APPROVED; owner decision NO. Root focal sources synchronized with unrelated changes/global generated bundle preserved.

@@ -278,10 +278,40 @@
     "DOWNLOAD_SOURCE still uses existing complete authorized context RPC; no new permission API or migration was introduced."
   ],
   "publication": {
+    "status": "PASS",
     "frontendVersion": 322,
     "backendVersion": 14,
-    "staticReceipt": "Pending post-push verification against GitHub Pages and sutiapp.com; no additional financial reads required",
-    "status": "PENDING"
+    "implementationCommit": "2ea631f85065e326b09e07348bcad935f9d79e3d",
+    "pagesRun": 37183422592,
+    "pagesConclusion": "success",
+    "staticReceipt": {
+      "status": "PASS",
+      "sites": [
+        {
+          "base": "https://david14081982.github.io/SutiApp-private/",
+          "status": "PASS",
+          "version": 322,
+          "hashes": {
+            "bundle.js": "4a639499930de5b6508bc576ad69c8b7642e1a75045d3d03b038e2f437fa71fe",
+            "sicof-simulation-worker.js": "fee3e436a73de05569a57a036de5cc32b3d6aa26f3f3dcfaa22188b74abf5bb4",
+            "vendor/exceljs-4.4.0/exceljs.min.js": "7e49da68588e250dbb8bba190d2caa8ab3787cc0284bda1d8b2f805c4df742c9"
+          }
+        },
+        {
+          "base": "https://sutiapp.com/",
+          "status": "PASS",
+          "version": 322,
+          "hashes": {
+            "bundle.js": "4a639499930de5b6508bc576ad69c8b7642e1a75045d3d03b038e2f437fa71fe",
+            "sicof-simulation-worker.js": "fee3e436a73de05569a57a036de5cc32b3d6aa26f3f3dcfaa22188b74abf5bb4",
+            "vendor/exceljs-4.4.0/exceljs.min.js": "7e49da68588e250dbb8bba190d2caa8ab3787cc0284bda1d8b2f805c4df742c9"
+          }
+        }
+      ],
+      "staticRequests": 8,
+      "productionFinancialReads": 0,
+      "financialWrites": 0
+    }
   },
   "hashes": {
     "app/sicof-admin.jsx": "1728e3008d3f3bda12acfadb31e1989aab0b79b64ece6b1c29e999ea17c690e3",
@@ -300,5 +330,15 @@
     "freshness": "FRESH",
     "command": "python scripts/test-architecture-registry.py",
     "checks": "generation, freshness, lookup, incremental add/remove, secrets, determinism"
+  },
+  "review": {
+    "skill": "sutiapp-architect-reviewer",
+    "verdict": "APPROVED",
+    "ownerDecision": false,
+    "closedFindings": [
+      "bounded actual expansion for all XML ZIP parts",
+      "FILE fund/date selection equivalent across preview and server",
+      "uppercase canonical fingerprint shape accepted without normalization"
+    ]
   }
 }

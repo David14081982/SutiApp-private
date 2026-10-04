@@ -24,7 +24,17 @@ const root=path.resolve(__dirname,'..');
   await page.evaluate(()=>{pendingFixture=false;renderCase();});await page.getByText('Synthetic evidence test',{exact:true}).waitFor();
   assert.equal(await page.locator('.sicof-metrics').getByText('Pendiente',{exact:true}).count(),0);
   assert((await page.locator('.sicof-metrics').innerText()).includes('$0.00'));assert.deepEqual(errors,[]);
-  const proof={status:'PASS',network:'BLOCKED',checks:['12 KPI and 8 tabs preserved','pending basis and yield never displayed as confirmed zero','known zero remains numeric','source and reserve semantics visible','expandable evidence counts','responsive 1440/430/320 with no metric overflow','no browser errors'],productionWrites:0};
+  await page.evaluate(()=>{
+   const original=SicofRepository.workspace;
+   SicofRepository.workspace=async input=>{const data=await original(input);Object.assign(data.result,{base:67.21,rate:178871.4307,annualRate:535000,nqual:1,reviewCount:328,distributed:120225.06});return data;};renderCase();
+  });
+  await page.getByText('Provisional: 1 ahorradores; 328 pendientes.',{exact:true}).waitFor();
+  assert.equal(await page.getByText('Tasa del periodo · provisional',{exact:true}).count(),1);
+  assert.equal(await page.getByText('Base parcial: 1 ahorradores.',{exact:true}).count(),1);
+  assert.equal(await page.getByText('Simulación parcial; no es un reparto aprobado.',{exact:true}).count(),1);
+  assert.equal(await page.locator('.sicof-metrics > *').count(),12);assert.equal(await page.getByRole('tab').count(),8);
+  assert(await page.locator('.sicof-metrics').evaluate(el=>el.scrollWidth<=el.clientWidth+2));assert.deepEqual(errors,[]);
+  const proof={status:'PASS',network:'BLOCKED',checks:['12 KPI and 8 tabs preserved','pending basis and yield never displayed as confirmed zero','known zero remains numeric','partial rate, base and distribution explicitly provisional with counts','source and reserve semantics visible','expandable evidence counts','responsive 1440/430/320 with no metric overflow','no browser errors'],productionWrites:0};
   fs.writeFileSync(path.join(out,'ui.json'),JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,12 +1,15 @@
 {
   "status": "PASS",
-  "baselineSha256": "813c606d88591df084b18cb95a93982b0bc6e408b015641cc3f0efe9796d3226",
+  "baselineCommit": "aea3c6c66f93081a8c8b69b6b170c0f605ebb138",
   "bundleSha256": "ff1fa4e485a01801c5f592aef0a1d428234564fd5129d863265162cb9253f768",
   "changedChunks": [
     "sicof-simulation-client.js",
     "sicof-admin.jsx"
   ],
   "preservedChunks": 150,
+  "uiMetrics": 12,
+  "tabs": 8,
   "workerSha256": "97b705f201b77263ae36c88f1d550b07a6f0e8a65c0c270b04ad54cdaa50fee9",
-  "productionDeployment": false
+  "engineVersion": "SICOF_2026_10_04_V4",
+  "dataWrites": 0
 }

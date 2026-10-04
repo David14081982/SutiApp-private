@@ -5,6 +5,7 @@
     "12 KPI and 8 tabs preserved",
     "pending basis and yield never displayed as confirmed zero",
     "known zero remains numeric",
+    "partial rate, base and distribution explicitly provisional with counts",
     "source and reserve semantics visible",
     "expandable evidence counts",
     "responsive 1440/430/320 with no metric overflow",

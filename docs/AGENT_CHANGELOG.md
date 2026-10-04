@@ -4029,3 +4029,7 @@ Opción 1 autorizada: lector privado SICOF conecta importes esperados sólo con 
 ## H-SICOF-SAVINGS-AUTHORITY-001 — 2026-10-04
 
 Ratificación owner persistida en AGENTS,DECISIONS,SOURCE_OF_TRUTH,INVARIANTS: todos los valores de Ahorro Supabase se aceptan; sólo la encargada corrige y no se vuelve a pedir validación. MotorV4 elimina bloqueos por expected histórico ausente y observación externa pendiente, sin modificar importes/fechas ni expected. Pruebas focales,simulación,exportaciones,worker y Pages PASS. Comparación real conserva entradas y dinero; saldo final obtiene243elegibles. Promedio aún tiene base parcial por fechas/componentes históricos ausentes; no se presenta como tasa completa. Candidato local sin publicar; cero escrituras financieras. Evidencia/auditoría: H-SICOF-SAVINGS-AUTHORITY-001.
+
+## H-SICOF-SAVINGS-AUTHORITY-RELEASE-001 — publicación autorizada 2026-10-04
+
+El propietario ordena «publicalo y haz commit push». Se publica el candidato de aceptación de valores Supabase; UI identifica explícitamente tasas, base y reparto provisionales con cantidad de cuentas. No cambia valores, método seleccionado ni reglas. Respaldo Edge 15, compilación V4, build exacto y pruebas UI PASS; verificación local/global y activación documentadas en docs/audits/H-SICOF-SAVINGS-AUTHORITY-RELEASE-001.md.

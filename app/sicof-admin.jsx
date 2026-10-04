@@ -214,41 +214,43 @@
   function Workbench({ app, onBack, header, identity }) {
     const [settings, setSettings] = React.useState(draftSettings), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
     const [data, setData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [loadError, setLoadError] = React.useState(''), [revision, setRevision] = React.useState(0);
-    const [result, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
+    const [storedResult, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
+    const [appliedKey, setAppliedKey] = React.useState(null);
+    const draftKey = JSON.stringify({ settings, costs, bank });
+    const draftPending = appliedKey !== null && draftKey !== appliedKey;
+    const result = draftPending ? null : storedResult;
     const [tab, setTab] = React.useState('resumen'), [order, setOrder] = React.useState(TABS.map(item => item.id)), [texts, setTexts] = React.useState({}), [editing, setEditing] = React.useState(null);
     const [busy, setBusy] = React.useState(''), [notice, setNotice] = React.useState(null), [detail, setDetail] = React.useState(null), [loan, setLoan] = React.useState(null), [attribution, setAttribution] = React.useState(null), [search, setSearch] = React.useState('');
     const [paymentFilter, setPaymentFilter] = React.useState({ funds: null, q: '', from: '', to: '' }), [arrearsFilter, setArrearsFilter] = React.useState({ funds: null, q: '', severity: '' }), [matrixFilter, setMatrixFilter] = React.useState({ funds: null, q: '', year: '' }), [reportFilter, setReportFilter] = React.useState({ q: '', year: '', semester: '' });
     const [costDraft, setCostDraft] = React.useState({ concept: '', amount: '', source: 'pool', status: 'estimated', date: '' });
-    const live = React.useRef(true), loadSequence = React.useRef(0), calcSequence = React.useRef(0), initialized = React.useRef(false), drag = React.useRef(null), busyRef = React.useRef(false);
+    const live = React.useRef(true), loadSequence = React.useRef(0), initialized = React.useRef(false), drag = React.useRef(null), busyRef = React.useRef(false), requestBusy = React.useRef(false);
     const repo = () => window.SicofRepository;
     const valid = () => live.current && window.SicofView.contextKey() === identity;
     const canConfigure = Boolean(app.admin && app.admin.has('savings.config'));
     const copy = key => texts[key] || TEXTS[key];
     const caption = value => { if (typeof value !== 'string') return value; if (CAPTION_KEYS[value]) return copy(CAPTION_KEYS[value]); const prefix = Object.keys(CAPTION_KEYS).find(text => text.endsWith(' ') && value.startsWith(text)); return prefix ? copy(CAPTION_KEYS[prefix]) + value.slice(prefix.length) : value; };
-    React.useEffect(() => () => { live.current = false; loadSequence.current++; calcSequence.current++; }, []);
+    React.useEffect(() => () => { live.current = false; loadSequence.current++; }, []);
+    function refresh() { if (!requestBusy.current && !busyRef.current) { requestBusy.current = true; setRevision(value => value + 1); } }
     React.useEffect(() => {
       const sequence = ++loadSequence.current; setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
-      const timer = setTimeout(() => Promise.resolve().then(() => repo().load({ from: settings.periodIni, to: settings.periodFin })).then(value => {
+      requestBusy.current = true; setCalculation('loading'); setCalculationError('');
+      const command = { settings, costs, bank }, commandKey = JSON.stringify(command);
+      const timer = setTimeout(() => Promise.resolve().then(() => repo().workspace(command)).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
+        const value = response.workspace;
         setData(value); setPhase('ready');
+        setAppliedKey(commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        setCalculationError(response.calculation_error ? errorText(Error(response.calculation_error)) : '');
         if (!initialized.current) {
           initialized.current = true;
           const preferences = value.preferences || {}; setTexts(preferences.texts || {});
           if (Array.isArray(preferences.tabOrder)) setOrder([...new Set(preferences.tabOrder.concat(TABS.map(item => item.id)))].filter(id => TABS.some(item => item.id === id)));
-          if (value.settings) setSettings(previous => Object.assign({}, previous, value.settings));
         }
-      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setLoadError(errorText(error)); } }), 200);
+      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), 200);
       return () => { clearTimeout(timer); loadSequence.current++; };
-    }, [settings.periodIni, settings.periodFin, revision, identity]);
-    React.useEffect(() => {
-      const sequence = ++calcSequence.current; setResult(null); setCalculationError(''); setDetail(null);
-      if (phase !== 'ready') { setCalculation('idle'); return undefined; }
-      setCalculation('loading');
-      const timer = setTimeout(() => Promise.resolve().then(() => repo().calculate({ settings, costs, bank })).then(value => {
-        if (valid() && sequence === calcSequence.current) { setResult(value); setCalculation('ready'); }
-      }, error => { if (valid() && sequence === calcSequence.current) { setCalculation('error'); setCalculationError(errorText(error)); } }), 300);
-      return () => { clearTimeout(timer); calcSequence.current++; };
-    }, [settings, costs, bank, data, phase, identity]);
+      // Draft edits are intentionally not dependencies: explicit Apply batches them.
+    }, [revision, identity]);
+    React.useEffect(() => { if (draftPending) setDetail(null); }, [draftKey, draftPending]);
     function change(key, value) { setSettings(previous => Object.assign({}, previous, { [key]: value })); setNotice(null); }
     async function operation(name, action, after) {
       if (busyRef.current) return;
@@ -272,7 +274,7 @@
     const fundOptions = (data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
     const rows = result && result.rows || [], loans = data && data.loans || [], payments = data && data.payments || [], periods = data && data.periods || [], report = data && data.report || {};
     const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
-    const exportBusy = Boolean(busy) || calculation !== 'ready';
+    const exportBusy = Boolean(busy) || calculation !== 'ready' || !result;
     const input = (key, type, extra) => h('input', Object.assign({ type: type || 'number', value: settings[key], 'aria-label': key, onChange: event => change(key, type === 'date' || type === 'text' ? event.target.value : event.target.value === '' ? '' : Number(event.target.value)) }, extra));
     const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
     const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
@@ -389,13 +391,14 @@
     const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
     return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
       h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Información consultada: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX') : 'Fecha no informada'))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => setRevision(value => value + 1) }, 'Actualizar'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Información consultada: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX') : 'Fecha no informada'))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: refresh }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
         h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
         data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
         phase === 'loading' && h('div', { className: 'sicof-status', role: 'status' }, 'Consultando ahorro y pagos registrados…'),
-        phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: () => setRevision(value => value + 1) }, 'Reintentar')),
+        phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
         calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),
-        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: () => setSettings(previous => Object.assign({}, previous)) }, 'Reintentar cálculo')),
+        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar cálculo')),
+        draftPending && h('div', { className: 'sicof-status', role: 'status' }, 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
         notice && h('div', { className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'), role: notice.level === 'error' ? 'alert' : 'status' }, notice.message),
         h('section', { id: 'sicof-pane-' + tab, role: 'tabpanel', 'aria-labelledby': 'sicof-tab-' + tab, 'aria-busy': phase === 'loading' || calculation === 'loading' }, panes[tab]())),
       saverDetail(), attribution && h(Attribution, { key: attribution.transactionId, ...attribution, onClose: () => setAttribution(null), onSaved: () => { setAttribution(null); setDetail(null); setNotice({ message: 'Clasificación registrada sin modificar el saldo.' }); setRevision(value => value + 1); } }), loan && h(window.SicofLoanDetail, { loan, onClose: () => setLoan(null) }),

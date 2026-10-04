@@ -26,7 +26,8 @@ async function main() {
       window.requestFixture = { id: 'synthetic-request', participant_id: 'synthetic-person', saver_folio: 'TEST-01', folio: 'TEST-WITHDRAW', name: 'PERSONA SINTÉTICA', request_type: 'WITHDRAW', status: 'APPROVED', requested_amount: 35, can_settle: true, can_review: false, can_cancel: false, continue_saving: true };
       window.SutiSupabase = { getClient: () => ({ functions: { invoke: async (name, options) => {
         const args = options.body; edgeCalls.push(structuredClone(args)); let data;
-        if (args.action === 'LOAD') data = { source: { status: 'READY', observed_at: '2026-10-03T12:00:00Z' }, funds: [], loans: [], payments: [], participants: [], periods: [], scenarios: [], preferences: {}, report: { rows: [] } };
+        if (args.action === 'WORKSPACE') data = { workspace: { source: { status: 'READY', observed_at: '2026-10-03T12:00:00Z' }, funds: [], loans: [], payments: [], participants: [], periods: [], scenarios: [], preferences: {}, report: { rows: [] } }, result: { fingerprint: 'synthetic-result', rate: 5, pool: 0, collected: 0, projected: 0, distributed: 0, base: 0, reserve: 0, rows: [], nqual: 0, nexcl: 0, alerts: [], liquidity: {}, compliance: [] } };
+        else if (args.action === 'LOAD') data = { source: { status: 'READY', observed_at: '2026-10-03T12:00:00Z' }, funds: [], loans: [], payments: [], participants: [], periods: [], scenarios: [], preferences: {}, report: { rows: [] } };
         else if (args.action === 'CALCULATE') data = { fingerprint: 'synthetic-result', rate: 5, pool: 0, collected: 0, projected: 0, distributed: 0, base: 0, reserve: 0, rows: [], nqual: 0, nexcl: 0, alerts: [], liquidity: {}, compliance: [] };
         else if (args.action === 'BEHAVIOR') data = Object.fromEntries(args.affiliate_ids.map(id => [id, { status: 'CURRENT', label: 'Al corriente', loans: [] }]));
         else throw Error('Unexpected isolated action: ' + args.action);
@@ -75,6 +76,7 @@ async function main() {
     if (!await page.locator('[data-admin-sidebar-module=sicof]').count()) await page.locator('[data-admin-sidebar-group=finance]').click();
     await page.locator('[data-admin-sidebar-module=sicof]').click();
     await page.locator('[data-admin-view=sicof]').waitFor(); await page.getByText('5%', { exact: true }).waitFor();
+    assert.deepEqual(await page.evaluate(() => edgeCalls.map(call => call.action)), ['WORKSPACE'], 'one actual repository call, no LOAD/CALCULATE chain');
     assert.equal(await page.evaluate(() => location.hash), '#/admin/sicof');
     assert.equal(await page.locator('input[type=password]').count(), 0);
     await page.screenshot({ path: path.join(output, 'admin-sidebar.png') });

@@ -71,6 +71,7 @@
     if(window.SavingsPanelRepository)window.SavingsPanelRepository.invalidate();return result.data;
   }
   window.SicofRepository=Object.freeze({
+    workspace:values=>invoke('WORKSPACE',values),
     load:values=>invoke('LOAD',values),
     calculate:values=>invoke('CALCULATE',values),
     saveScenario:values=>invoke('SAVE_SCENARIO',{...values,key:values.key||crypto.randomUUID()}),

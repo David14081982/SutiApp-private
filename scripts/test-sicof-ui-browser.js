@@ -30,11 +30,18 @@ async function main() {
         savePreferences: async args => { calls.push({ kind: 'savePreferences', args: structuredClone(args) }); },
         getBehavior: async id => { calls.push({ kind: 'behavior', id }); return { status: 'ARREARS', label: 'Con atraso', observed_at: '2026-10-03T12:00:00Z', loans: [loanFixture] }; }
       };
+      window.SicofRepository.workspace = async args => {
+        calls.push({ kind: 'workspace', args: structuredClone(args) });
+        const workspace = await SicofRepository.load({ from: args.settings.periodIni, to: args.settings.periodFin });
+        if (failSource) return { workspace, result: null, calculation_error: 'SICOF_LOAN_SOURCE_UNAVAILABLE' };
+        return { workspace, result: await SicofRepository.calculate(args) };
+      };
       window.ui = ReactDOM.createRoot(document.getElementById('root'));
       window.mount = () => ui.render(React.createElement(SicofAdminModule, { app: { admin: { phase: 'authorized', has: () => true } }, onBack: () => {}, header: ({ title }) => React.createElement('div', null, title) })); mount();
     });
     await page.waitForFunction(() => calls.some(item => item.kind === 'calculate'));
     await page.getByText('Resultado sintético para pruebas aisladas.', { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), 1);
     assert.equal(await page.getByRole('tab').count(), 8);
     assert.equal(await page.locator('input[type=password]').count(), 0);
     await page.getByText('Tasa proyectada sobre base confirmada', { exact: true }).waitFor();
@@ -83,6 +90,7 @@ async function main() {
     await page.getByLabel('Saldo bancario del fondo de ahorro', { exact: true }).fill('80');
     await page.getByLabel('Declarado por', { exact: true }).fill('RESPONSABLE SINTÉTICO');
     await page.getByLabel('Fecha de declaración', { exact: true }).fill('2026-10-03');
+    await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).click();
     await page.waitForFunction(() => calls.filter(item => item.kind === 'calculate').at(-1).args.bank.date === '2026-10-03');
     await page.getByText('Proporción por conciliar', { exact: true }).first().waitFor();
     assert.equal(await page.locator('.sicof-donut circle[stroke-dasharray]').count(), 0);
@@ -93,6 +101,7 @@ async function main() {
     await page.getByLabel('Buscar pagos', { exact: true }).fill('');
     await page.getByLabel('Concepto', { exact: true }).fill('COSTO SINTÉTICO'); await page.getByLabel('Monto', { exact: true }).fill('3');
     await page.getByRole('button', { name: '+ Agregar', exact: true }).click();
+    await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).click();
     await page.waitForFunction(() => calls.filter(item => item.kind === 'calculate').at(-1).args.costs.length === 1);
     await page.getByRole('button', { name: '↓ Descargar préstamos', exact: true }).click();
     await page.getByText('PERSONA SINTÉTICA', { exact: true }).click(); await page.getByRole('dialog').waitFor();
@@ -129,15 +138,32 @@ async function main() {
     await page.getByRole('button', { name: 'Mover Liquidez a la izquierda', exact: true }).click();
     await page.waitForFunction(() => calls.filter(item => item.kind === 'savePreferences').at(-1).args.tabOrder[0] === 'liquidez');
     await page.getByRole('tab', { name: 'Resumen', exact: true }).click();
-    await page.evaluate(() => { delayCalc = true; }); await page.getByLabel('Meses mínimos', { exact: true }).fill('7');
-    await page.waitForFunction(() => waiting.length === 1); await page.getByLabel('Meses mínimos', { exact: true }).fill('8');
-    await page.waitForFunction(() => waiting.length === 2);
-    await page.evaluate(() => waiting[1].resolve(resultFor(waiting[1].args.settings))); await page.getByText('8%', { exact: true }).waitFor();
-    await page.evaluate(() => waiting[0].resolve(resultFor(waiting[0].args.settings))); assert.equal(await page.getByText('7%', { exact: true }).count(), 0);
-    await page.evaluate(() => { delayCalc = false; failCalc = true; }); await page.getByLabel('Meses mínimos', { exact: true }).fill('9');
-    await page.getByRole('button', { name: 'Reintentar cálculo', exact: true }).waitFor();
+    const beforeEdits = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
+    await page.getByLabel('Meses m\u00ednimos', { exact: true }).fill('7');
+    await page.getByLabel('Meses m\u00ednimos', { exact: true }).fill('8');
+    await page.getByLabel('Inicio del periodo', { exact: true }).fill('2026-07-02');
+    await page.waitForTimeout(600);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), beforeEdits, 'draft edits must not query');
+    assert(await page.getByRole('button', { name: '+ Guardar escenario actual', exact: true }).isDisabled());
+    await page.evaluate(() => { delayCalc = true; });
+    await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).evaluate(el => { el.click(); el.click(); });
+    await page.waitForFunction(() => waiting.length === 1);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), beforeEdits + 1, 'double click sends one');
+    await page.getByLabel('Meses m\u00ednimos', { exact: true }).fill('9');
+    await page.evaluate(() => waiting[0].resolve(resultFor(waiting[0].args.settings)));
+    await page.getByText('Hay cambios sin aplicar.', { exact: false }).waitFor();
+    assert.equal(await page.getByText('8%', { exact: true }).count(), 0, 'late result mismatches edited draft');
+    await page.waitForTimeout(400);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), beforeEdits + 1, 'no queued automatic query');
+    await page.evaluate(() => { delayCalc = false; failCalc = true; });
+    await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).click();
+    await page.getByRole('button', { name: 'Reintentar', exact: true }).waitFor();
     assert.equal(await page.getByText('8%', { exact: true }).count(), 0);
-    await page.evaluate(() => { failCalc = false; }); await page.getByRole('button', { name: 'Reintentar cálculo', exact: true }).click(); await page.getByText('9%', { exact: true }).waitFor();
+    const failedCount = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
+    await page.waitForTimeout(400);
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), failedCount, 'no automatic retry');
+    await page.evaluate(() => { failCalc = false; });
+    await page.getByRole('button', { name: 'Reintentar', exact: true }).click(); await page.getByText('9%', { exact: true }).waitFor();
     for (const width of [320, 430, 1440]) {
       await page.setViewportSize({ width, height: 1100 });
       const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).position !== 'absolute').slice(0, 12).map(el => ({tag:el.tagName,cls:el.className,right:el.getBoundingClientRect().right})) })); assert(overflow.scroll <= width + 1, 'Page overflow: ' + JSON.stringify(overflow));
@@ -171,7 +197,7 @@ async function main() {
     await page.getByRole('button', { name: /Caja de Ahorro · test-loan/ }).click(); await page.getByRole('tab', { name: 'A · Historial real de pagos', exact: true }).waitFor();
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     assert.deepEqual(errors, []);
-    const proof = { status: 'PASS', network: 'BLOCKED', productionWrites: 0, checks: ['all original tabs and additional period report', 'saver transaction opens authorized classification and preserves detail on cancel', 'scenario full command and fingerprint', 'exports preserve backend fingerprint and filters', 'cost and bank drafts trigger backend calculation', 'loan charts and saver withdrawals visible', 'texts/tab order persisted via repository', 'late calculation rejection', 'source error removes stale amounts', 'savings/current and original reports remain downloadable during Google outage', 'matrix complete metadata and server percentage units', 'projection net pool and conditional percentage visible', 'payment/arrears/matrix totals reflect filters without reallocation', 'unknown components remain unknown in filtered totals', 'matrix year removes loans without dates in that year', 'report semester selects an explicit year', 'account global availability shown without summing periods', 'loan principal interest term remaining and progress preserved', 'duplicate-date matrix evidence never selects first payment', 'arrears uses authoritative status', 'context change clears private UI', 'behavior detail', 'responsive 320/430/1440', 'no browser errors'] };
+    const proof = { status: 'PASS', network: 'BLOCKED', productionWrites: 0, checks: ['all original tabs and additional period report', 'saver transaction opens authorized classification and preserves detail on cancel', 'scenario full command and fingerprint', 'exports preserve backend fingerprint and filters', 'cost and bank drafts require explicit combined calculation', 'loan charts and saver withdrawals visible', 'texts/tab order persisted via repository', 'drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry', 'source error removes stale amounts', 'savings/current and original reports remain downloadable during Google outage', 'matrix complete metadata and server percentage units', 'projection net pool and conditional percentage visible', 'payment/arrears/matrix totals reflect filters without reallocation', 'unknown components remain unknown in filtered totals', 'matrix year removes loans without dates in that year', 'report semester selects an explicit year', 'account global availability shown without summing periods', 'loan principal interest term remaining and progress preserved', 'duplicate-date matrix evidence never selects first payment', 'arrears uses authoritative status', 'context change clears private UI', 'behavior detail', 'responsive 320/430/1440', 'no browser errors'] };
     proof.checks.push('eligibility preserves verified yes verified no and pending review in table and modal', 'unknown months stay unknown while verified zero months remain zero');
     fs.writeFileSync(path.join(evidence, 'browser.json'), JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof));
   } finally { await browser.close(); }

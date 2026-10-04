@@ -129,6 +129,15 @@ row and overdue-loan counts. Unavailable data must be
 explicit and must never trigger a second financial source or inferred income.
 See `audits/H-SICOF-GOOGLE-RELEASE.md` for the current verified deployment state.
 
+## H-FINANCE-READ-PERFORMANCE-001 — transport only
+
+The current authenticated Apps Script SICOF reader, spreadsheet, formulas, schedules
+and shared OAuth credentials are unchanged. A bounded direct Sheets API experiment
+received SERVICE_DISABLED on the existing clasp OAuth project; its candidate code
+was excluded from the release. No Google deployment or API/scopes configuration was
+changed. Compact WORKSPACE affects only the already-read server response, preserving
+values, identity, date semantics and source fingerprints. No fallback was added.
+
 
 ## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
 

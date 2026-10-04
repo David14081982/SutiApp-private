@@ -301,3 +301,42 @@ export function workspaceView(context,analysis) {
     paymentMetrics:analysis?[{label:'Pagos registrados',value:analysis.totals.rows},{label:'Cuotas registradas',value:analysis.totals.recorded_paid,format:'money'},{label:'Capital conciliado',value:analysis.totals.reconciled_capital,format:'money'},{label:'Interés conciliado',value:analysis.totals.reconciled_interest,format:'money'},{label:'Gasto administrativo',value:analysis.totals.reconciled_admin_fee,format:'money'},{label:'Por revisar',value:analysis.totals.unresolved_rows}]:[],
     arrearsMetrics:analysis?[{label:'Préstamos con atraso',value:analysis.loans.filter(l=>l.status==='SALDO ATRASADO').length},{label:'Atraso registrado',value:total(analysis.loans.filter(l=>l.arrears!=null).map(l=>l.arrears)),format:'money'}]:[]};
 }
+
+// Transport only: no calculation or persistent state. Old clients retain the
+// original contract; opt-in clients receive repeated detail arrays only once.
+export function compactWorkspace(data) {
+  const {participants,...workspace}=data.workspace;
+  const rowSchemas=[],schemaIndexes=new Map();
+  const validKey=key=>/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(key)&&!['__proto__','prototype','constructor'].includes(key);
+  function encodeRows(rows) {
+    if(!Array.isArray(rows))throw Error('SICOF_WORKSPACE_INVALID');
+    for(const row of rows)if(!row||typeof row!=='object'||Array.isArray(row)||Object.keys(row).some(key=>!validKey(key)))throw Error('SICOF_WORKSPACE_INVALID');
+    // Undefined object fields are omitted by JSON; an undefined array element
+    // becomes null. Keep these exceptional rows in their original object form
+    // instead of changing their presence/type through the column encoding.
+    if(rows.some(row=>Object.values(row).some(value=>value===undefined||typeof value==='function'||typeof value==='symbol')))return rows;
+    return {encoding:'SICOF_ROWS_V1',rows:rows.map(row=>{
+      const keys=Object.keys(row),key=JSON.stringify(keys);
+      if(!schemaIndexes.has(key)){schemaIndexes.set(key,rowSchemas.length);rowSchemas.push(keys);}
+      return [schemaIndexes.get(key),...keys.map(name=>row[name])];
+    })};
+  }
+  const reportDetails=[],detailIndexes=new Map();
+  const report={...workspace.report,rows:(workspace.report?.rows||[]).map(row=>{
+    const detail={},summary={...row};
+    for(const key of ['movements','periods','withdrawal_periods'])if(Object.prototype.hasOwnProperty.call(row,key)){detail[key]=row[key];delete summary[key];}
+    const key=JSON.stringify([row.participant_id,detail]);
+    if(!detailIndexes.has(key)){detailIndexes.set(key,reportDetails.length);reportDetails.push(detail);}
+    return {...summary,detail_index:detailIndexes.get(key)};
+  })};
+  const loans=workspace.loans||[],loanIndexes=new Map(loans.map((loan,index)=>[loan,index]));
+  const result=data.result?{...data.result,rows:data.result.rows.map(row=>{
+    const {loans:personLoans,...summary}=row;
+    return {...summary,loan_indexes:(personLoans||[]).map(loan=>{
+      const index=loanIndexes.get(loan);if(index===undefined)throw Error('SICOF_WORKSPACE_INVALID');return index;
+    })};
+  })}:null;
+  const encodedLoans=Array.isArray(workspace.loans)?{loans:loans.map(loan=>Array.isArray(loan.schedule)?{...loan,schedule:encodeRows(loan.schedule)}:loan)}:{};
+  const encodedPayments=Array.isArray(workspace.payments)?{payments:encodeRows(workspace.payments)}:{};
+  return {...data,wire_version:'SICOF_WORKSPACE_COMPACT_V1',workspace:{...workspace,...encodedLoans,...encodedPayments,report},report_details:reportDetails,row_schemas:rowSchemas,result};
+}

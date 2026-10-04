@@ -360,6 +360,16 @@ separately from browser tests: SQL claims in a read-only transaction are not a
 claim that an ordinary-account HTTP login was tested. No credentials were created,
 reset or published for verification. See `audits/H-SICOF-LIVE-VERIFICATION.md`.
 
+## H-FINANCE-READ-PERFORMANCE-001 — read contract
+
+Conditional Savings responses still authorize the current actor/effective affiliate,
+session and exact business identity before checking a known version. Private version
+helpers and definition backups grant no API role access. Changed reader contracts
+disable reuse, and the existing client clears data on authorization/network/context
+failure. SICOF compact transport preserves JWT and capability gates, rejects malformed
+references, and uses no browser-persisted financial data. ExcelJS loads only after
+the authorized export and source checks. No shared authentication or role change.
+
 
 ## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
 

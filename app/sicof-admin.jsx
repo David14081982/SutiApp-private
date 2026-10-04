@@ -2,6 +2,56 @@
    historical attribution, exports and persistence belong to the repository. */
 (function () {
   'use strict';
+  function expandWorkspace(response) {
+    if (!response?.wire_version) return response;
+    if (response.wire_version !== 'SICOF_WORKSPACE_COMPACT_V1' || !Array.isArray(response.report_details) || !response.workspace || !Array.isArray(response.workspace.report?.rows)) throw Error('SICOF_RESPONSE_INVALID');
+    const { wire_version, report_details, row_schemas, ...data } = response;
+    const schemas = row_schemas === undefined ? [] : row_schemas;
+    const validKey = key => typeof key === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(key) && !['__proto__', 'prototype', 'constructor'].includes(key);
+    if (!Array.isArray(schemas) || schemas.some(keys => !Array.isArray(keys) || keys.some(key => !validKey(key)) || new Set(keys).size !== keys.length) || new Set(schemas.map(keys => JSON.stringify(keys))).size !== schemas.length) throw Error('SICOF_RESPONSE_INVALID');
+    function decodeRows(value) {
+      if (Array.isArray(value)) {
+        if (value.some(row => !row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).some(key => !validKey(key)))) throw Error('SICOF_RESPONSE_INVALID');
+        return value;
+      }
+      if (!value || value.encoding !== 'SICOF_ROWS_V1' || Object.keys(value).length !== 2 || !Array.isArray(value.rows)) throw Error('SICOF_RESPONSE_INVALID');
+      return value.rows.map(row => {
+        if (!Array.isArray(row) || !Number.isInteger(row[0]) || row[0] < 0 || row[0] >= schemas.length) throw Error('SICOF_RESPONSE_INVALID');
+        const keys = schemas[row[0]];
+        if (row.length !== keys.length + 1) throw Error('SICOF_RESPONSE_INVALID');
+        return Object.fromEntries(keys.map((key, index) => [key, row[index + 1]]));
+      });
+    }
+    const workspace = { ...data.workspace };
+    if (workspace.loans != null) {
+      if (!Array.isArray(workspace.loans)) throw Error('SICOF_RESPONSE_INVALID');
+      workspace.loans = workspace.loans.map(loan => {
+        if (!loan || typeof loan !== 'object' || Array.isArray(loan)) throw Error('SICOF_RESPONSE_INVALID');
+        return loan.schedule == null ? loan : { ...loan, schedule: decodeRows(loan.schedule) };
+      });
+    }
+    if (workspace.payments != null) workspace.payments = decodeRows(workspace.payments);
+    const loans = workspace.loans || [];
+    const detailAt = index => {
+      if (!Number.isInteger(index) || index < 0 || index >= report_details.length) throw Error('SICOF_RESPONSE_INVALID');
+      const detail = report_details[index];
+      if (!detail || Object.keys(detail).some(key => !['movements', 'periods', 'withdrawal_periods'].includes(key) || !Array.isArray(detail[key]))) throw Error('SICOF_RESPONSE_INVALID');
+      return detail;
+    };
+    const report = { ...data.workspace.report, rows: data.workspace.report.rows.map(row => {
+      const { detail_index, ...summary } = row;
+      return { ...summary, ...detailAt(detail_index) };
+    }) };
+    const result = data.result ? { ...data.result, rows: data.result.rows.map(row => {
+      const { loan_indexes, ...summary } = row;
+      if (!Array.isArray(loan_indexes)) throw Error('SICOF_RESPONSE_INVALID');
+      return { ...summary, loans: loan_indexes.map(index => {
+        if (!Number.isInteger(index) || index < 0 || index >= loans.length || loans[index].folio !== row.f) throw Error('SICOF_RESPONSE_INVALID');
+        return loans[index];
+      }) };
+    }) } : null;
+    return { ...data, workspace: { ...workspace, report }, result };
+  }
   const h = React.createElement;
   const TABS = [{ id: 'resumen', label: 'Resumen' }, { id: 'liquidez', label: 'Liquidez' }, { id: 'reparto', label: 'Reparto por ahorrador' }, { id: 'prestamos', label: 'Préstamos y pagos' }, { id: 'atrasos', label: 'Atrasos' }, { id: 'reporte', label: 'Reporte préstamos' }, { id: 'cumplimiento', label: 'Cumplimiento' }, { id: 'ahorro', label: 'Informe final de ahorro' }];
   const TEXTS = {
@@ -235,7 +285,7 @@
       const sequence = ++loadSequence.current; setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
       requestBusy.current = true; setCalculation('loading'); setCalculationError('');
       const command = { settings, costs, bank }, commandKey = JSON.stringify(command);
-      const timer = setTimeout(() => Promise.resolve().then(() => repo().workspace(command)).then(response => {
+      const timer = setTimeout(() => Promise.resolve().then(() => repo().workspace({ ...command, compact: true })).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
         setData(value); setPhase('ready');

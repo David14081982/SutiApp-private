@@ -806,3 +806,18 @@ The primary Informe acumulado worksheet preserves original historical A:M as ref
 Ahorro canónico publicado mantiene savings_transactions como autoridad de capital/rendimiento y saldo. savings_contribution_plans + generate_savings_schedule son instrucciones del importe/fecha habitual. savings_automatic_private.instructions registra excepciones futuras por inscripción y fecha con versión, autor, razón y huella del plan. No es saldo ni recibo anticipado. Al vencimiento, el worker privado genera savings_contribution_overrides y ledger atómicos, actor SYSTEM_SCHEDULE, sin confirmar individualmente de nuevo. El writer administrativo compartido corrige sólo el delta.
 
 Lectores: cuenta/calendario, workspace Personas, RH, proyección propia y composición/SICOF leen esos mismos registros. Última aportación proviene de fechas aplicadas positivas; la columna semestral suma aportaciones antes de retiros. Datos parciales previos al corte certificado permanecen identificados como parciales. Google y Excel privado conservan sus dominios y no reciben escrituras en esta H. La previsión futura no es dinero; una fecha vencida sí se aplica por la nueva instrucción expresa.
+
+## H-FINANCE-READ-PERFORMANCE-001 — validated conditional reads
+
+Published Self Savings now supports the existing session-bound in-memory conditional
+read contract. Backend authorization, exact identity, canonical row dependencies,
+business date, timed action availability and audited reader definitions are checked
+before a known version can omit its DTO. Corrections, deletion and context changes
+invalidate reuse. Unknown reader definitions require a fresh canonical response.
+There is no persisted financial cache, new balance writer or periodic sync.
+Admin summary preserves the same canonical KPIs/attention with less legacy work.
+SICOF compact WORKSPACE encodes repeated details and column names only for transport;
+all original UI detail is reconstructed. Calculation/export authority and source
+revalidation remain unchanged. The Google reader is identical to its previous GAS
+implementation; the unsuccessful direct Sheets experiment was not published.
+See `audits/H-FINANCE-READ-PERFORMANCE-001.md` and its aggregate evidence.

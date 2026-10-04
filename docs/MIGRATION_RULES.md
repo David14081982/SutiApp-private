@@ -387,3 +387,14 @@ all historical data. Installation evidence and final release results are recorde
 Migración 20261003000400 añade procedencia y permite actor NULL únicamente para recibos SYSTEM_SCHEDULE; respalda ocho funciones reemplazadas y valida trece funciones/tablas contra metadata instalada. Configuración inicialmente desactivada y piso 30/09/2026. Nuevas instrucciones, policy, ejecuciones y errores permanecen en schema privado. Activación separada, autorizada y auditada, con conjunto exacto de vencimientos validado en transacción. No se reejecutan migraciones SICOF 001–003.
 
 Recovery 004 serializa la pausa con la ejecución, desprograma el job y conserva dinero/historia. El rollback estructural sólo procede si no hay registros nuevos dependientes; nunca elimina recibos o movimientos para revertir económicamente. Backup de filas reales/metadata se guarda privado fuera del artefacto público. Pruebas PostgreSQL aisladas y evidencia del antes/después acompañan la aplicación.
+
+## H-FINANCE-READ-PERFORMANCE-001 — 20261003000500 APPLIED
+
+Two reader definitions changed after exact baseline guards. Their private RLS-closed
+definition backup and guarded recovery preserve original OIDs, owners and ACLs.
+No financial table, writer, trigger, policy, index or historical row changed.
+One REPEATABLE READ application compared exact before/after summary and self DTO,
+validated the conditional response, and protected 23 existing tables and 185 function
+contracts (only the two declared reader bodies changed). Recovery restores both
+definitions and removes only this migration's helper and metadata backup. Do not
+rerun installed migrations. Evidence: `qa/evidence/finance-read-performance.json`.

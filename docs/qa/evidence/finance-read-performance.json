@@ -1,0 +1,377 @@
+{
+  "task": "H-FINANCE-READ-PERFORMANCE-001",
+  "status": "PASS",
+  "baseline": "d53360704bfe02de678ab2e19bdc5fe2a675c29d",
+  "scope": "Existing readers and compact transport; no persistent mirror",
+  "sourceOfTruth": "SAFE: canonical Supabase savings and unchanged authenticated GAS source",
+  "savingsTests": {
+    "status": "PASS",
+    "command": "node scripts/test-savings-read-performance.js",
+    "exit_code": 0,
+    "run": "Final completed local run before SQL-comment-only clarification",
+    "checks": [
+      "migration preserves all business rows and existing function OIDs/ACLs",
+      "full self DTO and direct admin summary equal existing canonical readers",
+      "unchanged response is small and omits canonical DTO",
+      "contribution correction, withdrawal, hold and request invalidate only affected Folio",
+      "plans receipts scheduled instructions and retirement transitions invalidate",
+      "beneficiaries yield periods and period attribution invalidate",
+      "deletions and current source corrections invalidate without timestamp assumptions",
+      "certified historic snapshot and accepted balance corrections invalidate",
+      "context/session/impersonation/day changes and absent session cannot reuse old data",
+      "intraday action expiration invalidates without data changes",
+      "fresh authorization and exact identity guard every request including known version",
+      "unrecognized reader definitions disable reuse while retaining fresh canonical authority",
+      "PRIVATE publication branch remains unchanged and new account keeps JOIN contract",
+      "admin summary equivalent after changes and never invokes full panel",
+      "known version returns before any DTO construction, verified with fail-on-call probe",
+      "guarded recovery restores exact definitions and leaves financial rows intact"
+    ],
+    "timings": {
+      "fullMs": 172.59380000000056,
+      "unchangedMs": 44.73030000000108,
+      "fullBytes": 10276,
+      "unchangedBytes": 271
+    },
+    "fixture": {
+      "functions": 25,
+      "tables": 23,
+      "metadataOnly": true
+    },
+    "limitations": [
+      "Auth and PRIVATE branch providers isolated; unchanged real backend guards inspected",
+      "No production load benchmark; one WASM timing sample",
+      "Foreign keys to unrelated domains represented by key-only providers; no writers exercised"
+    ],
+    "externalQueries": 0,
+    "productionWrites": 0
+  },
+  "savingsApplication": {
+    "sample": {
+      "status": "PASS",
+      "samples": 1,
+      "dto_bytes": 14704,
+      "version_ms": 5.796,
+      "canonical_projection_ms": 20.537,
+      "identity_claims_changed": false
+    },
+    "status": "PASS",
+    "version": "20261003000500",
+    "isolation": "REPEATABLE READ",
+    "business_date": "2026-10-03",
+    "impersonation": false,
+    "summary_equal": true,
+    "before_self_ms": 27.869,
+    "business_clock": "Transaction timestamp / America-Hermosillo; stable across before and after",
+    "self_dto_equal": true,
+    "self_full_bytes": 10729,
+    "after_summary_ms": 2487.084,
+    "financial_writes": 0,
+    "migration_sha256": "84454c7a2dfd744a8d2da0f95331e5cc46f7b85fc651f66ff9b309fb27d37c5d",
+    "before_summary_ms": 2580.854,
+    "after_self_full_ms": 32.279,
+    "after_self_cacheable": true,
+    "before_self_cacheable": false,
+    "conditional_omits_dto": true,
+    "self_conditional_bytes": 312,
+    "oid_owner_acl_preserved": true,
+    "existing_functions_after": [
+      {
+        "md5": "f0a07c348ca96fc4676d6e36a45f9912",
+        "signature": "get_admin_savings_workspace_summary()"
+      },
+      {
+        "md5": "5954e5a2b705d7c86a43d299728a45d1",
+        "signature": "get_self_savings_if_changed(text)"
+      }
+    ],
+    "after_self_conditional_ms": 7.214,
+    "business_tables_unchanged": 23,
+    "same_transaction_snapshot": true,
+    "existing_functions_protected": 185,
+    "only_changed_existing_functions": 2,
+    "table_rls_constraints_indexes_triggers_preserved": true,
+    "completedAt": "2026-10-04T01:38:17.345Z",
+    "wallMs": 7385,
+    "networkCalls": {
+      "adminLogin": 1,
+      "managementTransaction": 1
+    },
+    "automaticRetries": 0
+  },
+  "syntheticTransport": {
+    "status": "PASS",
+    "checks": [
+      "actual engine and UI decoder parity",
+      "all details and fingerprints preserved",
+      "no input mutations",
+      "no extra source calls",
+      "unavailable source remains explicit",
+      "different details never merge",
+      "invalid references fail",
+      "old response compatibility",
+      "columnar schedule/payments preserve types and heterogeneous keys",
+      "undefined fields use exact object rows",
+      "malformed schemas/lengths and prototype keys rejected",
+      "result references rebuilt schedule objects"
+    ],
+    "participants": 30,
+    "reportRows": 180,
+    "bytesBefore": 3798427,
+    "bytesAfter": 919426,
+    "reduction_percent": 75.79,
+    "pack_ms": 98.24,
+    "externalQueries": 0,
+    "financialWrites": 0
+  },
+  "realCaptureOfflineReplay": {
+    "status": "PASS",
+    "source": "single previously captured authorized production WORKSPACE; offline replay only",
+    "bytesBefore": 28126746,
+    "bytesAfter": 10907759,
+    "reduction_percent": 61.22,
+    "pack_ms": 835.03,
+    "decode_ms": 810.35,
+    "financialResultsAndDetailsEqual": true,
+    "newProductionQueries": 0,
+    "financialWrites": 0
+  },
+  "backendDeployment": {
+    "status": "PASS",
+    "priorVersion": 6,
+    "version": 7,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "0627d2cec934d69baa4821dcc5028603210e578645491a2e59b962c842a3e033"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "f41db7051d92144ce684229096c66833c620f50a746bc5d8eec03fd90e46b356"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "3305c49cf834a88157411badb5300ac375d41309a969c09c07d043892d288a51"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+      }
+    ],
+    "productionFinancialReads": 0,
+    "financialWrites": 0
+  },
+  "backendLive": {
+    "status": "PASS",
+    "version": 7,
+    "anonymousStatus": 401,
+    "httpStatus": 200,
+    "headers_ms": 29872,
+    "total_ms": 30239,
+    "decoded_json_bytes": 10907937,
+    "content_encoding": "gzip",
+    "content_length": "1128368",
+    "sameFinancialObservation": true,
+    "sourceFingerprintUnchanged": true,
+    "scope": "One authenticated compact WORKSPACE; same settings as prior sample. Separate observations, not a p95 guarantee.",
+    "requests": {
+      "login": 1,
+      "anonymous": 1,
+      "workspace": 1
+    },
+    "financialWrites": 0
+  },
+  "build": {
+    "version": 317,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "58291760e31fb50e3bbf9e3b7aa4b6a80b332854421defac2d25096085d8965f"
+  },
+  "ui": {
+    "status": "PASS",
+    "network": "BLOCKED",
+    "productionWrites": 0,
+    "checks": [
+      "all original tabs and additional period report",
+      "saver transaction opens authorized classification and preserves detail on cancel",
+      "scenario full command and fingerprint",
+      "exports preserve backend fingerprint and filters",
+      "cost and bank drafts require explicit combined calculation",
+      "loan charts and saver withdrawals visible",
+      "texts/tab order persisted via repository",
+      "drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry",
+      "source error removes stale amounts",
+      "savings/current and original reports remain downloadable during Google outage",
+      "matrix complete metadata and server percentage units",
+      "projection net pool and conditional percentage visible",
+      "payment/arrears/matrix totals reflect filters without reallocation",
+      "unknown components remain unknown in filtered totals",
+      "matrix year removes loans without dates in that year",
+      "report semester selects an explicit year",
+      "account global availability shown without summing periods",
+      "loan principal interest term remaining and progress preserved",
+      "duplicate-date matrix evidence never selects first payment",
+      "arrears uses authoritative status",
+      "context change clears private UI",
+      "behavior detail",
+      "responsive 320/430/1440",
+      "no browser errors",
+      "eligibility preserves verified yes verified no and pending review in table and modal",
+      "unknown months stay unknown while verified zero months remain zero",
+      "base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load",
+      "base XLSX excludes presentation filters and waits for unapplied changes",
+      "source-changed export displays explicit error"
+    ]
+  },
+  "integration": {
+    "status": "PASS",
+    "network": "BLOCKED",
+    "productionWrites": 0,
+    "checks": [
+      "real Admin sidebar route",
+      "module-restricted and denied access",
+      "real Finance queue layout preserved",
+      "one behavior batch for repeated affiliates",
+      "behavior modal click does not open request",
+      "queue responsive 320/430/1440",
+      "existing settlement requires exact period/component allocation",
+      "over-allocation blocked",
+      "idempotent retry preserves allocation version",
+      "canonical total after withdrawal",
+      "annual references preserved",
+      "withdrawals reflect source periods",
+      "self savings actions and detail navigation preserved"
+    ]
+  },
+  "relatedTests": [
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "status": "PASS",
+      "checks": "auth, single source read, opt-in transport, lazy export library"
+    },
+    {
+      "command": "node scripts/test-sicof-engine.js",
+      "status": "PASS",
+      "checks": "unchanged policy and financial results"
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "status": "PASS",
+      "checks": "all exports and original workbook"
+    },
+    {
+      "command": "node scripts/test-sicof-calculation-base-export.js",
+      "status": "PASS",
+      "checks": "all selected funds and exact calculation backing"
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-handler.js",
+      "status": "PASS",
+      "checks": "semester report and current cutoff"
+    },
+    {
+      "command": "node scripts/test-sicof-workspace.js",
+      "status": "PASS",
+      "checks": "SQL context and permission boundaries"
+    },
+    {
+      "command": "node scripts/test-savings-read-work.js",
+      "status": "PASS",
+      "checks": "19 session/invalidation/failure contract cases"
+    },
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "status": "PASS",
+      "checks": "public allowlist, no private files"
+    }
+  ],
+  "protectedFiles": [
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "unchanged": true,
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "unchanged": true,
+      "sha256": "0627d2cec934d69baa4821dcc5028603210e578645491a2e59b962c842a3e033"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "unchanged": true,
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "unchanged": true,
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "unchanged": true,
+      "sha256": "b000c98ce6690968468a472d8f1d6f4b3963bc3266823ce8046100db463934d4"
+    },
+    {
+      "file": "app/savings-repository.js",
+      "unchanged": true,
+      "sha256": "9d697c710d72579dcb41eb5f275a6055ea8508bdf2b9ceefba9504de83f083bd"
+    }
+  ],
+  "review": {
+    "reviewer": "sicof_base_xlsx_review",
+    "verdict": "APPROVED technical",
+    "findingsOutstanding": 0
+  },
+  "google": {
+    "transport": "Unchanged Apps Script",
+    "directExperiment": "SERVICE_DISABLED on existing OAuth project; excluded from release",
+    "credentialWrites": 0,
+    "sourceWrites": 0,
+    "readerCodeUnchanged": true
+  },
+  "productionRequests": {
+    "catalogMetadata": 1,
+    "pairedExperiment": {
+      "adminLogin": 1,
+      "secretMetadata": 1,
+      "workspace": 1,
+      "directOAuth": 1,
+      "directSheetsDenied": 1
+    },
+    "savingsApplication": {
+      "adminLogin": 1,
+      "managementTransaction": 1
+    },
+    "backendVerification": {
+      "adminLogin": 1,
+      "anonymousDenied": 1,
+      "compactWorkspace": 1
+    },
+    "automaticRetries": 0,
+    "financialWrites": 0
+  },
+  "globalImageRegression": "NOT APPLICABLE: focal SICOF source and generated artifacts only; shared assets/auth/routing/SW logic unchanged",
+  "limitations": [
+    "Live WORKSPACE improved from one 36.794-second sample to one 30.239-second sample; still slow and not a p95 measurement.",
+    "61.22 percent describes decoded JSON, not billed egress. New live gateway response was gzip with content-length 1128368 bytes.",
+    "Most remaining live latency was before response headers (29.872 seconds); stages were not independently instrumented.",
+    "Columnar encoding/decoding incurs CPU work; local Node/VM measurements are not browser/Deno benchmarks.",
+    "Conditional Savings still checks backend dependencies; it is not an offline balance store. Initial full reads include this version check.",
+    "Direct Sheets transport was not activated and no Google OAuth/project configuration was changed.",
+    "No production financial export or financial operation was executed."
+  ]
+}

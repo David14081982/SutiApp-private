@@ -12,6 +12,8 @@ async function main() {
     await page.route('**/*', route => route.abort());
     await page.setContent('<style>:root{--surface:#fff;--surface-2:#edf0f5;--hairline:#e1e5ed;--ink:#172033;--ink-2:#364154;--ink-3:#657086;--guinda:#901040;--mono:monospace;--bg:#f6f6fa;--font:Arial;--grad-guinda:#901040}*{box-sizing:border-box}body{font-family:Arial;background:#f3f5f9;margin:0}html,body,#fixture{height:100%;width:100%}button,input,textarea,select{font-family:inherit}</style><div id="fixture"></div>');
     for (const file of ['app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-dom-18.3.1/react-dom.production.min.js']) await page.addScriptTag({ content: read(file) });
+    const projection = read('supabase/functions/sicof/projection.mjs');
+    await page.addScriptTag({ content: projection.slice(projection.indexOf('export function compactWorkspace(')).replace('export function', 'function') });
     await page.evaluate(() => {
       let serial = 0; window.crypto.randomUUID = () => 'test-action-' + (++serial);
       window.Icon = () => null; window.SutiSeal = () => null; window.money = value => '$' + value;
@@ -31,6 +33,7 @@ async function main() {
         else if (args.action === 'CALCULATE') data = { fingerprint: 'synthetic-result', rate: 5, pool: 0, collected: 0, projected: 0, distributed: 0, base: 0, reserve: 0, rows: [], nqual: 0, nexcl: 0, alerts: [], liquidity: {}, compliance: [] };
         else if (args.action === 'BEHAVIOR') data = Object.fromEntries(args.affiliate_ids.map(id => [id, { status: 'CURRENT', label: 'Al corriente', loans: [] }]));
         else throw Error('Unexpected isolated action: ' + args.action);
+        if (args.action === 'WORKSPACE' && args.compact) data = JSON.parse(JSON.stringify(compactWorkspace(data)));
         return { data: { context: { actor, effective_affiliate: 'synthetic-owner' }, data } };
       } }, rpc: async (name, args) => {
         if (name !== 'get_admin_savings_period_composition') throw Error('Unexpected RPC: ' + name);

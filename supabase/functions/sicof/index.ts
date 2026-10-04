@@ -1,5 +1,4 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import ExcelJS from 'npm:exceljs@4.4.0';
 import {dispatchSicof} from './handler.mjs';
 const origins=(Deno.env.get('ALLOWED_APP_ORIGINS')||'').split(',').map(v=>v.trim()).filter(Boolean);
 Deno.serve(async (request:Request)=>{
@@ -14,7 +13,7 @@ Deno.serve(async (request:Request)=>{
   try {
     const raw=await request.text();if(raw.length>200000)throw Error('SICOF_COMMAND_INVALID');
     const data=await dispatchSicof(JSON.parse(raw),authorization,{
-      env:(key:string)=>Deno.env.get(key),ExcelJS,
+      env:(key:string)=>Deno.env.get(key),loadExcelJS:async()=>(await import('npm:exceljs@4.4.0')).default,
       createUserClient:(auth:string)=>createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:auth}},auth:{persistSession:false}}),
       createServiceClient:()=>createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}})
     });

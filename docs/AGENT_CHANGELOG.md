@@ -3961,3 +3961,16 @@ Delivered a Spanish PDF manual (25 pages) and editable Word (24 sections), cover
 ## H-SAVINGS-AUTO-CONTRIBUTIONS-001 — 2026-10-03
 
 Cambio focal de Ahorro autorizado: aplicación automática al vencimiento, excepciones futuras por fecha, corrección posterior por delta y procedencia SYSTEM/humana. Paquete aislado sobre f6bcc741 conserva RH y 145 chunks de bundle ajenos; v313 cambia sólo cuatro fuentes de Ahorro y cachebusters generados. No cambia assets, Auth, viewer, routing, lógica de sw.js ni el transporte compartido; regresión global de imágenes NOT APPLICABLE según AGENTS, con verificación focal de componentes y lecturas reales. Manual SICOF edición 1.1 actualizado. Resultado y evidencia verificable: docs/audits/H-SAVINGS-AUTO-CONTRIBUTIONS-001.md y docs/qa/evidence/savings-automatic-contributions/.
+## 2026-10-03 — H-FINANCE-READ-PERFORMANCE-001
+
+Optimized existing readers and SICOF transport after owner instruction HAZLO.
+Migration 005 preserves 23 financial/authority tables and 185 existing function
+contracts; same-snapshot full DTO/summary equality, conditional 312 bytes versus
+10,729, and recovery verified in 16 isolated test groups. SICOF compact transport
+reconstructs identical UI data with 61.22% less decoded JSON; ExcelJS loads only
+during authorized export. GAS reader
+and shared credentials remain exact baseline; direct Sheets experiment excluded.
+Edge v7 live 200, anonymous 401; current full WORKSPACE sample 30.239s vs 36.794s before,
+so instant loading is explicitly not claimed. Focal v317 build and UI/integration,
+19 conditional client cases, exports and Pages allowlist PASS. No financial data
+writes, mirror or periodic polling. Audit/evidence: H-FINANCE-READ-PERFORMANCE-001.

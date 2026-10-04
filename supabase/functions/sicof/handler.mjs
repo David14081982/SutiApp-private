@@ -1,10 +1,10 @@
 import {readSicofLoanSource} from './loan-source.mjs';
 import {analyzeSicofLoans} from './loan-calculation.mjs';
 import {calculateSicof,validateSettings,date,fingerprint} from './engine.mjs';
-import {decorateLoans,behaviorFor,makeReports,workspaceView,buildContinuousSavingsReport} from './projection.mjs';
+import {decorateLoans,behaviorFor,makeReports,workspaceView,buildContinuousSavingsReport,compactWorkspace} from './projection.mjs';
 import {exportSicofReport} from './exports.mjs';
 const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v);
-const fields={LOAD:['from','to'],WORKSPACE:['settings','costs','bank'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to']};
+const fields={LOAD:['from','to'],WORKSPACE:['settings','costs','bank','compact'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to']};
 async function rpc(client,name,args) {const r=await client.rpc(name,args);if(r.error)throw Error(r.error.message||'SICOF_RPC_FAILED');return r.data;}
 function requireContext(context,actor) {if(!context||context.actor!==actor||!context.session)throw Error('SICOF_CONTEXT_CHANGED');return context;}
 function decodeBytes(base64){return Uint8Array.from(atob(base64.replace(/\s/g,'')),c=>c.charCodeAt(0));}
@@ -55,6 +55,7 @@ export async function dispatchSicof(body,authorization,dependencies) {
   if(auth.error||!auth.data?.user)throw Error('SICOF_AUTH_REQUIRED');
   const actor=auth.data.user.id;
   if(!body||!Object.prototype.hasOwnProperty.call(fields,body.action)||Object.keys(body).some(k=>k!=='action'&&!fields[body.action].includes(k)))throw Error('SICOF_COMMAND_INVALID');
+  if('compact' in body&&typeof body.compact!=='boolean')throw Error('SICOF_COMMAND_INVALID');
   const sourceReader=dependencies.sourceReader||readSicofLoanSource;
   if(body.action==='BEHAVIOR'){
     if(!Array.isArray(body.affiliate_ids)||body.affiliate_ids.length<1||body.affiliate_ids.length>100||body.affiliate_ids.some(id=>!uuid(id)))throw Error('SICOF_SUBJECTS_INVALID');
@@ -98,7 +99,8 @@ export async function dispatchSicof(body,authorization,dependencies) {
     const reports=makeReports(ctx);
     const continuous=body.kind==='final_ahorro'&&!body.filters?.historical?
       buildContinuousSavingsReport(await readContinuousReportContext(user,ctx,actor)):null;
-    const exported=await exportSicofReport({kind:body.kind,calculation,context:{...ctx,historical_report:ctx.report,report:reports.finalReport,continuous_report:continuous},loans:analysis,filters:body.filters||{},templateBytes,ExcelJS});
+    const excel=ExcelJS||await dependencies.loadExcelJS();
+    const exported=await exportSicofReport({kind:body.kind,calculation,context:{...ctx,historical_report:ctx.report,report:reports.finalReport,continuous_report:continuous},loans:analysis,filters:body.filters||{},templateBytes,ExcelJS:excel});
     return {context:ctx.context,data:{base64:encodeBytes(new Uint8Array(exported.bytes)),content_type:exported.contentType,filename:exported.filename}};
   }
   // Savings reports remain available independently of the loan-source outage.
@@ -108,14 +110,18 @@ export async function dispatchSicof(body,authorization,dependencies) {
   catch(error){
     if(!['LOAD','WORKSPACE'].includes(body.action))throw error;
     const workspace=workspaceView(ctx,null);
-    return {context:ctx.context,data:body.action==='WORKSPACE'?{workspace,result:null,calculation_error:'SICOF_LOAN_SOURCE_UNAVAILABLE'}:workspace};
+    const data={workspace,result:null,calculation_error:'SICOF_LOAN_SOURCE_UNAVAILABLE'};
+    return {context:ctx.context,data:body.action==='WORKSPACE'?(body.compact?compactWorkspace(data):data):workspace};
   }
   if(body.action==='LOAD')return {context:ctx.context,data:workspaceView(ctx,analysis)};
   if(!settings)throw Error('SICOF_SETTINGS_REQUIRED');
   const result=calculateSicof(ctx,analysis,{settings,costs:body.costs,bank:body.bank});
   result.fingerprint=await fingerprint({engine:result.engine_version,settings:result.settings,costs:result.costs,bank:result.bank,context:ctx.fingerprint,loans:analysis.source_fingerprint});
   // One authorized observation supplies both UI and calculation. No source cache.
-  if(body.action==='WORKSPACE')return {context:ctx.context,data:{workspace:workspaceView(ctx,analysis),result}};
+  if(body.action==='WORKSPACE'){
+    const data={workspace:workspaceView(ctx,analysis),result};
+    return {context:ctx.context,data:body.compact?compactWorkspace(data):data};
+  }
   if(body.action==='CALCULATE')return {context:ctx.context,data:result};
   if(body.fingerprint!==result.fingerprint)throw Error('SICOF_SOURCE_CHANGED');
   if(body.action==='EXPORT')return exportResult(result,analysis);

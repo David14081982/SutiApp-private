@@ -12,6 +12,8 @@ async function main() {
     await page.route('**/*', route => route.abort());
     await page.setContent('<html lang="es"><body style="margin:0;font-family:Arial,sans-serif"><div id="root"></div></body></html>');
     for (const file of ['app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-dom-18.3.1/react-dom.production.min.js', 'app/sicof-payment-behavior.jsx', 'app/sicof-admin.jsx']) await page.addScriptTag({ content: fs.readFileSync(path.join(root, file), 'utf8') });
+    const projection = fs.readFileSync(path.join(root, 'supabase/functions/sicof/projection.mjs'), 'utf8');
+    await page.addScriptTag({ content: projection.slice(projection.indexOf('export function compactWorkspace(')).replace('export function', 'function') });
     await page.evaluate(() => {
       let keyCounter = 0; window.crypto.randomUUID = () => 'synthetic-key-' + (++keyCounter); window.calls = []; window.waiting = []; window.delayCalc = false; window.failCalc = false; window.failSource = false; window.unknownCapital = false; window.currentIdentity = 'synthetic-admin'; window.authListeners = [];
       window.AffiliateAuth = { getState: () => ({ phase: currentIdentity ? 'authenticated' : 'anonymous', session: { user: { id: currentIdentity } }, affiliate: { id: 'synthetic-affiliate' } }), subscribe: fn => { authListeners.push(fn); return () => { authListeners = authListeners.filter(item => item !== fn); }; } };
@@ -33,8 +35,8 @@ async function main() {
       window.SicofRepository.workspace = async args => {
         calls.push({ kind: 'workspace', args: structuredClone(args) });
         const workspace = await SicofRepository.load({ from: args.settings.periodIni, to: args.settings.periodFin });
-        if (failSource) return { workspace, result: null, calculation_error: 'SICOF_LOAN_SOURCE_UNAVAILABLE' };
-        return { workspace, result: await SicofRepository.calculate(args) };
+        const data = failSource ? { workspace, result: null, calculation_error: 'SICOF_LOAN_SOURCE_UNAVAILABLE' } : { workspace, result: await SicofRepository.calculate(args) };
+        return JSON.parse(JSON.stringify(args.compact ? compactWorkspace(data) : data));
       };
       window.ui = ReactDOM.createRoot(document.getElementById('root'));
       window.mount = () => ui.render(React.createElement(SicofAdminModule, { app: { admin: { phase: 'authorized', has: () => true } }, onBack: () => {}, header: ({ title }) => React.createElement('div', null, title) })); mount();
@@ -42,6 +44,7 @@ async function main() {
     await page.waitForFunction(() => calls.some(item => item.kind === 'calculate'));
     await page.getByText('Resultado sintético para pruebas aisladas.', { exact: true }).waitFor();
     assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), 1);
+    assert.equal(await page.evaluate(() => calls.find(x => x.kind === 'workspace').args.compact), true);
     assert.equal(await page.getByRole('tab').count(), 8);
     assert.equal(await page.locator('input[type=password]').count(), 0);
     await page.getByText('Tasa proyectada sobre base confirmada', { exact: true }).waitFor();
@@ -56,8 +59,8 @@ async function main() {
     assert.equal(await page.evaluate(() => calls.find(item => item.kind === 'saveScenario').args.fingerprint), 'synthetic:6');
     await page.getByRole('tab', { name: 'Reparto por ahorrador', exact: true }).click();
     await page.evaluate(() => { window.originalPeople = people; people = [...people,
-      { ...people[0], f: 'TEST-EXCLUDED', n: 'EXCLUSION COMPROBADA', ok: false, review_required: false, months: 0, motivo: 'No cumple 6 meses', rend: 0 },
-      { ...people[0], f: 'TEST-REVIEW', n: 'EVIDENCIA PENDIENTE', ok: false, review_required: true, months: null, motivo: 'ENROLLMENT_UNVERIFIED', rend: null }
+      { ...people[0], f: 'TEST-EXCLUDED', loans: [], n: 'EXCLUSION COMPROBADA', ok: false, review_required: false, months: 0, motivo: 'No cumple 6 meses', rend: 0 },
+      { ...people[0], f: 'TEST-REVIEW', loans: [], n: 'EVIDENCIA PENDIENTE', ok: false, review_required: true, months: null, motivo: 'ENROLLMENT_UNVERIFIED', rend: null }
     ]; });
     await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
     const reviewRow = page.getByRole('row').filter({ has: page.getByRole('cell', { name: 'TEST-REVIEW', exact: true }) });

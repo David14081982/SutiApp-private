@@ -9,6 +9,10 @@
     {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
   ],
   "nodes": [
+    {"type":"admin_screen","name":"SutifinanzasAdminModule","file":"app/sutifinanzas-admin.jsx","domain":"finance","aliases":["SUTIFINANZAS","Gasto por Secretaría"],"source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"route":"Admin / sutifinanzas","status":"LOCAL_IMPLEMENTED_RELEASE_BLOCKED_GOOGLE_OAUTH_403","evidence":"docs/audits/H-SUTIFINANZAS-ADMIN-001.md","permission":"program_requests.read AND admin_module_boundary(sutifinanzas,read)","cache":"component session memory only; explicit refresh reads Google"}},
+    {"type":"repository","name":"SutifinanzasRepository","file":"app/sutifinanzas-repository.js","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"edge":"sutifinanzas","persistent_cache":false}},
+    {"type":"edge_function","name":"sutifinanzas","file":"supabase/functions/sutifinanzas/index.ts","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"source":"Google Gasto por secretaría","deployment":"version 3 deployed; source access blocked by existing OAuth 403","writes":0}},
+    {"type":"external_legacy_source","name":"Google Gasto por secretaría","file":"supabase/functions/sutifinanzas/report.mjs","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"spreadsheet_id":"1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60","tab":"Gasto por secretaría","header_mapping":"exact names; column-order independent","year":"AÑO","amount":"Gran total Comprobado","date":"FECHA DEL GASTO","google_writes":0,"supabase_financial_copy":false}},
     {"type":"admin_screen","name":"SicofAdminModule","file":"app/sicof-admin.jsx","domain":"finance","aliases":["Sicof","Rendimientos por semestre","Simulador de rendimiento","Informe final ahorro"],"source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","route":"Admin / sicof","permission":"savings.read plus module boundary; savings.config and savings.reports for restricted actions","authority":"Canonical savings_transactions plus authenticated fixed HISTORIAL P V2 reader; simulations never post money"}},
     {"type":"repository","name":"SicofRepository","file":"app/sicof-repository.js","domain":"finance","source_of_truth":"DERIVED","properties":{"edge":"sicof","cache":"pending request deduplication only; no persisted balances or fallback","identity":"real actor, Auth session, effective affiliate; exact Folio remains business identity"}},
     {"type":"edge_function","name":"sicof","file":"supabase/functions/sicof/index.ts","domain":"finance","source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","loan_source":"SutiApp Final / HISTORIAL P V2 fixed authenticated read_sicof_financial action","savings_source":"get_admin_sicof_context, canonical ledger and explicit origin metadata","outputs":"simulations, immutable scenario snapshots, reports; no yield credit or withdrawal writer","historical_excel":"private immutable source template and exact values; never imported as money"}},
@@ -61,6 +65,9 @@
     {"type": "external_legacy_source", "name": "Google Ahorro", "domain": "finance", "aliases": ["Ahorro legacy"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED_PRODUCTIVE"}}
   ],
   "relationships": [
+    {"from_type":"admin_screen","from":"SutifinanzasAdminModule","to_type":"repository","to":"SutifinanzasRepository","type":"USES"},
+    {"from_type":"repository","from":"SutifinanzasRepository","to_type":"edge_function","to":"sutifinanzas","type":"CALLS"},
+    {"from_type":"edge_function","from":"sutifinanzas","to_type":"external_legacy_source","to":"Google Gasto por secretaría","type":"READS"},
     {"from_type":"admin_screen","from":"SicofAdminModule","to_type":"repository","to":"SicofRepository","type":"USES"},
     {"from_type":"repository","from":"SicofRepository","to_type":"edge_function","to":"sicof","type":"CALLS"},
     {"from_type":"edge_function","from":"sicof","to_type":"external_legacy_source","to":"Google HISTORIAL P V2","type":"READS"},

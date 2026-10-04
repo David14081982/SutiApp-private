@@ -1,0 +1,35 @@
+begin;
+set local lock_timeout='2s';
+set local statement_timeout='60s';
+lock table public.admin_section_definitions,public.admin_section_responsibilities,public.admin_assignments,public.admin_roles,public.admin_role_permissions,public.admin_audit_log in share row exclusive mode;
+do $guard$ begin
+ if md5(pg_get_functiondef('admin_support_private.module_visible(uuid,text)'::regprocedure))<>'691fbf6ecd59db3e60e9cdea21930909' then raise exception 'MODULE_VISIBILITY_BASELINE_CHANGED'; end if;
+ if (select md5(pg_get_constraintdef(oid)) from pg_constraint where conrelid='public.admin_assignments'::regclass and conname='admin_assignments_permissions_check') is distinct from '0d01cf823d0232a4d4cefbebfa4bce18' then raise exception 'PERMISSION_CONSTRAINT_CHANGED'; end if;
+ if exists(select 1 from unnest(array['program_requests.read']::text[]) requested(permission) where not exists(select 1 from public.admin_role_permissions p join public.admin_roles r on r.id=p.role_id where r.code='principal_admin' and r.enabled and p.permission=requested.permission)) then raise exception 'ROLE_PERMISSION_CHANGED'; end if;
+ if exists(select 1 from unnest(array[]::text[]) requested(section_key) where not exists(select 1 from public.admin_section_definitions d where d.section_key=requested.section_key and d.module_key is null and d.enforcement_status='ENFORCED')) then raise exception 'SECTION_ENFORCEMENT_CHANGED'; end if;
+end $guard$;
+create table public.admin_screen_registration_recovery_20261004000200(singleton boolean primary key check(singleton),previous_definition text not null,applied_hash text,section_hash text,authorization_hash text not null);
+alter table public.admin_screen_registration_recovery_20261004000200 enable row level security;
+alter table public.admin_screen_registration_recovery_20261004000200 force row level security;
+revoke all on public.admin_screen_registration_recovery_20261004000200 from public,anon,authenticated,service_role;
+insert into public.admin_screen_registration_recovery_20261004000200(singleton,previous_definition,authorization_hash) select true,pg_get_functiondef('admin_support_private.module_visible(uuid,text)'::regprocedure),md5(concat_ws('|',md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_assignments t),'[]')),md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_section_responsibilities t),'[]')),md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_roles t),'[]')),md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_role_permissions t),'[]')),md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_audit_log t),'[]'))));
+insert into public.admin_section_definitions(section_key,display_name,data_boundary,allowed_actions,enforcement_status,module_key,module_read_permissions,module_write_permissions,module_sections,module_total_only,module_order) values ('admin_sutifinanzas','SUTIFINANZAS','Google Sheets direct read-only Gasto por secretaría; no financial persistence',array['read']::text[],'ENFORCED','sutifinanzas',array['program_requests.read']::text[],array[]::text[],array[]::text[],false,100);
+CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin
+ if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;
+ select permission,section_keys into required,sections from (values ('farma','program_catalog.read',array[]::text[]),('document_generation','document_generation.config.read',array[]::text[]),('login_history','authorization.read',array[]::text[]),('votaciones','votaciones.read',array['votaciones','votaciones_results']::text[]),('votaciones_nominal','votaciones.export_identified_votes',array['votaciones_identified']::text[]),('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('popups','popups.read',array['popups']::text[]),('sindicato','union_content.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('program_products','program_catalog.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('inversion','workflow.read',array[]::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('aprobaciones','popups.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[]),('branding','assets.read',array[]::text[]),('sicof','savings.read',array[]::text[]),('sutifinanzas','program_requests.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;
+ if required is null then return false; end if;
+ return coalesce((c->>'full_access')::boolean,false)
+  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))
+  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))
+  or admin_support_private.has_admin_permission(p_subject,required)
+  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));
+end $function$
+;
+update public.admin_screen_registration_recovery_20261004000200 set applied_hash=md5(pg_get_functiondef('admin_support_private.module_visible(uuid,text)'::regprocedure)),section_hash=md5(coalesce((select jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text from public.admin_section_definitions t),'[]'));
+commit;

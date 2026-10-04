@@ -1,3 +1,368 @@
+/* @@file sutifinanzas-repository.js */
+(function(){
+(function(){
+  'use strict';
+  const normalize=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleUpperCase('es-MX');
+  const missing=v=>v===null||v===undefined||String(v).trim()==='';
+  const reqKey=r=>r.requisitionId||r.requisition||('product:'+r.id);
+  const levels=['secretariat','project','item','requisition'];
+  const labels={secretariat:'Sin secretaría',project:'Sin proyecto',item:'Sin partida',requisition:'Sin requisición'};
+  function key(r,field){return field==='requisition'?reqKey(r):(missing(r[field])?null:r[field]);}
+  function filter(records,f){return records.filter(r=>(f.year==='all'||String(r.year??'missing')===f.year)&&(f.status==='all'||normalize(r.status)===(f.status==='missing'?'':f.status))&&(f.month==='all'||(r.date?r.date.slice(5,7):'missing')===f.month)&&(!f.search||normalize([r.secretariat,r.project,r.item,r.requisition,r.concept,r.budgetCode].join(' ')).includes(normalize(f.search))));}
+  function summarize(records){
+    // Sum decimal representations exactly; round only currency presentation, never each row.
+    let total=0n,scale=0;
+    for(const r of records){const [base,exponent='0']=String(r.amount).split('e'),[integer,fraction='']=base.split('.');let digits=BigInt(integer+fraction),places=fraction.length-Number(exponent);if(places<0){digits*=10n**BigInt(-places);places=0;}if(places>scale){total*=10n**BigInt(places-scale);scale=places;}total+=digits*10n**BigInt(scale-places);}
+    const amountCents=Number(total)/10**scale*100;
+    if(!Number.isFinite(amountCents)||Math.abs(amountCents)>Number.MAX_SAFE_INTEGER)throw Error('TOTAL_OUT_OF_RANGE');
+    return{amountCents,requisitions:new Set(records.filter(r=>r.requisitionId||r.requisition).map(reqKey)).size,secretariats:new Set(records.filter(r=>!missing(r.secretariat)).map(r=>r.secretariat)).size,projects:new Set(records.filter(r=>!missing(r.project)).map(r=>JSON.stringify([r.secretariat,r.project]))).size};
+  }
+  function explore(records,path,sort='amount-desc'){
+    const scoped=records.filter(r=>path.every((p,i)=>key(r,levels[i])===p.key));
+    if(path.length===levels.length)return {records:scoped,groups:[],level:null};
+    const level=levels[path.length],groups=new Map();
+    for(const r of scoped){const k=key(r,level);if(!groups.has(k))groups.set(k,{key:k,label:missing(r[level])?labels[level]:r[level],records:[]});groups.get(k).records.push(r);}
+    const total=summarize(records).amountCents;
+    const result=[...groups.values()].map(g=>({...g,...summarize(g.records),count:g.records.length,percentage:total?100*summarize(g.records).amountCents/total:0}));
+    result.sort((a,b)=>sort==='name'?a.label.localeCompare(b.label,'es'):sort==='amount-asc'?a.amountCents-b.amountCents:b.amountCents-a.amountCents);
+    return{records:scoped,groups:result,level};
+  }
+  function identity(){const auth=window.AffiliateAuth.getState(),admin=window.AdminRepository.getState();return JSON.stringify([auth.phase,auth.session?.user?.id,auth.affiliate?.id,auth.impersonation,admin.phase,admin.subjectKey,admin.assignment]);}
+  async function load(){
+    const subject=identity();
+    const response=await window.SutiSupabase.getClient().functions.invoke('sutifinanzas',{body:{action:'LOAD'}});
+    if(identity()!==subject)throw Error('CONTEXT_CHANGED');
+    if(response.error){let body;try{body=await response.error.context.clone().json();}catch(_){}const error=Error(body?.error||'SOURCE_UNAVAILABLE');error.details=body||{};throw error;}
+    if(response.data?.version!==1||!Array.isArray(response.data.records))throw Error('RESPONSE_INVALID');
+    return response.data;
+  }
+  window.SutifinanzasModel=Object.freeze({normalize,filter,summarize,explore,levels});
+  window.SutifinanzasRepository=Object.freeze({load,identity});
+})();
+})();
+/* @@file sutifinanzas-admin.jsx */
+(function(){
+(function () {
+  'use strict';
+
+  const {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    Model = window.SutifinanzasModel;
+  const money = c => new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(c / 100);
+  const names = {
+    secretariat: 'Secretarías',
+    project: 'Proyectos',
+    item: 'Partidas presupuestales',
+    requisition: 'Requisiciones'
+  };
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const blank = {
+    year: 'all',
+    status: 'APROBADO',
+    month: 'all',
+    search: ''
+  };
+  function errorText(error) {
+    const d = error.details || {};
+    if (error.message === 'MISSING_HEADERS') return 'La estructura del informe cambió. Faltan encabezados: ' + (d.missing || []).join(', ') + '.';
+    if (error.message === 'AMBIGUOUS_HEADERS') return 'La estructura del informe cambió. Hay encabezados duplicados: ' + (d.headers || []).join(', ') + '.';
+    if (d.row) return 'No se pudo validar la fila ' + d.row + ' de Google Sheets, columna “' + d.header + '” (' + error.message + '). Revisa la fuente y actualiza.';
+    if (error.message === 'GOOGLE_ACCESS_DENIED') return 'La integración de Google de SutiApp no tiene acceso a este archivo. Autoriza la hoja en la conexión existente y vuelve a actualizar.';
+    if (['AUTH_REQUIRED', 'ADMIN_DENIED', 'CONTEXT_CHANGED'].includes(error.message)) return 'Tu sesión o permiso para consultar este informe cambió. Vuelve a entrar al módulo.';
+    return 'No se pudo consultar Google Sheets. Intenta actualizar nuevamente. (' + error.message + ')';
+  }
+  function SutifinanzasAdminModule({
+    app,
+    onBack,
+    header
+  }) {
+    const [data, setData] = useState(null),
+      [phase, setPhase] = useState('loading'),
+      [error, setError] = useState('');
+    const [filters, setFilters] = useState(blank),
+      [path, setPath] = useState([]),
+      [sort, setSort] = useState('amount-desc');
+    const generation = useRef(0),
+      busy = useRef(false),
+      mounted = useRef(false),
+      scroll = useRef(new Map()),
+      heading = useRef(null),
+      pendingScroll = useRef(null);
+    const context = window.SutifinanzasRepository.identity();
+    const contextRef = useRef(context);
+    contextRef.current = context;
+    async function refresh(initial = false) {
+      if (busy.current) return;
+      busy.current = true;
+      const g = ++generation.current,
+        subject = contextRef.current;
+      setPhase('loading');
+      setError('');
+      setData(null);
+      try {
+        const result = await window.SutifinanzasRepository.load();
+        if (!mounted.current || g !== generation.current || subject !== contextRef.current) return;
+        if (initial) {
+          const years = result.records.map(r => r.year).filter(Number.isInteger),
+            now = new Date().getFullYear(),
+            year = years.includes(now) ? now : Math.max(...years);
+          setFilters({
+            ...blank,
+            year: Number.isFinite(year) ? String(year) : 'missing'
+          });
+        }
+        setPath([]);
+        scroll.current.clear();
+        setData(result);
+        setPhase('success');
+      } catch (e) {
+        if (mounted.current && g === generation.current) {
+          setError(errorText(e));
+          setPhase('error');
+        }
+      } finally {
+        if (g === generation.current) busy.current = false;
+      }
+    }
+    useEffect(() => {
+      mounted.current = true;
+      refresh(true);
+      return () => {
+        mounted.current = false;
+        generation.current++;
+        busy.current = false;
+      };
+    }, [context]);
+    useEffect(() => {
+      if (pendingScroll.current !== null) {
+        const {
+          top,
+          parent
+        } = pendingScroll.current;
+        if (parent) parent.scrollTop = top;else window.scrollTo(0, top);
+        pendingScroll.current = null;
+        heading.current?.focus({
+          preventScroll: true
+        });
+      }
+    }, [path]);
+    function scrollParent() {
+      let p = heading.current?.parentElement;
+      while (p) {
+        if (/auto|scroll/.test(getComputedStyle(p).overflowY) && p.scrollHeight > p.clientHeight) return p;
+        p = p.parentElement;
+      }
+      return null;
+    }
+    function navigate(next) {
+      const parent = scrollParent();
+      scroll.current.set(JSON.stringify(path), {
+        top: parent ? parent.scrollTop : window.scrollY,
+        parent
+      });
+      pendingScroll.current = scroll.current.get(JSON.stringify(next)) || {
+        top: parent ? parent.scrollTop : window.scrollY,
+        parent
+      };
+      setPath(next);
+    }
+    function change(k, v) {
+      setFilters(f => ({
+        ...f,
+        [k]: v
+      }));
+      setPath([]);
+      scroll.current.clear();
+    }
+    const visible = data ? Model.filter(data.records, filters) : [],
+      summary = Model.summarize(visible),
+      view = Model.explore(visible, path, sort);
+    const years = data ? [...new Set(data.records.map(r => r.year).filter(Number.isInteger))].sort((a, b) => b - a) : [];
+    const statuses = data ? [...new Set(data.records.map(r => Model.normalize(r.status)).filter(Boolean))].sort() : [];
+    if (!statuses.includes('APROBADO')) statuses.unshift('APROBADO');
+    return /*#__PURE__*/React.createElement("section", {
+      className: "sf-report",
+      "data-sutifinanzas": "report",
+      "aria-busy": phase === 'loading'
+    }, /*#__PURE__*/React.createElement("style", null, `.sf-report{font-family:Nunito,var(--font-family,sans-serif);color:var(--ink);min-width:0}.sf-body{padding:20px;max-width:1320px;margin:auto}.sf-report button,.sf-report input,.sf-report select{font:inherit}.sf-report button,.sf-report select,.sf-report input{min-height:44px}.sf-report button:focus-visible,.sf-report select:focus-visible,.sf-report input:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}.sf-toolbar,.sf-filters,.sf-crumbs{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.sf-toolbar{justify-content:space-between}.sf-button{border:1px solid var(--border,#ded8dc);background:var(--surface,#fff);color:var(--guinda);border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}.sf-button:disabled{opacity:.6;cursor:wait}.sf-filters{margin:20px 0;align-items:end}.sf-filters label{display:flex;flex:1 1 140px;flex-direction:column;gap:7px;font-weight:800;font-size:13px}.sf-filters input,.sf-filters select{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--border,#ded8dc);border-radius:12px;padding:10px;background:var(--surface,#fff);color:var(--ink)}.sf-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sf-card{padding:18px;border-radius:18px;background:var(--surface,#fff);box-shadow:var(--neo-sm);min-width:0}.sf-kpi-label{color:var(--ink-3);font-size:12px;font-weight:800}.sf-kpi-value{font-size:clamp(19px,2vw,28px);font-weight:900;overflow-wrap:anywhere;margin-top:7px}.sf-crumbs{margin:24px 0 10px;gap:4px}.sf-crumbs button{border:0;background:transparent;color:var(--guinda);padding:8px;font-weight:800;cursor:pointer;overflow-wrap:anywhere;text-align:left}.sf-group{width:100%;border:0;border-bottom:1px solid var(--border,#e9e1e5);background:transparent;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(110px,1fr) minmax(90px,.7fr) minmax(100px,.8fr) 20px;gap:14px;align-items:center;text-align:left;padding:18px 4px;color:var(--ink);cursor:pointer}.sf-group:hover{background:var(--guinda-50,#f9f0f3)}.sf-group-title{font-weight:900;overflow-wrap:anywhere}.sf-amount{text-align:right;font-weight:900}.sf-share{font-size:13px}.sf-bar{height:5px;background:var(--guinda-50,#eee);border-radius:9px;margin-top:7px;overflow:hidden}.sf-bar span{display:block;height:100%;background:var(--guinda)}.sf-muted{font-size:12px;color:var(--ink-3);line-height:1.6}.sf-note{background:var(--guinda-50,#f9f0f3);padding:12px 16px;border-radius:12px;margin:16px 0;font-size:13px;line-height:1.6}.sf-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sf-details dl{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1.3fr);gap:8px;margin:0;font-size:13px}.sf-details dt{font-weight:800}.sf-details dd{margin:0;overflow-wrap:anywhere}.sf-state{padding:36px 16px;text-align:center}.sf-list-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.sf-list-head select{max-width:100%;border:1px solid var(--border,#ded8dc);border-radius:10px;padding:8px;background:var(--surface,#fff);color:var(--ink)}@media(max-width:700px){.sf-body{padding:14px}.sf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sf-group{grid-template-columns:minmax(0,1fr) minmax(110px,.7fr) 16px;gap:8px}.sf-group .sf-share{grid-row:2;grid-column:1}.sf-group .sf-count{grid-row:2;grid-column:2;text-align:right}.sf-group .sf-chevron{grid-column:3;grid-row:1}.sf-details{grid-template-columns:minmax(0,1fr)}}`), header ? header({
+      title: 'SUTIFINANZAS',
+      sub: 'Gasto por Secretaría'
+    }) : /*#__PURE__*/React.createElement("button", {
+      className: "sf-button",
+      onClick: onBack
+    }, "Volver al Admin"), /*#__PURE__*/React.createElement("div", {
+      className: "sf-body"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "sf-toolbar"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "sf-muted"
+    }, "SUTIFINANZAS"), /*#__PURE__*/React.createElement("h1", {
+      style: {
+        margin: '4px 0',
+        fontSize: 26
+      }
+    }, "Gasto por Secretar\xEDa"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        margin: '6px 0',
+        fontSize: 14
+      }
+    }, "Consulta y analiza el gasto autorizado por secretar\xEDa.")), /*#__PURE__*/React.createElement("button", {
+      className: "sf-button",
+      disabled: phase === 'loading',
+      onClick: () => refresh()
+    }, phase === 'loading' ? 'Consultando…' : 'Actualizar')), /*#__PURE__*/React.createElement("p", {
+      className: "sf-muted"
+    }, data ? 'Datos consultados de Google Sheets: ' + new Date(data.source.consultedAt).toLocaleString('es-MX') : 'Fuente: Google Sheets · Gasto por secretaría'), phase === 'loading' && /*#__PURE__*/React.createElement("div", {
+      className: "sf-state",
+      role: "status"
+    }, "Consultando el informe de Google Sheets\u2026"), phase === 'error' && /*#__PURE__*/React.createElement("div", {
+      className: "sf-note",
+      role: "alert"
+    }, error), data && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "sf-filters"
+    }, /*#__PURE__*/React.createElement("label", null, "A\xF1o", /*#__PURE__*/React.createElement("select", {
+      "aria-label": "A\xF1o",
+      value: filters.year,
+      onChange: e => change('year', e.target.value)
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "all"
+    }, "Todos los a\xF1os"), years.map(y => /*#__PURE__*/React.createElement("option", {
+      key: y,
+      value: y
+    }, y)), /*#__PURE__*/React.createElement("option", {
+      value: "missing"
+    }, "Sin a\xF1o"))), /*#__PURE__*/React.createElement("label", null, "Estatus", /*#__PURE__*/React.createElement("select", {
+      "aria-label": "Estatus",
+      value: filters.status,
+      onChange: e => change('status', e.target.value)
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "all"
+    }, "Todos los estatus"), statuses.map(s => /*#__PURE__*/React.createElement("option", {
+      key: s,
+      value: s
+    }, s === 'APROBADO' ? 'Aprobado' : s === 'RECHAZADO' ? 'Rechazado' : s)), /*#__PURE__*/React.createElement("option", {
+      value: "missing"
+    }, "Sin estatus"))), /*#__PURE__*/React.createElement("label", null, "Mes", /*#__PURE__*/React.createElement("select", {
+      "aria-label": "Mes",
+      value: filters.month,
+      onChange: e => change('month', e.target.value)
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "all"
+    }, "Todos los meses"), months.map((m, i) => /*#__PURE__*/React.createElement("option", {
+      key: m,
+      value: String(i + 1).padStart(2, '0')
+    }, m)), /*#__PURE__*/React.createElement("option", {
+      value: "missing"
+    }, "Sin fecha de gasto"))), /*#__PURE__*/React.createElement("label", {
+      style: {
+        flexGrow: 2
+      }
+    }, "Buscar", /*#__PURE__*/React.createElement("input", {
+      type: "search",
+      "aria-label": "Buscar en el informe",
+      placeholder: "Secretar\xEDa, proyecto, partida o requisici\xF3n",
+      value: filters.search,
+      onChange: e => change('search', e.target.value)
+    }))), /*#__PURE__*/React.createElement("div", {
+      className: "sf-kpis"
+    }, [[filters.status === 'APROBADO' ? 'TOTAL APROBADO' : 'TOTAL FILTRADO', money(summary.amountCents)], ['REQUISICIONES', summary.requisitions], ['SECRETARÍAS', summary.secretariats], ['PROYECTOS', summary.projects]].map(([label, value]) => /*#__PURE__*/React.createElement("div", {
+      className: "sf-card",
+      key: label
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "sf-kpi-label"
+    }, label), /*#__PURE__*/React.createElement("div", {
+      className: "sf-kpi-value"
+    }, value)))), Object.values(data.quality).some(Boolean) && /*#__PURE__*/React.createElement("p", {
+      className: "sf-note"
+    }, "Datos faltantes en la hoja: ", data.quality.missingSecretariat, " filas sin secretar\xEDa; ", data.quality.missingRequisition, " sin n\xFAmero de requisici\xF3n; ", data.quality.missingYear, " sin a\xF1o; ", data.quality.missingDate, " sin fecha de gasto; ", data.quality.missingStatus, " sin estatus. Puedes consultarlas con las categor\xEDas \u201CSin\u2026\u201D. El a\xF1o usa A\xD1O; el mes usa FECHA DEL GASTO."), /*#__PURE__*/React.createElement("nav", {
+      "aria-label": "Desglose del gasto",
+      className: "sf-crumbs"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => navigate([]),
+      "aria-current": !path.length ? 'page' : undefined
+    }, "Todas las secretar\xEDas"), path.map((p, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+      key: i
+    }, /*#__PURE__*/React.createElement("span", {
+      "aria-hidden": "true"
+    }, "\u203A"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => navigate(path.slice(0, i + 1)),
+      "aria-current": i === path.length - 1 ? 'page' : undefined
+    }, p.label)))), /*#__PURE__*/React.createElement("div", {
+      className: "sf-card"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "sf-list-head"
+    }, /*#__PURE__*/React.createElement("h2", {
+      ref: heading,
+      tabIndex: -1,
+      style: {
+        fontSize: 19,
+        margin: '4px 0'
+      }
+    }, names[view.level] || 'Detalle de requisición'), view.level && /*#__PURE__*/React.createElement("select", {
+      "aria-label": "Orden del gasto",
+      value: sort,
+      onChange: e => setSort(e.target.value)
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "amount-desc"
+    }, "Mayor importe primero"), /*#__PURE__*/React.createElement("option", {
+      value: "amount-asc"
+    }, "Menor importe primero"), /*#__PURE__*/React.createElement("option", {
+      value: "name"
+    }, "Nombre A\u2013Z"))), /*#__PURE__*/React.createElement("p", {
+      className: "sf-muted"
+    }, visible.length, " registros con los filtros activos \xB7 Porcentajes sobre el total filtrado \xB7 Importes en MXN"), !view.records.length ? /*#__PURE__*/React.createElement("div", {
+      className: "sf-state",
+      role: "status"
+    }, "No hay registros para estos filtros.") : view.level ? view.groups.map(g => /*#__PURE__*/React.createElement("button", {
+      className: "sf-group",
+      key: g.key ?? 'missing',
+      "aria-label": 'Desglosar ' + g.label,
+      onClick: () => navigate([...path, {
+        key: g.key,
+        label: g.label
+      }])
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "sf-group-title"
+    }, g.label), /*#__PURE__*/React.createElement("span", {
+      className: "sf-amount"
+    }, money(g.amountCents)), /*#__PURE__*/React.createElement("span", {
+      className: "sf-share"
+    }, g.percentage.toLocaleString('es-MX', {
+      maximumFractionDigits: 1
+    }), "%", /*#__PURE__*/React.createElement("span", {
+      className: "sf-bar",
+      "aria-hidden": "true"
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: Math.max(0, Math.min(100, g.percentage)) + '%'
+      }
+    }))), /*#__PURE__*/React.createElement("span", {
+      className: "sf-muted sf-count"
+    }, g.count, " registros", /*#__PURE__*/React.createElement("br", null), g.requisitions, " requisiciones"), /*#__PURE__*/React.createElement("span", {
+      className: "sf-chevron",
+      "aria-hidden": "true"
+    }, "\u203A"))) : /*#__PURE__*/React.createElement("div", {
+      className: "sf-details"
+    }, view.records.map(r => /*#__PURE__*/React.createElement("article", {
+      className: "sf-card",
+      key: r.id
+    }, /*#__PURE__*/React.createElement("h3", {
+      style: {
+        marginTop: 0
+      }
+    }, r.concept || 'Sin concepto'), /*#__PURE__*/React.createElement("dl", null, [['Requisición', r.requisition], ['Producto', r.id], ['Fecha del gasto', r.date], ['Secretaría', r.secretariat], ['Proyecto', r.project], ['Partida', r.item], ['Clave presupuestal', r.budgetCode], ['Importe', money(r.amount * 100)], ['Estatus', r.status], ['Año', r.year], ['Forma de pago', r.payment], ['Fila de la hoja', r.row]].map(([k, v]) => /*#__PURE__*/React.createElement(React.Fragment, {
+      key: k
+    }, /*#__PURE__*/React.createElement("dt", null, k), /*#__PURE__*/React.createElement("dd", null, v ?? 'Sin dato en la hoja')))))))))));
+  }
+  window.SutifinanzasAdminModule = SutifinanzasAdminModule;
+})();
+})();
 /* @@file sicof-repository.js */
 (function(){
 /* Private authenticated SICOF boundary. Calculations and exports run on the
@@ -67916,6 +68281,22 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   // ─────────────────────────────────────────────────────────────
   // H-SICOF-001 integration: existing session and backend module boundary.
   const MODULES = [{
+    id: 'sutifinanzas',
+    label: 'SUTIFINANZAS',
+    icon: 'finance',
+    desc: 'Gasto por Secretaría · consulta de Google Sheets',
+    ready: true,
+    registration: {
+      version: '20261004000200',
+      totalOnly: false,
+      boundary: 'Google Sheets direct read-only Gasto por secretaría; no financial persistence',
+      readPermissions: ['program_requests.read'],
+      writePermissions: [],
+      sections: [],
+      backendEvidence: 'supabase/functions/sutifinanzas/report.mjs',
+      isolatedTest: 'scripts/test-sutifinanzas.js'
+    }
+  }, {
     id: 'sicof',
     label: 'Sicof',
     icon: 'trending',
@@ -68169,6 +68550,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    sutifinanzas: 'program_requests.read',
     sicof: 'savings.read',
     farma: 'program_catalog.read',
     document_generation: 'document_generation.config.read',
@@ -68225,6 +68607,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     marketplace: 'marketplace'
   });
   const ADMIN_DESKTOP_GROUPS = Object.freeze([{
+    id: 'sutifinanzas',
+    label: 'SUTIFINANZAS',
+    icon: 'finance',
+    modules: ['sutifinanzas']
+  }, {
     id: 'access_control',
     label: 'Acceso y control',
     icon: 'shield',
@@ -70316,6 +70703,10 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       onBack: backFromAffiliateLink,
       header: headerFn,
       initialAffiliateId: affiliateContext && affiliateContext.affiliateId
+    });else if (view === 'sutifinanzas') body = React.createElement(window.SutifinanzasAdminModule, {
+      app,
+      onBack: () => setView('menu'),
+      header: headerFn
     });else if (view === 'sicof') body = React.createElement(window.SicofAdminModule, {
       app,
       onBack: () => setView('menu'),

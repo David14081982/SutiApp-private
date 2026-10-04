@@ -29,6 +29,7 @@
   // ─────────────────────────────────────────────────────────────
   // H-SICOF-001 integration: existing session and backend module boundary.
   const MODULES = [
+    {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',desc:'Gasto por Secretaría · consulta de Google Sheets',ready:true,registration:{version:'20261004000200',totalOnly:false,boundary:'Google Sheets direct read-only Gasto por secretaría; no financial persistence',readPermissions:['program_requests.read'],writePermissions:[],sections:[],backendEvidence:'supabase/functions/sutifinanzas/report.mjs',isolatedTest:'scripts/test-sutifinanzas.js'}},
     { id:'sicof',label:'Sicof',icon:'trending',desc:'Rendimientos, periodos y comportamiento de pagos',ready:true,registration:{version:'20261003000200',totalOnly:false,boundary:'SICOF authenticated simulation and canonical savings reports; no financial posting',readPermissions:['savings.read','savings.reports'],writePermissions:['savings.config'],sections:[],backendEvidence:'supabase/migrations/20261003000200_sicof_workspace.sql',isolatedTest:'scripts/test-sicof-workspace.js'} },
     { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
@@ -74,6 +75,7 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    sutifinanzas:'program_requests.read',
     sicof:'savings.read',
     farma:'program_catalog.read',document_generation:'document_generation.config.read',login_history:'authorization.read',
     votaciones:'votaciones.read',votaciones_nominal:'votaciones.export_identified_votes',
@@ -82,6 +84,7 @@
   });
   const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
+    {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',modules:['sutifinanzas']},
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin','document_generation'] },
     { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','sicof','fondos','flujos','inversion'] },
@@ -536,6 +539,7 @@
     else if(view==='requests')body=React.createElement(window.RequestsModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
+    else if(view==='sutifinanzas')body=React.createElement(window.SutifinanzasAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sicof')body=React.createElement(window.SicofAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});

@@ -1,0 +1,54 @@
+{
+  "status": "PASS",
+  "cssOnly": true,
+  "otherChunksUnchanged": true,
+  "financialWrites": 0,
+  "bundleSha256": "63a72c7ecb3ccf595bec82f2d86afd494c4a4c8e3b2cfac0e34b9e47c6dceb1d",
+  "version": 314,
+  "originalOverflowReproduced": true,
+  "checks": [
+    {
+      "width": 240,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 320,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 375,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 430,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 580,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 700,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 990,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 1200,
+      "allAmountsInsideCards": true
+    },
+    {
+      "width": 1440,
+      "allAmountsInsideCards": true
+    }
+  ],
+  "largeAmountsAndNegativeValues": true,
+  "fullTextPreserved": true,
+  "enlargedTextContained": true,
+  "networkBlocked": true,
+  "structuralChanges": false,
+  "globalImageRegression": "NOT APPLICABLE",
+  "registry": "CSS-only change; structural regeneration not required"
+}

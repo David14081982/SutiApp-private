@@ -92,3 +92,9 @@ Un fallo puede conservar físicamente la última observación para diagnóstico,
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+## H-SICOF-INSTANT-FILTERS-001 — entrada efímera de simulación
+
+La entrada del simulador y sus resultados se conservan sólo en memoria de la sesión/pantalla, con vigencia máxima de 300 segundos y sin superar el vencimiento de la observación de préstamos. No se persisten en localStorage, sessionStorage, IndexedDB ni un nuevo almacén de saldos. Vencimiento, cambio de contexto/sesión o de día impiden reutilizarla; una carga canónica posterior la sustituye. No existe fallback a una vista previa vencida.
+
+La simulación no modifica aportaciones, retiros, rendimientos acreditados, históricos ni políticas. Guardar un escenario utiliza el escritor existente y sus comprobaciones, separado del derivado efímero. El servidor no acepta participantes ni resultados financieros aportados por el navegador como autoridad. La modificación de filtros compatibles no agrega polling ni lecturas periódicas; se conserva la actualización compartida de préstamos previamente autorizada.

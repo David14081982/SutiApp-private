@@ -832,3 +832,11 @@ Estado de esta adenda: migración `20261003000600` aplicada; corrección de cade
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+## H-SICOF-INSTANT-FILTERS-001 — simulación local con origen verificado
+
+Los filtros compatibles reutilizan en memoria una entrada canónica obtenida por WORKSPACE autenticado y ejecutan el mismo motor financiero, sin modificarlo ni consultar otra fuente. La entrada vence al primero de estos límites: 300 segundos desde su preparación o vencimiento de la observación Google. Google conserva la autoridad de préstamos y Supabase la de Ahorro; la vista previa es un derivado temporal, no un saldo nuevo ni una confirmación financiera.
+
+La reutilización mantiene la fecha inicial y el corte efectivo `as_of`. Permite acortar un cierre futuro dentro del intervalo cargado mientras `as_of` siga siendo el día observado; un periodo histórico sólo se reutiliza con el mismo corte. Cambiar el inicio o establecer otro corte histórico requiere cargar su contexto canónico. Las políticas vigentes, incluida la exigencia de semestre completo cuando corresponda, permanecen. Cambios de contexto, sesión, día o vencimiento invalidan la entrada. Exportar y guardar revalidan fuente, permisos y huellas en servidor; guardar otro cierre obtiene además su contexto canónico exacto y conserva ese periodo y su huella.
+
+El backend Edge v12 fue verificado con una consulta de workspace y una exportación autenticadas. La primera carga sigue requiriendo consultas remotas; la respuesta local de los filtros compatibles no la convierte en instantánea. La evidencia de publicación y cierre corresponde a `audits/H-SICOF-INSTANT-FILTERS-001.md`.

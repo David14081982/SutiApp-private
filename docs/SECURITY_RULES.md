@@ -383,3 +383,9 @@ El worker periódico utiliza exclusivamente los secretos Vault `sicof_source_ref
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+## H-SICOF-INSTANT-FILTERS-001 — preview sin facultades de escritura
+
+WORKSPACE entrega la entrada de simulación sólo por opción explícita y después de autenticar y autorizar el contexto administrativo actual. La identidad, sesión y día de operación delimitan su uso, y su vencimiento no puede exceder el de la fuente. El navegador y su worker no reciben secretos ni acceso de servicio. El motor compartido conserva las reglas existentes; ejecutar una vista previa no concede facultades para acreditar rendimientos o entregar dinero.
+
+EXPORT y SAVE_SCENARIO reciben únicamente las fechas base, parámetros y huella esperada; vuelven a leer el contexto autorizado y la fuente vigente. Fechas no soportadas, cambios de fuente/contexto, permisos revocados o huellas discrepantes se rechazan. Para guardar un cierre diferente se obtiene también el contexto canónico del periodo efectivo, se exige igualdad de los hechos financieros aplicables y se recalculan resultado y huella antes de invocar el escritor existente. No se confía en un resultado del cliente ni se debilitan los controles SQL.

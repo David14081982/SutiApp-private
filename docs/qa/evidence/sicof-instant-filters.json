@@ -1,0 +1,326 @@
+{
+  "task": "H-SICOF-INSTANT-FILTERS-001",
+  "status": "PASS",
+  "baseline": "2bd633718bc26008b805ae4658cc35db15d8b4de",
+  "contract": {
+    "authoritiesUnchanged": true,
+    "preview": "Same financial engine in a context-bound memory-only Web Worker",
+    "freshnessSeconds": 300,
+    "reuse": "Same start and canonical as_of; future cutoff may shrink/reexpand inside originally loaded range; same historic range supports settings only",
+    "externalReadsPerSupportedChange": 0,
+    "export": "One HISTORIAL P V2 sheet A:O, selected fund(s), inclusive applied dates",
+    "writes": "Existing backend authorization, source/context fingerprint and effective-period revalidation before scenario writer"
+  },
+  "build": {
+    "status": "PASS",
+    "version": 321,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "92254e8a4c6fd9c9283bd1a2e9ea2b6551a2687c033b23a102c65fae8cf4dff7",
+    "workerSha256": "f3ba0b1186f4f9c94045406df5b9412e938ecfa0e332567965fd736cdd48620e"
+  },
+  "deployment": {
+    "status": "PASS",
+    "priorVersion": 11,
+    "version": 12,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "12d0b041fdc454f4228b2db1b35cce0100c0a7933783f906c28ffac562913218"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "f8a4cc17e7fcfda5b5f89b2f469733a6af5c92b81b64318d92454c6f31292b91"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "1cf91dbdc4c3c886e5604236cfa8aa8424f6b779fd44a716f29fbb4ff0dd4ae7"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+      },
+      {
+        "file": "simulation.mjs",
+        "sha256": "71a1b5711c1483c61260e6a8fc9ae3220937b94adfe0b6e2081b953228fe6718"
+      },
+      {
+        "file": "source-cache.mjs",
+        "sha256": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268"
+      }
+    ],
+    "financialWrites": 0
+  },
+  "backend": {
+    "status": "PASS",
+    "provenance": "Commands already executed against the candidate; no repeated execution for this record.",
+    "checks": [
+      {
+        "command": "node scripts/test-sicof-simulation-handler.js",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/test-sicof-edge.js",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/test-sicof-export-fast-path.js",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/test-sicof-continuous-handler.js",
+        "result": "PASS",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/test-sicof-source-cache-worker.js",
+        "result": "PASS",
+        "exitCode": 0
+      }
+    ]
+  },
+  "simulationEquivalence": {
+    "status": "PASS",
+    "command": "node scripts/test-sicof-simulation.js",
+    "coverage": "17 equivalent scenarios plus historical same-range reuse; full result/workspace, strict bounds, origin integrity, source expiry/day and malformed/duplicate/large source records"
+  },
+  "browser": {
+    "status": "PASS",
+    "checks": [
+      "real generated Worker initialized once from compact authorized workspace",
+      "changing December 31 to December 4 calculates automatically, inclusive cutoff, zero additional RPC, exact export basis",
+      "funds and rapid percentages use newest draft; delayed older Worker reply cannot replace results",
+      "partial-semester contribution rule shows explicit error, leaves busy state, blocks export and recovers locally",
+      "reexpanding original December 31 restores future evidence from immutable loaded inputs",
+      "all eight original sections render, no Apply clicks, no browser persistence",
+      "session loss unmounts private UI, terminates Worker, and rejects subsequent work",
+      "source expiry prevents automatic work, exports and scenario save; Worker independently rejects stale inputs without polling",
+      "selector transport reconstructs all payments, loans, schedule flags, funds and metric fields exactly as independent server analysis"
+    ],
+    "fixture": {
+      "synthetic": true,
+      "participants": 2,
+      "sourceRows": 15,
+      "operationDay": "2026-10-03",
+      "clock": "fixed calendar date, progressing normal timers",
+      "worker": "generated production artifact with isolated clock shim"
+    },
+    "timings": [
+      {
+        "case": "automatic inclusive December 4",
+        "milliseconds": 21.2,
+        "includesArtificialDelay": false
+      },
+      {
+        "case": "cutoff change through displayed result",
+        "milliseconds": 279.04,
+        "includesPlaywrightAndAssertionOverhead": true
+      },
+      {
+        "case": "rapid selected funds and percentage latest wins",
+        "milliseconds": 10.3,
+        "includesArtificialDelay": false
+      },
+      {
+        "case": "invalid partial-semester policy recovers on correction",
+        "reusedPreviouslyAppliedResult": true
+      },
+      {
+        "case": "reexpanded original cutoff",
+        "milliseconds": 5.5,
+        "includesArtificialDelay": false
+      }
+    ],
+    "calls": {
+      "initialWorkspacePerSession": 1,
+      "additionalWorkspaceForFilters": 0,
+      "externalRequests": 0,
+      "financialWrites": 0
+    },
+    "errors": [],
+    "limits": [
+      "Small synthetic browser fixture; timings are observations, not production p95 or network latency.",
+      "Backend export authorization and concurrent-context validation covered by dedicated handler test."
+    ]
+  },
+  "performance": {
+    "status": "PASS",
+    "offlineRecordedData": true,
+    "externalRequests": 0,
+    "financialWrites": 0,
+    "screenshots": 0,
+    "ui_sha256": "32fb0c6ef1e69c05a80770ddd7e192a7e9824b505c280de5cee69c74af4ee232",
+    "worker_sha256": "f3ba0b1186f4f9c94045406df5b9412e938ecfa0e332567965fd736cdd48620e",
+    "client_sha256": "620727f02f9b3da7adfa4e881b1d13754505b5be7e6724bde3c069eb0932e406",
+    "counts": {
+      "participants": 354,
+      "loans": 2373,
+      "payments": 5656,
+      "schedules": 18534
+    },
+    "modes": [
+      {
+        "mode": "normal",
+        "calls": 1,
+        "changes": [
+          {
+            "end": "2026-12-04",
+            "totalMs": 839.7999999523163,
+            "workerMs": 666.4000000953674,
+            "clientMs": 738.9000000953674,
+            "preWorkerMs": 81.79999995231628,
+            "afterReplyMs": 19.09999990463257
+          },
+          {
+            "end": "2026-12-31",
+            "totalMs": 782.5,
+            "workerMs": 630.7999999523163,
+            "clientMs": 684,
+            "preWorkerMs": 80.89999985694885,
+            "afterReplyMs": 17.600000143051147
+          }
+        ],
+        "longTasks": {
+          "count": 1,
+          "totalMs": 89,
+          "maxMs": 89
+        },
+        "pageErrors": 0,
+        "profiler": false,
+        "workerInstrumentation": false
+      }
+    ]
+  },
+  "live": {
+    "status": "PASS",
+    "workspace": {
+      "http": 200,
+      "total_ms": 8014,
+      "decoded_bytes": 12636035,
+      "sourceVersion": 1,
+      "observed_at": "2026-10-04T05:12:38.351+00:00",
+      "expires_at": "2026-10-04T05:17:38.351+00:00",
+      "participants": 354
+    },
+    "localCalculation": {
+      "requestedFrom": "2026-07-01",
+      "requestedTo": "2026-12-04",
+      "milliseconds": 225.67,
+      "networkRequests": 0
+    },
+    "export": {
+      "http": 200,
+      "total_ms": 7189,
+      "sheets": 1,
+      "columns": 15,
+      "dataRows": 1397,
+      "from": "2026-07-05",
+      "to": "2026-11-30",
+      "fund": "Caja de Ahorro",
+      "requestedFrom": "2026-07-01",
+      "requestedTo": "2026-12-04"
+    },
+    "requests": {
+      "login": 1,
+      "workspace": 1,
+      "export": 1
+    },
+    "googleReadsDuringConsultation": 0,
+    "financialWrites": 0,
+    "limitation": "One measured live request per operation; localCalculation is Node timing, browser rendering measured separately."
+  },
+  "regression": {
+    "status": "PASS",
+    "commands": [
+      "node scripts/test-sicof-ui-browser.js",
+      "node scripts/test-sicof-read-deadline.js",
+      "node scripts/test-pages-deployment.js",
+      "node scripts/build-sicof-simulation-worker.js --check",
+      "git diff --check"
+    ],
+    "scope": "Eight original tabs, responsive cards, matrix totals/duplicates, exports, session isolation, timeouts, public asset allowlist"
+  },
+  "unchanged": [
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "sha256": "12d0b041fdc454f4228b2db1b35cce0100c0a7933783f906c28ffac562913218",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/exports.mjs",
+      "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/index.ts",
+      "sha256": "1cf91dbdc4c3c886e5604236cfa8aa8424f6b779fd44a716f29fbb4ff0dd4ae7",
+      "unchanged": true
+    },
+    {
+      "file": "supabase/functions/sicof/source-cache.mjs",
+      "sha256": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268",
+      "unchanged": true
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "sha256": "b000c98ce6690968468a472d8f1d6f4b3963bc3266823ce8046100db463934d4",
+      "unchanged": true
+    },
+    {
+      "file": "app/savings-repository.js",
+      "sha256": "9d697c710d72579dcb41eb5f275a6055ea8508bdf2b9ceefba9504de83f083bd",
+      "unchanged": true
+    },
+    {
+      "file": "app/sicof-payment-behavior.jsx",
+      "sha256": "7396554c2e1a1b45c89d67e1d540db55bacc492eec937045f0936c008e5f5465",
+      "unchanged": true
+    }
+  ],
+  "financialWrites": 0,
+  "sqlChanges": 0,
+  "googleFormulaChanges": 0,
+  "persistentBrowserCopies": 0,
+  "limitations": [
+    "Initial full workspace and backend-authorized XLSX still require server reads; measured once at 8014 ms and 7189 ms respectively.",
+    "Offline real-size browser measurements are observations on this computer, not guaranteed response times or p95.",
+    "Changed start, unsupported historical cutoff or expired observation require one fresh authorized context.",
+    "An expired view displays its expiry and blocks new calculation/export/save until explicitly refreshed."
+  ],
+  "globalImageRegression": {
+    "status": "NOT APPLICABLE",
+    "reason": "Focal SICOF UI/Worker/Edge only; shared Auth, repositories, assets, routing and service-worker logic unchanged; generated bundle/cachebuster exception applies."
+  }
+}

@@ -35,6 +35,7 @@ const publicFiles = [
   'assets/branding/home-header-collapsed.webp',
   'assets/branding/credencial-puno.png',
   'app/bundle.js',
+  'app/sicof-simulation-worker.js',
   'app/vendor/pdfjs-5.4.149/pdf.min.mjs',
   'app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs',
   'app/vendor/pdfjs-5.4.149/LICENSE',

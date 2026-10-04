@@ -151,3 +151,9 @@ El candidato programa una lectura global cada cuatro minutos y permite actualiza
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+## H-SICOF-INSTANT-FILTERS-001 — filtros sin lecturas Google adicionales
+
+Cambiar filtros compatibles trabaja sobre la observación ya autorizada y el contexto canónico recibido; no genera consultas Google ni altera el job compartido de cuatro minutos. El lector, libro, columnas, fórmulas, fechas de amortización y huellas conservan su contrato. El motor financiero permanece idéntico en servidor y simulador local.
+
+La vista previa expira como máximo a los cinco minutos y antes si vence su fuente. Otro inicio o corte histórico requiere contexto canónico suficiente; no se reconstruyen políticas faltantes a partir de los gráficos. Exportar o guardar conserva la comprobación del servidor y falla ante una fuente modificada o vencida. No se introducen writers legacy, polling por filtro ni una segunda autoridad de préstamos.

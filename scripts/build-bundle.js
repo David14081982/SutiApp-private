@@ -16,7 +16,7 @@ if (babelPath) {
 
 // H-SICOF-001 integration: private repositories and focal UI dependencies.
 const files = [
-  'sicof-repository.js', 'sicof-payment-behavior.jsx', 'sicof-admin.jsx', 'savings-period-breakdown.jsx',
+  'sicof-repository.js', 'sicof-payment-behavior.jsx', 'sicof-simulation-client.js', 'sicof-admin.jsx', 'savings-period-breakdown.jsx',
   'document-generation-design.js','document-generation-repository.js','document-layout-repository.js','document-layout-designer.jsx','screens-admin-document-generation.jsx', 'farma-repository.js', 'screens-farma.jsx',
   'login-history-repository.js', 'screens-admin-login-history.jsx',
   'voting-design.js', 'voting-repository.js', 'screens-voting.jsx',

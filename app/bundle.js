@@ -215,6 +215,68 @@
   window.SicofView = Object.freeze({ money, Table, contextKey, useContext });
 })();
 })();
+/* @@file sicof-simulation-client.js */
+(function(){
+/* SICOF-only disposable, context-bound simulation. No storage or data requests. */
+(function () {
+  'use strict';
+  function create() {
+    const worker = new Worker(new URL('app/sicof-simulation-worker.js?v=321', document.baseURI));
+    const pending = new Map(); let sequence = 0, closed = false, basis = null, expires = 0, original = null;
+    function fail(error) { for (const item of pending.values()) { clearTimeout(item.timer); item.reject(error); } pending.clear(); }
+    worker.onerror = () => fail(Error('SICOF_SIMULATION_WORKER_FAILED'));
+    worker.onmessage = event => {
+      const message = event.data, item = pending.get(message?.id); if (!item) return;
+      pending.delete(message.id); clearTimeout(item.timer);
+      if (message.error) item.reject(Error(message.error)); else item.resolve(message.data);
+    };
+    function request(type, values) {
+      if (closed) return Promise.reject(Error('SICOF_SIMULATION_CLOSED'));
+      const id = ++sequence;
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => { pending.delete(id); reject(Error('SICOF_SIMULATION_TIMEOUT')); }, 10000);
+        pending.set(id, { resolve, reject, timer });
+        try { worker.postMessage({ id, type, ...values }); } catch (error) { clearTimeout(timer); pending.delete(id); reject(error); }
+      });
+    }
+    return {
+      async initialize(seed, workspace) {
+        await request('INIT', { seed, workspace }); basis = seed.basis; expires = Date.parse(seed.expires_at); original = workspace;
+      },
+      supports(settings) {
+        return !!basis && Date.now() < expires && settings.periodIni === basis.from && settings.periodFin <= basis.to &&
+          (basis.as_of === basis.today ? settings.periodFin >= basis.today : settings.periodFin === basis.to);
+      },
+      async calculate(input) {
+        const response = await request('CALCULATE', { input }), selection = response.selection;
+        if (closed || !original) throw Error('SICOF_SIMULATION_CLOSED');
+        if (!Array.isArray(selection?.payments) || !Array.isArray(selection?.loanPeriods) || selection.loanPeriods.length !== original.loans.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+        const payments = selection.payments.map(index => {
+          if (!Number.isInteger(index) || index < 0 || index >= original.payments.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          return original.payments[index];
+        });
+        const loans = original.loans.map((loan, index) => {
+          const flags = selection.loanPeriods[index];
+          if (!Array.isArray(flags) || flags.length !== loan.schedule.length || flags.some(flag => typeof flag !== 'boolean')) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          const schedule = loan.schedule.map((payment, paymentIndex) => payment.in_period === flags[paymentIndex] ? payment : { ...payment, in_period: flags[paymentIndex] });
+          return schedule.every((payment, paymentIndex) => payment === loan.schedule[paymentIndex]) ? loan : { ...loan, schedule };
+        });
+        if (!Array.isArray(response.result?.rows)) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+        const result = { ...response.result, rows: response.result.rows.map(({ loan_indexes, ...row }) => {
+          if (!Array.isArray(loan_indexes)) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          return { ...row, loans: loan_indexes.map(index => {
+            if (!Number.isInteger(index) || index < 0 || index >= loans.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+            return loans[index];
+          }) };
+        }) };
+        return { result, workspace: { loans, payments, funds: response.funds, paymentMetrics: response.paymentMetrics }, basis: response.basis, elapsed_ms: response.elapsed_ms };
+      },
+      close() { if (closed) return; closed = true; basis = null; original = null; worker.terminate(); fail(Error('SICOF_SIMULATION_CLOSED')); }
+    };
+  }
+  window.SicofSimulationClient = Object.freeze({ create });
+})();
+})();
 /* @@file sicof-admin.jsx */
 (function(){
 /* SICOF administrative workbench. Inputs are scenario drafts; calculations,
@@ -379,6 +441,9 @@
   }
   function errorText(error) {
     const value = String(error && (error.code || error.message) || '');
+    if (/FULL_SEMESTER_REQUIRED/.test(value)) return 'Aportaciones del semestre requiere el semestre completo. Para un corte parcial selecciona Capital acumulado.';
+    if (/SIMULATION_EXPIRED/.test(value)) return 'La información cargada venció. Pulsa Actualizar para usar la versión vigente.';
+    if (/SIMULATION_WORKER|SIMULATION_CLOSED|SIMULATION_INPUT/.test(value)) return 'No se pudo preparar el cálculo en esta pantalla. Pulsa Actualizar para reintentarlo.';
     if (/TIMEOUT/.test(value)) return 'La consulta no respondió a tiempo. Puedes reintentar; no se hacen reintentos automáticos.';
     if (/SOURCE_CACHE/.test(value)) return 'La copia de préstamos necesita actualizarse. Revisa su fecha y usa Actualizar desde Google.';
     if (/DENIED|AUTH|42501/.test(value)) return 'La sesión o los permisos cambiaron. Vuelve a consultar con una cuenta autorizada.';
@@ -509,22 +574,34 @@
     const [paymentFilter, setPaymentFilter] = React.useState({ funds: null, q: '', from: '', to: '' }), [arrearsFilter, setArrearsFilter] = React.useState({ funds: null, q: '', severity: '' }), [matrixFilter, setMatrixFilter] = React.useState({ funds: null, q: '', year: '' }), [reportFilter, setReportFilter] = React.useState({ q: '', year: '', semester: '' });
     const [costDraft, setCostDraft] = React.useState({ concept: '', amount: '', source: 'pool', status: 'estimated', date: '' });
     const live = React.useRef(true), loadSequence = React.useRef(0), initialized = React.useRef(false), drag = React.useRef(null), busyRef = React.useRef(false), requestBusy = React.useRef(false);
-    const refreshSource = React.useRef(false);
+    const refreshSource = React.useRef(false), simulator = React.useRef(null), localSequence = React.useRef(0), appliedBasis = React.useRef(null);
+    const [simulationReady, setSimulationReady] = React.useState(false);
+    const currentDraft = React.useRef(draftKey); currentDraft.current = draftKey;
+    const latestInput = React.useRef(null); latestInput.current = { settings, costs, bank };
+    const automaticFilters = Boolean(window.SicofSimulationClient);
     const repo = () => window.SicofRepository;
     const valid = () => live.current && window.SicofView.contextKey() === identity;
     const canConfigure = Boolean(app.admin && app.admin.has('savings.config'));
     const copy = key => texts[key] || TEXTS[key];
     const caption = value => { if (typeof value !== 'string') return value; if (CAPTION_KEYS[value]) return copy(CAPTION_KEYS[value]); const prefix = Object.keys(CAPTION_KEYS).find(text => text.endsWith(' ') && value.startsWith(text)); return prefix ? copy(CAPTION_KEYS[prefix]) + value.slice(prefix.length) : value; };
-    React.useEffect(() => () => { live.current = false; loadSequence.current++; }, []);
+    React.useEffect(() => () => { live.current = false; loadSequence.current++; localSequence.current++; simulator.current?.close(); }, []);
     function refresh(forceSource = false) { if (!requestBusy.current && !busyRef.current) { refreshSource.current = forceSource === true; requestBusy.current = true; setRevision(value => value + 1); } }
     React.useEffect(() => {
-      const sequence = ++loadSequence.current; setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
+      const sequence = ++loadSequence.current; localSequence.current++; simulator.current?.close(); simulator.current = null; appliedBasis.current = null; setSimulationReady(false); setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
       requestBusy.current = true; setCalculation('loading'); setCalculationError('');
-      const command = { settings, costs, bank }, commandKey = JSON.stringify(command);
+      const command = latestInput.current, commandKey = JSON.stringify(command);
       const forceSource = refreshSource.current; refreshSource.current = false;
-      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => repo().workspace({ ...command, compact: true, ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 25000).then(expandWorkspace).then(response => {
+      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 25000).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
+        if (automaticFilters && response.simulation) {
+          try {
+            const channel = window.SicofSimulationClient.create(); simulator.current = channel;
+            channel.initialize(response.simulation, value).then(() => {
+              if (valid() && sequence === loadSequence.current) setSimulationReady(true);
+            }, error => { if (valid() && sequence === loadSequence.current) { channel.close(); simulator.current = null; setNotice({ level: 'error', message: errorText(error) }); } });
+          } catch (error) { setNotice({ level: 'error', message: errorText(error) }); }
+        }
         setData(value); setPhase('ready');
         setAppliedKey(commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
         setCalculationError(response.calculation_error ? errorText(Error(response.calculation_error)) : '');
@@ -535,9 +612,37 @@
         }
       }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), 200);
       return () => { clearTimeout(timer); loadSequence.current++; };
-      // Draft edits are intentionally not dependencies: explicit Apply batches them.
+      // Local draft edits use the worker below; only context changes reload sources.
     }, [revision, identity]);
     React.useEffect(() => { if (draftPending) setDetail(null); }, [draftKey, draftPending]);
+    function applyCalculation() {
+      if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) { refresh(); return; }
+      const sequence = ++localSequence.current, command = { settings, costs, bank }, commandKey = JSON.stringify(command), channel = simulator.current;
+      setCalculation('loading'); setCalculationError('');
+      channel.calculate(command).then(response => {
+        if (!valid() || sequence !== localSequence.current || channel !== simulator.current || currentDraft.current !== commandKey) return;
+        setData(previous => ({ ...previous, ...response.workspace })); setResult(response.result); setAppliedKey(commandKey); appliedBasis.current = response.basis;
+        setCalculation('ready'); setCalculationError('');
+      }, error => {
+        if (valid() && sequence === localSequence.current && channel === simulator.current && currentDraft.current === commandKey) { setCalculation('error'); setCalculationError(errorText(error)); }
+      });
+    }
+    React.useEffect(() => {
+      if (phase === 'ready' && !draftPending && storedResult && calculation !== 'ready') {
+        localSequence.current++; setCalculation('ready'); setCalculationError('');
+      }
+    }, [draftKey, appliedKey, phase]);
+    React.useEffect(() => {
+      if (!automaticFilters || !draftPending || phase !== 'ready' || sourceExpired || busyRef.current) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.periodIni) || !/^\d{4}-\d{2}-\d{2}$/.test(settings.periodFin)) return;
+      // Worker initialization is local; do not turn a short INIT into a second
+      // server read. A range absent from this context needs one explicit load.
+      if (simulator.current && !simulationReady) return;
+      if (!simulationReady) return;
+      const timer = setTimeout(applyCalculation, 60);
+      return () => { clearTimeout(timer); localSequence.current++; };
+    }, [draftKey, appliedKey, phase, simulationReady, sourceExpired, busy]);
+
     function change(key, value) { setSettings(previous => Object.assign({}, previous, { [key]: value })); setNotice(null); }
     async function operation(name, action, after) {
       if (busyRef.current) return;
@@ -547,8 +652,8 @@
       finally { busyRef.current = false; if (valid()) setBusy(''); }
     }
     function exportHistorical() { operation('export:historical', () => repo().exportReport('final_ahorro', { filters: { historical: true } }), () => setNotice({ message: 'Informe histórico descargado con sus valores originales.' })); }
-    function exportFile(kind, filters) { if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; } if (!result || calculation !== 'ready') return; operation('export:' + kind, () => repo().exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint }), () => setNotice({ message: 'Informe generado con el escenario consultado.' })); }
-    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
+    function exportFile(kind, filters) { if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; } if (!result || calculation !== 'ready') return; operation('export:' + kind, () => repo().exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => setNotice({ message: 'Informe generado con el escenario consultado.' })); }
+    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
     function savePreferences(nextTexts, nextOrder) { const invalid = preferenceError(nextTexts, nextOrder); if (invalid) { setNotice({ level: 'error', message: invalid }); return; } const overrides = textOverrides(nextTexts); operation('preferences', () => repo().savePreferences({ texts: overrides, tabOrder: nextOrder }), () => { setTexts(overrides); setOrder(nextOrder); setEditing(null); setNotice({ message: 'Presentación guardada.' }); }); }
     function moveTab(id, target) { if (busyRef.current || id === target) return; const next = order.filter(item => item !== id); next.splice(next.indexOf(target), 0, id); savePreferences(texts, next); }
     function addCost(event) {
@@ -563,23 +668,6 @@
     const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
     const exportBusy = Boolean(busy) || calculation !== 'ready' || !result || sourceExpired;
     const input = (key, type, extra) => h('input', Object.assign({ type: type || 'number', value: settings[key], 'aria-label': key, onChange: event => change(key, type === 'date' || type === 'text' ? event.target.value : event.target.value === '' ? '' : Number(event.target.value)) }, extra));
-    const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
-    const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
-    const filteredMatrix = loans.filter(row => (matrixFilter.funds === null || matrixFilter.funds.includes(row.fund)) && match(row, matrixFilter.q, ['name', 'folio', 'id', 'fund']) && (!matrixFilter.year || (row.schedule || []).some(item => !item.date || String(item.date).slice(0, 4) === matrixFilter.year)));
-    const matrixDates = [...new Set(filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || String(item.date).slice(0, 4) === matrixFilter.year).map(item => item.date).filter(Boolean)))].sort();
-    const matrixEntries = filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || !item.date || String(item.date).slice(0, 4) === matrixFilter.year).map(item => Object.assign({}, item, { matrix_identity: row.id + ':' + row.folio })));
-    const matrixHasDuplicates = new Set(matrixEntries.map(row => row.matrix_identity + ':' + row.date)).size !== matrixEntries.length;
-    const paymentMetrics = [
-      { label: 'Pagos mostrados', value: filteredPayments.length }, { label: 'Cuotas registradas', value: sumSnapshot(filteredPayments, 'paid'), format: 'money' },
-      { label: 'Capital conciliado', value: sumSnapshot(filteredPayments, 'capital'), format: 'money' }, { label: 'Interés conciliado', value: sumSnapshot(filteredPayments, 'interest'), format: 'money' },
-      { label: 'Gasto administrativo', value: sumSnapshot(filteredPayments, 'fee'), format: 'money' }, { label: 'Por revisar', value: filteredPayments.filter(row => row.audit === 'REVIEW_REQUIRED' || (row.issues || []).length).length }
-    ];
-    const overdueTotal = sumSnapshot(filteredArrears, 'arrears');
-    const arrearsMetrics = [{ label: 'Préstamos con atraso', value: filteredArrears.length }, { label: 'Atraso registrado', value: overdueTotal, format: 'money' },
-      { label: 'Adeudo promedio', value: overdueTotal == null ? null : filteredArrears.length ? overdueTotal / filteredArrears.length : 0, format: 'money' }, { label: 'Casos graves', value: filteredArrears.filter(row => row.severity === 'severe').length }];
-    const matrixMetrics = [{ label: 'Préstamos', value: filteredMatrix.length }, { label: 'Fechas de pago', value: matrixDates.length },
-      ...[['paid', 'Cuotas registradas'], ['capital', 'Capital'], ['interest', 'Interés'], ['fee', 'Gasto administrativo']].map(([key, label]) => ({ label, value: matrixHasDuplicates ? null : sumSnapshot(matrixEntries, key), format: 'money' }))];
-    const matrixTotals = matrixDates.map(date => { const entries = matrixEntries.filter(row => row.date === date), unique = new Set(entries.map(row => row.matrix_identity)); return { date, ...Object.fromEntries(['paid', 'capital', 'interest', 'fee'].map(key => [key, unique.size < entries.length ? null : sumSnapshot(entries, key)])) }; });
     const reportRows = (report.rows || []).filter(row => match(row, reportFilter.q, ['name', 'folio', 'n', 'f', 'A', 'B']) && (!reportFilter.year || String(row.year || row.period_year) === reportFilter.year) && (!reportFilter.semester || String(row.semester) === reportFilter.semester));
     const paymentColumns = [{ key: 'date', label: 'Fecha' }, { key: 'folio', label: 'Folio' }, { key: 'name', label: 'Nombre' }, { key: 'loan_id', label: 'ID' }, { key: 'fund', label: 'Fondo' }, { key: 'paid', label: 'Cuota', format: 'money' }, { key: 'capital', label: 'Capital', format: 'money' }, { key: 'interest', label: 'Interés', format: 'money' }, { key: 'fee', label: 'Gasto admón.', format: 'money' }, { key: 'audit', label: 'Auditoría' }];
     const loanColumns = [{ key: 'folio', label: 'Folio' }, { key: 'name', label: 'Nombre' }, { key: 'id', label: 'ID' }, { key: 'fund', label: 'Fondo' }, { key: 'capital', label: 'Prestado', format: 'money' }, { key: 'total', label: 'Total contractual', format: 'money' }, { key: 'expected', label: 'Debió pagar', format: 'money' }, { key: 'paid', label: 'Pagado', format: 'money' }, { key: 'arrears', label: 'Atraso', format: 'money' }, { key: 'progress_percent', label: 'Avance', render: row => h(LoanProgress, { value: row.progress_percent }) }, { key: 'severity', label: 'Severidad', render: row => severityLabel(row.severity) }, { key: 'status', label: 'Estado' }];
@@ -625,17 +713,38 @@
       costs.length > 0 && h(Table, { rows: costs, columns: [{ key: 'concept', label: 'Concepto' }, { key: 'amount', label: 'Monto', format: 'money' }, { key: 'source', label: 'Origen', render: row => row.source === 'pool' ? 'Bolsa a repartir' : 'Reserva' }, { key: 'status', label: 'Estado', render: row => ({ estimated: 'Estimado', committed: 'Comprometido', paid: 'Pagado' })[row.status] }, { key: 'date', label: 'Fecha' }, { key: 'remove', label: '', render: row => h('button', { type: 'button', className: 'sicof-row-remove', 'aria-label': 'Quitar costo ' + row.concept, onClick: () => setCosts(previous => previous.filter(item => item.id !== row.id)) }, '×') }] }),
       !costs.length && h('p', { className: 'sicof-help' }, 'Sin apartados, el escenario refleja la bolsa sin costos adicionales.'), h('div', { className: 'sicof-cost-bar' }, h('span', null, 'Total apartado: ' + money(result && result.costsTotal)), h('span', null, result && result.costsEffectLabel || 'El efecto se muestra en la tasa del escenario')),
       h('div', { className: 'sicof-actions' }, h(Button, { busy: exportBusy, onClick: () => exportFile('acta') }, '▤ Exportar escenario (acta imprimible)')), h('p', { className: 'sicof-help', style: { textAlign: 'center' } }, 'Incluye tasa, reglas, reserva, apartados y declaración de liquidez. Exportar no acredita ni entrega rendimientos.'))); }
-    function loanPayments() { const charts = result && result.charts || {}; return h(React.Fragment, null,
+    function loanPayments() {
+    const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
+    const paymentMetrics = [
+      { label: 'Pagos mostrados', value: filteredPayments.length }, { label: 'Cuotas registradas', value: sumSnapshot(filteredPayments, 'paid'), format: 'money' },
+      { label: 'Capital conciliado', value: sumSnapshot(filteredPayments, 'capital'), format: 'money' }, { label: 'Interés conciliado', value: sumSnapshot(filteredPayments, 'interest'), format: 'money' },
+      { label: 'Gasto administrativo', value: sumSnapshot(filteredPayments, 'fee'), format: 'money' }, { label: 'Por revisar', value: filteredPayments.filter(row => row.audit === 'REVIEW_REQUIRED' || (row.issues || []).length).length }
+    ];
+      const charts = result && result.charts || {}; return h(React.Fragment, null,
       h('h2', null, '③ ' + copy('loans')), h('p', { className: 'sicof-sub' }, charts.byFundNote || copy('loansNote')), h('div', { className: 'sicof-chart-grid' }, h(CaptionChart, { title: 'Recuperado vs. falta por cobrar, por fondo', type: 'stacked', rows: charts.byFund || [], series: [{ key: 'paid', label: 'Recuperado', color: '#97002c' }, { key: 'pending', label: 'Por cobrar', color: '#d2d6df' }] }), h(CaptionChart, { title: 'Recuperación acumulada en el tiempo', type: 'line', rows: charts.recovery || [], series: [{ key: 'caja', label: 'Caja de Ahorro', color: '#97002c' }, { key: 'all', label: 'Todos los fondos', color: '#9ca5b7' }] })), costSection(),
       h('h2', null, '④·b ' + copy('paymentDetail')), h(Panel, null,
         h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: paymentFilter.funds, onChange: value => setPaymentFilter(previous => Object.assign({}, previous, { funds: value })) }), h('input', { className: 'sicof-search', type: 'search', placeholder: 'Buscar nombre, folio o ID…', 'aria-label': 'Buscar pagos', value: paymentFilter.q, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h(Field, { label: 'Desde' }, h('input', { type: 'date', value: paymentFilter.from, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { from: event.target.value })) })), h(Field, { label: 'Hasta' }, h('input', { type: 'date', value: paymentFilter.to, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { to: event.target.value })) })), h(Button, { busy: exportBusy, onClick: () => exportFile('pagos', paymentFilter) }, '↓ Descargar préstamos')),
         h('p', { className: 'sicof-help' }, filteredPayments.length + ' pagos con los filtros seleccionados. Selecciona una fila para revisar el préstamo.'), displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? paymentMetrics : []), h(Table, { columns: paymentColumns, rows: filteredPayments, limit: 600, onRow: showPayment })));
     }
-    function arrears() { return h(React.Fragment, null, h('h2', null, copy('arrears')), h('p', { className: 'sicof-sub' }, 'Se muestran importes vencidos con evidencia; los pagos futuros y las incidencias por revisar se distinguen del incumplimiento.'), h(Panel, null,
+    function arrears() {
+    const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
+    const overdueTotal = sumSnapshot(filteredArrears, 'arrears');
+    const arrearsMetrics = [{ label: 'Préstamos con atraso', value: filteredArrears.length }, { label: 'Atraso registrado', value: overdueTotal, format: 'money' },
+      { label: 'Adeudo promedio', value: overdueTotal == null ? null : filteredArrears.length ? overdueTotal / filteredArrears.length : 0, format: 'money' }, { label: 'Casos graves', value: filteredArrears.filter(row => row.severity === 'severe').length }];
+      return h(React.Fragment, null, h('h2', null, copy('arrears')), h('p', { className: 'sicof-sub' }, 'Se muestran importes vencidos con evidencia; los pagos futuros y las incidencias por revisar se distinguen del incumplimiento.'), h(Panel, null,
       h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: arrearsFilter.funds, onChange: value => setArrearsFilter(previous => Object.assign({}, previous, { funds: value })) }), h('input', { type: 'search', className: 'sicof-search', placeholder: 'Buscar nombre, folio o ID…', 'aria-label': 'Buscar atrasos', value: arrearsFilter.q, onChange: event => setArrearsFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h('select', { 'aria-label': 'Severidad del atraso', value: arrearsFilter.severity, onChange: event => setArrearsFilter(previous => Object.assign({}, previous, { severity: event.target.value })) }, h('option', { value: '' }, 'Todas las severidades'), h('option', { value: 'mild' }, 'Leve'), h('option', { value: 'moderate' }, 'Moderado'), h('option', { value: 'severe' }, 'Grave')), h(Button, { busy: exportBusy, onClick: () => exportFile('atrasos', arrearsFilter) }, '↓ Descargar atrasos')),
       displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? arrearsMetrics : []), h(Table, { rows: filteredArrears, columns: loanColumns, onRow: setLoan })));
     }
-    function matrix() { const years = [...new Set(loans.flatMap(item => (item.schedule || []).map(row => String(row.date).slice(0, 4))))].sort().reverse(); return h(React.Fragment, null, h('h2', null, copy('matrix')), h('p', { className: 'sicof-sub' }, 'Matriz consolidada por préstamo y fecha: cuota, capital, interés y gasto administrativo.'), h(Panel, null,
+    function matrix() {
+    const filteredMatrix = loans.filter(row => (matrixFilter.funds === null || matrixFilter.funds.includes(row.fund)) && match(row, matrixFilter.q, ['name', 'folio', 'id', 'fund']) && (!matrixFilter.year || (row.schedule || []).some(item => !item.date || String(item.date).slice(0, 4) === matrixFilter.year)));
+    const matrixDates = [...new Set(filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || String(item.date).slice(0, 4) === matrixFilter.year).map(item => item.date).filter(Boolean)))].sort();
+    const matrixEntries = filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || !item.date || String(item.date).slice(0, 4) === matrixFilter.year).map(item => Object.assign({}, item, { matrix_identity: row.id + ':' + row.folio })));
+    const matrixHasDuplicates = new Set(matrixEntries.map(row => row.matrix_identity + ':' + row.date)).size !== matrixEntries.length;
+    const matrixMetrics = [{ label: 'Préstamos', value: filteredMatrix.length }, { label: 'Fechas de pago', value: matrixDates.length },
+      ...[['paid', 'Cuotas registradas'], ['capital', 'Capital'], ['interest', 'Interés'], ['fee', 'Gasto administrativo']].map(([key, label]) => ({ label, value: matrixHasDuplicates ? null : sumSnapshot(matrixEntries, key), format: 'money' }))];
+    const matrixByDate = new Map(); for (const entry of matrixEntries) { if (!matrixByDate.has(entry.date)) matrixByDate.set(entry.date, []); matrixByDate.get(entry.date).push(entry); }
+    const matrixTotals = matrixDates.map(date => { const entries = matrixByDate.get(date) || [], unique = new Set(entries.map(row => row.matrix_identity)); return { date, ...Object.fromEntries(['paid', 'capital', 'interest', 'fee'].map(key => [key, unique.size < entries.length ? null : sumSnapshot(entries, key)])) }; });
+      const years = [...new Set(loans.flatMap(item => (item.schedule || []).map(row => String(row.date).slice(0, 4))))].sort().reverse(); return h(React.Fragment, null, h('h2', null, copy('matrix')), h('p', { className: 'sicof-sub' }, 'Matriz consolidada por préstamo y fecha: cuota, capital, interés y gasto administrativo.'), h(Panel, null,
       h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: matrixFilter.funds, onChange: value => setMatrixFilter(previous => Object.assign({}, previous, { funds: value })) }), h('select', { 'aria-label': 'Año del reporte de préstamos', value: matrixFilter.year, onChange: event => setMatrixFilter(previous => Object.assign({}, previous, { year: event.target.value })) }, h('option', { value: '' }, 'Todos los años'), years.map(year => h('option', { value: year, key: year }, year))), h('input', { type: 'search', className: 'sicof-search', 'aria-label': 'Buscar reporte de préstamos', placeholder: 'Buscar nombre, folio o ID…', value: matrixFilter.q, onChange: event => setMatrixFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h(Button, { busy: exportBusy, onClick: () => exportFile('matriz', matrixFilter) }, '↓ Descargar Excel'), h(Button, { secondary: true, busy: exportBusy, onClick: () => exportFile('matriz_fondos', matrixFilter) }, '↓ Excel por fondo')),
       displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? matrixMetrics : []),
       h('div', { className: 'sicof-table-scroll' }, h('table', { className: 'sicof-table' }, h('thead', null, h('tr', null, ['ID', 'Folio', 'Nombre', 'Fondo', 'Proceso', 'Estado', 'Prestado', 'Tasa quincenal', 'Plazo', 'Total', 'Cargos totales registrados', 'Capital + interés contractual', 'Interés total', 'Gasto admón. total', 'Inicio descuento', 'Fin descuento', 'Transferencia', 'Fecha descuento', 'Solicitud'].map(text => h('th', { key: text, rowSpan: 2 }, text)), matrixDates.map(date => h('th', { key: date, colSpan: 4, style: { textAlign: 'center' } }, date))), h('tr', null, matrixDates.flatMap(date => ['Cuota', 'Capital', 'Interés', 'Gasto admón.'].map(label => h('th', { key: date + label, className: 'number' }, label))))), h('tbody', null, filteredMatrix.slice(0, 100).map(item => h('tr', { key: item.id + ':' + item.folio, 'data-clickable': true, tabIndex: 0, onClick: () => setLoan(item), onKeyDown: event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); setLoan(item); } } }, [item.id, item.folio, item.name, item.fund, item.process, item.status, money(item.capital), percent(item.rate_percent), item.term, money(item.total), money(item.loan_charges), money(item.principal_interest_total), money(item.interest_total), money(item.admin_fee_total), item.discount_start, item.discount_end, item.transfer_date, item.discount_date, item.request_date].map((value, index) => h('td', { key: index }, value)), matrixDates.flatMap(date => { const entries = (item.schedule || []).filter(row => row.date === date), entry = entries.length === 1 ? entries[0] : null; return ['paid', 'capital', 'interest', 'fee'].map(key => h('td', { key: date + key, className: 'number' }, entries.length > 1 ? 'Por revisar' : money(entry && entry[key]))); })))), h('tfoot', null, h('tr', null, h('td', { colSpan: 19 }, 'Totales de los filtros seleccionados'), matrixTotals.flatMap(total => ['paid', 'capital', 'interest', 'fee'].map(key => h('td', { key: total.date + key, className: 'number' }, total[key] == null ? 'Por conciliar' : money(total[key]))))))), !filteredMatrix.length && h('div', { className: 'sicof-empty' }, 'No hay préstamos con estos filtros.')),
@@ -679,7 +788,7 @@
     const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
     return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
       h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => refresh(true) }, 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: refresh }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => refresh(true) }, 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
         h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
         data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
         data?.source?.refreshing && h('div', { className: 'sicof-status', role: 'status' }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'),
@@ -688,7 +797,7 @@
         phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
         calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),
         calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar cálculo')),
-        draftPending && h('div', { className: 'sicof-status', role: 'status' }, 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
+        draftPending && (!automaticFilters || (calculation !== 'error' && !sourceExpired)) && h('div', { className: 'sicof-status', role: 'status' }, automaticFilters ? (simulationReady ? 'Aplicando los filtros con la información cargada…' : 'Preparando el cálculo con la información cargada…') : 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
         notice && h('div', { className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'), role: notice.level === 'error' ? 'alert' : 'status' }, notice.message),
         h('section', { id: 'sicof-pane-' + tab, role: 'tabpanel', 'aria-labelledby': 'sicof-tab-' + tab, 'aria-busy': phase === 'loading' || calculation === 'loading' }, panes[tab]())),
       saverDetail(), attribution && h(Attribution, { key: attribution.transactionId, ...attribution, onClose: () => setAttribution(null), onSaved: () => { setAttribution(null); setDetail(null); setNotice({ message: 'Clasificación registrada sin modificar el saldo.' }); setRevision(value => value + 1); } }), loan && h(window.SicofLoanDetail, { loan, onClose: () => setLoan(null) }),

@@ -1326,3 +1326,9 @@ La migración `20261003000600` está aplicada; la corrección local `20261003000
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+## H-SICOF-INSTANT-FILTERS-001 — filtros inmediatos dentro del contexto comprobado
+
+La petición del propietario de obtener respuesta inmediata al cambiar filtros se implementa mediante simulación efímera en memoria y el mismo motor financiero. Conserva las ocho secciones, controles, reportes y comportamiento aprobado, sin rediseño. La primera carga continúa dependiendo de las fuentes remotas; las modificaciones compatibles posteriores se calculan localmente sin volver a consultarlas.
+
+La optimización no autoriza alterar reglas, usar datos vencidos o inferir otro contexto histórico. Se conservan inicio y `as_of` comprobados, con corte futuro dentro del rango cargado o periodo histórico idéntico; otros rangos requieren una carga canónica. La entrada vence a los 300 segundos como máximo, limitada también por la observación de origen, y se invalida al cambiar contexto/sesión o día. Guardar/exportar sigue siendo una operación autorizada y validada en servidor, usando el periodo efectivo. No se crea otra autoridad, persistencia de saldos en navegador, polling adicional ni escritor financiero.

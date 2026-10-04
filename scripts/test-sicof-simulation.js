@@ -2,10 +2,11 @@
 // Independent server-path comparison; only synthetic, in-memory observations.
 const assert=require('assert/strict');
 (async()=>{
- const {createSimulationSeed,executeSimulation,validateSimulationBasis,SIMULATION_VERSION}=await import('../supabase/functions/sicof/simulation.mjs');
+ const {createSimulationSeed,createPreparedSimulation,executeSimulation,validateSimulationBasis,SIMULATION_VERSION}=await import('../supabase/functions/sicof/simulation.mjs');
  const {calculateSicof,fingerprint}=await import('../supabase/functions/sicof/engine.mjs');
  const {analyzeSicofLoans}=await import('../supabase/functions/sicof/loan-calculation.mjs');
  const {decorateLoans,workspaceView,compactWorkspace}=await import('../supabase/functions/sicof/projection.mjs');
+ const {scopeFileAnalysis}=await import('../supabase/functions/sicof/file-workspace.mjs');
  const now=Date.parse('2026-10-03T12:00:00.000Z'),today='2026-10-03',iso=ms=>new Date(ms).toISOString();
  const settings={src:'caja',selFunds:[],pay:90,method:'end',periodIni:'2026-07-01',periodFin:'2026-12-31',minm:6,exterm:true,exmin:true,warn:1000,exConsec:false,consecN:4,loanEffect:'retiro',retScope:'todo',anchorOn:false,capitalBasis:'all',yieldMode:'none',yieldPeriods:[]};
  const participants=Array.from({length:4},(_,index)=>{
@@ -34,6 +35,7 @@ const assert=require('assert/strict');
  initial.source={...initial.source,expires_at:source.cache_meta.expires_at,state:'READY',version:1};
  delete initial.participants; // Actual compact responses send participants in seed only.
  const seed=createSimulationSeed(ctx,analysis,source,now);
+ const prepared=createPreparedSimulation(seed,initial,{now,today});
  assert.equal(seed.version,SIMULATION_VERSION);assert.equal(seed.expires_at,source.cache_meta.expires_at);
  assert.deepEqual(Object.keys(seed.context).sort(),['participants','today','as_of','from','to','fingerprint'].sort());
  assert.deepEqual(Object.keys(seed.basis).sort(),['from','to','today','as_of'].sort());
@@ -51,6 +53,8 @@ const assert=require('assert/strict');
   expected.fingerprint=await fingerprint({engine:expected.engine_version,settings:expected.settings,costs:expected.costs,bank:expected.bank,context:ctx.fingerprint,loans:analysis.source_fingerprint});
   const expectedWorkspace=workspaceView(currentContext,currentAnalysis);delete expectedWorkspace.participants;expectedWorkspace.source={...expectedWorkspace.source,expires_at:source.cache_meta.expires_at,state:'READY',version:1};
   const actual=await executeSimulation(seed,initial,input,{now,today});
+  const reused=await prepared.execute(input);
+  assert.deepEqual(reused,actual,'prepared observation preserves complete result/workspace/basis');
   assert.deepEqual(actual.result,expected,'identical engine result and fingerprint for '+JSON.stringify(variant));
   assert.deepEqual(actual.workspace,expectedWorkspace,'identical workspace analysis for '+JSON.stringify(variant));
   assert.equal(actual.workspace.report,initial.report,'same savings interval evidence and report reused');
@@ -87,5 +91,67 @@ const assert=require('assert/strict');
  assert.throws(()=>createSimulationSeed(ctx,analysis,{...source,source_fingerprint:'c'.repeat(64)},now),/SICOF_SIMULATION_INVALID/);
  assert.throws(()=>createSimulationSeed(ctx,analysis,{...source,cache_meta:{state:'READY',expires_at:iso(now)}},now),/SICOF_SIMULATION_EXPIRED/);
  assert.throws(()=>createSimulationSeed(ctx,{...analysis,period:{...analysis.period,to:'2027-01-01'}},source,now),/SICOF_SIMULATION_INVALID/);
- console.log(JSON.stringify({status:'PASS',cases:cases.length,sourceRows:rows.length,elapsed_ms:Math.round((performance.now()-before)*100)/100,checks:['same engine result and fingerprint as independent server analysis','same workspace fields and source order','inclusive December 4 versus December 5 and original December 31','fund selection changes retain all loan evidence','source duplicate/null/negative/huge-review amount semantics preserved','unchanged savings reports and exclusions','future same-start range only and historical same-range settings allowed','invalid policy remains invalid','expiry and day changes reject including expiry during calculation','invalid or mixed seed/source rejected','no authorized input mutation','compact envelope retains seed'],externalQueries:0,financialWrites:0}));
+ // An explicit file observation stays inspectable, dated at its original day.
+ const makeFile=async funds=>{
+  const file_basis={version:'SICOF_FILE_BASIS_V1',from:ctx.from,to:ctx.to,funds,source_fingerprint:source.source_fingerprint,sha256:'f'.repeat(64)};
+  const hash=await fingerprint({version:'SICOF_FILE_BASIS_V1',file_basis});
+  const selection={sourceRows:source.rows.filter(p=>p.date>=ctx.from&&p.date<=ctx.to&&(!funds||funds.includes(p.fund))),source_fingerprint:hash};
+  const scoped=scopeFileAnalysis(analysis,selection,{...settings,src:funds===null?'todos':'sel',selFunds:funds||[]});
+  const workspace=workspaceView(ctx,scoped);delete workspace.participants;workspace.source={...initial.source,fingerprint:hash};
+  return {seed:{...seed,mode:'FILE',file_basis,analysisMetadata:{...seed.analysisMetadata,source_fingerprint:hash}},workspace,analysis:scoped,selection};
+ };
+ const file=await makeFile(null),frozen=createPreparedSimulation(file.seed,file.workspace,{now:now+7*86400000,today:'2026-10-10'});
+ const fileInput={settings},first=await frozen.execute(fileInput),second=await frozen.execute({settings:{...settings,pay:98}});
+ assert.equal(first.workspace.loans,second.workspace.loans,'same interval reuses immutable schedule analysis');
+ assert.equal(first.workspace.payments,second.workspace.payments,'same interval reuses original source row selection');
+ assert.equal(first.result.liquidity.portfolio_as_of,today,'file date never silently advances');
+ assert.equal(first.basis.today,today);
+ const reference=calculateSicof(ctx,scopeFileAnalysis(file.analysis,file.selection,settings),fileInput);
+ reference.fingerprint=await fingerprint({engine:reference.engine_version,settings:reference.settings,costs:reference.costs,bank:reference.bank,context:ctx.fingerprint,loans:file.seed.analysisMetadata.source_fingerprint});
+ assert.deepEqual(first.result,reference,'expired file preview has same dated financial result');
+ for(const filter of [{src:'todos'},{src:'caja'},{src:'sel',selFunds:['Extra']},{src:'todos'}]){
+  const chosen={...settings,...filter},scoped=scopeFileAnalysis(file.analysis,file.selection,chosen),expected=calculateSicof(ctx,scoped,{settings:chosen});
+  expected.fingerprint=await fingerprint({engine:expected.engine_version,settings:expected.settings,costs:expected.costs,bank:expected.bank,context:ctx.fingerprint,loans:file.seed.analysisMetadata.source_fingerprint});
+  const actual=await frozen.execute({settings:chosen});
+  assert.deepEqual(actual.result,expected,'FILE funds produce identical result and charts to server scope');
+  assert.deepEqual(actual.workspace.payments,scoped.payments,'FILE rows reflect exactly the selected funds');
+  const expectedWorkspace=workspaceView(ctx,scoped);
+  assert.deepEqual(actual.workspace.paymentMetrics,expectedWorkspace.paymentMetrics,'FILE metrics match scoped rows');
+  assert.deepEqual(actual.workspace.funds,expectedWorkspace.funds,'FILE fund buckets match server');
+  assert.deepEqual(actual.workspace.loans,file.workspace.loans,'all-fund retention context stays available');
+ }
+ for(const variant of [{...settings,periodIni:'2026-08-01'},{...settings,periodFin:'2026-09-30'}])await assert.rejects(()=>frozen.execute({settings:variant}),/SICOF_SIMULATION_RANGE_REQUIRED/);
+ const limited=await makeFile(['Caja de Ahorro','Extra']),scoped=createPreparedSimulation(limited.seed,limited.workspace,{now:now+7*86400000});
+ await scoped.execute({settings:{...settings,src:'sel',selFunds:['Extra']}});
+ for(const variant of [{...settings,src:'todos'},{...settings,src:'sel',selFunds:['Other']}])await assert.rejects(()=>scoped.execute({settings:variant}),/SICOF_FILE_SCOPE_REQUIRED/);
+ for(const patch of [{mode:'OTHER'},{mode:undefined,file_basis:file.seed.file_basis},{file_basis:{...file.seed.file_basis,sha256:'e'.repeat(64)}},{file_basis:{...file.seed.file_basis,funds:['Extra','Caja de Ahorro']}},{file_basis:{...file.seed.file_basis,funds:['Extra']}}])
+  await assert.rejects(()=>executeSimulation({...file.seed,...patch},file.workspace,fileInput,{now:now+7*86400000}),/SICOF_(?:SIMULATION_INVALID|FILE_BASIS_INVALID)/);
+ const earliest=await frozen.execute({settings:{...settings,periodFin:'2026-10-03'}});
+ for(let day=4;day<=20;day++)await frozen.execute({settings:{...settings,periodFin:'2026-10-'+String(day).padStart(2,'0')}});
+ assert.notEqual((await frozen.execute({settings:{...settings,periodFin:'2026-10-03'}})).workspace.loans,earliest.workspace.loans,'range cache evicts beyond sixteen entries');
+ // Execute the generated browser worker and reconstruct its compact selectors.
+ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),messages=[];
+ const self={postMessage:message=>messages.push(structuredClone(message))};
+ vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../app/sicof-simulation-worker.js'),'utf8'),{self,crypto,TextEncoder,performance});
+ await self.onmessage({data:structuredClone({id:1,type:'INIT',seed:file.seed,workspace:file.workspace,initialInput:fileInput})});
+ assert.deepEqual(messages.pop(),{id:1,data:{ready:true}});
+ await self.onmessage({data:structuredClone({id:2,type:'CALCULATE',input:{settings:{...settings,pay:98}}})});
+ const transport=messages.pop();assert.equal(transport.error,undefined);assert.equal(transport.data.selection.range_key,JSON.stringify([ctx.from,ctx.to,['Caja de Ahorro']]));
+ const restore=message=>{
+ const loans=file.workspace.loans.slice();assert.equal(message.selection.loanPeriods,undefined);assert(Array.isArray(message.selection.loan_changes));
+ for(const [loanIndex,changes] of message.selection.loan_changes){const original=file.workspace.loans[loanIndex];loans[loanIndex]={...original,schedule:original.schedule.slice()};for(const [paymentIndex,flag] of changes){assert.equal(typeof flag,'boolean');assert.notEqual(flag,original.schedule[paymentIndex].in_period);loans[loanIndex].schedule[paymentIndex]={...original.schedule[paymentIndex],in_period:flag};}}
+ return message.result.rows.map(({participant_index,loan_indexes,...row})=>{
+  assert.equal(Number.isInteger(participant_index),true);assert.equal(row.movements,undefined);assert.equal(row.periods,undefined);
+  const p=file.seed.context.participants[participant_index];assert.equal(p.id,row.participant_id);
+  return {...row,movements:p.composition?.movements||p.transactions||[],periods:p.composition?.periods||[],loans:loan_indexes.map(i=>loans[i])};
+ });};
+ const reconstructed=restore(transport.data);
+ assert.deepEqual({...transport.data.result,rows:reconstructed},second.result,'worker restores every stable participant field and all loans');
+ assert.deepEqual(transport.data.selection.payments.map(i=>file.workspace.payments[i]),second.workspace.payments);
+ for(const periodFin of ['2026-12-04','2026-12-31']){
+  const input={settings:{...settings,periodFin}};await self.onmessage({data:structuredClone({id:3,type:'CALCULATE',input})});
+  const actual=messages.pop();assert.equal(actual.error,undefined);const expected=await frozen.execute(input);
+  assert.deepEqual({...actual.data.result,rows:restore(actual.data)},expected.result,'sparse schedule changes reconstruct from original in either direction');
+ }
+ console.log(JSON.stringify({status:'PASS',cases:cases.length,sourceRows:rows.length,elapsed_ms:Math.round((performance.now()-before)*100)/100,checks:['same engine result and fingerprint as independent server analysis','prepared and ordinary complete outputs equivalent','same workspace fields and source order','inclusive December 4 versus December 5 and original December 31','fund selection changes retain all loan evidence','source duplicate/null/negative/huge-review amount semantics preserved','unchanged savings reports and exclusions','future same-start range only and historical same-range settings allowed','invalid policy remains invalid','expiry and day changes reject including expiry during calculation','explicit file preview remains dated beyond TTL/day','file funds and hash scope enforced','prepared interval cache bounded to sixteen','generated worker prewarm and participant/payment/loan selectors roundtrip','invalid or mixed seed/source rejected','no authorized input mutation','compact envelope retains seed'],externalQueries:0,financialWrites:0}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

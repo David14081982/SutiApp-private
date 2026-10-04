@@ -18,23 +18,34 @@ No credentials, financial storage, network calls or transaction writers. */
 'use strict';
 const engine=(()=>{${unexport(engine)}\nreturn {${names(engine).join(',')}};})();
 const simulation=(()=>{${unexport(body)}\nreturn {${names(simulation).join(',')}};})();
-let seed=null,workspace=null,paymentIndex=null;
+let seed=null,workspace=null,paymentIndex=null,participantIndex=null,prepared=null,generation=0,selections=new WeakMap();
 self.onmessage=async event=>{
  const {id,type}=event.data||{};
  try{
   if(type==='INIT'){
-   seed=event.data.seed;workspace=event.data.workspace;
+   generation++;prepared=null;selections=new WeakMap();seed=event.data.seed;workspace=event.data.workspace;
    if(seed?.version!=='SICOF_SIMULATION_INPUT_V1'||!workspace)throw Error('SICOF_SIMULATION_INPUT_INVALID');
    paymentIndex=new Map(workspace.payments.map((payment,index)=>[payment,index]));
+   participantIndex=new Map(seed.context.participants.map((person,index)=>[person.id,index]));
+   const candidate=simulation.createPreparedSimulation(seed,workspace),current=generation;
+   if(event.data.initialInput)await candidate.execute(event.data.initialInput);
+   if(current!==generation)throw Error('SICOF_SIMULATION_CONTEXT_CHANGED');
+   prepared=candidate;
    self.postMessage({id,data:{ready:true}});return;
   }
-  if(type!=='CALCULATE'||!seed)throw Error('SICOF_SIMULATION_INPUT_REQUIRED');
-  const start=performance.now(),value=await simulation.executeSimulation(seed,workspace,event.data.input);
+  if(type!=='CALCULATE'||!prepared)throw Error('SICOF_SIMULATION_INPUT_REQUIRED');
+  const current=generation,start=performance.now(),value=await prepared.execute(event.data.input);
+  if(current!==generation)throw Error('SICOF_SIMULATION_CONTEXT_CHANGED');
   const {loans,payments,funds,paymentMetrics}=value.workspace;
   // Transport only changed selectors, not thousands of unchanged loan fields.
-  const selection={payments:payments.map(payment=>paymentIndex.get(payment)),loanPeriods:loans.map(loan=>loan.schedule.map(payment=>payment.in_period))};
-  const loanIndex=new Map(loans.map((loan,index)=>[loan,index]));
-  const result={...value.result,rows:value.result.rows.map(({loans:personLoans,...row})=>({...row,loan_indexes:personLoans.map(loan=>loanIndex.get(loan))}))};
+  let transport=selections.get(value.workspace);
+  if(!transport){
+   const loan_changes=[];
+   loans.forEach((loan,index)=>{const original=workspace.loans[index];if(loan===original)return;const changes=[];loan.schedule.forEach((payment,i)=>{if(payment.in_period!==original.schedule[i].in_period)changes.push([i,payment.in_period]);});if(changes.length)loan_changes.push([index,changes]);});
+   transport={selection:{range_key:simulation.simulationRangeKey(seed,value.result.settings),payments:payments.map(payment=>paymentIndex.get(payment)),loan_changes},loanIndex:new Map(loans.map((loan,index)=>[loan,index]))};selections.set(value.workspace,transport);
+  }
+  const {selection,loanIndex}=transport;
+  const result={...value.result,rows:value.result.rows.map(({loans:personLoans,movements,periods,...row})=>({...row,participant_index:participantIndex.get(row.participant_id),loan_indexes:personLoans.map(loan=>loanIndex.get(loan))}))};
   self.postMessage({id,data:{result,selection,funds,paymentMetrics,basis:value.basis,elapsed_ms:performance.now()-start}});
  }catch(error){self.postMessage({id,error:/^SICOF_[A-Z_]+$/.test(error?.message||'')?error.message:'SICOF_SIMULATION_FAILED'});}
 };

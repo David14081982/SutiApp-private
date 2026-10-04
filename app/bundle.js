@@ -221,8 +221,8 @@
 (function () {
   'use strict';
   function create() {
-    const worker = new Worker(new URL('app/sicof-simulation-worker.js?v=321', document.baseURI));
-    const pending = new Map(); let sequence = 0, closed = false, basis = null, expires = 0, original = null;
+    const worker = new Worker(new URL('app/sicof-simulation-worker.js?v=322', document.baseURI));
+    const pending = new Map(), selections = new Map(); let sequence = 0, closed = false, basis = null, expires = 0, original = null, participants = null, fileBasis = null, active = false, queued = null;
     function fail(error) { for (const item of pending.values()) { clearTimeout(item.timer); item.reject(error); } pending.clear(); }
     worker.onerror = () => fail(Error('SICOF_SIMULATION_WORKER_FAILED'));
     worker.onmessage = event => {
@@ -240,41 +240,285 @@
       });
     }
     return {
-      async initialize(seed, workspace) {
-        await request('INIT', { seed, workspace }); basis = seed.basis; expires = Date.parse(seed.expires_at); original = workspace;
+      async initialize(seed, workspace, initialInput) {
+        // The worker needs calculation inputs only. Keep historical report
+        // layouts and repeated detail arrays in the UI, without cloning them.
+        const calculationWorkspace = { loans: workspace.loans, payments: workspace.payments, paymentMetrics: workspace.paymentMetrics, funds: workspace.funds, source: workspace.source };
+        await request('INIT', { seed, workspace: calculationWorkspace, initialInput }); basis = seed.basis; expires = Date.parse(seed.expires_at); original = workspace; participants = seed.context.participants; fileBasis = seed.mode === 'FILE' ? seed.file_basis : null;
       },
       supports(settings) {
-        return !!basis && Date.now() < expires && settings.periodIni === basis.from && settings.periodFin <= basis.to &&
-          (basis.as_of === basis.today ? settings.periodFin >= basis.today : settings.periodFin === basis.to);
+        const funds = settings.src === 'todos' ? null : ['Caja de Ahorro', ...(settings.src === 'sel' ? settings.selFunds : [])];
+        return !!basis && (fileBasis || Date.now() < expires) && settings.periodIni === basis.from && settings.periodFin <= basis.to &&
+          (basis.as_of === basis.today ? settings.periodFin >= basis.today : settings.periodFin === basis.to) &&
+          (!Array.isArray(fileBasis?.funds) || funds && funds.every(fund => fileBasis.funds.includes(fund)));
       },
       async calculate(input) {
-        const response = await request('CALCULATE', { input }), selection = response.selection;
+        const response = await schedule(input), selection = response.selection;
         if (closed || !original) throw Error('SICOF_SIMULATION_CLOSED');
-        if (!Array.isArray(selection?.payments) || !Array.isArray(selection?.loanPeriods) || selection.loanPeriods.length !== original.loans.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+        if (!Array.isArray(selection?.payments) || !Array.isArray(selection?.loan_changes) || typeof selection.range_key !== 'string') throw Error('SICOF_SIMULATION_INPUT_INVALID');
+        let projection = selections.get(selection.range_key);
+        if (!projection) {
         const payments = selection.payments.map(index => {
           if (!Number.isInteger(index) || index < 0 || index >= original.payments.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
           return original.payments[index];
         });
-        const loans = original.loans.map((loan, index) => {
-          const flags = selection.loanPeriods[index];
-          if (!Array.isArray(flags) || flags.length !== loan.schedule.length || flags.some(flag => typeof flag !== 'boolean')) throw Error('SICOF_SIMULATION_INPUT_INVALID');
-          const schedule = loan.schedule.map((payment, paymentIndex) => payment.in_period === flags[paymentIndex] ? payment : { ...payment, in_period: flags[paymentIndex] });
-          return schedule.every((payment, paymentIndex) => payment === loan.schedule[paymentIndex]) ? loan : { ...loan, schedule };
-        });
+        const loans = original.loans.slice(), seen = new Set();
+        for (const entry of selection.loan_changes) {
+          if (!Array.isArray(entry) || entry.length !== 2) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          const [index, changes] = entry;
+          if (!Number.isInteger(index) || index < 0 || index >= loans.length || seen.has(index) || !Array.isArray(changes)) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          seen.add(index); const loan = original.loans[index], schedule = loan.schedule.slice(), changed = new Set();
+          for (const pair of changes) {
+            if (!Array.isArray(pair) || pair.length !== 2) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+            const [paymentIndex, flag] = pair;
+            if (!Number.isInteger(paymentIndex) || paymentIndex < 0 || paymentIndex >= schedule.length || changed.has(paymentIndex) || typeof flag !== 'boolean') throw Error('SICOF_SIMULATION_INPUT_INVALID');
+            changed.add(paymentIndex); schedule[paymentIndex] = { ...loan.schedule[paymentIndex], in_period: flag };
+          }
+          loans[index] = { ...loan, schedule };
+        }
+        projection = { payments, loans }; if (selections.size >= 16) selections.delete(selections.keys().next().value); selections.set(selection.range_key, projection);
+        }
+        const { payments, loans } = projection;
         if (!Array.isArray(response.result?.rows)) throw Error('SICOF_SIMULATION_INPUT_INVALID');
-        const result = { ...response.result, rows: response.result.rows.map(({ loan_indexes, ...row }) => {
+        const result = { ...response.result, rows: response.result.rows.map(({ loan_indexes, participant_index, ...row }) => {
           if (!Array.isArray(loan_indexes)) throw Error('SICOF_SIMULATION_INPUT_INVALID');
-          return { ...row, loans: loan_indexes.map(index => {
+          if (!Number.isInteger(participant_index) || participant_index < 0 || participant_index >= participants.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
+          const person = participants[participant_index];
+          return { ...row, movements: person.composition?.movements || person.transactions || [], periods: person.composition?.periods || [], loans: loan_indexes.map(index => {
             if (!Number.isInteger(index) || index < 0 || index >= loans.length) throw Error('SICOF_SIMULATION_INPUT_INVALID');
             return loans[index];
           }) };
         }) };
         return { result, workspace: { loans, payments, funds: response.funds, paymentMetrics: response.paymentMetrics }, basis: response.basis, elapsed_ms: response.elapsed_ms };
       },
-      close() { if (closed) return; closed = true; basis = null; original = null; worker.terminate(); fail(Error('SICOF_SIMULATION_CLOSED')); }
+      close() { if (closed) return; closed = true; basis = null; original = null; participants = null; fileBasis = null; selections.clear(); if (queued) queued.reject(Error('SICOF_SIMULATION_CLOSED')); queued = null; worker.terminate(); fail(Error('SICOF_SIMULATION_CLOSED')); }
     };
+    function schedule(input) {
+      if (closed) return Promise.reject(Error('SICOF_SIMULATION_CLOSED'));
+      return new Promise((resolve, reject) => {
+        if (queued) queued.reject(Error('SICOF_SIMULATION_SUPERSEDED'));
+        queued = { input, resolve, reject }; pump();
+      });
+    }
+    function pump() {
+      if (closed || active || !queued) return;
+      const next = queued; queued = null; active = true;
+      request('CALCULATE', { input: next.input }).then(next.resolve, next.reject).finally(() => { active = false; pump(); });
+    }
   }
   window.SicofSimulationClient = Object.freeze({ create });
+})();
+})();
+/* @@file sicof-file-repository.js */
+(function(){
+/* Explicit SICOF file preparation. No persisted browser data or finance writer. */
+(function () {
+  'use strict';
+  function identity() {
+    const auth = window.AffiliateAuth.getState(), actor = auth.session?.user?.id;
+    if (auth.phase !== 'authenticated' || !actor) throw Error('SICOF_AUTH_REQUIRED');
+    let session = auth.session.session_id || '';
+    if (!session && auth.session.access_token) { try { session = JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).session_id || ''; } catch (_) {} }
+    return { actor, affiliate: auth.affiliate?.id || null, session, key: window.SicofView.contextKey() };
+  }
+  async function invoke(action, values) {
+    const subject = identity(), result = await window.SutiSupabase.getClient().functions.invoke('sicof', { body: { action, ...values } });
+    if (identity().key !== subject.key) throw Error('SICOF_CONTEXT_CHANGED');
+    if (result.error) { let body; try { body = await result.error.context.clone().json(); } catch (_) {} throw Error(body?.error || 'SICOF_UNAVAILABLE'); }
+    const response = result.data, context = response?.context;
+    if (!response || response.error) throw Error(response?.error || 'SICOF_RESPONSE_INVALID');
+    if (context?.actor !== subject.actor || context.effective_affiliate !== subject.affiliate || subject.session && context.session !== subject.session) throw Error('SICOF_CONTEXT_CHANGED');
+    return response.data;
+  }
+  function download(bytes, filename, type) {
+    const url = URL.createObjectURL(new Blob([bytes], { type })), link = document.createElement('a');
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function downloadResponse(result) {
+    if (typeof result?.base64 !== 'string' || typeof result.filename !== 'string') throw Error('SICOF_EXPORT_INVALID');
+    download(Uint8Array.from(atob(result.base64), c => c.charCodeAt(0)), result.filename, result.content_type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    return result;
+  }
+  let excelPromise;
+  function excel() {
+    if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if (!excelPromise) excelPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script'); script.src = new URL('app/vendor/exceljs-4.4.0/exceljs.min.js', document.baseURI).href;
+      script.integrity = 'sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz'; script.crossOrigin = 'anonymous';
+      script.onload = () => window.ExcelJS ? resolve(window.ExcelJS) : reject(Error('SICOF_EXCEL_UNAVAILABLE'));
+      script.onerror = () => { script.remove(); excelPromise = null; reject(Error('SICOF_EXCEL_UNAVAILABLE')); }; document.head.appendChild(script);
+    });
+    return excelPromise;
+  }
+  async function prepare(file, settings) {
+    if (!file || !/\.xlsx$/i.test(file.name) || file.size < 1 || file.size > 6 * 1024 * 1024) throw Error('SICOF_FILE_SIZE_OR_TYPE_INVALID');
+    const bytes = new Uint8Array(await file.arrayBuffer()); let binary = '';
+    for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    return invoke('FILE_WORKSPACE', { settings, costs: [], bank: { amount: null, declaredBy: '', date: '' }, compact: true, file: { name: file.name, base64: btoa(binary) } });
+  }
+  async function exportBase(file, settings) {
+    const subject = identity();
+    if (!file || !Array.isArray(file.rows) || !Array.isArray(file.headers) || file.headers.length !== 15 || !/^\d{4}-\d{2}-\d{2}$/.test(settings.periodIni) || !/^\d{4}-\d{2}-\d{2}$/.test(settings.periodFin) || settings.periodIni > settings.periodFin || settings.periodIni < file.from || settings.periodFin > file.to) throw Error('SICOF_FILE_RANGE_REQUIRED');
+    const funds = settings.src === 'todos' ? null : new Set(['Caja de Ahorro', ...(settings.src === 'sel' ? settings.selFunds : [])]);
+    if (Array.isArray(file.basis?.funds) && (!funds || [...funds].some(fund => !file.basis.funds.includes(fund)))) throw Error('SICOF_FILE_RANGE_REQUIRED');
+    const selected = file.rows.filter(row => row[0] >= settings.periodIni && row[0] <= settings.periodFin && (!funds || funds.has(row[6])));
+    const ExcelJS = await excel(); if (identity().key !== subject.key) throw Error('SICOF_CONTEXT_CHANGED');
+    const book = new ExcelJS.Workbook(), sheet = book.addWorksheet('HISTORIAL P V2');
+    sheet.addRow(file.headers); for (const row of selected) sheet.addRow(row.slice(0, 15));
+    sheet.getRow(1).font = { bold: true }; sheet.views = [{ state: 'frozen', ySplit: 1 }]; sheet.autoFilter = { from: 'A1', to: 'O1' };
+    sheet.columns.forEach((column, index) => { column.width = index === 4 ? 35 : index === 6 ? 30 : 19; });
+    const bytes = await book.xlsx.writeBuffer(); if (identity().key !== subject.key) throw Error('SICOF_CONTEXT_CHANGED');
+    const filename = 'SICOF_base_' + settings.periodIni + '_' + settings.periodFin + '.xlsx';
+    download(bytes, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); return { filename };
+  }
+  window.SicofFileRepository = Object.freeze({
+    funds: values => invoke('SOURCE_FUNDS', values),
+    downloadSource: async settings => downloadResponse(await invoke('DOWNLOAD_SOURCE', { settings })),
+    prepare, exportBase,
+    exportReport: async (kind, values) => downloadResponse(await invoke('EXPORT', { kind, ...values })),
+    saveScenario: values => invoke('SAVE_SCENARIO', { ...values, key: values.key || crypto.randomUUID() })
+  });
+})();
+})();
+/* @@file sicof-file-flow.jsx */
+(function(){
+/* Explicit file workflow. Private preparation lives only in this component. */
+(function () {
+  'use strict';
+  const h = React.createElement;
+  const FILE_LIMIT = 6 * 1024 * 1024;
+  const FLOW_CSS = '.sicof-file-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.sicof-file-grid>section{min-width:0}.sicof-file-grid input[type=file]{max-width:100%;width:100%;font:inherit}.sicof-file-name{overflow-wrap:anywhere}.sicof-file-funds{display:grid;gap:9px;max-height:230px;overflow:auto;margin:12px 0}.sicof-file-grid fieldset{min-width:0;border:0;padding:0;margin:0}.sicof-file-grid legend{padding:0}.sicof-file-grid .sicof-segment{flex-wrap:wrap}.sicof-file-grid .sicof-segment button{min-width:0}.sicof-file-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}@media(max-width:760px){.sicof-file-grid{grid-template-columns:minmax(0,1fr)}}';
+  const copySettings = settings => ({ ...settings, selFunds: [...(settings.selFunds || [])], yieldPeriods: [...(settings.yieldPeriods || [])] });
+  const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+  function deadline(promise, milliseconds) {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds); })]).finally(() => clearTimeout(timer));
+  }
+  function Flow({ app, onBack, header, identity, Workbench, defaultSettings, css, errorText }) {
+    const [settings, setSettings] = React.useState(() => copySettings(typeof defaultSettings === 'function' ? defaultSettings() : defaultSettings));
+    const [file, setFile] = React.useState(null), [prepared, setPrepared] = React.useState(null);
+    const [funds, setFunds] = React.useState(null), [busy, setBusy] = React.useState('');
+    const [error, setError] = React.useState(''), [notice, setNotice] = React.useState(''), [inputKey, setInputKey] = React.useState(0);
+    const live = React.useRef(true), sequence = React.useRef(0), busyRef = React.useRef(false);
+    React.useEffect(() => () => { live.current = false; sequence.current++; }, []);
+    const valid = ticket => live.current && sequence.current === ticket && window.SicofView.contextKey() === identity;
+    const rangeKey = settings.periodIni + ':' + settings.periodFin;
+    const currentFunds = funds?.rangeKey === rangeKey ? funds : null;
+    const datesValid = validDate(settings.periodIni) && validDate(settings.periodFin) && settings.periodIni <= settings.periodFin;
+    function message(failure) {
+      const code = String(failure?.code || failure?.message || '');
+      if (/FILE_(?:TOO_LARGE|SIZE_OR_TYPE_INVALID)/.test(code)) return 'Selecciona un archivo .xlsx de hasta 6 MB.';
+      if (/FILE_HEADERS_INVALID/.test(code)) return 'Las columnas no coinciden. Usa el archivo descargado con una sola hoja HISTORIAL P V2 y sus columnas A–O.';
+      if (/FILE_SOURCE_(?:MISMATCH|CHANGED)/.test(code)) return 'El archivo no coincide con la fuente disponible. Descarga otra base con el mismo periodo y fondos, y vuelve a cargarla.';
+      if (/FILE_SCOPE_REQUIRED|FILE_BASIS_INVALID/.test(code)) return 'El archivo no corresponde al periodo o los fondos seleccionados. Revisa la selección y prepara la base correspondiente.';
+      if (/FILE_(?:INVALID|RESPONSE_INVALID)/.test(code)) return 'No se pudo preparar este archivo. Usa el .xlsx original, con una sola hoja HISTORIAL P V2 y las columnas A–O completas.';
+      if (/RANGE|DATE/.test(code)) return 'Revisa las fechas: el inicio debe ser anterior o igual al cierre.';
+      return typeof errorText === 'function' ? errorText(failure) : 'No se completó la consulta. Puedes volver a intentarlo.';
+    }
+    async function run(name, action, complete) {
+      if (busyRef.current || !live.current || window.SicofView.contextKey() !== identity) return;
+      const ticket = ++sequence.current;
+      busyRef.current = true; setBusy(name); setError(''); setNotice('');
+      try {
+        const response = await deadline(Promise.resolve().then(action), name === 'prepare' ? 60000 : 30000);
+        if (valid(ticket)) complete(response);
+      } catch (failure) { if (valid(ticket)) setError(message(failure)); }
+      finally { if (valid(ticket)) { busyRef.current = false; setBusy(''); } }
+    }
+    function requireDates(command) {
+      if (!validDate(command.periodIni) || !validDate(command.periodFin) || command.periodIni > command.periodFin) throw Error('SICOF_RANGE_INVALID');
+    }
+    function acceptFunds(response, command) {
+      if (!Array.isArray(response?.funds) || response.funds.some(value => typeof value !== 'string' || !value.trim() || value !== value.trim())) throw Error('SICOF_RESPONSE_INVALID');
+      setFunds({ rangeKey: command.periodIni + ':' + command.periodFin, values: [...new Set(response.funds)], observed_at: response.observed_at });
+    }
+    function loadFunds(command = settings, force = false) {
+      if (!force && funds?.rangeKey === command.periodIni + ':' + command.periodFin) return;
+      const snapshot = copySettings(command);
+      run('funds', () => { requireDates(snapshot); return window.SicofFileRepository.funds({ from: snapshot.periodIni, to: snapshot.periodFin }); }, response => acceptFunds(response, snapshot));
+    }
+    function chooseSource(src) {
+      if (busyRef.current) return;
+      const next = { ...settings, src };
+      setSettings(next); setError(''); setNotice('');
+      // Choosing this option is the explicit request; mounting never reads data.
+      if (src === 'sel') loadFunds(next);
+    }
+    function changeDate(key, value) {
+      if (busyRef.current) return;
+      setSettings(previous => ({ ...previous, [key]: value })); setError(''); setNotice('');
+    }
+    function download() {
+      const snapshot = copySettings(settings);
+      run('download', () => { requireDates(snapshot); return window.SicofFileRepository.downloadSource(snapshot); }, response => {
+        if (response?.funds) acceptFunds(response, snapshot);
+        setNotice('Base descargada. Selecciona ese archivo en el paso 2 para preparar el cálculo.');
+      });
+    }
+    function selectFile(event) {
+      if (busyRef.current) return;
+      const selected = event.target.files?.[0] || null;
+      setError(''); setNotice('');
+      if (!selected) { setFile(null); return; }
+      if (!/\.xlsx$/i.test(selected.name) || selected.size < 1 || selected.size > FILE_LIMIT) {
+        setFile(null); setError(message(Error('SICOF_FILE_SIZE_OR_TYPE_INVALID'))); event.target.value = ''; return;
+      }
+      setFile(selected);
+    }
+    function prepare(event) {
+      event.preventDefault();
+      const selected = file, snapshot = copySettings(settings);
+      if (!selected) { setError('Selecciona el archivo .xlsx que quieres utilizar.'); return; }
+      run('prepare', () => { requireDates(snapshot); return window.SicofFileRepository.prepare(selected, snapshot); }, response => {
+        // Repository already unwraps the authenticated {context,data} envelope.
+        if (!response?.workspace || !response.result || response.simulation?.mode !== 'FILE' || !response.file) throw Error(response?.calculation_error || 'SICOF_FILE_RESPONSE_INVALID');
+        setPrepared({ response, file: selected, settings: snapshot, metadata: response.file });
+      });
+    }
+    function replaceFile() {
+      sequence.current++; busyRef.current = false; setBusy(''); setPrepared(null); setFile(null);
+      setError(''); setNotice(''); setInputKey(value => value + 1);
+    }
+    if (prepared) return h(Workbench, { app, onBack, header, identity, initialResponse: prepared.response, fileSession: { file: prepared.file, settings: prepared.settings, metadata: prepared.metadata }, onReplaceFile: replaceFile });
+    const button = (text, action, disabled, secondary) => h('button', { type: 'button', className: 'sicof-btn' + (secondary ? ' secondary' : ''), disabled, onClick: action }, text);
+    return h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': busy ? 'preparing-file' : 'select-file' },
+      h('style', null, (css || '') + '\n' + FLOW_CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
+      h('div', { className: 'su-app-scroll sicof-content' },
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, 'Simulador de Rendimiento'), h('p', { className: 'sicof-sub' }, 'Descarga la base, carga el archivo y compara los escenarios con esa información.'))),
+        h('div', { className: 'sicof-file-grid' },
+          h('section', { className: 'sicof-panel', 'aria-labelledby': 'sicof-file-download-title' },
+            h('h2', { className: 'sicof-panel-head', id: 'sicof-file-download-title' }, '1. Descarga la base de préstamos'),
+            h('div', { className: 'sicof-panel-body' },
+              h('p', { className: 'sicof-sub' }, 'Los registros provienen de Historial P V2, del Google Sheets Sutiapp Final. El archivo conserva una sola hoja y las columnas A–O.'),
+              h('fieldset', { disabled: Boolean(busy) },
+                h('div', { className: 'sicof-date-row' },
+                  h('label', { className: 'sicof-field' }, h('span', null, 'Inicio'), h('input', { type: 'date', required: true, value: settings.periodIni, 'aria-label': 'Inicio del periodo', onChange: event => changeDate('periodIni', event.target.value) })),
+                  h('label', { className: 'sicof-field' }, h('span', null, 'Cierre / corte'), h('input', { type: 'date', required: true, value: settings.periodFin, 'aria-label': 'Cierre del periodo', onChange: event => changeDate('periodFin', event.target.value) }))),
+                h('div', { className: 'sicof-control', style: { marginTop: 16 } }, h('div', { className: 'sicof-label' }, 'Fuente de la bolsa'),
+                  h('div', { className: 'sicof-segment', role: 'group', 'aria-label': 'Fuente de la bolsa' }, [['caja', 'Solo Caja de Ahorro'], ['sel', 'Fondos seleccionados'], ['todos', 'Todos']].map(([value, label]) => h('button', { key: value, type: 'button', 'aria-pressed': settings.src === value, onClick: () => chooseSource(value) }, label)))),
+                settings.src === 'sel' && h('div', null,
+                  h('p', { className: 'sicof-help' }, 'Caja de Ahorro siempre se incluye. Marca los fondos adicionales.'),
+                  currentFunds && h('div', { className: 'sicof-file-funds', role: 'group', 'aria-label': 'Fondos adicionales' }, currentFunds.values.filter(value => value !== 'Caja de Ahorro').map(value => h('label', { className: 'sicof-check', key: value }, h('input', { type: 'checkbox', checked: settings.selFunds.includes(value), onChange: event => setSettings(previous => ({ ...previous, selFunds: event.target.checked ? [...previous.selFunds, value] : previous.selFunds.filter(item => item !== value) })) }), value))),
+                  !currentFunds && busy !== 'funds' && h('p', { className: 'sicof-help' }, 'Consulta los fondos disponibles para este periodo.'),
+                  button(currentFunds ? 'Volver a consultar fondos' : 'Consultar fondos', () => loadFunds(settings, true), Boolean(busy) || !datesValid, true))),
+              h('div', { className: 'sicof-file-actions' }, button(busy === 'download' ? 'Descargando base…' : '↓ Descargar base de préstamos (.xlsx)', download, Boolean(busy) || !datesValid, false)),
+              h('p', { className: 'sicof-help' }, 'Sólo se incluyen los fondos y las fechas seleccionados.'))),
+          h('section', { className: 'sicof-panel', 'aria-labelledby': 'sicof-file-import-title' },
+            h('h2', { className: 'sicof-panel-head', id: 'sicof-file-import-title' }, '2. Carga y prepara el archivo'),
+            h('div', { className: 'sicof-panel-body' },
+              h('p', { className: 'sicof-sub' }, 'Usa el archivo descargado sin alterar sus columnas ni registros, y conserva el mismo periodo y fondos del paso 1.'),
+              h('form', { onSubmit: prepare },
+                h('label', { className: 'sicof-field' }, h('span', null, 'Archivo de préstamos (.xlsx)'), h('input', { key: inputKey, type: 'file', accept: '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'aria-label': 'Archivo de préstamos (.xlsx)', disabled: Boolean(busy), onChange: selectFile })),
+                file && h('p', { className: 'sicof-help sicof-file-name' }, file.name + ' · ' + Math.max(1, Math.ceil(file.size / 1024)) + ' KB'),
+                h('div', { className: 'sicof-file-actions' }, h('button', { type: 'submit', className: 'sicof-btn', disabled: Boolean(busy) || !file || !datesValid }, busy === 'prepare' ? 'Preparando archivo…' : 'Preparar cálculo con este archivo'))),
+              h('p', { className: 'sicof-help' }, 'Al preparar se comprueba el archivo y se consulta una vez el ahorro de Supabase. El simulador mostrará las fechas del archivo, los préstamos y el ahorro consultado.'),
+              h('p', { className: 'sicof-help' }, 'Después, los filtros compatibles utilizan la información cargada. Para otro inicio o un cierre histórico distinto, prepara una nueva base.')))),
+        busy && h('p', { className: 'sicof-status', role: 'status' }, busy === 'funds' ? 'Consultando fondos disponibles…' : busy === 'download' ? 'Generando el archivo del periodo y fondos seleccionados…' : 'Comprobando el archivo y preparando la información de ahorro…'),
+        error && h('p', { className: 'sicof-status error', role: 'alert' }, error),
+        notice && h('p', { className: 'sicof-status success', role: 'status' }, notice)));
+  }
+  // A changed identity remounts every private field even if the parent omits key.
+  window.SicofFileFlow = props => h(Flow, { ...props, key: props.identity });
 })();
 })();
 /* @@file sicof-admin.jsx */
@@ -441,6 +685,8 @@
   }
   function errorText(error) {
     const value = String(error && (error.code || error.message) || '');
+    if (/FILE_SOURCE_CHANGED|FILE_CONTENT|FILE_ROWS|FILE_MISMATCH|FILE_HASH|FILE_BASIS/.test(value)) return 'El archivo no coincide con la base autorizada. Descarga la base del periodo y fondos seleccionados y vuelve a cargarla.';
+    if (/FILE_/.test(value)) return 'Carga el Excel original de una sola hoja HISTORIAL P V2, columnas A–O, con las mismas fechas y fondos seleccionados (máximo 6 MB).';
     if (/FULL_SEMESTER_REQUIRED/.test(value)) return 'Aportaciones del semestre requiere el semestre completo. Para un corte parcial selecciona Capital acumulado.';
     if (/SIMULATION_EXPIRED/.test(value)) return 'La información cargada venció. Pulsa Actualizar para usar la versión vigente.';
     if (/SIMULATION_WORKER|SIMULATION_CLOSED|SIMULATION_INPUT/.test(value)) return 'No se pudo preparar el cálculo en esta pantalla. Pulsa Actualizar para reintentarlo.';
@@ -552,17 +798,19 @@
         error && h('p', { className: 'sicof-status error', role: 'alert' }, error), stale && h(Button, { secondary: true, busy, onClick: () => setRevision(value => value + 1) }, 'Recargar composici\u00f3n'),
         h('div', { className: 'sicof-actions', style: { gap: 10 } }, h(Button, { secondary: true, busy, onClick: onClose }, 'Cancelar'), h(Button, { type: 'submit', busy: busy || !valid }, busy ? 'Guardando\u2026' : 'Confirmar clasificaci\u00f3n')))));
   }
-  function Workbench({ app, onBack, header, identity }) {
-    const [settings, setSettings] = React.useState(draftSettings), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
+  function Workbench({ app, onBack, header, identity, initialResponse, fileSession, onReplaceFile }) {
+    const fileMode = Boolean(fileSession);
+    const [settings, setSettings] = React.useState(() => fileSession?.settings || draftSettings()), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
+    const [fileMetadata, setFileMetadata] = React.useState(fileSession?.metadata || null), [fileFunds, setFileFunds] = React.useState([]);
     const [data, setData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [loadError, setLoadError] = React.useState(''), [revision, setRevision] = React.useState(0);
     const [storedResult, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
     const [appliedKey, setAppliedKey] = React.useState(null);
     const [sourceClock, setSourceClock] = React.useState(Date.now);
     const sourceExpiry = Date.parse(data?.source?.expires_at || '');
-    const sourceExpired = Number.isFinite(sourceExpiry) && sourceClock >= sourceExpiry;
+    const sourceExpired = !fileMode && Number.isFinite(sourceExpiry) && sourceClock >= sourceExpiry;
     React.useEffect(() => {
       setSourceClock(Date.now());
-      if (!Number.isFinite(sourceExpiry)) return;
+      if (fileMode || !Number.isFinite(sourceExpiry)) return;
       const timer = setTimeout(() => setSourceClock(Date.now()), Math.max(0, sourceExpiry - Date.now()) + 10);
       return () => clearTimeout(timer);
     }, [sourceExpiry]);
@@ -591,32 +839,36 @@
       requestBusy.current = true; setCalculation('loading'); setCalculationError('');
       const command = latestInput.current, commandKey = JSON.stringify(command);
       const forceSource = refreshSource.current; refreshSource.current = false;
-      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 25000).then(expandWorkspace).then(response => {
+      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => fileMode ? (revision === 0 ? initialResponse : window.SicofFileRepository.prepare(fileSession.file, fileSession.settings)) : repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 45000).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
         if (automaticFilters && response.simulation) {
           try {
             const channel = window.SicofSimulationClient.create(); simulator.current = channel;
-            channel.initialize(response.simulation, value).then(() => {
+            channel.initialize(response.simulation, value, response.result && { settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }).then(() => {
               if (valid() && sequence === loadSequence.current) setSimulationReady(true);
             }, error => { if (valid() && sequence === loadSequence.current) { channel.close(); simulator.current = null; setNotice({ level: 'error', message: errorText(error) }); } });
           } catch (error) { setNotice({ level: 'error', message: errorText(error) }); }
         }
-        setData(value); setPhase('ready');
-        setAppliedKey(commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        setData(value); setPhase('ready'); if (response.file) { setFileMetadata(response.file); setFileFunds(value.funds || []); }
+        setAppliedKey(fileMode && response.result ? JSON.stringify({ settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }) : commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        appliedBasis.current = response.simulation?.basis || null;
         setCalculationError(response.calculation_error ? errorText(Error(response.calculation_error)) : '');
         if (!initialized.current) {
           initialized.current = true;
           const preferences = value.preferences || {}; setTexts(preferences.texts || {});
           if (Array.isArray(preferences.tabOrder)) setOrder([...new Set(preferences.tabOrder.concat(TABS.map(item => item.id)))].filter(id => TABS.some(item => item.id === id)));
         }
-      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), 200);
+      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), fileMode ? 0 : 200);
       return () => { clearTimeout(timer); loadSequence.current++; };
       // Local draft edits use the worker below; only context changes reload sources.
     }, [revision, identity]);
     React.useEffect(() => { if (draftPending) setDetail(null); }, [draftKey, draftPending]);
     function applyCalculation() {
-      if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) { refresh(); return; }
+      if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) {
+        if (fileMode) { setCalculation('error'); setCalculationError('Este cambio requiere otra base: conserva el inicio y el corte de ahorro observado, y elige fechas y fondos incluidos en el archivo. Para otro periodo o más fondos, pulsa Cargar otro archivo.'); }
+        else refresh(); return;
+      }
       const sequence = ++localSequence.current, command = { settings, costs, bank }, commandKey = JSON.stringify(command), channel = simulator.current;
       setCalculation('loading'); setCalculationError('');
       channel.calculate(command).then(response => {
@@ -632,13 +884,14 @@
         localSequence.current++; setCalculation('ready'); setCalculationError('');
       }
     }, [draftKey, appliedKey, phase]);
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
       if (!automaticFilters || !draftPending || phase !== 'ready' || sourceExpired || busyRef.current) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.periodIni) || !/^\d{4}-\d{2}-\d{2}$/.test(settings.periodFin)) return;
       // Worker initialization is local; do not turn a short INIT into a second
       // server read. A range absent from this context needs one explicit load.
       if (simulator.current && !simulationReady) return;
       if (!simulationReady) return;
+      if (fileMode) { applyCalculation(); return () => { localSequence.current++; }; }
       const timer = setTimeout(applyCalculation, 60);
       return () => { clearTimeout(timer); localSequence.current++; };
     }, [draftKey, appliedKey, phase, simulationReady, sourceExpired, busy]);
@@ -652,8 +905,13 @@
       finally { busyRef.current = false; if (valid()) setBusy(''); }
     }
     function exportHistorical() { operation('export:historical', () => repo().exportReport('final_ahorro', { filters: { historical: true } }), () => setNotice({ message: 'Informe histórico descargado con sus valores originales.' })); }
-    function exportFile(kind, filters) { if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; } if (!result || calculation !== 'ready') return; operation('export:' + kind, () => repo().exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => setNotice({ message: 'Informe generado con el escenario consultado.' })); }
-    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
+    function exportFile(kind, filters) {
+      if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; }
+      if (!result || calculation !== 'ready') return;
+      const action = fileMode && kind === 'base_calculo' ? () => window.SicofFileRepository.exportBase(fileMetadata, settings) : () => (fileMode ? window.SicofFileRepository : repo()).exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) });
+      operation('export:' + kind, action, () => setNotice({ message: 'Informe generado con el escenario consultado.' }));
+    }
+    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => (fileMode ? window.SicofFileRepository : repo()).saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) }), response => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); if (fileMode) setData(previous => ({ ...previous, scenarios: [...(previous.scenarios || []), { id: response.id, name: 'Escenario guardado en esta sesión', settings, costs, bank, rate: result.rate, annualRate: result.annualRate, base: result.base, payTotal: result.distributed, eligible_count: result.nqual, created_at: 'Confirmado en esta sesión' }] })); else setRevision(value => value + 1); }); }
     function savePreferences(nextTexts, nextOrder) { const invalid = preferenceError(nextTexts, nextOrder); if (invalid) { setNotice({ level: 'error', message: invalid }); return; } const overrides = textOverrides(nextTexts); operation('preferences', () => repo().savePreferences({ texts: overrides, tabOrder: nextOrder }), () => { setTexts(overrides); setOrder(nextOrder); setEditing(null); setNotice({ message: 'Presentación guardada.' }); }); }
     function moveTab(id, target) { if (busyRef.current || id === target) return; const next = order.filter(item => item !== id); next.splice(next.indexOf(target), 0, id); savePreferences(texts, next); }
     function addCost(event) {
@@ -663,7 +921,7 @@
       setCosts(previous => previous.concat(cost));
       setCostDraft(previous => Object.assign({}, previous, { concept: '', amount: '' }));
     }
-    const fundOptions = (data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
+    const fundOptions = (fileMode ? fileFunds : data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: fileMode ? undefined : 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
     const rows = result && result.rows || [], loans = data && data.loans || [], payments = data && data.payments || [], periods = data && data.periods || [], report = data && data.report || {};
     const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
     const exportBusy = Boolean(busy) || calculation !== 'ready' || !result || sourceExpired;
@@ -687,13 +945,13 @@
       h(Control, { label: 'Cláusula 10 · Préstamo atrasado' }, h(Segment, { label: 'Efecto del préstamo atrasado', value: settings.loanEffect, options: [['retiro', 'Sólo retiene el retiro'], ['rendimiento', 'Pierde rendimiento']], onChange: value => change('loanEffect', value) }), h('div', { style: { marginTop: 10 } }, h(Segment, { label: 'Alcance de retención', value: settings.retScope, options: [['todo', 'Todo el ahorro'], ['adeudo', 'Sólo el adeudo']], onChange: value => change('retScope', value) }))),
       h(Control, { label: 'Alerta de tasa anual (%)' }, input('warn', 'number', { min: 0, step: 1, 'aria-label': 'Umbral de alerta anual' })));
     }
-    function scenarios() { const list = data && data.scenarios || []; return h(Panel, { title: 'Comparador de escenarios' }, h('div', { className: 'sicof-toolbar' }, canConfigure && h(Button, { onClick: saveScenario, busy: exportBusy }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => operation('clear-scenarios', async () => { for (const scene of list) await repo().deleteScenario(scene.id); }, () => setRevision(value => value + 1)) }, 'Limpiar escenarios guardados')), h(Table, { rows: list.map(scene => Object.assign({}, scene, { name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10) })), columns: [
+    function scenarios() { const list = data && data.scenarios || []; return h(Panel, { title: 'Comparador de escenarios' }, h('div', { className: 'sicof-toolbar' }, canConfigure && h(Button, { onClick: saveScenario, busy: exportBusy }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => operation('clear-scenarios', async () => { for (const scene of list) await repo().deleteScenario(scene.id); }, () => fileMode ? setData(previous => ({ ...previous, scenarios: [] })) : setRevision(value => value + 1)) }, 'Limpiar escenarios guardados')), h(Table, { rows: list.map(scene => Object.assign({}, scene, { name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10) })), columns: [
       { key: 'name', label: 'Escenario', render: scene => h('button', { type: 'button', className: 'sicof-row-link', onClick: () => { setSettings(Object.assign(draftSettings(), scene.settings)); setCosts(scene.costs || []); setBank(scene.bank || { amount: null, declaredBy: '', date: '' }); } }, scene.name) },
       { key: 'source', label: 'Fuente', render: scene => ({ caja: 'Solo Caja de Ahorro', todos: 'Todos', sel: 'Caja + ' + (scene.settings.selFunds || []).join(', ') })[scene.settings.src] },
       { key: 'pay', label: '% repartir', render: scene => percent(scene.settings.pay) }, { key: 'method', label: 'Método', render: scene => scene.settings.method === 'avg' ? 'Saldo promedio por días' : 'Saldo final' },
       { key: 'period', label: 'Periodo', render: scene => scene.settings.periodIni + ' al ' + scene.settings.periodFin }, { key: 'minm', label: 'Meses mínimos', render: scene => scene.settings.minm },
       { key: 'rate', label: 'Tasa', format: 'percent' }, { key: 'annualRate', label: 'Tasa anual', format: 'percent' }, { key: 'base', label: 'Base', format: 'money' }, { key: 'payTotal', label: 'Reparto', format: 'money' }, { key: 'eligible_count', label: 'Elegibles' }, { key: 'created_at', label: 'Guardado' },
-      { key: 'actions', label: 'Acciones', render: scene => canConfigure && h('button', { type: 'button', className: 'sicof-row-remove', disabled: Boolean(busy), onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => setRevision(value => value + 1)), 'aria-label': 'Eliminar escenario ' + scene.name }, 'Eliminar') }
+      { key: 'actions', label: 'Acciones', render: scene => canConfigure && h('button', { type: 'button', className: 'sicof-row-remove', disabled: Boolean(busy), onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => fileMode ? setData(previous => ({ ...previous, scenarios: previous.scenarios.filter(item => item.id !== scene.id) })) : setRevision(value => value + 1)), 'aria-label': 'Eliminar escenario ' + scene.name }, 'Eliminar') }
     ], empty: 'Aún no has guardado escenarios.' }), h('p', { className: 'sicof-help' }, 'Selecciona un escenario para recuperar todas sus reglas, costos y declaración bancaria. El cálculo actualizado puede cambiar si cambiaron las fuentes.')); }
     function summary() { return h(React.Fragment, null,
       h('details', { className: 'sicof-panel sicof-executive', open: true }, h('summary', null, copy('executive')), h('div', { className: 'sicof-panel-body' }, result && (result.summary || []).length ? h('ol', null, result.summary.map((text, index) => h('li', { key: index }, text))) : h('p', { className: 'sicof-sub' }, 'Selecciona el periodo y revisa la bolsa, sus reglas y el respaldo registrado antes de guardar un escenario.'))),
@@ -788,7 +1046,8 @@
     const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
     return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
       h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => refresh(true) }, 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (fileMode ? ' · Escenario del archivo' : data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, fileMode ? 'Preparar de nuevo' : 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: fileMode ? onReplaceFile : () => refresh(true) }, fileMode ? 'Cargar otro archivo' : 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        fileMode && fileMetadata && h('div', { className: 'sicof-period-note', style: { overflowWrap: 'anywhere' }, 'data-sicof-file': fileMetadata.sha256 }, h('strong', null, 'Archivo: ' + fileMetadata.name), h('div', null, fileMetadata.from + ' al ' + fileMetadata.to + ' · ' + (fileMetadata.funds ? fileMetadata.funds.join(', ') : 'Todos los fondos')), h('div', null, 'Archivo preparado: ' + new Date(fileMetadata.imported_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) + ' · Ahorro consultado: ' + new Date(fileMetadata.savings_observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' })), h('div', null, 'Los filtros utilizan esta información. Para incorporar movimientos posteriores, prepara de nuevo el archivo. Para otro inicio o un cierre histórico distinto, carga otra base.')),
         h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
         data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
         data?.source?.refreshing && h('div', { className: 'sicof-status', role: 'status' }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'),
@@ -796,7 +1055,7 @@
         phase === 'loading' && h('div', { className: 'sicof-status', role: 'status' }, 'Consultando ahorro y pagos registrados…'),
         phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
         calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),
-        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar cálculo')),
+        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: fileMode ? onReplaceFile : refresh }, fileMode ? 'Cargar otro archivo' : 'Reintentar cálculo')),
         draftPending && (!automaticFilters || (calculation !== 'error' && !sourceExpired)) && h('div', { className: 'sicof-status', role: 'status' }, automaticFilters ? (simulationReady ? 'Aplicando los filtros con la información cargada…' : 'Preparando el cálculo con la información cargada…') : 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
         notice && h('div', { className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'), role: notice.level === 'error' ? 'alert' : 'status' }, notice.message),
         h('section', { id: 'sicof-pane-' + tab, role: 'tabpanel', 'aria-labelledby': 'sicof-tab-' + tab, 'aria-busy': phase === 'loading' || calculation === 'loading' }, panes[tab]())),
@@ -806,6 +1065,7 @@
   function SicofAdmin({ app, onBack, header }) {
     const identity = window.SicofView.useContext();
     if (!identity || !app.admin || app.admin.phase !== 'authorized') return h('div', { role: 'alert' }, 'Acceso administrativo requerido.');
+    if (window.SicofFileFlow) return h(window.SicofFileFlow, { key: identity, app, onBack, header, identity, Workbench, defaultSettings: draftSettings, expand: expandWorkspace, css: CSS, errorText });
     return h(Workbench, { key: identity, app, onBack, header, identity });
   }
   window.SicofAttribution = Attribution;

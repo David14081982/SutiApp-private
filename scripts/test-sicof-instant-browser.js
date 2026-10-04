@@ -62,7 +62,7 @@ async function main() {
         localRequests.push('document');
         return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html lang="es"><meta charset="utf-8"><body style="margin:0"><div id="root"></div></body></html>' });
       }
-      if (url.origin === 'http://localhost:32199' && url.pathname === '/app/sicof-simulation-worker.js' && url.search === '?v=321') {
+      if (url.origin === 'http://localhost:32199' && url.pathname === '/app/sicof-simulation-worker.js' && url.search === '?v=322') {
         localRequests.push('worker');
         return route.fulfill({ status: 200, contentType: 'application/javascript', body: fixtureClock + '\n' + workerCode });
       }

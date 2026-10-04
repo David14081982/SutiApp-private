@@ -160,6 +160,8 @@
   }
   function errorText(error) {
     const value = String(error && (error.code || error.message) || '');
+    if (/FILE_SOURCE_CHANGED|FILE_CONTENT|FILE_ROWS|FILE_MISMATCH|FILE_HASH|FILE_BASIS/.test(value)) return 'El archivo no coincide con la base autorizada. Descarga la base del periodo y fondos seleccionados y vuelve a cargarla.';
+    if (/FILE_/.test(value)) return 'Carga el Excel original de una sola hoja HISTORIAL P V2, columnas A–O, con las mismas fechas y fondos seleccionados (máximo 6 MB).';
     if (/FULL_SEMESTER_REQUIRED/.test(value)) return 'Aportaciones del semestre requiere el semestre completo. Para un corte parcial selecciona Capital acumulado.';
     if (/SIMULATION_EXPIRED/.test(value)) return 'La información cargada venció. Pulsa Actualizar para usar la versión vigente.';
     if (/SIMULATION_WORKER|SIMULATION_CLOSED|SIMULATION_INPUT/.test(value)) return 'No se pudo preparar el cálculo en esta pantalla. Pulsa Actualizar para reintentarlo.';
@@ -271,17 +273,19 @@
         error && h('p', { className: 'sicof-status error', role: 'alert' }, error), stale && h(Button, { secondary: true, busy, onClick: () => setRevision(value => value + 1) }, 'Recargar composici\u00f3n'),
         h('div', { className: 'sicof-actions', style: { gap: 10 } }, h(Button, { secondary: true, busy, onClick: onClose }, 'Cancelar'), h(Button, { type: 'submit', busy: busy || !valid }, busy ? 'Guardando\u2026' : 'Confirmar clasificaci\u00f3n')))));
   }
-  function Workbench({ app, onBack, header, identity }) {
-    const [settings, setSettings] = React.useState(draftSettings), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
+  function Workbench({ app, onBack, header, identity, initialResponse, fileSession, onReplaceFile }) {
+    const fileMode = Boolean(fileSession);
+    const [settings, setSettings] = React.useState(() => fileSession?.settings || draftSettings()), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
+    const [fileMetadata, setFileMetadata] = React.useState(fileSession?.metadata || null), [fileFunds, setFileFunds] = React.useState([]);
     const [data, setData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [loadError, setLoadError] = React.useState(''), [revision, setRevision] = React.useState(0);
     const [storedResult, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
     const [appliedKey, setAppliedKey] = React.useState(null);
     const [sourceClock, setSourceClock] = React.useState(Date.now);
     const sourceExpiry = Date.parse(data?.source?.expires_at || '');
-    const sourceExpired = Number.isFinite(sourceExpiry) && sourceClock >= sourceExpiry;
+    const sourceExpired = !fileMode && Number.isFinite(sourceExpiry) && sourceClock >= sourceExpiry;
     React.useEffect(() => {
       setSourceClock(Date.now());
-      if (!Number.isFinite(sourceExpiry)) return;
+      if (fileMode || !Number.isFinite(sourceExpiry)) return;
       const timer = setTimeout(() => setSourceClock(Date.now()), Math.max(0, sourceExpiry - Date.now()) + 10);
       return () => clearTimeout(timer);
     }, [sourceExpiry]);
@@ -310,32 +314,36 @@
       requestBusy.current = true; setCalculation('loading'); setCalculationError('');
       const command = latestInput.current, commandKey = JSON.stringify(command);
       const forceSource = refreshSource.current; refreshSource.current = false;
-      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 25000).then(expandWorkspace).then(response => {
+      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => fileMode ? (revision === 0 ? initialResponse : window.SicofFileRepository.prepare(fileSession.file, fileSession.settings)) : repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 45000).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
         if (automaticFilters && response.simulation) {
           try {
             const channel = window.SicofSimulationClient.create(); simulator.current = channel;
-            channel.initialize(response.simulation, value).then(() => {
+            channel.initialize(response.simulation, value, response.result && { settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }).then(() => {
               if (valid() && sequence === loadSequence.current) setSimulationReady(true);
             }, error => { if (valid() && sequence === loadSequence.current) { channel.close(); simulator.current = null; setNotice({ level: 'error', message: errorText(error) }); } });
           } catch (error) { setNotice({ level: 'error', message: errorText(error) }); }
         }
-        setData(value); setPhase('ready');
-        setAppliedKey(commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        setData(value); setPhase('ready'); if (response.file) { setFileMetadata(response.file); setFileFunds(value.funds || []); }
+        setAppliedKey(fileMode && response.result ? JSON.stringify({ settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }) : commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        appliedBasis.current = response.simulation?.basis || null;
         setCalculationError(response.calculation_error ? errorText(Error(response.calculation_error)) : '');
         if (!initialized.current) {
           initialized.current = true;
           const preferences = value.preferences || {}; setTexts(preferences.texts || {});
           if (Array.isArray(preferences.tabOrder)) setOrder([...new Set(preferences.tabOrder.concat(TABS.map(item => item.id)))].filter(id => TABS.some(item => item.id === id)));
         }
-      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), 200);
+      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), fileMode ? 0 : 200);
       return () => { clearTimeout(timer); loadSequence.current++; };
       // Local draft edits use the worker below; only context changes reload sources.
     }, [revision, identity]);
     React.useEffect(() => { if (draftPending) setDetail(null); }, [draftKey, draftPending]);
     function applyCalculation() {
-      if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) { refresh(); return; }
+      if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) {
+        if (fileMode) { setCalculation('error'); setCalculationError('Este cambio requiere otra base: conserva el inicio y el corte de ahorro observado, y elige fechas y fondos incluidos en el archivo. Para otro periodo o más fondos, pulsa Cargar otro archivo.'); }
+        else refresh(); return;
+      }
       const sequence = ++localSequence.current, command = { settings, costs, bank }, commandKey = JSON.stringify(command), channel = simulator.current;
       setCalculation('loading'); setCalculationError('');
       channel.calculate(command).then(response => {
@@ -351,13 +359,14 @@
         localSequence.current++; setCalculation('ready'); setCalculationError('');
       }
     }, [draftKey, appliedKey, phase]);
-    React.useEffect(() => {
+    React.useLayoutEffect(() => {
       if (!automaticFilters || !draftPending || phase !== 'ready' || sourceExpired || busyRef.current) return;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.periodIni) || !/^\d{4}-\d{2}-\d{2}$/.test(settings.periodFin)) return;
       // Worker initialization is local; do not turn a short INIT into a second
       // server read. A range absent from this context needs one explicit load.
       if (simulator.current && !simulationReady) return;
       if (!simulationReady) return;
+      if (fileMode) { applyCalculation(); return () => { localSequence.current++; }; }
       const timer = setTimeout(applyCalculation, 60);
       return () => { clearTimeout(timer); localSequence.current++; };
     }, [draftKey, appliedKey, phase, simulationReady, sourceExpired, busy]);
@@ -371,8 +380,13 @@
       finally { busyRef.current = false; if (valid()) setBusy(''); }
     }
     function exportHistorical() { operation('export:historical', () => repo().exportReport('final_ahorro', { filters: { historical: true } }), () => setNotice({ message: 'Informe histórico descargado con sus valores originales.' })); }
-    function exportFile(kind, filters) { if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; } if (!result || calculation !== 'ready') return; operation('export:' + kind, () => repo().exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => setNotice({ message: 'Informe generado con el escenario consultado.' })); }
-    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => repo().saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}) }), () => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); setRevision(value => value + 1); }); }
+    function exportFile(kind, filters) {
+      if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; }
+      if (!result || calculation !== 'ready') return;
+      const action = fileMode && kind === 'base_calculo' ? () => window.SicofFileRepository.exportBase(fileMetadata, settings) : () => (fileMode ? window.SicofFileRepository : repo()).exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) });
+      operation('export:' + kind, action, () => setNotice({ message: 'Informe generado con el escenario consultado.' }));
+    }
+    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => (fileMode ? window.SicofFileRepository : repo()).saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) }), response => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); if (fileMode) setData(previous => ({ ...previous, scenarios: [...(previous.scenarios || []), { id: response.id, name: 'Escenario guardado en esta sesión', settings, costs, bank, rate: result.rate, annualRate: result.annualRate, base: result.base, payTotal: result.distributed, eligible_count: result.nqual, created_at: 'Confirmado en esta sesión' }] })); else setRevision(value => value + 1); }); }
     function savePreferences(nextTexts, nextOrder) { const invalid = preferenceError(nextTexts, nextOrder); if (invalid) { setNotice({ level: 'error', message: invalid }); return; } const overrides = textOverrides(nextTexts); operation('preferences', () => repo().savePreferences({ texts: overrides, tabOrder: nextOrder }), () => { setTexts(overrides); setOrder(nextOrder); setEditing(null); setNotice({ message: 'Presentación guardada.' }); }); }
     function moveTab(id, target) { if (busyRef.current || id === target) return; const next = order.filter(item => item !== id); next.splice(next.indexOf(target), 0, id); savePreferences(texts, next); }
     function addCost(event) {
@@ -382,7 +396,7 @@
       setCosts(previous => previous.concat(cost));
       setCostDraft(previous => Object.assign({}, previous, { concept: '', amount: '' }));
     }
-    const fundOptions = (data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
+    const fundOptions = (fileMode ? fileFunds : data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: fileMode ? undefined : 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
     const rows = result && result.rows || [], loans = data && data.loans || [], payments = data && data.payments || [], periods = data && data.periods || [], report = data && data.report || {};
     const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
     const exportBusy = Boolean(busy) || calculation !== 'ready' || !result || sourceExpired;
@@ -406,13 +420,13 @@
       h(Control, { label: 'Cláusula 10 · Préstamo atrasado' }, h(Segment, { label: 'Efecto del préstamo atrasado', value: settings.loanEffect, options: [['retiro', 'Sólo retiene el retiro'], ['rendimiento', 'Pierde rendimiento']], onChange: value => change('loanEffect', value) }), h('div', { style: { marginTop: 10 } }, h(Segment, { label: 'Alcance de retención', value: settings.retScope, options: [['todo', 'Todo el ahorro'], ['adeudo', 'Sólo el adeudo']], onChange: value => change('retScope', value) }))),
       h(Control, { label: 'Alerta de tasa anual (%)' }, input('warn', 'number', { min: 0, step: 1, 'aria-label': 'Umbral de alerta anual' })));
     }
-    function scenarios() { const list = data && data.scenarios || []; return h(Panel, { title: 'Comparador de escenarios' }, h('div', { className: 'sicof-toolbar' }, canConfigure && h(Button, { onClick: saveScenario, busy: exportBusy }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => operation('clear-scenarios', async () => { for (const scene of list) await repo().deleteScenario(scene.id); }, () => setRevision(value => value + 1)) }, 'Limpiar escenarios guardados')), h(Table, { rows: list.map(scene => Object.assign({}, scene, { name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10) })), columns: [
+    function scenarios() { const list = data && data.scenarios || []; return h(Panel, { title: 'Comparador de escenarios' }, h('div', { className: 'sicof-toolbar' }, canConfigure && h(Button, { onClick: saveScenario, busy: exportBusy }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => operation('clear-scenarios', async () => { for (const scene of list) await repo().deleteScenario(scene.id); }, () => fileMode ? setData(previous => ({ ...previous, scenarios: [] })) : setRevision(value => value + 1)) }, 'Limpiar escenarios guardados')), h(Table, { rows: list.map(scene => Object.assign({}, scene, { name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10) })), columns: [
       { key: 'name', label: 'Escenario', render: scene => h('button', { type: 'button', className: 'sicof-row-link', onClick: () => { setSettings(Object.assign(draftSettings(), scene.settings)); setCosts(scene.costs || []); setBank(scene.bank || { amount: null, declaredBy: '', date: '' }); } }, scene.name) },
       { key: 'source', label: 'Fuente', render: scene => ({ caja: 'Solo Caja de Ahorro', todos: 'Todos', sel: 'Caja + ' + (scene.settings.selFunds || []).join(', ') })[scene.settings.src] },
       { key: 'pay', label: '% repartir', render: scene => percent(scene.settings.pay) }, { key: 'method', label: 'Método', render: scene => scene.settings.method === 'avg' ? 'Saldo promedio por días' : 'Saldo final' },
       { key: 'period', label: 'Periodo', render: scene => scene.settings.periodIni + ' al ' + scene.settings.periodFin }, { key: 'minm', label: 'Meses mínimos', render: scene => scene.settings.minm },
       { key: 'rate', label: 'Tasa', format: 'percent' }, { key: 'annualRate', label: 'Tasa anual', format: 'percent' }, { key: 'base', label: 'Base', format: 'money' }, { key: 'payTotal', label: 'Reparto', format: 'money' }, { key: 'eligible_count', label: 'Elegibles' }, { key: 'created_at', label: 'Guardado' },
-      { key: 'actions', label: 'Acciones', render: scene => canConfigure && h('button', { type: 'button', className: 'sicof-row-remove', disabled: Boolean(busy), onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => setRevision(value => value + 1)), 'aria-label': 'Eliminar escenario ' + scene.name }, 'Eliminar') }
+      { key: 'actions', label: 'Acciones', render: scene => canConfigure && h('button', { type: 'button', className: 'sicof-row-remove', disabled: Boolean(busy), onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => fileMode ? setData(previous => ({ ...previous, scenarios: previous.scenarios.filter(item => item.id !== scene.id) })) : setRevision(value => value + 1)), 'aria-label': 'Eliminar escenario ' + scene.name }, 'Eliminar') }
     ], empty: 'Aún no has guardado escenarios.' }), h('p', { className: 'sicof-help' }, 'Selecciona un escenario para recuperar todas sus reglas, costos y declaración bancaria. El cálculo actualizado puede cambiar si cambiaron las fuentes.')); }
     function summary() { return h(React.Fragment, null,
       h('details', { className: 'sicof-panel sicof-executive', open: true }, h('summary', null, copy('executive')), h('div', { className: 'sicof-panel-body' }, result && (result.summary || []).length ? h('ol', null, result.summary.map((text, index) => h('li', { key: index }, text))) : h('p', { className: 'sicof-sub' }, 'Selecciona el periodo y revisa la bolsa, sus reglas y el respaldo registrado antes de guardar un escenario.'))),
@@ -507,7 +521,8 @@
     const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
     return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
       h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: () => refresh(true) }, 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (fileMode ? ' · Escenario del archivo' : data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, fileMode ? 'Preparar de nuevo' : 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: fileMode ? onReplaceFile : () => refresh(true) }, fileMode ? 'Cargar otro archivo' : 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
+        fileMode && fileMetadata && h('div', { className: 'sicof-period-note', style: { overflowWrap: 'anywhere' }, 'data-sicof-file': fileMetadata.sha256 }, h('strong', null, 'Archivo: ' + fileMetadata.name), h('div', null, fileMetadata.from + ' al ' + fileMetadata.to + ' · ' + (fileMetadata.funds ? fileMetadata.funds.join(', ') : 'Todos los fondos')), h('div', null, 'Archivo preparado: ' + new Date(fileMetadata.imported_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) + ' · Ahorro consultado: ' + new Date(fileMetadata.savings_observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' })), h('div', null, 'Los filtros utilizan esta información. Para incorporar movimientos posteriores, prepara de nuevo el archivo. Para otro inicio o un cierre histórico distinto, carga otra base.')),
         h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
         data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
         data?.source?.refreshing && h('div', { className: 'sicof-status', role: 'status' }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'),
@@ -515,7 +530,7 @@
         phase === 'loading' && h('div', { className: 'sicof-status', role: 'status' }, 'Consultando ahorro y pagos registrados…'),
         phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
         calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),
-        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar cálculo')),
+        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: fileMode ? onReplaceFile : refresh }, fileMode ? 'Cargar otro archivo' : 'Reintentar cálculo')),
         draftPending && (!automaticFilters || (calculation !== 'error' && !sourceExpired)) && h('div', { className: 'sicof-status', role: 'status' }, automaticFilters ? (simulationReady ? 'Aplicando los filtros con la información cargada…' : 'Preparando el cálculo con la información cargada…') : 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
         notice && h('div', { className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'), role: notice.level === 'error' ? 'alert' : 'status' }, notice.message),
         h('section', { id: 'sicof-pane-' + tab, role: 'tabpanel', 'aria-labelledby': 'sicof-tab-' + tab, 'aria-busy': phase === 'loading' || calculation === 'loading' }, panes[tab]())),
@@ -525,6 +540,7 @@
   function SicofAdmin({ app, onBack, header }) {
     const identity = window.SicofView.useContext();
     if (!identity || !app.admin || app.admin.phase !== 'authorized') return h('div', { role: 'alert' }, 'Acceso administrativo requerido.');
+    if (window.SicofFileFlow) return h(window.SicofFileFlow, { key: identity, app, onBack, header, identity, Workbench, defaultSettings: draftSettings, expand: expandWorkspace, css: CSS, errorText });
     return h(Workbench, { key: identity, app, onBack, header, identity });
   }
   window.SicofAttribution = Attribution;

@@ -1,0 +1,304 @@
+{
+  "task": "H-SICOF-FILE-WORKFLOW-001",
+  "status": "PASS",
+  "baseline": "c55ef8f237031dfa06c5149e063534414c1aa0f8",
+  "build": {
+    "status": "PASS",
+    "version": 322,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "4a639499930de5b6508bc576ad69c8b7642e1a75045d3d03b038e2f437fa71fe",
+    "workerSha256": "fee3e436a73de05569a57a036de5cc32b3d6aa26f3f3dcfaa22188b74abf5bb4",
+    "vendorSha256": "7e49da68588e250dbb8bba190d2caa8ab3787cc0284bda1d8b2f805c4df742c9"
+  },
+  "backend": {
+    "status": "PASS",
+    "priorVersion": 13,
+    "version": 14,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "2c36670de05a268908d72fee2d38fa9f77c3aa02a8257ec8cb054e843d60b971"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f"
+      },
+      {
+        "file": "file-workspace.mjs",
+        "sha256": "d7e6a7d5b78e8323d8f35f9352018a64cae5939070ef0bf1cbf451e7e826f9dd"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "11ae2841b77c34376eeab9824fc273d789cc045bff21a81ee6359289871533d3"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "8e6ce1430d5476bb7c40490ecbe7cdb7d963b90f42adf2ed28408d02117d717c"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+      },
+      {
+        "file": "simulation.mjs",
+        "sha256": "b7c77d15f073ef55bd329dfd5bf1200aa414457505685e7efa8693a03bb37b10"
+      },
+      {
+        "file": "source-cache.mjs",
+        "sha256": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268"
+      }
+    ],
+    "financialWrites": 0
+  },
+  "live": {
+    "status": "PASS",
+    "download": {
+      "http": 200,
+      "total_ms": 8118,
+      "sheets": 1,
+      "columns": 15,
+      "dataRows": 1684,
+      "from": "2026-07-01",
+      "to": "2026-12-31",
+      "fund": "Caja de Ahorro"
+    },
+    "preparation": {
+      "http": 200,
+      "total_ms": 8030,
+      "decoded_bytes": 11996838,
+      "participants": 354,
+      "loans": 2373,
+      "payments": 1684,
+      "source_observed_at": "2026-10-04T06:28:27.508Z",
+      "savings_observed_at": "2026-10-04T06:32:27.348Z",
+      "imported_at": "2026-10-04T06:32:28.609Z"
+    },
+    "cutoff": {
+      "from": "2026-07-01",
+      "to": "2026-12-04",
+      "payments": 1397,
+      "extraQueries": 0
+    },
+    "requests": {
+      "login": 1,
+      "download": 1,
+      "prepare": 1
+    },
+    "googleReadsDuringConsultation": 0,
+    "financialWrites": 0,
+    "limitation": "Single bounded live sample per explicit operation. Download/preparation remain network operations; only subsequent compatible filtering is local."
+  },
+  "performance": {
+    "status": "PASS",
+    "offlineRecordedData": true,
+    "externalRequests": 0,
+    "financialWrites": 0,
+    "screenshots": 0,
+    "ui_sha256": "1728e3008d3f3bda12acfadb31e1989aab0b79b64ece6b1c29e999ea17c690e3",
+    "worker_sha256": "fee3e436a73de05569a57a036de5cc32b3d6aa26f3f3dcfaa22188b74abf5bb4",
+    "client_sha256": "5dc36ecb0cdfeb2f36411369a0416e374374cc097f5ecfca9af0c2ec4fa23b73",
+    "counts": {
+      "participants": 354,
+      "loans": 2373,
+      "payments": 5656,
+      "schedules": 18534
+    },
+    "modes": [
+      {
+        "mode": "normal",
+        "calls": 0,
+        "changes": [
+          {
+            "end": "2026-12-04",
+            "totalMs": 95.40000009536743,
+            "workerMs": 64.89999985694885,
+            "clientMs": 74.69999980926514,
+            "preWorkerMs": 12.400000095367432,
+            "afterReplyMs": 8.5
+          },
+          {
+            "end": "2026-12-31",
+            "totalMs": 49.80000019073486,
+            "workerMs": 13.300000190734863,
+            "clientMs": 31.399999856948853,
+            "preWorkerMs": 7.300000190734863,
+            "afterReplyMs": 11.100000143051147
+          }
+        ],
+        "longTasks": {
+          "count": 0,
+          "totalMs": 0,
+          "maxMs": 0
+        },
+        "pageErrors": 0,
+        "profiler": false,
+        "workerInstrumentation": false
+      }
+    ]
+  },
+  "browser": {
+    "status": "PASS",
+    "checks": [
+      "opening and responsive initial workflow perform zero data reads",
+      "explicit fund discovery and download produce one original typed sheet A:O with selected dates",
+      "invalid extension is rejected locally; malformed XLSX and extra column fail visibly without a fallback workspace",
+      "one preparation enriches missing components; local filters equal frozen engine and retain other-fund credit evidence without mixing pool",
+      "local ExcelJS export writes exactly one sheet A:O with inclusive applied dates and funds, with zero RPC",
+      "Todos to Caja to selected funds to Todos to Caja reconstructs exact sparse loan schedules and scoped payments without reads",
+      "unsupported start and historical cutoff fail explicitly with zero auto reads; dated file preview remains usable after live-source TTL",
+      "all eight sections remain; replacing file clears private workspace; delayed preparation cannot survive session loss"
+    ],
+    "synthetic": true,
+    "network": "all requests intercepted locally",
+    "externalRequests": 0,
+    "financialWrites": 0,
+    "initialDataReads": 0,
+    "dataReadsPerSuccessfulPreparation": 1,
+    "apiActions": [
+      "SOURCE_FUNDS",
+      "DOWNLOAD_SOURCE",
+      "FILE_WORKSPACE",
+      "FILE_WORKSPACE",
+      "FILE_WORKSPACE",
+      "FILE_WORKSPACE"
+    ],
+    "sourceReads": 6,
+    "contextReads": 6,
+    "protectedBaseline": "c55ef8f237031dfa06c5149e063534414c1aa0f8",
+    "performanceClaim": "None: small-fixture correctness and lifecycle only; full-size browser timing is separate.",
+    "errors": []
+  },
+  "tests": [
+    {
+      "command": "node scripts/test-sicof-engine.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-prepared-engine.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-file-workspace.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-simulation.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-simulation-handler.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-export-fast-path.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-source-cache.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-source-cache-worker.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-continuous-handler.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-ui-browser.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-integration-browser.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-instant-browser.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-file-browser.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "status": "PASS"
+    }
+  ],
+  "equivalence": {
+    "frozenBaselineSyntheticCases": 58,
+    "privateFullSizeCases": 13,
+    "independentReviewCases": 240,
+    "completeResultsAndFingerprintsEqual": true
+  },
+  "sourceOfTruth": "Google loans; Supabase savings/yields/withdrawals; dated FILE derivative in session RAM only",
+  "security": {
+    "serverAuthorization": true,
+    "zipExpansionBoundedForEveryXmlPart": true,
+    "uppercaseOriginalHashesPreserved": true,
+    "serverSaveExportRevalidation": true,
+    "browserPersistence": false
+  },
+  "financialWrites": 0,
+  "migrations": 0,
+  "globalImageRegression": "NOT APPLICABLE: focal modules and generated bundle/cachebusters only; shared repositories/Auth/assets/SW behavior unchanged",
+  "initialLiveFailure": {
+    "operation": "FILE_WORKSPACE",
+    "code": "SICOF_FILE_SOURCE_INVALID",
+    "cause": "Original uppercase Google hash rejected by new lowercase-only validator",
+    "resolution": "Case-insensitive shape check; exact original equality retained; added upper-case regression; v14 real import PASS",
+    "requests": {
+      "login": 1,
+      "download": 1,
+      "prepare": 1
+    },
+    "financialWrites": 0
+  },
+  "limits": [
+    "Download and preparation are explicit remote operations (about eight seconds each in the live sample).",
+    "50–95 ms are two observed full-size local cutoff changes, not a hardware-independent SLA or p95.",
+    "Preview stays dated/frozen until explicitly prepared again; no automatic freshness promise.",
+    "Another start/historical as_of or wider date/fund scope requires a new explicit preparation.",
+    "DOWNLOAD_SOURCE still uses existing complete authorized context RPC; no new permission API or migration was introduced."
+  ],
+  "publication": {
+    "frontendVersion": 322,
+    "backendVersion": 14,
+    "staticReceipt": "Pending post-push verification against GitHub Pages and sutiapp.com; no additional financial reads required",
+    "status": "PENDING"
+  },
+  "hashes": {
+    "app/sicof-admin.jsx": "1728e3008d3f3bda12acfadb31e1989aab0b79b64ece6b1c29e999ea17c690e3",
+    "app/sicof-simulation-client.js": "5dc36ecb0cdfeb2f36411369a0416e374374cc097f5ecfca9af0c2ec4fa23b73",
+    "app/sicof-simulation-worker.js": "fee3e436a73de05569a57a036de5cc32b3d6aa26f3f3dcfaa22188b74abf5bb4",
+    "supabase/functions/sicof/engine.mjs": "2c36670de05a268908d72fee2d38fa9f77c3aa02a8257ec8cb054e843d60b971",
+    "supabase/functions/sicof/handler.mjs": "11ae2841b77c34376eeab9824fc273d789cc045bff21a81ee6359289871533d3",
+    "supabase/functions/sicof/index.ts": "8e6ce1430d5476bb7c40490ecbe7cdb7d963b90f42adf2ed28408d02117d717c",
+    "supabase/functions/sicof/simulation.mjs": "b7c77d15f073ef55bd329dfd5bf1200aa414457505685e7efa8693a03bb37b10",
+    "app/sicof-file-flow.jsx": "39024630b9b4ad5e6df260f386b539337229c4346ac432ec7c504a5ddb83a32e",
+    "app/sicof-file-repository.js": "9f41f9f3bd7946ef315d760799ae5e0d9d7bf0e574ef3e28323dd5b2220e3935",
+    "supabase/functions/sicof/file-workspace.mjs": "d7e6a7d5b78e8323d8f35f9352018a64cae5939070ef0bf1cbf451e7e826f9dd"
+  },
+  "registry": {
+    "status": "PASS",
+    "freshness": "FRESH",
+    "command": "python scripts/test-architecture-registry.py",
+    "checks": "generation, freshness, lookup, incremental add/remove, secrets, determinism"
+  }
+}

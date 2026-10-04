@@ -5,8 +5,9 @@ import {calculateSicof,validateSettings,validateCalculationInputs,ENGINE_VERSION
 import {decorateLoans,behaviorFor,makeReports,workspaceView,buildContinuousSavingsReport,compactWorkspace} from './projection.mjs';
 import {exportSicofReport} from './exports.mjs';
 import {createSimulationSeed,validateSimulationBasis} from './simulation.mjs';
+import {availableSourceFunds,validateFileInput,validateFileBasis,importSicofFile,revalidateFileBasis,scopeFileAnalysis} from './file-workspace.mjs';
 const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v);
-const fields={LOAD:['from','to'],WORKSPACE:['settings','costs','bank','compact','refresh_source','simulation'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title','simulation_basis'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to','simulation_basis']};
+const fields={LOAD:['from','to'],SOURCE_FUNDS:['from','to'],DOWNLOAD_SOURCE:['settings'],FILE_WORKSPACE:['settings','costs','bank','compact','file'],WORKSPACE:['settings','costs','bank','compact','refresh_source','simulation'],CALCULATE:['settings','costs','bank'],BEHAVIOR:['affiliate_ids'],SAVE_SCENARIO:['settings','costs','bank','fingerprint','key','title','simulation_basis','file_basis'],ARCHIVE_SCENARIO:['id','key'],SAVE_PREFERENCES:['texts','tabOrder','key'],EXPORT:['kind','settings','costs','bank','fingerprint','filters','from','to','simulation_basis','file_basis']};
 async function rpc(client,name,args) {const r=await client.rpc(name,args);if(r.error)throw Error(r.error.message||'SICOF_RPC_FAILED');return r.data;}
 function requireContext(context,actor) {if(!context||context.actor!==actor||!context.session)throw Error('SICOF_CONTEXT_CHANGED');return context;}
 function decodeBytes(base64){return Uint8Array.from(atob(base64.replace(/\s/g,'')),c=>c.charCodeAt(0));}
@@ -70,11 +71,14 @@ export async function dispatchSicof(body,authorization,dependencies) {
     return {context:context.context,data:Object.fromEntries(context.subjects.map(subject=>[subject.affiliate_id,behaviorFor(subject,analysis)]))};
   }
   const settings=body.settings?validateSettings(body.settings):null;
-  if(body.action==='WORKSPACE'&&!settings)throw Error('SICOF_SETTINGS_REQUIRED');
+  if(['WORKSPACE','FILE_WORKSPACE','DOWNLOAD_SOURCE'].includes(body.action)&&!settings)throw Error('SICOF_SETTINGS_REQUIRED');
+  if(body.action==='FILE_WORKSPACE'){validateFileInput(body.file);validateCalculationInputs({settings,costs:body.costs,bank:body.bank});}
   const today=dependencies.today?dependencies.today():new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   // A client supplies only the original read bounds, never a trusted context or
   // result. Re-read that same authorized context before checking its fingerprint.
   const basis=Object.hasOwn(body,'simulation_basis')?validateSimulationBasis(body.simulation_basis,settings,today):null;
+  const fileBasis=Object.hasOwn(body,'file_basis')?validateFileBasis(body.file_basis,settings):null;
+  if(fileBasis&&(!basis||basis.from!==fileBasis.from||basis.to!==fileBasis.to))throw Error('SICOF_FILE_BASIS_INVALID');
   if(basis&&body.action==='EXPORT'&&body.kind==='final_ahorro')throw Error('SICOF_SIMULATION_RANGE_REQUIRED');
   let from=settings?.periodIni||body.from||today.slice(0,4)+'-01-01',to=settings?.periodFin||body.to||today;
   date(from);date(to);
@@ -86,6 +90,7 @@ export async function dispatchSicof(body,authorization,dependencies) {
     const year=String(body.filters.year),semester=String(body.filters.semester||'');from=year+(semester==='2'?'-07-01':'-01-01');to=year+(semester==='1'?'-06-30':'-12-31');
   }
   const ctx=await rpc(user,'get_admin_sicof_context',{p_from:basis?.from||from,p_to:basis?.to||to});requireContext(ctx.context,actor);
+  const savingsObservedAt=body.action==='FILE_WORKSPACE'?new Date(dependencies.now?dependencies.now():Date.now()).toISOString():null;
   if(basis){
     validateSimulationBasis(basis,settings,ctx.today);
     if(ctx.from!==basis.from||ctx.to!==basis.to||ctx.today!==basis.today||ctx.as_of!==basis.as_of)throw Error('SICOF_CONTEXT_CHANGED');
@@ -101,7 +106,7 @@ export async function dispatchSicof(body,authorization,dependencies) {
     if(!ctx.can_configure||!uuid(body.id))throw Error('SICOF_ADMIN_DENIED');
     return {context:ctx.context,data:await rpc(user,'admin_archive_sicof_scenario',{p_scenario_id:body.id,p_key:body.key||crypto.randomUUID()})};
   }
-  if(body.action==='EXPORT'&&!ctx.can_export)throw Error('SICOF_EXPORT_DENIED');
+  if(['EXPORT','DOWNLOAD_SOURCE'].includes(body.action)&&!ctx.can_export)throw Error('SICOF_EXPORT_DENIED');
   if(body.action==='SAVE_SCENARIO'&&(!ctx.can_configure||!uuid(body.key)))throw Error('SICOF_ADMIN_DENIED');
   const sourceResponse=(data,source)=>{
     // Recheck after calculation, compaction or XLSX/base64 creation. No second
@@ -109,6 +114,13 @@ export async function dispatchSicof(body,authorization,dependencies) {
     requireCurrentSicofSource(source,dependencies);
     return {context:ctx.context,data};
   };
+  if(['SOURCE_FUNDS','DOWNLOAD_SOURCE'].includes(body.action)){
+    const source=await sourceReader(env),funds=availableSourceFunds(source);
+    if(body.action==='SOURCE_FUNDS')return sourceResponse({funds,observed_at:source.observed_at},source);
+    const excel=ExcelJS||await dependencies.loadExcelJS();
+    const exported=await exportSicofReport({kind:'base_calculo',calculation:{settings},context:{},loans:{source_fingerprint:source.source_fingerprint},source,ExcelJS:excel});
+    return sourceResponse({base64:encodeBytes(new Uint8Array(exported.bytes)),content_type:exported.contentType,filename:exported.filename,funds,observed_at:source.observed_at},source);
+  }
   async function exportResult(calculation,analysis,source){
     // Supported simulation ranges share the cutoff and complete participant
     // facts, but report labels and interval totals must use the chosen dates.
@@ -135,16 +147,23 @@ export async function dispatchSicof(body,authorization,dependencies) {
     if(!settings)throw Error('SICOF_SETTINGS_REQUIRED');
     const inputs=validateCalculationInputs({settings,costs:body.costs,bank:body.bank});
     const source=await sourceReader(env);
+    const selectedFile=fileBasis?await revalidateFileBasis(fileBasis,source,settings):null;
     // The existing fingerprint seals inputs and the current live context plus
     // the shared source observation within the authorized five-minute lifetime,
     // not the derived distribution. Reconstruct it identically without building
     // loan histories, participant allocations or reports for a raw A:O export.
-    const currentFingerprint=await fingerprint({engine:ENGINE_VERSION,...inputs,context:ctx.fingerprint,loans:source.source_fingerprint});
+    const currentFingerprint=await fingerprint({engine:ENGINE_VERSION,...inputs,context:ctx.fingerprint,loans:selectedFile?.source_fingerprint||source.source_fingerprint});
     if(body.fingerprint!==currentFingerprint)throw Error('SICOF_SOURCE_CHANGED');
     return exportResult({...inputs,engine_version:ENGINE_VERSION,fingerprint:currentFingerprint},{source_fingerprint:source.source_fingerprint},source);
   }
-  let analysis,source;
-  try {source=await sourceReader(env);analysis=decorateLoans(analyzeSicofLoans(source,{from,to,as_of:ctx.today}));}
+  let analysis,source,selectedFile;
+  try {
+    source=await sourceReader(env);
+    if(body.action==='FILE_WORKSPACE')selectedFile=await importSicofFile(body.file,source,settings,ExcelJS||await dependencies.loadExcelJS(),{importedAt:new Date(dependencies.now?dependencies.now():Date.now()).toISOString(),savingsObservedAt});
+    else if(fileBasis)selectedFile=await revalidateFileBasis(fileBasis,source,settings);
+    analysis=decorateLoans(analyzeSicofLoans(source,{from,to,as_of:ctx.today}));
+    if(selectedFile)analysis=scopeFileAnalysis(analysis,selectedFile,settings);
+  }
   catch(error){
     if(!['LOAD','WORKSPACE'].includes(body.action))throw error;
     const workspace=workspaceView(ctx,null);
@@ -152,16 +171,17 @@ export async function dispatchSicof(body,authorization,dependencies) {
     const data={workspace,result:null,calculation_error:error?.sourceState?error.message:'SICOF_LOAN_SOURCE_UNAVAILABLE'};
     return {context:ctx.context,data:body.action==='WORKSPACE'?(body.compact?compactWorkspace(data):data):workspace};
   }
-  const workspace=()=>{const view=workspaceView(ctx,analysis);if(source.cache_meta)view.source={...view.source,...source.cache_meta,status:source.cache_meta.state};return view;};
+  const workspace=()=>{const view=workspaceView(ctx,analysis);if(source.cache_meta)view.source={...view.source,...source.cache_meta,status:source.cache_meta.state};if(selectedFile){view.source.canonical_fingerprint=source.source_fingerprint;view.payment_scope=analysis.payment_scope;view.loan_history_scope=analysis.loan_history_scope;}return view;};
   if(body.action==='LOAD')return sourceResponse(workspace(),source);
   if(!settings)throw Error('SICOF_SETTINGS_REQUIRED');
   const result=calculateSicof(ctx,analysis,{settings,costs:body.costs,bank:body.bank});
   result.fingerprint=await fingerprint({engine:result.engine_version,settings:result.settings,costs:result.costs,bank:result.bank,context:ctx.fingerprint,loans:analysis.source_fingerprint});
   // One authorized observation supplies both UI and calculation. Supabase
   // savings remain live; source metadata identifies the shared Google copy.
-  if(body.action==='WORKSPACE'){
+  if(['WORKSPACE','FILE_WORKSPACE'].includes(body.action)){
     const data={workspace:workspace(),result};
-    if(body.simulation)data.simulation=createSimulationSeed(ctx,analysis,source,dependencies.now?dependencies.now():Date.now());
+    if(selectedFile){data.file=selectedFile.metadata;data.simulation={...createSimulationSeed(ctx,analysis,{...source,source_fingerprint:analysis.source_fingerprint},dependencies.now?dependencies.now():Date.now()),mode:'FILE',file_basis:selectedFile.basis};}
+    else if(body.simulation)data.simulation=createSimulationSeed(ctx,analysis,source,dependencies.now?dependencies.now():Date.now());
     return sourceResponse(body.compact?compactWorkspace(data):data,source);
   }
   if(body.action==='CALCULATE')return sourceResponse(result,source);

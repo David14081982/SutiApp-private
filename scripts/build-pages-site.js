@@ -36,6 +36,8 @@ const publicFiles = [
   'assets/branding/credencial-puno.png',
   'app/bundle.js',
   'app/sicof-simulation-worker.js',
+  'app/vendor/exceljs-4.4.0/exceljs.min.js',
+  'app/vendor/exceljs-4.4.0/LICENSE',
   'app/vendor/pdfjs-5.4.149/pdf.min.mjs',
   'app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs',
   'app/vendor/pdfjs-5.4.149/LICENSE',
@@ -62,7 +64,7 @@ for (const relative of publicFiles) {
     const bytes = fs.readFileSync(source, 'utf8').replace(/\r\n/g, '\n');
     const html = fs.readFileSync(path.join(root, 'SutiApp.html'), 'utf8');
     const tag = [...html.matchAll(/<script\b[^>]*>/g)].map(m=>m[0]).find(t=>t.includes('src="'+relative+'"'));
-    const expected = tag && /integrity="sha384-([^"]+)"/.exec(tag);
+    const expected = tag && /integrity="sha384-([^"]+)"/.exec(tag) || relative === 'app/vendor/exceljs-4.4.0/exceljs.min.js' && /script.integrity = 'sha384-([^']+)'/.exec(fs.readFileSync(path.join(root, 'app/sicof-file-repository.js'), 'utf8'));
     if (!expected || crypto.createHash('sha384').update(bytes).digest('base64') !== expected[1]) throw new Error('VENDOR_INTEGRITY_MISMATCH: '+relative);
     fs.writeFileSync(target, bytes);
   } else fs.copyFileSync(source, target);

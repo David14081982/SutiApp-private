@@ -56,13 +56,12 @@ function originSelected(key, component, s) {
 // A single common day denominator; deposits earn from their effective day and
 // withdrawals stop earning on their effective day. A certified opening is not
 // pretended to be an individual deposit on the date of its later import.
-export function basisFor(person, settings) {
-  const s = settings, tx = (person.transactions || []).filter(t=>date(t.effective_date)<=s.periodFin);
-  const byId = new Map((person.composition?.movements || []).map(t=>[t.id || t.transaction_id,t]));
+function basisEvents(person, s, prepared) {
+  const transactions = prepared ? prepared.transactions : (person.transactions || []).map(t=>{date(t.effective_date);return t;});
+  const tx = transactions.filter(t=>t.effective_date<=s.periodFin);
+  const byId = prepared ? prepared.byId : new Map((person.composition?.movements || []).map(t=>[t.id || t.transaction_id,t]));
   const events = [], errors = [];
   const openingDate = person.certified_as_of || (person.transactions||[]).filter(t=>t.transaction_type==='REGULARIZATION').map(t=>t.effective_date).sort()[0];
-  if(openingDate && openingDate>s.periodFin)errors.push('HISTORICAL_CUTOFF_UNPROVEN');
-  if (s.method === 'avg' && openingDate && openingDate > s.periodIni && tx.some(t=>t.transaction_type==='REGULARIZATION')) errors.push('HISTORICAL_DAILY_BALANCE_UNPROVEN');
   for (const t of tx) {
     if (!['CAPITAL','YIELD'].includes(t.component) || !['CREDIT','DEBIT'].includes(t.direction)) throw Error('SICOF_LEDGER_INVALID');
     const n = amountOf(t), composed = byId.get(t.id);
@@ -81,18 +80,50 @@ export function basisFor(person, settings) {
       else if (!key) errors.push('PERIOD_ORIGIN_UNRESOLVED');
     }
   }
-  const end = sum(events.map(e=>e.cents));
-  const weighted = events.reduce((a,e)=>a+BigInt(e.cents)*BigInt(days(e.date<s.periodIni?s.periodIni:e.date,s.periodFin)),0n);
-  if (end<0 || weighted<0n) errors.push('NEGATIVE_BASIS');
-  const totalDays = days(s.periodIni,s.periodFin);
-  const valid = !errors.length;
+  return {events, errors, openingDate, regularization:tx.some(t=>t.transaction_type==='REGULARIZATION'),timelines:new Map()};
+}
+function basisTimeline(events,from,interval) {
+  const end=sum(events.map(e=>e.cents)),totalCents=events.reduce((a,e)=>a+BigInt(e.cents),0n);
+  // Exact BigInt identity: shifting the common cutoff by N days adds each
+  // event's cents * N. No float approximation or alternative interest rule.
+  const initialWeight=events.reduce((a,e)=>a+BigInt(e.cents)*BigInt(interval(e.date<from?from:e.date,from)),0n);
   const dated=new Map();
-  for(const e of events) {const day=e.date<s.periodIni?s.periodIni:e.date;dated.set(day,(dated.get(day)||0)+e.cents);}
-  if(!dated.has(s.periodIni))dated.set(s.periodIni,0);
-  const ordered=[...dated.keys()].sort();let running=0;
-  const steps=ordered.map((day,i)=>{running+=dated.get(day);const last=i+1<ordered.length?new Date(Date.parse(ordered[i+1])-DAY).toISOString().slice(0,10):s.periodFin;const duration=days(day,last);return {date:day,amount:money(dated.get(day)),balance:money(running),days:duration,balance_days:money(running*duration)};});
+  for(const e of events){const day=e.date<from?from:e.date;dated.set(day,(dated.get(day)||0)+e.cents);}
+  if(!dated.has(from))dated.set(from,0);
+  const ordered=[...dated.keys()].sort(),prefix=[];let running=0,last;
+  for(let i=0;i<ordered.length;i++){
+    const day=ordered[i];running+=dated.get(day);
+    const step={date:day,amount:money(dated.get(day)),balance:money(running)};
+    if(i+1<ordered.length){const until=new Date(Date.parse(ordered[i+1])-DAY).toISOString().slice(0,10),duration=interval(day,until);prefix.push({...step,days:duration,balance_days:money(running*duration)});}
+    else last={step,running};
+  }
+  return {end,totalCents,initialWeight,prefix,last};
+}
+function computeBasis(person, s, prepared) {
+  // Selection is independent of payout, costs and method. Future cutoffs share
+  // the same ledger events once they pass the last authorized movement.
+  const cutoff=prepared&&s.periodFin>prepared.lastDate?prepared.lastDate:s.periodFin;
+  const eventKey=prepared?JSON.stringify([cutoff,periodKey(s.periodIni),s.capitalBasis,s.yieldMode,selectedOrigins(s)]):null;
+  let selected=prepared?.events.get(eventKey);
+  if(!selected){selected=basisEvents(person,s,prepared);if(prepared)remember(prepared.events,eventKey,selected);}
+  const {events,openingDate}=selected,errors=[];
+  if(openingDate && openingDate>s.periodFin)errors.push('HISTORICAL_CUTOFF_UNPROVEN');
+  if(s.method==='avg'&&openingDate&&openingDate>s.periodIni&&selected.regularization)errors.push('HISTORICAL_DAILY_BALANCE_UNPROVEN');
+  errors.push(...selected.errors);
+  const interval=prepared?prepared.days:days;
+  const totalDays = interval(s.periodIni,s.periodFin);
+  const timeline=prepared?(selected.timelines.get(s.periodIni)||remember(selected.timelines,s.periodIni,basisTimeline(events,s.periodIni,interval))):basisTimeline(events,s.periodIni,interval);
+  const {end}=timeline,weighted=timeline.initialWeight+timeline.totalCents*BigInt(totalDays-1);
+  if (end<0 || weighted<0n) errors.push('NEGATIVE_BASIS');
+  const valid = !errors.length;
+  const duration=interval(timeline.last.step.date,s.periodFin),steps=[...timeline.prefix,{...timeline.last.step,days:duration,balance_days:money(timeline.last.running*duration)}];
   return {end:valid?end:null,average:valid?Number(weighted)/totalDays:null,weight:valid?(s.method==='avg'?weighted:BigInt(end)*BigInt(totalDays)):0n,
     errors:[...new Set(errors)],days:totalDays,steps:valid?steps:[]};
+}
+export function basisFor(person, settings) { return computeBasis(person,settings); }
+function remember(cache,key,value) {
+  if(cache.size>=32)cache.delete(cache.keys().next().value);
+  cache.set(key,value);return value;
 }
 function allocateCents(total, rows) {
   const weights = rows.map(r=>r.ok?r._weight:0n), denominator = weights.reduce((a,b)=>a+b,0n);
@@ -112,56 +143,55 @@ function validateCosts(input) {
     return {id:c.id,concept:c.concept.trim(),amount:c.amount,source:enumValue(c.source,['pool','reserve']),status:enumValue(c.status,['estimated','committed','paid']),date:c.date?date(c.date):null};
   });
 }
-// Shared input validation for simulations and source-only exports. This does
-// not derive a balance or allocation; normalized values retain their existing
-// representation so both paths produce the same calculation fingerprint.
-export function validateCalculationInputs(input) {
-  const s=validateSettings(input.settings), costs=validateCosts(input.costs||[]), bank=input.bank||{amount:null};
-  const declared=bank.amount==null||bank.amount===''?null:cents(bank.amount);
-  if (declared!=null&&(declared<0||!bank.declaredBy?.trim()||!bank.date)) throw Error('SICOF_BANK_DECLARATION_REQUIRED');
-  if (bank.date) date(bank.date);
-  return {settings:s,costs,bank};
-}
-export function calculateSicof(context, loanAnalysis, input) {
-  const {settings:s,costs,bank}=validateCalculationInputs(input);
-  if (!context || !Array.isArray(context.participants) || !loanAnalysis || !Array.isArray(loanAnalysis.payments)) throw Error('SICOF_SOURCE_INVALID');
-  const today=date(context.today), alerts=[];
-  const addAlert=(code,text,severity='warning')=>alerts.push({code,text,severity});
+function paymentTotals(loanAnalysis,s) {
   const acceptedFunds=s.src==='caja'?['Caja de Ahorro']:s.src==='sel'?[...new Set(['Caja de Ahorro',...s.selFunds])]:null;
   const payments=loanAnalysis.payments.filter(p=>(!acceptedFunds||acceptedFunds.includes(p.fund))&&(!p.date||(p.date>=s.periodIni&&p.date<=s.periodFin)));
   const collected=sum(payments.filter(p=>p.audit==='RECONCILED_SOURCE_PAYMENT').map(p=>cents(p.interest)));
   const projected=sum(payments.filter(p=>p.audit==='PROJECTED').map(p=>cents(p.projected_interest)));
   const fees=sum(payments.filter(p=>p.audit==='RECONCILED_SOURCE_PAYMENT').map(p=>cents(p.fee)));
   const unresolved=payments.filter(p=>p.audit==='REVIEW_REQUIRED');
-  addAlert('DATE_SEMANTICS','Los ingresos se agrupan por la fecha de amortización de la hoja. Esa fecha no acredita por sí sola cuándo se recibió el dinero.');
-  if (unresolved.length) addAlert('UNALLOCATED_PAYMENTS',unresolved.length+' pagos requieren conciliación de capital, interés y gasto administrativo; no se incluyen en la bolsa.','error');
-  if (s.periodFin>today) addAlert('FUTURE_CUTOFF','El corte es futuro: aportaciones e intereses aún no cobrados se muestran como proyección.');
-  const policyDeviations=[];
-  if (!s.exmin||s.minm!==6||s.anchorOn) policyDeviations.push('permanencia');
-  if (!s.exterm) policyDeviations.push('bajas');
-  if (s.method!=='end') policyDeviations.push('saldo promedio');
-  if (s.yieldMode!=='none') policyDeviations.push('rendimiento sobre rendimiento');
-  if (policyDeviations.length) addAlert('POLICY_SCENARIO','El escenario compara opciones de '+policyDeviations.join(', ')+'. Acreditar rendimientos conserva las validaciones y autorizaciones del proceso de Ahorro.');
-  const originalPool=Math.round(collected*s.pay/100), originalReserve=collected-originalPool;
-  const poolCosts=sum(costs.filter(c=>c.source==='pool').map(c=>cents(c.amount))), reserveCosts=sum(costs.filter(c=>c.source==='reserve').map(c=>cents(c.amount)));
-  const spill=Math.max(0,reserveCosts-originalReserve), distributable=Math.max(0,originalPool-poolCosts-spill), reserve=Math.max(0,originalReserve-reserveCosts);
-  if (poolCosts+reserveCosts>collected) addAlert('COST_DEFICIT','Los apartados y costos superan el interés conciliado; no queda bolsa para repartir.','error');
+  return {collected,projected,fees,unresolved};
+}
+function analysisFacts(loanAnalysis,today) {
+  const dates=[...new Set(loanAnalysis.payments.filter(p=>p.audit==='RECONCILED_SOURCE_PAYMENT').map(p=>p.date))].sort();
+  const byDate=new Map();
+  for(const payment of loanAnalysis.payments)if(payment.audit==='RECONCILED_SOURCE_PAYMENT'){if(!byDate.has(payment.date))byDate.set(payment.date,[]);byDate.get(payment.date).push(payment);}
+  let caja=0,all=0;
+  const recovery=dates.map(d=>{for(const p of byDate.get(d)) {all+=cents(p.paid);if(p.fund==='Caja de Ahorro')caja+=cents(p.paid);}return {label:d,caja:money(caja),all:money(all)};});
+  // Current contractual receivables are not bank cash or guaranteed recovery.
+  // They cannot be reconstructed at an earlier cutoff from a mutable sheet.
+  const portfolioLoans=loanAnalysis.loans.filter(l=>l.fund==='Caja de Ahorro');
+  const portfolioUncertain=loanAnalysis.loans.some(l=>!l.fund)||portfolioLoans.some(l=>l.behavior==='REVIEW_REQUIRED'||l.total==null||l.paid==null||!Number.isFinite(l.total)||!Number.isFinite(l.paid));
+  const portfolio=portfolioUncertain?null:moneySum(portfolioLoans.map(l=>money(Math.max(0,cents(l.total)-cents(l.paid)))));
+  const groupedLoans=new Map();
+  for(const loan of loanAnalysis.loans){const fund=loan.fund||'Fondo por conciliar';if(!groupedLoans.has(fund))groupedLoans.set(fund,[]);groupedLoans.get(fund).push(loan);}
+  const fundRecovery=[...groupedLoans].map(([label,loans])=>{
+    const reliable=loans.every(l=>l.fund&&l.behavior!=='REVIEW_REQUIRED'&&typeof l.total==='number'&&typeof l.paid==='number'&&Number.isFinite(l.total)&&Number.isFinite(l.paid)&&l.total>=l.paid&&l.paid>=0);
+    return {label,paid:reliable?moneySum(loans.map(l=>l.paid)):null,pending:reliable?moneySum(loans.map(l=>money(cents(l.total)-cents(l.paid)))):null,total:reliable?moneySum(loans.map(l=>l.total)):null,as_of:today};
+  });
+  return {recovery,portfolio,fundRecovery};
+}
+function missedContributions(person,s,today) {
+  const hist=(person.history||[]).filter(h=>h.date>=s.periodIni&&h.date<=s.periodFin&&h.date<=today).sort((a,b)=>a.date.localeCompare(b.date));
+  let run=0,maxMissQ=0;
+  for(const h of hist){run=h.amount===0&&h.expected>0?run+(person.enrollment?.frequency==='MONTHLY'?2:1):0;maxMissQ=Math.max(maxMissQ,run);}
+  return maxMissQ;
+}
+function participantRows(context,loanAnalysis,s,today,prepared) {
   const participantIds=new Set(), folios=new Set();
-  const rows=context.participants.map(p=>{
+  return context.participants.map(p=>{
     if (!p.id||participantIds.has(p.id)||typeof p.folio!=='string'||folios.has(p.folio)) throw Error('SICOF_DUPLICATE_IDENTITY');
     participantIds.add(p.id);folios.add(p.folio);
-    const b=basisFor(p,s), en=p.enrollment||{}, starts=(en.first_actual_contribution_date||en.enrollment_started_at||'').slice(0,10);
+    const b=prepared?prepared.basis(p,s):basisFor(p,s), en=p.enrollment||{}, starts=(en.first_actual_contribution_date||en.enrollment_started_at||'').slice(0,10);
     const tenureFrom=s.anchorOn&&starts&&starts<s.anchorDate?s.anchorDate:starts, months=completedMonths(tenureFrom,s.periodFin);
-    const loans=loanAnalysis.loans.filter(l=>l.folio===p.folio), overdue=loans.some(l=>l.status==='SALDO ATRASADO'||l.behavior==='OVERDUE'), debt=sum(loans.map(l=>cents(Math.max(0,l.arrears||0))));
+    const loans=prepared?(prepared.analysis(loanAnalysis).loansByFolio.get(p.folio)||[]):loanAnalysis.loans.filter(l=>l.folio===p.folio), overdue=loans.some(l=>l.status==='SALDO ATRASADO'||l.behavior==='OVERDUE'), debt=sum(loans.map(l=>cents(Math.max(0,l.arrears||0))));
     const reasons=[...b.errors], review=[];
     const policyMessages={SHORT_CONTRIBUTION:'Descuentos no cubiertos dentro del periodo',PERIOD_ALREADY_RECONCILED:'Periodo ya incluido en el rendimiento histórico',EARLY_OR_EXTRAORDINARY_WITHDRAWAL:'Retiro anticipado o extraordinario en el periodo'};
     for(const code of p.eligibility?.policy_reasons||[])if(policyMessages[code])reasons.push(policyMessages[code]);
     if(s.exterm&&(p.eligibility?.policy_reasons||[]).includes('INACTIVE_ENROLLMENT'))reasons.push('Inscripción sin ahorro activo');
     if (!p.identity_resolved||!p.certified) review.push('Identidad o saldo por certificar');
     if (p.eligibility?.complete!==true) review.push(...(p.eligibility?.reasons?.length?p.eligibility.reasons:['Políticas y aportaciones pendientes de verificación']));
-    const hist=(p.history||[]).filter(h=>h.date>=s.periodIni&&h.date<=s.periodFin&&h.date<=today).sort((a,b)=>a.date.localeCompare(b.date));
-    let run=0,maxMissQ=0;
-    for (const h of hist) {run=h.amount===0&&h.expected>0?run+(en.frequency==='MONTHLY'?2:1):0;maxMissQ=Math.max(maxMissQ,run);}
+    const maxMissQ=prepared?prepared.history(p,s,today):missedContributions(p,s,today);
     if (s.exterm&&(en.terminated_at||'').slice(0,10)&&en.terminated_at.slice(0,10)<=s.periodFin) reasons.push('Baja en el periodo');
     if (s.exmin&&months===null) review.push('Fecha de inicio del ahorro pendiente de verificar');
     else if (s.exmin&&months<s.minm) reasons.push('No cumple '+s.minm+' meses');
@@ -178,6 +208,89 @@ export function calculateSicof(context, loanAnalysis, input) {
       ov:overdue,debt:money(debt),maxMissQ,_weight:ok?b.weight:0n,movements:p.composition?.movements||p.transactions||[],periods:p.composition?.periods||[],loans,
       calculation_steps:b.steps,calculation_explanation:b.errors.length?'Se requiere conciliar la historia y los orígenes antes de reconstruir este cálculo.':'Suma del saldo de cada intervalo por sus días, dividida entre '+b.days+' días del periodo común. Los retiros dejan de participar desde su fecha efectiva.',existing_policy_reasons:p.eligibility?.policy_reasons||[]};
   });
+}
+// Shared input validation for simulations and source-only exports. This does
+// not derive a balance or allocation; normalized values retain their existing
+// representation so both paths produce the same calculation fingerprint.
+export function validateCalculationInputs(input) {
+  const s=validateSettings(input.settings), costs=validateCosts(input.costs||[]), bank=input.bank||{amount:null};
+  const declared=bank.amount==null||bank.amount===''?null:cents(bank.amount);
+  if (declared!=null&&(declared<0||!bank.declaredBy?.trim()||!bank.date)) throw Error('SICOF_BANK_DECLARATION_REQUIRED');
+  if (bank.date) date(bank.date);
+  return {settings:s,costs,bank};
+}
+export function calculateSicof(context, loanAnalysis, input) {
+  return calculateCore(context,loanAnalysis,input);
+}
+// Disposable preparation for one immutable, authorized observation. It is not
+// a data source and never survives a context/file/session replacement. The
+// ordinary server calculation and prepared calculation share every formula.
+export function createPreparedCalculator(context, loanAnalysis) {
+  if(!context||!Array.isArray(context.participants)||!loanAnalysis||!Array.isArray(loanAnalysis.payments)||!Array.isArray(loanAnalysis.loans))throw Error('SICOF_SOURCE_INVALID');
+  const analyses=new WeakMap(),people=new WeakMap(),timestamps=new Map();
+  const timestamp=value=>{if(!timestamps.has(value))timestamps.set(value,Date.parse(value));return timestamps.get(value);};
+  const interval=(from,to)=>Math.round((timestamp(to)-timestamp(from))/DAY)+1;
+  const preparation={
+    analysis(value){
+      let state=analyses.get(value);
+      if(!state){
+        const loansByFolio=new Map();
+        for(const loan of value.loans){if(!loansByFolio.has(loan.folio))loansByFolio.set(loan.folio,[]);loansByFolio.get(loan.folio).push(loan);}
+        state={loansByFolio,rows:new Map(),payments:new Map(),facts:null};analyses.set(value,state);
+      }
+      return state;
+    },
+    basis(person,s){
+      let state=people.get(person);
+      if(!state){
+        const transactions=(person.transactions||[]).map(t=>{date(t.effective_date);return t;});
+        state={transactions,byId:new Map((person.composition?.movements||[]).map(t=>[t.id||t.transaction_id,t])),
+          lastDate:transactions.reduce((last,t)=>t.effective_date>last?t.effective_date:last,''),events:new Map(),basis:new Map(),history:new Map(),days:interval};
+        people.set(person,state);
+      }
+      const key=JSON.stringify([s.periodIni,s.periodFin,s.method,s.capitalBasis,s.yieldMode,s.yieldPeriods]);
+      return state.basis.get(key)||remember(state.basis,key,computeBasis(person,s,state));
+    },
+    history(person,s,today){
+      const state=people.get(person),key=JSON.stringify([s.periodIni,s.periodFin<today?s.periodFin:today]);
+      return state.history.has(key)?state.history.get(key):remember(state.history,key,missedContributions(person,s,today));
+    },
+    rows(analysis,s,today){
+      const state=this.analysis(analysis),key=JSON.stringify([s.periodIni,s.periodFin,s.method,s.capitalBasis,s.yieldMode,s.yieldPeriods,
+        s.minm,s.exterm,s.exmin,s.exConsec,s.consecN,s.loanEffect,s.anchorOn,s.anchorDate]);
+      return state.rows.get(key)||remember(state.rows,key,participantRows(context,analysis,s,today,this));
+    },
+    payments(analysis,s){
+      const state=this.analysis(analysis),key=JSON.stringify([s.periodIni,s.periodFin,s.src,s.selFunds]);
+      return state.payments.get(key)||remember(state.payments,key,paymentTotals(analysis,s));
+    },
+    facts(analysis,today){
+      const state=this.analysis(analysis),facts=state.facts||(state.facts=analysisFacts(analysis,today));
+      return {...facts,recovery:facts.recovery.map(row=>({...row})),fundRecovery:facts.fundRecovery.map(row=>({...row}))};
+    }
+  };
+  return Object.freeze({calculate(input,analysis=loanAnalysis){return calculateCore(context,analysis,input,preparation);}});
+}
+function calculateCore(context, loanAnalysis, input, prepared) {
+  const {settings:s,costs,bank}=validateCalculationInputs(input);
+  if (!context || !Array.isArray(context.participants) || !loanAnalysis || !Array.isArray(loanAnalysis.payments)) throw Error('SICOF_SOURCE_INVALID');
+  const today=date(context.today), alerts=[];
+  const addAlert=(code,text,severity='warning')=>alerts.push({code,text,severity});
+  const {collected,projected,fees,unresolved}=prepared?prepared.payments(loanAnalysis,s):paymentTotals(loanAnalysis,s);
+  addAlert('DATE_SEMANTICS','Los ingresos se agrupan por la fecha de amortización de la hoja. Esa fecha no acredita por sí sola cuándo se recibió el dinero.');
+  if (unresolved.length) addAlert('UNALLOCATED_PAYMENTS',unresolved.length+' pagos requieren conciliación de capital, interés y gasto administrativo; no se incluyen en la bolsa.','error');
+  if (s.periodFin>today) addAlert('FUTURE_CUTOFF','El corte es futuro: aportaciones e intereses aún no cobrados se muestran como proyección.');
+  const policyDeviations=[];
+  if (!s.exmin||s.minm!==6||s.anchorOn) policyDeviations.push('permanencia');
+  if (!s.exterm) policyDeviations.push('bajas');
+  if (s.method!=='end') policyDeviations.push('saldo promedio');
+  if (s.yieldMode!=='none') policyDeviations.push('rendimiento sobre rendimiento');
+  if (policyDeviations.length) addAlert('POLICY_SCENARIO','El escenario compara opciones de '+policyDeviations.join(', ')+'. Acreditar rendimientos conserva las validaciones y autorizaciones del proceso de Ahorro.');
+  const originalPool=Math.round(collected*s.pay/100), originalReserve=collected-originalPool;
+  const poolCosts=sum(costs.filter(c=>c.source==='pool').map(c=>cents(c.amount))), reserveCosts=sum(costs.filter(c=>c.source==='reserve').map(c=>cents(c.amount)));
+  const spill=Math.max(0,reserveCosts-originalReserve), distributable=Math.max(0,originalPool-poolCosts-spill), reserve=Math.max(0,originalReserve-reserveCosts);
+  if (poolCosts+reserveCosts>collected) addAlert('COST_DEFICIT','Los apartados y costos superan el interés conciliado; no queda bolsa para repartir.','error');
+  const rows=prepared?prepared.rows(loanAnalysis,s,today).map(r=>({...r,calculation_steps:r.calculation_steps.map(step=>({...step}))})):participantRows(context,loanAnalysis,s,today);
   const allocations=allocateCents(distributable,rows);
   rows.forEach((r,i)=>{
     r.rend=r.review_required?null:money(allocations[i]);
@@ -205,14 +318,7 @@ export function calculateSicof(context, loanAnalysis, input) {
   if(rate!=null&&rate*365/days(s.periodIni,s.periodFin)>s.warn)addAlert('ANNUAL_RATE_THRESHOLD','La tasa equivalente anual supera el umbral configurado de '+s.warn+'%. No constituye una tasa garantizada.');
   const totals={capital:rows.some(r=>r.capital==null)?null:moneySum(rows.map(r=>r.capital)),yield:rows.some(r=>r.previous_yield==null)?null:moneySum(rows.map(r=>r.previous_yield)),
     withdrawals:money(sum(context.participants.flatMap(p=>p.transactions||[]).filter(t=>t.transaction_type==='WITHDRAWAL'&&t.effective_date>=s.periodIni&&t.effective_date<=s.periodFin&&t.direction==='DEBIT').map(t=>cents(Number(t.amount)))))};
-  const dates=[...new Set(loanAnalysis.payments.filter(p=>p.audit==='RECONCILED_SOURCE_PAYMENT').map(p=>p.date))].sort();
-  let caja=0,all=0;
-  const recovery=dates.map(d=>{for(const p of loanAnalysis.payments.filter(p=>p.date===d&&p.audit==='RECONCILED_SOURCE_PAYMENT')) {all+=cents(p.paid);if(p.fund==='Caja de Ahorro')caja+=cents(p.paid);}return {label:d,caja:money(caja),all:money(all)};});
-  // Current contractual receivables are not bank cash or guaranteed recovery.
-  // They cannot be reconstructed at an earlier cutoff from a mutable sheet.
-  const portfolioLoans=loanAnalysis.loans.filter(l=>l.fund==='Caja de Ahorro');
-  const portfolioUncertain=loanAnalysis.loans.some(l=>!l.fund)||portfolioLoans.some(l=>l.behavior==='REVIEW_REQUIRED'||l.total==null||l.paid==null||!Number.isFinite(l.total)||!Number.isFinite(l.paid));
-  const portfolio=portfolioUncertain?null:moneySum(portfolioLoans.map(l=>money(Math.max(0,cents(l.total)-cents(l.paid)))));
+  const {recovery,portfolio,fundRecovery}=prepared?prepared.facts(loanAnalysis,today):analysisFacts(loanAnalysis,today);
   const gross=rows.some(r=>r.total==null)?null:moneySum(rows.map(r=>r.total));
   const retained=rows.some(r=>r.retenido==null)?null:moneySum(rows.map(r=>r.retenido));
   const liquidityScenarios=[10,25,50,100].map(percent=>{
@@ -231,12 +337,6 @@ export function calculateSicof(context, loanAnalysis, input) {
   if(cash!=null&&cash<0)addAlert('CASH_DEFICIT','Los costos pendientes superan el saldo bancario declarado. El efectivo tiene un déficit de '+money(-cents(cash)).toFixed(2)+'; no se representa como respaldo positivo.','error');
   const backing=[{label:'Efectivo después de costos',value:backingComplete?cash:null},{label:'Cartera por recuperar · Caja de Ahorro',value:backingComplete?portfolio:null}];
   const backingTotal=backing.some(x=>x.value==null)?null:moneySum(backing.map(x=>x.value));
-  const groupedLoans=new Map();
-  for(const loan of loanAnalysis.loans){const fund=loan.fund||'Fondo por conciliar';if(!groupedLoans.has(fund))groupedLoans.set(fund,[]);groupedLoans.get(fund).push(loan);}
-  const fundRecovery=[...groupedLoans].map(([label,loans])=>{
-    const reliable=loans.every(l=>l.fund&&l.behavior!=='REVIEW_REQUIRED'&&typeof l.total==='number'&&typeof l.paid==='number'&&Number.isFinite(l.total)&&Number.isFinite(l.paid)&&l.total>=l.paid&&l.paid>=0);
-    return {label,paid:reliable?moneySum(loans.map(l=>l.paid)):null,pending:reliable?moneySum(loans.map(l=>money(cents(l.total)-cents(l.paid)))):null,total:reliable?moneySum(loans.map(l=>l.total)):null,as_of:today};
-  });
   return {engine_version:ENGINE_VERSION,status:'SIMULATION',settings:s,costs,bank,source:loanAnalysis.source||context.source,
     pool:money(distributable),collected:money(collected),projected:money(projected),administrative_fees:money(fees),reserve:money(reserve),base,rate,
     costsTotal:money(poolCosts+reserveCosts),costsEffectLabel:poolCosts+spill>0?'La bolsa disminuye '+money(poolCosts+spill).toFixed(2):'La bolsa no cambia',

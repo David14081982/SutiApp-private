@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "migration refuses definition/ACL drift before mutation",
+    "existing canonical plan at exact date resolves only expected with provenance",
+    "current plan is never projected into the past",
+    "ambiguous plans, mixed yield, conflicts and unknown amount stay pending",
+    "private ACL, backup RLS and context identity are conserved",
+    "recovery refuses drift and restores exact original reader"
+  ],
+  "productionWrites": 0
+}

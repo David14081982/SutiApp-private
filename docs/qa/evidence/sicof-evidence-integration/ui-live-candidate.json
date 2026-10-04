@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "mode": "CANDIDATE_PUBLIC_ASSET_OVERRIDE",
+  "at": "2026-10-04T19:04:50.936Z",
+  "bundleHash": "813c606d88591df084b18cb95a93982b0bc6e408b015641cc3f0efe9796d3226",
+  "backend": {
+    "version": "SICOF_2026_10_04_V3",
+    "rate": null,
+    "base": 0,
+    "review": 354,
+    "collected": 148426,
+    "reasons": [
+      {
+        "reason": "HISTORICAL_EXPECTATION_UNVERIFIED",
+        "count": 328
+      },
+      {
+        "reason": "HISTORICAL_DAILY_BALANCE_UNPROVEN",
+        "count": 297
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 47
+      },
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 18
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 18
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 16
+      },
+      {
+        "reason": "Descuentos no cubiertos dentro del periodo",
+        "count": 5
+      },
+      {
+        "reason": "SOURCE_REVIEW_REQUIRED",
+        "count": 2
+      }
+    ]
+  },
+  "requests": [
+    {
+      "action": "DOWNLOAD_SOURCE",
+      "status": 200
+    },
+    {
+      "action": "FILE_WORKSPACE",
+      "status": 200
+    }
+  ],
+  "checks": [
+    "actual authenticated login",
+    "unchanged production shell and file flow",
+    "legitimate source download and validation",
+    "installed reader and Edge V3",
+    "12 KPI and 8 tabs",
+    "pending amounts and reason counts",
+    "local generated worker recalculation"
+  ],
+  "financialWrites": 0,
+  "fixtureResponses": 0,
+  "serviceWorkers": "BLOCKED_FOCAL_TEST"
+}

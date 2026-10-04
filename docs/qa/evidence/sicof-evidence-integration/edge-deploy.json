@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "version": 15,
+  "cloudStatus": "ACTIVE",
+  "verifyJwt": true,
+  "hashes": {
+    "engine.mjs": "0ba30c6f88efd3e9654c492ec0f7d1764383d4cb7ecfdf6f50474cfddace5e67",
+    "exports.mjs": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f",
+    "file-workspace.mjs": "d7e6a7d5b78e8323d8f35f9352018a64cae5939070ef0bf1cbf451e7e826f9dd",
+    "handler.mjs": "11ae2841b77c34376eeab9824fc273d789cc045bff21a81ee6359289871533d3",
+    "index.ts": "8e6ce1430d5476bb7c40490ecbe7cdb7d963b90f42adf2ed28408d02117d717c",
+    "loan-calculation.mjs": "7adaea841cebaf632d928aec4f92e46504b1ccc0829fad42f8b3b9d3e92dd53b",
+    "loan-source.mjs": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7",
+    "projection.mjs": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa",
+    "simulation.mjs": "b7c77d15f073ef55bd329dfd5bf1200aa414457505685e7efa8693a03bb37b10",
+    "source-cache.mjs": "64e4d66288e8d18b5a4b9c628d468f4f49a3d7bca310e2fe66d1c3c7029f8268"
+  },
+  "financialWrites": 0
+}

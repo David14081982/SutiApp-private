@@ -1,0 +1,131 @@
+{
+  "status": "PASS",
+  "mode": "installed",
+  "at": "2026-10-04T19:00:26.545Z",
+  "period": {
+    "from": "2026-07-01",
+    "to": "2026-10-30",
+    "today": "2026-10-04"
+  },
+  "sourceObservedAt": "2026-10-04T18:56:25.752+00:00",
+  "sourceState": "READY",
+  "participants": 354,
+  "strict": {
+    "rate": null,
+    "base": 0,
+    "eligible": 0,
+    "excluded": 0,
+    "review": 354,
+    "reasons": [
+      {
+        "reason": "HISTORICAL_EXPECTATION_UNVERIFIED",
+        "count": 328
+      },
+      {
+        "reason": "HISTORICAL_DAILY_BALANCE_UNPROVEN",
+        "count": 297
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 272
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 47
+      },
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 18
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 18
+      },
+      {
+        "reason": "Descuentos no cubiertos dentro del periodo",
+        "count": 5
+      },
+      {
+        "reason": "SOURCE_REVIEW_REQUIRED",
+        "count": 2
+      }
+    ]
+  },
+  "candidate": {
+    "rate": null,
+    "base": 0,
+    "eligible": 0,
+    "excluded": 0,
+    "review": 354,
+    "reasons": [
+      {
+        "reason": "HISTORICAL_EXPECTATION_UNVERIFIED",
+        "count": 328
+      },
+      {
+        "reason": "HISTORICAL_DAILY_BALANCE_UNPROVEN",
+        "count": 297
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 47
+      },
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 18
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 18
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 16
+      },
+      {
+        "reason": "Descuentos no cubiertos dentro del periodo",
+        "count": 5
+      },
+      {
+        "reason": "SOURCE_REVIEW_REQUIRED",
+        "count": 2
+      }
+    ]
+  },
+  "money": {
+    "collected": 148426,
+    "projected": 3175.53,
+    "pool": 120225.06,
+    "reserve": 28200.94,
+    "projectedNetPool": 122797.24
+  },
+  "historyExpectedSources": {
+    "UNRESOLVED": 1298,
+    "SOURCE_HISTORY": 585
+  },
+  "financialWrites": 0
+}

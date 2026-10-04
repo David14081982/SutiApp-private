@@ -119,13 +119,6 @@ export function analyzeSicofLoans(source, options = {}) {
     const paid = distinct('paid_to_date'), expected = distinct('expected_to_date');
     const currentStatus = rows.every(r => normalize(r.raw.status) === normalize(raw.status)) && statusValues.has(normalize(raw.status)) ? normalize(raw.status) : null;
     const review = rows.some(row=>row.issues.some(code=>!['PARTIAL_PAYMENT_ALLOCATION_REQUIRED','OVERPAYMENT_ALLOCATION_REQUIRED','PAYMENT_ON_FUTURE_AMORTIZATION_DATE'].includes(code)));
-    // Savings needs a proved current status/arrears, not an interest allocation
-    // for every scheduled installment. Keep payment/portfolio review unchanged.
-    const identityProved=rows.every(r=>exactText(r.raw.folio)&&exactText(r.raw.loan_id)&&exactText(r.raw.fund))&&uniform('fund')!==null;
-    const currentAmountsProved=paid!==null&&expected!==null&&paid>=0&&expected>=0;
-    const currentOverdue=currentAmountsProved&&cents(expected)>cents(paid);
-    const statusConsistent=currentStatus!==null&&currentAmountsProved&&((currentStatus==='SALDO ATRASADO')===currentOverdue);
-    const currentVerified=identityProved&&statusConsistent&&!rows.some(r=>r.issues.includes('AMBIGUOUS_LOAN_DATE_ROWS'));
     return {id:raw.loan_id,folio:raw.folio,name:raw.name,fund:uniform('fund'),capital:distinct('principal'),total:distinct('total_due'),paid,expected,
       process:uniform('process'),rate:distinct('rate'),rate_percent:distinct('rate')==null?null:distinct('rate')*100,term:distinct('term'),
       admin_fee_total:distinct('admin_fee_total'),interest_total:distinct('interest_total'),loan_charges:distinct('loan_charges'),principal_interest_total:distinct('principal_interest_total'),
@@ -133,8 +126,6 @@ export function analyzeSicofLoans(source, options = {}) {
       discount_date:date(uniform('discount_date')),request_date:date(uniform('request_date')),metadata_issues:metadataIssues,
       arrears:paid!==null && expected!==null ? Math.max(0,amount(cents(expected)-cents(paid))) : null,status:currentStatus,
       behavior:review || !currentStatus ? 'REVIEW_REQUIRED' : currentStatus==='SALDO ATRASADO' ? 'OVERDUE' : 'CURRENT',
-      savings_evidence:{version:'SICOF_CURRENT_LOAN_EVIDENCE_V1',verified:currentVerified,
-        source:'SOURCE_CURRENT_STATUS_AND_AGGREGATES',as_of:asOf},
       punctuality_score:null,score_reason:'ORIGINAL_DUE_AND_RECEIPT_DATES_UNAVAILABLE',
       schedule:rows.map(r=>r.payment).sort((a,b)=>String(a.date).localeCompare(String(b.date)) || a.source_row-b.source_row)};
   });

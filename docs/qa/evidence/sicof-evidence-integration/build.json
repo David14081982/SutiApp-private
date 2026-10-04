@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "baseline": "published v322",
+  "baselineSha256": "4a639499930de5b6508bc576ad69c8b7642e1a75045d3d03b038e2f437fa71fe",
+  "candidate": ".tmp/sicof-evidence-integration/candidate",
+  "changedChunks": [
+    "sicof-admin.jsx",
+    "sicof-simulation-client.js"
+  ],
+  "preservedChunks": 150,
+  "bundleSha256": "813c606d88591df084b18cb95a93982b0bc6e408b015641cc3f0efe9796d3226",
+  "generatedArtifactsOnly": true
+}

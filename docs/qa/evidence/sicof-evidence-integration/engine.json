@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "payment and portfolio results unchanged",
+    "component-only review does not invalidate proven current status",
+    "unknown identity/status/aggregates and duplicate evidence remain pending",
+    "status must agree with current aggregate arrears",
+    "known arrears retain hold and exclusion rules",
+    "stale/missing proof stays strict",
+    "history is not inferred",
+    "prepared/normal results identical",
+    "empty versus pending basis distinguished"
+  ],
+  "financialWrites": 0
+}

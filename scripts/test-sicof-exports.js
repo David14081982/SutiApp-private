@@ -112,7 +112,7 @@ const JSZip=require('../.tmp/sicof/deps/node_modules/jszip');
   const noPortfolio=calculateSicof(engineContext,{...engineLoans,loans:[{...engineLoans.loans[0],paid:null,behavior:'REVIEW_REQUIRED'}]},options);
   assert.equal(noPortfolio.liquidity.portfolio,null);assert((await documentOf(noPortfolio)).includes('<td>Cartera actual por recuperar · Caja de Ahorro</td><td>POR CONCILIAR</td>'));
   await assert.rejects(()=>exportSicofReport({kind:'pagos',loans,filters:{from:'2026-02-30'},ExcelJS}),/SICOF_EXPORT_FILTER_INVALID/);
-  const template=fs.readFileSync('C:/Users/david/Downloads/Reporte Final Ahorro JC (3 reglas) .xlsx'),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+  const template=fs.readFileSync(process.env.SUTIAPP_SICOF_HISTORICAL_XLSX || 'C:/Users/david/Downloads/Reporte Final Ahorro JC (3 reglas) .xlsx'),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
   // Original download works without calculator, source availability or ExcelJS.
   file=await exportSicofReport({kind:'final_ahorro',filters:{historical:true},templateBytes:template});assert.equal(sha(file.bytes),sha(template));
   const original=await load(template),hist=original.worksheets[0],originalXml=await(await JSZip.loadAsync(template)).file('xl/worksheets/sheet1.xml').async('string');
@@ -131,6 +131,6 @@ const JSZip=require('../.tmp/sicof/deps/node_modules/jszip');
   assert.equal(book.getWorksheet('Periodos').getCell('G2').value,60);assert.equal(book.getWorksheet('Movimientos').getCell('G2').value,40);assert(book.getWorksheet('Movimientos').getCell('I2').value.includes('2026-S2'));
   const changed={...context,report:{...context.report,rows:[{...values,D:999999}]}};
   await assert.rejects(()=>exportSicofReport({kind:'final_ahorro',context:changed,templateBytes:template,ExcelJS}),/SICOF_EXPORT_HISTORICAL_VALUES_CHANGED/);
-  assert.equal(sha(fs.readFileSync('C:/Users/david/Downloads/Reporte Final Ahorro JC (3 reglas) .xlsx')),sha(template));
+  assert.equal(sha(fs.readFileSync(process.env.SUTIAPP_SICOF_HISTORICAL_XLSX || 'C:/Users/david/Downloads/Reporte Final Ahorro JC (3 reglas) .xlsx')),sha(template));
   console.log(JSON.stringify({status:'PASS',checks:['real ExcelJS XLSX read/write','CSV formula injection','HTML escaping','all filtered rows','unknown is not zero','eligibility Por verificar No Sí in CSV XLSX and formula detail','formula criteria match Sí and preserve known zero plus cent allocations','matrix duplicate ambiguity','formula costs/reserve/retention/cent conservation','Pagos source formulas and income reconciliation','Desglose interval formulas and actual engine weighted withdrawals','unknown or inconsistent basis is never inferred','global formula basis preserved with filtered participants','acta actual engine liquidity scenarios 10/25/50/100','cash-covered collection-dependent shortfall and unknown liquidity','acta bank declaration signature spaces and print','historical exact bytes offline','all original cells preserved','new report styles and separate period withdrawals','historical outcome mutation rejected'],historicalRows:hist.rowCount-3,externalWrites:0}));
 })().catch(error=>{console.error(error);process.exitCode=1;});

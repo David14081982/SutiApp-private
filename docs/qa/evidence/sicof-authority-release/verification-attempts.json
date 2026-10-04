@@ -10,7 +10,8 @@
     "status": "FAIL",
     "reason": "DOCUMENT_PREVIEW_UNAVAILABLE during legitimate PDF preview",
     "followup": "Repeated failure diagnosed by real HTTP 403 ORIGIN_DENIED. Test used http://127.0.0.1:8081; existing allowed origin is http://localhost:8080 (OPTIONS 204). No CORS or data change; restart exact build at allowed origin.",
-    "runtimeChanges": 0
+    "runtimeChanges": 0,
+    "retest": "PASS with original complete regression script, actual authorized localhost:8080, exact final hash"
   },
   "dataChanges": 0
 }

@@ -94,3 +94,7 @@ Legacy impact: lectura; cero escrituras Google y cero movimientos financieros.
 Unexpected files changed: ninguno incluido en el paquete focal; modificaciones previas del workspace preservadas.
 Known limitations: 328 cuentas sin importe histórico esperado, 297 sin saldo diario demostrable; otros motivos solapados, incluyendo 16 estados/adeudos de préstamo aún pendientes. Las 354 cuentas siguen en revisión.
 Evidence: archivos agregados, scripts reproducibles y auditoría anterior H-SICOF-KPI-AUDIT-001.
+
+## Vigencia posterior — publicación completada 2026-10-04
+
+El propietario autorizó explícitamente publicar y hacer commit/push. La activación y verificación quedaron completadas en H-SICOF-SAVINGS-AUTHORITY-RELEASE-001: main b408415, Edge16/V4, 12 KPI verificados y regresión global local/producción PASS. Los estados pendientes de publicación anteriores describen el momento de este informe; quedan cerrados por la evidencia posterior. Las tasas parciales siguen identificadas como provisionales, sin cambiar datos ni inventar fechas. Véase [cierre productivo](H-SICOF-SAVINGS-AUTHORITY-RELEASE-001.md).

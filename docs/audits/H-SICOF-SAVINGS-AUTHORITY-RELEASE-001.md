@@ -28,3 +28,37 @@ Incidencias de verificación: primer intento de navegación quedó cubierto por 
 Status: backend y candidato PASS; push y verificación productiva pendientes de terminar.
 
 Diagnóstico documental demostrado:403 ORIGIN_DENIED. El runner estaba en127.0.0.1:8081; document-access permite localhost:8080 (preflight204). Se detuvo únicamente el preview anterior de esta sesión y se sirve el mismo build en el origen ya permitido. Cero cambios CORS,permisos,datos o documentos. Se repite el script global original íntegro.
+
+Regresión global local final PASS:194assets públicos,29imágenes documentales,226assets de programas,foto,sello,Admin,Membership,Préstamo,Marketplace,galería,fullscreen,recarga,con/sin SW y PDF legítimo HTTP200abierto. Cero errores/cero mutaciones. Hash exacto ff1fa4e... y caché sutiapp-v2026100402. Push main aea3c6c→b408415 completado; GitHub Pages en proceso.
+
+Publicación web confirmada por GitHub Actions37232148300, commit b408415c383f54f16d3037fbd0121c0aba4190fc, success2026-10-04T20:27:41Z. Gates Auth,solicitudes backend,build31archivos y solicitudes en producción PASS. URL de evidencia en github-deployment.json. Verificación UI/global pública en curso.
+
+Ampliación documental de cierre: actualizar únicamente la vigencia al final de las auditorías H-SICOF-EVIDENCE-INTEGRATION-001 y H-SICOF-SAVINGS-AUTHORITY-001, enlazando esta publicación posterior. No reescribir hallazgos históricos ni fórmulas.
+
+Navegador publicado PASS2026-10-04T20:29:54Z: bundle público ff1fa4e..., motorV4,12KPI exactos,8tabs y archivo Google real. Ambos controles recalculan en worker y coinciden con el motor normal; sólo DOWNLOAD_SOURCE y FILE_WORKSPACE200. Provisional mostrado con conteos reales; expected histórico y observación de fuente ya no bloquean los valores válidos. No se cambió el porcentaje predeterminado ni el método seleccionado para obtener otro resultado.
+
+## Cierre productivo
+
+Regresión global GitHub Pages PASS con el mismo hash exacto: 194 assets públicos, 29 imágenes documentales, 226 assets de programas, foto, sello, documentos de Membership/Préstamo/Admin, Marketplace, galería, visor fullscreen, recarga, caché con service worker y perfil sin service worker. PDF legítimo HTTP 200 abierto. Cero errores de navegador y cero mutaciones de datos de negocio. Evidencia: global-production.json. Los intentos locales fallidos y el diagnóstico ORIGIN_DENIED se conservan; no se omitió ninguna aserción ni se sustituyeron assets.
+
+Publicación funcional: commit b408415c383f54f16d3037fbd0121c0aba4190fc en main; workflow 37232148300 success. Edge SICOF versión 16, motor SICOF_2026_10_04_V4, JWT true. Web/worker v2026100402. La confirmación owner elimina el bloqueo previo de publicación; no se volvió a solicitar validación de los valores de Ahorro.
+
+## H-SICOF-SAVINGS-AUTHORITY-RELEASE-001 RESULT
+
+Status: PASS para publicación y comprobación del candidato autorizado.
+Files changed: UI/copy de resultados provisionales, build focal generado, pruebas/herramientas de despliegue y evidencia declaradas. Commits anteriores 64d2167 y 7c09d42 incluidos en el push de b408415.
+Source-of-truth verdict: SAFE; Supabase Ahorro válido, encargado del programa conserva correcciones; HISTORIAL P V2 sigue autoridad de préstamos.
+Invariant verdict: PASS; importes, fechas, fórmulas, controles y reglas conservados; no acreditaciones ni escrituras financieras.
+Build: PASS; 31 archivos Pages, sólo dos chunks SICOF modificados y 150 ajenos idénticos.
+Tests: PASS focal/UI completa; navegador real candidato y publicado con 12 KPI, 8 tabs, igualdad servidor/worker; regresión global local y GitHub Pages completas con hash final.
+Security: PASS; JWT/permisos intactos; respaldo privado; sin secretos, Excel ni PII en paquete público; CORS existente respetado.
+Legacy impact: cero escrituras Google, cero correcciones de ahorro, cero nuevos movimientos, cero migraciones en esta publicación.
+Unexpected files changed: ninguno en paquete; cambios anteriores ajenos del workspace preservados.
+Known limitations: las tasas con base parcial son provisionales y muestran sus cuentas elegibles/pendientes. Esta publicación acepta valores existentes; no inventa trayectoria temporal ni declara concluido un reparto completo.
+Evidence: docs/qa/evidence/sicof-authority-release/, workflow enlazado en github-deployment.json, hashes en package.json, respaldos privados .tmp/sicof-authority-release.
+
+La evidencia final se guarda en un commit documental posterior con [skip ci]; no cambia el artefacto publicado ni obliga a repetir una compilación idéntica. Registry conserva su actualización estructural de la integración previa; esta extensión no crea dependencias runtime, RPC, permisos o autoridad nuevos. Su stale de contenido conocido no se presenta como FRESH.
+
+## Revisión arquitectónica final
+
+APPROVED para el alcance publicado. Revisor independiente contrastó Edge16/V4/JWT, commit b408415/origin, workflow37232148300, UI real12KPI/8tabs y ambos globales exactos con PDF/visores/SW. No aprueba una tasa definitiva sobre base parcial. RESPONSE TO CODEX: guardar revisión y evidencia, commit/push documental, comprobar que el artefacto no cambia y cerrar. No requiere otra decisión del propietario.

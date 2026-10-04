@@ -1,0 +1,251 @@
+{
+  "status": "PASS",
+  "mode": "PUBLISHED",
+  "at": "2026-10-04T20:29:54.281Z",
+  "bundleHash": "ff1fa4e485a01801c5f592aef0a1d428234564fd5129d863265162cb9253f768",
+  "workbookSha256": "8ef1057ab8b8b513e8541c93eb717f65e2b240f4feb8542ed456cd4027177e48",
+  "backend": {
+    "engine_version": "SICOF_2026_10_04_V4",
+    "rate": 198746.03414634147,
+    "annualRate": 594609.0365853659,
+    "base": 67.21311475409836,
+    "pool": 133583.4,
+    "reserve": 14842.6,
+    "collected": 148426,
+    "projected": 3175.53,
+    "projectedNetPool": 136441.38,
+    "projectedRateOnConfirmedBase": 202998.15073170734,
+    "nqual": 1,
+    "nexcl": 25,
+    "reviewCount": 328,
+    "distributed": 133583.4,
+    "basisPending": false,
+    "reviewReasons": [
+      {
+        "reason": "HISTORICAL_DAILY_BALANCE_UNPROVEN",
+        "count": 297
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 41
+      },
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 16
+      },
+      {
+        "reason": "Descuentos no cubiertos dentro del periodo",
+        "count": 3
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 2
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 2
+      }
+    ],
+    "settings": {
+      "src": "caja",
+      "selFunds": [],
+      "pay": 90,
+      "method": "avg",
+      "periodIni": "2026-07-01",
+      "periodFin": "2026-10-30",
+      "minm": 6,
+      "exterm": true,
+      "exmin": true,
+      "warn": 20,
+      "exConsec": false,
+      "consecN": 4,
+      "loanEffect": "retiro",
+      "retScope": "todo",
+      "anchorOn": false,
+      "anchorDate": "2026-07-01",
+      "capitalBasis": "all",
+      "yieldMode": "none",
+      "yieldPeriods": []
+    }
+  },
+  "slider": {
+    "engine_version": "SICOF_2026_10_04_V4",
+    "rate": 196537.7448780488,
+    "annualRate": 588002.2695121953,
+    "base": 67.21311475409836,
+    "pool": 132099.14,
+    "reserve": 16326.86,
+    "collected": 148426,
+    "projected": 3175.53,
+    "projectedNetPool": 134925.36,
+    "projectedRateOnConfirmedBase": 200742.60878048782,
+    "nqual": 1,
+    "nexcl": 25,
+    "reviewCount": 328,
+    "distributed": 132099.14,
+    "basisPending": false,
+    "reviewReasons": [
+      {
+        "reason": "HISTORICAL_DAILY_BALANCE_UNPROVEN",
+        "count": 297
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 41
+      },
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 16
+      },
+      {
+        "reason": "Descuentos no cubiertos dentro del periodo",
+        "count": 3
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 2
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 2
+      }
+    ],
+    "settings": {
+      "src": "caja",
+      "selFunds": [],
+      "pay": 89,
+      "method": "avg",
+      "periodIni": "2026-07-01",
+      "periodFin": "2026-10-30",
+      "minm": 6,
+      "exterm": true,
+      "exmin": true,
+      "warn": 20,
+      "exConsec": false,
+      "consecN": 4,
+      "loanEffect": "retiro",
+      "retScope": "todo",
+      "anchorOn": false,
+      "anchorDate": "2026-07-01",
+      "capitalBasis": "all",
+      "yieldMode": "none",
+      "yieldPeriods": []
+    }
+  },
+  "finalBalance": {
+    "engine_version": "SICOF_2026_10_04_V4",
+    "rate": 6.597873555939712,
+    "annualRate": 19.739539737032747,
+    "base": 2002147.19,
+    "pool": 132099.14,
+    "reserve": 16326.86,
+    "collected": 148426,
+    "projected": 3175.53,
+    "projectedNetPool": 134925.36,
+    "projectedRateOnConfirmedBase": 6.739033007857928,
+    "nqual": 243,
+    "nexcl": 67,
+    "reviewCount": 44,
+    "distributed": 132099.14,
+    "basisPending": false,
+    "reviewReasons": [
+      {
+        "reason": "ENROLLMENT_UNVERIFIED",
+        "count": 29
+      },
+      {
+        "reason": "Fecha de inicio del ahorro pendiente de verificar",
+        "count": 29
+      },
+      {
+        "reason": "Saldo canónico no disponible",
+        "count": 26
+      },
+      {
+        "reason": "Estado o adeudo de préstamos por verificar",
+        "count": 16
+      },
+      {
+        "reason": "Baja en el periodo",
+        "count": 2
+      },
+      {
+        "reason": "Inscripción sin ahorro activo",
+        "count": 2
+      },
+      {
+        "reason": "No cumple 6 meses",
+        "count": 2
+      }
+    ],
+    "settings": {
+      "src": "caja",
+      "selFunds": [],
+      "pay": 89,
+      "method": "end",
+      "periodIni": "2026-07-01",
+      "periodFin": "2026-10-30",
+      "minm": 6,
+      "exterm": true,
+      "exmin": true,
+      "warn": 20,
+      "exConsec": false,
+      "consecN": 4,
+      "loanEffect": "retiro",
+      "retScope": "todo",
+      "anchorOn": false,
+      "anchorDate": "2026-07-01",
+      "capitalBasis": "all",
+      "yieldMode": "none",
+      "yieldPeriods": []
+    }
+  },
+  "requests": [
+    {
+      "action": "DOWNLOAD_SOURCE",
+      "status": 200
+    },
+    {
+      "action": "FILE_WORKSPACE",
+      "status": 200
+    }
+  ],
+  "checks": [
+    "actual authenticated login",
+    "legitimate source download and same-file import",
+    "installed engine V4",
+    "12 KPI match returned calculation",
+    "8 tabs preserved",
+    "provisional notes use actual eligible and pending counts",
+    "obsolete amount-review blocks absent",
+    "worker slider and final-balance results equal ordinary engine",
+    "local controls make no further source or calculation request"
+  ],
+  "financialWrites": 0,
+  "fixtureResponses": 0,
+  "serviceWorkers": "BLOCKED_FOCAL_TEST"
+}

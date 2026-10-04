@@ -52,3 +52,7 @@ Evidence: docs/qa/evidence/sicof-savings-authority/,copias previas privadas y co
 ## Revisión independiente final
 
 sutiapp-architect-reviewer: APPROVED del alcance local. El revisor contrastó el respaldo, delta, memoria persistente, comparación real y ejecutó independientemente test-sicof-engine y worker --check, ambos PASS. No aprueba publicación ni tasa definitiva. Instrucción: conservar la aceptación de valores sin reconfirmación, completar evidencia y no alterar fechas/saldos/reglas para fabricar otra tasa. RESULT y AGENT_CHANGELOG completados. Sin dependencia productiva, ruta, RPC, permiso o autoridad nueva; Registry no requiere regeneración estructural por esta H. Su freshness puede reflejar el delta textual/de cálculo pendiente de publicación, sin atribuirle FRESH ficticio.
+
+## Vigencia posterior — publicación completada 2026-10-04
+
+El propietario autorizó explícitamente publicar y hacer commit/push. La activación y verificación quedaron completadas en H-SICOF-SAVINGS-AUTHORITY-RELEASE-001: main b408415, Edge16/V4, 12 KPI verificados y regresión global local/producción PASS. Los estados pendientes de publicación anteriores describen el momento de este informe; quedan cerrados por la evidencia posterior. Las tasas parciales siguen identificadas como provisionales, sin cambiar datos ni inventar fechas. Véase [cierre productivo](H-SICOF-SAVINGS-AUTHORITY-RELEASE-001.md).

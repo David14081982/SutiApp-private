@@ -4033,3 +4033,5 @@ Ratificación owner persistida en AGENTS,DECISIONS,SOURCE_OF_TRUTH,INVARIANTS: t
 ## H-SICOF-SAVINGS-AUTHORITY-RELEASE-001 — publicación autorizada 2026-10-04
 
 El propietario ordena «publicalo y haz commit push». Se publica el candidato de aceptación de valores Supabase; UI identifica explícitamente tasas, base y reparto provisionales con cantidad de cuentas. No cambia valores, método seleccionado ni reglas. Respaldo Edge 15, compilación V4, build exacto y pruebas UI PASS; verificación local/global y activación documentadas en docs/audits/H-SICOF-SAVINGS-AUTHORITY-RELEASE-001.md.
+
+Cierre H-SICOF-SAVINGS-AUTHORITY-RELEASE-001: PUBLICADO, main b408415 y Edge16/V4. Workflow37232148300 PASS; 12 KPI reales y worker PASS; global local/GitHub Pages PASS con PDF legítimo, 194/29/226 assets e imágenes, visor, recarga y SW. Hash ff1fa4e485a01801c5f592aef0a1d428234564fd5129d863265162cb9253f768. Cero modificaciones de importes. Tasas parciales explícitamente provisionales. Evidencia final documental, sin nuevo artefacto.

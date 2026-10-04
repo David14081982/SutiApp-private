@@ -3974,3 +3974,14 @@ Edge v7 live 200, anonymous 401; current full WORKSPACE sample 30.239s vs 36.794
 so instant loading is explicitly not claimed. Focal v317 build and UI/integration,
 19 conditional client cases, exports and Pages allowlist PASS. No financial data
 writes, mirror or periodic polling. Audit/evidence: H-FINANCE-READ-PERFORMANCE-001.
+
+## 2026-10-03 — H-SICOF-SOURCE-AO-XLSX-001
+
+Owner replaced the multi-sheet calculation backing with one HISTORIAL P V2 sheet,
+original A:O values and all dates for the applied source funds. No derived amounts,
+savings/cost tabs or extra metadata. Existing authorized source read and fingerprint
+check remain; headers retained privately from the same observation. ExcelJS exact
+round-trip, all source modes, 18,000 rows, previous exports and Edge tests PASS.
+Corrected stale button help; focal v318 build/UI/Pages allowlist PASS. Edge v8 ACTIVE;
+zero production financial queries or writes for this verification. Registry refreshed
+for the raw-source export dependency. Audit/evidence: H-SICOF-SOURCE-AO-XLSX-001.

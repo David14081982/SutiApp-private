@@ -1,5 +1,6 @@
 // Authenticated server callers inject the canonical report and existing ExcelJS.
 // No reader, ledger writer, storage key, or browser financial calculation here.
+import {SICOF_FIELDS} from './loan-source.mjs';
 const encoder = new TextEncoder();
 const moneyFormat = '"$"#,##0.00;[Red]-"$"#,##0.00';
 const pending = 'POR CONCILIAR';
@@ -222,107 +223,6 @@ function addFormulaReparto(workbook,calculation,filters,loans) {
   params.getColumn(2).numFmt=moneyFormat;params.getCell('B3').numFmt='0.00%';params.getCell('B14').numFmt='0.000000%';
 }
 
-function addCalculationBase(workbook,calculation,context,loans) {
-  if(!Array.isArray(calculation?.rows)||!Array.isArray(context?.participants)||!Array.isArray(loans?.loans))throw Error('SICOF_EXPORT_CALCULATION_REQUIRED');
-  // Reuse the checked source/interval/allocation evidence, without list filters.
-  // This export describes one complete server calculation, never a UI page.
-  const summary=workbook.addWorksheet('Resumen');
-  addFormulaReparto(workbook,calculation,{},loans);
-  const s=calculation.settings,funds=s.src==='caja'?['Caja de Ahorro']:s.src==='sel'?[...new Set(['Caja de Ahorro',...s.selFunds])]:null;
-  const selectedPayments=loans.payments.filter(p=>(!funds||funds.includes(p.fund))&&(!p.date||(p.date>=s.periodIni&&p.date<=s.periodFin)));
-  const effectiveFunds=funds||[...new Set(selectedPayments.map(p=>p.fund||'Fondo por conciliar'))];
-  const fees=sum(selectedPayments.filter(p=>p.audit==='RECONCILED_SOURCE_PAYMENT').map(p=>p.fee));
-  const costs=calculation.costs,poolCosts=sum(costs.filter(c=>c.source==='pool').map(c=>c.amount)),reserveCosts=sum(costs.filter(c=>c.source==='reserve').map(c=>c.amount));
-  const incomeCents=cents(calculation.collected)+cents(calculation.projected),projectedPoolCents=Math.round(incomeCents*s.pay/100);
-  const projectedReserveCents=incomeCents-projectedPoolCents,spillCents=Math.max(0,cents(reserveCosts)-projectedReserveCents);
-  const projectedNet=Math.max(0,projectedPoolCents-cents(poolCosts)-spillCents)/100;
-  const projectedRate=calculation.base>0?projectedNet/calculation.base*100:null;
-  if(!sameMoney(fees,calculation.administrative_fees)||!sameMoney(poolCosts+reserveCosts,calculation.costsTotal)||!sameMoney(projectedNet,calculation.projectedNetPool)||
-      (projectedRate===null?calculation.projectedRateOnConfirmedBase!==null:!closeNumber(projectedRate,calculation.projectedRateOnConfirmedBase)))throw Error('SICOF_EXPORT_RESULT_MISMATCH');
-  const fields=[
-    ['status','Naturaleza','SIMULACIÓN / BASE DEL CÁLCULO','No acredita ni entrega rendimientos.'],
-    ['source','Fuente de la bolsa',({caja:'Sólo Caja de Ahorro',sel:'Caja de Ahorro y fondos seleccionados',todos:'Todos los fondos'})[s.src],'La selección corresponde a los parámetros aplicados.'],
-    ['funds','Fondos efectivos',effectiveFunds.join('; ')||'Sin filas en el intervalo','Pagos contiene todas las filas del intervalo y selección; también incidencias con fecha desconocida.'],
-    ['from','Inicio del periodo',s.periodIni,'Fecha de amortización de la hoja.'],['to','Cierre / corte del periodo',s.periodFin,'Una fecha futura no acredita cobro.'],
-    ['today','Fecha actual del contexto',context.today,'Corte usado para comprobar las reglas de ahorro.'],
-    ['pay','Porcentaje del interés a repartir',s.pay/100,'El resto se conserva como reserva antes de costos.','percent'],
-    ['method','Método de reparto',s.method==='avg'?'Saldo promedio por días':'Saldo final','Desglose conserva todos los intervalos y la base elegible.'],
-    ['collected','Interés registrado conciliado',calculation.collected,'Suma de Pagos: interés aplicado a la bolsa.','money'],
-    ['projected','Interés proyectado pendiente',calculation.projected,'Suma de Pagos: interés proyectado separado; no es efectivo.','money'],
-    ['fees','Gasto administrativo conciliado',fees,'Separado del interés repartible.','money'],
-    ['pool','Bolsa a repartir después de costos',calculation.pool,'Bolsa actual; no incluye los cobros proyectados.','money'],
-    ['reserve','Reserva restante',calculation.reserve,'Reserva actual después de los costos asignados.','money'],
-    ['costs','Costos y apartados',calculation.costsTotal,'Se conserva origen, estado y fecha en Costos.','money'],
-    ['base','Base elegible que participa',calculation.base,'Base de ahorro verificada; no incorpora aportaciones futuras.','money'],
-    ['rate','Tasa del periodo',calculation.rate==null?null:calculation.rate/100,'Rendimiento distribuido / base elegible.','percent'],
-    ['grossProjected','Interés registrado más proyectado',incomeCents/100,'Sólo para proyectar; no es dinero disponible para acreditar.','money'],
-    ['projectedOriginalPool','Bolsa proyectada antes de costos',projectedPoolCents/100,'Aplica el porcentaje a interés registrado más proyectado.','money'],
-    ['projectedReserve','Reserva proyectada antes de costos',projectedReserveCents/100,'Parte no destinada al reparto dentro de la proyección.','money'],
-    ['projectedSpill','Costos de reserva que reducen la bolsa proyectada',spillCents/100,'Sólo el exceso de costos sobre la reserva proyectada.','money'],
-    ['projectedNet','Bolsa proyectada neta de costos',calculation.projectedNetPool,'Bolsa proyectada menos costos de bolsa y exceso de reserva.','money'],
-    ['projectedRate','Tasa proyectada sobre base confirmada',projectedRate==null?null:projectedRate/100,'No garantiza cobro ni acredita rendimiento.','percent'],
-    ['distributed','Suma de rendimientos simulados',calculation.distributed,'Coincide con Reparto formulado; los pendientes no se inventan.','money'],
-    ['eligible','Ahorradores elegibles',calculation.nqual,'Participan en la base y en el reparto.'],
-    ['excluded','Ahorradores excluidos',calculation.nexcl,'Se conserva el motivo en Reparto formulado.'],
-    ['review','Ahorradores pendientes de revisión',calculation.reviewCount,'No confundir POR CONCILIAR con cero.'],
-    ['rows','Filas de pagos en la selección',selectedPayments.length,'Sin límite de pantalla ni búsqueda adicional.'],
-    ['unknown','Pagos pendientes de conciliación',selectedPayments.filter(p=>p.audit==='REVIEW_REQUIRED').length,'No se incluyen en el interés repartible ni se convierten en cero conocido.'],
-    ['composition','Composición del ahorro','Movimientos y Periodos muestran la composición canónica','Desglose delimita qué saldos y días participan en este cálculo.'],
-    ['dependencies','Préstamos de ahorradores','Otros fondos pueden afectar reglas o retenciones','La hoja Préstamos de ahorradores es evidencia de reglas, separada de los ingresos de Pagos.'],
-    ['freshness','Correspondencia con la pantalla','Huella del cálculo revalidada antes de descargar','Fuentes y alcance conserva las huellas del cálculo y de la hoja.']
-  ];
-  styleSheet(summary,{columns:columns([['label','Indicador'],['value','Valor'],['note','Alcance / comprobación']]),rows:fields.map(([,label,value,note])=>({label,value,note}))});
-  summary.getColumn(1).width=48;summary.getColumn(2).width=42;summary.getColumn(3).width=90;summary.getColumn(3).alignment={wrapText:true,vertical:'top'};
-  const cells=Object.fromEntries(fields.map(([key],i)=>[key,'B'+(i+2)]));
-  fields.forEach(([, , , ,format],i)=>{if(format)summary.getCell(i+2,2).numFmt=format==='percent'?'0.000000%':moneyFormat;});
-  const paymentSheet=workbook.getWorksheet('Pagos'),lastPayment=Math.max(2,paymentSheet.rowCount);
-  // The extra projected components explain the separation used by the reader.
-  for(const [col,key,label]of [[17,'projected_capital','Capital proyectado separado'],[18,'projected_fee','Gasto administrativo proyectado separado']]){
-    paymentSheet.getColumn(col).width=30;paymentSheet.getColumn(col).numFmt=moneyFormat;
-    paymentSheet.getCell(1,col).value=label;paymentSheet.getCell(1,col).style={...paymentSheet.getCell('A1').style};
-    selectedPayments.forEach((p,i)=>{paymentSheet.getCell(i+2,col).value=scalar(p[key]);});
-  }
-  paymentSheet.autoFilter={from:'A1',to:{row:lastPayment,column:18}};
-  const formulas={pay:"'Parámetros'!B3",collected:"'Parámetros'!B2",projected:"'Parámetros'!B4",fees:`SUMIF(Pagos!L2:L${lastPayment},"RECONCILED_SOURCE_PAYMENT",Pagos!J2:J${lastPayment})`,
-    pool:"'Parámetros'!B10",reserve:"'Parámetros'!B11",costs:"SUM('Parámetros'!B7:B8)",
-    grossProjected:`SUM(${cells.collected},${cells.projected})`,projectedOriginalPool:`ROUND(${cells.grossProjected}*${cells.pay},2)`,
-    projectedReserve:`ROUND(${cells.grossProjected}-${cells.projectedOriginalPool},2)`,projectedSpill:`MAX(0,ROUND('Parámetros'!B8-${cells.projectedReserve},2))`,
-    projectedNet:`MAX(0,ROUND(${cells.projectedOriginalPool}-'Parámetros'!B7-${cells.projectedSpill},2))`};
-  // Only link verified numeric formulas; unknown bases stay explicit in Excel.
-  const params=workbook.getWorksheet('Parámetros');
-  if(typeof params.getCell('B12').value==='object')formulas.base="'Parámetros'!B12";
-  if(calculation.rate!=null&&typeof params.getCell('B14').value==='object')formulas.rate="'Parámetros'!B14";
-  if(projectedRate!=null&&formulas.base)formulas.projectedRate=`${cells.projectedNet}/${cells.base}`;
-  if(typeof params.getCell('B13').value==='object')formulas.distributed="'Parámetros'!B13";
-  for(const [key,formula]of Object.entries(formulas)){const cell=summary.getCell(cells[key]);cell.value={formula,result:cell.value};}
-  const selectedLoanKeys=new Set(selectedPayments.map(p=>JSON.stringify([p.folio,p.loan_id]))),byFolio=new Map();
-  for(const loan of loans.loans){if(!byFolio.has(loan.folio))byFolio.set(loan.folio,[]);byFolio.get(loan.folio).push(loan);}
-  const poolLoans=loans.loans.filter(l=>selectedLoanKeys.has(JSON.stringify([l.folio,l.id])));
-  addTable(workbook,{name:'Contratos de la bolsa',columns:columns([['folio','Folio'],['name','Nombre'],['id','Préstamo'],['fund','Fondo contractual'],['process','Proceso'],['capital','Capital prestado',true],['term','Plazo'],['rate_percent','Tasa quincenal (%)'],['total','Total contractual',true],['interest_total','Interés contractual sin gasto',true],['admin_fee_total','Gasto administrativo contractual',true],['status','Estado actual'],['paid','Pagado según la fuente',true],['expected','Esperado según la fuente',true],['arrears','Atraso vigente',true],['behavior','Revisión'],['source_rows','Filas fuente'],['note','Alcance']]),rows:poolLoans.map(l=>({...l,source_rows:(l.schedule||[]).map(p=>p.source_row).join('; '),note:'Antecedente contractual; sólo los importes conciliados y proyectados de Pagos alimentan la bolsa.'}))});
-  const dependencyRows=[],evidenceRows=new Set(selectedPayments.map(p=>p.source_row));
-  for(const loan of poolLoans)for(const p of loan.schedule||[])evidenceRows.add(p.source_row);
-  for(const row of calculation.rows)for(const loan of byFolio.get(row.f)||[]){
-    for(const p of loan.schedule||[])evidenceRows.add(p.source_row);
-    dependencyRows.push({
-    folio:row.f,name:row.n,id:loan.id,fund:loan.fund,status:loan.status,behavior:loan.behavior,arrears:loan.arrears,
-    scope:!funds||funds.includes(loan.fund)?'Fondo incluido en la selección de bolsa':'Fuera de la bolsa; sólo evidencia de reglas / retenciones',
-    overdue:loan.status==='SALDO ATRASADO'||loan.behavior==='OVERDUE'?'Sí':'No',review:loan.status===null||loan.behavior==='REVIEW_REQUIRED'?'Sí':'No',
-    loanEffect:s.loanEffect,retScope:s.retScope,retained:row.retenido,reason:row.motivo,
-    source_rows:(loan.schedule||[]).map(p=>p.source_row).join('; ')
-    });
-  }
-  addTable(workbook,{name:'Préstamos de ahorradores',columns:columns([['folio','Folio'],['name','Ahorrador'],['id','Préstamo'],['fund','Fondo'],['scope','Alcance: no sumar como ingresos'],['status','Estado actual de la fuente'],['behavior','Comportamiento'],['arrears','Atraso vigente',true],['overdue','Activa regla de atraso'],['review','Requiere revisar el préstamo'],['loanEffect','Efecto de atraso configurado'],['retScope','Alcance de retención configurado'],['retained','Retención del ahorrador (no sumar por préstamo)',true],['reason','Motivo del resultado del ahorrador'],['source_rows','Filas fuente del préstamo']]),rows:dependencyRows});
-  const people=new Map(context.participants.map(p=>[p.folio,p]));
-  for(const row of calculation.rows)if(!people.has(row.f))throw Error('SICOF_EXPORT_SOURCE_MISMATCH');
-  const selectedContext={participants:calculation.rows.map(row=>people.get(row.f))};
-  compositionTables(selectedContext).forEach(table=>addTable(workbook,table));
-  addTable(workbook,{name:'Reglas de ahorro',columns:columns([['folio','Folio'],['name','Nombre'],['identity','Identidad resuelta'],['certified','Saldo certificado'],['started','Inicio de ahorro'],['status','Estado inscripción'],['terminated','Fecha baja'],['frequency','Frecuencia'],['months','Meses calculados'],['policy_complete','Políticas verificadas'],['policy_reasons','Motivos de política'],['review','Revisión'],['missed','Máximo quincenas sin descuento'],['reason','Resultado de reglas']]),rows:calculation.rows.map(row=>{const p=people.get(row.f),en=p.enrollment||{};return{folio:row.f,name:row.n,identity:p.identity_resolved,certified:p.certified,started:en.first_actual_contribution_date||en.enrollment_started_at,status:en.status,terminated:en.terminated_at,frequency:en.frequency,months:row.months,policy_complete:p.eligibility?.complete,policy_reasons:(p.eligibility?.policy_reasons||[]).join('; '),review:(p.eligibility?.reasons||[]).join('; '),missed:row.maxMissQ,reason:row.motivo};})});
-  addTable(workbook,{name:'Aportaciones para reglas',columns:columns([['folio','Folio'],['name','Nombre'],['date','Fecha'],['amount','Aportación registrada',true],['expected','Aportación esperada',true]]),rows:selectedContext.participants.flatMap(p=>(p.history||[]).filter(h=>h.date>=s.periodIni&&h.date<=s.periodFin&&h.date<=context.today).map(h=>({folio:p.folio,name:p.name||p.nombre,date:h.date,amount:h.amount,expected:h.expected})))});
-  addTable(workbook,{name:'Reglas aplicadas',columns:columns([['key','Parámetro'],['value','Valor aplicado']]),rows:Object.entries(s).map(([key,value])=>({key,value}))});
-  addTable(workbook,{name:'Observaciones del cálculo',columns:columns([['code','Código'],['severity','Nivel'],['text','Observación']]),rows:calculation.alerts||[]});
-  return {sourceRows:evidenceRows};
-}
-
 function compositionTables(context) {
   const participants=context?.participants;
   if(!Array.isArray(participants))return[];
@@ -501,7 +401,37 @@ function acta(calculation,loans,context) {
     '<h2>Observaciones</h2><ul>'+notes.map(note=>'<li>'+escapeHtml(note)+'</li>').join('')+'</ul><p>Espacios para revisión del escenario. Su impresión no registra una aprobación contable en SutiApp.</p><div class="signatures"><div>Secretaría General</div><div>Secretaría de Finanzas</div></div><button type="button" class="print" onclick="window.print()">Imprimir / Guardar como PDF</button></body></html>');
 }
 
-export async function exportSicofReport({kind,calculation,context,loans,filters={},templateBytes,ExcelJS}) {
+function addSourceAO(workbook,calculation,loans,source) {
+  const s=calculation?.settings;
+  if(!s||!['caja','sel','todos'].includes(s.src)||s.src==='sel'&&(!Array.isArray(s.selFunds)||s.selFunds.some(f=>typeof f!=='string'||!f)))throw Error('SICOF_EXPORT_CALCULATION_REQUIRED');
+  if(!Array.isArray(source?.rows)||!Array.isArray(source?.headers)||source.headers.length<15||source.headers.slice(0,15).some(h=>typeof h!=='string')||
+      !Array.isArray(source?.columns)||source.columns.slice(0,15).join(',')!=='A,B,C,D,E,F,G,H,I,J,K,L,M,N,O'||
+      !/^[a-f0-9]{64}$/i.test(source?.source_fingerprint||''))throw Error('SICOF_EXPORT_RAW_SOURCE_REQUIRED');
+  if(source.source_fingerprint!==loans?.source_fingerprint)throw Error('SICOF_EXPORT_SOURCE_MISMATCH');
+  const fields=SICOF_FIELDS.slice(0,15),funds=s.src==='caja'?['Caja de Ahorro']:s.src==='sel'?[...new Set(['Caja de Ahorro',...s.selFunds])]:null;
+  // The owner requested original A:O for the chosen funds, including all source
+  // dates and problematic rows. Never reconstruct values from loan analysis.
+  const rows=source.rows.filter(row=>!funds||funds.includes(row?.fund));
+  const sheet=workbook.addWorksheet('HISTORIAL P V2');
+  sheet.columns=fields.map((field,i)=>({header:source.headers[i],key:field,width:field==='name'?38:field==='fund'?28:20}));
+  sheet.views=[{state:'frozen',ySplit:1}];
+  sheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'}};
+  sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF930027'}};
+  sheet.getRow(1).alignment={wrapText:true,vertical:'middle'};
+  for(const row of rows){
+    const values=fields.map(field=>{
+      if(!row||!Object.hasOwn(row,field))throw Error('SICOF_EXPORT_RAW_SOURCE_REQUIRED');
+      const value=row[field];
+      if(value!==null&&(!['string','number','boolean'].includes(typeof value)||typeof value==='number'&&!Number.isFinite(value)))throw Error('SICOF_EXPORT_RAW_SOURCE_REQUIRED');
+      return value;
+    });
+    // Plain typed values only: null stays blank; strings are never formulas.
+    sheet.addRow(values);
+  }
+  sheet.autoFilter={from:'A1',to:{row:Math.max(1,rows.length+1),column:15}};
+}
+
+export async function exportSicofReport({kind,calculation,context,loans,source,filters={},templateBytes,ExcelJS}) {
   // This path must remain independent of Google and of the current calculator.
   if(kind==='final_ahorro'&&filters.historical===true){
     const bytes=bytesOf(templateBytes);
@@ -519,9 +449,11 @@ export async function exportSicofReport({kind,calculation,context,loans,filters=
   if(filters.format!=null&&filters.format!=='xlsx')throw Error('SICOF_EXPORT_FORMAT_INVALID');
   if(!ExcelJS?.Workbook)throw Error('SICOF_EXPORT_EXCEL_REQUIRED');
   const workbook=new ExcelJS.Workbook();workbook.creator='SutiApp';workbook.calcProperties={fullCalcOnLoad:true};
-  let evidence;
+  if(kind==='base_calculo'){
+    addSourceAO(workbook,calculation,loans,source);
+    return{bytes:new Uint8Array(await workbook.xlsx.writeBuffer()),contentType:'application/octet-stream',filename:'SICOF_base_calculo.xlsx'};
+  }
   if(kind==='final_ahorro')await currentFinal(workbook,templateBytes,context,filters);
-  else if(kind==='base_calculo')evidence=addCalculationBase(workbook,calculation,context,loans);
   else if(kind==='reparto_formulado')addFormulaReparto(workbook,calculation,filters,loans);
   else if(byFund){
     const selectedFunds=[...new Set((loans.loans||[]).filter(r=>matches(r,filters)&&(!filters.year||(r.schedule||[]).some(p=>!p.date||p.date.slice(0,4)===String(filters.year)))).map(r=>r.fund))];
@@ -534,7 +466,7 @@ export async function exportSicofReport({kind,calculation,context,loans,filters=
     }
   }
   else addTable(workbook,table);
-  if(loans?.issues?.length)addTable(workbook,{name:'Incidencias fuente',columns:columns([['source_row','Fila'],['loan_id','Préstamo'],['folio','Folio'],['code','Incidencia']]),rows:evidence?loans.issues.filter(row=>evidence.sourceRows.has(row.source_row)):loans.issues});
+  if(loans?.issues?.length)addTable(workbook,{name:'Incidencias fuente',columns:columns([['source_row','Fila'],['loan_id','Préstamo'],['folio','Folio'],['code','Incidencia']]),rows:loans.issues});
   metadata(workbook,{calculation,loans,filters,context});
   return{bytes:new Uint8Array(await workbook.xlsx.writeBuffer()),contentType:'application/octet-stream',filename:'SICOF_'+(byFund?'matriz_fondos':kind)+'.xlsx'};
 }

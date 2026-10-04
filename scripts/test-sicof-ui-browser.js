@@ -45,6 +45,7 @@ async function main() {
     await page.getByText('Resultado sintético para pruebas aisladas.', { exact: true }).waitFor();
     assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), 1);
     assert.equal(await page.evaluate(() => calls.find(x => x.kind === 'workspace').args.compact), true);
+    await page.getByText('Descarga HISTORIAL P V2, columnas A–O, de los fondos seleccionados, con todas sus fechas.', { exact: true }).waitFor();
     assert.equal(await page.getByRole('tab').count(), 8);
     assert.equal(await page.locator('input[type=password]').count(), 0);
     await page.getByText('Tasa proyectada sobre base confirmada', { exact: true }).waitFor();

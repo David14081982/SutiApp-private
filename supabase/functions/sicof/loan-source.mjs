@@ -26,6 +26,7 @@ export function decodeSicofLoanSource(data) {
     return Object.fromEntries([['source_row',row.source_row],...SICOF_FIELDS.map((field,i) => [field,row.values[i]])]);
   });
   return { contract_version:SICOF_LOAN_CONTRACT, source:SICOF_WORKBOOK+':'+SICOF_SHEET_ID,
+    headers:[...data.headers], columns:[...data.columns],
     observed_at:data.observed_at, source_fingerprint:data.source_fingerprint, scanned_rows:rows.length,
     date_semantics:'AMORTIZATION_DATE_NOT_RECEIPT_DATE', rows };
 }

@@ -1,0 +1,207 @@
+{
+  "task": "H-SICOF-CALCULATION-BASE-XLSX-001",
+  "status": "PASS",
+  "baseline": "4f5755c6d4d7f67e5901db299b988ffc34ce6902",
+  "scope": "Selected-source calculation XLSX only",
+  "dedicated": {
+    "command": "node scripts/test-sicof-calculation-base-export.js",
+    "exitCode": 0,
+    "status": "PASS",
+    "scenarios": [
+      {
+        "source": "caja",
+        "rows": 608,
+        "collected": 756.25,
+        "projected": 8.75,
+        "projectedNetPool": 714.89
+      },
+      {
+        "source": "sel",
+        "rows": 610,
+        "collected": 761.5,
+        "projected": 15.25,
+        "projectedNetPool": 726.64
+      },
+      {
+        "source": "todos",
+        "rows": 611,
+        "collected": 811.5,
+        "projected": 15.25,
+        "projectedNetPool": 776.64
+      }
+    ],
+    "checks": [
+      "Actual engine and ExcelJS readback",
+      "Complete rows, no screen filters or pagination",
+      "98 percent, costs and reserve spill",
+      "Unknowns explicit; exact Folio",
+      "Source/result/filter mismatches rejected",
+      "Source/context immutability",
+      "Formula injection text",
+      "Relevant prior-contract incidents included; unrelated incidents excluded"
+    ],
+    "externalQueries": 0,
+    "financialWrites": 0
+  },
+  "relatedTests": [
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "status": "PASS",
+      "verifiedBy": "builder; independent reviewer inspected assertions",
+      "checks": [
+        "Existing authorization before source",
+        "One source read for user-triggered export",
+        "Matching fingerprint only",
+        "Changed source/context or missing fingerprint rejected",
+        "No financial writes"
+      ]
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "status": "PASS",
+      "verifiedBy": "builder",
+      "historicalRows": 214
+    },
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "status": "PASS",
+      "verifiedBy": "root",
+      "forbiddenFiles": 0
+    }
+  ],
+  "browser": {
+    "command": "node scripts/test-sicof-ui-browser.js",
+    "status": "PASS",
+    "network": "BLOCKED",
+    "productionWrites": 0,
+    "checks": [
+      "all original tabs and additional period report",
+      "saver transaction opens authorized classification and preserves detail on cancel",
+      "scenario full command and fingerprint",
+      "exports preserve backend fingerprint and filters",
+      "cost and bank drafts require explicit combined calculation",
+      "loan charts and saver withdrawals visible",
+      "texts/tab order persisted via repository",
+      "drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry",
+      "source error removes stale amounts",
+      "savings/current and original reports remain downloadable during Google outage",
+      "matrix complete metadata and server percentage units",
+      "projection net pool and conditional percentage visible",
+      "payment/arrears/matrix totals reflect filters without reallocation",
+      "unknown components remain unknown in filtered totals",
+      "matrix year removes loans without dates in that year",
+      "report semester selects an explicit year",
+      "account global availability shown without summing periods",
+      "loan principal interest term remaining and progress preserved",
+      "duplicate-date matrix evidence never selects first payment",
+      "arrears uses authoritative status",
+      "context change clears private UI",
+      "behavior detail",
+      "responsive 320/430/1440",
+      "no browser errors",
+      "eligibility preserves verified yes verified no and pending review in table and modal",
+      "unknown months stay unknown while verified zero months remain zero",
+      "base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load",
+      "base XLSX excludes presentation filters and waits for unapplied changes",
+      "source-changed export displays explicit error"
+    ]
+  },
+  "build": {
+    "version": 316,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "43e6669b1ca7c4f0768f25902d6b073cc627eaae2639345ef4519fc8ef662250"
+  },
+  "backendDeployment": {
+    "status": "PASS",
+    "priorVersion": 5,
+    "version": 6,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "0627d2cec934d69baa4821dcc5028603210e578645491a2e59b962c842a3e033"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "2b3aae8bd6a696dc17a99fa2fc33d08099846080938b672c9f9876272bc2ad34"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+      }
+    ],
+    "productionFinancialReads": 0,
+    "financialWrites": 0
+  },
+  "protectedFiles": [
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "unchangedFromBaseline": true,
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "unchangedFromBaseline": true,
+      "sha256": "2b3aae8bd6a696dc17a99fa2fc33d08099846080938b672c9f9876272bc2ad34"
+    },
+    {
+      "file": "supabase/functions/sicof/index.ts",
+      "unchangedFromBaseline": true,
+      "sha256": "b0b56e40464c2ce14f482aa2085348f3543d91634960152671a105a1f0d6cade"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "unchangedFromBaseline": true,
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "unchangedFromBaseline": true,
+      "sha256": "bf3f8031129e5f5b5c3527658a7db9e160db56abe49f2dfc0df7d1846d9d00a6"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "unchangedFromBaseline": true,
+      "sha256": "d45d01d13f187a1496922e7c606f4f5a36ea3f81e15d247665d1d65371687542"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "unchangedFromBaseline": true,
+      "sha256": "b000c98ce6690968468a472d8f1d6f4b3963bc3266823ce8046100db463934d4"
+    }
+  ],
+  "review": {
+    "reviewer": "sicof_base_xlsx_review",
+    "verdict": "APPROVED",
+    "unresolvedFindings": 0,
+    "correctedFinding": "Retain incidents outside the period when their contract was used; fixture source row 801."
+  },
+  "sourceOfTruth": "SAFE: existing authenticated Google HISTORIAL P V2 and canonical savings context; no new writer or authority",
+  "security": "Existing can_export and source/context fingerprint validation; no permission/schema changes",
+  "globalImageRegression": "NOT APPLICABLE: focal SICOF module plus generated bundle/cachebuster; no shared runtime changes",
+  "productionFinancialReads": 0,
+  "productionFinancialWrites": 0,
+  "limitations": [
+    "No authenticated production financial export was executed.",
+    "Export preserves existing authenticated source reread and rejects changed fingerprints.",
+    "No mirror, persistent snapshot or synchronization redesign."
+  ]
+}

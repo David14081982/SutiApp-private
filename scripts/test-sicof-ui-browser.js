@@ -24,7 +24,7 @@ async function main() {
         composition: async participantId => ({ participant_id: participantId, can_attribute: true, version: 'synthetic-attribution-v1', movements: people[0].movements.map(row => ({ ...row, amount: 11 })), periods: [] }),
         load: async args => { calls.push({ kind: 'load', args }); return { source: failSource ? { status: 'UNAVAILABLE', observed_at: null, error: 'Fuente de préstamos no disponible' } : { status: 'READY', observed_at: '2026-10-03T12:00:00Z' }, funds: [{ id: 'Caja de Ahorro', name: 'Caja de Ahorro', collected: 2, projected: 3, unresolved_rows: 0 }, { id: 'FONDO SINTETICO', name: 'FONDO SINTÉTICO', collected: 4, projected: 5, unresolved_rows: 1 }], loans: failSource ? null : [loanFixture, otherLoan], payments: [{ id: 'payment-test', date: '2026-08-15', folio: 'TEST-01', name: 'PERSONA SINTÉTICA', loan_id: 'test-loan', fund: 'Caja de Ahorro', paid: 20, capital: unknownCapital ? null : 17, interest: 2, fee: 1, audit: 'RECONCILED_SOURCE_PAYMENT' }, { id: 'other-payment', date: '2025-08-15', folio: 'TEST-02', name: 'OTRA PERSONA', loan_id: 'other-loan', fund: 'FONDO SINTETICO', paid: 30, capital: 25, interest: 4, fee: 1, audit: 'RECONCILED_SOURCE_PAYMENT' }], participants: people, periods: [{ id: 'period-test', period_year: 2026, semester: 1 }], scenarios: scenes, preferences: {}, report: { balances: { 'synthetic-person': { capital: 101, yield_amount: 4.1, total: 105.1, available: 85.1, as_of: '2026-10-03' } }, periods: [{ year: 2026, semester: 1 }], rows: [{ participant_id: 'synthetic-person', folio: 'TEST-01', name: 'PERSONA SINTÉTICA', year: 2026, semester: 1, period_label: '2026-S1', capital: 112, yield: 4.10, withdrawn_capital: 11, withdrawn_yield: 0, remaining: 105.10, available: 85.10, movements: people[0].movements }] } }; },
         calculate: async args => { calls.push({ kind: 'calculate', args: structuredClone(args) }); if (failCalc || failSource) throw Error('NETWORK'); if (delayCalc) return new Promise(resolve => waiting.push({ args: structuredClone(args), resolve })); return resultFor(args.settings); },
-        exportReport: async (kind, args) => { calls.push({ kind: 'export', exportKind: kind, args: structuredClone(args) }); },
+        exportReport: async (kind, args) => { calls.push({ kind: 'export', exportKind: kind, args: structuredClone(args) }); if (kind === 'base_calculo' && window.failBaseExport) throw Error('SICOF_SOURCE_CHANGED'); },
         saveScenario: async args => { calls.push({ kind: 'saveScenario', args: structuredClone(args) }); scenes.push({ id: 'scenario-test', name: 'Escenario sintético', settings: args.settings, costs: args.costs, bank: args.bank, rate: 6, annualRate: 12, base: 82, payTotal: 4.1, eligible_count: 1 }); },
         deleteScenario: async id => { calls.push({ kind: 'deleteScenario', id }); scenes = scenes.filter(item => item.id !== id); },
         savePreferences: async args => { calls.push({ kind: 'savePreferences', args: structuredClone(args) }); },
@@ -164,6 +164,31 @@ async function main() {
     assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), failedCount, 'no automatic retry');
     await page.evaluate(() => { failCalc = false; });
     await page.getByRole('button', { name: 'Reintentar', exact: true }).click(); await page.getByText('9%', { exact: true }).waitFor();
+    const baseButton = page.getByRole('button', { name: '↓ Descargar base del cálculo (.xlsx)', exact: true });
+    const beforeBase = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
+    await baseButton.click();
+    let baseCall = await page.evaluate(() => calls.filter(x => x.kind === 'export').at(-1));
+    assert.equal(baseCall.exportKind, 'base_calculo'); assert.equal(baseCall.args.settings.src, 'caja');
+    assert.equal(baseCall.args.fingerprint, 'synthetic:9'); assert.deepEqual(baseCall.args.filters, {});
+    assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), beforeBase, 'download does not trigger workspace refresh');
+    for (const [label, source] of [['Todos', 'todos'], ['Fondos seleccionados', 'sel']]) {
+      await page.getByRole('button', { name: label, exact: true }).click();
+      assert(await baseButton.isDisabled(), 'unapplied source cannot export');
+      if (source === 'sel') {
+        await page.getByLabel('Fondos adicionales', { exact: true }).click();
+        await page.locator('.sicof-multi-panel').getByRole('checkbox').check();
+        await page.getByLabel('Fondos adicionales', { exact: true }).click();
+      }
+      await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).click();
+      await baseButton.click();
+      baseCall = await page.evaluate(() => calls.filter(x => x.kind === 'export').at(-1));
+      assert.equal(baseCall.args.settings.src, source); assert.deepEqual(baseCall.args.filters, {});
+      if (source === 'sel') assert.deepEqual(baseCall.args.settings.selFunds, ['FONDO SINTETICO']);
+      assert.equal(baseCall.args.costs.length, 1); assert.equal(baseCall.args.bank.amount, 80);
+    }
+    await page.evaluate(() => { window.failBaseExport = true; }); await baseButton.click();
+    await page.getByRole('alert').getByText('Cambió la información del escenario. Actualiza el cálculo antes de continuar.', { exact: true }).waitFor();
+    await page.evaluate(() => { window.failBaseExport = false; });
     for (const width of [320, 430, 1440]) {
       await page.setViewportSize({ width, height: 1100 });
       const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth, elements: [...document.querySelectorAll('body *')].filter(el => el.getBoundingClientRect().right > innerWidth + 1 && getComputedStyle(el).position !== 'absolute').slice(0, 12).map(el => ({tag:el.tagName,cls:el.className,right:el.getBoundingClientRect().right})) })); assert(overflow.scroll <= width + 1, 'Page overflow: ' + JSON.stringify(overflow));
@@ -198,7 +223,7 @@ async function main() {
     await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
     assert.deepEqual(errors, []);
     const proof = { status: 'PASS', network: 'BLOCKED', productionWrites: 0, checks: ['all original tabs and additional period report', 'saver transaction opens authorized classification and preserves detail on cancel', 'scenario full command and fingerprint', 'exports preserve backend fingerprint and filters', 'cost and bank drafts require explicit combined calculation', 'loan charts and saver withdrawals visible', 'texts/tab order persisted via repository', 'drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry', 'source error removes stale amounts', 'savings/current and original reports remain downloadable during Google outage', 'matrix complete metadata and server percentage units', 'projection net pool and conditional percentage visible', 'payment/arrears/matrix totals reflect filters without reallocation', 'unknown components remain unknown in filtered totals', 'matrix year removes loans without dates in that year', 'report semester selects an explicit year', 'account global availability shown without summing periods', 'loan principal interest term remaining and progress preserved', 'duplicate-date matrix evidence never selects first payment', 'arrears uses authoritative status', 'context change clears private UI', 'behavior detail', 'responsive 320/430/1440', 'no browser errors'] };
-    proof.checks.push('eligibility preserves verified yes verified no and pending review in table and modal', 'unknown months stay unknown while verified zero months remain zero');
+    proof.checks.push('eligibility preserves verified yes verified no and pending review in table and modal', 'unknown months stay unknown while verified zero months remain zero', 'base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load', 'base XLSX excludes presentation filters and waits for unapplied changes', 'source-changed export displays explicit error');
     fs.writeFileSync(path.join(evidence, 'browser.json'), JSON.stringify(proof, null, 2)); console.log(JSON.stringify(proof));
   } finally { await browser.close(); }
 }

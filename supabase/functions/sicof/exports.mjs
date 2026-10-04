@@ -404,14 +404,15 @@ function acta(calculation,loans,context) {
 function addSourceAO(workbook,calculation,loans,source) {
   const s=calculation?.settings;
   if(!s||!['caja','sel','todos'].includes(s.src)||s.src==='sel'&&(!Array.isArray(s.selFunds)||s.selFunds.some(f=>typeof f!=='string'||!f)))throw Error('SICOF_EXPORT_CALCULATION_REQUIRED');
+  if(!validDate(s.periodIni)||!validDate(s.periodFin)||s.periodIni>s.periodFin)throw Error('SICOF_EXPORT_PERIOD_INVALID');
   if(!Array.isArray(source?.rows)||!Array.isArray(source?.headers)||source.headers.length<15||source.headers.slice(0,15).some(h=>typeof h!=='string')||
       !Array.isArray(source?.columns)||source.columns.slice(0,15).join(',')!=='A,B,C,D,E,F,G,H,I,J,K,L,M,N,O'||
       !/^[a-f0-9]{64}$/i.test(source?.source_fingerprint||''))throw Error('SICOF_EXPORT_RAW_SOURCE_REQUIRED');
   if(source.source_fingerprint!==loans?.source_fingerprint)throw Error('SICOF_EXPORT_SOURCE_MISMATCH');
   const fields=SICOF_FIELDS.slice(0,15),funds=s.src==='caja'?['Caja de Ahorro']:s.src==='sel'?[...new Set(['Caja de Ahorro',...s.selFunds])]:null;
-  // The owner requested original A:O for the chosen funds, including all source
-  // dates and problematic rows. Never reconstruct values from loan analysis.
-  const rows=source.rows.filter(row=>!funds||funds.includes(row?.fund));
+  // Column A determines membership in the applied period, including both ends.
+  // Keep original A:O values; financial issues do not remove in-period rows.
+  const rows=source.rows.filter(row=>(!funds||funds.includes(row?.fund))&&validDate(row?.date)&&row.date>=s.periodIni&&row.date<=s.periodFin);
   const sheet=workbook.addWorksheet('HISTORIAL P V2');
   sheet.columns=fields.map((field,i)=>({header:source.headers[i],key:field,width:field==='name'?38:field==='fund'?28:20}));
   sheet.views=[{state:'frozen',ySplit:1}];

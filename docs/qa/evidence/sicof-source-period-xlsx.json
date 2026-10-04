@@ -1,0 +1,223 @@
+{
+  "task": "H-SICOF-SOURCE-PERIOD-XLSX-001",
+  "status": "PASS",
+  "baseline": "b6a71c5dfc4b857623469dfa6587fe66538ed082",
+  "contract": {
+    "report": "base_calculo",
+    "worksheets": 1,
+    "name": "HISTORIAL P V2",
+    "columns": "A:O",
+    "filter": "Applied source funds AND applied periodIni <= column A date <= periodFin; valid dates only",
+    "values": "Original typed source values in source order; future rows inside period included; no financial reconstruction"
+  },
+  "dedicated": {
+    "status": "PASS",
+    "scenarios": [
+      {
+        "source": "caja",
+        "sourceRows": 609,
+        "sheets": 1,
+        "columns": 15
+      },
+      {
+        "source": "sel",
+        "sourceRows": 611,
+        "sheets": 1,
+        "columns": 15
+      },
+      {
+        "source": "todos",
+        "sourceRows": 613,
+        "sheets": 1,
+        "columns": 15
+      }
+    ],
+    "largeFixture": {
+      "sourceRows": 18002,
+      "exportedRows": 18000,
+      "xlsxBytes": 1026715,
+      "writeMs": 7657.3974,
+      "nodePeakRssKiB": 541560,
+      "edgeQuotaVerified": false
+    },
+    "checks": [
+      "exact one HISTORIAL P V2 sheet A:O",
+      "original header order and typed scalar values",
+      "inclusive July 1 and December 31 boundaries for all fund modes",
+      "2025 and 2027-04-30 excluded from 2026 S2",
+      "invalid or missing dates excluded; in-period financial errors preserved",
+      "future dates inside cutoff included",
+      "applied single-day, prior-year and cross-year intervals",
+      "missing invalid and reversed periods rejected",
+      "605+ rows without UI limits",
+      "Caja plus additional selected funds and all including blank funds",
+      "raw M/N and fractional rates unchanged",
+      "null zero false empty text leading zeros preserved",
+      "formula-looking source strings remain text",
+      "no source mutation or analyzed reconstruction",
+      "source fingerprint required and mismatch rejected",
+      "presentation filters rejected",
+      "empty selection retains header only"
+    ],
+    "externalQueries": 0,
+    "financialWrites": 0
+  },
+  "relatedTests": [
+    {
+      "command": "node scripts/test-sicof-edge.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-sicof-exports.js",
+      "status": "PASS"
+    },
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "status": "PASS"
+    }
+  ],
+  "ui": {
+    "status": "PASS",
+    "network": "BLOCKED",
+    "productionWrites": 0,
+    "checks": [
+      "all original tabs and additional period report",
+      "saver transaction opens authorized classification and preserves detail on cancel",
+      "scenario full command and fingerprint",
+      "exports preserve backend fingerprint and filters",
+      "cost and bank drafts require explicit combined calculation",
+      "loan charts and saver withdrawals visible",
+      "texts/tab order persisted via repository",
+      "drafts issue zero queries; combined apply single flight; late mismatched result hidden; no auto retry",
+      "source error removes stale amounts",
+      "savings/current and original reports remain downloadable during Google outage",
+      "matrix complete metadata and server percentage units",
+      "projection net pool and conditional percentage visible",
+      "payment/arrears/matrix totals reflect filters without reallocation",
+      "unknown components remain unknown in filtered totals",
+      "matrix year removes loans without dates in that year",
+      "report semester selects an explicit year",
+      "account global availability shown without summing periods",
+      "loan principal interest term remaining and progress preserved",
+      "duplicate-date matrix evidence never selects first payment",
+      "arrears uses authoritative status",
+      "context change clears private UI",
+      "behavior detail",
+      "responsive 320/430/1440",
+      "no browser errors",
+      "eligibility preserves verified yes verified no and pending review in table and modal",
+      "unknown months stay unknown while verified zero months remain zero",
+      "base XLSX button sends applied caja/sel/todos parameters and fingerprint without extra workspace load",
+      "base XLSX excludes presentation filters and waits for unapplied changes",
+      "source-changed export displays explicit error"
+    ]
+  },
+  "uiPeriodChecks": [
+    "Unapplied July 1 date change disables export",
+    "After explicit apply, July 1 through December 31 transmitted in all three fund modes",
+    "Export adds no workspace refresh"
+  ],
+  "build": {
+    "version": 319,
+    "otherChunksUnchanged": true,
+    "financialWrites": 0,
+    "bundleSha256": "c8292a2149b7135b0f5e32d089e1d01b2729f19f3efe35a186b10aca1e617ff1"
+  },
+  "deployment": {
+    "status": "PASS",
+    "priorVersion": 8,
+    "version": 9,
+    "cloudStatus": "ACTIVE",
+    "verifyJwt": true,
+    "sourceFiles": [
+      {
+        "file": "engine.mjs",
+        "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+      },
+      {
+        "file": "exports.mjs",
+        "sha256": "144199cf096bd6594108695d0be2ed114523f042708bd6605055fc2ec4a0958f"
+      },
+      {
+        "file": "handler.mjs",
+        "sha256": "fcae7dee81975323855395cc22b2aad1caf611d86e41a14e6104a6c3ab331e30"
+      },
+      {
+        "file": "index.ts",
+        "sha256": "3305c49cf834a88157411badb5300ac375d41309a969c09c07d043892d288a51"
+      },
+      {
+        "file": "loan-calculation.mjs",
+        "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+      },
+      {
+        "file": "loan-source.mjs",
+        "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+      },
+      {
+        "file": "projection.mjs",
+        "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+      }
+    ],
+    "productionFinancialReads": 0,
+    "financialWrites": 0
+  },
+  "protectedFiles": [
+    {
+      "file": "supabase/functions/sicof/engine.mjs",
+      "unchanged": true,
+      "sha256": "ccf1a5693ed12c6ddcae651f559db3017cd7ed795ca300d2d84a32fda76090a5"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-calculation.mjs",
+      "unchanged": true,
+      "sha256": "49a300f060e06a1ffe507e7cad21561cc44ec32a560c83438e8b97801f32e04f"
+    },
+    {
+      "file": "supabase/functions/sicof/projection.mjs",
+      "unchanged": true,
+      "sha256": "b420b71d85d4b2b3a3386788d711bba2b75f2434e0f64d7138f34cc292a262aa"
+    },
+    {
+      "file": "supabase/functions/sicof/index.ts",
+      "unchanged": true,
+      "sha256": "3305c49cf834a88157411badb5300ac375d41309a969c09c07d043892d288a51"
+    },
+    {
+      "file": "supabase/functions/sicof/handler.mjs",
+      "unchanged": true,
+      "sha256": "fcae7dee81975323855395cc22b2aad1caf611d86e41a14e6104a6c3ab331e30"
+    },
+    {
+      "file": "supabase/functions/sicof/loan-source.mjs",
+      "unchanged": true,
+      "sha256": "92b6d51f34735737465fb622564f41222695492b8e5a166a4e342a832c4535f7"
+    },
+    {
+      "file": "app/sicof-repository.js",
+      "unchanged": true,
+      "sha256": "b000c98ce6690968468a472d8f1d6f4b3963bc3266823ce8046100db463934d4"
+    },
+    {
+      "file": "app/savings-repository.js",
+      "unchanged": true,
+      "sha256": "9d697c710d72579dcb41eb5f275a6055ea8508bdf2b9ceefba9504de83f083bd"
+    }
+  ],
+  "authority": "Existing authenticated Google source unchanged; only authorized XLSX selection corrected",
+  "security": "Existing actor/module/can_export checks and source/context/settings fingerprint preserved; no new queries or financial writes",
+  "productionFinancialReads": 0,
+  "productionFinancialWrites": 0,
+  "review": {
+    "reviewer": "sicof_base_xlsx_review",
+    "verdict": "APPROVED"
+  },
+  "globalImageRegression": "NOT APPLICABLE: one focal help sentence and generated bundle URL only; no shared logic changes",
+  "limitations": [
+    "No production financial download executed for testing.",
+    "Local 18000-row XLSX write/readback does not prove Edge memory/CPU quota. Node peak RSS includes readback.",
+    "Dates refer to column A, not source discount-end dates in other columns.",
+    "Rows without a valid column A date are excluded because period membership cannot be established.",
+    "Source fingerprint must still match the applied calculation."
+  ]
+}

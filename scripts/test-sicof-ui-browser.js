@@ -45,7 +45,7 @@ async function main() {
     await page.getByText('Resultado sintético para pruebas aisladas.', { exact: true }).waitFor();
     assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), 1);
     assert.equal(await page.evaluate(() => calls.find(x => x.kind === 'workspace').args.compact), true);
-    await page.getByText('Descarga HISTORIAL P V2, columnas A–O, de los fondos seleccionados, con todas sus fechas.', { exact: true }).waitFor();
+    await page.getByText('Descarga HISTORIAL P V2, columnas A–O, de los fondos seleccionados y dentro del periodo aplicado.', { exact: true }).waitFor();
     assert.equal(await page.getByRole('tab').count(), 8);
     assert.equal(await page.locator('input[type=password]').count(), 0);
     await page.getByText('Tasa proyectada sobre base confirmada', { exact: true }).waitFor();
@@ -169,10 +169,16 @@ async function main() {
     await page.evaluate(() => { failCalc = false; });
     await page.getByRole('button', { name: 'Reintentar', exact: true }).click(); await page.getByText('9%', { exact: true }).waitFor();
     const baseButton = page.getByRole('button', { name: '↓ Descargar base del cálculo (.xlsx)', exact: true });
+    await page.getByLabel('Inicio del periodo', { exact: true }).fill('2026-07-01');
+    await page.getByLabel('Cierre del periodo', { exact: true }).fill('2026-12-31');
+    assert(await baseButton.isDisabled(), 'unapplied period cannot export');
+    await page.getByRole('button', { name: 'Aplicar y calcular', exact: true }).click();
+    await page.waitForFunction(() => [...document.querySelectorAll('button')].some(button => button.textContent.includes('Descargar base del') && !button.disabled));
     const beforeBase = await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length);
     await baseButton.click();
     let baseCall = await page.evaluate(() => calls.filter(x => x.kind === 'export').at(-1));
     assert.equal(baseCall.exportKind, 'base_calculo'); assert.equal(baseCall.args.settings.src, 'caja');
+    assert.equal(baseCall.args.settings.periodIni, '2026-07-01'); assert.equal(baseCall.args.settings.periodFin, '2026-12-31');
     assert.equal(baseCall.args.fingerprint, 'synthetic:9'); assert.deepEqual(baseCall.args.filters, {});
     assert.equal(await page.evaluate(() => calls.filter(x => x.kind === 'workspace').length), beforeBase, 'download does not trigger workspace refresh');
     for (const [label, source] of [['Todos', 'todos'], ['Fondos seleccionados', 'sel']]) {
@@ -187,6 +193,7 @@ async function main() {
       await baseButton.click();
       baseCall = await page.evaluate(() => calls.filter(x => x.kind === 'export').at(-1));
       assert.equal(baseCall.args.settings.src, source); assert.deepEqual(baseCall.args.filters, {});
+      assert.equal(baseCall.args.settings.periodIni, '2026-07-01'); assert.equal(baseCall.args.settings.periodFin, '2026-12-31');
       if (source === 'sel') assert.deepEqual(baseCall.args.settings.selFunds, ['FONDO SINTETICO']);
       assert.equal(baseCall.args.costs.length, 1); assert.equal(baseCall.args.bank.amount, 80);
     }

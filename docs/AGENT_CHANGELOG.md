@@ -3985,3 +3985,17 @@ round-trip, all source modes, 18,000 rows, previous exports and Edge tests PASS.
 Corrected stale button help; focal v318 build/UI/Pages allowlist PASS. Edge v8 ACTIVE;
 zero production financial queries or writes for this verification. Registry refreshed
 for the raw-source export dependency. Audit/evidence: H-SICOF-SOURCE-AO-XLSX-001.
+
+## 2026-10-03 — H-SICOF-SOURCE-PERIOD-XLSX-001
+
+Corrected the previous all-dates interpretation following the owner's explicit
+report of 2025/2027 records in the July–December 2026 export. Base XLSX now filters
+original column A by applied start/end dates, inclusive, as well as selected funds.
+One HISTORIAL P V2 sheet A:O remains; invalid dates are excluded, future dates within
+the period included, and financial values remain unchanged. No new source queries.
+Actual XLSX round-trip tests cover both boundaries, year changes, empty selections,
+all fund modes and 18002 source rows -> 18000 in-period rows. Edge, other exports,
+browser interactions and Pages validation PASS. Focal bundle v319 preserves all
+unrelated chunks. Edge v9 ACTIVE; zero production financial reads/writes for tests.
+Independent reviewer APPROVED; no financial engine, permissions, Google transport
+or persisted data changes. Audit/evidence: H-SICOF-SOURCE-PERIOD-XLSX-001.

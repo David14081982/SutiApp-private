@@ -11,7 +11,7 @@ const assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),p
  let r=calc(context([p]),loans,{settings:s});
  assert.equal(r.pool,9);assert.equal(r.reserve,1);assert.equal(r.rate,9);assert.equal(r.rows[0].rend,9);assert.equal(r.distributed,9);assert.equal(r.rows[0].total,109);assert.equal(r.certification.can_post,false);
  const verifiedAllocation={rate:r.rate,distributed:r.distributed,rend:r.rows[0].rend,total:r.rows[0].total};
- assert.equal(r.engine_version,'SICOF_2026_10_04_V3');assert.equal(r.rows[0].months,17);assert.equal(r.rows[0].review_required,false);
+ assert.equal(r.engine_version,'SICOF_2026_10_04_V4');assert.equal(r.rows[0].months,17);assert.equal(r.rows[0].review_required,false);
  for(const eligibility of [{complete:true},{complete:false,reasons:['ENROLLMENT_UNVERIFIED']}]){
   const unknown={...p,enrollment:{status:'ACTIVE'},eligibility};
   for(const settings of [s,{...s,anchorOn:true,anchorDate:'2026-01-01'}]){

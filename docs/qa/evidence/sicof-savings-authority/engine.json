@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "engine_version": "SICOF_2026_10_04_V4",
+  "synthetic_only": true,
+  "financial_writes": 0,
+  "checks": [
+    "positive and zero certified amounts are accepted without inventing expected amounts",
+    "pending source observations preserve the accepted current capital and yield",
+    "independent review reasons and genuine historical conflicts remain pending",
+    "missing or nonnumeric history is never created or accepted as recorded money",
+    "identity, certification and missing canonical components remain required",
+    "minimum tenure, termination, short contribution and overdue rules remain effective",
+    "known dated movements retain the same average and withdrawal day calculation",
+    "a certified closing balance supports end method without inventing a prior daily history",
+    "cent allocations conserve the distributable pool with deterministic remainders"
+  ]
+}

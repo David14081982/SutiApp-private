@@ -34,6 +34,8 @@ Estados oficiales: `PASS`, `FAIL`, `BLOCKED`, `DECISION REQUIRED`, `NOT APPLICAB
 12. La futura impersonación separa siempre `actor_real` de `usuario_contexto`, sin contraseña del afiliado.
 13. Toda H deja evidencia verificable de build, tests, invariantes, autoridad, seguridad, legacy y archivos inesperados.
 
+14. **Ahorro Supabase: valores válidos por instrucción permanente del propietario (2026-10-04).** Tomar como correctos los valores registrados de los ahorradores y usarlos en cálculos/SICOF sin exigir conciliación o confirmación adicional de esos importes. Sólo la encargada del programa corrige los datos; el agente no los corrige ni reabre esta decisión. Conservar fechas y significado de cada valor, sin inventar ausencias. Véase H-SICOF-SAVINGS-AUTHORITY-001 en docs/DECISIONS.md.
+
 ## Mapa normativo
 
 - Arquitectura y adaptadores: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)

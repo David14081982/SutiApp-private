@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "baselineSha256": "813c606d88591df084b18cb95a93982b0bc6e408b015641cc3f0efe9796d3226",
+  "bundleSha256": "85d93d6015cb3086d8a11e6d6e554e1f9afecc734a1aca28ce71a90014921f5e",
+  "changedChunks": [
+    "sicof-simulation-client.js"
+  ],
+  "preservedChunks": 151,
+  "workerSha256": "97b705f201b77263ae36c88f1d550b07a6f0e8a65c0c270b04ad54cdaa50fee9",
+  "productionDeployment": false
+}

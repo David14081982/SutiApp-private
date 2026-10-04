@@ -1,5 +1,14 @@
 # Fuentes de verdad
 
+## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04
+
+El propietario ratifica: «Los valores descritos en el ahorro que se encuentran en Supabase de los ahorradores son correctos y de no serlo quien debe corregirlos es la encargada del programa no tú, estos valores tómalos como válidos».
+
+Los lectores y cálculos de Ahorro/SICOF deben consumir los valores existentes como válidos, incluidas las aportaciones históricas registradas. No exigir de nuevo al propietario que los confirme, certifique o concilie ni invalidarlos porque falta una comparación con un importe esperado histórico. La encargada conserva la responsabilidad de corregir mediante el flujo existente; el agente no modifica valores para hacerlos coincidir con expectativas.
+
+Esta decisión ratifica la autoridad Supabase y la aceptación previa de importes programados de H-SAVINGS-AUTO-CONTRIBUTIONS-001. Prevalece sobre cualquier interpretación anterior del agente que trate los valores existentes como dudosos. No cambia el significado de un campo, no transforma aportación en saldo ni inventa fechas, importes ausentes o rendimientos; los cálculos se derivan de las fechas y valores registrados. Se conservan identidad, permisos, reglas de participación, retiros y separación capital/rendimiento. No autoriza reescrituras financieras ni Google. No volver a solicitar esta misma decisión.
+
+
 ## Reporte RH de Ahorro — 2026-10-01
 
 `get_admin_savings_rh_report` → Edge `savings-rh-report` → `SavingsRhRepository`

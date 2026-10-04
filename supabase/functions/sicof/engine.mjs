@@ -1,6 +1,6 @@
 // SICOF simulations are derived reports. This module cannot post transactions,
 // authorize a withdrawal, change an eligibility exception or credit yield.
-export const ENGINE_VERSION = 'SICOF_2026_10_04_V3';
+export const ENGINE_VERSION = 'SICOF_2026_10_04_V4';
 const DAY = 86400000;
 export function date(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw Error('SICOF_DATE_INVALID');
@@ -177,6 +177,22 @@ function missedContributions(person,s,today) {
   for(const h of hist){run=h.amount===0&&h.expected>0?run+(person.enrollment?.frequency==='MONTHLY'?2:1):0;maxMissQ=Math.max(maxMissQ,run);}
   return maxMissQ;
 }
+function savingsReviewReasons(person) {
+  const eligibility=person.eligibility;
+  if(eligibility?.complete===true)return [];
+  const reasons=eligibility?.reasons?.length?eligibility.reasons:['Políticas y aportaciones pendientes de verificación'];
+  if(!person.identity_resolved||!person.certified)return reasons;
+  // Permanent owner decision, 2026-10-04: existing Supabase savings values
+  // are valid. Only the program manager corrects them. An absent historical
+  // target or a pending source observation cannot invalidate accepted money.
+  // Do not fill expected, copy pending proposals, or invent a daily timeline.
+  const history=(person.history||[]).filter(h=>h.source==='CERTIFIED_HISTORY');
+  const recordedHistory=history.length>0&&history.every(h=>h.amount!=null&&Number.isFinite(Number(h.amount)));
+  const balance=person.composition?.as_of_balance||person.composition?.balances||person.balance;
+  const recordedBalance=balance&&['capital','yield_amount'].every(key=>balance[key]!=null&&Number.isFinite(Number(balance[key])));
+  return reasons.filter(reason=>!(reason==='HISTORICAL_EXPECTATION_UNVERIFIED'&&recordedHistory)
+    &&!(reason==='SOURCE_REVIEW_REQUIRED'&&recordedBalance));
+}
 function participantRows(context,loanAnalysis,s,today,prepared) {
   const participantIds=new Set(), folios=new Set();
   return context.participants.map(p=>{
@@ -190,7 +206,7 @@ function participantRows(context,loanAnalysis,s,today,prepared) {
     for(const code of p.eligibility?.policy_reasons||[])if(policyMessages[code])reasons.push(policyMessages[code]);
     if(s.exterm&&(p.eligibility?.policy_reasons||[]).includes('INACTIVE_ENROLLMENT'))reasons.push('Inscripción sin ahorro activo');
     if (!p.identity_resolved||!p.certified) review.push('Identidad o saldo por certificar');
-    if (p.eligibility?.complete!==true) review.push(...(p.eligibility?.reasons?.length?p.eligibility.reasons:['Políticas y aportaciones pendientes de verificación']));
+    review.push(...savingsReviewReasons(p));
     const maxMissQ=prepared?prepared.history(p,s,today):missedContributions(p,s,today);
     if (s.exterm&&(en.terminated_at||'').slice(0,10)&&en.terminated_at.slice(0,10)<=s.periodFin) reasons.push('Baja en el periodo');
     if (s.exmin&&months===null) review.push('Fecha de inicio del ahorro pendiente de verificar');

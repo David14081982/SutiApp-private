@@ -221,7 +221,7 @@
 (function () {
   'use strict';
   function create() {
-    const worker = new Worker(new URL('app/sicof-simulation-worker.js?v=2026100401', document.baseURI));
+    const worker = new Worker(new URL('app/sicof-simulation-worker.js?v=2026100402', document.baseURI));
     const pending = new Map(), selections = new Map(); let sequence = 0, closed = false, basis = null, expires = 0, original = null, participants = null, fileBasis = null, active = false, queued = null;
     function fail(error) { for (const item of pending.values()) { clearTimeout(item.timer); item.reject(error); } pending.clear(); }
     worker.onerror = () => fail(Error('SICOF_SIMULATION_WORKER_FAILED'));

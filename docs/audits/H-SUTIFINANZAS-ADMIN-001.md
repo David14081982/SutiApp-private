@@ -1,5 +1,42 @@
 # H-SUTIFINANZAS-ADMIN-001
 
+## Final result ? H-SUTIFINANZAS-ADMIN-001
+
+Status: PASS.
+Files changed: new report repository/UI, focal Admin integration/build manifest/bundle/cachebusters, dedicated Edge reader, additive read-only screen migration/recovery, one contractual test, existing governance/registry and permission metadata. Full release scope: git diff 8cd11a3..7a32401 --name-only. Isolated release excludes unrelated dirty workspace.
+Source-of-truth verdict: SAFE. Google workbook 1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60, exact Gasto por secretaria tab (accented name in code), direct API only. No financial Supabase copies, persistent report cache, mock or fallback.
+Invariant verdict: PASS. Header-name mapping fail closed; true year/status/date/amount fields, missing dimensions explicit, raw fractional amounts preserved. Initial read once, memory-only drill/filter, explicit refresh once.
+Build: PASS; 31 public files, forbiddenFiles=0; Edge compiled/deployed v13; GitHub Pages deployment SUCCESS. Bundle/source scope verified.
+Tests: contractual parser/model/authentication/authorization PASS; 20 screen-permission checks PASS; real API 200/1224 rows and anonymous 401; live browser local and sutiapp.com PASS; keyboard, responsive synthetic/error states PASS. Global image regression local exact candidate and published GitHub Pages both PASS: login seal, profile, Admin affiliates, legitimate images/PDF, Membership, Loans, programs/gallery, Marketplace, fullscreen, refresh and with/without service worker. Production browserErrors=0 and productionDataMutations=0. Public HTML version and bundle SHA independently verified on both domains.
+Security: dedicated new service account/project and secret only; read-only Sheets scope, fixed endpoints/workbook/tab, backend session+permission+module boundary; private key never exposed. Existing secret metadata unchanged; shared bot credential never used.
+Legacy impact: zero Google writes; SutiApp Final engine, Apps Script, request-sync and existing credentials untouched. Financial request and Membership Google workflow checks SUCCESS.
+Unexpected files changed: none in isolated release. Pre-existing root changes preserved.
+Known limitations: source has 253 rows without secretariat/requisition label, 18 without year, 22 without expense date, 10 without status; UI reports these without invention. Access is subject to existing admin permission system. Credentials and Viewer sharing must remain valid.
+Evidence: workflow 37247440040, Membership workflow 37247440012, release 7a32401, API v13, test-sutifinanzas.js, test-screen-permission-contract.js, test-pages-deployment.js, ignored global-candidate-allowed.txt/global-production.txt and live-ui.cjs outputs. No real report rows persisted as QA fixtures.
+
+## SUTIAPP ARCHITECT REVIEW ? final
+
+Task: H-SUTIFINANZAS-ADMIN-001.
+Verdict: APPROVED.
+Critical findings: source access verified with the owner's dedicated new credential; both source and production UI are real, not fixtures. Prior OAuth and cross-project credential blockers resolved by isolated service-account architecture authorized in later instructions. Historical blocked snapshots below do not represent final state.
+Source of truth: one Google authority. Architecture: dedicated server reader and browser memory; existing admin boundaries. Security: no shared credential reuse, no Google write scopes, no client secrets, no backend bypass. Data: totals validated, missing source values explicit, no financial writes. Legacy: intact and regression checked.
+Owner decision: NO.
+Next action: use Admin / SUTIFINANZAS / Gasto por Secretaria; close this H. No further feature work authorized by this review.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX
+
+Close H-SUTIFINANZAS-ADMIN-001 with PASS and provide the public route. Keep the dedicated credential server-side, preserve direct Google authority and leave SutiApp Final untouched. Do not advance to another H.
+
+
+## Published module verification (2026-10-04)
+
+Release 7a324012bf2369f235ec2af3b0e9708025c37927 pushed fast-forward from isolated checkout. GitHub Pages workflow 37247440040 SUCCESS, including Auth and critical request backend/production compatibility. Membership Google contract workflow 37247440012 SUCCESS. Both https://sutiapp.com/ and GitHub Pages return HTTP 200, HTML cache version 2026100403 and bundle SHA256 185dfc7dc8dd8b969d7f29dd8e8d8bed7743abe6527307b5f71fc743c75109cd. Only the three focal bundle modules differ from prior published main; all other chunks unchanged.
+
+Real browser report at https://sutiapp.com/: PASS. Native Admin/sidebar, Nunito, 1,224 source records, default filtered totals equal the source/model, four drill levels, initial read 1, filter/drill reads 0, explicit refresh read 1, zero business writes. Local candidate report same checks PASS. Automated mouse timing retries occurred in the shared shell; accessible keyboard entry and final real pointer drill/refresh completed successfully. No shared shell change or forced click used. Local global-image regression already PASS on this exact bundle. Post-publication global-image regression PASS with zero browser errors and zero data mutations; legitimate PDF verified separately.
+
+All earlier BLOCKED/prepared/pending descriptions below are historical snapshots superseded by dated later evidence.
+
 ## Current verified state ? dedicated source connected (2026-10-04)
 
 Owner supplied Downloads/sutifinanzas-reportes-17cdac4aaba7.json for this module. Dedicated identity verified as sutifinanzas-reader@sutifinanzas-reportes.iam.gserviceaccount.com, separate project sutifinanzas-reportes. Direct Sheets API read PASS: 1,224 rows, real header row 1, fixed authorized tab, no rows persisted. Installed only SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON in server secrets; existing secret metadata comparison unchanged. No shared bot credential read or used. No legacy secret, Apps Script or SutiApp Final engine change.

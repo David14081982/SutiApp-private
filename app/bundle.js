@@ -47295,7 +47295,6 @@ Object.assign(window, {
 })();
 /* @@file screens-admin-finanzas.jsx */
 (function(){
-/* H-SICOF-001 integration: payment behavior below the existing queue identity. */
 /* screens-admin-finanzas.jsx — Panel de Finanzas (base). Concentra TODAS las
    solicitudes de financiamiento enviadas por los usuarios tras simular un
    producto/servicio con descuento vía nómina. Vincula por ID usuario, empresa,
@@ -49417,9 +49416,7 @@ Object.assign(window, {
       'data-financial-queue-person': 'true'
     }, row.nombre), h('span', {
       className: 'finwb-sub'
-    }, maskedControl(row.numero_control) + ' · ' + queueProgramLabel(row)), h(window.SicofPaymentBehavior, {
-      affiliateId: row.affiliate_id
-    })), h('span', null, h('span', {
+    }, maskedControl(row.numero_control) + ' · ' + queueProgramLabel(row))), h('span', null, h('span', {
       className: 'finwb-amount'
     }, moneyValue(row.requested_amount != null ? row.requested_amount : row.quoted_amount)), h('span', {
       className: 'finwb-sub'

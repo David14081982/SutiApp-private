@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "receipts": [
+    {
+      "scope": "working-copy",
+      "chunks": 154,
+      "preserved": 153,
+      "changed": [
+        "screens-admin-finanzas.jsx"
+      ],
+      "bundleSha256": "678f2a0466a4dda5efdf54e90f4af8a3b293297a4ddd342bfdf7c5fce27c1872",
+      "swLogicUnchanged": true,
+      "version": 2026100408
+    },
+    {
+      "scope": "published-candidate",
+      "chunks": 156,
+      "preserved": 155,
+      "changed": [
+        "screens-admin-finanzas.jsx"
+      ],
+      "bundleSha256": "ae9c27baa32f0a65f08e8118f26c4450656328ab2b526e82d8294a19c56d088e",
+      "swLogicUnchanged": true,
+      "version": 2026100408
+    }
+  ]
+}

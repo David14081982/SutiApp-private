@@ -1,0 +1,97 @@
+{
+  "status": "PASS",
+  "scope": "BROWSER_AND_BACKEND",
+  "target": "http://localhost:8080/SutiApp.html",
+  "checkedAt": "2026-10-05T04:33:48.839Z",
+  "checks": [
+    {
+      "serviceWorkers": "block",
+      "initial": {
+        "menuOrder": "finanzas > finance_blocks > sicof",
+        "log": "EXISTING_ROWS",
+        "requestControlVisible": true,
+        "editorDatesAndReason": "PASS",
+        "editorCancelledWithoutSave": true
+      },
+      "refresh": {
+        "menuOrder": "finanzas > finance_blocks > sicof",
+        "log": "EXISTING_ROWS",
+        "requestControlVisible": true,
+        "editorDatesAndReason": "PASS",
+        "editorCancelledWithoutSave": true
+      },
+      "bundleSha256": "ae9c27baa32f0a65f08e8118f26c4450656328ab2b526e82d8294a19c56d088e",
+      "expectedBundleMatched": true,
+      "controlledAfterRefresh": false,
+      "sicofBehaviorRequests": 0,
+      "blockedWriteAttempts": 0,
+      "blockedOperations": [],
+      "pageErrors": 0,
+      "authResponseStatuses": [
+        200
+      ]
+    },
+    {
+      "serviceWorkers": "allow",
+      "initial": {
+        "menuOrder": "finanzas > finance_blocks > sicof",
+        "log": "EXISTING_ROWS",
+        "requestControlVisible": true,
+        "editorDatesAndReason": "PASS",
+        "editorCancelledWithoutSave": true
+      },
+      "refresh": {
+        "menuOrder": "finanzas > finance_blocks > sicof",
+        "log": "EXISTING_ROWS",
+        "requestControlVisible": true,
+        "editorDatesAndReason": "PASS",
+        "editorCancelledWithoutSave": true
+      },
+      "bundleSha256": "ae9c27baa32f0a65f08e8118f26c4450656328ab2b526e82d8294a19c56d088e",
+      "expectedBundleMatched": true,
+      "controlledAfterRefresh": true,
+      "sicofBehaviorRequests": 0,
+      "blockedWriteAttempts": 0,
+      "blockedOperations": [],
+      "pageErrors": 0,
+      "authResponseStatuses": [
+        200
+      ]
+    }
+  ],
+  "businessWrites": 0,
+  "realDataScreenshotsSaved": false,
+  "rawResponsesSaved": false,
+  "backend": {
+    "adminList": "PASS",
+    "selfProjectionActor": "admin",
+    "selfBooleanAndAllowedFields": "PASS",
+    "normalAdminList": "NOT_RUN_NO_CONTROLLED_CREDENTIALS",
+    "anonymousAdminList": "DENIED",
+    "normalSaveWithoutTarget": "NOT_RUN_NO_CONTROLLED_CREDENTIALS",
+    "normalDirectTables": "NOT_RUN_NO_CONTROLLED_CREDENTIALS",
+    "directTables": [
+      {
+        "table": "finance_blocks",
+        "role": "admin",
+        "status": "DENIED"
+      },
+      {
+        "table": "finance_blocks",
+        "role": "anonymous",
+        "status": "DENIED"
+      },
+      {
+        "table": "finance_block_events",
+        "role": "admin",
+        "status": "DENIED"
+      },
+      {
+        "table": "finance_block_events",
+        "role": "anonymous",
+        "status": "DENIED"
+      }
+    ],
+    "recordsUnchangedDuringCheck": true
+  }
+}

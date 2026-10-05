@@ -1,0 +1,27 @@
+'use strict';
+// Authorized focal release; never copies the dirty workspace bundle wholesale.
+const fs=require('fs'),path=require('path'),cp=require('child_process'),assert=require('assert/strict'),vm=require('vm'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),release=path.join(root,'.tmp/company-create-save/release');
+const norm=s=>s.replace(/\r\n/g,'\n'),read=(file,base=root)=>norm(fs.readFileSync(path.join(base,file),'utf8'));
+const git=args=>cp.execFileSync('git',['-C',release,...args],{encoding:'utf8',windowsHide:true,maxBuffer:32*1024*1024}).trimEnd();
+const put=(file,content)=>{const target=path.join(release,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,content);};
+const name='screens-admin-visual-crud.jsx',source='app/'+name,baseCommit=git(['rev-parse','HEAD']);
+assert.equal(read(source,release),read('.tmp/company-create-save/before/'+source),'REMOTE_FOCAL_SOURCE_CHANGED');
+const chunks=s=>[...s.matchAll(/\/\* @@file ([^\r\n]+) \*\/\n[\s\S]*?(?=\/\* @@file |$)/g)];
+const published=read('app/bundle.js',release),before=chunks(published),local=chunks(read('app/bundle.js'));
+assert.equal(before.map(m=>m[0]).join(''),published);assert.equal(before.filter(m=>m[1]===name).length,1);
+const box={};vm.createContext(box);vm.runInContext(fs.readFileSync('C:/tmp/babel-standalone-7.29.0.min.js','utf8'),box);
+const compiled=box.Babel.transform(read(source),{presets:['react'],filename:name}).code;
+const chunk=`/* @@file ${name} */\n(function(){\n${compiled}\n})();\n`;assert.equal(local.find(m=>m[1]===name)[0],chunk,'SOURCE_BUNDLE_MISMATCH');
+const next=before.map(m=>m[1]===name?chunk:m[0]).join('');new vm.Script(next);
+for(const m of before)if(m[1]!==name)assert.equal(chunks(next).find(n=>n[1]===m[1])[0],m[0]);
+const html=read('SutiApp.html',release),sw=read('sw.js',release),version=Math.max(...[...html.matchAll(/(?:bundle\.js\?v=|sw\.js\?v=)(\d+)/g),...sw.matchAll(/(?:sutiapp-v|bundle\.js\?v=)(\d+)/g)].map(m=>Number(m[1])))+1;
+const update=s=>s.replace(/(app\/bundle\.js\?v=|sw\.js\?v=|sutiapp-v)\d+/g,(_,prefix)=>prefix+version),clear=s=>s.replace(/(app\/bundle\.js\?v=|sw\.js\?v=|sutiapp-v)\d+/g,'$1VERSION');
+assert.equal(clear(html),clear(update(html)));assert.equal(clear(sw),clear(update(sw)));
+put(source,read(source));put('app/bundle.js',next);put('SutiApp.html',update(html));put('sw.js',update(sw));
+for(const file of ['scripts/test-company-create-save.js','scripts/test-company-create-save-browser.js','scripts/build-company-create-save.js','scripts/package-company-create-save.js','scripts/verify-company-create-save-live.js','docs/audits/H-COMPANY-CREATE-SAVE-001.md'])put(file,read(file));
+const changelog=cp.execFileSync('git',['-C',release,'show','HEAD:docs/AGENT_CHANGELOG.md'],{encoding:'utf8',windowsHide:true,maxBuffer:8*1024*1024}),section=read('docs/AGENT_CHANGELOG.md').split('## H-COMPANY-CREATE-SAVE-001')[1].split('\n## ')[0];assert(section&&!changelog.includes('H-COMPANY-CREATE-SAVE-001'));
+put('docs/AGENT_CHANGELOG.md',changelog+'\n\n## H-COMPANY-CREATE-SAVE-001'+section.trimEnd()+'\n');
+const evidence='docs/qa/evidence/company-create-save';fs.cpSync(path.join(root,evidence),path.join(release,evidence),{recursive:true});
+const report={status:'PASS',baseCommit,changedChunks:[name],unrelatedPublishedChunksPreserved:before.length-1,bundleSha256:crypto.createHash('sha256').update(next).digest('hex'),version,htmlLogicIdentical:true,workerLogicIdentical:true,previousPublishedContentPreserved:true,published:false};
+for(const base of [root,release])fs.writeFileSync(path.join(base,evidence,'release-package.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

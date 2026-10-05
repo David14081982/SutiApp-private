@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_BROWSER",
+  "productionWrites": 0,
+  "network": "ALL_ROUTES_ABORTED",
+  "results": [
+    {
+      "width": 390,
+      "build": "source",
+      "originalFailureReproduced": true,
+      "controlsPreserved": true,
+      "fullProfile": true,
+      "logoAndCover": true,
+      "deniedRetainsDraft": true,
+      "partialSaveRetryWithoutDuplicate": true,
+      "edit": true,
+      "refreshErrorDistinct": true,
+      "otherResourceUnchanged": true
+    },
+    {
+      "width": 390,
+      "build": "bundle",
+      "originalFailureReproduced": true,
+      "controlsPreserved": true,
+      "fullProfile": true,
+      "logoAndCover": true,
+      "deniedRetainsDraft": true,
+      "partialSaveRetryWithoutDuplicate": true,
+      "edit": true,
+      "refreshErrorDistinct": true,
+      "otherResourceUnchanged": true
+    },
+    {
+      "width": 1440,
+      "build": "source",
+      "originalFailureReproduced": true,
+      "controlsPreserved": true,
+      "fullProfile": true,
+      "logoAndCover": true,
+      "deniedRetainsDraft": true,
+      "partialSaveRetryWithoutDuplicate": true,
+      "edit": true,
+      "refreshErrorDistinct": true,
+      "otherResourceUnchanged": true
+    },
+    {
+      "width": 1440,
+      "build": "bundle",
+      "originalFailureReproduced": true,
+      "controlsPreserved": true,
+      "fullProfile": true,
+      "logoAndCover": true,
+      "deniedRetainsDraft": true,
+      "partialSaveRetryWithoutDuplicate": true,
+      "edit": true,
+      "refreshErrorDistinct": true,
+      "otherResourceUnchanged": true
+    }
+  ]
+}

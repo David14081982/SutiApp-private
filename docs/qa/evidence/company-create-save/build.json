@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "screens-admin-visual-crud.jsx"
+  ],
+  "unrelatedChunksPreserved": 153,
+  "workerLogicIdentical": true,
+  "version": 2026100411,
+  "bundleSha256": "a34633bb55ea9f4a2c0fc583be6f2b9dacc7771a0b53dc57e6e0daaec4ef8493",
+  "productionPublished": false
+}

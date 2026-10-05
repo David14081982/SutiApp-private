@@ -61396,6 +61396,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     const [busy, setBusy] = React.useState(false);
     const [pending, setPending] = React.useState({});
     const pendingRef = React.useRef({});
+    const [saveError, setSaveError] = React.useState('');
     const [educationText, setEducationText] = React.useState(() => Object.fromEntries(['benefits', 'services'].map(key => [key, ((item?.public_details || {})[key] || []).map(v => v.label + (v.description ? ' | ' + v.description : '')).join('\n')])));
     const remember = async (key, asset) => {
       if (pendingRef.current[key]) await window.AdminRepository.discardAsset(pendingRef.current[key]);
@@ -61435,6 +61436,8 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       if (cfg.required.some(key => !form[key])) return app.toast('Completa los campos y archivos requeridos');
       if (kind === 'popups' && form.enabled && !String(form.body || '').trim()) return app.toast('Un pop-up activo requiere contenido');
       setBusy(true);
+      setSaveError('');
+      let stage = 'profile';
       try {
         const values = kind === 'education' && form.resource_kind === 'education' ? {
           ...form,
@@ -61449,22 +61452,39 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
             }).filter(v => v.label)]))
           }
         } : form;
-        const saved = await window.AdminRepository.saveManaged(kind, values);
+        let saved;
+        if (kind === 'companies') {
+          // Use the existing complete-profile RPC; direct table grants cover only basic fields.
+          if (!window.AdminRepository.has('companies.' + (form.id ? 'update' : 'create'))) throw new Error('COMPANY_DENIED');
+          const fields = Object.fromEntries(['display_name', 'description', 'category_raw', 'address_raw', 'location_raw', 'phone_raw', 'whatsapp_raw', 'email_raw', 'website_url', 'public_details', 'logo_asset_id', 'enabled', 'sort_order'].filter(key => values[key] !== undefined).map(key => [key, values[key]]));
+          if (!form.id) {
+            const rows = await window.AdminRepository.listManaged('companies');
+            fields.sort_order = Math.max(0, ...rows.map(row => Number(row.sort_order) || 0)) + 1;
+          }
+          saved = await window.ConveniosRepository.saveCompany(form.id, fields);
+        } else saved = await window.AdminRepository.saveManaged(kind, values);
         const id = form.id || saved.id;
         if (!form.id) setForm(old => Object.assign({}, old, {
           id
         }));
         committed(Object.keys(pendingRef.current).filter(key => key !== 'cover_asset_id'));
         if (kind === 'education') committed(['cover_asset_id']);
+        stage = 'cover';
         if (kind === 'companies' && form.cover_asset_id) {
-          await window.AdminRepository.replaceCompanyAsset(id, form.cover_asset_id, 'cover');
+          await window.ConveniosRepository.attachImage(id, form.cover_asset_id, 'cover');
           committed(['cover_asset_id']);
         }
+        stage = 'refresh';
         window.ConveniosRepository.invalidate();
         app.toast('Cambios guardados');
         await onDone();
-      } catch (_) {
-        app.toast('No fue posible guardar los cambios');
+      } catch (error) {
+        if (kind === 'companies') {
+          const denied = /DENIED|PERMISSION|42501/i.test(String(error.code || '') + ' ' + String(error.message || ''));
+          const message = stage === 'cover' ? 'La ficha se guardó, pero no se pudo guardar la portada. Vuelve a pulsar Guardar para reintentar.' : stage === 'refresh' ? 'La empresa se guardó, pero no se pudo actualizar la pantalla. Vuelve a abrir Empresas.' : denied ? 'Tu cuenta no tiene permiso para guardar estos cambios en Empresas.' : 'No se pudo guardar la empresa. Tus datos siguen en el formulario; intenta de nuevo.';
+          setSaveError(message);
+          app.toast(message);
+        } else app.toast('No fue posible guardar los cambios');
       } finally {
         setBusy(false);
       }
@@ -61604,7 +61624,14 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       onChange: e => setForm(Object.assign({}, form, {
         [kind === 'education' ? 'published' : 'enabled']: e.target.checked
       }))
-    }), 'Publicado / activo'), React.createElement('button', {
+    }), 'Publicado / activo'), kind === 'companies' && saveError && React.createElement('p', {
+      role: 'alert',
+      style: {
+        fontSize: 13,
+        color: '#C0341D',
+        lineHeight: 1.5
+      }
+    }, saveError), React.createElement('button', {
       'data-h009-save': kind,
       onClick: save,
       disabled: busy,

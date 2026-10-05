@@ -4116,3 +4116,8 @@ Pages run 37280400432 SUCCESS, https://sutiapp.com/ v2026100410. Paquete sobre m
 remoto conservó 155 chunks ajenos. Navegador productivo autenticado PASS en alta,
 edición, móvil y refresh; hash publicado exacto, cero mutaciones de afiliados reales.
 Revisión final APPROVED / CLOSED. Evidencia: affiliates-demographics/published.json.
+
+
+## H-COMPANY-CREATE-SAVE-001
+
+Alta/edición de Empresas conecta el formulario completo con ConveniosRepository.saveCompany y attachImage existentes. Reproduce 42501 por INSERT directo de contactos/categoría; sin ampliación de grants ni cambios de schema/RLS. Error específico por etapa, draft e ID preservados en reintento de portada. PostgreSQL y Chrome aislados 390/1440, fuente/bundle, PASS; 153 chunks ajenos locales preservados. Empresa reportada ausente en consulta REST; cero escrituras productivas. Publicación autorizada: paquete sobre main f36fdd5 conserva 155 chunks publicados ajenos. Build Pages y navegador autenticado del candidato PASS en móvil/escritorio; requests de guardado interceptados, cero escrituras. Evidencia: docs/audits/H-COMPANY-CREATE-SAVE-001.md y docs/qa/evidence/company-create-save/.

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "environment": "ISOLATED_PGLITE",
+  "productionWrites": 0,
+  "checks": [
+    "original contact/category insert reproduces 42501",
+    "existing RPC saves full profile without fabricated provenance",
+    "edit and cover retry preserve identity and order",
+    "RPC rejects caller without company permission"
+  ],
+  "limitation": "Auth permission helpers are fixtures; production RLS and grants are unchanged, not certified by this test."
+}

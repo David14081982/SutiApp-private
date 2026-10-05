@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseCommit": "f36fdd5b3e4db15644a5e4721ee561e2b9d470d8",
+  "changedChunks": [
+    "screens-admin-visual-crud.jsx"
+  ],
+  "unrelatedPublishedChunksPreserved": 155,
+  "bundleSha256": "937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e",
+  "version": 2026100411,
+  "htmlLogicIdentical": true,
+  "workerLogicIdentical": true,
+  "previousPublishedContentPreserved": true,
+  "published": false
+}

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "migration": "20261004000300",
+  "latest": "20261004000200",
+  "forwardSha256": "c3c971b1ff66d7ef200f8cd2ba3f8076823fd053a780d300358e8ca97c0d15d2",
+  "recoverySha256": "a42b900276672733678a236831d3cdbe79d97a5362946a433dd8ab9450390416",
+  "existingBusinessWrites": 0
+}

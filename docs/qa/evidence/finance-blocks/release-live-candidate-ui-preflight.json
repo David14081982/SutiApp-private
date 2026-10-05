@@ -1,0 +1,17 @@
+{
+  "status": "FAIL",
+  "scope": "BROWSER_ONLY_BACKEND_NOT_VERIFIED",
+  "target": "http://localhost:8080/SutiApp.html",
+  "checkedAt": "2026-10-05T03:58:40.367Z",
+  "checks": [],
+  "businessWrites": 0,
+  "realDataScreenshotsSaved": false,
+  "rawResponsesSaved": false,
+  "activeBrowserStats": {
+    "blockedWriteAttempts": 0,
+    "blockedOperations": [],
+    "pageErrors": 0
+  },
+  "failedStage": "browser-block",
+  "errorCode": "LIVE_VERIFICATION_FAILED"
+}

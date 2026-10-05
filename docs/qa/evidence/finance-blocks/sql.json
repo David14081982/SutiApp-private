@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "permissions/module boundary; blank reason/reversed dates/stale version; raw control and real actor; same-day inclusive",
+    "self only; anonymous/other affiliate/no identity; private RLS tables prohibit browser reads and writes",
+    "all financial entry paths denied at canonical insertion; zero partial request; other affiliate/ordinary Marketplace unaffected; control edit cannot bypass FK",
+    "scheduled/expired/current dates; edits preserve events; lifting immediate and auditable",
+    "authorized source-request deletion preserves affiliate restriction and original request ID in immutable history",
+    "recovery removes API/enforcement and retains full private history"
+  ],
+  "productionTouched": false
+}

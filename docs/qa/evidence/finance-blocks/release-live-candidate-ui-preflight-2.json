@@ -1,0 +1,26 @@
+{
+  "status": "FAIL",
+  "scope": "BROWSER_ONLY_BACKEND_NOT_VERIFIED",
+  "target": "http://localhost:8080/SutiApp.html",
+  "checkedAt": "2026-10-05T04:00:29.122Z",
+  "checks": [],
+  "businessWrites": 0,
+  "realDataScreenshotsSaved": false,
+  "rawResponsesSaved": false,
+  "activeBrowserStats": {
+    "blockedWriteAttempts": 0,
+    "blockedOperations": [],
+    "pageErrors": 0
+  },
+  "browserState": {
+    "authPhase": "unauthenticated",
+    "adminPhase": "denied",
+    "loginFieldsPresent": true,
+    "desktopSidebarPresent": false,
+    "financeRowsPresent": false,
+    "financeBlockControlPresent": false,
+    "financeBlockEditorPresent": false
+  },
+  "failedStage": "browser-block-login",
+  "errorCode": "LIVE_VERIFICATION_FAILED"
+}

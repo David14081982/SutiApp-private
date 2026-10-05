@@ -4085,3 +4085,16 @@ Owner requested Excel of the current expanded/collapsed report. Added genuine XL
 
 ### H-SUTIFINANZAS-EXPORT-004 final PASS
 Published06c5bb4. Genuine Excel download matches current visible folders/subfolders and their subtotals, filters/order/periods; closed branches stay summarized. Independent13 synthetic downloads and3 cancellation cases PASS; real local/public4 XLSX readbacks each PASS on1224 source records, no extra source reads for export. Both domains match cache2026100406/hash312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76. Pages37253866112 and Membership37253866058 SUCCESS. Architect review APPROVED; Google/backend/SutiApp Final unchanged.
+
+## H-FINANCE-BLOCKS-001 — candidato local, 2026-10-04
+
+Implementado control desde detalle de Finanzas Solicitudes, bitácora entre Solicitudes
+y SICOF, edición/revocación, fechas inclusivas, explicación visible y vínculo canónico
+con numero_control conservado. Migración/recovery preparados, sin aplicación productiva.
+Pruebas SQL aisladas, UI aislada e integración del workbench pasan. Registro y limitaciones:
+[auditoría](audits/H-FINANCE-BLOCKS-001.md). Cambios previos del propietario preservados;
+ningún afiliado real bloqueado, ninguna solicitud creada ni modificada por esta H.
+
+## H-FINANCE-BLOCKS-001 — activación autorizada del backend
+
+El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.

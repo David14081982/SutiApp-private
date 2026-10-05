@@ -1,3 +1,75 @@
+/* @@file finance-blocks-repository.js */
+(function(){
+/* Administrative restrictions: Supabase is the only authority. No persistent cache. */
+(function () {
+  const client = () => { const db = window.SutiSupabase?.getClient(); if (!db) throw new Error('SUPABASE_NOT_CONFIGURED'); return db; };
+  const context = () => JSON.stringify([window.AffiliateAuth?.getState().session?.user?.id, window.AffiliateAuth?.getState().affiliate?.id, window.AdminRepository?.getState?.().assignment]);
+  async function rpc(name, args) {
+    const before = context(), result = await client().rpc(name, args || {});
+    if (before !== context()) throw new Error('FINANCE_BLOCK_CONTEXT_CHANGED');
+    if (result.error) throw result.error;
+    return result.data;
+  }
+  async function assertAllowed() {
+    const result = await rpc('get_self_finance_block');
+    if (!result || typeof result.blocked !== 'boolean') throw new Error('FINANCE_BLOCK_CHECK_UNAVAILABLE');
+    if (result.blocked) {
+      window.FinanceBlocksUI.show(result.block);
+      const error = new Error('FINANCE_REQUEST_BLOCKED'); error.code = 'FINANCE_REQUEST_BLOCKED'; throw error;
+    }
+  }
+  async function handle(error) {
+    if ([error?.message,error?.code,error?.details].some(value => String(value || '').includes('FINANCE_REQUEST_BLOCKED'))) await assertAllowed();
+    throw error;
+  }
+  window.FinanceBlocksRepository = Object.freeze({
+    context, assertAllowed, handle,
+    list: (affiliateId) => rpc('list_admin_finance_blocks', { p_affiliate_id: affiliateId || null }),
+    save: (values) => rpc('save_admin_finance_block', values),
+    revoke: (id, version, reason) => rpc('revoke_admin_finance_block', { p_id:id, p_version:version, p_reason:reason }),
+  });
+})();
+})();
+/* @@file finance-blocks.jsx */
+(function(){
+/* Focal additions to Finance requests. All text is rendered as React text. */
+(function () {
+  const h=React.createElement;
+  const R=()=>window.FinanceBlocksRepository;
+  const message=error=>({FINANCE_BLOCK_VERSION_CHANGED:'Otro administrador modificó este bloqueo. Recarga la bitácora antes de continuar.',FINANCE_BLOCK_ALREADY_EXISTS_REFRESH:'Este afiliado ya tiene un bloqueo registrado. Recarga para editarlo.',FINANCE_BLOCK_WRITE_DENIED:'Tu cuenta no tiene permiso para modificar bloqueos.',FINANCE_BLOCK_DATES_OR_REASON_INVALID:'Revisa las fechas y escribe una explicación.',FINANCE_BLOCK_CONTEXT_CHANGED:'La sesión cambió. Vuelve a abrir la bitácora.'})[error?.message]||'No se pudo guardar el cambio. Recarga la bitácora e inténtalo de nuevo.';
+  const day=value=>String(value||'').split('-').reverse().join('/');
+  const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Hermosillo'}).format(new Date());
+  const status=row=>row.revoked_at?'Levantado':today()<row.starts_on?'Programado':today()>row.ends_on?'Vencido':'Activo';
+  const box={background:'var(--surface,white)',border:'1px solid #E4D3D9',borderRadius:14,padding:16,marginBottom:12,overflowWrap:'anywhere'};
+  const button={padding:'10px 14px',borderRadius:10,border:'1px solid #D6C8CE',background:'var(--surface,white)',color:'var(--guinda,#791636)',font:'inherit',cursor:'pointer'};
+  const field={display:'block',width:'100%',boxSizing:'border-box',padding:10,border:'1px solid #ccc',borderRadius:8,font:'inherit',marginTop:5};
+  function Explain({block}) { return h('div',{'data-finance-block-explanation':true},h('p',null,'No puedes enviar nuevas solicitudes de préstamos ni financiamiento durante este periodo.'),h('p',null,h('strong',null,'Desde: '),day(block.starts_on),h('br'),h('strong',null,'Hasta: '),day(block.ends_on),' (inclusive, horario de Hermosillo)'),h('p',{style:{whiteSpace:'pre-wrap'}},h('strong',null,'Motivo: '),block.reason)); }
+  let noticeRoot=null,noticeHost=null;
+  function Notice({block,onClose}) {
+    const ref=React.useRef(null);
+    React.useEffect(()=>{ref.current?.focus();const initial=R().context();const clear=()=>{if(R().context()!==initial)onClose();};const a=window.AffiliateAuth?.subscribe(clear),b=window.AdminRepository?.subscribe?.(clear);return()=>{a?.();b?.();};},[]);
+    return h('div',{style:{position:'fixed',inset:0,zIndex:100000,background:'#0008',display:'grid',placeItems:'center',padding:20}},h('section',{role:'dialog','aria-modal':true,'aria-labelledby':'finance-block-notice-title',style:{...box,width:'min(480px,100%)',maxHeight:'85vh',overflow:'auto'},onKeyDown:e=>{if(e.key==='Escape')onClose();if(e.key==='Tab'){e.preventDefault();ref.current?.focus();}}},h('h2',{id:'finance-block-notice-title'},'Solicitudes temporalmente bloqueadas'),h(Explain,{block}),h('button',{ref,style:button,onClick:onClose},'Entendido')));
+  }
+  window.FinanceBlocksUI={show(block){const previous=document.activeElement;const close=()=>{noticeRoot?.unmount();noticeHost?.remove();noticeRoot=null;noticeHost=null;previous?.focus?.();};if(noticeRoot)close();noticeHost=document.createElement('div');document.body.appendChild(noticeHost);noticeRoot=ReactDOM.createRoot(noticeHost);noticeRoot.render(h(Notice,{block,onClose:close}));}};
+  function Editor({row,request,onSaved,onCancel}) {
+    const [start,setStart]=React.useState(row?.starts_on||today()),[end,setEnd]=React.useState(row?.ends_on||today()),[reason,setReason]=React.useState(row?.reason||''),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
+    async function save(e){e.preventDefault();setBusy(true);setError('');try{await R().save({p_request_id:request?.id||null,p_id:row?.id||null,p_version:row?.version||null,p_starts_on:start,p_ends_on:end,p_reason:reason.trim()});onSaved();}catch(e){setError(message(e));}finally{setBusy(false);}}
+    return h('form',{onSubmit:save,'data-finance-block-editor':true},h('p',null,'Aplica a todos los préstamos y financiamientos. Ambas fechas se incluyen.'),h('div',{style:{display:'flex',flexWrap:'wrap',gap:12}},h('label',null,'Fecha de inicio',h('input',{style:field,type:'date',required:true,value:start,onChange:e=>setStart(e.target.value)})),h('label',null,'Fecha de fin',h('input',{style:field,type:'date',required:true,min:start,value:end,onChange:e=>setEnd(e.target.value)}))),h('label',{style:{display:'block',margin:'12px 0'}},'Explicación visible para el afiliado',h('textarea',{style:field,required:true,maxLength:1000,rows:4,value:reason,onChange:e=>setReason(e.target.value)})),error&&h('p',{role:'alert'},error),h('button',{style:button,type:'submit',disabled:busy||!reason.trim()||end<start},busy?'Guardando…':'Guardar bloqueo'),' ',h('button',{style:button,type:'button',disabled:busy,onClick:onCancel},'Cancelar'));
+  }
+  function Records({affiliateId,request,canWrite}) {
+    const [rows,setRows]=React.useState([]),[phase,setPhase]=React.useState('loading'),[error,setError]=React.useState(''),[edit,setEdit]=React.useState(null),[revision,setRevision]=React.useState(0),[revoke,setRevoke]=React.useState(null),[reason,setReason]=React.useState(''),[busy,setBusy]=React.useState(false),[search,setSearch]=React.useState('');
+    const generation=React.useRef(0);
+    React.useEffect(()=>{const seq=++generation.current,initial=R().context();setPhase('loading');setRows([]);setEdit(null);setRevoke(null);setError('');R().list(affiliateId).then(data=>{if(generation.current===seq){if(!Array.isArray(data))throw Error('Respuesta inválida');setRows(data);setPhase('ready');}}).catch(()=>{if(generation.current===seq){setPhase('error');setError('No se pudo consultar la bitácora.');}});const changed=()=>{if(R().context()===initial)return;generation.current++;setRows([]);setEdit(null);setRevoke(null);setPhase('error');setError('La sesión cambió. Vuelve a abrir la bitácora.');};const a=window.AffiliateAuth?.subscribe(changed),b=window.AdminRepository?.subscribe?.(changed);return()=>{generation.current++;a?.();b?.();};},[affiliateId,revision]);
+    const refresh=()=>{setEdit(null);setRevoke(null);setRevision(n=>n+1);};
+    async function lift(){setBusy(true);setError('');try{await R().revoke(revoke.id,revoke.version,reason.trim());refresh();}catch(e){setError(message(e));}finally{setBusy(false);}}
+    if(phase==='loading')return h('p',{role:'status'},'Consultando bloqueos…');
+    if(phase==='error')return h('div',{role:'alert'},error,' ',h('button',{style:button,onClick:refresh},'Reintentar'));
+    return h('div',null,!affiliateId&&h('label',null,'Buscar por nombre o número de control',h('input',{style:{...field,marginBottom:14},value:search,onChange:e=>setSearch(e.target.value)})),error&&h('p',{role:'alert'},error),!rows.length&&h('p',null,'No hay bloqueos registrados.'),request&&canWrite&&!rows.length&&!edit&&h('button',{style:button,onClick:()=>setEdit({create:true})},'Bloquear programas de Finanzas'),edit&&h(Editor,{key:edit.id||'new',row:edit.create?null:edit,request,onSaved:refresh,onCancel:()=>setEdit(null)}),rows.filter(row=>[row.full_name,row.numero_control].join(' ').toLowerCase().includes(search.toLowerCase())).map(row=>h('article',{key:row.id,style:box,'data-finance-block-id':row.id},h('strong',null,row.full_name,' · Control ',row.numero_control),h('p',null,h('strong',null,status(row)),' · ',day(row.starts_on),' — ',day(row.ends_on)),h('p',{style:{whiteSpace:'pre-wrap'}},row.reason),canWrite&&h('div',null,h('button',{style:button,onClick:()=>setEdit(row)},row.revoked_at?'Programar nuevo bloqueo':'Editar bloqueo'),' ',!row.revoked_at&&h('button',{style:button,onClick:()=>{setReason('');setRevoke(row);}},'Levantar bloqueo')),revoke?.id===row.id&&h('div',null,h('label',null,'Motivo para levantar el bloqueo',h('textarea',{style:field,value:reason,maxLength:1000,onChange:e=>setReason(e.target.value)})),h('button',{style:button,disabled:busy||!reason.trim(),onClick:lift},busy?'Guardando…':'Confirmar desbloqueo'),' ',h('button',{style:button,disabled:busy,onClick:()=>setRevoke(null)},'Cancelar')),h('details',{style:{marginTop:12}},h('summary',null,'Historial de cambios'),(row.events||[]).map(event=>h('div',{key:event.id,style:{borderTop:'1px solid #eee',padding:'10px 0'}},h('strong',null,({CREATE:'Creado',EDIT:'Editado',REVOKE:'Levantado'})[event.action]),' · ',new Date(event.created_at).toLocaleString('es-MX',{timeZone:'America/Hermosillo'}),h('p',null,event.reason),h('small',null,'Administrador: ',event.actor_auth_user_id),event.after&&h('p',null,'Vigencia registrada: ',day(event.after.starts_on),' — ',day(event.after.ends_on))))))));
+  }
+  window.FinanceBlockRequestControl=function({app,request}){return h('section',{className:'finwb-card','data-finance-block-control':true},h('h3',null,'Bloqueo de programas de Finanzas'),h(Records,{key:request.affiliate_id,affiliateId:request.affiliate_id,request,canWrite:app.admin.has('program_requests.write')}));};
+  window.FinanceBlocksModule=function({app,header,onBack}){return h('div',{'data-admin-view':'finance_blocks'},header?header({title:'Bitácora de bloqueos',sub:'Préstamos y financiamientos · vigencia y explicación',onBack}):h('button',{onClick:onBack},'Volver'),h('div',{style:{padding:20}},h(Records,{canWrite:app.admin.has('program_requests.write')})));};
+})();
+})();
 /* @@file sutifinanzas-repository.js */
 (function(){
 (function(){
@@ -15348,13 +15420,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function create(values){
     const v=values||{};
+    if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();
     const r=await db().rpc('create_program_request_with_documents',{
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
-    if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);
+    if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)throw r.error;await refreshRequest(r.data.id);return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');await window.FinanceBlocksRepository.assertAllowed();const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -49018,7 +49091,10 @@ Object.assign(window, {
         }
       }, 'Continuar con nueva solicitud')), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
         className: 'finwb-detail-column finwb-detail-context'
-      }, h('div', {
+      }, h(window.FinanceBlockRequestControl, {
+        app,
+        request: detail
+      }), h('div', {
         className: 'finwb-card finwb-card-group'
       }, h('section', {
         className: 'finwb-card',
@@ -68757,22 +68833,6 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       isolatedTest: 'scripts/test-sutifinanzas.js'
     }
   }, {
-    id: 'sicof',
-    label: 'Sicof',
-    icon: 'trending',
-    desc: 'Rendimientos, periodos y comportamiento de pagos',
-    ready: true,
-    registration: {
-      version: '20261003000200',
-      totalOnly: false,
-      boundary: 'SICOF authenticated simulation and canonical savings reports; no financial posting',
-      readPermissions: ['savings.read', 'savings.reports'],
-      writePermissions: ['savings.config'],
-      sections: [],
-      backendEvidence: 'supabase/migrations/20261003000200_sicof_workspace.sql',
-      isolatedTest: 'scripts/test-sicof-workspace.js'
-    }
-  }, {
     id: 'document_generation',
     label: 'Documentos y Firmas',
     icon: 'doc',
@@ -68850,6 +68910,29 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     icon: 'finance',
     desc: 'Solicitudes de financiamiento',
     classification: 'PRODUCTIVE_HYBRID'
+  }, {
+    id: 'finance_blocks',
+    accessModule: 'finanzas',
+    label: 'Bitácora de bloqueos',
+    icon: 'lock',
+    desc: 'Vigencia, explicación y desbloqueo de programas financieros',
+    ready: true
+  }, {
+    id: 'sicof',
+    label: 'Sicof',
+    icon: 'trending',
+    desc: 'Rendimientos, periodos y comportamiento de pagos',
+    ready: true,
+    registration: {
+      version: '20261003000200',
+      totalOnly: false,
+      boundary: 'SICOF authenticated simulation and canonical savings reports; no financial posting',
+      readPermissions: ['savings.read', 'savings.reports'],
+      writePermissions: ['savings.config'],
+      sections: [],
+      backendEvidence: 'supabase/migrations/20261003000200_sicof_workspace.sql',
+      isolatedTest: 'scripts/test-sicof-workspace.js'
+    }
   }, {
     id: 'savings',
     label: 'Ahorro',
@@ -69010,6 +69093,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    finance_blocks: 'program_requests.read',
     sutifinanzas: 'program_requests.read',
     sicof: 'savings.read',
     farma: 'program_catalog.read',
@@ -69085,7 +69169,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     id: 'finance',
     label: 'Finanzas',
     icon: 'finance',
-    modules: ['finanzas', 'sicof', 'fondos', 'flujos', 'inversion']
+    modules: ['finanzas', 'finance_blocks', 'sicof', 'fondos', 'flujos', 'inversion']
   }, {
     id: 'savings',
     label: 'Ahorro',
@@ -69131,14 +69215,15 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     const sectionOnly = (assignment.permissions || []).length === 0 && sectionActions.length > 0;
     const candidates = MODULES;
     const stateFor = m => {
-      let permission = MODULE_PERMISSION[m.id];
+      const accessModule = m.accessModule || m.id;
+      let permission = MODULE_PERMISSION[accessModule];
       if (m.id === 'education' && sectionOnly) permission = app.admin.has('education.read') ? 'education.read' : 'tutorials.read';
       if (m.id === 'convenios' && sectionOnly) permission = 'agreements.read';
       const sectionKeys = [].concat(SECTION_MODULE[m.id] || []);
       const sectionAccess = sectionKeys.some(key => sectionActions.some(entry => entry.section_key === key));
       const sectionExport = m.id === 'data_exports' && sectionActions.some(x => x.action === 'export');
       const productive = m.ready || String(m.classification || '').startsWith('PRODUCTIVE_');
-      const canView = m.id === 'document_generation' ? app.admin.has(permission) : Array.isArray(assignment.moduleKeys) ? assignment.moduleKeys.includes(m.id) : sectionExport || sectionAccess || (permission ? app.admin.has(permission) : productive);
+      const canView = m.id === 'document_generation' ? app.admin.has(permission) : Array.isArray(assignment.moduleKeys) ? assignment.moduleKeys.includes(accessModule) : sectionExport || sectionAccess || (permission ? app.admin.has(permission) : productive);
       const usable = productive && canView;
       const desktopCanView = canView;
       const desktopUsable = productive && desktopCanView;
@@ -71164,6 +71249,10 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       header: headerFn,
       initialAffiliateId: affiliateContext && affiliateContext.affiliateId
     });else if (view === 'sutifinanzas') body = React.createElement(window.SutifinanzasAdminModule, {
+      app,
+      onBack: () => setView('menu'),
+      header: headerFn
+    });else if (view === 'finance_blocks') body = React.createElement(window.FinanceBlocksModule, {
       app,
       onBack: () => setView('menu'),
       header: headerFn

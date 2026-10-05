@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "finance-blocks-repository.js",
+    "finance-blocks.jsx",
+    "program-request-repository.js",
+    "screens-admin-finanzas.jsx",
+    "screens-admin.jsx"
+  ],
+  "unrelatedChunksIdentical": true,
+  "workerLogicIdentical": true,
+  "bundleVersion": 2026100407,
+  "workerVersion": 2026100407,
+  "repoVersion": 2026100407,
+  "bundleSha256": "b32906cbe1a6fa9ecf15c51eeb41d29e022a58cdeb9e26f4ffe59f120e257fc6",
+  "productionPublished": false
+}

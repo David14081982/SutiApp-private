@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "migration": "20261004000300",
+  "forwardSha256": "c3c971b1ff66d7ef200f8cd2ba3f8076823fd053a780d300358e8ca97c0d15d2",
+  "receipt": [
+    {
+      "receipt": {
+        "business_writes": 0,
+        "preserved_tables": 8,
+        "existing_functions_preserved": 484
+      }
+    }
+  ],
+  "rlsAclVerified": true,
+  "newBlocks": 0,
+  "newEvents": 0,
+  "existingBusinessWrites": 0
+}

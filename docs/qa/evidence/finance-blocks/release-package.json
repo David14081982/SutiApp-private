@@ -1,0 +1,126 @@
+{
+  "status": "PASS",
+  "preparedAt": "2026-10-05T04:01:42.369Z",
+  "baselineCommit": "4f01f0a3795412a9d41d3341289ef639855dbb66",
+  "baselineChunks": 154,
+  "candidateChunks": 156,
+  "preservedPublishedChunks": 151,
+  "changedChunks": [
+    "program-request-repository.js",
+    "screens-admin-finanzas.jsx",
+    "screens-admin.jsx"
+  ],
+  "addedChunks": [
+    "finance-blocks-repository.js",
+    "finance-blocks.jsx"
+  ],
+  "sourceChecks": [
+    {
+      "file": "app/program-request-repository.js",
+      "baselineSha256": "f0481190ac0eb9d398104c21f69fdb9e394f404e799e6bf8b8a80f5ee8ee9416",
+      "candidateSha256": "00740a652511f0814e30425a1e20f8230c0579bc4ce4fcaf735f1394418f4aeb"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "baselineSha256": "a2d0c79a87985f9a1cfad356180d16c72be1eeac8c236723203056f7ab2b6988",
+      "candidateSha256": "afe7fd1c12d636df7ce87cf2a64232fc59765068af3e015054419d963b468f02"
+    },
+    {
+      "file": "app/screens-admin.jsx",
+      "baselineSha256": "855b961cc9a6fa6008c8141988344a8023fa1b8240fea85ec87f0969e3dd9a23",
+      "candidateSha256": "dbb0cefba901fad0951f40b3b991102019e748fd3372d37088e8ae9221a24138"
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "baselineSha256": "c83b50593c63831fc21c25783877d24315ce636651e99f8cc32eeaaa7305377f",
+      "candidateSha256": "065de271aef4f4cf075a8c4a06175b9b798daeecefd98415ebac5586b0382666"
+    }
+  ],
+  "sourceCompiler": {
+    "program-request-repository.js": false,
+    "screens-admin-finanzas.jsx": true,
+    "screens-admin.jsx": true
+  },
+  "baselineBundleSha256": "312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76",
+  "bundleSha256": "4b9fd3501bd8b2c4ce092d2c7c7f696f2cbb6281af7c03da3f356eb226f9951d",
+  "bundleVersion": 2026100407,
+  "workerVersion": 2026100407,
+  "financialRepositoryVersion": 2026100407,
+  "workerLogicIdentical": true,
+  "htmlLogicIdentical": true,
+  "publishedContentPreserved": true,
+  "sourceBuilderPreservesRemoteEntries": true,
+  "governance": [
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "headings": [
+        "## H-FINANCE-BLOCKS-001 — candidato local, sin aplicar"
+      ],
+      "publishedContentPreserved": true
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "headings": [
+        "## H-FINANCE-BLOCKS-001 — alcance solicitado, 2026-10-04"
+      ],
+      "publishedContentPreserved": true
+    },
+    {
+      "file": "docs/INVARIANTS.md",
+      "headings": [
+        "## H-FINANCE-BLOCKS-001 — contrato del candidato local"
+      ],
+      "publishedContentPreserved": true
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "headings": [
+        "## H-FINANCE-BLOCKS-001 — candidato local, 2026-10-04"
+      ],
+      "publishedContentPreserved": true
+    }
+  ],
+  "files": [
+    "app/program-request-repository.js",
+    "app/screens-admin-finanzas.jsx",
+    "app/screens-admin.jsx",
+    "app/financial-legacy-repository.js",
+    "app/finance-blocks-repository.js",
+    "app/finance-blocks.jsx",
+    "scripts/screen-permission-contract.js",
+    "scripts/build-bundle.js",
+    "app/bundle.js",
+    "SutiApp.html",
+    "sw.js",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/DECISIONS.md",
+    "docs/INVARIANTS.md",
+    "docs/AGENT_CHANGELOG.md",
+    "scripts/package-finance-blocks.js",
+    "scripts/build-finance-blocks.js",
+    "scripts/inspect-finance-blocks.js",
+    "scripts/test-finance-blocks.js",
+    "scripts/test-finance-blocks-browser.js",
+    "scripts/test-finance-blocks-integration.js",
+    "scripts/test-finance-blocks-permissions.js",
+    "scripts/test-finance-blocks-read-boundary.js",
+    "supabase/migrations/20261004000300_finance_blocks.sql",
+    "supabase/recovery/20261004000300_finance_blocks.sql",
+    "docs/audits/H-FINANCE-BLOCKS-001.md",
+    "docs/qa/evidence/finance-blocks/browser.json",
+    "docs/qa/evidence/finance-blocks/build.json",
+    "docs/qa/evidence/finance-blocks/global-local-final.txt",
+    "docs/qa/evidence/finance-blocks/global-local-retry.txt",
+    "docs/qa/evidence/finance-blocks/global-local.json",
+    "docs/qa/evidence/finance-blocks/global-production-retry.txt",
+    "docs/qa/evidence/finance-blocks/global-production.json",
+    "docs/qa/evidence/finance-blocks/integration/browser-result.json",
+    "docs/qa/evidence/finance-blocks/integration/queue-1440.png",
+    "docs/qa/evidence/finance-blocks/integration/queue-320.png",
+    "docs/qa/evidence/finance-blocks/integration/queue-390.png",
+    "docs/qa/evidence/finance-blocks/integration/queue-768.png",
+    "docs/qa/evidence/finance-blocks/sql.json"
+  ],
+  "businessWrites": 0,
+  "published": false
+}

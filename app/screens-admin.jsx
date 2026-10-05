@@ -30,7 +30,6 @@
   // H-SICOF-001 integration: existing session and backend module boundary.
   const MODULES = [
     {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',desc:'Gasto por Secretaría · consulta de Google Sheets',ready:true,registration:{version:'20261004000200',totalOnly:false,boundary:'Google Sheets direct read-only Gasto por secretaría; no financial persistence',readPermissions:['program_requests.read'],writePermissions:[],sections:[],backendEvidence:'supabase/functions/sutifinanzas/report.mjs',isolatedTest:'scripts/test-sutifinanzas.js'}},
-    { id:'sicof',label:'Sicof',icon:'trending',desc:'Rendimientos, periodos y comportamiento de pagos',ready:true,registration:{version:'20261003000200',totalOnly:false,boundary:'SICOF authenticated simulation and canonical savings reports; no financial posting',readPermissions:['savings.read','savings.reports'],writePermissions:['savings.config'],sections:[],backendEvidence:'supabase/migrations/20261003000200_sicof_workspace.sql',isolatedTest:'scripts/test-sicof-workspace.js'} },
     { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
     { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
@@ -44,6 +43,8 @@
     { id: 'sindicato', label: 'Tu Sindicato', icon: 'fist', desc: 'Contenido de las 9 pantallas', classification: 'PRODUCTIVE_SUPABASE' },
     { id: 'requests', label: 'Solicitudes', icon: 'receipt', desc: 'Trámites de programas y productos', ready: true },
     { id: 'finanzas', label: 'Finanzas · Solicitudes', icon: 'finance', desc: 'Solicitudes de financiamiento', classification: 'PRODUCTIVE_HYBRID' },
+    { id:'finance_blocks', accessModule:'finanzas', label:'Bitácora de bloqueos', icon:'lock', desc:'Vigencia, explicación y desbloqueo de programas financieros', ready:true },
+    { id:'sicof',label:'Sicof',icon:'trending',desc:'Rendimientos, periodos y comportamiento de pagos',ready:true,registration:{version:'20261003000200',totalOnly:false,boundary:'SICOF authenticated simulation and canonical savings reports; no financial posting',readPermissions:['savings.read','savings.reports'],writePermissions:['savings.config'],sections:[],backendEvidence:'supabase/migrations/20261003000200_sicof_workspace.sql',isolatedTest:'scripts/test-sicof-workspace.js'} },
     { id: 'savings', label: 'Ahorro', icon: 'piggy', desc: 'Ahorradores, aportaciones, retiros y aperturas', classification: 'PRODUCTIVE_SHADOW' },
     { id: 'fondos', label: 'Fondos y reglas', icon: 'finance', desc: 'Visibilidad SutiApp por criterio', classification: 'PRODUCTIVE_GOOGLE_CONTROLLED' },
     { id: 'fincat', label: 'Catálogo de Finanzas', icon: 'wallet', desc: 'Secciones y productos de Finanzas', classification: 'PRODUCTIVE_HYBRID' },
@@ -75,6 +76,7 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    finance_blocks:'program_requests.read',
     sutifinanzas:'program_requests.read',
     sicof:'savings.read',
     farma:'program_catalog.read',document_generation:'document_generation.config.read',login_history:'authorization.read',
@@ -87,7 +89,7 @@
     {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',modules:['sutifinanzas']},
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin','document_generation'] },
-    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','sicof','fondos','flujos','inversion'] },
+    { id:'finance', label:'Finanzas', icon:'finance', modules:['finanzas','finance_blocks','sicof','fondos','flujos','inversion'] },
     { id:'savings', label:'Ahorro', icon:'piggy', modules:['savings','farma','program_products','fincat','membresias'] },
     { id:'commerce', label:'Empresas y convenios', icon:'handshake', modules:['marketplace','convenios','aprobaciones','planes','companies_admin'] },
     { id:'content', label:'Contenido', icon:'news', modules:['votaciones','votaciones_nominal','sindicato','noticias','education','banners','popups','minutes_admin','programs_admin'] },
@@ -102,14 +104,15 @@
     const sectionOnly=(assignment.permissions||[]).length===0&&sectionActions.length>0;
     const candidates=MODULES;
     const stateFor=(m)=>{
-      let permission=MODULE_PERMISSION[m.id];
+      const accessModule=m.accessModule||m.id;
+      let permission=MODULE_PERMISSION[accessModule];
       if(m.id==='education'&&sectionOnly)permission=app.admin.has('education.read')?'education.read':'tutorials.read';
       if(m.id==='convenios'&&sectionOnly)permission='agreements.read';
       const sectionKeys=[].concat(SECTION_MODULE[m.id]||[]);
       const sectionAccess=sectionKeys.some((key)=>sectionActions.some((entry)=>entry.section_key===key));
       const sectionExport=m.id==='data_exports'&&sectionActions.some((x)=>x.action==='export');
       const productive=m.ready||String(m.classification||'').startsWith('PRODUCTIVE_');
-      const canView=m.id==='document_generation'?app.admin.has(permission):Array.isArray(assignment.moduleKeys)?assignment.moduleKeys.includes(m.id):sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
+      const canView=m.id==='document_generation'?app.admin.has(permission):Array.isArray(assignment.moduleKeys)?assignment.moduleKeys.includes(accessModule):sectionExport||sectionAccess||(permission?app.admin.has(permission):productive);
       const usable=productive&&canView;
       const desktopCanView=canView;
       const desktopUsable=productive&&desktopCanView;
@@ -540,6 +543,7 @@
     else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='sutifinanzas')body=React.createElement(window.SutifinanzasAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='finance_blocks')body=React.createElement(window.FinanceBlocksModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sicof')body=React.createElement(window.SicofAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='fondos')body=React.createElement(window.FondosModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='aprobaciones')body=React.createElement(ApprovalsModule,{app,onBack:()=>setView('menu'),header:headerFn});

@@ -872,3 +872,20 @@ Owner supplied a new credential belonging to separate project sutifinanzas-repor
 
 ### SUTIFINANZAS pivot expense type (2026-10-04)
 Expense-type authority is exact header TIPO DE GASTOS in the existing Gasto por secretaria tab (accented tab name in code). Configurable grouping and period columns are derived in memory from the one authorized Sheets response; no new source, storage or fallback. A?O remains year-filter authority, while monthly columns retain actual FECHA DEL GASTO calendar year/month.
+
+## H-FINANCE-BLOCKS-001 — candidato local, sin aplicar
+
+Restricciones temporales administrativas: `finance_blocks` será la única autoridad,
+con FK al afiliado canónico y `numero_control` TEXT exacto conservado como vínculo
+de negocio/evidencia; no crea otro padrón ni depende de email/Auth. `finance_block_events`
+preserva cada alta, edición y revocación, con actor real y estados anterior/posterior.
+Lectores/escritores administrativos: RPC con permisos y boundary del módulo Finanzas.
+Autoservicio consulta solo su restricción vigente; el trigger canónico protege nuevas
+solicitudes de préstamos/programas/membresías/procesamiento financiero. Sin almacenamiento
+local, copia Google, fallback o modificación de saldos. Fechas inclusivas America/Hermosillo.
+El esquema es candidato; no se afirma que esta autoridad ya esté instalada en producción.
+Evidencia: [H-FINANCE-BLOCKS-001](audits/H-FINANCE-BLOCKS-001.md).
+
+## H-FINANCE-BLOCKS-001 — activación autorizada del backend
+
+El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.

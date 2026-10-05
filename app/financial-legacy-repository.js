@@ -77,13 +77,17 @@
     return failure;
   }
   async function invoke(payload, options) {
+    if (['loanSessionConfirm','programPaymentSessionConfirm'].includes(payload.action)) await window.FinanceBlocksRepository.assertAllowed();
     const client = window.SutiSupabase && window.SutiSupabase.getClient();
     if (!client) throw new Error('SUPABASE_NOT_CONFIGURED');
     const signal = options && options.signal;
     if (signal && signal.aborted) throw abortedInvocation();
     const { data, error } = await client.functions.invoke('financial-legacy', { body: payload, signal });
     if (signal && signal.aborted) throw abortedInvocation();
-    if (error) await throwInvocationError(error, data, 'FINANCIAL_LEGACY_UNAVAILABLE');
+    if (error) {
+      if (['loanSessionConfirm','programPaymentSessionConfirm'].includes(payload.action)) await window.FinanceBlocksRepository.assertAllowed();
+      await throwInvocationError(error, data, 'FINANCIAL_LEGACY_UNAVAILABLE');
+    }
     if (!data || !data.data) throw new Error('FINANCIAL_LEGACY_INVALID_RESPONSE');
     if (['loanSessionConfirm','programPaymentSessionConfirm','approve','handoff'].includes(payload.action)) window.dispatchEvent(new Event('suti:request-changed'));
     return data.data;

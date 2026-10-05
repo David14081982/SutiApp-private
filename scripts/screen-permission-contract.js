@@ -28,7 +28,13 @@ function inspect(inventory,metadata,surfaces){
  for(const m of inventory.modules){
   error(Boolean(inventory.permissions[m.id]),'MISSING_MENU_PERMISSION:'+m.id);
   error(inventory.groups.filter(g=>g.modules.includes(m.id)).length===1,'MISSING_OR_DUPLICATE_SIDEBAR_GROUP:'+m.id);
-  const row=catalog.find(s=>s.module_key===m.id);
+  // Subviews inherit one real backend module; they cannot create permission authority.
+  if(m.accessModule){
+   const parent=inventory.modules.find(p=>p.id===m.accessModule);
+   error(Boolean(parent)&&parent.id!==m.id&&!parent.accessModule,'INVALID_ACCESS_MODULE:'+m.id);
+   error(inventory.permissions[m.id]===inventory.permissions[m.accessModule],'ACCESS_MODULE_PERMISSION_MISMATCH:'+m.id);
+  }
+  const row=catalog.find(s=>s.module_key===(m.accessModule||m.id));
   error(Boolean(row),'MISSING_BACKEND_REGISTRATION:'+m.id);
   if(row)error(row.enforcement_status==='ENFORCED','MODULE_NOT_ENFORCED:'+m.id);
  }
@@ -49,8 +55,8 @@ function inspect(inventory,metadata,surfaces){
  for(const key of Object.keys(surfaces.company))error(inventory.companyRoutes.includes(key),'STALE_COMPANY_ROUTE:'+key);
  const visible=metadata.functions.find(f=>f.schema==='admin_support_private'&&f.name==='module_visible');
  const visibilityKeys=visible?[...visible.definition.matchAll(/\('([a-z_]+)','[^']+',array/g)].map(m=>m[1]):[];
- for(const id of modules.filter(id=>!visibilityKeys.includes(id)))error((surfaces.knownAssistedVisibilityGaps||[]).includes(id),'MISSING_ASSISTED_VISIBILITY:'+id);
- return {status:errors.length?'FAIL':'PASS',meaning:'Structural coverage only, not certification of independent backend authorization',errors,counts:{adminMenu:modules.length,backendCatalog:keys.length,affiliateRoutes:inventory.routes.length,unionScreens:inventory.union.length,companyViews:inventory.companyRoutes.length},assistedVisibilityMissing:modules.filter(id=>!visibilityKeys.includes(id)),audienceSelectorMissing:inventory.routes.filter(id=>!(inventory.audienceScreens||[]).includes(id)),companyIndividualScreenDelegation:false};
+ for(const m of inventory.modules.filter(m=>!visibilityKeys.includes(m.accessModule||m.id)))error((surfaces.knownAssistedVisibilityGaps||[]).includes(m.id),'MISSING_ASSISTED_VISIBILITY:'+m.id);
+ return {status:errors.length?'FAIL':'PASS',meaning:'Structural coverage only, not certification of independent backend authorization',errors,counts:{adminMenu:modules.length,backendCatalog:keys.length,affiliateRoutes:inventory.routes.length,unionScreens:inventory.union.length,companyViews:inventory.companyRoutes.length},assistedVisibilityMissing:inventory.modules.filter(m=>!visibilityKeys.includes(m.accessModule||m.id)).map(m=>m.id),audienceSelectorMissing:inventory.routes.filter(id=>!(inventory.audienceScreens||[]).includes(id)),companyIndividualScreenDelegation:false};
 }
 function check(){
  const metadata=JSON.parse(read('docs/qa/evidence/screen-permissions-20260924/production-metadata.json'));

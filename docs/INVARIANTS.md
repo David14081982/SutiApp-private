@@ -419,3 +419,18 @@ Never substitute live bank profile values or copy these identifiers into list me
 A documentary revision must preserve original event, identity, authorized financial
 values, historical signers and the old PDF. New revision ID is idempotent; stale-parent
 revision is rejected. The revision never invokes any financial writer or Google.
+
+## H-FINANCE-BLOCKS-001 — contrato del candidato local
+
+- Una restricción administrativa no cambia saldos, cálculos, préstamos existentes,
+  solicitudes previas, pagos, Google ni retiros de Ahorro.
+- FK al afiliado y numero_control TEXT exacto; email o Auth no son identidad del bloqueo.
+- Inicio/fin inclusivos se evalúan en servidor (America/Hermosillo); vigencia futura
+  o expirada no impide solicitar, revocación habilita inmediatamente nuevas solicitudes.
+- Cada edición/revocación preserva historia y actor real; versiones evitan sobrescrituras.
+- UI no autoriza: el trigger de inserción y las RPC con permisos son obligatorios.
+- Error al consultar restricciones no habilita un envío ni crea una autoridad alternativa.
+
+## H-FINANCE-BLOCKS-001 — activación autorizada del backend
+
+El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.

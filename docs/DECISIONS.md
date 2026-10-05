@@ -1368,3 +1368,20 @@ Owner supplied a new credential belonging to separate project sutifinanzas-repor
 
 ### H-SUTIFINANZAS-PIVOT-002 user-directed UI
 Owner explicitly requests inline expandable pivot-table hierarchy matching supplied reference, with interactive row-field order including TIPO DE GASTOS. This authorizes replacing the sequential drill list within the existing report. Other controls and data authority remain intact. Row fields are configurable; amounts remain the aggregated measure and are never duplicated as grouping values.
+
+## H-FINANCE-BLOCKS-001 — alcance solicitado, 2026-10-04
+
+El propietario solicita bloquear desde el detalle de Finanzas Solicitudes, aplicar
+la restricción a programas financieros, definir inicio y fin, mostrar ambas fechas
+y explicación al afiliado, y administrar/levantar bloqueos desde una bitácora debajo
+de Solicitudes y encima de SICOF. Vínculo al registro del afiliado por número de control.
+Implementación candidata: FK estable y número TEXT sin cambiar maestro ni exigir Auth;
+fechas inclusivas America/Hermosillo; nueva solicitud protegida en backend, historial
+administrativo preservado. La bitácora hereda permisos del módulo Finanzas existente.
+Consultas, pagos, retiros de Ahorro y solicitudes previas no cambian. Se pidió aclaración
+opcional sobre solicitudes de Ahorro; el candidato no las incluye. No se atribuye al
+propietario autorización de rechazar/cancelar solicitudes ya existentes ni publicación.
+
+## H-FINANCE-BLOCKS-001 — activación autorizada del backend
+
+El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.

@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "create from request; dates/reason/raw control; edit; lift and retained history",
+    "history header preserves return navigation",
+    "history search and read-only administrator",
+    "self denial shows inclusive dates and escaped note; mobile modal fits and closes",
+    "immediate subscriptions preserve UI; identity change clears private records"
+  ],
+  "productionTouched": false
+}

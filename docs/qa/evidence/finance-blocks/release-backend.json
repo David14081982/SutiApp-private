@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "migration": "20261004000300",
+  "rlsAclVerified": true,
+  "triggerEnabled": true,
+  "blocks": 0,
+  "events": 0,
+  "functions": [
+    {
+      "name": "enforce_finance_request_block",
+      "hash": "8a9d85a56d462622e8ec69a37422ccdb"
+    },
+    {
+      "name": "get_self_finance_block",
+      "hash": "a3cbd8d5f9aec82f7488b1243af3f791"
+    },
+    {
+      "name": "list_admin_finance_blocks",
+      "hash": "b691e5c4cf2a4ef471c51c12f0b9285f"
+    },
+    {
+      "name": "revoke_admin_finance_block",
+      "hash": "11de3b04e285cdf4f349a3376605eee6"
+    },
+    {
+      "name": "save_admin_finance_block",
+      "hash": "0ed8cf984b6b668ed7e7bee25950abac"
+    }
+  ],
+  "businessWrites": 0
+}

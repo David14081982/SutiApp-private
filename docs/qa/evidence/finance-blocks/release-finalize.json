@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-05T04:01:43.517Z",
+  "copied": [
+    "scripts/package-finance-blocks.js",
+    "scripts/release-finance-blocks.js",
+    "scripts/verify-finance-blocks-live.js",
+    "docs/qa/evidence/finance-blocks/release-apply.json",
+    "docs/qa/evidence/finance-blocks/release-backend.json",
+    "docs/qa/evidence/finance-blocks/release-finalize.json",
+    "docs/qa/evidence/finance-blocks/release-integration.json",
+    "docs/qa/evidence/finance-blocks/release-live-candidate-ui-preflight-2.json",
+    "docs/qa/evidence/finance-blocks/release-live-candidate-ui-preflight.json",
+    "docs/qa/evidence/finance-blocks/release-package.json",
+    "docs/qa/evidence/finance-blocks/release-prepare.json"
+  ],
+  "backendApplied": true,
+  "businessWrites": 0,
+  "frontendPublished": false,
+  "unrelatedGovernancePreserved": true
+}

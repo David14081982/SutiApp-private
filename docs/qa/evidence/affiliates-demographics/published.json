@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "checkedAt": "2026-10-05T07:57:03.333Z",
+  "checks": [
+    "Published HTML, bundle hash and service worker version match release",
+    "Authenticated edit/create show exact choices and children count; retired controls absent; cancel without writes",
+    "Mobile layout and authenticated refresh retain published fields and version"
+  ],
+  "businessWrites": 0,
+  "realDataScreenshots": false,
+  "bundleSha256": "50091a56556ea8cae1318a90fd23bb1ee62de5cf805a7f4f5536136d7a348bd5",
+  "version": 2026100410,
+  "pageErrors": [],
+  "affiliateMutationRequests": 0
+}

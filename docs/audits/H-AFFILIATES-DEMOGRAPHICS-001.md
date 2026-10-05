@@ -130,3 +130,48 @@ release-browser/browser.json y release-regression/browser-result.json PASS. Sin
 datos/env privados en staging, ni cambios de backend. Revisión de paquete: APPROVED
 para publicar por workflow existente. La comprobación online queda pendiente del
 despliegue; se registrará por separado sin presentar preparación como publicación.
+
+## Publicación final — PASS / CLOSED
+
+Commit funcional `97bdfa2ba1793a9f2e7974dbfd9f41e516d1a652`, push fast-forward
+a main desde checkout aislado. GitHub Pages run `37280400432` terminó SUCCESS,
+incluidos contratos Auth, solicitudes, build y comprobación productiva de solicitudes.
+Destino: https://sutiapp.com/ . Versión bundle/SW: 2026100410.
+
+`node scripts/verify-affiliates-demographics-live.js https://sutiapp.com/`: PASS.
+Bundle servido con SHA exacto `50091a56556ea8cae1318a90fd23bb1ee62de5cf805a7f4f5536136d7a348bd5`;
+sesión administrativa real verifica opciones exactas en alta/edición, Número de hijos,
+ausencia de campos retirados, vista móvil y recarga autenticada. Cero requests de
+mutación de afiliados, cero errores JS, sin capturas ni respuestas con PII. El primer
+intento del verificador esperaba el menú después de refresh: la app correctamente
+conserva la ruta de Afiliados. Se corrigió sólo esa expectativa y la verificación pasó.
+
+H-AFFILIATES-DEMOGRAPHICS-001 RESULT
+Status: PASS — publicado y verificado.
+Files changed: scope focal del commit funcional y verificador/evidencia de cierre.
+Source-of-truth verdict: PASS — mismo public.affiliates y RPC existentes.
+Invariant verdict: PASS — históricos, identidad, permisos, auditoría y cero/NULL conservados.
+Build: PASS local/Pages; 155 chunks remotos ajenos conservados.
+Tests: PASS focal aislado y online; fallo estático financiero preexistente documentado.
+Security: PASS para alcance; cero mutaciones reales y cero secretos publicados.
+Legacy impact: NOT APPLICABLE — sin cambios financieros/Google.
+Unexpected files changed: ninguno en paquete; otros trabajos del workspace conservados.
+Known limitations: no se hicieron escrituras sintéticas en producción; persistencia probada
+aisladamente con los writers exactos instalados. Registry sigue STALE documentado.
+Evidence: published.json, release-package.json, release-browser/browser.json,
+release-regression/browser-result.json, pages-build.json y GitHub Actions run 37280400432.
+
+SUTIAPP ARCHITECT REVIEW — publicación
+Task: H-AFFILIATES-DEMOGRAPHICS-001.
+Verdict: APPROVED.
+Critical findings: ninguno; la limitación «sin publicar» del cierre local queda resuelta.
+Source of truth / Architecture / Security / Data: PASS dentro del alcance evidenciado.
+Legacy: NOT APPLICABLE.
+Owner decision: NO.
+Next action: entregar enlace público y commit; no iniciar otra H.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX — cierre publicado
+
+Aprobar y cerrar la publicación verificada de H-AFFILIATES-DEMOGRAPHICS-001.
+Informar commit y enlace. Preservar workspace y no avanzar la cola financiera.

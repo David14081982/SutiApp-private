@@ -24,7 +24,7 @@ async function main(){
   await page.goto(target,{waitUntil:'domcontentloaded'});
   await page.locator('input[type=email]').fill(env.H005_TEST_EMAIL);await page.locator('input[type=password]').fill(env.H005_TEST_PASSWORD);await page.locator('button[type=submit]').click();
   await page.waitForFunction(()=>window.AffiliateAuth?.getState().phase==='authenticated',null,{timeout:45000});
-  const open=async()=>{const admin=page.getByRole('button',{name:'Admin',exact:true});if(await admin.count())await admin.evaluate(e=>e.click());await page.locator('[data-admin-module="affiliates"]').click();await page.locator('[data-admin-affiliate-detail]').waitFor();};
+  const open=async()=>{const admin=page.getByRole('button',{name:'Admin',exact:true});if(await admin.count())await admin.evaluate(e=>e.click());await page.waitForFunction(()=>document.querySelector('[data-admin-module="affiliates"], [data-admin-affiliate-detail]'));const entry=page.locator('[data-admin-module="affiliates"]');if(await entry.count())await entry.click();await page.locator('[data-admin-affiliate-detail]').waitFor();};
   await open();
   const controls=async container=>{
    for(const [label,values] of [['Género',['','Masculino','Femenino']],['Estado civil',['','Soltero(a)','Casado(a)','Unión Libre','Viudo(a)']]]){

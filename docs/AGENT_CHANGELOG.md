@@ -4110,3 +4110,9 @@ focal PASS. Un chunk de bundle cambiado, 153 preservados; SW sólo cachebusters.
 Test estático financiero antiguo falla también con baseline; documentado, no alterado.
 Sin DDL/DML productivo, sin publicación frontend. Revisión APPROVED para alcance local.
 [Auditoría y cierre](audits/H-AFFILIATES-DEMOGRAPHICS-001.md).
+
+Actualización: propietario autorizó commit/push/publicación. Commit 97bdfa2 en main;
+Pages run 37280400432 SUCCESS, https://sutiapp.com/ v2026100410. Paquete sobre main
+remoto conservó 155 chunks ajenos. Navegador productivo autenticado PASS en alta,
+edición, móvil y refresh; hash publicado exacto, cero mutaciones de afiliados reales.
+Revisión final APPROVED / CLOSED. Evidencia: affiliates-demographics/published.json.

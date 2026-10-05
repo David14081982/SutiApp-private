@@ -1,0 +1,54 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "checkedAt": "2026-10-05T18:57:24.229Z",
+  "businessWrites": 0,
+  "checks": [
+    "HTML, bundle SHA256 and service worker version match release",
+    {
+      "width": 1440,
+      "formControls": "PASS",
+      "saveRpcIntercepted": {
+        "newCompany": true,
+        "fields": [
+          "description",
+          "display_name",
+          "email_raw",
+          "enabled",
+          "logo_asset_id",
+          "phone_raw",
+          "sort_order"
+        ],
+        "contactMatches": true,
+        "nameMatches": true
+      },
+      "failureRetainsDraft": "PASS",
+      "refresh": "PASS",
+      "businessWrites": 0
+    },
+    {
+      "width": 390,
+      "formControls": "PASS",
+      "saveRpcIntercepted": {
+        "newCompany": true,
+        "fields": [
+          "description",
+          "display_name",
+          "email_raw",
+          "enabled",
+          "logo_asset_id",
+          "phone_raw",
+          "sort_order"
+        ],
+        "contactMatches": true,
+        "nameMatches": true
+      },
+      "failureRetainsDraft": "PASS",
+      "refresh": "PASS",
+      "businessWrites": 0
+    }
+  ],
+  "realDataScreenshots": false,
+  "version": 2026100411,
+  "bundleSha256": "937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e"
+}

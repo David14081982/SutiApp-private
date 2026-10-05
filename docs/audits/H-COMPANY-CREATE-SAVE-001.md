@@ -1,5 +1,13 @@
 # H-COMPANY-CREATE-SAVE-001
 
+## Cierre publicado — PASS
+
+Commit funcional `0163382881b25d9f00654238c952ff5c40cc0234`, push a main completado. GitHub Pages run `37359743953`: SUCCESS, incluidos checks de Auth, contrato de solicitudes y verificación productiva del workflow. `https://sutiapp.com/` y `https://david14081982.github.io/SutiApp-private/` sirven versión 2026100411 y SHA256 937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e.
+
+Verificación publicada autenticada 1440/390 px: PASS; campos completos, RPC correcta con contactos, error interceptado conserva formulario, cancelación y refresh. Cero escrituras de negocio. No se creó Empresa P. La escritura exitosa se probó en PostgreSQL aislado; producción se verificó sin guardar fichas ficticias. Evidencia: `published.json` y `deployment.json`.
+
+H-COMPANY-CREATE-SAVE-001 RESULT: Status PASS; fuente de verdad SAFE; invariantes PASS; build y pruebas PASS; seguridad/RLS intactas; legacy sin impacto; archivos inesperados ninguno en los commits de esta H. El workspace original y su trabajo ajeno permanecen intactos. SUTIAPP ARCHITECT REVIEW final: APPROVED / CLOSED, Owner decision NO. Siguiente instrucción: dar por publicado el arreglo; no crear planes, cuentas ni empresas sin nueva solicitud. Este cierre supersede las notas de publicación pendiente del candidato local que se conservan abajo como evidencia cronológica.
+
 ## Publicación autorizada — 2026-10-05
 
 Owner: «publicalo y haz commit push». Autoriza commit, push a main y despliegue GitHub Pages de esta corrección. Se amplía el alcance a `scripts/package-company-create-save.js`, `scripts/verify-company-create-save-live.js`, evidencia de release/publicación y checkout aislado `.tmp/company-create-save/release`. No requiere confirmación adicional. La entrega parte del main remoto vigente, conserva los chunks ajenos y regenera su propio Registry (no copia el índice del workspace con trabajo no publicado). Se validará el artefacto servido y el formulario autenticado con writers de empresas bloqueados en la prueba; no se crearán fichas de prueba productivas. Recovery: revertir únicamente el commit de esta H mediante un nuevo commit, conservando datos.

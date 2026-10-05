@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "commit": "e8241f05e8f98aa4c18b61991a553ec25f10fd9d",
+  "workflow": 37267526085,
+  "targets": [
+    {
+      "url": "https://sutiapp.com/SutiApp.html",
+      "bundleSha256": "630ef01392f3e7f77da172aea7b229d6e66fe26df9ab9de69f30b56a27e4f414",
+      "removedTextAbsent": true
+    },
+    {
+      "url": "https://david14081982.github.io/SutiApp-private/SutiApp.html",
+      "bundleSha256": "630ef01392f3e7f77da172aea7b229d6e66fe26df9ab9de69f30b56a27e4f414",
+      "removedTextAbsent": true
+    }
+  ]
+}

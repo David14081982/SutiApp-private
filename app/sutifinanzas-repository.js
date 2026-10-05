@@ -6,7 +6,7 @@
   const levels=['secretariat','project','item','requisition'];
   const labels={secretariat:'Sin secretaría',project:'Sin proyecto',item:'Sin partida',requisition:'Sin requisición'};
   function key(r,field){return field==='requisition'?reqKey(r):(missing(r[field])?null:r[field]);}
-  function filter(records,f){return records.filter(r=>(f.year==='all'||String(r.year??'missing')===f.year)&&(f.status==='all'||normalize(r.status)===(f.status==='missing'?'':f.status))&&(f.month==='all'||(r.date?r.date.slice(5,7):'missing')===f.month)&&(!f.search||normalize([r.secretariat,r.project,r.item,r.requisition,r.concept,r.budgetCode].join(' ')).includes(normalize(f.search))));}
+  function filter(records,f){return records.filter(r=>(f.year==='all'||String(r.year??'missing')===f.year)&&(f.status==='all'||normalize(r.status)===(f.status==='missing'?'':f.status))&&(f.month==='all'||(r.date?r.date.slice(5,7):'missing')===f.month)&&(!f.search||normalize([r.secretariat,r.expenseType,r.project,r.item,r.requisition,r.concept,r.budgetCode].join(' ')).includes(normalize(f.search))));}
   function summarize(records){
     // Sum decimal representations exactly; round only currency presentation, never each row.
     let total=0n,scale=0;
@@ -25,6 +25,55 @@
     result.sort((a,b)=>sort==='name'?a.label.localeCompare(b.label,'es'):sort==='amount-asc'?a.amountCents-b.amountCents:b.amountCents-a.amountCents);
     return{records:scoped,groups:result,level};
   }
+  const fields=Object.freeze([
+    {key:'secretariat',label:'Secretaría',missing:'Sin secretaría'},
+    {key:'expenseType',label:'Tipo de gastos',missing:'Sin tipo de gastos'},
+    {key:'project',label:'Proyecto',missing:'Sin proyecto'},
+    {key:'item',label:'Partida',missing:'Sin partida'},
+    {key:'requisition',label:'Requisición',missing:'Sin requisición'},
+    {key:'product',label:'Producto',missing:'Sin producto'},
+    {key:'status',label:'Estatus',missing:'Sin estatus'},
+    {key:'payment',label:'Forma de pago',missing:'Sin forma de pago'},
+    {key:'year',label:'Año',missing:'Sin año'}
+  ].map(Object.freeze));
+  const pivotFields=new Map(fields.map(field=>[field.key,field]));
+  const monthNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function pivot(records,dimensions,options={}){
+    if(!Array.isArray(dimensions)||new Set(dimensions).size!==dimensions.length||dimensions.some(field=>!pivotFields.has(field)))throw Error('PIVOT_DIMENSIONS_INVALID');
+    const sort=options.sort??'amount-desc',columnField=options.columnField??'month';
+    if(!['amount-desc','amount-asc','name'].includes(sort))throw Error('PIVOT_SORT_INVALID');
+    if(!['month','year','none'].includes(columnField))throw Error('PIVOT_COLUMN_INVALID');
+    const columnKey=r=>columnField==='month'?(missing(r.date)?'missing':r.date.slice(0,7)):(missing(r.year)?'missing':String(r.year));
+    const columns=columnField==='none'?[]:[...new Set(records.map(columnKey))].sort((a,b)=>a==='missing'?1:b==='missing'?-1:a.localeCompare(b,'es',{numeric:true})).map(k=>({key:k,label:k==='missing'?(columnField==='month'?'Sin fecha':'Sin año'):columnField==='year'?k:monthNames[Number(k.slice(5,7))-1]+' '+k.slice(0,4)}));
+    function amountsFor(source){
+      const amounts={},buckets=new Map(columns.map(column=>[column.key,[]]));
+      if(columnField!=='none')for(const record of source)buckets.get(columnKey(record)).push(record);
+      for(const [k,bucket] of buckets)amounts[k]=summarize(bucket).amountCents;
+      return amounts;
+    }
+    function build(source,depth,path){
+      if(depth===dimensions.length)return[];
+      const field=dimensions[depth],groups=new Map();
+      for(const record of source){
+        const k=field==='product'?record.id:key(record,field);
+        if(!groups.has(k)){
+          const value=field==='product'?(record.concept||record.id):record[field];
+          groups.set(k,{key:k,label:missing(value)?pivotFields.get(field).missing:String(value),records:[]});
+        }
+        groups.get(k).records.push(record);
+      }
+      const nodes=[...groups.values()].map(group=>{
+        const nextPath=[...path,[field,group.key]];
+        return{...group,id:JSON.stringify(nextPath),field,depth,children:build(group.records,depth+1,nextPath),summary:summarize(group.records),amounts:amountsFor(group.records),count:group.records.length};
+      });
+      nodes.sort((a,b)=>{
+        const amount=sort==='amount-asc'?a.summary.amountCents-b.summary.amountCents:sort==='amount-desc'?b.summary.amountCents-a.summary.amountCents:0;
+        return amount||a.label.localeCompare(b.label,'es',{numeric:true})||String(a.key).localeCompare(String(b.key),'es',{numeric:true});
+      });
+      return nodes;
+    }
+    return{roots:build(records,0,[]),columns,summary:summarize(records),amounts:amountsFor(records),records:records.slice(),count:records.length};
+  }
   function identity(){const auth=window.AffiliateAuth.getState(),admin=window.AdminRepository.getState();return JSON.stringify([auth.phase,auth.session?.user?.id,auth.affiliate?.id,auth.impersonation,admin.phase,admin.subjectKey,admin.assignment]);}
   async function load(){
     const subject=identity();
@@ -34,6 +83,6 @@
     if(response.data?.version!==1||!Array.isArray(response.data.records))throw Error('RESPONSE_INVALID');
     return response.data;
   }
-  window.SutifinanzasModel=Object.freeze({normalize,filter,summarize,explore,levels});
+  window.SutifinanzasModel=Object.freeze({normalize,filter,summarize,explore,levels,fields,pivot});
   window.SutifinanzasRepository=Object.freeze({load,identity});
 })();

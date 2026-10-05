@@ -868,3 +868,7 @@ Owner requests API access without further human OAuth. Candidate reader uses a d
 
 ### SUTIFINANZAS dedicated connection verified (2026-10-04)
 Owner supplied a new credential belonging to separate project sutifinanzas-reportes. Dedicated sutifinanzas-reader identity activated only for this report. Google remains sole authority; source API and deployed authenticated endpoint read 1,224 rows successfully; anonymous denied. Existing secrets unchanged, shared bot credential never used, SutiApp Final untouched. Server-only credential is not report data. Edge version 13 active; no financial persistence or Google writes. This supersedes earlier pending-credential statements.
+
+
+### SUTIFINANZAS pivot expense type (2026-10-04)
+Expense-type authority is exact header TIPO DE GASTOS in the existing Gasto por secretaria tab (accented tab name in code). Configurable grouping and period columns are derived in memory from the one authorized Sheets response; no new source, storage or fallback. A?O remains year-filter authority, while monthly columns retain actual FECHA DEL GASTO calendar year/month.

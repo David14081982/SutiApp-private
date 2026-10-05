@@ -1364,3 +1364,7 @@ Owner requires SutiApp Final financial request engine to remain intact. Shared c
 
 ### SUTIFINANZAS dedicated connection verified (2026-10-04)
 Owner supplied a new credential belonging to separate project sutifinanzas-reportes. Dedicated sutifinanzas-reader identity activated only for this report. Google remains sole authority; source API and deployed authenticated endpoint read 1,224 rows successfully; anonymous denied. Existing secrets unchanged, shared bot credential never used, SutiApp Final untouched. Server-only credential is not report data. Edge version 13 active; no financial persistence or Google writes. This supersedes earlier pending-credential statements.
+
+
+### H-SUTIFINANZAS-PIVOT-002 user-directed UI
+Owner explicitly requests inline expandable pivot-table hierarchy matching supplied reference, with interactive row-field order including TIPO DE GASTOS. This authorizes replacing the sequential drill list within the existing report. Other controls and data authority remain intact. Row fields are configurable; amounts remain the aggregated measure and are never duplicated as grouping values.

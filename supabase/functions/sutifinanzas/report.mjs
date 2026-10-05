@@ -3,7 +3,7 @@ export const WORKBOOK = '1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60';
 export const SHEET = 'Gasto por secretaría';
 export const HEADERS = Object.freeze({
   requisitionId:'🔒 Row ID Requisición', id:'ID Producto', requisition:'REQUISICIÓN',
-  secretariat:'Secretaría', concept:'Concepto', amount:'Gran total Comprobado',
+  secretariat:'Secretaría', expenseType:'TIPO DE GASTOS', concept:'Concepto', amount:'Gran total Comprobado',
   date:'FECHA DEL GASTO', project:'Nombre del proyecto', item:'Partida presupuestal',
   budgetCode:'Clave presupuestal', status:'Estatus', payment:'Forma de pago', year:'AÑO'
 });
@@ -41,7 +41,7 @@ export function projectSheet(values,consultedAt=new Date().toISOString()) {
     if(present(r.year)&&(!Number.isInteger(r.year)||r.year<1900||r.year>9999))throw new ReportError('INVALID_YEAR',{row:i+1,header:HEADERS.year});
     if(!present(r.year))r.year=null;
     r.date=dateValue(r.date,i+1);r.row=i+1;
-    for(const k of ['id','requisitionId','requisition','secretariat','concept','project','item','budgetCode','status','payment']) {
+    for(const k of ['id','requisitionId','requisition','secretariat','expenseType','concept','project','item','budgetCode','status','payment']) {
       if(present(r[k])&&!['number','string'].includes(typeof r[k]))throw new ReportError('INVALID_CELL',{row:i+1,header:HEADERS[k]});
       r[k]=present(r[k])?String(r[k]):null;
     }

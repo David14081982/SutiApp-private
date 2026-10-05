@@ -4077,3 +4077,7 @@ Owner requests fixed identification columns through Producto with months remaini
 
 ### H-SUTIFINANZAS-FROZEN-003 final PASS
 Published8808622. All selected hierarchy fields through Producto fixed, with visible scrollable month columns and responsive compact hierarchy. Local/public desktop/mobile verification PASS on1224 real records; totals and interactions preserved, zero pivot reads. Both domains serve cache2026100405 / hash38b685dfe948bcf2188d2676de25311994a5863c6128ae000446650045a197eb. Pages37252876428 and Membership37252876405 SUCCESS. Independent architect review APPROVED. Google/source/backend/SutiApp Final unchanged.
+
+
+### H-SUTIFINANZAS-EXPORT-004
+Owner requested Excel of the current expanded/collapsed report. Added genuine XLSX export using the same visible row projection as the grid and the already published ExcelJS vendor. Filters/order/period columns/visible branches/subtotals preserved; numeric amounts, safe text labels, frozen fields, source/export timestamps. Snapshot at click; stale session/source/unmount cancels download. No Google reads on export or source writes. Unit roundtrip,13 independent synthetic downloads and existing UI/frozen suites PASS. Isolated release/public checks pending.

@@ -1,0 +1,24 @@
+# H-SUTIFINANZAS-EXPORT-004
+
+## PRE-CHANGE AUDIT
+
+Status: PASS for implementation; verification pending.
+Objective: owner requests Excel export of the current expanded/collapsed folders and subfolders in SUTIFINANZAS.
+Scope: app/sutifinanzas-admin.jsx, app/sutifinanzas-repository.js, scripts/test-sutifinanzas-export.js, focal generated bundle chunks, isolated release HTML/sw cache versions only, this audit and existing changelog/derived registry. Existing same-origin vendored ExcelJS 4.4.0 is already in the published artifact; no new dependency or shared helper edits.
+Authority: Gasto por secretaría in the existing fixed Google workbook remains authoritative. Export is an explicitly requested downloadable derivative of the authorized in-memory report, never an input/fallback or persisted app store. User owns the downloaded file. No Google reads on export, no Google or Supabase financial writes, no backend/credentials/SutiApp Final changes.
+Plan: centralize the existing visible pivot row projection, reuse it for both screen and XLSX. Capture current filters, sort, configured row fields, period columns, expansion set and source consultation time at click. Export only visible aggregate/leaf/subtotal rows plus the existing grand total, no hidden branch children or extra details worksheet. Keep amounts numeric, preserve decimal values and display MXN, use text cells for source labels including formula-like strings; freeze row dimensions and headers. Include readable source/filter context and export time. Lazy-load existing integrity-pinned ExcelJS; explicit busy/error states, no success on failure. Cancel download if session/context, source generation or mounted module changes during asynchronous generation.
+UI contract: keep Nunito, filters/KPIs, drag and keyboard field ordering, inline expansion, detail, subtotal layout, frozen dimensions/month scrolling and refresh behavior. Add one Exportar a Excel button and a concise scope hint. Desktop field columns remain separate in XLSX even when the narrow UI uses a compact hierarchy.
+Risks/tests: exact row selection/merges under mixed expanded branches and reordering, duplicate labels with distinct IDs, missing fields, zero dimensions/empty filters, monthly/yearly/total modes, fractional cents, formula injection, async snapshot/state changes and library failure, source reads unchanged. Test actual XLSX readback and browser download with synthetic rows; real public checks only sanitized metrics and in-memory buffers, no real row fixtures persisted.
+Recovery: revert focal source/generated chunks and cache versions. No data rollback required. Global image regression NOT APPLICABLE: no shared runtime/auth/storage/service-worker logic changes. Root unrelated changes preserved; release from existing isolated checkout.
+Guardians: Navigator FRESH, pre-change, source-of-truth SAFE, legacy READ ONLY, UI preservation, post-change and independent architect review.
+
+
+## Implementation / pre-publication verification
+
+Shared visibleRows projection is unchanged from the existing grid traversal and now feeds both screen and XLSX. Closed branches contribute only their aggregate row; expanded branches preserve visible children, parent merges and subtotals. Exported monetary columns, active row order, filters and sorting match the clicked view. Includes consultation/export timestamps, numeric original amounts with MXN formatting, exact text labels, Nunito, long-label row heights and frozen identification/header panes. One worksheet only; no hidden detailed records. No regrouping or financial recalculation added.
+
+Verification PASS: real ExcelJS XLSX serialization/readback (visible mixed branches, exact merges, hidden-node exclusion, duplicate labels with distinct identities, negative/fractional amounts, formula-like source text, long labels, nine fields, zero fields/empty, all column modes, reorder); library integrity/failure/timeout/retry; original report contract. Independent synthetic browser13 actual downloads matches rendered DOM rows/labels/amounts/merges, compact390px exports full configured hierarchy, empty export disabled, click snapshot survives filter change, generation/library failure and retry, refresh/unmount/context changes cancel3 stale downloads. Initial read1; export reads0. Existing pivot functional and frozen geometry suites PASS. No production row fixtures saved.
+
+Build PASS:31 public files; existing vendored ExcelJS reused, no new dependency or shared helper changes. Isolated bundle changed only sutifinanzas-repository.js and sutifinanzas-admin.jsx, preserving152 other chunks. Cache2026100406; SHA256312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76. SRI test uses published LF bytes, matching existing vendor normalization in the public build; root and isolated roundtrip suites PASS. Pages guard PASS.
+
+Real local/public acceptance and publication receipt pending. No backend/schema/credentials/Google writes.

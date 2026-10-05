@@ -32,16 +32,7 @@
     const columnWidths=compact?[frozenWidth]:weights.map(weight=>Math.floor(Math.min(84,frozenWidth/width)+Math.max(0,frozenWidth-width*84)*weight/sumWeights));
     columnWidths[columnWidths.length-1]+=frozenWidth-columnWidths.reduce((sum,n)=>sum+n,0);
     const leftAt=index=>columnWidths.slice(0,index).reduce((sum,n)=>sum+n,0);
-    function rowsFor(nodes){
-      return nodes.flatMap(node=>{
-        if(!node.children.length||!expanded.has(node.id))return [{id:node.id,node,cells:[{node,depth:node.depth,colSpan:width-node.depth,rowSpan:1}],subtotal:false}];
-        const rows=rowsFor(node.children);
-        rows.push({id:node.id+'-subtotal',node,cells:[{depth:node.depth+1,colSpan:width-node.depth-1,rowSpan:1,label:'Subtotal · '+node.label}],subtotal:true});
-        rows[0].cells.unshift({node,depth:node.depth,colSpan:1,rowSpan:rows.length});
-        return rows;
-      });
-    }
-    const rows=rowsFor(pivot.roots);
+    const rows=Model.visibleRows(pivot,dimensions,expanded);
     const amounts=node=><>{pivot.columns.map(c=><td key={c.key} className="sf-value">{money(node.amounts[c.key]||0)}</td>)}<td className="sf-value sf-total">{money(node.summary.amountCents)}</td></>;
     const entry=cell=>cell.node?<button type="button" className="sf-tree-button" data-pivot-node={cell.node.id} aria-expanded={cell.node.children.length?expanded.has(cell.node.id):undefined} aria-label={(cell.node.children.length?(expanded.has(cell.node.id)?'Contraer ':'Expandir '):'Ver detalle de ')+fieldName(cell.node.field)+': '+cell.node.label} onClick={()=>cell.node.children.length?onToggle(cell.node.id):onDetail(cell.node)}>
       <span className="sf-tree-icon" aria-hidden="true">{cell.node.children.length?(expanded.has(cell.node.id)?'−':'+'):'↗'}</span><span>{compact&&<span className="sf-compact-field">{fieldName(cell.node.field)}</span>}{cell.node.label}</span>
@@ -71,6 +62,8 @@
     const [data,setData]=useState(null),[phase,setPhase]=useState('loading'),[error,setError]=useState('');
     const [filters,setFilters]=useState(blank),[sort,setSort]=useState('amount-desc');
     const [dimensions,setDimensions]=useState(defaults),[columnField,setColumnField]=useState('month'),[expanded,setExpanded]=useState(()=>new Set()),[detail,setDetail]=useState(null),[dragged,setDragged]=useState(null),[notice,setNotice]=useState('');
+    const [exportBusy,setExportBusy]=useState(false),[exportError,setExportError]=useState('');
+    const exportRunning=useRef(false);
     const generation=useRef(0),busy=useRef(false),mounted=useRef(false),reportElement=useRef(null),pendingFocus=useRef(null);
     const context=window.SutifinanzasRepository.identity();
     const contextRef=useRef(context);contextRef.current=context;
@@ -78,7 +71,7 @@
     async function refresh(initial=false){
       if(busy.current)return;busy.current=true;
       const g=++generation.current,subject=contextRef.current;
-      setPhase('loading');setError('');setData(null);clearBranches();
+      setPhase('loading');setError('');setExportError('');setData(null);clearBranches();
       try{
         const result=await window.SutifinanzasRepository.load();
         if(!mounted.current||g!==generation.current||subject!==contextRef.current)return;
@@ -96,6 +89,28 @@
     const visible=useMemo(()=>data?Model.filter(data.records,filters):[],[data,filters]);
     const summary=useMemo(()=>Model.summarize(visible),[visible]);
     const pivot=useMemo(()=>Model.pivot(visible,dimensions,{sort,columnField}),[visible,dimensions,sort,columnField]);
+    async function exportExcel(){
+      if(exportRunning.current||phase!=='success'||!data||!pivot.count)return;
+      const subject=window.SutifinanzasRepository.identity(),g=generation.current,exportedAt=new Date();
+      if(subject!==contextRef.current)return;
+      // Snapshot the selected view at click; scrolling or later filter changes do not alter the file.
+      const snapshot={pivot,dimensions:dimensions.slice(),expanded:new Set(expanded),filters:{...filters},sort,columnField,source:{...data.source},exportedAt};
+      const valid=()=>mounted.current&&g===generation.current&&subject===contextRef.current&&subject===window.SutifinanzasRepository.identity();
+      exportRunning.current=true;setExportBusy(true);setExportError('');
+      try{
+        const ExcelJS=await window.SutifinanzasExport.excel();
+        if(!valid())return;
+        const book=window.SutifinanzasExport.buildWorkbook({...snapshot,ExcelJS});
+        const bytes=await book.xlsx.writeBuffer();
+        if(!valid())return;
+        const url=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+        const link=document.createElement('a');
+        try{link.href=url;link.download='SUTIFINANZAS_vista_'+exportedAt.toISOString().slice(0,19).replace(/[:T]/g,'-')+'.xlsx';document.body.appendChild(link);link.click();}
+        finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+        setNotice('Excel descargado con los filtros y grupos abiertos al momento de exportar.');
+      }catch(e){if(valid())setExportError('No se pudo generar el archivo Excel. Vuelve a intentarlo.');}
+      finally{exportRunning.current=false;if(mounted.current)setExportBusy(false);}
+    }
     function expandLevel(){setExpanded(current=>{const next=new Set(current);function visit(nodes){for(const node of nodes){if(!node.children.length)continue;if(!current.has(node.id))next.add(node.id);else visit(node.children);}}visit(pivot.roots);return next;});}
     const years=data?[...new Set(data.records.map(r=>r.year).filter(Number.isInteger))].sort((a,b)=>b-a):[];
     const statuses=data?[...new Set(data.records.map(r=>Model.normalize(r.status)).filter(Boolean))].sort():[];
@@ -119,7 +134,7 @@
           <div className="sf-kpis">{[[filters.status==='APROBADO'?'TOTAL APROBADO':'TOTAL FILTRADO',money(summary.amountCents)],['REQUISICIONES',summary.requisitions],['SECRETARÍAS',summary.secretariats],['PROYECTOS',summary.projects]].map(([label,value])=><div className="sf-card" key={label}><div className="sf-kpi-label">{label}</div><div className="sf-kpi-value">{value}</div></div>)}</div>
           {Object.values(data.quality).some(Boolean)&&<p className="sf-note">Datos faltantes en la hoja: {data.quality.missingSecretariat} filas sin secretaría; {data.quality.missingRequisition} sin número de requisición; {data.quality.missingYear} sin año; {data.quality.missingDate} sin fecha de gasto; {data.quality.missingStatus} sin estatus. Puedes consultarlas con las categorías “Sin…”. El año usa AÑO; el mes usa FECHA DEL GASTO.</p>}
           <div className="sf-card sf-pivot-card">
-            <div className="sf-pivot-heading"><h2>Tabla dinámica del gasto</h2><p className="sf-muted">Abre los grupos con + y ciérralos con −. El orden de los campos define cómo se desglosa el gasto.</p></div>
+            <div className="sf-pivot-heading sf-list-head"><div><h2>Tabla dinámica del gasto</h2><p className="sf-muted">Abre los grupos con + y ciérralos con −. El orden de los campos define cómo se desglosa el gasto.</p></div><button type="button" className="sf-button" disabled={exportBusy||phase!=='success'||!pivot.count} onClick={exportExcel}>{exportBusy?'Generando Excel…':'Exportar a Excel'}</button></div>
             <div className="sf-field-panel"><div className="sf-zone-label">FILAS · Arrastra para cambiar el orden o usa las flechas</div><div className="sf-field-zone" aria-label="Orden de los campos">
               {dimensions.map((field,index)=><div className="sf-field-chip" key={field} draggable aria-grabbed={dragged===field} data-pivot-field={field} onDragStart={e=>{setDragged(field);e.dataTransfer.setData('text/plain',field);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>setDragged(null)} onDragOver={e=>{if(dragged)e.preventDefault();}} onDrop={e=>{e.preventDefault();if(dragged&&dragged!==field)move(dragged,index);setDragged(null);}}>
                 <span className="sf-field-name">{index+1}. {fieldName(field)}</span><button type="button" aria-label={'Mover '+fieldName(field)+' antes'} disabled={index===0} onClick={()=>move(field,index-1)}>←</button><button type="button" aria-label={'Mover '+fieldName(field)+' después'} disabled={index===dimensions.length-1} onClick={()=>move(field,index+1)}>→</button><button type="button" aria-label={'Quitar '+fieldName(field)} onClick={()=>layout(dimensions.filter(f=>f!==field),'Campo retirado: '+fieldName(field))}>×</button>
@@ -129,6 +144,8 @@
             </div></div>
             <div className="sf-pivot-tools"><label>Columnas<select aria-label="Columnas de la tabla" value={columnField} onChange={e=>setColumnField(e.target.value)}><option value="month">Mes del gasto</option><option value="year">Año</option><option value="none">Solo total</option></select></label><label>Ordenar grupos<select aria-label="Orden del gasto" value={sort} onChange={e=>setSort(e.target.value)}><option value="amount-desc">Mayor importe primero</option><option value="amount-asc">Menor importe primero</option><option value="name">Nombre A–Z</option></select></label><button type="button" className="sf-button" onClick={expandLevel} disabled={!pivot.roots.some(n=>n.children.length)}>Expandir un nivel</button><button type="button" className="sf-button" disabled={!expanded.size} onClick={()=>setExpanded(new Set())}>Contraer todo</button><button type="button" className="sf-button" onClick={()=>{layout(defaults,'Vista inicial restaurada');setColumnField('month');}}>Restablecer vista</button></div>
             <p className="sf-muted sf-layout-note">{visible.length} registros con los filtros activos · Subtotales por grupo · Los importes se muestran en MXN</p>
+            <p className="sf-muted sf-layout-note">El Excel conserva los filtros, el orden y los grupos abiertos de esta vista.</p>
+            {exportError&&<p className="sf-note sf-export-error" role="alert">{exportError}</p>}
             <div className="sf-sr-only" role="status" aria-live="polite">{notice}</div>
             <PivotGrid pivot={pivot} dimensions={dimensions} expanded={expanded} onToggle={toggle} onDetail={setDetail}/>
           </div>

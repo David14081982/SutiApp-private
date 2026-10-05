@@ -76,6 +76,115 @@
     }
     return{roots:build(records,0,[]),columns,summary:summarize(records),amounts:amountsFor(records),records:records.slice(),count:records.length};
   }
+  function visibleRows(pivot,dimensions,expanded){
+    const width=dimensions.length||1;
+    function rowsFor(nodes){
+      return nodes.flatMap(node=>{
+        if(!node.children.length||!expanded.has(node.id))return [{id:node.id,node,cells:[{node,depth:node.depth,colSpan:width-node.depth,rowSpan:1}],subtotal:false}];
+        const rows=rowsFor(node.children);
+        rows.push({id:node.id+'-subtotal',node,cells:[{depth:node.depth+1,colSpan:width-node.depth-1,rowSpan:1,label:'Subtotal · '+node.label}],subtotal:true});
+        rows[0].cells.unshift({node,depth:node.depth,colSpan:1,rowSpan:rows.length});
+        return rows;
+      });
+    }
+    return rowsFor(pivot.roots);
+  }
+  let excelPromise;
+  function excel(){
+    if(typeof window.ExcelJS?.Workbook==='function')return Promise.resolve(window.ExcelJS);
+    if(excelPromise)return excelPromise;
+    excelPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');let timer,settled=false;
+      const finish=error=>{
+        if(settled)return;settled=true;clearTimeout(timer);script.onload=null;script.onerror=null;
+        if(error){script.remove();reject(Error(error));}else resolve(window.ExcelJS);
+      };
+      script.src=new URL('app/vendor/exceljs-4.4.0/exceljs.min.js',document.baseURI).href;
+      script.integrity='sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz';script.crossOrigin='anonymous';
+      script.onload=()=>finish(typeof window.ExcelJS?.Workbook==='function'?null:'SUTIFINANZAS_EXCEL_UNAVAILABLE');
+      script.onerror=()=>finish('SUTIFINANZAS_EXCEL_UNAVAILABLE');
+      timer=setTimeout(()=>finish('SUTIFINANZAS_EXCEL_TIMEOUT'),20000);
+      document.head.appendChild(script);
+    }).catch(error=>{excelPromise=null;throw error;});
+    return excelPromise;
+  }
+  function buildWorkbook({ExcelJS,pivot,dimensions,expanded,filters={},sort='amount-desc',columnField='month',source={},exportedAt=new Date()}){
+    if(typeof ExcelJS?.Workbook!=='function')throw Error('SUTIFINANZAS_EXCEL_UNAVAILABLE');
+    const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('Gasto por Secretaría');
+    const width=dimensions.length||1,columnCount=width+pivot.columns.length+1,rows=visibleRows(pivot,dimensions,expanded);
+    const text=value=>String(value??''),fieldName=field=>pivotFields.get(field)?.label||text(field);
+    const color={ink:'FF234957',blue:'FFE8F5FA',header:'FFE6F2F7',line:'FFD7E5EC',subtotal:'FFFFF8DE',total:'FFE7DCE2',white:'FFFFFFFF'};
+    const border={top:{style:'hair',color:{argb:color.line}},left:{style:'hair',color:{argb:color.line}},bottom:{style:'hair',color:{argb:color.line}},right:{style:'hair',color:{argb:color.line}}};
+    const fill=argb=>({type:'pattern',pattern:'solid',fgColor:{argb}});
+    const font=bold=>({name:'Nunito',size:11,color:{argb:color.ink},bold:!!bold});
+    const stamp=value=>{if(!value)return 'Sin dato';const date=new Date(value);return Number.isNaN(date.getTime())?text(value):date.toISOString();};
+    const choice=(value,all,absent)=>value===undefined||value==='all'?all:value==='missing'?absent:text(value);
+    const month=filters.month&&filters.month!=='all'&&filters.month!=='missing'?monthNames[Number(filters.month)-1]||text(filters.month):choice(filters.month,'Todos los meses','Sin fecha de gasto');
+    const metadata=[
+      'SUTIFINANZAS · Gasto por Secretaría',
+      'Fuente: '+text(source.name||'Google Sheets')+' · '+text(source.sheet||'Gasto por secretaría'),
+      'Datos consultados (UTC): '+stamp(source.consultedAt),
+      'Exportado (UTC): '+stamp(exportedAt),
+      'Filtros: Año: '+choice(filters.year,'Todos los años','Sin año')+' · Estatus: '+choice(filters.status,'Todos los estatus','Sin estatus')+' · Mes: '+month+' · Buscar: '+(text(filters.search)||'Sin búsqueda'),
+      'Filas: '+(dimensions.map(fieldName).join(' → ')||'Total general'),
+      'Columnas: '+({month:'Mes del gasto',year:'Año',none:'Solo total'}[columnField]||text(columnField))+' · Orden: '+({'amount-desc':'Mayor importe primero','amount-asc':'Menor importe primero',name:'Nombre A–Z'}[sort]||text(sort)),
+      'Vista al exportar: solo grupos y subgrupos visibles. Los subtotales resumen sus filas; no son gastos adicionales.'
+    ];
+    book.creator='SutiApp';book.created=new Date(exportedAt);book.modified=new Date(exportedAt);
+    sheet.columns=[...(dimensions.length?dimensions:['total']).map(field=>({width:field==='product'?38:field==='project'?30:25})),...pivot.columns.map(()=>({width:20})),{width:20}];
+    function fitLabel(top,left,rowSpan,colSpan,label){
+      let characters=-2;for(let col=left;col<left+colSpan;col++)characters+=sheet.getColumn(col).width*.9;
+      const lines=text(label).split(/\r?\n/).reduce((sum,line)=>sum+Math.max(1,Math.ceil(line.length/Math.max(1,characters))),0);
+      let needed=lines*16+10;for(let row=top;row<top+rowSpan;row++)needed-=sheet.getRow(row).height||30;
+      for(let row=top;needed>0&&row<top+rowSpan;row++){const current=sheet.getRow(row).height||30,extra=Math.min(409-current,needed);sheet.getRow(row).height=current+extra;needed-=extra;}
+    }
+    metadata.forEach((value,index)=>{
+      sheet.mergeCells(index+1,1,index+1,columnCount);const cell=sheet.getCell(index+1,1);cell.value=value;cell.font=font(index===0);cell.alignment={vertical:'middle',wrapText:true};
+      sheet.getRow(index+1).height=index===0?30:index===4||index===7?34:25;
+    });
+    for(let row=10;row<=11;row++)for(let col=1;col<=columnCount;col++){
+      const cell=sheet.getCell(row,col);cell.font=font(true);cell.fill=fill(color.header);cell.border=border;cell.alignment={vertical:'middle',wrapText:true};
+    }
+    (dimensions.length?dimensions:['total']).forEach((field,index)=>{
+      sheet.mergeCells(10,index+1,11,index+1);sheet.getCell(10,index+1).value=field==='total'?'Gasto filtrado':fieldName(field);
+    });
+    if(pivot.columns.length)sheet.mergeCells(10,width+1,10,columnCount);
+    sheet.getCell(10,width+1).value='Importe · MXN';
+    pivot.columns.forEach((column,index)=>{sheet.getCell(11,width+index+1).value=text(column.label);});
+    sheet.getCell(11,columnCount).value='Total';sheet.getCell(11,columnCount).fill=fill(color.total);
+    sheet.getRow(10).height=25;sheet.getRow(11).height=32;
+    function paint(row,background,bold){
+      for(let col=1;col<=columnCount;col++){
+        const cell=sheet.getCell(row,col);cell.font=font(bold);cell.fill=fill(background);cell.border=border;cell.alignment={vertical:'top',wrapText:true};
+      }
+    }
+    function amounts(row,node){
+      [...pivot.columns.map(column=>node.amounts[column.key]||0),node.summary.amountCents].forEach((value,index)=>{
+        const cell=sheet.getCell(row,width+index+1);cell.value=value/100;cell.numFmt='"$"#,##0.00;[Red]-"$"#,##0.00';cell.alignment={horizontal:'right',vertical:'top'};
+      });
+    }
+    rows.forEach((row,index)=>{paint(12+index,row.subtotal?color.subtotal:color.white,row.subtotal);amounts(12+index,row.node);});
+    // Merge only the displayed parent/collapsed/subtotal cells, after painting rows.
+    rows.forEach((row,index)=>row.cells.forEach(cell=>{
+      const top=12+index,left=cell.depth+1;
+      if(cell.rowSpan>1||cell.colSpan>1)sheet.mergeCells(top,left,top+cell.rowSpan-1,left+cell.colSpan-1);
+      const target=sheet.getCell(top,left);target.value=text(cell.node?cell.node.label:cell.label);target.fill=fill(cell.node?color.blue:color.subtotal);target.font=font(!cell.node);target.alignment={vertical:'top',wrapText:true};
+    }));
+    let totalRow=12+rows.length;
+    if(!pivot.count){
+      sheet.mergeCells(totalRow,1,totalRow,columnCount);const cell=sheet.getCell(totalRow,1);cell.value='No hay registros para estos filtros.';cell.font=font(false);cell.alignment={vertical:'middle',wrapText:true};sheet.getRow(totalRow).height=28;totalRow++;
+    }
+    paint(totalRow,color.total,true);
+    if(width>1)sheet.mergeCells(totalRow,1,totalRow,width);
+    sheet.getCell(totalRow,1).value='Total general · '+pivot.count+' registros';amounts(totalRow,pivot);
+    metadata.forEach((label,index)=>fitLabel(index+1,1,1,columnCount,label));
+    rows.forEach((row,index)=>row.cells.forEach(cell=>fitLabel(12+index,cell.depth+1,cell.rowSpan,cell.colSpan,cell.node?cell.node.label:cell.label)));
+    fitLabel(totalRow,1,1,width,sheet.getCell(totalRow,1).value);
+    sheet.views=[{state:'frozen',xSplit:width,ySplit:11,topLeftCell:sheet.getCell(12,width+1).address,activeCell:'A1'}];
+    sheet.pageSetup={orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'10:11'};
+    sheet.properties.defaultRowHeight=30;
+    return book;
+  }
   function identity(){const auth=window.AffiliateAuth.getState(),admin=window.AdminRepository.getState();return JSON.stringify([auth.phase,auth.session?.user?.id,auth.affiliate?.id,auth.impersonation,admin.phase,admin.subjectKey,admin.assignment]);}
   async function load(){
     const subject=identity();
@@ -85,8 +194,9 @@
     if(response.data?.version!==1||!Array.isArray(response.data.records))throw Error('RESPONSE_INVALID');
     return response.data;
   }
-  window.SutifinanzasModel=Object.freeze({normalize,filter,summarize,explore,levels,fields,pivot});
+  window.SutifinanzasModel=Object.freeze({normalize,filter,summarize,explore,levels,fields,pivot,visibleRows});
   window.SutifinanzasRepository=Object.freeze({load,identity});
+  window.SutifinanzasExport=Object.freeze({buildWorkbook,excel});
 })();
 })();
 /* @@file sutifinanzas-admin.jsx */
@@ -156,41 +266,7 @@
     const columnWidths = compact ? [frozenWidth] : weights.map(weight => Math.floor(Math.min(84, frozenWidth / width) + Math.max(0, frozenWidth - width * 84) * weight / sumWeights));
     columnWidths[columnWidths.length - 1] += frozenWidth - columnWidths.reduce((sum, n) => sum + n, 0);
     const leftAt = index => columnWidths.slice(0, index).reduce((sum, n) => sum + n, 0);
-    function rowsFor(nodes) {
-      return nodes.flatMap(node => {
-        if (!node.children.length || !expanded.has(node.id)) return [{
-          id: node.id,
-          node,
-          cells: [{
-            node,
-            depth: node.depth,
-            colSpan: width - node.depth,
-            rowSpan: 1
-          }],
-          subtotal: false
-        }];
-        const rows = rowsFor(node.children);
-        rows.push({
-          id: node.id + '-subtotal',
-          node,
-          cells: [{
-            depth: node.depth + 1,
-            colSpan: width - node.depth - 1,
-            rowSpan: 1,
-            label: 'Subtotal · ' + node.label
-          }],
-          subtotal: true
-        });
-        rows[0].cells.unshift({
-          node,
-          depth: node.depth,
-          colSpan: 1,
-          rowSpan: rows.length
-        });
-        return rows;
-      });
-    }
-    const rows = rowsFor(pivot.roots);
+    const rows = Model.visibleRows(pivot, dimensions, expanded);
     const amounts = node => /*#__PURE__*/React.createElement(React.Fragment, null, pivot.columns.map(c => /*#__PURE__*/React.createElement("td", {
       key: c.key,
       className: "sf-value"
@@ -349,6 +425,9 @@
       [detail, setDetail] = useState(null),
       [dragged, setDragged] = useState(null),
       [notice, setNotice] = useState('');
+    const [exportBusy, setExportBusy] = useState(false),
+      [exportError, setExportError] = useState('');
+    const exportRunning = useRef(false);
     const generation = useRef(0),
       busy = useRef(false),
       mounted = useRef(false),
@@ -368,6 +447,7 @@
         subject = contextRef.current;
       setPhase('loading');
       setError('');
+      setExportError('');
       setData(null);
       clearBranches();
       try {
@@ -443,6 +523,61 @@
       sort,
       columnField
     }), [visible, dimensions, sort, columnField]);
+    async function exportExcel() {
+      if (exportRunning.current || phase !== 'success' || !data || !pivot.count) return;
+      const subject = window.SutifinanzasRepository.identity(),
+        g = generation.current,
+        exportedAt = new Date();
+      if (subject !== contextRef.current) return;
+      // Snapshot the selected view at click; scrolling or later filter changes do not alter the file.
+      const snapshot = {
+        pivot,
+        dimensions: dimensions.slice(),
+        expanded: new Set(expanded),
+        filters: {
+          ...filters
+        },
+        sort,
+        columnField,
+        source: {
+          ...data.source
+        },
+        exportedAt
+      };
+      const valid = () => mounted.current && g === generation.current && subject === contextRef.current && subject === window.SutifinanzasRepository.identity();
+      exportRunning.current = true;
+      setExportBusy(true);
+      setExportError('');
+      try {
+        const ExcelJS = await window.SutifinanzasExport.excel();
+        if (!valid()) return;
+        const book = window.SutifinanzasExport.buildWorkbook({
+          ...snapshot,
+          ExcelJS
+        });
+        const bytes = await book.xlsx.writeBuffer();
+        if (!valid()) return;
+        const url = URL.createObjectURL(new Blob([bytes], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }));
+        const link = document.createElement('a');
+        try {
+          link.href = url;
+          link.download = 'SUTIFINANZAS_vista_' + exportedAt.toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.xlsx';
+          document.body.appendChild(link);
+          link.click();
+        } finally {
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        setNotice('Excel descargado con los filtros y grupos abiertos al momento de exportar.');
+      } catch (e) {
+        if (valid()) setExportError('No se pudo generar el archivo Excel. Vuelve a intentarlo.');
+      } finally {
+        exportRunning.current = false;
+        if (mounted.current) setExportBusy(false);
+      }
+    }
     function expandLevel() {
       setExpanded(current => {
         const next = new Set(current);
@@ -557,10 +692,15 @@
     }, "Datos faltantes en la hoja: ", data.quality.missingSecretariat, " filas sin secretar\xEDa; ", data.quality.missingRequisition, " sin n\xFAmero de requisici\xF3n; ", data.quality.missingYear, " sin a\xF1o; ", data.quality.missingDate, " sin fecha de gasto; ", data.quality.missingStatus, " sin estatus. Puedes consultarlas con las categor\xEDas \u201CSin\u2026\u201D. El a\xF1o usa A\xD1O; el mes usa FECHA DEL GASTO."), /*#__PURE__*/React.createElement("div", {
       className: "sf-card sf-pivot-card"
     }, /*#__PURE__*/React.createElement("div", {
-      className: "sf-pivot-heading"
-    }, /*#__PURE__*/React.createElement("h2", null, "Tabla din\xE1mica del gasto"), /*#__PURE__*/React.createElement("p", {
+      className: "sf-pivot-heading sf-list-head"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", null, "Tabla din\xE1mica del gasto"), /*#__PURE__*/React.createElement("p", {
       className: "sf-muted"
-    }, "Abre los grupos con + y ci\xE9rralos con \u2212. El orden de los campos define c\xF3mo se desglosa el gasto.")), /*#__PURE__*/React.createElement("div", {
+    }, "Abre los grupos con + y ci\xE9rralos con \u2212. El orden de los campos define c\xF3mo se desglosa el gasto.")), /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "sf-button",
+      disabled: exportBusy || phase !== 'success' || !pivot.count,
+      onClick: exportExcel
+    }, exportBusy ? 'Generando Excel…' : 'Exportar a Excel')), /*#__PURE__*/React.createElement("div", {
       className: "sf-field-panel"
     }, /*#__PURE__*/React.createElement("div", {
       className: "sf-zone-label"
@@ -659,7 +799,12 @@
       }
     }, "Restablecer vista")), /*#__PURE__*/React.createElement("p", {
       className: "sf-muted sf-layout-note"
-    }, visible.length, " registros con los filtros activos \xB7 Subtotales por grupo \xB7 Los importes se muestran en MXN"), /*#__PURE__*/React.createElement("div", {
+    }, visible.length, " registros con los filtros activos \xB7 Subtotales por grupo \xB7 Los importes se muestran en MXN"), /*#__PURE__*/React.createElement("p", {
+      className: "sf-muted sf-layout-note"
+    }, "El Excel conserva los filtros, el orden y los grupos abiertos de esta vista."), exportError && /*#__PURE__*/React.createElement("p", {
+      className: "sf-note sf-export-error",
+      role: "alert"
+    }, exportError), /*#__PURE__*/React.createElement("div", {
       className: "sf-sr-only",
       role: "status",
       "aria-live": "polite"

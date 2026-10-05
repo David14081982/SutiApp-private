@@ -43,7 +43,7 @@
   const box={background:'var(--surface,white)',border:'1px solid #E4D3D9',borderRadius:14,padding:16,marginBottom:12,overflowWrap:'anywhere'};
   const button={padding:'10px 14px',borderRadius:10,border:'1px solid #D6C8CE',background:'var(--surface,white)',color:'var(--guinda,#791636)',font:'inherit',cursor:'pointer'};
   const field={display:'block',width:'100%',boxSizing:'border-box',padding:10,border:'1px solid #ccc',borderRadius:8,font:'inherit',marginTop:5};
-  function Explain({block}) { return h('div',{'data-finance-block-explanation':true},h('p',null,'No puedes enviar nuevas solicitudes de préstamos ni financiamiento durante este periodo.'),h('p',null,h('strong',null,'Desde: '),day(block.starts_on),h('br'),h('strong',null,'Hasta: '),day(block.ends_on),' (inclusive, horario de Hermosillo)'),h('p',{style:{whiteSpace:'pre-wrap'}},h('strong',null,'Motivo: '),block.reason)); }
+  function Explain({block}) { return h('div',{'data-finance-block-explanation':true},h('p',null,'No puedes enviar nuevas solicitudes de préstamos ni financiamiento durante este periodo.'),h('p',null,h('strong',null,'Desde: '),day(block.starts_on),h('br'),h('strong',null,'Hasta: '),day(block.ends_on)),h('p',{style:{whiteSpace:'pre-wrap'}},h('strong',null,'Motivo: '),block.reason)); }
   let noticeRoot=null,noticeHost=null;
   function Notice({block,onClose}) {
     const ref=React.useRef(null);

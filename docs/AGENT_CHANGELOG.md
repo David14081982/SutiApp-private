@@ -4040,3 +4040,20 @@ Cierre H-SICOF-SAVINGS-AUTHORITY-RELEASE-001: PUBLICADO, main b408415 y Edge16/V
 ## H-SUTIFINANZAS-ADMIN-001 — Google Sheets directo (2026-10-04)
 
 Implementación local del nuevo informe, lector Edge v3 desplegado, migración de catálogo de pantalla preparada sin aplicar. Mapping real y parser sobre 1,224 filas en memoria; pruebas contractuales, PostgreSQL aislado y Chrome responsive PASS. Backend anónimo 401; administrador 409 GOOGLE_ACCESS_DENIED (Google 403): pendiente concesión al OAuth existente. No copia Supabase ni escrituras financieras/Google. Candidato aislado preparado para commit local; sin push ni publicación frontend. Evidencia y alcance: docs/audits/H-SUTIFINANZAS-ADMIN-001.md.
+
+
+### H-SUTIFINANZAS-ADMIN-001 — continuación autorizada
+
+Registro de pantalla 20261004000200 aplicado y verificado sin modificar asignaciones ni datos financieros. Guard de permisos, 20 pruebas existentes y build Pages PASS. Error Google diagnosticado PERMISSION_DENIED; consentimiento oficial preparado con el mismo cliente OAuth, PKCE, cuenta soporte.sutiapp@gmail.com y tokens exclusivamente backend. Pendiente respuesta de Google antes de actualizar la credencial existente y publicar. Herramienta temporal retira su handler al completar/fallar/expirar.
+
+
+### H-SUTIFINANZAS-ADMIN-001 ? service-account candidate
+Human consent cancelled, temporary helper removed, production reader restored at version 10. Candidate report.mjs now signs RS256 JWTs using server-only SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON, fixed Google token endpoint, 15-minute assertion, spreadsheets.readonly and no delegated user or OAuth fallback. Existing contractual test PASS using synthetic RSA key: signature verified, hostile token_uri ignored, invalid credential fails before network, auth failures sanitized, one values GET. All parser/permission/drill-down contracts still PASS. No actual service credential read; attempted read-only probe was rejected before execution by automatic approval review. No candidate deployment or financial writes. Current status BLOCKED pending explicit credential reuse authorization and actual Sheet access.
+
+
+### SUTIFINANZAS dedicated identity constraint (2026-10-04)
+Owner requires SutiApp Final financial request engine to remain intact. Shared credential reuse is withdrawn. Candidate accepts only a new sutifinanzas-reader service identity and dedicated SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON secret. Existing bot-sheets identity is explicitly rejected by the contractual test before network access. No legacy credentials, grants or deployments modified. Activation awaits provisioning/sharing of the dedicated account; original shared credential was never used.
+
+
+### SUTIFINANZAS dedicated connection verified (2026-10-04)
+Owner supplied a new credential belonging to separate project sutifinanzas-reportes. Dedicated sutifinanzas-reader identity activated only for this report. Google remains sole authority; source API and deployed authenticated endpoint read 1,224 rows successfully; anonymous denied. Existing secrets unchanged, shared bot credential never used, SutiApp Final untouched. Server-only credential is not report data. Edge version 13 active; no financial persistence or Google writes. This supersedes earlier pending-credential statements.

@@ -1,5 +1,29 @@
 # H-SUTIFINANZAS-ADMIN-001
 
+## Current verified state ? dedicated source connected (2026-10-04)
+
+Owner supplied Downloads/sutifinanzas-reportes-17cdac4aaba7.json for this module. Dedicated identity verified as sutifinanzas-reader@sutifinanzas-reportes.iam.gserviceaccount.com, separate project sutifinanzas-reportes. Direct Sheets API read PASS: 1,224 rows, real header row 1, fixed authorized tab, no rows persisted. Installed only SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON in server secrets; existing secret metadata comparison unchanged. No shared bot credential read or used. No legacy secret, Apps Script or SutiApp Final engine change.
+
+Deployed sutifinanzas Edge v13 using the dedicated account. Real authenticated LOAD HTTP 200, 1,224 records. Anonymous LOAD HTTP 401 AUTH_REQUIRED. Quality counts match source discovery: 253 missing secretariat/requisition labels, 18 missing year, 22 missing expense date, 10 missing status. This supersedes all historical credential/access blockers below. Frontend publication and post-release verification in progress. No private key/token values in logs, frontend, repository or audit.
+
+## Latest owner constraint ? isolate SutiApp Final
+
+Owner requires SutiApp Final and its financial request engine to remain intact. Do not reuse bot-sheets or any existing credential for this implementation. Service-account setup must use a new dedicated sutifinanzas-reader identity, separate secret and only Viewer sharing on the authorized report workbook. Scope extension: enforce that dedicated identity name in report.mjs and test rejection of the existing bot identity before any network request. No current service-account credential has been read/used. No legacy secret, source, deployment, permission, scope, quota setting or engine is modified. Prior request to approve shared credential reuse is withdrawn. Missing external prerequisite is a newly provisioned dedicated account and key; no authenticated Google Cloud provisioning capability is available in this session.
+
+## Current continuation ? service-account API (2026-10-04)
+
+Owner now explicitly requests an API or other solution without continuing interactive OAuth. This supersedes the original requirement to reuse human OAuth, not the Google-only source of truth. PRE-CHANGE AUDIT: prepare service-account JWT authentication inside report.mjs, update the existing contractual test, this audit, SOURCE_OF_TRUTH/DECISIONS/AGENT_CHANGELOG and derived architecture metadata; mirror only focal files into the isolated release. No frontend behavior, Google data, sharing, Apps Script, legacy credential or financial-table changes. Single configured authentication method; no OAuth/mock/cache fallback. Scope spreadsheets.readonly; fixed Google token endpoint and authorized workbook/tab. Secret remains server-only. Recover by restoring previous report module; deployment waits for approved credentials and verified source access.
+
+Existing service identity was found by filename/reference: bot-sheets@whatsapp-bot-sutiapp.iam.gserviceaccount.com. Automatic approval review rejected reading/using its private credential from another project as unauthorized credential probing. The command did not execute. Do not retry or read the credential until explicit approval resolves that restriction. Only synthetic keys are allowed in local tests. Temporary consent flow cancelled; temporary handler removed and deployed reader metadata verified at version 10. Service candidate compile-only check succeeded; version 10 remained deployed. Production read and publication remain BLOCKED, never PASS, until an authorized credential actually reads the sheet.
+
+## Resumed authorization — resolve and publish
+
+Owner explicitly requested “hazlo resuelvelo” after the OAuth blocker. Same H continues. Scope additionally includes sanitized Google 403 diagnostics, correction/re-consent of the existing Google visibility OAuth connection (only this reader's credential set; never legacy request-sync credentials), temporary loopback consent tooling if Google requires interactive consent, and completing the already authorized screen registration/release. No Google sheet/metadata writes, Apps Script changes, alternate financial sources, second OAuth client/system or copied report data. Credentials never appear in logs/frontend/versioned files; any callback/exchange remains server-side. Reuse prior test evidence and repeat checks affected by actual changes.
+
+Current continuation: Google returns HTTP 403 / PERMISSION_DENIED. Existing dedicated OAuth client was authorized with drive.file for the different SutiApp Final workbook (docs/FINANCIAL_PROGRAM_VISIBILITY_RESULT.md). A temporary maintenance flow reuses that exact existing client, requests the additional Google Sheets read-only grant through official Google consent, pins soporte.sutiapp@gmail.com, and verifies the fixed target workbook before updating the existing visibility refresh token. Existing request-sync credentials are never changed. No access/refresh token is served to the browser: PKCE/code exchange executes on the backend; refresh tokens travel encrypted to the local maintenance process, with in-memory rollback. Maintenance requires a full administrator, authorization.write, an unguessable nonce and an expiring session; the temporary handler is removed automatically on completion/error/timeout. Consent is pending until Google returns it; no success is inferred from elapsed time.
+
+Screen registration 20261004000200 is now APPLIED: guarded transaction, authorization-state hash unchanged, zero business/financial writes and zero user grant changes. PostgREST list_admin_module_catalog includes sutifinanzas and the real administrator passes its read boundary. Existing production metadata has been refreshed read-only; screen-permission build guard PASS. Existing `test-screen-permission-contract.js`: all 20 checks PASS. Candidate Pages build/test PASS with 31 public files, no private files, cache version 2026100403. These continuation facts supersede the earlier prepared/unapplied status below; frontend publication remains pending the verified Google read.
+
 ## PRE-CHANGE AUDIT — 2026-10-04
 
 Status: PASS (authorization to implement and publish supplied by owner; verification pending).
@@ -140,3 +164,28 @@ No cierres H-SUTIFINANZAS-ADMIN-001. Concedido el acceso real al archivo autoriz
 ## UI preservation contract
 
 Existing Admin gate, header, sidebar groups, modules, mobile cards, permission management, assisted-context behavior and navigation remain structurally intact. Add one distinct SUTIFINANZAS entry/group and report controller. Report: title/subtitle, year/status/month/search, up to four contextual KPIs, source consultation timestamp, refresh, amount-sorted accessible rows with percentage bars, clickable breadcrumbs, explicit loading/error/empty and source-quality notices; responsive without required horizontal scrolling.
+
+
+## Service-account candidate verification and review
+
+H-SUTIFINANZAS-ADMIN-001 RESULT
+Status: BLOCKED (authorized credential and live source access pending).
+Files changed: report.mjs, existing test-sutifinanzas.js, existing authority/audit/changelog/architecture files; ignored maintenance tooling only.
+Source-of-truth verdict: SAFE, fixed Google source unchanged; no report persistence.
+Invariant verdict: PASS for synthetic parser/authentication/authorization contracts.
+Build: Edge compile-only succeeds; current production version 10 verified unchanged. UI and bundle unchanged in this continuation; prior candidate global image regression PASS with zero mutations.
+Tests: node scripts/test-sutifinanzas.js PASS, including RS256 signature, read-only scope, no delegated identity, fixed token endpoint, missing/invalid secret fail closed, one values GET and existing report contracts.
+Security: service credential remains unused; automatic approval rejection respected.
+Legacy impact: zero Google writes; existing OAuth/request-sync secrets unchanged.
+Unexpected files changed: none by this continuation; pre-existing SICOF audit registry staleness is unrelated.
+Known limitations: no service credential authorized/installed; live access and frontend publication not verified.
+Evidence: contractual suite, compile-only output, deployed function metadata version 10.
+
+SUTIAPP ARCHITECT REVIEW
+Task: service-account API candidate.
+Verdict: BLOCKED.
+Critical findings: implementation tested with synthetic key only; reuse of cross-project private credential requires explicit permission after automatic approval rejection.
+Source of truth: Google only. Architecture: one selected authentication path, no fallback. Security: backend permission/boundary before Google; no private key in frontend or versioned content. Data: unchanged. Legacy: read only.
+Owner decision: YES ? authorize reuse of the identified service credential, or supply a dedicated authorized credential.
+Next action: after explicit approval, verify the exact Sheet read before installing the server secret and publishing. Never infer success from credential presence.
+Response generated for Codex: NO.

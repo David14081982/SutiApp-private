@@ -860,3 +860,11 @@ Esta decisión sustituye el vencimiento de la vista previa descrito en H-SICOF-I
 ## H-SUTIFINANZAS-ADMIN-001 — Google Sheets directo (2026-10-04)
 
 Autoridad única del informe: Google Sheets 1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60, pestaña Gasto por secretaría. Backend autorizado lee una vez por apertura/Actualizar; proyección y drill-down sólo en memoria. Sin copia financiera en Supabase, localStorage, IndexedDB, Storage o JSON productivo. AÑO, Estatus, Gran total Comprobado y FECHA DEL GASTO usan encabezados exactos. Supabase conserva identidad/permisos. Implementación local; acceso OAuth productivo 403, publicación bloqueada.
+
+
+### SUTIFINANZAS ? server authentication continuation (2026-10-04)
+Owner requests API access without further human OAuth. Candidate reader uses a dedicated server-only service-account secret with spreadsheets.readonly; no OAuth fallback. The same fixed Google workbook/tab remains the sole report authority. Credentials are not financial copies. Candidate is not deployed: authorized credential reuse and live access remain pending.
+
+
+### SUTIFINANZAS dedicated connection verified (2026-10-04)
+Owner supplied a new credential belonging to separate project sutifinanzas-reportes. Dedicated sutifinanzas-reader identity activated only for this report. Google remains sole authority; source API and deployed authenticated endpoint read 1,224 rows successfully; anonymous denied. Existing secrets unchanged, shared bot credential never used, SutiApp Final untouched. Server-only credential is not report data. Edge version 13 active; no financial persistence or Google writes. This supersedes earlier pending-credential statements.

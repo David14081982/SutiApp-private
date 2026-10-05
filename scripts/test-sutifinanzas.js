@@ -31,9 +31,22 @@ async function main(){
  await assert.rejects(loadReport({action:'LOAD'},client(true,true,false),read),/ADMIN_DENIED/);
  await assert.rejects(loadReport({action:'LOAD',sheet:'other'},client(true,true,true),read),/REQUEST_INVALID/);assert.equal(sourceReads,0);
  await loadReport({action:'LOAD'},client(true,true,true),read);assert.equal(sourceReads,1);
- const calls=[];await readGoogle(()=> 'secret',async(url,options)=>{calls.push({url,options});return{ok:true,json:async()=>url.includes('oauth2')?{access_token:'token'}:{values}};});
+ const crypto=require('crypto'),{privateKey,publicKey}=crypto.generateKeyPairSync('rsa',{modulusLength:2048});
+ const credential=JSON.stringify({type:'service_account',client_email:'sutifinanzas-reader@test-only.iam.gserviceaccount.com',private_key:privateKey.export({type:'pkcs8',format:'pem'}),token_uri:'https://untrusted.invalid'});
+ const envReads=[],env=key=>{envReads.push(key);assert.equal(key,'SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON');return credential;};
+ const calls=[];await readGoogle(env,async(url,options)=>{calls.push({url,options});return{ok:true,json:async()=>url.includes('oauth2')?{access_token:'token'}:{values}};});
  assert.equal(calls.length,2);assert.equal(calls.filter(c=>c.url.includes('sheets.googleapis.com')).length,1);assert.equal(calls[1].options.method,undefined);assert(calls[1].url.includes('UNFORMATTED_VALUE'));
- for(const file of ['app/sutifinanzas-repository.js','app/sutifinanzas-admin.jsx','supabase/functions/sutifinanzas/report.mjs'])assert(!/localStorage|sessionStorage|indexedDB|\.from\(/.test(fs.readFileSync(path.join(__dirname,'..',file),'utf8')));
+ await assert.rejects(readGoogle(env,async(url)=>url.includes('oauth2')?{ok:true,json:async()=>({access_token:'private-token'})}:{ok:false,status:403,json:async()=>({error:{status:'PERMISSION_DENIED',message:'not exposed'}})}),e=>e.message==='GOOGLE_ACCESS_DENIED'&&e.details.googleStatus===403&&e.details.googleReason==='PERMISSION_DENIED'&&!JSON.stringify(e.details).includes('private-token'));
+ const [jwtHeader,jwtClaims,jwtSignature]=calls[0].options.body.get('assertion').split('.');
+ assert.equal(calls[0].url,'https://oauth2.googleapis.com/token','credential cannot override token destination');
+ assert.equal(calls[0].options.body.get('grant_type'),'urn:ietf:params:oauth:grant-type:jwt-bearer');
+ assert(crypto.verify('RSA-SHA256',Buffer.from(jwtHeader+'.'+jwtClaims),publicKey,Buffer.from(jwtSignature,'base64url')),'valid server signature');
+ const claims=JSON.parse(Buffer.from(jwtClaims,'base64url'));
+ assert.equal(claims.scope,'https://www.googleapis.com/auth/spreadsheets.readonly');assert.equal(claims.exp-claims.iat,900);assert(!claims.sub,'no user impersonation');
+ let invalidFetches=0;for(const bad of ['', '{', '{}', JSON.stringify({type:'service_account',client_email:'invalid',private_key:'secret'}), JSON.stringify({...JSON.parse(credential),client_email:'bot-sheets@whatsapp-bot-sutiapp.iam.gserviceaccount.com'})])await assert.rejects(readGoogle(()=>bad,async()=>{invalidFetches++;}),/GOOGLE_NOT_CONFIGURED/);
+ assert.equal(invalidFetches,0,'invalid credentials fail before network');
+ await assert.rejects(readGoogle(env,async()=>({ok:false,json:async()=>({error:'private-google-detail'})})),e=>e.message==='GOOGLE_AUTH_FAILED'&&!JSON.stringify(e).includes('private-google-detail'));
+ for(const file of ['app/sutifinanzas-repository.js','app/sutifinanzas-admin.jsx','supabase/functions/sutifinanzas/report.mjs'])assert(!/localStorage|sessionStorage|indexedDB|\.from\(/.test(fs.readFileSync(path.join(__dirname,'..',file),'utf8').replaceAll('Uint8Array.from(', 'byteConversion(')));
  console.log('PASS: header movement/missing/ambiguity, exact date field, numeric amounts, duplicates, missing dimensions, year/status, drill-down totals, permissions, one Google values GET, no persistence.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

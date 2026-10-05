@@ -1352,3 +1352,15 @@ Se autoriza conservar la fotografía FILE para simulación sin vencimiento autom
 ## H-SUTIFINANZAS-ADMIN-001 — Google Sheets directo (2026-10-04)
 
 Decisión expresa del propietario: SUTIFINANZAS separado de Finanzas/Solicitudes; Google directo READ ONLY, una consulta inicial y por Actualizar, navegación en memoria, sin migración/réplica ni caché persistente. Nunito. Reutilizar OAuth y permisos existentes; ninguna escritura Google. Encabezados reales inspeccionados y autoridad sin ambigüedad. El permiso Google efectivo pendiente no cambia esta decisión.
+
+
+### H-SUTIFINANZAS-ADMIN-001 ? API alternative (2026-10-04)
+Owner instructs: implement APIs or another solution instead of continuing interactive authorization. This authorizes preparing server-to-server read-only Sheets access and supersedes human OAuth reuse for this module. It does not authorize public sharing, Google writes, financial copies or changing legacy integrations. A credential found in a different project is not used: automatic approval review requires explicit permission to reuse it. Production activation remains pending that permission and a successful live read.
+
+
+### SUTIFINANZAS dedicated identity constraint (2026-10-04)
+Owner requires SutiApp Final financial request engine to remain intact. Shared credential reuse is withdrawn. Candidate accepts only a new sutifinanzas-reader service identity and dedicated SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON secret. Existing bot-sheets identity is explicitly rejected by the contractual test before network access. No legacy credentials, grants or deployments modified. Activation awaits provisioning/sharing of the dedicated account; original shared credential was never used.
+
+
+### SUTIFINANZAS dedicated connection verified (2026-10-04)
+Owner supplied a new credential belonging to separate project sutifinanzas-reportes. Dedicated sutifinanzas-reader identity activated only for this report. Google remains sole authority; source API and deployed authenticated endpoint read 1,224 rows successfully; anonymous denied. Existing secrets unchanged, shared bot credential never used, SutiApp Final untouched. Server-only credential is not report data. Edge version 13 active; no financial persistence or Google writes. This supersedes earlier pending-credential statements.

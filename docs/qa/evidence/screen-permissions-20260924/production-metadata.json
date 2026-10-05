@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-03T20:13:43.630Z",
+  "capturedAt": "2026-10-04T22:37:49.418Z",
   "productionWrites": 0,
   "permissionConstraint": [
     {
@@ -1130,6 +1130,23 @@
       "module_order": 91
     },
     {
+      "section_key": "admin_sutifinanzas",
+      "display_name": "SUTIFINANZAS",
+      "data_boundary": "Google Sheets direct read-only Gasto por secretaría; no financial persistence",
+      "allowed_actions": [
+        "read"
+      ],
+      "enforcement_status": "ENFORCED",
+      "module_key": "sutifinanzas",
+      "module_read_permissions": [
+        "program_requests.read"
+      ],
+      "module_write_permissions": [],
+      "module_sections": [],
+      "module_total_only": false,
+      "module_order": 100
+    },
+    {
       "section_key": "admin_document_generation",
       "display_name": "Documentos y Firmas",
       "data_boundary": "Private generated documents",
@@ -1651,7 +1668,7 @@
       "schema": "admin_support_private",
       "name": "module_visible",
       "signature": "admin_support_private.module_visible(uuid,text)",
-      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('farma','program_catalog.read',array[]::text[]),('document_generation','document_generation.config.read',array[]::text[]),('login_history','authorization.read',array[]::text[]),('votaciones','votaciones.read',array['votaciones','votaciones_results']::text[]),('votaciones_nominal','votaciones.export_identified_votes',array['votaciones_identified']::text[]),('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('popups','popups.read',array['popups']::text[]),('sindicato','union_content.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('program_products','program_catalog.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('inversion','workflow.read',array[]::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('aprobaciones','popups.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[]),('branding','assets.read',array[]::text[]),('sicof','savings.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION admin_support_private.module_visible(p_subject uuid, p_module text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare c jsonb:=admin_support_private.get_admin_access_context(p_subject); required text; sections text[]; begin\r\n if admin_support_private.is_module_admin(p_subject) then return admin_support_private.has_admin_module(p_subject,p_module); end if;\r\n select permission,section_keys into required,sections from (values ('farma','program_catalog.read',array[]::text[]),('document_generation','document_generation.config.read',array[]::text[]),('login_history','authorization.read',array[]::text[]),('votaciones','votaciones.read',array['votaciones','votaciones_results']::text[]),('votaciones_nominal','votaciones.export_identified_votes',array['votaciones_identified']::text[]),('administrators','authorization.read',array[]::text[]),('screen_permissions','authorization.read',array[]::text[]),('impersonation','affiliates.impersonate',array[]::text[]),('affiliates','affiliates.read',array[]::text[]),('data_exports','data_exports.read',array[]::text[]),('popups','popups.read',array['popups']::text[]),('sindicato','union_content.read',array[]::text[]),('requests','program_requests.read',array[]::text[]),('finanzas','program_requests.read',array[]::text[]),('savings','savings.read',array[]::text[]),('fondos','financial_criteria.visibility.read',array[]::text[]),('fincat','workflow.read',array[]::text[]),('program_products','program_catalog.read',array[]::text[]),('flujos','workflow.read',array[]::text[]),('inversion','workflow.read',array[]::text[]),('marketplace','marketplace.read',array['marketplace']::text[]),('aprobaciones','popups.read',array[]::text[]),('planes','company_portal.read',array[]::text[]),('membresias','memberships.read',array[]::text[]),('noticias','news.read',array['news']::text[]),('education','content.read',array['education','tutorials']::text[]),('convenios','companies.read',array['agreements']::text[]),('catalogos','segmentation.read',array[]::text[]),('roles','authorization.read',array[]::text[]),('pantallas','segmentation.read',array[]::text[]),('secciones','content.read',array[]::text[]),('banners','banners.read',array['banners']::text[]),('companies_admin','companies.read',array['companies']::text[]),('documents_admin','documents.read',array['documents']::text[]),('minutes_admin','minutes.read',array['minutes']::text[]),('programs_admin','programs.read',array['programs']::text[]),('menus','content.read',array[]::text[]),('formularios','content.read',array[]::text[]),('branding','assets.read',array[]::text[]),('sicof','savings.read',array[]::text[]),('sutifinanzas','program_requests.read',array[]::text[])) modules(key,permission,section_keys) where key=p_module;\r\n if required is null then return false; end if;\r\n return coalesce((c->>'full_access')::boolean,false)\r\n  or exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key'=any(sections))\r\n  or (p_module='data_exports' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'action'='export'))\r\n  or admin_support_private.has_admin_permission(p_subject,required)\r\n  or (p_module='education' and exists(select 1 from jsonb_array_elements(c->'section_actions') entry where entry->>'section_key' in ('education','tutorials')));\r\nend $function$\n",
       "acl": "{postgres=X/postgres}"
     },
     {
@@ -2715,6 +2732,11 @@
     }
   ],
   "tables": [
+    {
+      "name": "admin_screen_registration_recovery_20261004000200",
+      "rls": true,
+      "force_rls": true
+    },
     {
       "name": "app_editorial_screens",
       "rls": true,

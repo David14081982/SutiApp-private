@@ -52,17 +52,38 @@ export function projectSheet(values,consultedAt=new Date().toISOString()) {
   }
   return {version:1,source:{name:'Google Sheets',sheet:SHEET,consultedAt,headerRow:best.index+1},records,quality};
 }
+async function serviceAssertion(env) {
+  // Owner-authorized server-to-server authentication. No human OAuth fallback.
+  const raw=env('SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON');
+  if(!raw)throw new ReportError('GOOGLE_NOT_CONFIGURED');
+  try {
+    const account=JSON.parse(raw);
+    if(account.type!=='service_account'||typeof account.client_email!=='string'||
+      !/^sutifinanzas-reader@[a-zA-Z0-9-]+\.iam\.gserviceaccount\.com$/.test(account.client_email)||
+      typeof account.private_key!=='string'||!account.private_key.startsWith('-----BEGIN PRIVATE KEY-----'))throw Error();
+    const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    const text=value=>encode(new TextEncoder().encode(JSON.stringify(value)));
+    const now=Math.floor(Date.now()/1000);
+    const unsigned=text({alg:'RS256',typ:'JWT'})+'.'+text({iss:account.client_email,
+      scope:'https://www.googleapis.com/auth/spreadsheets.readonly',
+      aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+900});
+    const der=Uint8Array.from(atob(account.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,'')),c=>c.charCodeAt(0));
+    const key=await crypto.subtle.importKey('pkcs8',der,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+    const signature=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,new TextEncoder().encode(unsigned));
+    return unsigned+'.'+encode(new Uint8Array(signature));
+  }catch(_){throw new ReportError('GOOGLE_NOT_CONFIGURED');}
+}
 export async function readGoogle(env,fetcher=fetch) {
-  // Reuse the existing Google visibility OAuth credentials. This path only GETs Sheets.
-  const keys=['CLIENT_ID','CLIENT_SECRET','REFRESH_TOKEN'];
-  const [client_id,client_secret,refresh_token]=keys.map(k=>env('GOOGLE_VISIBILITY_OAUTH_'+k));
-  if(!client_id||!client_secret||!refresh_token)throw new ReportError('GOOGLE_NOT_CONFIGURED');
-  const tokenResponse=await fetcher('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id,client_secret,refresh_token,grant_type:'refresh_token'}),signal:AbortSignal.timeout(15000)});
+  const assertion=await serviceAssertion(env);
+  const tokenResponse=await fetcher('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({assertion,grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer'}),signal:AbortSignal.timeout(15000)});
   const token=await tokenResponse.json();
   if(!tokenResponse.ok||!token.access_token)throw new ReportError('GOOGLE_AUTH_FAILED');
   // Exact tab, whole used value range: no fixed column boundary or silent row truncation.
   const response=await fetcher('https://sheets.googleapis.com/v4/spreadsheets/'+WORKBOOK+'/values/'+encodeURIComponent("'"+SHEET+"'")+'?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER',{headers:{Authorization:'Bearer '+token.access_token},signal:AbortSignal.timeout(45000)});
-  if(!response.ok)throw new ReportError(response.status===403?'GOOGLE_ACCESS_DENIED':'GOOGLE_UNAVAILABLE');
+  if(!response.ok){
+    let reason='';try{const error=await response.json();reason=String(error.error?.errors?.[0]?.reason||error.error?.status||'').replace(/[^A-Za-z_]/g,'').slice(0,80);}catch(_){}
+    throw new ReportError(response.status===403?'GOOGLE_ACCESS_DENIED':'GOOGLE_UNAVAILABLE',{googleStatus:response.status,googleReason:reason});
+  }
   const body=await response.json();
   return projectSheet(body.values||[]);
 }

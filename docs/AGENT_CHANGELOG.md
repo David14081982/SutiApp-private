@@ -4065,3 +4065,7 @@ Published 7a32401. Dedicated Sheets account returns 1,224 rows; local/public UI 
 
 ### H-SUTIFINANZAS-PIVOT-002
 Owner-approved pivot table replaces the sequential report list. Row fields can be reordered/added/removed; inline branch expansion, parent cells, subtotals, monthly/yearly/total-only columns. Real TIPO DE GASTOS header connected by name in dedicated reader v14. Existing report security/source/precision and SutiApp Final unchanged. Model and synthetic browser verification PASS; live release checks pending.
+
+
+### H-SUTIFINANZAS-PIVOT-002 final PASS
+Published a48caa5. Real local/public pivot PASS on1224 records, same totals under configurable grouping, five inline levels, all column modes, one initial/refresh read and zero interaction reads. Focus restoration fixed and tested. Dedicated reader v14; both workflows SUCCESS. Independent architect review APPROVED.

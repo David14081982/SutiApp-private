@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "checks": [
+    "installed writers loaded with identical function hashes",
+    "create persists all demographic fields, zero distinct from NULL and no Auth required",
+    "update stores and rereads canonical choices and children count; unchanged financial history preserved",
+    "explicit empty count stored as NULL, zero stored as zero; audit records changed keys and actor",
+    "stale version, forbidden columns, anonymous and unprivileged writes denied"
+  ],
+  "productionWrites": 0,
+  "engine": "isolated PGlite",
+  "writers": "exact installed create/update definitions",
+  "dependencyFixtures": [
+    "permission resolver",
+    "duplicate lookup",
+    "workbench full-row projection"
+  ],
+  "rawBackendContractUnchanged": true
+}

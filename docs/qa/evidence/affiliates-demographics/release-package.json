@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseCommit": "f233e76f3ca38775d32e1b479fc8e422ce1e47a4",
+  "changedChunks": [
+    "screens-admin-affiliates.jsx"
+  ],
+  "unrelatedPublishedChunksPreserved": 155,
+  "bundleSha256": "50091a56556ea8cae1318a90fd23bb1ee62de5cf805a7f4f5536136d7a348bd5",
+  "version": 2026100410,
+  "htmlLogicIdentical": true,
+  "workerLogicIdentical": true,
+  "previousPublishedContentPreserved": true,
+  "published": false
+}

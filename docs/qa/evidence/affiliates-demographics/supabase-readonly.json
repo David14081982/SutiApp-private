@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "productionWrites": 0,
+  "columns": [
+    {
+      "name": "gender_raw",
+      "type": "text",
+      "nullable": "YES"
+    },
+    {
+      "name": "marital_status_raw",
+      "type": "text",
+      "nullable": "YES"
+    },
+    {
+      "name": "children_count_raw",
+      "type": "text",
+      "nullable": "YES"
+    }
+  ],
+  "rls": true,
+  "directWrites": 0,
+  "functions": [
+    {
+      "hash": "54613d2725ed82238bf61c318c923227",
+      "name": "create_admin_affiliate",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "create_admin_affiliate(jsonb,text)",
+      "anon_execute": false,
+      "security_definer": true,
+      "authenticated_execute": true
+    },
+    {
+      "hash": "96499ab470210588cd484802ad10497f",
+      "name": "get_admin_affiliate_workbench",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "get_admin_affiliate_workbench(uuid)",
+      "anon_execute": false,
+      "security_definer": true,
+      "authenticated_execute": true
+    },
+    {
+      "hash": "ddaa2a601f1b3ea26d4d8f4c08c62b1e",
+      "name": "update_admin_affiliate",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "update_admin_affiliate(uuid,timestamp with time zone,jsonb,text)",
+      "anon_execute": false,
+      "security_definer": true,
+      "authenticated_execute": true
+    }
+  ]
+}

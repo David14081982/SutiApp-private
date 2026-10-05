@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "screens-admin-affiliates.jsx"
+  ],
+  "unrelatedChunksPreserved": 153,
+  "workerLogicIdentical": true,
+  "version": 2026100410,
+  "bundleSha256": "0b0ad8281bf9d006c4add60b27e9532d70cdd9b7c52826440f1c8c398c3a1c95",
+  "productionPublished": false
+}

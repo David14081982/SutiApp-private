@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Edit: exact dropdowns, invalid count blocked, zero retained, error preserves draft, retry, RPC minimal patch, readback and explicit NULL",
+    "Historical raw values preserved on unrelated edits; disabled current value visible; removed fields never patched; six tabs preserved",
+    "Create: same choices, invalid count blocked before RPC, complete payload, readback in detail and edit"
+  ],
+  "pageErrors": [],
+  "source": "generated bundle screen + actual repository",
+  "productionTraffic": false
+}

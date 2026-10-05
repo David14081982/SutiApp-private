@@ -65412,8 +65412,48 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   const h = React.createElement,
     I = window.Icon;
   const PAGE_SIZE = 25;
-  const EDIT_FIELDS = Object.freeze([['full_name', 'Nombre completo'], ['display_name', 'Nombre visible'], ['historical_email_raw', 'Correo de contacto'], ['phone_raw', 'Teléfono'], ['rfc_raw', 'RFC'], ['curp_raw', 'CURP'], ['birth_date_raw', 'Fecha de nacimiento'], ['gender_raw', 'Género'], ['marital_status_raw', 'Estado civil'], ['address_raw', 'Domicilio'], ['city_raw', 'Ciudad'], ['unit_raw', 'Unidad'], ['employment_position_raw', 'Puesto'], ['employment_area_raw', 'Área'], ['employment_level_raw', 'Nivel laboral'], ['occupation_raw', 'Ocupación'], ['employment_entry_date_raw', 'Ingreso laboral'], ['institute_entry_date_raw', 'Ingreso al instituto'], ['union_enrollment_date_raw', 'Ingreso al sindicato'], ['affiliation_raw', 'Afiliación'], ['union_position_raw', 'Cargo sindical'], ['termination_date_raw', 'Fecha de baja'], ['financial_employee_type', 'Tipo de empleado'], ['financial_affiliation_status', 'Estatus de afiliación'], ['financial_employment_status', 'Estatus laboral']]);
+  const EDIT_FIELDS = Object.freeze([['full_name', 'Nombre completo'], ['display_name', 'Nombre visible'], ['historical_email_raw', 'Correo de contacto'], ['phone_raw', 'Teléfono'], ['rfc_raw', 'RFC'], ['curp_raw', 'CURP'], ['birth_date_raw', 'Fecha de nacimiento'], ['gender_raw', 'Género'], ['marital_status_raw', 'Estado civil'], ['children_count_raw', 'Número de hijos'], ['address_raw', 'Domicilio'], ['city_raw', 'Ciudad'], ['unit_raw', 'Unidad'], ['employment_position_raw', 'Puesto'], ['employment_area_raw', 'Área'], ['employment_level_raw', 'Nivel laboral'], ['occupation_raw', 'Ocupación'], ['employment_entry_date_raw', 'Ingreso laboral'], ['institute_entry_date_raw', 'Ingreso al instituto'], ['union_enrollment_date_raw', 'Ingreso al sindicato'], ['affiliation_raw', 'Afiliación'], ['union_position_raw', 'Cargo sindical'], ['termination_date_raw', 'Fecha de baja']]);
   const inputClass = 'aff-input';
+  const DEMOGRAPHIC_OPTIONS = Object.freeze({
+    gender_raw: ['Masculino', 'Femenino'],
+    marital_status_raw: ['Soltero(a)', 'Casado(a)', 'Unión Libre', 'Viudo(a)']
+  });
+  function CaptureInput({
+    field,
+    label,
+    value,
+    onChange,
+    disabled
+  }) {
+    const options = DEMOGRAPHIC_OPTIONS[field],
+      current = String(value ?? '');
+    const props = {
+      className: inputClass,
+      'aria-label': label,
+      value: current,
+      disabled,
+      onChange: event => onChange(event.target.value)
+    };
+    if (options) return h('select', props, h('option', {
+      value: ''
+    }, 'Sin dato'), current && !options.includes(current) && h('option', {
+      value: current,
+      disabled: true
+    }, current + ' (valor registrado)'), options.map(option => h('option', {
+      key: option,
+      value: option
+    }, option)));
+    return h('input', Object.assign(props, {
+      type: 'text',
+      maxLength: 240,
+      inputMode: field === 'children_count_raw' ? 'numeric' : undefined
+    }));
+  }
+  function captureError(values) {
+    if (Object.prototype.hasOwnProperty.call(values, 'children_count_raw') && !/^\d*$/.test(String(values.children_count_raw ?? '').trim())) return 'Número de hijos debe ser un número entero igual o mayor que cero.';
+    for (const key of Object.keys(DEMOGRAPHIC_OPTIONS)) if (values[key] != null && values[key] !== '' && !DEMOGRAPHIC_OPTIONS[key].includes(values[key])) return 'Selecciona una opción de la lista de ' + (key === 'gender_raw' ? 'Género.' : 'Estado civil.');
+    return '';
+  }
   function text(value, fallback) {
     const result = String(value == null ? '' : value).trim();
     return result || fallback || '—';
@@ -65558,6 +65598,9 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       phone_raw: '',
       rfc_raw: '',
       curp_raw: '',
+      gender_raw: '',
+      marital_status_raw: '',
+      children_count_raw: '',
       financial_union_code: '',
       financial_employee_category_code: ''
     });
@@ -65575,6 +65618,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     };
     const submit = async () => {
       if (busy) return;
+      const validation = captureError(form);
+      if (validation) {
+        setError(validation);
+        return;
+      }
       setBusy(true);
       setError('');
       try {
@@ -65614,7 +65662,15 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }, control('numero_control', 'Número de control'), control('full_name', 'Nombre completo'), control('affiliate_status_raw', 'Estado', 'select', statuses.map(value => h('option', {
       key: value,
       value
-    }, value))), control('historical_email_raw', 'Correo de contacto'), control('phone_raw', 'Teléfono'), control('rfc_raw', 'RFC'), control('curp_raw', 'CURP'), control('financial_union_code', 'Sindicato', 'select', [h('option', {
+    }, value))), control('historical_email_raw', 'Correo de contacto'), control('phone_raw', 'Teléfono'), control('rfc_raw', 'RFC'), control('curp_raw', 'CURP'), [['gender_raw', 'Género'], ['marital_status_raw', 'Estado civil'], ['children_count_raw', 'Número de hijos']].map(([key, label]) => h('label', {
+      key
+    }, h('span', null, label), h(CaptureInput, {
+      field: key,
+      label,
+      value: form[key],
+      disabled: busy,
+      onChange: value => set(key, value)
+    }))), control('financial_union_code', 'Sindicato', 'select', [h('option', {
       key: '',
       value: ''
     }, 'Sin dato')].concat(unions.map(row => h('option', {
@@ -65978,6 +66034,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
           prior = String(profile[key] ?? '').trim();
         if (next !== prior) patch[key] = next || null;
       });
+      const validation = captureError(patch);
+      if (validation) {
+        setError(validation);
+        return;
+      }
       if (!Object.keys(patch).length) {
         setError('No hay cambios por guardar.');
         return;
@@ -66007,11 +66068,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       disabled: busy
     }, EDIT_FIELDS.map(([key, label]) => h('label', {
       key
-    }, h('span', null, label), h('input', {
-      className: inputClass,
-      value: form[key] ?? '',
-      maxLength: 240,
-      onChange: event => set(key, event.target.value)
+    }, h('span', null, label), h(CaptureInput, {
+      field: key,
+      label,
+      value: form[key],
+      onChange: value => set(key, value)
     }))), h('label', null, h('span', null, 'Sindicato'), h('select', {
       className: inputClass,
       value: form.financial_union_code || '',
@@ -66123,6 +66184,9 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       label: 'Estado civil',
       value: p.marital_status_raw
     }), h(Field, {
+      label: 'Número de hijos',
+      value: p.children_count_raw
+    }), h(Field, {
       label: 'Domicilio',
       value: p.address_raw
     }), h(Field, {
@@ -66145,12 +66209,6 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }), h(Field, {
       label: 'Categoría',
       value: p.financial_employee_category_code
-    }), h(Field, {
-      label: 'Tipo de empleado',
-      value: p.financial_employee_type
-    }), h(Field, {
-      label: 'Estatus laboral',
-      value: p.financial_employment_status
     }), h(Field, {
       label: 'Unidad',
       value: p.unit_raw

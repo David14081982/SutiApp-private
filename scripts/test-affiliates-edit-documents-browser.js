@@ -2,8 +2,8 @@
 // Actual screen and repository, isolated backend fixtures, no production traffic.
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert').strict;
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
-const dir=path.join(root,'docs/qa/evidence/affiliates-optional-reason-20260924');
+const root=path.resolve(process.env.AFFILIATES_TEST_ROOT||path.join(__dirname,'..')),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const dir=path.join(root,process.env.AFFILIATES_EVIDENCE_DIR||'docs/qa/evidence/affiliates-optional-reason-20260924');
 async function main(){
  fs.mkdirSync(dir,{recursive:true});const errors=[],checks=[];
  const server=http.createServer((req,res)=>res.end('<!doctype html><html><head><meta charset="utf-8"></head><body><div id="fixture"></div></body></html>'));
@@ -59,7 +59,7 @@ async function main(){
   const page=await fixture();
   await page.getByRole('button',{name:'Editar información',exact:true}).click();
   const form=page.locator('[data-affiliate-edit-form]'),save=form.getByRole('button',{name:'Guardar cambios auditados'});
-  assert.equal(await form.locator('input').count(),25);assert.equal(await form.locator('select').count(),2);
+  assert.equal(await form.locator('input').count(),21);assert.equal(await form.locator('select').count(),4);
   await form.getByLabel('Teléfono',{exact:true}).fill('6629999999');await save.click();
   await page.locator('[data-admin-affiliate-detail="a1"]').waitFor();assert.equal(await page.evaluate(()=>__calls.filter(c=>c.name==='update_admin_affiliate').at(-1).args.p_reason),'');
   await page.getByRole('button',{name:'Editar información',exact:true}).click();await form.getByLabel('Teléfono',{exact:true}).fill('6628888888');
@@ -129,7 +129,8 @@ async function main(){
    const b=await editor.boundingBox(),button=await editor.getByRole('button',{name:'Guardar cambios auditados'}).boundingBox();
    assert(button.y>=b.y&&button.y+button.height<=b.y+b.height+1,'save outside editor '+width);assert(button.y+button.height<=height+1,'save below viewport '+width);
    assert(await editor.locator('fieldset').evaluate(e=>e.scrollHeight>e.clientHeight),'fields must scroll');
-   const labels=await editor.locator('label>span').allTextContents(),prior=await before.locator('.aff-edit label>span').allTextContents();assert.deepEqual(labels.slice(0,27),prior.slice(0,27));
+   const labels=await editor.locator('label>span').allTextContents(),prior=await before.locator('.aff-edit label>span').allTextContents();
+   const preserved=prior.filter(label=>!['Tipo de empleado','Estatus de afiliación','Estatus laboral'].includes(label));preserved.splice(preserved.indexOf('Estado civil')+1,0,'Número de hijos');assert.deepEqual(labels,preserved);
    await editor.locator('fieldset').evaluate(e=>e.scrollTop=e.scrollHeight);assert(await editor.locator('select').last().isVisible(),'category missing '+width);
    assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'horizontal overflow '+width);
    await p.screenshot({path:path.join(dir,`edit-${width}x${height}.png`)});

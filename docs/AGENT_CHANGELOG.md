@@ -4098,3 +4098,15 @@ ningún afiliado real bloqueado, ninguna solicitud creada ni modificada por esta
 ## H-FINANCE-BLOCKS-001 — activación autorizada del backend
 
 El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.
+
+## H-AFFILIATES-DEMOGRAPHICS-001 — implementación local verificada, 2026-10-05
+
+Admin Afiliados: Género y Estado civil pasan a listas de opciones autorizadas en alta
+y edición; Número de hijos usa children_count_raw existente en public.affiliates.
+Retirados Tipo de empleado/Estatus de afiliación/Estatus laboral de captura, y sus
+tarjetas visibles de afiliación, sin borrar historia. RPC/Repository/RLS intactos.
+Supabase read-only, PostgreSQL aislado con writers instalados, navegador y regresión
+focal PASS. Un chunk de bundle cambiado, 153 preservados; SW sólo cachebusters.
+Test estático financiero antiguo falla también con baseline; documentado, no alterado.
+Sin DDL/DML productivo, sin publicación frontend. Revisión APPROVED para alcance local.
+[Auditoría y cierre](audits/H-AFFILIATES-DEMOGRAPHICS-001.md).

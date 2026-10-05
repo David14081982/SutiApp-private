@@ -131,8 +131,41 @@ El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó com
 
 ## Release final candidate
 
-Paquete aislado sobre 4f01f0a3795412a9d41d3341289ef639855dbb66, con bundle SHA256 4b9fd3501bd8b2c4ce092d2c7c7f696f2cbb6281af7c03da3f356eb226f9951d y cachebuster 2026100407. Conserva 151 chunks publicados sin cambios; modifica tres focales y a?ade dos. Lecturas/aperturas financieras permanecen disponibles y el encabezado de la bit?cora conserva Volver.
+Paquete aislado sobre 4f01f0a3795412a9d41d3341289ef639855dbb66, con bundle SHA256 4b9fd3501bd8b2c4ce092d2c7c7f696f2cbb6281af7c03da3f356eb226f9951d y cachebuster 2026100407. Conserva 151 chunks publicados sin cambios; modifica tres focales y añade dos. Lecturas/aperturas financieras permanecen disponibles y el encabezado de la bitácora conserva Volver.
 
-La evidencia actual es docs/qa/evidence/finance-blocks/release-package.json, release-integration.json, release-live-candidate.json, release-apply.json y release-backend.json; sustituye para este candidato los hashes/resultados hist?ricos de build.json y global-* del candidato inicial. La UI autenticada local, con/sin service worker y refresh, y la verificaci?n backend admin/self/anon/ACL son PASS. El test aislado de navegador incluye navegaci?n de retorno; integraci?n conserva seis casos.
+La evidencia actual es docs/qa/evidence/finance-blocks/release-package.json, release-integration.json, release-live-candidate.json, release-apply.json y release-backend.json; sustituye para este candidato los hashes/resultados históricos de build.json y global-* del candidato inicial. La UI autenticada local, con/sin service worker y refresh, y la verificación backend admin/self/anon/ACL son PASS. El test aislado de navegador incluye navegación de retorno; integración conserva seis casos.
 
-La migraci?n est? aplicada sin bloqueos/eventos reales ni cambios de negocio; el frontend todav?a requiere publicaci?n y comprobaci?n productiva. Las pruebas de afiliado normal en vivo est?n NOT_RUN_NO_CONTROLLED_CREDENTIALS porque no existen credenciales controladas disponibles; su matriz de permisos est? verificada en PostgreSQL aislado. No se ejecut? una prueba real de carrera multiconexi?n. Ning?n resultado aislado se presenta como prueba productiva equivalente.
+La migración está aplicada sin bloqueos/eventos reales ni cambios de negocio; el frontend todavía requiere publicación y comprobación productiva. Las pruebas de afiliado normal en vivo están NOT_RUN_NO_CONTROLLED_CREDENTIALS porque no existen credenciales controladas disponibles; su matriz de permisos está verificada en PostgreSQL aislado. No se ejecutó una prueba real de carrera multiconexión. Ningún resultado aislado se presenta como prueba productiva equivalente.
+
+
+## Publicación verificada antes del cierre global
+
+Commit bccb935a3ca11926906e76b531545eddf167a6da publicado por GitHub Pages run 37262338502 (SUCCESS). https://sutiapp.com/SutiApp.html y https://david14081982.github.io/SutiApp-private/SutiApp.html sirven el bundle 4b9fd3501bd8b2c4ce092d2c7c7f696f2cbb6281af7c03da3f356eb226f9951d, versión 2026100407. Evidencia: release-published.json.
+
+Verificación focal productiva PASS: navegación, bitácora, fechas/motivo, apertura/cancelación, con/sin service worker y refresh; backend admin/self/anon y tablas privadas. Cero mutaciones de negocio. Evidencia: release-live-production.json. La regresión global productiva continúa pendiente al registrar esta sección. Persisten las limitaciones de credenciales normales controladas no disponibles y ausencia de ensayo multiconexión.
+
+release-live-candidate-preflight-available.json se conserva como intento histórico previo y no sustituye los resultados finales PASS.
+
+
+## H-FINANCE-BLOCKS-001 RESULT FINAL
+
+```text
+H-FINANCE-BLOCKS-001 RESULT
+Status: PASS - publicado y verificado
+Files changed: fuentes focales de bloqueos/Finanzas; migracion/recovery; tests/build focal; bundle/cachebusters generados; documentacion H y Registry derivado. Runtime publicado en bccb935a3ca11926906e76b531545eddf167a6da.
+Source-of-truth verdict: PASS - finance_blocks autoritativo privado, finance_block_events conserva historia; FK afiliado y numero_control; sin autoridad alternativa.
+Invariant verdict: PASS - 8 tablas de autoridad y 484 funciones existentes conservadas; solicitudes anteriores, Ahorro, saldos y calculos intactos.
+Build: PASS - Pages run 37262338502 SUCCESS; ambos dominios hash 4b9fd3501bd8b2c4ce092d2c7c7f696f2cbb6281af7c03da3f356eb226f9951d, version 2026100407; 151 chunks ajenos preservados.
+Tests: PASS - SQL aislado; navegador 5 controles; integracion 6 casos; permisos y read-boundary; focal local/productivo con/sin SW+refresh; regresion global local y productiva final.
+Security: PASS - backend admin/self/anon y ACL privadas; permisos, identidad y bloqueo evaluados en servidor. Matriz afiliado normal en PostgreSQL aislado.
+Legacy impact: NOT APPLICABLE para escritura - cero modificaciones Google, saldos, formulas, solicitudes previas o datos de negocio.
+Unexpected files changed: ninguno en los commits focales; cambios previos del workspace preservados y previews excluidos.
+Known limitations: afiliado normal en vivo NOT_RUN_NO_CONTROLLED_CREDENTIALS; no ensayo real multiconexion de carrera. Ningun bloqueo/solicitud sinteticos en produccion.
+Evidence: docs/qa/evidence/finance-blocks/release-{package,integration,apply,backend,published,live-candidate,live-production}.json; release-global-{local,production}.txt; browser.json; sql.json.
+```
+
+Regresión global productiva final: PASS para 194 app assets y 226 imágenes de catálogo; sello/Login, perfil, Admin Afiliados, documentos imagen/PDF legítimo, Membership, Préstamo, Marketplace, fullscreen, refresh y comparación con/sin service worker. Cero errores de navegador y cero mutaciones productivas. Esta evidencia final sustituye las ejecuciones históricas de candidatos anteriores.
+
+## SUTIAPP ARCHITECT REVIEW FINAL
+
+Verdict: APPROVED. Revisión independiente confirmó el hash exacto publicado, conservación de 151 chunks, controles de autoridad/seguridad, evidencia focal y todos los gates productivos. Sin fases adicionales ni nueva decisión owner. Instrucción siguiente: registrar el cierre documental/evidencia con [skip ci], conservando congelado el runtime ya publicado; no ejecutar otras H.

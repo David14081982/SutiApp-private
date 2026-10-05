@@ -4086,11 +4086,11 @@ Owner requested Excel of the current expanded/collapsed report. Added genuine XL
 ### H-SUTIFINANZAS-EXPORT-004 final PASS
 Published06c5bb4. Genuine Excel download matches current visible folders/subfolders and their subtotals, filters/order/periods; closed branches stay summarized. Independent13 synthetic downloads and3 cancellation cases PASS; real local/public4 XLSX readbacks each PASS on1224 source records, no extra source reads for export. Both domains match cache2026100406/hash312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76. Pages37253866112 and Membership37253866058 SUCCESS. Architect review APPROVED; Google/backend/SutiApp Final unchanged.
 
-## H-FINANCE-BLOCKS-001 — candidato local, 2026-10-04
+## H-FINANCE-BLOCKS-001 — publicado y verificado, 2026-10-04
 
 Implementado control desde detalle de Finanzas Solicitudes, bitácora entre Solicitudes
 y SICOF, edición/revocación, fechas inclusivas, explicación visible y vínculo canónico
-con numero_control conservado. Migración/recovery preparados, sin aplicación productiva.
+con numero_control conservado. Migración aplicada y frontend publicado con bccb935a; recovery conservado.
 Pruebas SQL aisladas, UI aislada e integración del workbench pasan. Registro y limitaciones:
 [auditoría](audits/H-FINANCE-BLOCKS-001.md). Cambios previos del propietario preservados;
 ningún afiliado real bloqueado, ninguna solicitud creada ni modificada por esta H.

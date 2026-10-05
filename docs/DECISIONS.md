@@ -1375,12 +1375,10 @@ El propietario solicita bloquear desde el detalle de Finanzas Solicitudes, aplic
 la restricción a programas financieros, definir inicio y fin, mostrar ambas fechas
 y explicación al afiliado, y administrar/levantar bloqueos desde una bitácora debajo
 de Solicitudes y encima de SICOF. Vínculo al registro del afiliado por número de control.
-Implementación candidata: FK estable y número TEXT sin cambiar maestro ni exigir Auth;
+Implementación publicada: FK estable y número TEXT sin cambiar maestro ni exigir Auth;
 fechas inclusivas America/Hermosillo; nueva solicitud protegida en backend, historial
 administrativo preservado. La bitácora hereda permisos del módulo Finanzas existente.
-Consultas, pagos, retiros de Ahorro y solicitudes previas no cambian. Se pidió aclaración
-opcional sobre solicitudes de Ahorro; el candidato no las incluye. No se atribuye al
-propietario autorización de rechazar/cancelar solicitudes ya existentes ni publicación.
+Consultas, pagos, retiros de Ahorro y solicitudes previas no cambian. El propietario confirmó este alcance y autorizó commit, push y publicación. No se autoriza rechazar/cancelar solicitudes ya existentes. Publicación verificada: bccb935a, Pages run 37262338502 SUCCESS.
 
 ## H-FINANCE-BLOCKS-001 — activación autorizada del backend
 

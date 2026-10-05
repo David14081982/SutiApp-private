@@ -420,7 +420,7 @@ A documentary revision must preserve original event, identity, authorized financ
 values, historical signers and the old PDF. New revision ID is idempotent; stale-parent
 revision is rejected. The revision never invokes any financial writer or Google.
 
-## H-FINANCE-BLOCKS-001 — contrato del candidato local
+## H-FINANCE-BLOCKS-001 — contrato productivo verificado
 
 - Una restricción administrativa no cambia saldos, cálculos, préstamos existentes,
   solicitudes previas, pagos, Google ni retiros de Ahorro.

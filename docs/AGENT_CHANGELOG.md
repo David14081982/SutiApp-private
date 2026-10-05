@@ -4081,3 +4081,7 @@ Published8808622. All selected hierarchy fields through Producto fixed, with vis
 
 ### H-SUTIFINANZAS-EXPORT-004
 Owner requested Excel of the current expanded/collapsed report. Added genuine XLSX export using the same visible row projection as the grid and the already published ExcelJS vendor. Filters/order/period columns/visible branches/subtotals preserved; numeric amounts, safe text labels, frozen fields, source/export timestamps. Snapshot at click; stale session/source/unmount cancels download. No Google reads on export or source writes. Unit roundtrip,13 independent synthetic downloads and existing UI/frozen suites PASS. Isolated release/public checks pending.
+
+
+### H-SUTIFINANZAS-EXPORT-004 final PASS
+Published06c5bb4. Genuine Excel download matches current visible folders/subfolders and their subtotals, filters/order/periods; closed branches stay summarized. Independent13 synthetic downloads and3 cancellation cases PASS; real local/public4 XLSX readbacks each PASS on1224 source records, no extra source reads for export. Both domains match cache2026100406/hash312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76. Pages37253866112 and Membership37253866058 SUCCESS. Architect review APPROVED; Google/backend/SutiApp Final unchanged.

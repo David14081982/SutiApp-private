@@ -22,3 +22,32 @@ Verification PASS: real ExcelJS XLSX serialization/readback (visible mixed branc
 Build PASS:31 public files; existing vendored ExcelJS reused, no new dependency or shared helper changes. Isolated bundle changed only sutifinanzas-repository.js and sutifinanzas-admin.jsx, preserving152 other chunks. Cache2026100406; SHA256312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76. SRI test uses published LF bytes, matching existing vendor normalization in the public build; root and isolated roundtrip suites PASS. Pages guard PASS.
 
 Real local/public acceptance and publication receipt pending. No backend/schema/credentials/Google writes.
+
+
+## H-SUTIFINANZAS-EXPORT-004 RESULT
+
+Status: PASS.
+Files changed: app/sutifinanzas-admin.jsx, app/sutifinanzas-repository.js, scripts/test-sutifinanzas-export.js; two focal generated bundle chunks; isolated release HTML/sw cache versions only; this audit, existing changelog and derived architecture index.
+Source-of-truth verdict: SAFE. Same authorized Google-only report. Download is an explicitly requested derivative of the clicked in-memory view, with consultation/export timestamps; never an alternative source or app-persisted copy.
+Invariant verdict: PASS. Visible rows, hierarchy order, filters, sorting, period columns, original decimal amounts, parent/subtotal merges and independently derived grand total preserved. Closed descendants excluded; no hidden detail sheet or formula execution. Export never sums subtotal rows to obtain totals.
+Build: PASS.31 public files, no private files.152 unrelated bundle chunks unchanged. Both public domains match SHA256312e3bdf529a524d97885af6175ccd52fd0bcded937a90cf67a4d0c0bdca6b76, cache2026100406. Existing vendored ExcelJS bytes/integrity verified; no new library or shared runtime edit.
+Tests: PASS. Original parser/model/security contracts; actual XLSX roundtrip suite including numeric fractional/negative amounts, formula-safe strings, identity distinction, long labels, nine fields, zero fields/empty, all period modes, reorder and lazyloader error/timeout/retry. Existing pivot functional and frozen geometry suites PASS. Independent browser13 actual XLSX downloads matched rendered labels/amounts/rows/merges, including compact mobile and empty filter;3 stale-export cancellation scenarios PASS. Real local and sutiapp.com readback verified4 downloads each:19 collapsed visible rows,94 rows with5 levels open,125 rows after field reordering,125 in total-only mode. All exported numeric displays equal the corresponding UI cells and total; source returns1224 records. Initial read1, report interactions/exports0 additional reads, explicit refresh1. Browser errors0; business writes0. Global image regression NOT APPLICABLE under focal-generated-artifact rule.
+Security: existing backend gate unchanged; asynchronous export canceled on source generation/session/context change or unmount. Source text remains Excel string, including leading equals. Explicit export failures permit retry; no stale download or fallback. No credentials changed or exposed.
+Legacy impact: NONE. No backend deployment, Google writes, Apps Script, schema or SutiApp Final changes. Auth/request compatibility and Membership Google contract passed.
+Unexpected files changed: NONE in isolated release. Root unrelated work preserved.
+Known limitations: XLSX is a snapshot of visible branches at click; hidden children are not embedded for later expansion. Scroll position does not limit export rows/months. Compact screen layout becomes the full configured field columns in Excel. Current local-only file can be kept by its downloader but is never read back by SutiApp. Existing report refresh and global shell breakpoint remount behavior unchanged.
+Evidence: release06c5bb471e9859d53c07c6cb1c88c4a1160fa0a8; Pages37253866112 SUCCESS; Membership37253866058 SUCCESS; both domain public hash/cache checks PASS. scripts/test-sutifinanzas-export.js, scripts/test-sutifinanzas.js, scripts/test-pages-deployment.js; ignored export-browser.cjs, export-live.cjs, export-public.cjs, pivot-browser.cjs and frozen-browser.cjs. Actual downloaded workbooks inspected in ephemeral memory, no financial row snapshots added to repository. Local preview stopped.
+
+## SUTIAPP ARCHITECT REVIEW
+
+Task: H-SUTIFINANZAS-EXPORT-004.
+Verdict: APPROVED.
+Critical findings: no unresolved implementation defect. Independent reviewer validated exact visible projection, safe XLSX text/numbers, async guards, UI preservation and isolated scope. The unit test normalizes vendor line endings consistently with the existing public builder; root/release tests and actual browser integrity loading passed.
+Source of truth: unchanged Google authority. Architecture: focal visible-view XLSX derivative. Security: existing authorized report, cancellation guards and no formula injection. Data: unchanged values; no financial persistence. Legacy: untouched.
+Owner decision: NO.
+Next action: close this H and explain Exportar a Excel and the opened/closed branch behavior.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX
+
+Close H-SUTIFINANZAS-EXPORT-004 with PASS. Report that the published Excel button exports the current filters, field order, periods and visible hierarchy, with closed branches summarized. Preserve source-only reading and SutiApp Final. Do not advance to unrelated work.

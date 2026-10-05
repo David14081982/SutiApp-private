@@ -97,6 +97,7 @@
   const {
       useState,
       useEffect,
+      useLayoutEffect,
       useRef,
       useMemo
     } = React,
@@ -131,6 +132,30 @@
     onDetail
   }) {
     const width = dimensions.length || 1;
+    const viewport = useRef(null),
+      [available, setAvailable] = useState(1000);
+    useLayoutEffect(() => {
+      const element = viewport.current;
+      if (!element) return;
+      const measure = () => setAvailable(Math.max(1, element.clientWidth));
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(element);
+      return () => observer.disconnect();
+    }, []);
+    // Measure the report container (including sidebar changes) and reserve room for amounts.
+    const pinTotal = available >= 700,
+      valueWidth = 132;
+    const budget = Math.max(84, Math.min(available * .60, available - (pinTotal ? valueWidth * 2 : valueWidth)));
+    const compact = width > 1 && budget < width * 84;
+    const frozenWidth = Math.round(compact ? Math.min(260, Math.max(112, available * .42)) : Math.min(budget, width * 150));
+    const visualWidth = compact ? 1 : width;
+    const weights = (dimensions.length ? dimensions : ['total']).map(field => field === 'product' ? 1.4 : field === 'project' ? 1.2 : 1);
+    const sumWeights = weights.reduce((sum, n) => sum + n, 0);
+    // Explicit col widths keep sticky offsets correct for merged parent and subtotal cells.
+    const columnWidths = compact ? [frozenWidth] : weights.map(weight => Math.floor(Math.min(84, frozenWidth / width) + Math.max(0, frozenWidth - width * 84) * weight / sumWeights));
+    columnWidths[columnWidths.length - 1] += frozenWidth - columnWidths.reduce((sum, n) => sum + n, 0);
+    const leftAt = index => columnWidths.slice(0, index).reduce((sum, n) => sum + n, 0);
     function rowsFor(nodes) {
       return nodes.flatMap(node => {
         if (!node.children.length || !expanded.has(node.id)) return [{
@@ -172,47 +197,7 @@
     }, money(node.amounts[c.key] || 0))), /*#__PURE__*/React.createElement("td", {
       className: "sf-value sf-total"
     }, money(node.summary.amountCents)));
-    return /*#__PURE__*/React.createElement("div", {
-      className: "sf-table-scroll",
-      role: "region",
-      "aria-label": "Tabla din\xE1mica de gastos; desplaza horizontalmente para ver todas las columnas",
-      tabIndex: 0
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "sf-pivot",
-      style: {
-        minWidth: Math.max(620, width * 150 + (pivot.columns.length + 1) * 130)
-      }
-    }, /*#__PURE__*/React.createElement("caption", {
-      className: "sf-sr-only"
-    }, "Gasto agrupado por ", dimensions.map(fieldName).join(', ') || 'total general', ". Los subtotales resumen sus filas; no son gastos adicionales."), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, (dimensions.length ? dimensions : ['total']).map((field, i) => /*#__PURE__*/React.createElement("th", {
-      key: field,
-      rowSpan: 2,
-      scope: "col",
-      className: 'sf-dimension-head' + (!i ? ' sf-first-column' : '')
-    }, field === 'total' ? 'Gasto filtrado' : fieldName(field))), /*#__PURE__*/React.createElement("th", {
-      colSpan: pivot.columns.length + 1,
-      scope: "colgroup",
-      className: "sf-measure-head"
-    }, "Importe comprobado \xB7 MXN")), /*#__PURE__*/React.createElement("tr", null, pivot.columns.map(c => /*#__PURE__*/React.createElement("th", {
-      key: c.key,
-      scope: "col"
-    }, c.label)), /*#__PURE__*/React.createElement("th", {
-      scope: "col",
-      className: "sf-total-head"
-    }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, !pivot.count ? /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-      colSpan: width + pivot.columns.length + 1,
-      className: "sf-state"
-    }, "No hay registros para estos filtros.")) : rows.map(row => /*#__PURE__*/React.createElement("tr", {
-      key: row.id,
-      className: row.subtotal ? 'sf-subtotal' : 'sf-pivot-row',
-      "data-pivot-row": row.subtotal ? 'subtotal' : 'group'
-    }, row.cells.map(cell => /*#__PURE__*/React.createElement("th", {
-      key: cell.depth,
-      rowSpan: cell.rowSpan,
-      colSpan: cell.colSpan,
-      scope: cell.rowSpan > 1 ? 'rowgroup' : 'row',
-      className: 'sf-dimension' + (cell.depth === 0 ? ' sf-first-column' : '') + (row.subtotal && !cell.node ? ' sf-subtotal-label' : '')
-    }, cell.node ? /*#__PURE__*/React.createElement("button", {
+    const entry = cell => cell.node ? /*#__PURE__*/React.createElement("button", {
       type: "button",
       className: "sf-tree-button",
       "data-pivot-node": cell.node.id,
@@ -222,10 +207,92 @@
     }, /*#__PURE__*/React.createElement("span", {
       className: "sf-tree-icon",
       "aria-hidden": "true"
-    }, cell.node.children.length ? expanded.has(cell.node.id) ? '−' : '+' : '↗'), /*#__PURE__*/React.createElement("span", null, cell.node.label)) : cell.label)), amounts(row.node)))), /*#__PURE__*/React.createElement("tfoot", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-      colSpan: width,
+    }, cell.node.children.length ? expanded.has(cell.node.id) ? '−' : '+' : '↗'), /*#__PURE__*/React.createElement("span", null, compact && /*#__PURE__*/React.createElement("span", {
+      className: "sf-compact-field"
+    }, fieldName(cell.node.field)), cell.node.label)) : /*#__PURE__*/React.createElement("span", null, cell.label);
+    return /*#__PURE__*/React.createElement("div", {
+      ref: viewport,
+      className: 'sf-table-scroll sf-freeze-grid' + (compact ? ' sf-compact-grid' : '') + (pinTotal ? ' sf-pin-total' : ''),
+      role: "region",
+      "aria-label": "Tabla din\xE1mica de gastos; identificaci\xF3n fija y meses con desplazamiento horizontal",
+      tabIndex: 0
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "sf-pivot",
+      style: {
+        width: frozenWidth + (pivot.columns.length + 1) * valueWidth,
+        minWidth: frozenWidth + (pivot.columns.length + 1) * valueWidth,
+        tableLayout: 'fixed'
+      }
+    }, /*#__PURE__*/React.createElement("colgroup", null, columnWidths.map((size, i) => /*#__PURE__*/React.createElement("col", {
+      key: 'field-' + i,
+      style: {
+        width: size
+      }
+    })), pivot.columns.map(c => /*#__PURE__*/React.createElement("col", {
+      key: c.key,
+      style: {
+        width: valueWidth
+      }
+    })), /*#__PURE__*/React.createElement("col", {
+      style: {
+        width: valueWidth
+      }
+    })), /*#__PURE__*/React.createElement("caption", {
+      className: "sf-sr-only"
+    }, "Gasto agrupado por ", dimensions.map(fieldName).join(', ') || 'total general', ". Los subtotales resumen sus filas; no son gastos adicionales."), /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, (compact ? ['hierarchy'] : dimensions.length ? dimensions : ['total']).map((field, i) => /*#__PURE__*/React.createElement("th", {
+      key: field,
+      rowSpan: 2,
+      scope: "col",
+      style: {
+        left: leftAt(i)
+      },
+      className: "sf-dimension-head sf-frozen"
+    }, field === 'hierarchy' ? 'Desglose' : field === 'total' ? 'Gasto filtrado' : fieldName(field))), /*#__PURE__*/React.createElement("th", {
+      colSpan: pivot.columns.length + 1,
+      scope: "colgroup",
+      className: "sf-measure-head",
+      title: "Importe comprobado en MXN"
+    }, "Importe \xB7 MXN")), /*#__PURE__*/React.createElement("tr", null, pivot.columns.map(c => /*#__PURE__*/React.createElement("th", {
+      key: c.key,
+      scope: "col"
+    }, c.label)), /*#__PURE__*/React.createElement("th", {
+      scope: "col",
+      className: "sf-total-head"
+    }, "Total"))), /*#__PURE__*/React.createElement("tbody", null, !pivot.count ? /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+      colSpan: visualWidth + pivot.columns.length + 1,
+      className: "sf-state"
+    }, "No hay registros para estos filtros.")) : rows.map(row => /*#__PURE__*/React.createElement("tr", {
+      key: row.id,
+      className: row.subtotal ? 'sf-subtotal' : 'sf-pivot-row',
+      "data-pivot-row": row.subtotal ? 'subtotal' : 'group'
+    }, compact ? /*#__PURE__*/React.createElement("th", {
+      className: 'sf-dimension sf-frozen' + (row.subtotal ? ' sf-subtotal-label' : ''),
+      style: {
+        left: 0
+      },
+      scope: "row"
+    }, row.cells.map(cell => /*#__PURE__*/React.createElement("div", {
+      key: cell.depth,
+      className: "sf-compact-entry",
+      style: {
+        paddingLeft: Math.min(cell.depth * 7, 28)
+      }
+    }, entry(cell)))) : row.cells.map(cell => /*#__PURE__*/React.createElement("th", {
+      key: cell.depth,
+      rowSpan: cell.rowSpan,
+      colSpan: cell.colSpan,
+      scope: cell.rowSpan > 1 ? 'rowgroup' : 'row',
+      style: {
+        left: leftAt(cell.depth)
+      },
+      className: 'sf-dimension sf-frozen' + (row.subtotal && !cell.node ? ' sf-subtotal-label' : '')
+    }, entry(cell))), amounts(row.node)))), /*#__PURE__*/React.createElement("tfoot", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+      colSpan: visualWidth,
       scope: "row",
-      className: "sf-first-column"
+      className: "sf-frozen",
+      style: {
+        left: 0
+      }
     }, "Total general ", /*#__PURE__*/React.createElement("span", {
       className: "sf-muted"
     }, "\xB7 ", pivot.count, " registros")), amounts(pivot)))), !pivot.columns.length && /*#__PURE__*/React.createElement("p", {
@@ -397,7 +464,7 @@
       className: "sf-report",
       "data-sutifinanzas": "report",
       "aria-busy": phase === 'loading'
-    }, /*#__PURE__*/React.createElement("style", null, `.sf-report{font-family:Nunito,var(--font-family,sans-serif);color:var(--ink);min-width:0}.sf-body{padding:20px;max-width:1320px;margin:auto}.sf-report button,.sf-report input,.sf-report select{font:inherit}.sf-report button,.sf-report select,.sf-report input{min-height:44px}.sf-report button:focus-visible,.sf-report select:focus-visible,.sf-report input:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}.sf-toolbar,.sf-filters,.sf-crumbs{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.sf-toolbar{justify-content:space-between}.sf-button{border:1px solid var(--border,#ded8dc);background:var(--surface,#fff);color:var(--guinda);border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}.sf-button:disabled{opacity:.6;cursor:wait}.sf-filters{margin:20px 0;align-items:end}.sf-filters label{display:flex;flex:1 1 140px;flex-direction:column;gap:7px;font-weight:800;font-size:13px}.sf-filters input,.sf-filters select{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--border,#ded8dc);border-radius:12px;padding:10px;background:var(--surface,#fff);color:var(--ink)}.sf-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sf-card{padding:18px;border-radius:18px;background:var(--surface,#fff);box-shadow:var(--neo-sm);min-width:0}.sf-kpi-label{color:var(--ink-3);font-size:12px;font-weight:800}.sf-kpi-value{font-size:clamp(19px,2vw,28px);font-weight:900;overflow-wrap:anywhere;margin-top:7px}.sf-crumbs{margin:24px 0 10px;gap:4px}.sf-crumbs button{border:0;background:transparent;color:var(--guinda);padding:8px;font-weight:800;cursor:pointer;overflow-wrap:anywhere;text-align:left}.sf-group{width:100%;border:0;border-bottom:1px solid var(--border,#e9e1e5);background:transparent;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(110px,1fr) minmax(90px,.7fr) minmax(100px,.8fr) 20px;gap:14px;align-items:center;text-align:left;padding:18px 4px;color:var(--ink);cursor:pointer}.sf-group:hover{background:var(--guinda-50,#f9f0f3)}.sf-group-title{font-weight:900;overflow-wrap:anywhere}.sf-amount{text-align:right;font-weight:900}.sf-share{font-size:13px}.sf-bar{height:5px;background:var(--guinda-50,#eee);border-radius:9px;margin-top:7px;overflow:hidden}.sf-bar span{display:block;height:100%;background:var(--guinda)}.sf-muted{font-size:12px;color:var(--ink-3);line-height:1.6}.sf-note{background:var(--guinda-50,#f9f0f3);padding:12px 16px;border-radius:12px;margin:16px 0;font-size:13px;line-height:1.6}.sf-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sf-details dl{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1.3fr);gap:8px;margin:0;font-size:13px}.sf-details dt{font-weight:800}.sf-details dd{margin:0;overflow-wrap:anywhere}.sf-state{padding:36px 16px;text-align:center}.sf-list-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.sf-list-head select{max-width:100%;border:1px solid var(--border,#ded8dc);border-radius:10px;padding:8px;background:var(--surface,#fff);color:var(--ink)}@media(max-width:700px){.sf-body{padding:14px}.sf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sf-group{grid-template-columns:minmax(0,1fr) minmax(110px,.7fr) 16px;gap:8px}.sf-group .sf-share{grid-row:2;grid-column:1}.sf-group .sf-count{grid-row:2;grid-column:2;text-align:right}.sf-group .sf-chevron{grid-column:3;grid-row:1}.sf-details{grid-template-columns:minmax(0,1fr)}}`), /*#__PURE__*/React.createElement("style", null, `.sf-body{max-width:1600px;min-width:0}.sf-pivot-card{margin-top:20px;padding:18px 0 0;overflow:hidden}.sf-pivot-heading,.sf-field-panel,.sf-pivot-tools{padding:0 18px 16px}.sf-pivot-heading h2{margin:0 0 6px;font-size:20px}.sf-pivot-heading p{margin:0}.sf-field-panel{border-bottom:1px solid var(--border,#ded8dc)}.sf-zone-label{font-size:12px;font-weight:900;margin-bottom:8px;color:var(--ink-3)}.sf-field-zone{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sf-field-chip{display:flex;align-items:center;border:1px solid #C5DCE5;border-radius:10px;background:#EDF7FB;max-width:100%;color:#234957;cursor:grab}.sf-field-chip[aria-grabbed=true]{opacity:.5}.sf-field-name{font-weight:800;font-size:12px;padding:0 10px;overflow-wrap:anywhere}.sf-field-chip button{background:transparent;border:0;border-left:1px solid #D7E7ED;padding:0;min-width:44px;color:#234957;cursor:pointer}.sf-field-chip button:disabled{opacity:.3;cursor:default}.sf-pivot-tools{display:flex;gap:12px;flex-wrap:wrap;align-items:end;padding-top:14px}.sf-pivot-tools label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800}.sf-pivot-tools .sf-button{font-size:12px}.sf-pivot-tools select,.sf-add-field{max-width:100%;min-width:0;border:1px solid var(--border,#ded8dc);border-radius:10px;padding:10px;background:var(--surface,#fff);color:var(--ink)}.sf-layout-note{padding:0 18px 12px;margin:0}.sf-table-scroll{overflow:auto;max-height:70vh;max-width:100%;border-top:1px solid #CCDDE5;overscroll-behavior:contain}.sf-table-scroll:focus-visible{outline:3px solid var(--guinda);outline-offset:-3px}.sf-pivot{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;line-height:1.35;table-layout:auto}.sf-pivot th,.sf-pivot td{border-right:1px solid #D7E5EC;border-bottom:1px solid #D7E5EC;padding:8px 10px}.sf-pivot thead th{position:sticky;top:0;z-index:3;background:#E6F2F7;font-weight:800;color:#234957;text-align:left}.sf-pivot thead tr:first-child th{height:38px;box-sizing:border-box}.sf-pivot thead tr:nth-child(2) th{top:38px;white-space:nowrap}.sf-pivot .sf-dimension-head{min-width:125px;vertical-align:bottom}.sf-pivot .sf-measure-head{color:var(--guinda);background:#F8F2F5}.sf-pivot .sf-dimension{vertical-align:top;background:#E8F5FA;text-align:left;font-weight:600;min-width:125px;max-width:260px;padding:0}.sf-tree-button{display:flex;align-items:flex-start;gap:7px;text-align:left;width:100%;border:0;background:transparent;color:inherit;padding:10px;cursor:pointer;font-size:12px!important}.sf-tree-button:hover{background:#D4EAF4}.sf-tree-button span:last-child{overflow-wrap:anywhere}.sf-tree-icon{flex-shrink:0;width:18px;height:18px;display:grid;place-items:center;border:1px solid #A9C4D0;border-radius:4px;background:#fff;font-size:14px;line-height:1;font-weight:800}.sf-pivot .sf-value{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;min-width:115px;background:var(--surface,#fff)}.sf-pivot .sf-total{font-weight:900;background:#FAF7F9;position:sticky;right:0;z-index:1;box-shadow:-1px 0 #CCDDE5}.sf-pivot thead .sf-total-head{right:0;z-index:4;background:#E7DCE2}.sf-pivot tfoot .sf-total{background:#E7DCE2}.sf-pivot .sf-subtotal td,.sf-pivot .sf-subtotal-label{background:#FFF8DE;color:#55491E;font-weight:800}.sf-pivot .sf-subtotal-label{padding:10px;overflow-wrap:anywhere}.sf-pivot tfoot th,.sf-pivot tfoot td{background:#E7DCE2;font-weight:900;color:var(--guinda);border-top:2px solid #B58A9C}.sf-pivot .sf-first-column{position:sticky;left:0;z-index:2;box-shadow:1px 0 #CCDDE5}.sf-pivot thead .sf-first-column{z-index:4}.sf-pivot tfoot .sf-first-column{background:#E7DCE2}.sf-table-hint{padding:12px;font-size:12px;color:var(--ink-3)}.sf-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.sf-detail-dialog{font-family:Nunito,sans-serif;color:var(--ink);background:var(--surface,#fff);width:min(960px,calc(100vw - 32px));max-height:85vh;border:1px solid var(--border,#ddd);border-radius:18px;padding:20px;box-sizing:border-box}.sf-detail-dialog::backdrop{background:rgba(20,14,18,.5)}.sf-detail-dialog h2{font-size:20px;overflow-wrap:anywhere}.sf-details{margin-top:16px}.sf-details h3{font-size:16px;margin-top:0}@media(max-width:700px){.sf-field-chip{width:100%}.sf-field-name{flex:1}.sf-pivot-tools label{flex:1 1 130px}.sf-pivot-tools select{width:100%}.sf-pivot .sf-first-column{max-width:140px;min-width:110px}.sf-pivot-card{border-radius:14px}.sf-detail-dialog{padding:14px}}`), header ? header({
+    }, /*#__PURE__*/React.createElement("style", null, `.sf-report{font-family:Nunito,var(--font-family,sans-serif);color:var(--ink);min-width:0}.sf-body{padding:20px;max-width:1320px;margin:auto}.sf-report button,.sf-report input,.sf-report select{font:inherit}.sf-report button,.sf-report select,.sf-report input{min-height:44px}.sf-report button:focus-visible,.sf-report select:focus-visible,.sf-report input:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}.sf-toolbar,.sf-filters,.sf-crumbs{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.sf-toolbar{justify-content:space-between}.sf-button{border:1px solid var(--border,#ded8dc);background:var(--surface,#fff);color:var(--guinda);border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}.sf-button:disabled{opacity:.6;cursor:wait}.sf-filters{margin:20px 0;align-items:end}.sf-filters label{display:flex;flex:1 1 140px;flex-direction:column;gap:7px;font-weight:800;font-size:13px}.sf-filters input,.sf-filters select{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--border,#ded8dc);border-radius:12px;padding:10px;background:var(--surface,#fff);color:var(--ink)}.sf-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sf-card{padding:18px;border-radius:18px;background:var(--surface,#fff);box-shadow:var(--neo-sm);min-width:0}.sf-kpi-label{color:var(--ink-3);font-size:12px;font-weight:800}.sf-kpi-value{font-size:clamp(19px,2vw,28px);font-weight:900;overflow-wrap:anywhere;margin-top:7px}.sf-crumbs{margin:24px 0 10px;gap:4px}.sf-crumbs button{border:0;background:transparent;color:var(--guinda);padding:8px;font-weight:800;cursor:pointer;overflow-wrap:anywhere;text-align:left}.sf-group{width:100%;border:0;border-bottom:1px solid var(--border,#e9e1e5);background:transparent;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(110px,1fr) minmax(90px,.7fr) minmax(100px,.8fr) 20px;gap:14px;align-items:center;text-align:left;padding:18px 4px;color:var(--ink);cursor:pointer}.sf-group:hover{background:var(--guinda-50,#f9f0f3)}.sf-group-title{font-weight:900;overflow-wrap:anywhere}.sf-amount{text-align:right;font-weight:900}.sf-share{font-size:13px}.sf-bar{height:5px;background:var(--guinda-50,#eee);border-radius:9px;margin-top:7px;overflow:hidden}.sf-bar span{display:block;height:100%;background:var(--guinda)}.sf-muted{font-size:12px;color:var(--ink-3);line-height:1.6}.sf-note{background:var(--guinda-50,#f9f0f3);padding:12px 16px;border-radius:12px;margin:16px 0;font-size:13px;line-height:1.6}.sf-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sf-details dl{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,1.3fr);gap:8px;margin:0;font-size:13px}.sf-details dt{font-weight:800}.sf-details dd{margin:0;overflow-wrap:anywhere}.sf-state{padding:36px 16px;text-align:center}.sf-list-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}.sf-list-head select{max-width:100%;border:1px solid var(--border,#ded8dc);border-radius:10px;padding:8px;background:var(--surface,#fff);color:var(--ink)}@media(max-width:700px){.sf-body{padding:14px}.sf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sf-group{grid-template-columns:minmax(0,1fr) minmax(110px,.7fr) 16px;gap:8px}.sf-group .sf-share{grid-row:2;grid-column:1}.sf-group .sf-count{grid-row:2;grid-column:2;text-align:right}.sf-group .sf-chevron{grid-column:3;grid-row:1}.sf-details{grid-template-columns:minmax(0,1fr)}}`), /*#__PURE__*/React.createElement("style", null, `.sf-body{max-width:1600px;min-width:0}.sf-pivot-card{margin-top:20px;padding:18px 0 0;overflow:hidden}.sf-pivot-heading,.sf-field-panel,.sf-pivot-tools{padding:0 18px 16px}.sf-pivot-heading h2{margin:0 0 6px;font-size:20px}.sf-pivot-heading p{margin:0}.sf-field-panel{border-bottom:1px solid var(--border,#ded8dc)}.sf-zone-label{font-size:12px;font-weight:900;margin-bottom:8px;color:var(--ink-3)}.sf-field-zone{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sf-field-chip{display:flex;align-items:center;border:1px solid #C5DCE5;border-radius:10px;background:#EDF7FB;max-width:100%;color:#234957;cursor:grab}.sf-field-chip[aria-grabbed=true]{opacity:.5}.sf-field-name{font-weight:800;font-size:12px;padding:0 10px;overflow-wrap:anywhere}.sf-field-chip button{background:transparent;border:0;border-left:1px solid #D7E7ED;padding:0;min-width:44px;color:#234957;cursor:pointer}.sf-field-chip button:disabled{opacity:.3;cursor:default}.sf-pivot-tools{display:flex;gap:12px;flex-wrap:wrap;align-items:end;padding-top:14px}.sf-pivot-tools label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800}.sf-pivot-tools .sf-button{font-size:12px}.sf-pivot-tools select,.sf-add-field{max-width:100%;min-width:0;border:1px solid var(--border,#ded8dc);border-radius:10px;padding:10px;background:var(--surface,#fff);color:var(--ink)}.sf-layout-note{padding:0 18px 12px;margin:0}.sf-table-scroll{overflow:auto;max-height:70vh;max-width:100%;border-top:1px solid #CCDDE5;overscroll-behavior:contain}.sf-table-scroll:focus-visible{outline:3px solid var(--guinda);outline-offset:-3px}.sf-pivot{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;line-height:1.35;table-layout:fixed}.sf-pivot th,.sf-pivot td{border-right:1px solid #D7E5EC;border-bottom:1px solid #D7E5EC;padding:8px 10px;box-sizing:border-box;min-width:0;overflow-wrap:anywhere}.sf-pivot thead th{position:sticky;top:0;z-index:3;background:#E6F2F7;font-weight:800;color:#234957;text-align:left}.sf-pivot thead tr:first-child th{height:38px;box-sizing:border-box}.sf-pivot thead tr:nth-child(2) th{top:38px;white-space:nowrap}.sf-pivot .sf-dimension-head{vertical-align:bottom}.sf-pivot .sf-measure-head{color:var(--guinda);background:#F8F2F5}.sf-pivot .sf-dimension{vertical-align:top;background:#E8F5FA;text-align:left;font-weight:600;padding:0}.sf-tree-button{display:flex;align-items:flex-start;gap:7px;text-align:left;width:100%;border:0;background:transparent;color:inherit;padding:10px 6px;cursor:pointer;font-size:12px!important}.sf-tree-button:hover{background:#D4EAF4}.sf-tree-button span:last-child{overflow-wrap:anywhere}.sf-tree-icon{flex-shrink:0;width:18px;height:18px;display:grid;place-items:center;border:1px solid #A9C4D0;border-radius:4px;background:#fff;font-size:14px;line-height:1;font-weight:800}.sf-pivot .sf-value{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;background:var(--surface,#fff)}.sf-pivot .sf-total{font-weight:900;background:#FAF7F9}.sf-pin-total .sf-total{position:sticky;right:0;z-index:1;box-shadow:-1px 0 #CCDDE5}.sf-pivot thead .sf-total-head{background:#E7DCE2}.sf-pin-total thead .sf-total-head{right:0;z-index:4}.sf-pivot tfoot .sf-total{background:#E7DCE2}.sf-pivot .sf-subtotal td,.sf-pivot .sf-subtotal-label{background:#FFF8DE;color:#55491E;font-weight:800}.sf-pivot .sf-subtotal-label{padding:10px;overflow-wrap:anywhere}.sf-pivot tfoot th,.sf-pivot tfoot td{background:#E7DCE2;font-weight:900;color:var(--guinda);border-top:2px solid #B58A9C}.sf-pivot .sf-frozen{position:sticky;z-index:2;box-shadow:1px 0 #CCDDE5}.sf-pivot thead .sf-frozen{z-index:5}.sf-pivot tfoot .sf-frozen{background:#E7DCE2}.sf-compact-field{display:block;font-size:10px;font-weight:900;color:#526D7B;margin-bottom:2px}.sf-compact-entry{box-sizing:border-box}.sf-compact-grid .sf-subtotal-label{padding:8px 6px}.sf-table-hint{padding:12px;font-size:12px;color:var(--ink-3)}.sf-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.sf-detail-dialog{font-family:Nunito,sans-serif;color:var(--ink);background:var(--surface,#fff);width:min(960px,calc(100vw - 32px));max-height:85vh;border:1px solid var(--border,#ddd);border-radius:18px;padding:20px;box-sizing:border-box}.sf-detail-dialog::backdrop{background:rgba(20,14,18,.5)}.sf-detail-dialog h2{font-size:20px;overflow-wrap:anywhere}.sf-details{margin-top:16px}.sf-details h3{font-size:16px;margin-top:0}@media(max-width:700px){.sf-field-chip{width:100%}.sf-field-name{flex:1}.sf-pivot-tools label{flex:1 1 130px}.sf-pivot-tools select{width:100%}.sf-pivot-card{border-radius:14px}.sf-detail-dialog{padding:14px}}`), header ? header({
       title: 'SUTIFINANZAS',
       sub: 'Gasto por Secretaría'
     }) : /*#__PURE__*/React.createElement("button", {

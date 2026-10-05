@@ -4069,3 +4069,7 @@ Owner-approved pivot table replaces the sequential report list. Row fields can b
 
 ### H-SUTIFINANZAS-PIVOT-002 final PASS
 Published a48caa5. Real local/public pivot PASS on1224 records, same totals under configurable grouping, five inline levels, all column modes, one initial/refresh read and zero interaction reads. Focus restoration fixed and tested. Dedicated reader v14; both workflows SUCCESS. Independent architect review APPROVED.
+
+
+### H-SUTIFINANZAS-FROZEN-003
+Owner requests fixed identification columns through Producto with months remaining visible. UI-only change freezes all currently selected row fields by visual order and reserves a monetary area. Compact fixed hierarchy on narrow containers preserves fields/controls. Synthetic geometry/functionality, report contracts, isolated public build and unchanged153 non-focal bundle chunks PASS. Independent reviewer APPROVED after fixing Solo total header overlap. Google source/model/backend and SutiApp Final unchanged; live release checks pending.

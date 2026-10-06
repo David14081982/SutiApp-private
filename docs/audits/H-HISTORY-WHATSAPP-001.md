@@ -38,3 +38,10 @@ Reviewer: /root/review_history_whatsapp, read-only.
 Verdict: APPROVED; Claude UI preservation PASS. Reviewer independently confirmed exact destination, synchronous handler, no PII, unchanged UI/rejection branch and 155 byte-identical unrelated bundle chunks. Minor newline normalization in historical changelog was corrected before commit; final diff is five appended lines only. WORK_QUEUE_HISTORY.md is absent; no new task is inferred.
 Owner decision: NO.
 Response to Codex: publish only the already authorized focal scope, verify deployed hash and click behavior, retain evidence and stop. No next H authorized.
+
+## Final publication
+
+Status: PASS. Commit 85b157b074a5c2d8647b31820362e051a0faf988; GitHub Pages run 37417942810 SUCCESS. Live https://sutiapp.com/ serves v2026100413 with the exact tested SHA256. A real non-rejected request retained summary/timeline and no private-PDF block; clicking its actual Btn invoked exactly the owner-specified WhatsApp URL with _blank and noopener,noreferrer. Outbound opening was intercepted; zero messages or business mutations. Authenticated refresh passed.
+Evidence: docs/qa/evidence/history-whatsapp/deployment.json and published.json. Final follow-up only records evidence; no runtime changes or further H.
+
+Final independent review (/root/review_history_whatsapp): APPROVED. Commit scope, append-only changelog, successful deployment receipt, matching published hash and real click interception verified read-only. Refresh check confirms authenticated state; bundle hash was checked separately before reload. Owner decision: NO. Next action: retain receipts and stop.

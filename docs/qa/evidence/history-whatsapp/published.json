@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "version": 2026100413,
+  "bundleSha256": "cfbaab3195d4355765fcd5ffd09ab139d01aa499a7d4b8887dbc8dd996c3039d",
+  "checks": [
+    "real affiliate History → Tracking has summary/timeline and no authorization section",
+    "real advisor click invokes exact WhatsApp target with noopener/noreferrer; intercepted, no message sent",
+    "authenticated refresh retains published bundle"
+  ],
+  "businessWrites": 0,
+  "privateContentLogged": false
+}

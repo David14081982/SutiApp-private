@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "at": "2026-10-06T01:28:33.966Z",
+  "authenticatedLiveCatalog": true,
+  "authenticatedLiveOverview": true,
+  "catalogRules": 146,
+  "allRulesMatchCutoff": true,
+  "closedDatedRules": 50,
+  "closedMostrarRules": 0,
+  "newlyHiddenRules": 3,
+  "undatedRulesPreserved": 47,
+  "beforeAvailableFunds": 5,
+  "afterAvailableFunds": 4,
+  "beforeAvailableCreditSum": 143000,
+  "afterAvailableCreditSum": 133000,
+  "existingBrowserSumMatches": true,
+  "permittedLiveQuoteSamplesUnchanged": 2,
+  "staleAvailableQuoteRejected": true,
+  "businessWrites": 0,
+  "realLoanRequestsCreated": 0
+}

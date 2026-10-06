@@ -1,0 +1,117 @@
+{
+  "status": "PASS",
+  "at": "2026-10-06T01:24:24.916Z",
+  "migration": "20261005000100",
+  "migrationSha256": "113e89cd166c0a735451853c24e23d75aa68744cdc108a270d36ca3dda422029",
+  "functions": [
+    {
+      "oid": 22037,
+      "signature": "resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "caa656046218f8956bf40f93c6d8a688",
+      "normalized_md5": "caa656046218f8956bf40f93c6d8a688"
+    },
+    {
+      "oid": 23920,
+      "signature": "resolve_suti_loan_quote_contract(jsonb,text,text,text,numeric,integer,jsonb)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "2f621bc02e9e0919a00fb63c7a5032be",
+      "normalized_md5": "a9268e7b210515ecbbcd33a1a3fd8a9a"
+    }
+  ],
+  "protectedTables": [
+    "financial_programs",
+    "financial_funds",
+    "financial_rules",
+    "financial_session_snapshots",
+    "program_requests",
+    "loan_request_deposit_snapshots",
+    "savings_transactions"
+  ],
+  "businessDataUnchanged": true,
+  "businessWrites": 0,
+  "snapshotRpcUnchanged": true,
+  "oidsOwnersAclsPreserved": true,
+  "fingerprints": [
+    {
+      "evidence": {
+        "after": [
+          {
+            "count": 35,
+            "resource": "financial_funds",
+            "fingerprint": "dbe0e32882413d01f346efb93a02cc84"
+          },
+          {
+            "count": 3,
+            "resource": "financial_programs",
+            "fingerprint": "658008f22c0dbc157eb1c83cc6cad681"
+          },
+          {
+            "count": 186,
+            "resource": "financial_rules",
+            "fingerprint": "24fa2948d2c11004f50f50efcb45c912"
+          },
+          {
+            "count": 2,
+            "resource": "financial_session_snapshots",
+            "fingerprint": "1f520fb0e831dbe1d40f199774464b4c"
+          },
+          {
+            "count": 247,
+            "resource": "loan_request_deposit_snapshots",
+            "fingerprint": "03d59ac1f60575d751819719a88de5ce"
+          },
+          {
+            "count": 279,
+            "resource": "program_requests",
+            "fingerprint": "52f4297202a9c9a19be634f87389a370"
+          },
+          {
+            "count": 1151,
+            "resource": "savings_transactions",
+            "fingerprint": "4c32738a684990c37d639c212a77d31c"
+          }
+        ],
+        "before": [
+          {
+            "count": 35,
+            "resource": "financial_funds",
+            "fingerprint": "dbe0e32882413d01f346efb93a02cc84"
+          },
+          {
+            "count": 3,
+            "resource": "financial_programs",
+            "fingerprint": "658008f22c0dbc157eb1c83cc6cad681"
+          },
+          {
+            "count": 186,
+            "resource": "financial_rules",
+            "fingerprint": "24fa2948d2c11004f50f50efcb45c912"
+          },
+          {
+            "count": 2,
+            "resource": "financial_session_snapshots",
+            "fingerprint": "1f520fb0e831dbe1d40f199774464b4c"
+          },
+          {
+            "count": 247,
+            "resource": "loan_request_deposit_snapshots",
+            "fingerprint": "03d59ac1f60575d751819719a88de5ce"
+          },
+          {
+            "count": 279,
+            "resource": "program_requests",
+            "fingerprint": "52f4297202a9c9a19be634f87389a370"
+          },
+          {
+            "count": 1151,
+            "resource": "savings_transactions",
+            "fingerprint": "4c32738a684990c37d639c212a77d31c"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/SutiApp.html",
+  "checkedAt": "2026-10-06T01:28:47.257Z",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "businessWrites": 0,
+  "rawResponsesSaved": false,
+  "screenshotsSaved": false,
+  "checks": [
+    {
+      "phase": "initial",
+      "homeAvailableCredit": 133000,
+      "homeDisplayed": "Préstamo disponible $133,000",
+      "financeAvailableCredit": 133000,
+      "financeDisplayed": "$133,000",
+      "loanFunds": {
+        "count": 4,
+        "optionsLabel": "4 opciones",
+        "closedOctoberFundVisible": false
+      },
+      "projection": {
+        "status": "ready",
+        "total": 133000,
+        "availableFunds": 4
+      }
+    },
+    {
+      "phase": "refresh",
+      "homeAvailableCredit": 133000,
+      "homeDisplayed": "Préstamo disponible $133,000",
+      "financeAvailableCredit": 133000,
+      "financeDisplayed": "$133,000",
+      "loanFunds": {
+        "count": 4,
+        "optionsLabel": "4 opciones",
+        "closedOctoberFundVisible": false
+      },
+      "projection": {
+        "status": "ready",
+        "total": 133000,
+        "availableFunds": 4
+      }
+    }
+  ],
+  "stats": {
+    "blockedOperations": [],
+    "pageErrors": 0,
+    "financialActions": [
+      "loanSessionOpen",
+      "loanSessionValidate",
+      "loanSessionOpen",
+      "loanSessionValidate"
+    ]
+  }
+}

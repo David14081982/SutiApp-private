@@ -11,8 +11,9 @@ la suma derivada existente. Fondos sin fecha, horizonte inicial, perfil,
 autorizaciones de Ahorro, importes/tasas y contratos históricos se conservan.
 Esta decisión sustituye únicamente la capacidad anterior de MOSTRAR para
 ignorar el límite final de fondos fechados; no cambia la autoridad Supabase.
-Implementación y 140 verificaciones locales PASS; no publicada: la consulta de
-gestión Supabase devuelve HTTP 401. Véase la auditoría del mismo identificador.
+Implementación publicada y verificada: migración 20261005000100, Edge v62,
+140 verificaciones aisladas y comparación autenticada live PASS. El bloqueo
+inicial HTTP 401 quedó resuelto. Véase la auditoría del mismo identificador.
 
 
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04

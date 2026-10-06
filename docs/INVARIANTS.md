@@ -1,6 +1,6 @@
 # Invariantes
 
-## H-LOAN-DATED-FUND-CUTOFF-001 — decisión autorizada, implementación local
+## H-LOAN-DATED-FUND-CUTOFF-001 — contrato publicado y verificado
 
 - Ningún fondo con fecha puede estar disponible desde `vencimiento - 1 mes
   calendario`, inclusive en America/Hermosillo, tampoco con MOSTRAR. El día se
@@ -10,8 +10,8 @@
 - «Préstamo disponible» suma sólo los máximos de opciones disponibles del perfil.
 - Fondos permanentes, horizonte de apertura, cálculos y contratos históricos no
   cambian. No se reescriben fechas, reglas ni solicitudes para ocultar fondos.
-- Estado de instalación: pendiente por HTTP 401 de gestión Supabase; no afirmar
-  que este contrato ya está aplicado en producción.
+- Instalado y verificado el 2026-10-05 (Hermosillo): migración 20261005000100
+  y financial-legacy v62. Backend rechaza también AVAILABLE de sesiones previas.
 
 
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04

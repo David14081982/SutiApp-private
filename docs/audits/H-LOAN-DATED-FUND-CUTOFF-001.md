@@ -16,9 +16,10 @@
   `docs/AGENT_CHANGELOG.md`; focused sanitized evidence under
   `docs/qa/evidence/loan-dated-fund-cutoff/` and private preparation under
   `.tmp/loan-dated-fund-cutoff/`.
-- Architecture lookup is stale only for unrelated company evidence/scripts.
-  Directed inspection confirms the financial Edge helper, quote resolver and
-  existing `availableCreditTotal` consumers in Inicio/Financiera.
+- Architecture lookup is stale for focal helper/tests/governance plus unrelated
+  company and Membership evidence. Directed inspection confirms the financial
+  helper, quote resolver and existing availableCreditTotal consumers. The change
+  alters existing function bodies only; no structural Registry update required.
 - Existing workspace changes are pre-existing, including financial index and
   repository edits. Do not overwrite or publish unrelated local changes.
 - Authority: Supabase financial_programs/financial_funds/financial_rules.
@@ -38,7 +39,7 @@
   guarded reverse migration; no historical/business data restoration required.
 - UI: no screen/repository/bundle/CSS/asset changes planned. Global image suite
   is NOT APPLICABLE: no shared app helper, viewer, routing, auth or asset change.
-- Status: PASS (authorized scope; implementation/verification pending).
+- Status: PASS (authorized scope; verified below).
 
 ## Guardian findings
 
@@ -86,123 +87,113 @@ Commands executed:
 - Preserved permitted quote amounts, rates, fee/calendar engine and historical
   advance approval snapshots; no financial formula change.
 
-## Publication limitation
+## Authorized publication — verified 2026-10-05, America/Hermosillo
 
-### Authorized release continuation — 2026-10-05
+The owner explicitly authorized implementation, commit, push and publication.
+The initial management HTTP 401 prevented backend publication after code commit
+de183ec61db0e7ee397d2b3a464cb47e1c70d242 and Pages run 37394050518. The owner
+restored management access; the following continuation replaces that BLOCKED
+state. Membership's separate pre-existing CI comparison failure was corrected
+in a07b3fe2481e9d5b3557c5484d1bd627a7fabdc1: Membership run 37395086418 and Pages
+run 37395086439 succeeded. Neither change modifies financial runtime sources.
 
-Owner now explicitly requests commit, push and publication. Scope expands only
-to isolated release preparation under `.tmp/loan-dated-fund-cutoff/release`,
-`scripts/package-loan-dated-fund-cutoff.js`, focused release evidence in the
-existing evidence directory, and this H's sections in governance documents.
-Use latest remote main, copy the exact focal delta, preserve all other deployed
-sources/frontend, commit and push without resetting the dirty main workspace.
-Re-check management credentials and perform the original live drift preflight
-before any backend mutation. GitHub publication does not itself deploy Supabase.
+Release preparation and verification remain within the declared private scope
+.tmp/loan-dated-fund-cutoff/. The activation helper captures deployed ESZIP and
+SQL definitions privately, builds the candidate from deployed sources, compiles
+without activating, applies guarded SQL first, then publishes the Edge helper.
+Public evidence contains hashes/counts, never credentials or affiliate records.
+Final documentation is packaged on latest remote main 0e33ee3d269f2581d66fa4743ad201ad9eff3f1f
+in an isolated worktree; unrelated dirty workspace changes are not published.
 
-Release candidate is based on remote main
-`81273504905a197a7c0a5b851037408659d51d48`. Independent agent review approved the
-focal commit and re-ran all four suites. The isolated checkout independently
-passes all 140 behavioral/SQL checks and three focal suites. The fixture setup
-normalizes only the historical fee migration to its original LF installation
-before its existing hash-guarded successor; production files are untouched.
-Mixed line endings in unrelated governance entries are preserved verbatim.
-Live checks on both `sutiapp.com` and GitHub Pages confirm exact normalized
-hashes for the candidate bundle, service worker and financial repository;
-`frontend-parity.json` records them. The automatic Pages deployment on push
-therefore preserves the published frontend. No backend deployment secret is
-configured in GitHub; the local management preflight still returns HTTP 401.
+Commands and results:
 
-Commit/push completed: `de183ec61db0e7ee397d2b3a464cb47e1c70d242` on main,
-14 focal files. Independent review verified the actual commit, clean release
-checkout and preservation of all unrelated governance/frontend. Pages run
-`37394050518` succeeded; post-deployment checks confirmed the same frontend
-hashes on both domains. The separate Membership Google contract workflow fails
-at `test-membership-payment-contract.js:43` with exactly the same pre-existing
-FinanceBlocksRepository baseline difference as run `37360128239`; this H does
-not modify that repository or test. Full release remains BLOCKED: neither the
-SQL migration nor Edge helper is active in Supabase. Evidence:
-`../qa/evidence/loan-dated-fund-cutoff/deployment.json`.
+- node .tmp/loan-dated-fund-cutoff/activate.cjs backup: PASS. Quote definition
+  MD5 895fa1fea4cd2974ddc5948637163bfb, normalized expected baseline matches;
+  Edge version 61, JWT enabled; private exact backup retained.
+- prepare and compile: PASS; candidate only changes visibility-policy.js.
+  Existing index.ts, request-google-sync.js and savings-eligibility.ts preserved.
+- runtime-before: authenticated catalog/overview PASS; 146 rules, test profile
+  five available funds with existing browser sum $143000. Two read-only permitted
+  quote samples captured; no business record created.
+- apply-sql: PASS. Migration 20261005000100 registered transactionally. Final
+  quote MD5 2f621bc02e9e0919a00fb63c7a5032be matches isolated verification.
+  OIDs, owner, ACL and authenticated snapshot RPC preserved. Seven protected
+  tables retain exact counts/fingerprints within the same repeatable-read
+  transaction; no financial/catalog/history/snapshot writes.
+- deploy-edge then verify-edge: PASS, version 62 ACTIVE, JWT true. Same 26
+  module entries. Only source/visibility-policy.js changes; binary runtime
+  metadata differs solely in its deployment identifier. The previous bundle
+  identifier was 58 while management version was 61; verification compares
+  actual captured metadata bytes, not an assumed identifier. Anonymous HTTP401.
+- verify-runtime: authenticated catalog/overview PASS, all 146 rules match the
+  policy. Three profile-specific rules newly hidden; 47 undated rules unchanged.
+  Test profile now has four available funds and $133000, exactly the original
+  sum less the $10000 fund maturing 2026-10-15. This total is profile-specific.
+  Both permitted SQL quotes preserve every field except resolved_at. A read-only
+  call supplying a stale AVAILABLE dated option is rejected by the installed
+  resolver. No new loan, catalog edits, Google writes or real fixture rows.
+- 140 isolated checks and the three existing focal suites re-run: PASS.
+- Focal public browser verification: PASS on sutiapp.com, mobile 390x844.
+  Inicio and Finanzas visibly show $133000; Suti Pr?stamo shows four options
+  without the 2026-10-15 fund. Refresh preserves the result. No browser errors
+  or business writes. Evidence: activation-browser.json.
 
-The read-only management API inspection using existing local configuration
-failed with HTTP 401 after network access was available. No remote mutation,
-deployment, migration, login reset or business-data write was attempted.
-The deployed function definition and Edge version therefore remain unverified.
-Once management access is restored, read/capture the live function and deployed
-Edge source first; match migration precondition, preserve unrelated deployed
-files, apply only the migration and visibility helper, then verify the live
-overview and available-credit total. Do not deploy the dirty local index.ts.
+MOSTRAR precedence, exact midnight and month-end boundaries are tested in the
+isolated SQL/Edge suite. The live catalog contains no currently closed MOSTRAR
+rule; no claim is made that such a production record was exercised or modified.
+Full browser/shared-image regression is NOT APPLICABLE to this backend-only
+change. Existing frontend hashes match both published domains.
+
+Evidence: ../qa/evidence/loan-dated-fund-cutoff/activation-backup.json,
+activation-candidate.json, activation-compile.json, activation-runtime-before.json,
+activation-sql.json, activation-edge.json, activation-runtime.json, activation-browser.json, isolated.json,
+frontend-parity.json and deployment.json.
 
 ## H-LOAN-DATED-FUND-CUTOFF-001 RESULT
 
-Status: BLOCKED for production publication; local implementation/verification PASS.
-Files changed: visibility-policy.js; new migration/recovery; two focused test
-files; DECISIONS.md, INVARIANTS.md, SOURCE_OF_TRUTH.md, AGENT_CHANGELOG.md; this
-audit and isolated evidence. Private inspection preparation is under ignored .tmp.
-Source-of-truth verdict: SAFE, same Supabase authority and existing derived total.
-Invariant verdict: PASS for authorized local scope; live adoption pending.
-Build: PASS Edge module compilation; frontend NOT APPLICABLE.
-Tests: PASS, 140 behavioral/SQL checks and three existing focal suites.
-Security: PASS isolated authenticated/anonymous/other-actor checks; ACLs unchanged.
-Legacy impact: none; zero Google/Apps Script or financial business-data writes.
-Unexpected files changed: none by this task; pre-existing workspace changes retained.
-Known limitations: management HTTP 401 blocks live verification and publication.
-Evidence: ../qa/evidence/loan-dated-fund-cutoff/isolated.json and commands above.
+Status: PASS, backend installed and live behavior verified.
+Files changed: existing focal helper/migration/recovery/tests; this H's entries
+in DECISIONS, INVARIANTS, SOURCE_OF_TRUTH and AGENT_CHANGELOG; audit and evidence.
+Source-of-truth verdict: SAFE, same Supabase criteria and existing derived total.
+Invariant verdict: PASS, cutoff precedes MOSTRAR; permanent funds preserved.
+Build: PASS, actual Supabase candidate compilation; frontend NOT APPLICABLE.
+Tests: PASS, 140 isolated checks, three focal suites and authenticated live checks.
+Security: PASS, preserved OID/owner/ACL/JWT; anonymous Edge401; snapshot RPC intact.
+Legacy impact: zero Google/Apps Script/business-data writes; quote math preserved.
+Unexpected files changed: none; unrelated local work retained.
+Known limitations: current live catalog has no closed MOSTRAR record; isolated
+coverage verifies this case. Existing refresh lifecycle unchanged: an already
+open screen updates on its normal refresh; backend rejects closed options.
+Evidence: focused activation-*.json and isolated.json in the existing directory.
 
 ## CLAUDE UI PRESERVATION REVIEW
 
 Screen: Suti Préstamo, Inicio and Financiera.
-Original sections: loan result, available-fund carousel, amount/term controls,
-deposit/documents/summary steps; Inicio/Financiera financial cards.
-Current sections: unchanged source and generated frontend.
-Missing sections: none.
-Added sections: none.
-Interactions preserved: yes; existing selection, quote, refresh and sum consumers.
-Navigation preserved: yes.
-Visual structure preserved: yes, no frontend modification.
-Unauthorized redesign: NO.
-Verdict: PASS (source parity; no claim of new live browser verification).
+Original/current sections: unchanged result, funds carousel, amount/term controls,
+deposit/documents/summary steps, financial cards and all navigation.
+Missing/added sections: none. Interactions and visual structure: preserved.
+Unauthorized redesign: NO. Verdict: PASS, unchanged published frontend sources
+and focal authenticated mobile browser/refresh verification.
 
 ## SUTIAPP ARCHITECT REVIEW
 
-Task: H-LOAN-DATED-FUND-CUTOFF-001, focused final read-only review.
-Verdict: BLOCKED for production release, local implementation accepted.
-
-Critical findings:
-
-- Verified actual helper diff, executable SQL, RPC behavior and evidence, rather
-  than relying on completion text. Local calendar, totals and stale-session
-  enforcement satisfy the approved requirement.
-- Final review identified a Windows CRLF portability issue in the SQL literal;
-  corrected it within scope and verified both LF/CRLF installation and recovery.
-- No mathematical changes or request-history changes; unchanged approved
-  historical contracts are explicitly exercised. Only eligibility changes.
-- A read-only Supabase management request returned 401. No valid alternative
-  management token exists in process environment or the usual CLI login file.
-  Live function/source comparison and deployment remain unperformed.
-- WORK_QUEUE_HISTORY.md is absent. Existing WORK_QUEUE is historical; this
-  implementation is directly owner-authorized in the current conversation.
-- `git diff --check` on touched tracked files and JS syntax check passed.
-
-Source of truth: SAFE, existing Supabase criteria; no alternate authority.
-Architecture: existing helper and resolver bodies only, no new dependencies.
-Security: unchanged OID/owner/ACL/SECURITY DEFINER/search_path and guarded recovery;
-anonymous/cross-actor access denied by the existing authenticated RPC.
-Data: zero business/history writes; isolated fixtures only.
-Legacy: no Google, Apps Script, payroll writer, rate or amortization edits.
-
-Owner decision: NO new business decision; valid management access is required.
-
-Next action: restore the configured Supabase management connection, then run
-live read-only drift checks before publishing the reviewed focal artifacts.
+Task: H-LOAN-DATED-FUND-CUTOFF-001, independent activation review.
+Verdict: APPROVED.
+Critical findings: independently inspected before/after ESZIP, SQL definitions
+and private live responses. Only the visibility helper and deployment metadata
+changed among 26 modules. Seven table fingerprints, permissions and snapshot
+RPC preserved. Live profile 5 -> 4 funds and $143000 -> $133000; dated fund
+2026-10-15 excluded. Two permitted quotes equivalent; stale AVAILABLE rejected.
+No closed MOSTRAR record in live sample; isolated coverage explicitly retained.
+Source of truth: SAFE. Architecture: existing bodies only. Security: PASS.
+Data/Legacy: no business writes, Google actions or financial calculation changes.
+Owner decision: NO.
+Next action: commit/push the focal closure evidence and verify publication status.
 Response generated for Codex: YES.
 
 ### RESPONSE TO CODEX
 
-Do not mark H-LOAN-DATED-FUND-CUTOFF-001 published or fully PASS. Preserve the
-accepted local implementation. Once management access works, capture current
-function definitions/ACLs and deployed financial-legacy files privately. Require
-the migration hash precondition; deploy only this SQL guard and the reviewed
-visibility-policy.js while preserving other deployed files. Verify eligibility,
-the existing total, MOSTRAR precedence, undated options and authentication without
-creating a real loan or altering catalog/history. Stop if live definitions differ;
-audit the precise difference instead of overwriting it. Do not advance to another H.
+Approve this activation. Preserve the original HTTP401 as a historical blocker
+that has now been resolved. Publish only focal documentation/evidence from a
+clean worktree, verify the remote result, and report the profile-specific
+5 -> 4 funds and $143000 -> $133000. Do not advance to another H.

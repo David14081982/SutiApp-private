@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "baselineVersion": 61,
+  "changedFiles": [
+    "visibility-policy.js"
+  ],
+  "unchangedFiles": [
+    "index.ts",
+    "request-google-sync.js",
+    "savings-eligibility.ts"
+  ],
+  "sourceHashes": {
+    "index.ts": "81bbbdcd109145dcd69788be621f6b225e8ba8260871115ffff4ee917622f5ad",
+    "visibility-policy.js": "3e622533039ed1fdacfc42abf571fa94f3c87d56490b86c777ad6e5d1bad218e",
+    "request-google-sync.js": "6547c6467ade97761ea426f935927e8065e74003ead6442d4d80cbbc1271b314",
+    "savings-eligibility.ts": "229ae0c7aa13e6be521a4b7b4a48def6f765b879cf002e949a88bbd5bc88e0a1"
+  }
+}

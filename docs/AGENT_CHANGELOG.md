@@ -12,7 +12,7 @@ en aplicación, backend, datos o Google. Evidencia: auditoría y carpeta
 `docs/qa/evidence/membership-ci-finance-blocks/`.
 
 
-## H-LOAN-DATED-FUND-CUTOFF-001 — cambio local verificado, 2026-10-05
+## H-LOAN-DATED-FUND-CUTOFF-001 — publicado y verificado, 2026-10-05
 
 Fondos fechados: ocultación un mes calendario antes del vencimiento, inclusive
 en Hermosillo, prevalece sobre MOSTRAR. Helper Edge focal y migración reversible
@@ -20,8 +20,13 @@ del resolver existente; frontend, bundle, tasas, motor matemático y datos intac
 140 comprobaciones aisladas PASS, incluidos $143000 -> $133000, cierre mensual,
 bisiesto, sesión anterior, RPC autenticada, permisos y recuperación exacta.
 Compilación de módulos Edge y tres suites focales existentes PASS.
-Producción BLOCKED: consulta read-only de gestión Supabase HTTP 401, cero cambios
-remotos. Evidencia y revisión: `docs/audits/H-LOAN-DATED-FUND-CUTOFF-001.md`.
+Producción PASS tras restaurar la credencial: migración 20261005000100 y Edge
+v62. Sólo visibility-policy.js cambia entre 26 módulos. Catálogo live: 146 reglas,
+47 permanentes intactas. Sesión verificada: 5 -> 4 fondos, $143000 -> $133000.
+Cotización AVAILABLE cerrada rechazada; dos cotizaciones permitidas sin cambios
+financieros. Siete tablas y permisos conservados, cero escrituras de negocio.
+Revisión independiente APPROVED. El HTTP 401 inicial queda como antecedente.
+Evidencia y revisión: `docs/audits/H-LOAN-DATED-FUND-CUTOFF-001.md`.
 
 ## 2026-10-01 — H-SAVINGS-RH-REPORT-001
 

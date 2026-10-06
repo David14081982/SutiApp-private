@@ -1,6 +1,6 @@
 # Fuentes de verdad
 
-## H-LOAN-DATED-FUND-CUTOFF-001 — preparado localmente, 2026-10-05
+## H-LOAN-DATED-FUND-CUTOFF-001 — publicado y verificado, 2026-10-05
 
 Supabase financial_programs/financial_funds/financial_rules conserva la única
 autoridad de criterios; `available_on` conserva su fecha original. La nueva
@@ -9,8 +9,10 @@ inclusivo en America/Hermosillo que prevalece sobre MOSTRAR. El helper Edge
 filtra la disponibilidad y el resolver SQL protege cotizaciones de snapshots
 anteriores. `availableCreditTotal` ya suma sólo opciones AVAILABLE y permanece
 intacto, igual que sus consumidores Inicio/Financiera. Sin autoridad alternativa,
-fallback, escritura Google o modificación de datos históricos. Migración/Edge
-pendientes de publicación: gestión Supabase responde HTTP 401.
+fallback, escritura Google o modificación de datos históricos. Migración
+20261005000100 y Edge v62 activos. La sesión live verificada pasó de 5 a 4
+fondos y de $143000 a $133000; 47 reglas permanentes conservadas. El HTTP 401
+inicial quedó resuelto al restablecer la credencial de gestión.
 
 
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04

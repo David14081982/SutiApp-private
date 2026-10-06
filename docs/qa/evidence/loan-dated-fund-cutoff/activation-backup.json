@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "at": "2026-10-06T01:22:05.502Z",
+  "version": 61,
+  "verifyJwt": true,
+  "moduleCount": 26,
+  "sources": {
+    "index.ts": "81bbbdcd109145dcd69788be621f6b225e8ba8260871115ffff4ee917622f5ad",
+    "visibility-policy.js": "80e266e71f7f1d99e1d655c87ba3354c751f7c2c077a68d2e23e038b102e5875",
+    "request-google-sync.js": "6547c6467ade97761ea426f935927e8065e74003ead6442d4d80cbbc1271b314",
+    "savings-eligibility.ts": "229ae0c7aa13e6be521a4b7b4a48def6f765b879cf002e949a88bbd5bc88e0a1"
+  },
+  "backupSha256": "281af0022934f19e19586282851aac2334f56cbeeb5aff826031abd38cb4f869",
+  "functions": [
+    {
+      "oid": 22037,
+      "signature": "resolve_current_loan_snapshot_quote(uuid,text,numeric,integer)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "caa656046218f8956bf40f93c6d8a688",
+      "normalized_md5": "caa656046218f8956bf40f93c6d8a688"
+    },
+    {
+      "oid": 23920,
+      "signature": "resolve_suti_loan_quote_contract(jsonb,text,text,text,numeric,integer,jsonb)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "895fa1fea4cd2974ddc5948637163bfb",
+      "normalized_md5": "e9be0f63a8904007d23b1f9497032b76"
+    }
+  ],
+  "migrationAlreadyApplied": false
+}

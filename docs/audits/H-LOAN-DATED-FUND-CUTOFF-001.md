@@ -112,6 +112,17 @@ hashes for the candidate bundle, service worker and financial repository;
 therefore preserves the published frontend. No backend deployment secret is
 configured in GitHub; the local management preflight still returns HTTP 401.
 
+Commit/push completed: `de183ec61db0e7ee397d2b3a464cb47e1c70d242` on main,
+14 focal files. Independent review verified the actual commit, clean release
+checkout and preservation of all unrelated governance/frontend. Pages run
+`37394050518` succeeded; post-deployment checks confirmed the same frontend
+hashes on both domains. The separate Membership Google contract workflow fails
+at `test-membership-payment-contract.js:43` with exactly the same pre-existing
+FinanceBlocksRepository baseline difference as run `37360128239`; this H does
+not modify that repository or test. Full release remains BLOCKED: neither the
+SQL migration nor Edge helper is active in Supabase. Evidence:
+`../qa/evidence/loan-dated-fund-cutoff/deployment.json`.
+
 The read-only management API inspection using existing local configuration
 failed with HTTP 401 after network access was available. No remote mutation,
 deployment, migration, login reset or business-data write was attempted.

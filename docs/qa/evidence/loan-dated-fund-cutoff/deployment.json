@@ -1,0 +1,30 @@
+{
+  "status": "BLOCKED",
+  "codeCommit": "de183ec61db0e7ee397d2b3a464cb47e1c70d242",
+  "baseCommit": "81273504905a197a7c0a5b851037408659d51d48",
+  "push": "PASS",
+  "pages": {
+    "status": "PASS",
+    "run": 37394050518,
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/37394050518",
+    "frontendChanged": false,
+    "postDeployBothDomainsVerified": true
+  },
+  "backend": {
+    "status": "BLOCKED",
+    "reason": "Supabase management API HTTP 401",
+    "migrationApplied": false,
+    "edgeDeployed": false,
+    "newRuleActive": false,
+    "productionBusinessWrites": 0
+  },
+  "tests": {
+    "isolatedChecks": 140,
+    "focalSuites": 3,
+    "independentCommitReview": "APPROVED",
+    "membershipWorkflow": "PRE_EXISTING_FAILURE",
+    "membershipRun": 37394050213,
+    "baselineMembershipRun": 37360128239,
+    "sameFailure": "scripts/test-membership-payment-contract.js:43 compares ProgramRequestRepository against a baseline preceding FinanceBlocksRepository guards"
+  }
+}

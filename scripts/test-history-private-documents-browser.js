@@ -13,13 +13,13 @@ async function main(){const browser=await chromium.launch({executablePath:'C:/Pr
    await page.evaluate(state=>{fixture.row={sourceId:'synthetic',id:'SR-SYNTHETIC',tipo:'Suti Préstamo',estado:state==='rejected'?'rechazado':'aprobado',requestStatus:state==='rejected'?'rejected':'approved',monto:5000,plazo:'12 quincenal',fecha:'29/9/2026',workflowAvailable:state!=='unavailable',steps:[{label:'Solicitud enviada'},{label:'Revisión de documentos'},{label:'Autorización'}],motivo:state==='rejected'?'Motivo de ejemplo':null};fixture.phase=state==='loading'?'loading':state==='error'?'error':'loaded';if(['loading','error','missing'].includes(state))fixture.row=null;},state);
    await page.addScriptTag({content:read(path.join(dir,'before/app/screens-historial.jsx'))});await page.evaluate(()=>draw());const before=await page.locator('#root').evaluate(el=>{const copy=el.cloneNode(true);copy.querySelector('[data-private-doc]')?.remove();return copy.innerHTML;});
    await page.addScriptTag({content:chunk});await page.evaluate(()=>{calls=[];draw();});assert.equal(await page.locator('#root').innerHTML(),before);assert.deepEqual(await page.evaluate(()=>calls),[]);assert.equal(await page.getByText('Documento de autorización').count(),0);
-   if(state==='approved'){await page.getByRole('button',{name:'Contactar a un asesor'}).click();assert.deepEqual(await page.evaluate(()=>calls),['support']);}
+   if(state==='approved'){await page.evaluate(()=>{window.open=(...args)=>calls.push(args);});await page.getByRole('button',{name:'Contactar a un asesor'}).click();assert.deepEqual(await page.evaluate(()=>calls),[['https://wa.me/526626727130','_blank','noopener,noreferrer']]);}
    if(state==='rejected'){await page.getByRole('button',{name:'Volver a explorar beneficios'}).click();assert.deepEqual(await page.evaluate(()=>calls),['back','explore']);}
    if(state==='error'){await page.getByRole('button',{name:'Reintentar'}).click();assert.deepEqual(await page.evaluate(()=>calls),['retry']);}
    checks.push({width,state,remainingDomIdentical:true,noDocumentMount:true});
   }
   assert.deepEqual(errors,[]);await page.close();
  }
- const proof={status:'PASS',checks,productionRequests:0};const out=path.join(root,'docs/qa/evidence/history-private-documents/browser.json');fs.writeFileSync(out,JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
+ const proof={status:'PASS',checks,productionRequests:0};const out=process.env.SUTIAPP_HISTORY_BROWSER_EVIDENCE||path.join(root,'docs/qa/evidence/history-private-documents/browser.json');fs.writeFileSync(out,JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
  }finally{await browser.close();}}
 main().catch(e=>{console.error(e.message);process.exitCode=1;});

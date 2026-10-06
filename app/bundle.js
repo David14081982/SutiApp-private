@@ -29221,7 +29221,7 @@ Object.assign(window, {
       style: {
         marginTop: 22
       },
-      onClick: () => app.toast('Conectando con soporte sindical…')
+      onClick: () => window.open('https://wa.me/526626727130', '_blank', 'noopener,noreferrer')
     }, 'Contactar a un asesor')));
   }
   Object.assign(window, {

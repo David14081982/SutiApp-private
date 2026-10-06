@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "screens-historial.jsx"
+  ],
+  "unrelatedChunksPreserved": 155,
+  "bundleSha256": "cfbaab3195d4355765fcd5ffd09ab139d01aa499a7d4b8887dbc8dd996c3039d",
+  "version": 2026100413
+}

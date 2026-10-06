@@ -118,7 +118,7 @@
         })(),
         s.estado === 'rechazado'
           ? React.createElement(window.Btn, { full: true, size: 'lg', icon: 'refresh', style: { marginTop: 22 }, onClick: () => { app.back(); app.setTab('convenios'); } }, 'Volver a explorar beneficios')
-          : React.createElement(window.Btn, { full: true, size: 'lg', variant: 'outline', icon: 'headset', style: { marginTop: 22 }, onClick: () => app.toast('Conectando con soporte sindical…') }, 'Contactar a un asesor'),
+          : React.createElement(window.Btn, { full: true, size: 'lg', variant: 'outline', icon: 'headset', style: { marginTop: 22 }, onClick: () => window.open('https://wa.me/526626727130', '_blank', 'noopener,noreferrer') }, 'Contactar a un asesor'),
       ),
     );
   }

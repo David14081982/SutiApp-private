@@ -95,7 +95,7 @@ Security: actual existing guards preserved; isolated browser tests do not claim
 to replace backend RLS enforcement.
 Data / Legacy: zero production writes; Google and financial calculations intact.
 Owner decision: NO.
-Next action: push only this test/evidence scope and verify both GitHub workflows.
+Next action: completed below; no additional implementation required.
 Response generated for Codex: YES.
 
 ### RESPONSE TO CODEX
@@ -107,7 +107,7 @@ calculations, Google or other Hs to resolve the CI comparison.
 
 ## H-MEMBERSHIP-CI-FINANCE-BLOCKS-001 RESULT
 
-Status: local verification PASS; GitHub CI/publication pending.
+Status: PASS, including GitHub CI/publication and post-publication runtime hashes.
 Files changed: two tests, this audit, one AGENT_CHANGELOG section and focal evidence.
 Source-of-truth verdict: SAFE, unchanged production authorities.
 Invariant verdict: PASS; exact shared-code gate and original financial assertions retained.
@@ -116,5 +116,15 @@ Tests: PASS four suites; 14 behavioral groups and five negative mutations.
 Security: PASS for unchanged boundary/isolated assertions; no security configuration edits.
 Legacy impact: none; zero external/production requests or data changes.
 Unexpected files changed: none included; prior work preserved.
-Known limitations: CI/publication still to be verified; no claim of new financial live transactions.
+Known limitations: no claim of new financial live transactions; none were needed for this test-only correction.
 Evidence: ../qa/evidence/membership-ci-finance-blocks/ (contracts, projection, package, build, public hashes).
+
+## Verified publication
+
+Commit `a07b3fe2481e9d5b3557c5484d1bd627a7fabdc1` was pushed to main with exactly
+nine focal test/documentation/evidence files and zero runtime changes. Membership
+Google contract run `37395086418` and Pages run `37395086439` both completed with
+success. Both public domains retain the exact previous bundle, SW and financial
+repository hashes after publication. Final evidence is `deployment.json`.
+The separate loan-cutoff backend activation remains a different, previously
+blocked H and is not implied by this successful CI correction.

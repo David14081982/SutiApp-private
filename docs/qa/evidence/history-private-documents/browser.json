@@ -1,0 +1,78 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 390,
+      "state": "approved",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 390,
+      "state": "rejected",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 390,
+      "state": "unavailable",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 390,
+      "state": "loading",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 390,
+      "state": "error",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 390,
+      "state": "missing",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "approved",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "rejected",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "unavailable",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "loading",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "error",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    },
+    {
+      "width": 1440,
+      "state": "missing",
+      "remainingDomIdentical": true,
+      "noDocumentMount": true
+    }
+  ],
+  "productionRequests": 0
+}

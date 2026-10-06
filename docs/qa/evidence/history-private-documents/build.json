@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "bundleSha256": "e2ac100ad0b69e36351841eedc460a171aecda9e3dd3215f5772b8799216957c",
+  "unrelatedChunksPreserved": 155,
+  "version": 2026100412,
+  "changedChunks": [
+    "screens-historial.jsx"
+  ],
+  "workerLogicUnchanged": true,
+  "backendBeforeMd5": "102eb920ddb8c826a6a32a3a5055f3eb",
+  "backendAfterMd5": "1eaef3e0d05a99b70e3f50da12a8bb66"
+}

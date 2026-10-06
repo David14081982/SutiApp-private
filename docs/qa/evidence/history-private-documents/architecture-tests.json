@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "command": "python scripts/test-architecture-registry.py",
+  "workspace": "isolated release based on origin/main b9cd79e",
+  "checks": ["generation", "freshness", "stale detection", "feature lookup", "table/column lookup", "reverse dependencies", "admin permissions", "incremental add/remove", "secrets", "determinism"],
+  "note": "Initial working-tree run became stale while new verification scripts were being written; the isolated release run completed successfully. Final package will regenerate the index after copying final evidence."
+}

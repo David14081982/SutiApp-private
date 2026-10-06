@@ -1,0 +1,24 @@
+{
+  "status": "READ_ONLY",
+  "documentStatus": "PENDING_REVIEW",
+  "rpcStatus": 200,
+  "rpcCode": null,
+  "rpcMessage": null,
+  "origins": [
+    {
+      "origin": "http://localhost:8766",
+      "status": 403,
+      "error": "ORIGIN_DENIED"
+    },
+    {
+      "origin": "http://localhost:8080",
+      "status": 200,
+      "error": null
+    },
+    {
+      "origin": "https://david14081982.github.io",
+      "status": 200,
+      "error": null
+    }
+  ]
+}

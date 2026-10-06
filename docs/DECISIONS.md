@@ -1399,3 +1399,8 @@ Consultas, pagos, retiros de Ahorro y solicitudes previas no cambian. El propiet
 ## H-FINANCE-BLOCKS-001 — activación autorizada del backend
 
 El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.
+
+
+## H-HISTORY-PRIVATE-DOCUMENTS-001 — 2026-10-05
+
+Owner authorizes removing authorization PDFs from affiliate History/Tracking and reserving program request documents for administrators. Tracking no longer mounts GeneratedDocuments. document_private.visible denies all program self-context LIST/ACCESS, retaining program_requests.read and admin_request_module_boundary for admin access. Savings document visibility, generation, immutable records and private Storage remain unchanged. Migration 20261005000200 is guarded and reversible; production readback preserves function OID/owner/ACL and all 84 existing document records. Edge denies self context (403) and serves a legitimate admin PDF (200). See [audit](audits/H-HISTORY-PRIVATE-DOCUMENTS-001.md) and focal evidence. Commit/push/Pages publication explicitly authorized; only this H is packaged.

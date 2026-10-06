@@ -29140,10 +29140,7 @@ Object.assign(window, {
         fontWeight: 800,
         marginTop: 4
       }
-    }, s.fecha)))), React.createElement(window.GeneratedDocuments, {
-      domain: 'program',
-      operationId: s.sourceId
-    }),
+    }, s.fecha)))),
     // rejection reason
     s.motivo && React.createElement('div', {
       style: {

@@ -4155,3 +4155,8 @@ Alta/edición de Empresas conecta el formulario completo con ConveniosRepository
 ### H-COMPANY-CREATE-SAVE-001 published PASS
 
 Published 0163382881b25d9f00654238c952ff5c40cc0234; Pages run 37359743953 SUCCESS. Both domains serve v2026100411 / SHA256 937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e. Authenticated production desktop/mobile, full company form, intercepted RPC save, draft preservation and refresh PASS. No production company, account, membership or payment written. Isolated PostgreSQL certified the successful save. Final focal architect review APPROVED / CLOSED. Evidence: company-create-save/published.json and deployment.json.
+
+
+## H-HISTORY-PRIVATE-DOCUMENTS-001 — 2026-10-05
+
+Owner authorizes removing authorization PDFs from affiliate History/Tracking and reserving program request documents for administrators. Tracking no longer mounts GeneratedDocuments. document_private.visible denies all program self-context LIST/ACCESS, retaining program_requests.read and admin_request_module_boundary for admin access. Savings document visibility, generation, immutable records and private Storage remain unchanged. Migration 20261005000200 is guarded and reversible; production readback preserves function OID/owner/ACL and all 84 existing document records. Edge denies self context (403) and serves a legitimate admin PDF (200). See [audit](audits/H-HISTORY-PRIVATE-DOCUMENTS-001.md) and focal evidence. Commit/push/Pages publication explicitly authorized; only this H is packaged.

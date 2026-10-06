@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "oidOwnerAclPreserved": true,
+  "sourceExact": true,
+  "affiliateContextList": 0,
+  "affiliateContextAccess": 403,
+  "adminList": 61,
+  "adminPdfAccess": 200,
+  "legitimatePdf": true,
+  "ttlSeconds": 120,
+  "rawUrlsLogged": 0
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "migration": "20261005000200",
+  "migrationSha256": "05eac2eaeafe90b3a1e76e6e685ff0a1e3f0063adebb7a3cfad91b43e559b304",
+  "result": [
+    {
+      "records": 84,
+      "data_integrity": "PASS"
+    }
+  ],
+  "businessWrites": 0,
+  "storageWrites": 0
+}

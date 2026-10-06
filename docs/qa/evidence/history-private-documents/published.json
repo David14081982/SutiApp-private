@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "version": 2026100412,
+  "bundleSha256": "e2ac100ad0b69e36351841eedc460a171aecda9e3dd3215f5772b8799216957c",
+  "checks": [
+    "real affiliate History → Tracking has summary/timeline and no authorization section",
+    "authenticated refresh retains published bundle"
+  ],
+  "businessWrites": 0,
+  "privateContentLogged": false
+}

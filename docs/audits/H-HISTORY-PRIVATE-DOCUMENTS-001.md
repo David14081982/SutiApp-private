@@ -62,3 +62,31 @@ Response generated for Codex: YES.
 ### RESPONSE TO CODEX
 
 The implementation is approved. Complete the owner's explicit commit/push/publication instruction using the isolated release. Do not include unrelated workspace changes or alter business data. Close only after deployment and live verification evidence; do not advance to another H.
+
+## Final publication and review
+
+H-HISTORY-PRIVATE-DOCUMENTS-001 RESULT
+Status: PASS.
+Files changed: same declared focal scope; final follow-up contains this audit, deployment/test receipts, derived index and an idempotence fix in evidence packaging (replace the full access description rather than a suffix). No runtime change.
+Source-of-truth verdict: SAFE.
+Invariant verdict: PASS; no document, financial or historical data rewritten.
+Build: PASS; v2026100412 with exact candidate SHA256 confirmed on sutiapp.com and GitHub Pages.
+Tests: PASS; 22 document integration checks, 12 UI state comparisons, live History navigation/refresh, full Registry suite, global image regression on local build AND GitHub Pages.
+Security: PASS; affiliate self-context document reads denied in backend; administrative PDF retrieval preserved. No new grants or frontend secrets.
+Legacy impact: read-only verification; zero business/Storage mutations.
+Unexpected files changed: none in release; prior workspace changes excluded.
+Known limitations: none blocking the requested outcome. Existing 120-second signed URL lifetime unchanged.
+Evidence: implementation commit e9bcadb5b1a57f10ec410ac8d62b401ed58fb991; successful Pages run 37416624247; deployment.json, published.json and global-production.json in docs/qa/evidence/history-private-documents/.
+
+SUTIAPP ARCHITECT REVIEW
+Task: completed H-HISTORY-PRIVATE-DOCUMENTS-001.
+Verdict: APPROVED.
+Critical findings: none. Final committed runtime diff remains one component removal and one backend predicate restriction; global test verified legitimate assets, administrative images/PDF, Membership, loan documents, gallery/fullscreen, refresh and with/without service worker. Published artifact hash equals the tested candidate; UI live test opened an existing request and confirmed summary/timeline with no authorization block.
+Source of truth: preserved. Architecture: focal. Security: enforced server-side. Data: preserved. Legacy: unchanged.
+Owner decision: NO.
+Next action: retain the final evidence in the already authorized release and stop. No additional H or business action is authorized.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX — final
+
+Approve and close H-HISTORY-PRIVATE-DOCUMENTS-001 after retaining the final receipts. Keep the verified runtime artifact unchanged. Do not advance to another H.

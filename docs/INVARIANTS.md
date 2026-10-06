@@ -1,5 +1,19 @@
 # Invariantes
 
+## H-LOAN-DATED-FUND-CUTOFF-001 — decisión autorizada, implementación local
+
+- Ningún fondo con fecha puede estar disponible desde `vencimiento - 1 mes
+  calendario`, inclusive en America/Hermosillo, tampoco con MOSTRAR. El día se
+  ajusta al último del mes anterior cuando sea necesario.
+- El listado y la cotización backend aplican el límite; una sesión anterior no
+  autoriza una nueva cotización de un fondo cerrado.
+- «Préstamo disponible» suma sólo los máximos de opciones disponibles del perfil.
+- Fondos permanentes, horizonte de apertura, cálculos y contratos históricos no
+  cambian. No se reescriben fechas, reglas ni solicitudes para ocultar fondos.
+- Estado de instalación: pendiente por HTTP 401 de gestión Supabase; no afirmar
+  que este contrato ya está aplicado en producción.
+
+
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04
 
 El propietario ratifica: «Los valores descritos en el ahorro que se encuentran en Supabase de los ahorradores son correctos y de no serlo quien debe corregirlos es la encargada del programa no tú, estos valores tómalos como válidos».

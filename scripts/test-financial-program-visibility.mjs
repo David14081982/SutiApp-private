@@ -25,6 +25,12 @@ assert.equal(evaluateVisibility('2027-01-15','AUTO',now).status,'SCHEDULED');
 assert.equal(evaluateVisibility('2027-01-15','MOSTRAR',now).status,'AVAILABLE');
 assert.equal(evaluateVisibility('2026-10-15','OCULTAR',now).status,'UNAVAILABLE');
 assert.equal(evaluateVisibility('2026-10-15','',now).visibilityMode,'AUTO');
+const cutoff = new Date('2026-09-15T07:00:00Z');
+for (const mode of ['AUTO','MOSTRAR','OCULTAR']) {
+  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).status,'UNAVAILABLE');
+  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).effectiveVisibility,'HIDDEN');
+}
+assert.equal(evaluateVisibility('2026-10-15','MOSTRAR',new Date('2026-09-15T06:59:59Z')).status,'AVAILABLE');
 
 assert(edge.includes('get_financial_runtime_rules')&&edge.includes('readCriteriaRules(privileged)')&&!edge.includes('readVisibilityColumn()')&&!edge.includes('gvizCell(cells[15])'));
 assert(!/docs\.google\.com|sheets\.googleapis\.com|oauth2\.googleapis\.com|GOOGLE_VISIBILITY_OAUTH/.test(edge));

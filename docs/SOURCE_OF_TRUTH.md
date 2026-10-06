@@ -1,5 +1,18 @@
 # Fuentes de verdad
 
+## H-LOAN-DATED-FUND-CUTOFF-001 — preparado localmente, 2026-10-05
+
+Supabase financial_programs/financial_funds/financial_rules conserva la única
+autoridad de criterios; `available_on` conserva su fecha original. La nueva
+política deriva el límite de nómina restando un mes calendario, con corte
+inclusivo en America/Hermosillo que prevalece sobre MOSTRAR. El helper Edge
+filtra la disponibilidad y el resolver SQL protege cotizaciones de snapshots
+anteriores. `availableCreditTotal` ya suma sólo opciones AVAILABLE y permanece
+intacto, igual que sus consumidores Inicio/Financiera. Sin autoridad alternativa,
+fallback, escritura Google o modificación de datos históricos. Migración/Edge
+pendientes de publicación: gestión Supabase responde HTTP 401.
+
+
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04
 
 El propietario ratifica: «Los valores descritos en el ahorro que se encuentran en Supabase de los ahorradores son correctos y de no serlo quien debe corregirlos es la encargada del programa no tú, estos valores tómalos como válidos».

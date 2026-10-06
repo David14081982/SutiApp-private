@@ -1,5 +1,20 @@
 # Registro de decisiones arquitectónicas
 
+## H-LOAN-DATED-FUND-CUTOFF-001 — límite de nómina autorizado, 2026-10-05
+
+El propietario ordena ocultar los fondos con fecha desde un mes calendario antes
+de su vencimiento, inclusive en America/Hermosillo. MOSTRAR no puede eludir ese
+límite. Ejemplo: vencimiento 15/10/2026, último día visible 14/09/2026 y oculto
+desde 15/09/2026. Si el mes anterior carece del día, se usa su último día.
+Cada fondo oculto deja de aportar su máximo a «Préstamo disponible», mediante
+la suma derivada existente. Fondos sin fecha, horizonte inicial, perfil,
+autorizaciones de Ahorro, importes/tasas y contratos históricos se conservan.
+Esta decisión sustituye únicamente la capacidad anterior de MOSTRAR para
+ignorar el límite final de fondos fechados; no cambia la autoridad Supabase.
+Implementación y 140 verificaciones locales PASS; no publicada: la consulta de
+gestión Supabase devuelve HTTP 401. Véase la auditoría del mismo identificador.
+
+
 ## H-SICOF-SAVINGS-AUTHORITY-001 — instrucción permanente, 2026-10-04
 
 El propietario ratifica: «Los valores descritos en el ahorro que se encuentran en Supabase de los ahorradores son correctos y de no serlo quien debe corregirlos es la encargada del programa no tú, estos valores tómalos como válidos».

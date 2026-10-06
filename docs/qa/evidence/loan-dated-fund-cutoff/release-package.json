@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "baseCommit": "81273504905a197a7c0a5b851037408659d51d48",
+  "files": [
+    "supabase/functions/financial-legacy/visibility-policy.js",
+    "supabase/migrations/20261005000100_loan_dated_fund_cutoff.sql",
+    "supabase/recovery/20261005000100_loan_dated_fund_cutoff.sql",
+    "scripts/test-financial-program-visibility.mjs",
+    "scripts/test-loan-dated-fund-cutoff.js",
+    "scripts/package-loan-dated-fund-cutoff.js",
+    "docs/audits/H-LOAN-DATED-FUND-CUTOFF-001.md",
+    "docs/qa/evidence/loan-dated-fund-cutoff/isolated.json",
+    "docs/DECISIONS.md",
+    "docs/INVARIANTS.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/AGENT_CHANGELOG.md"
+  ],
+  "protectedPublishedFiles": {
+    "app/bundle.js": "66598cc9ff30853ff48b9341799020c6575228ddfc131e1adaa0b9eaa6d1c5fa",
+    "SutiApp.html": "55315fce48a6ad83aecb84c15259dfda4ef46b774f107bc1213477818140b146",
+    "sw.js": "d3dc0dd1cc1ef5f2f88703cb3f14b6e4abad065dca0b026a991f018a56b362fa",
+    "supabase/functions/financial-legacy/index.ts": "d74addc4464b380d8b661362cecfbe1fb77a99ec58ec19b88943b2352608670b",
+    "app/financial-legacy-repository.js": "1fa34de8ec825d710f4d4f4b8231f1f9403888e0d04cce02127e71b912f03adc"
+  },
+  "frontendChanged": false,
+  "backendPublished": false
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": 140,
+  "example": {
+    "before": 143000,
+    "after": 133000
+  },
+  "beforeFunctionHash": "895fa1fea4cd2974ddc5948637163bfb",
+  "afterFunctionHash": "2f621bc02e9e0919a00fb63c7a5032be",
+  "exactRecovery": true,
+  "productionWrites": 0,
+  "uiFilesChanged": 0
+}

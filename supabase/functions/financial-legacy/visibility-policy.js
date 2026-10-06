@@ -24,8 +24,13 @@ export function evaluateVisibility(eventDateISO, requestedMode, now = new Date()
   const window = visibilityWindow(now, timeZone);
   const eventDate = eventDateISO ? new Date(eventDateISO + 'T00:00:00Z') : null;
   if (eventDate && Number.isNaN(eventDate.getTime())) throw new Error('FINANCIAL_CRITERIA_DATE_INVALID');
-  const automaticVisible = !eventDate || (eventDate >= window.lower && eventDate <= window.upper);
-  const effectiveVisible = visibilityMode === 'MOSTRAR' ? true : visibilityMode === 'OCULTAR' ? false : automaticVisible;
+  // Payroll closes one calendar month before maturity, including that day.
+  // Clamp month ends (March 31 -> February 28/29), matching PostgreSQL interval.
+  const cutoff = eventDate && new Date(Date.UTC(eventDate.getUTCFullYear(), eventDate.getUTCMonth() - 1,
+    Math.min(eventDate.getUTCDate(), new Date(Date.UTC(eventDate.getUTCFullYear(), eventDate.getUTCMonth(), 0)).getUTCDate())));
+  const payrollClosed = !!cutoff && window.lower >= cutoff;
+  const automaticVisible = !payrollClosed && (!eventDate || (eventDate >= window.lower && eventDate <= window.upper));
+  const effectiveVisible = !payrollClosed && (visibilityMode === 'MOSTRAR' ? true : visibilityMode === 'OCULTAR' ? false : automaticVisible);
   const status = effectiveVisible ? 'AVAILABLE' : eventDate && eventDate > window.upper ? 'SCHEDULED' : 'UNAVAILABLE';
   return {
     visibilityMode,

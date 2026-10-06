@@ -1,4 +1,16 @@
 # Bitácora de agentes
+
+## H-LOAN-DATED-FUND-CUTOFF-001 — cambio local verificado, 2026-10-05
+
+Fondos fechados: ocultación un mes calendario antes del vencimiento, inclusive
+en Hermosillo, prevalece sobre MOSTRAR. Helper Edge focal y migración reversible
+del resolver existente; frontend, bundle, tasas, motor matemático y datos intactos.
+140 comprobaciones aisladas PASS, incluidos $143000 -> $133000, cierre mensual,
+bisiesto, sesión anterior, RPC autenticada, permisos y recuperación exacta.
+Compilación de módulos Edge y tres suites focales existentes PASS.
+Producción BLOCKED: consulta read-only de gestión Supabase HTTP 401, cero cambios
+remotos. Evidencia y revisión: `docs/audits/H-LOAN-DATED-FUND-CUTOFF-001.md`.
+
 ## 2026-10-01 — H-SAVINGS-RH-REPORT-001
 
 Reporte RH se agrega después de Programa, conservando las cuatro secciones y sus

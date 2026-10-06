@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "googleColumnsEtoI": [
+    "Vales y membresias",
+    0,
+    2,
+    200,
+    200
+  ],
+  "doubleCharge": false,
+  "legacyRequestsUnchanged": true,
+  "sharedRepositoryNonMembershipIdentical": true,
+  "approvedAdminReadBoundaryVerified": true,
+  "approvedFinanceBlockBoundaryVerified": true,
+  "financeBlockChecks": [
+    "program: blocked before write",
+    "program: allowed, exact payload/idempotency and successful projection",
+    "program: source failure/malformed result fail closed",
+    "program: concurrent backend block rechecked, no false success",
+    "program: unrelated writer error preserved",
+    "program: changed affiliate cannot write",
+    "membership: blocked before write",
+    "membership: allowed, exact payload/idempotency and successful projection",
+    "membership: source failure/malformed result fail closed",
+    "membership: concurrent backend block rechecked, no false success",
+    "membership: unrelated writer error preserved",
+    "membership: changed affiliate cannot write",
+    "membership: invalid quote hash stops before any RPC",
+    "Marketplace: ordinary request bypasses financial preflight and preserves errors"
+  ],
+  "financeBlockMutations": 5,
+  "googleOtherColumnsIdentical": true,
+  "uiCssIdentical": true,
+  "quoteAuthorityAndErrors": true,
+  "externalWrites": 0
+}

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "companies": [
+    "Bud Tv Ultra",
+    "RiveraGas",
+    "Sams Club",
+    "Costco",
+    "Casa Ley",
+    "Arco gasolinera"
+  ],
+  "onlyColumnChanged": "Z",
+  "other32ColumnsIdentical": true,
+  "otherProgramsIdentical": true,
+  "historicalRequestsAndInitialRowsPreserved": true,
+  "catalogRenameIgnored": true,
+  "invalidSnapshotDenied": true,
+  "bridgeCreateApprovalRetry": true,
+  "deliveryInitialRowAndHashPreserved": true,
+  "externalWrites": 0
+}

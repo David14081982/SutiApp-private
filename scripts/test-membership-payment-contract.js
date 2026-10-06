@@ -40,7 +40,18 @@ function omitApprovedModuleReads(source){
   for(const [fragment,count] of additions){assert.equal(source.split(fragment).length-1,count,'Approved module read boundary changed');source=source.replaceAll(fragment,'');}
   return source;
 }
-assert.equal(omitMembership(omitApprovedModuleReads(read('app/program-request-repository.js'))),omitMembership(before));
+function omitApprovedFinanceBlocks(source){
+  // H-FINANCE-BLOCKS-001 is authorized; every other byte stays under the
+  // historical guard. Exact counts also reject removed or duplicated checks.
+  const changes=[
+    ['    if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();\n','',1],
+    ["await window.FinanceBlocksRepository.assertAllowed();const r=await db().rpc('create_membership_request'","const r=await db().rpc('create_membership_request'",1],
+    ['if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);','if(r.error)throw r.error;await refreshRequest(r.data.id);',2],
+  ];
+  for(const [fragment,replacement,count] of changes){assert.equal(source.split(fragment).length-1,count,'Approved finance block boundary changed');source=source.replaceAll(fragment,replacement);}
+  return source;
+}
+assert.equal(omitMembership(omitApprovedModuleReads(omitApprovedFinanceBlocks(read('app/program-request-repository.js')))),omitMembership(before));
 const ui=read('app/screens-membership-application.jsx'),original=baseline('app/screens-membership-application.jsx');
 assert.equal(ui.match(/const CSS=`([\s\S]*?)`;/)[1],original.match(/const CSS=`([\s\S]*?)`;/)[1]);
 for(const label of ['mr-hero','mr-figures','mr-tracker','UnifiedDocumentPhase','mr-data','mr-privacy','mr-footer','RequestSubmissionSuccess'])assert(ui.includes(label));
@@ -49,11 +60,14 @@ let response={data:q},calls=[];
 const sandbox={window:{SutiSupabase:{getClient:()=>({rpc:async(name,args)=>{calls.push({name,args});return response;}})}}};
 vm.createContext(sandbox);vm.runInContext(read('app/membership-repository.js'),sandbox);
 (async()=>{
+  const financeBlockTests=require('./test-program-request-finance-block-contract');
+  const financeBlockChecks=await financeBlockTests.verify(),financeBlockMutations=await financeBlockTests.mutationChecks();
   assert.equal((await sandbox.window.MembershipRepository.paymentQuote('offering')).financialResult.total,200);
   assert.equal(calls[0].name,'get_current_membership_payment_quote');assert.deepEqual(Object.keys(calls[0].args),['p_membership_offering_id']);
   response={error:new Error('authority unavailable')};await assert.rejects(()=>sandbox.window.MembershipRepository.paymentQuote('offering'),/authority unavailable/);
   response={data:{...q,financialResult:{...financial,rate:1}}};await assert.rejects(()=>sandbox.window.MembershipRepository.paymentQuote('offering'),/QUOTE_INVALID/);
   const result={status:'PASS',googleColumnsEtoI:Array.from(row.slice(4,9)),doubleCharge:false,legacyRequestsUnchanged:true,
-    sharedRepositoryNonMembershipIdentical:true,approvedAdminReadBoundaryVerified:true,googleOtherColumnsIdentical:true,uiCssIdentical:true,quoteAuthorityAndErrors:true,externalWrites:0};
+    sharedRepositoryNonMembershipIdentical:true,approvedAdminReadBoundaryVerified:true,approvedFinanceBlockBoundaryVerified:true,financeBlockChecks,financeBlockMutations,
+    googleOtherColumnsIdentical:true,uiCssIdentical:true,quoteAuthorityAndErrors:true,externalWrites:0};
   fs.writeFileSync(path.join(out,'contracts.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.message);process.exitCode=1;});

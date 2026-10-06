@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "baseCommit": "2f7803867c81a428624395a7cda48e0d704de9bb",
+  "productionFilesChanged": 0,
+  "protectedSourceHashes": {
+    "app/program-request-repository.js": "00740a652511f0814e30425a1e20f8230c0579bc4ce4fcaf735f1394418f4aeb",
+    "app/finance-blocks-repository.js": "2a8d086541d7d2e6317b936ed204beb97370f86d24c378d57dce72860fa37588",
+    "app/membership-repository.js": "aea0ac4a6601fa8d5cc404d3cc81727b6ad685bcd06783ae720da632fdcc75ba",
+    "app/screens-membership-application.jsx": "7de63f6ead25f5ae860ded8be5fc9d05659b5c014398ca086c0ce3b59b026d4f",
+    "supabase/functions/financial-legacy/request-google-sync.js": "0bad760744c568f8fba8b8d2da8d319744914c13bb1362125425c58c673a9b28",
+    "app/bundle.js": "937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e",
+    "sw.js": "2df0594b2aa40b533f19dbc114736df3e4396e91fa5cd76a0c34316011984449",
+    "SutiApp.html": "d4469d1b0da964432d58b3d107957e2ad5062e0fd9b6e3b8e823958394ed68c7"
+  }
+}

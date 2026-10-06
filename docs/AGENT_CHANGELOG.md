@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## H-MEMBERSHIP-CI-FINANCE-BLOCKS-001 — corrección focal de pruebas, 2026-10-05
+
+La comparación histórica de Membership Google contract reconoce únicamente las
+adiciones exactas y contadas de H-FINANCE-BLOCKS-001. Conserva las comprobaciones
+de código ajeno, importes, proyección Google, solicitudes históricas y CSS.
+Nueva prueba ejecuta los repositories reales con transporte aislado: 14 grupos
+de casos y 5 mutaciones negativas detectadas. Bloqueos previos/concurrentes,
+errores, identidad, payload/idempotencia y Marketplace verificados. Cero cambios
+en aplicación, backend, datos o Google. Evidencia: auditoría y carpeta
+`docs/qa/evidence/membership-ci-finance-blocks/`.
+
+
 ## H-LOAN-DATED-FUND-CUTOFF-001 — cambio local verificado, 2026-10-05
 
 Fondos fechados: ocultación un mes calendario antes del vencimiento, inclusive

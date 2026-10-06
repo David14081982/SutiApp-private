@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "checked": [
+    {
+      "url": "https://sutiapp.com/app/bundle.js",
+      "sha256": "937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e"
+    },
+    {
+      "url": "https://sutiapp.com/sw.js",
+      "sha256": "2df0594b2aa40b533f19dbc114736df3e4396e91fa5cd76a0c34316011984449"
+    },
+    {
+      "url": "https://sutiapp.com/app/financial-legacy-repository.js",
+      "sha256": "065de271aef4f4cf075a8c4a06175b9b798daeecefd98415ebac5586b0382666"
+    },
+    {
+      "url": "https://david14081982.github.io/SutiApp-private/app/bundle.js",
+      "sha256": "937f05de1fa9750b6029ca573942042def823c9eb60dd744292b91742498ac8e"
+    },
+    {
+      "url": "https://david14081982.github.io/SutiApp-private/sw.js",
+      "sha256": "2df0594b2aa40b533f19dbc114736df3e4396e91fa5cd76a0c34316011984449"
+    },
+    {
+      "url": "https://david14081982.github.io/SutiApp-private/app/financial-legacy-repository.js",
+      "sha256": "065de271aef4f4cf075a8c4a06175b9b798daeecefd98415ebac5586b0382666"
+    }
+  ]
+}

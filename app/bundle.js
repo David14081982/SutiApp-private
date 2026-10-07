@@ -2084,56 +2084,81 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
   function PDFPreview({
     url
   }) {
-    const [pdf, setPdf] = useState(null),
+    const [source, setSource] = useState(null),
       [number, setNumber] = useState(1),
-      [ready, setReady] = useState(false),
+      [readyPage, setReadyPage] = useState(0),
       [error, setError] = useState(''),
-      node = useRef(null);
+      [attempt, setAttempt] = useState(0),
+      node = useRef(null),
+      scroll = useRef(null);
+    const pdf = source?.url === url && source.attempt === attempt ? source.pdf : null,
+      ready = !!pdf && readyPage === number;
     useEffect(() => {
       let cancelled = false,
         task;
+      const abort = new AbortController();
+      setSource(null);
+      setNumber(1);
+      setReadyPage(0);
+      setError('');
       (async () => {
         const lib = await import(new URL('app/vendor/pdfjs-5.4.149/pdf.min.mjs', document.baseURI).href);
+        if (cancelled) return;
         lib.GlobalWorkerOptions.workerSrc = new URL('app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs', document.baseURI).href;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          signal: abort.signal
+        });
+        if (cancelled) return;
         if (!response.ok) throw Error();
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (cancelled) return;
         task = lib.getDocument({
-          data: new Uint8Array(await response.arrayBuffer()),
+          data: bytes,
           isEvalSupported: false,
           enableXfa: false,
           useSystemFonts: true
         });
         const loaded = await task.promise;
-        if (!cancelled) setPdf(loaded);
+        if (!cancelled) setSource({
+          url,
+          attempt,
+          pdf: loaded
+        });
       })().catch(() => {
-        if (!cancelled) setError('No se pudo leer el PDF. Vuelve al diseño y reintenta la vista previa.');
+        if (!cancelled) setError('No se pudo leer el PDF. Reintenta la vista previa.');
       });
       return () => {
         cancelled = true;
-        task?.destroy();
+        abort.abort();
+        task?.destroy().catch(() => {});
       };
-    }, [url]);
+    }, [url, attempt]);
     useEffect(() => {
       if (!pdf) return;
       let cancelled = false,
         render;
-      setReady(false);
+      setReadyPage(0);
+      setError('');
       (async () => {
         const page = await pdf.getPage(number);
         if (cancelled) return;
         const viewport = page.getViewport({
-          scale: 1.5
-        });
-        node.current.width = viewport.width;
-        node.current.height = viewport.height;
+            scale: 1.5
+          }),
+          canvas = node.current;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
         render = page.render({
-          canvasContext: node.current.getContext('2d'),
+          canvasContext: canvas.getContext('2d'),
           viewport
         });
         await render.promise;
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setReadyPage(number);
+          if (scroll.current) scroll.current.scrollTop = 0;
+        }
       })().catch(() => {
-        if (!cancelled) setError('No se pudo mostrar esta página del PDF.');
+        if (!cancelled) setError('No se pudo mostrar esta página del PDF. Reintenta la vista previa.');
       });
       return () => {
         cancelled = true;
@@ -2141,38 +2166,66 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       };
     }, [pdf, number]);
     return /*#__PURE__*/React.createElement("div", {
-      className: "dl-pdf-preview"
+      className: "dl-pdf-preview",
+      style: {
+        minWidth: 0,
+        width: '100%'
+      }
     }, /*#__PURE__*/React.createElement("div", {
-      className: "dl-toolbar"
+      className: "dl-toolbar",
+      style: {
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        marginBottom: 12
+      }
     }, /*#__PURE__*/React.createElement("button", {
       className: "df-btn df-btn--ghost df-btn--sm",
-      disabled: !pdf || number === 1,
+      disabled: !pdf || !ready || !!error || number === 1,
       onClick: () => setNumber(n => n - 1)
     }, "P\xE1gina anterior"), /*#__PURE__*/React.createElement("span", {
-      role: "status"
-    }, pdf ? 'Página ' + number + ' de ' + pdf.numPages : 'Leyendo PDF…'), /*#__PURE__*/React.createElement("button", {
+      role: "status",
+      "aria-live": "polite"
+    }, pdf ? 'Página ' + number + ' de ' + pdf.numPages : error ? 'Vista previa no disponible' : 'Leyendo PDF…'), /*#__PURE__*/React.createElement("button", {
       className: "df-btn df-btn--ghost df-btn--sm",
-      disabled: !pdf || number === pdf.numPages,
+      disabled: !pdf || !ready || !!error || number === pdf.numPages,
       onClick: () => setNumber(n => n + 1)
     }, "P\xE1gina siguiente"), /*#__PURE__*/React.createElement("a", {
       className: "df-btn df-btn--ghost df-btn--sm",
       href: url,
       download: "vista-previa-documento.pdf"
-    }, "Descargar vista previa")), error && /*#__PURE__*/React.createElement("p", {
+    }, "Descargar vista previa")), error && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
       role: "alert"
-    }, error), /*#__PURE__*/React.createElement("div", {
-      className: "dl-preview-scroll"
+    }, error), /*#__PURE__*/React.createElement("button", {
+      className: "df-btn df-btn--ghost df-btn--sm",
+      onClick: () => setAttempt(n => n + 1)
+    }, "Reintentar")), /*#__PURE__*/React.createElement("div", {
+      className: "dl-preview-scroll",
+      ref: scroll,
+      style: {
+        overflow: 'auto',
+        maxHeight: '65vh',
+        minHeight: 180,
+        background: 'var(--surface-2)',
+        padding: 12
+      }
     }, /*#__PURE__*/React.createElement("canvas", {
       ref: node,
+      role: "img",
       "aria-label": "Vista previa PDF del dise\xF1o",
-      "data-rendered": ready ? 'true' : 'false',
+      "data-page": number,
+      "data-rendered": pdf && ready && !error ? 'true' : 'false',
       style: {
-        display: ready ? 'block' : 'none',
+        display: pdf && ready && !error ? 'block' : 'none',
         maxWidth: '100%',
         height: 'auto',
-        margin: 'auto'
+        margin: 'auto',
+        background: '#fff'
       }
-    }), !ready && !error && /*#__PURE__*/React.createElement("p", null, "Mostrando p\xE1gina\u2026")));
+    }), !error && (!pdf || !ready) && /*#__PURE__*/React.createElement("p", {
+      role: "status"
+    }, "Mostrando p\xE1gina\u2026")));
   }
   function Designer({
     scope,
@@ -3326,6 +3379,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, "Eliminar"))))))));
   }
   window.DocumentLayoutDesigner = Designer;
+  window.DocumentLayoutDesigner.PDFPreview = PDFPreview;
 })();
 })();
 /* @@file screens-admin-document-generation.jsx */
@@ -4915,13 +4969,16 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       title: modal === 'preview' ? 'Vista previa del documento' : 'Documento de autorización',
       description: modal === 'preview' ? 'VISTA PREVIA / DATOS DE EJEMPLO' : 'Documento emitido · versión histórica',
       onClose: close
-    }, /*#__PURE__*/React.createElement("iframe", {
-      title: modal === 'preview' ? 'Vista previa del documento' : 'Documento emitido',
+    }, /*#__PURE__*/React.createElement(React.Fragment, null, modal === 'preview' ? /*#__PURE__*/React.createElement(window.DocumentLayoutDesigner.PDFPreview, {
+      key: preview,
+      url: preview
+    }) : /*#__PURE__*/React.createElement("iframe", {
+      title: "Documento emitido",
       src: preview,
       style: {
         height: '70vh'
       }
-    })), modal === 'signer' && /*#__PURE__*/React.createElement(Dialog, {
+    }))), modal === 'signer' && /*#__PURE__*/React.createElement(Dialog, {
       side: true,
       title: draft.previous_id ? 'Editar firmante' : 'Nuevo firmante',
       description: "Los datos aparecer\xE1n tal cual debajo de la firma en el documento.",

@@ -42,6 +42,8 @@ async function mount(browser,width,code=currentCode,options={}){
    const template=data.templates.find(t=>t.id===payload.template_id);Object.assign(assignment,{id:'assignment-saved',layout_id:'layout-saved',layout_version:2,template_id:template.id,template_name:template.name,template_version:template.version});return {configuration_id:config.id,assignment_id:assignment.id};
   }};
   window.DocumentLayoutDesigner=({scope,onClose})=>{window.designerCalls.push(scope);return React.createElement('div',{role:'dialog','aria-label':'Diseñador aislado'},React.createElement('button',{onClick:onClose},'Cerrar diseñador'));};
+  // Pixel rendering is verified with real PDF.js in test-document-preview-render.js.
+  window.DocumentLayoutDesigner.PDFPreview=({url})=>React.createElement('div',{'data-qa-preview-transport':true},React.createElement('a',{href:url},'Vista previa aislada'));
  },{data:fixture(),options});
  await page.addScriptTag({content:code});
  await page.evaluate(()=>{window.renderRoot=ReactDOM.createRoot(document.getElementById('root'));window.renderRoot.render(React.createElement(window.AdminDocumentGeneration,{app:{},onBack:()=>window.backCount++}));});
@@ -120,5 +122,5 @@ async function browseTabs(page){
   }
   assert.equal(result.pageErrors.length,0,'uncaught browser exceptions');assert.equal(result.networkRequests.length,0,'unexpected HTTP(S) network access');result.status='PASS';
  }catch(e){result.failure=e.stack;process.exitCode=1;}
- finally{if(browser)await browser.close();const out=path.join(root,'docs/qa/evidence/document-assignment-fix/browser.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));}
+ finally{if(browser)await browser.close();const out=process.env.SUTIAPP_ASSIGNMENT_BROWSER_OUTPUT?path.resolve(root,process.env.SUTIAPP_ASSIGNMENT_BROWSER_OUTPUT):path.join(root,'docs/qa/evidence/document-assignment-fix/browser.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));}
 })();

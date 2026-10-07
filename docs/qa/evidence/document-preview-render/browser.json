@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "nativePdfViewerDisabled": true,
+  "sourceHashes": {
+    "app/document-layout-designer.jsx": "5d4b3fc4dd94abf685aa6c3c61a88db0a53ccdffc4e06dfa8cd06a370caa37cf",
+    "app/screens-admin-document-generation.jsx": "8e6793ae9a4f4e5327c9a26b4191b036f97092f47faad9bf9a6b3b69c00bd1cb"
+  },
+  "checks": {
+    "configPreviewRealPages": true,
+    "urlChangeResetsPageAndPixels": true,
+    "invalidPdfVisibleErrorAndRetry": true,
+    "closeDuringLoadAndReopen": true,
+    "closeDuringRenderAndReopen": true,
+    "existingDesignerUsesSameRealRenderer": true
+  },
+  "viewports": {
+    "390": {
+      "nativeOff": true,
+      "firstPage": {
+        "width": 600,
+        "height": 750,
+        "displayedWidth": 266,
+        "displayedHeight": 332.5,
+        "inkFraction": 0.08049777777777778,
+        "visible": true,
+        "fitsWidth": true
+      },
+      "secondPage": {
+        "width": 600,
+        "height": 750,
+        "displayedWidth": 266,
+        "displayedHeight": 332.5,
+        "inkFraction": 0.08059111111111111,
+        "visible": true,
+        "fitsWidth": true
+      },
+      "pagination": true,
+      "download": true,
+      "draftPreserved": true,
+      "writes": 0
+    },
+    "1440": {
+      "nativeOff": true,
+      "firstPage": {
+        "width": 600,
+        "height": 750,
+        "displayedWidth": 600,
+        "displayedHeight": 750,
+        "inkFraction": 0.08049777777777778,
+        "visible": true,
+        "fitsWidth": true
+      },
+      "secondPage": {
+        "width": 600,
+        "height": 750,
+        "displayedWidth": 600,
+        "displayedHeight": 750,
+        "inkFraction": 0.08059111111111111,
+        "visible": true,
+        "fitsWidth": true
+      },
+      "pagination": true,
+      "download": true,
+      "draftPreserved": true,
+      "writes": 0
+    }
+  },
+  "pageErrors": [],
+  "externalRequests": [],
+  "screenshots": [
+    "preview-390-page1.png",
+    "preview-1440-page1.png"
+  ]
+}

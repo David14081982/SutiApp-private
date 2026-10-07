@@ -4176,3 +4176,8 @@ Production migration 20261007000200 and Edge v19 verified; Membership alone move
 ### H-DOCUMENT-ASSIGNMENT-FIX-001 cierre publicado PASS
 
 Published 252e0af57fac35e4e8ca335f69d19d8920a1d544 / Pages 37657278503 SUCCESS; v2026100416. Public HTML/bundle/SW and authenticated document screen at 390/1440 verified. Membership card/configuration/synthetic PDF agree; 107 original records remain byte-equivalent by full-row hash, while 3 normal new loan documents were distinguished from historical changes. No QA document issued. Independent final review APPROVED.
+
+
+## H-DOCUMENT-PREVIEW-RENDER-001
+
+The generated-document preview iframe depended on native browser PDF support and could show only an Open tile. Reuse the existing internal Designer PDF.js canvas renderer in that preview modal, with page-bound readiness, source reset, cancellation and explicit retry. Preserve issued viewers, all assignments, backend and the shared asset viewer. Actual two-page pixel tests with native PDF disabled pass at 390/1440, plus the 20 assignment UI checks. Build v2026100417 preserves 154 unrelated chunks. Local authenticated preview is denied by the existing backend origin policy (403 DOCUMENT_ORIGIN_DENIED); final visual verification is required on the authorized published origin. See audits/H-DOCUMENT-PREVIEW-RENDER-001.md and document-preview-render evidence.

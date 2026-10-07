@@ -1,0 +1,81 @@
+{
+  "status": "FAIL",
+  "checkedAt": "2026-10-07T18:04:09.196Z",
+  "businessWritesAllowed": 0,
+  "issuedDocumentAccessAllowed": 0,
+  "realDataScreenshots": false,
+  "screenshotScope": "synthetic preview canvas only",
+  "privateContentLogged": false,
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "FAIL",
+      "nativePdfViewerEnabled": false,
+      "effectiveCard": "PASS"
+    }
+  ],
+  "blockedRequests": [
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_self_marketplace_quote_notifications"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "get_app_editorial"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "other_edge",
+      "operation": "financial-legacy:loanSessionOpen"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    }
+  ],
+  "authenticatedReadCounts": {
+    "rpc:get_admin_access_context": 1,
+    "rpc:get_current_affiliate_access_state": 1,
+    "rpc:get_effective_affiliate_id": 1,
+    "rpc:get_impersonation_context": 1,
+    "rpc:list_self_request_event_notifications": 1,
+    "rpc:get_self_savings_if_changed": 1,
+    "rpc:get_self_request_push_config": 2,
+    "storage:sign_read": 1,
+    "rpc:list_paid_company_ids": 2,
+    "rpc:get_admin_refresh_context": 1,
+    "document:DASHBOARD": 1,
+    "document:LIST": 1,
+    "edge:ASSET_ACCESS": 12,
+    "edge:LAYOUT_CONFIGURE_PREVIEW": 1
+  },
+  "target": "http://127.0.0.1:4178/",
+  "mode": "local",
+  "version": 2026100417,
+  "bundleSha256": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6",
+  "configuredProjectMatchesTarget": true,
+  "authentication": "controlled QA; exact configured Supabase origin; password never passed to webpage",
+  "failure": {
+    "stage": "synthetic_preview_1440",
+    "code": "PREVIEW_RENDER_CHECK_FAILED",
+    "kind": "TimeoutError"
+  }
+}

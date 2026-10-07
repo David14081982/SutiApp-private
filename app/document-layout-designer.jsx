@@ -5,10 +5,31 @@
  const humanError=e=>e.details||[({DOCUMENT_LAYOUT_ASSIGNMENTS_REQUIRED:'Selecciona al menos un programa o fondo.',DOCUMENT_LAYOUT_NAME_REQUIRED:'Escribe el nombre del diseño.',DOCUMENT_LAYOUT_ASSIGNMENT_CHANGED:'La asignación cambió en otra sesión. Vuelve a abrir el diseñador para revisar la versión vigente.',DOCUMENT_LAYOUT_FUND_INVALID:'El fondo no pertenece al programa elegido.',DOCUMENT_LAYOUT_TEXT_OVERFLOW:'Un texto no cabe en su área. Amplía su alto o ancho, o reduce la fuente.',DOCUMENT_LAYOUT_SIGNER_TOO_TALL:'Amplía el espacio disponible para las firmas.',DOCUMENT_LAYOUT_TABLE_ROW_TOO_TALL:'Amplía el calendario o reduce su fuente.',DOCUMENT_CONTEXT_CHANGED:'La sesión cambió. Vuelve a abrir el diseñador.',DOCUMENT_PERMISSION_DENIED:'Tu cuenta no tiene permiso para editar distribuciones.',DOCUMENT_CONFIGURATION_MISSING:'Guarda primero la configuración del documento.',DOCUMENT_SIGNER_NOT_EFFECTIVE:'Revisa la vigencia de los firmantes.',DOCUMENT_LAYOUT_SCOPE_DENIED:'La versión no pertenece a este documento.'})[e.message]||'No se pudo completar la acción. Revisa la configuración e inténtalo de nuevo.'];
  // Render the actual server PDF locally; browser PDF plugins are not required.
  function PDFPreview({url}){
-  const [pdf,setPdf]=useState(null),[number,setNumber]=useState(1),[ready,setReady]=useState(false),[error,setError]=useState(''),node=useRef(null);
-  useEffect(()=>{let cancelled=false,task;(async()=>{const lib=await import(new URL('app/vendor/pdfjs-5.4.149/pdf.min.mjs',document.baseURI).href);lib.GlobalWorkerOptions.workerSrc=new URL('app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs',document.baseURI).href;const response=await fetch(url);if(!response.ok)throw Error();task=lib.getDocument({data:new Uint8Array(await response.arrayBuffer()),isEvalSupported:false,enableXfa:false,useSystemFonts:true});const loaded=await task.promise;if(!cancelled)setPdf(loaded);})().catch(()=>{if(!cancelled)setError('No se pudo leer el PDF. Vuelve al diseño y reintenta la vista previa.');});return()=>{cancelled=true;task?.destroy();};},[url]);
-  useEffect(()=>{if(!pdf)return;let cancelled=false,render;setReady(false);(async()=>{const page=await pdf.getPage(number);if(cancelled)return;const viewport=page.getViewport({scale:1.5});node.current.width=viewport.width;node.current.height=viewport.height;render=page.render({canvasContext:node.current.getContext('2d'),viewport});await render.promise;if(!cancelled)setReady(true);})().catch(()=>{if(!cancelled)setError('No se pudo mostrar esta página del PDF.');});return()=>{cancelled=true;render?.cancel();};},[pdf,number]);
-  return <div className="dl-pdf-preview"><div className="dl-toolbar"><button className="df-btn df-btn--ghost df-btn--sm" disabled={!pdf||number===1} onClick={()=>setNumber(n=>n-1)}>Página anterior</button><span role="status">{pdf?'Página '+number+' de '+pdf.numPages:'Leyendo PDF…'}</span><button className="df-btn df-btn--ghost df-btn--sm" disabled={!pdf||number===pdf.numPages} onClick={()=>setNumber(n=>n+1)}>Página siguiente</button><a className="df-btn df-btn--ghost df-btn--sm" href={url} download="vista-previa-documento.pdf">Descargar vista previa</a></div>{error&&<p role="alert">{error}</p>}<div className="dl-preview-scroll"><canvas ref={node} aria-label="Vista previa PDF del diseño" data-rendered={ready?'true':'false'} style={{display:ready?'block':'none',maxWidth:'100%',height:'auto',margin:'auto'}}/>{!ready&&!error&&<p>Mostrando página…</p>}</div></div>;
+  const [source,setSource]=useState(null),[number,setNumber]=useState(1),[readyPage,setReadyPage]=useState(0),[error,setError]=useState(''),[attempt,setAttempt]=useState(0),node=useRef(null),scroll=useRef(null);
+  const pdf=source?.url===url&&source.attempt===attempt?source.pdf:null,ready=!!pdf&&readyPage===number;
+  useEffect(()=>{
+   let cancelled=false,task;const abort=new AbortController();setSource(null);setNumber(1);setReadyPage(0);setError('');
+   (async()=>{
+    const lib=await import(new URL('app/vendor/pdfjs-5.4.149/pdf.min.mjs',document.baseURI).href);if(cancelled)return;
+    lib.GlobalWorkerOptions.workerSrc=new URL('app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs',document.baseURI).href;
+    const response=await fetch(url,{signal:abort.signal});if(cancelled)return;if(!response.ok)throw Error();
+    const bytes=new Uint8Array(await response.arrayBuffer());if(cancelled)return;
+    task=lib.getDocument({data:bytes,isEvalSupported:false,enableXfa:false,useSystemFonts:true});
+    const loaded=await task.promise;if(!cancelled)setSource({url,attempt,pdf:loaded});
+   })().catch(()=>{if(!cancelled)setError('No se pudo leer el PDF. Reintenta la vista previa.');});
+   return()=>{cancelled=true;abort.abort();task?.destroy().catch(()=>{});};
+  },[url,attempt]);
+  useEffect(()=>{
+   if(!pdf)return;let cancelled=false,render;setReadyPage(0);setError('');
+   (async()=>{
+    const page=await pdf.getPage(number);if(cancelled)return;
+    const viewport=page.getViewport({scale:1.5}),canvas=node.current;canvas.width=viewport.width;canvas.height=viewport.height;
+    render=page.render({canvasContext:canvas.getContext('2d'),viewport});await render.promise;
+    if(!cancelled){setReadyPage(number);if(scroll.current)scroll.current.scrollTop=0;}
+   })().catch(()=>{if(!cancelled)setError('No se pudo mostrar esta página del PDF. Reintenta la vista previa.');});
+   return()=>{cancelled=true;render?.cancel();};
+  },[pdf,number]);
+  return <div className="dl-pdf-preview" style={{minWidth:0,width:'100%'}}><div className="dl-toolbar" style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12}}><button className="df-btn df-btn--ghost df-btn--sm" disabled={!pdf||!ready||!!error||number===1} onClick={()=>setNumber(n=>n-1)}>Página anterior</button><span role="status" aria-live="polite">{pdf?'Página '+number+' de '+pdf.numPages:error?'Vista previa no disponible':'Leyendo PDF…'}</span><button className="df-btn df-btn--ghost df-btn--sm" disabled={!pdf||!ready||!!error||number===pdf.numPages} onClick={()=>setNumber(n=>n+1)}>Página siguiente</button><a className="df-btn df-btn--ghost df-btn--sm" href={url} download="vista-previa-documento.pdf">Descargar vista previa</a></div>{error&&<div><p role="alert">{error}</p><button className="df-btn df-btn--ghost df-btn--sm" onClick={()=>setAttempt(n=>n+1)}>Reintentar</button></div>}<div className="dl-preview-scroll" ref={scroll} style={{overflow:'auto',maxHeight:'65vh',minHeight:180,background:'var(--surface-2)',padding:12}}><canvas ref={node} role="img" aria-label="Vista previa PDF del diseño" data-page={number} data-rendered={pdf&&ready&&!error?'true':'false'} style={{display:pdf&&ready&&!error?'block':'none',maxWidth:'100%',height:'auto',margin:'auto',background:'#fff'}}/>{!error&&(!pdf||!ready)&&<p role="status">Mostrando página…</p>}</div></div>;
  }
  function Designer({scope,onClose,Dialog,Button,Field}){
   const [program,setProgram]=useState(scope.program);
@@ -81,4 +102,5 @@
   </Dialog></div>;
  }
  window.DocumentLayoutDesigner=Designer;
+ window.DocumentLayoutDesigner.PDFPreview=PDFPreview;
 })();

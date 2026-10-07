@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "localOrigin": "http://127.0.0.1:4178",
+  "httpStatus": 403,
+  "error": "DOCUMENT_ORIGIN_DENIED",
+  "allowOrigin": null,
+  "authSent": false,
+  "businessWrites": 0
+}

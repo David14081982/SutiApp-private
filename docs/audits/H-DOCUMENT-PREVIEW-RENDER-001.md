@@ -22,7 +22,7 @@ Tests: actual two-page synthetic PDF with distinct colored markers; Chrome with 
 
 Recovery: revert the two focal frontend chunks/cachebusters using their committed baseline; no data recovery needed because no business data writes are authorized. Preserve all preexisting local work.
 
-Status: PASS for scoped implementation. Final verification pending.
+Status: PASS for scoped implementation. Final verification is recorded below.
 
 ## Candidate verification
 
@@ -33,3 +33,27 @@ Local renderer tests PASS with Chrome's native PDF viewer verifiably disabled: r
 Build v2026100417 SHA256 d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6; exactly two focal chunks regenerated, 154 unrelated chunks identical. Pages allowlist/PWA test PASS with zero forbidden files. No backend/data/configuration files changed.
 
 Authenticated candidate boundary: login, configured project, native viewer disabled, effective card and configuration succeed on loopback. The PDF endpoint correctly rejects Origin http://127.0.0.1:4178. A separate unauthenticated OPTIONS request proves HTTP 403 DOCUMENT_ORIGIN_DENIED without Access-Control-Allow-Origin. The complete local integration attempt is not a PASS and is retained as such. This is a deliberate backend origin restriction, not a renderer failure. No CORS setting, origin header or security control is changed; final authenticated visual verification will run on the authorized published sutiapp.com origin. Isolated renderer/page/pixel tests and the public build remain PASS.
+
+
+## Published closure
+
+Runtime commit 2b5e3d03929ea53c4b5e621688f75392005bd742 published by Pages run 37665165970 (SUCCESS). Public HTML, bundle, service worker and both local PDF.js modules match the tested candidate byte-for-byte. Version 2026100417 remains unchanged during evidence-only completion.
+
+Authenticated live verification PASS at 390 and 1440 with native PDF support verifiably disabled. The actual Membership synthetic preview is a two-page PDF. Both pages display real content, the previous/next controls return to the correct page, close preserves configuration, refresh preserves the effective assignment, and browser errors/document mutation attempts are zero. Screenshots contain only the visible synthetic canvas; the surrounding live UI and issued documents were not captured. Both viewport/page captures were inspected visually.
+
+The first live attempt used whole-image hash equality and reported FAIL when returning to page 1. The diagnostic attempt measured exactly two of 1,090,584 pixels differing by only one RGB level, with identical geometry, ink mask, alpha, ink/color counts and visible screenshot. Both failed reports and their captures are preserved. The verifier now permits at most eight such one-level pixel differences while requiring exact dimensions, ink mask, alpha and content counts, and a distinct second page. This is a QA precision correction, not a runtime change; the independent reviewer approved the measured tolerance. The complete subsequent live run passes.
+
+The loopback integration failure remains in local-browser.json and is NOT APPLICABLE for acceptance because the unchanged backend rejects that origin with DOCUMENT_ORIGIN_DENIED. The authorized production origin supplies the complete integration evidence. Global image regression is NOT APPLICABLE under AGENTS.md: no shared viewer, asset repository, authentication, backend, routing or service-worker logic changed. No historical PDF was regenerated.
+
+H-DOCUMENT-PREVIEW-RENDER-001 RESULT
+Status: PASS
+Files changed: two focal frontend sources; generated bundle and cachebusters; focused QA/release scripts; audit/changelog, evidence and derived Architecture Registry. Full runtime inventory: scope.json.
+Source-of-truth verdict: PASS. Existing document-generation Edge remains the PDF authority; PDF.js displays its authorized Blob in memory. No alternate authority, productive mock, fallback or persistent business cache added.
+Invariant verdict: PASS. Assignment rules, templates, signer order, sealed history and program boundaries preserved.
+Build: PASS. v2026100417; exactly two chunks regenerated and 154 unrelated chunks preserved. Public bytes match candidate; Pages allowlist/PWA check passes.
+Tests: PASS. Real renderer pixel/navigation/error/cancellation tests at 390/1440; 20 assignment checks; authenticated live actual-canvas verification at 390/1440.
+Security: PASS. Existing backend authorization unchanged. QA uses the exact configured Supabase origin; zero business writes, document mutation attempts, issued-document access or private-data screenshots.
+Legacy impact: NOT APPLICABLE. No Supabase, financial or Google legacy code/data modified.
+Unexpected files changed: none in the isolated release checkout; unrelated root work preserved.
+Known limitations: the intentional local-origin denial is preserved as raw FAIL and classified NOT APPLICABLE. Issued-document and shared asset viewers are outside this focal preview fix.
+Evidence: docs/qa/evidence/document-preview-render/ (browser, assignment-browser, build, pages-build, deployment, published, live-browser, preserved attempts, local-origin, scope, synthetic screenshots); final independent architect review recorded alongside evidence.

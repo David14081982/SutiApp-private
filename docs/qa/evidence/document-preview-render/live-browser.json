@@ -1,0 +1,425 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-07T18:25:23.492Z",
+  "businessWritesAllowed": 0,
+  "issuedDocumentAccessAllowed": 0,
+  "realDataScreenshots": false,
+  "screenshotScope": "synthetic preview canvas only",
+  "privateContentLogged": false,
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "nativePdfViewerEnabled": false,
+      "effectiveCard": "PASS",
+      "syntheticPreviewRequest": "PASS",
+      "source": {
+        "blob": true,
+        "headerPdf": true,
+        "bytes": 301028,
+        "pageCount": 2,
+        "contentType": "application/pdf"
+      },
+      "firstPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 33734,
+        "chromaticPixels": 14516,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.03093205108455653,
+        "pixelFingerprint": "490166fc",
+        "rendered": true,
+        "cssWidth": 807.984375,
+        "cssHeight": 1045.640625
+      },
+      "screenshots": [
+        {
+          "file": "synthetic-live-1440-page-1.png",
+          "sha256": "09d7905e15489fe733a48818e51f01f9ae12d472ea11b6170e6d725e87a64992",
+          "width": 803,
+          "height": 601,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        },
+        {
+          "file": "synthetic-live-1440-page-2.png",
+          "sha256": "d875f1286b4d3ae3a053ba210e02954704995944ff9b0e0ea03ba5920452b0ca",
+          "width": 803,
+          "height": 601,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        },
+        {
+          "file": "synthetic-live-1440-page-1-returned.png",
+          "sha256": "09d7905e15489fe733a48818e51f01f9ae12d472ea11b6170e6d725e87a64992",
+          "width": 803,
+          "height": 601,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        }
+      ],
+      "secondPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 19909,
+        "chromaticPixels": 6132,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.018255356762982036,
+        "pixelFingerprint": "fe87fd3b",
+        "rendered": true,
+        "cssWidth": 807.984375,
+        "cssHeight": 1045.640625
+      },
+      "returnedPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 33734,
+        "chromaticPixels": 14516,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.03093205108455653,
+        "pixelFingerprint": "3460761a",
+        "rendered": true,
+        "cssWidth": 807.984375,
+        "cssHeight": 1045.640625
+      },
+      "returnedRasterDifference": {
+        "sameDimensions": true,
+        "pixels": 1090584,
+        "differentPixels": 2,
+        "differentRatio": 0.000001833879829522531,
+        "over8Pixels": 0,
+        "over16Pixels": 0,
+        "over32Pixels": 0,
+        "over64Pixels": 0,
+        "maxChannelDelta": 1,
+        "meanAbsoluteRgbDelta": 0.000001833879829522531,
+        "inkMaskDifference": 0,
+        "alphaDifferences": 0,
+        "differenceBounds": {
+          "minX": 298,
+          "minY": 1118,
+          "maxX": 421,
+          "maxY": 1120
+        }
+      },
+      "returnedRasterLimits": {
+        "maxDifferentPixels": 8,
+        "maxChannelDelta": 1,
+        "inkMaskDifference": 0,
+        "alphaDifferences": 0
+      },
+      "pagination": "PASS",
+      "pdfModules": [
+        "pdf.min.mjs",
+        "pdf.worker.min.mjs"
+      ],
+      "previewClose": "PASS",
+      "refresh": "PASS",
+      "pageErrorCount": 0,
+      "documentMutationAttempts": 0
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "nativePdfViewerEnabled": false,
+      "effectiveCard": "PASS",
+      "syntheticPreviewRequest": "PASS",
+      "source": {
+        "blob": true,
+        "headerPdf": true,
+        "bytes": 301028,
+        "pageCount": 2,
+        "contentType": "application/pdf"
+      },
+      "firstPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 33734,
+        "chromaticPixels": 14516,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.03093205108455653,
+        "pixelFingerprint": "490166fc",
+        "rendered": true,
+        "cssWidth": 265.984375,
+        "cssHeight": 344.234375
+      },
+      "screenshots": [
+        {
+          "file": "synthetic-live-390-page-1.png",
+          "sha256": "b0024dc73965755008f2bb34fbcc518b3178fbd4675d172eb617976d9d0d8764",
+          "width": 261,
+          "height": 340,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        },
+        {
+          "file": "synthetic-live-390-page-2.png",
+          "sha256": "3d1333c37fe07153cbe6ff652a71e7e4bc9ac879c0d1f01a71e827a059a6b5ef",
+          "width": 261,
+          "height": 340,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        },
+        {
+          "file": "synthetic-live-390-page-1-returned.png",
+          "sha256": "b0024dc73965755008f2bb34fbcc518b3178fbd4675d172eb617976d9d0d8764",
+          "width": 261,
+          "height": 340,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        }
+      ],
+      "secondPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 19909,
+        "chromaticPixels": 6132,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.018255356762982036,
+        "pixelFingerprint": "fe87fd3b",
+        "rendered": true,
+        "cssWidth": 265.984375,
+        "cssHeight": 344.234375
+      },
+      "returnedPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 33734,
+        "chromaticPixels": 14516,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.03093205108455653,
+        "pixelFingerprint": "3460761a",
+        "rendered": true,
+        "cssWidth": 265.984375,
+        "cssHeight": 344.234375
+      },
+      "returnedRasterDifference": {
+        "sameDimensions": true,
+        "pixels": 1090584,
+        "differentPixels": 2,
+        "differentRatio": 0.000001833879829522531,
+        "over8Pixels": 0,
+        "over16Pixels": 0,
+        "over32Pixels": 0,
+        "over64Pixels": 0,
+        "maxChannelDelta": 1,
+        "meanAbsoluteRgbDelta": 0.000001833879829522531,
+        "inkMaskDifference": 0,
+        "alphaDifferences": 0,
+        "differenceBounds": {
+          "minX": 298,
+          "minY": 1118,
+          "maxX": 421,
+          "maxY": 1120
+        }
+      },
+      "returnedRasterLimits": {
+        "maxDifferentPixels": 8,
+        "maxChannelDelta": 1,
+        "inkMaskDifference": 0,
+        "alphaDifferences": 0
+      },
+      "pagination": "PASS",
+      "pdfModules": [
+        "pdf.min.mjs",
+        "pdf.worker.min.mjs"
+      ],
+      "previewClose": "PASS",
+      "refresh": "PASS",
+      "pageErrorCount": 0,
+      "documentMutationAttempts": 0
+    }
+  ],
+  "blockedRequests": [
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_self_marketplace_quote_notifications"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "get_app_editorial"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "other_edge",
+      "operation": "financial-legacy:loanSessionOpen"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 390,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_self_marketplace_quote_notifications"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "get_app_editorial"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 390,
+      "kind": "other_edge",
+      "operation": "financial-legacy:loanSessionOpen"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 390,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 390,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 390,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 390,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    }
+  ],
+  "authenticatedReadCounts": {
+    "rpc:get_admin_access_context": 4,
+    "rpc:get_current_affiliate_access_state": 4,
+    "rpc:get_effective_affiliate_id": 4,
+    "rpc:get_impersonation_context": 4,
+    "rpc:list_self_request_event_notifications": 2,
+    "rpc:get_self_savings_if_changed": 2,
+    "rpc:get_self_request_push_config": 4,
+    "rpc:list_paid_company_ids": 6,
+    "storage:sign_read": 4,
+    "rpc:get_admin_refresh_context": 2,
+    "document:DASHBOARD": 6,
+    "document:LIST": 6,
+    "edge:ASSET_ACCESS": 48,
+    "edge:LAYOUT_CONFIGURE_PREVIEW": 2
+  },
+  "target": "https://sutiapp.com/",
+  "mode": "live",
+  "version": 2026100417,
+  "bundleSha256": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6",
+  "configuredProjectMatchesTarget": true,
+  "authentication": "controlled QA; exact configured Supabase origin; password never passed to webpage"
+}

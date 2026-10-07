@@ -1,0 +1,152 @@
+{
+  "status": "FAIL",
+  "checkedAt": "2026-10-07T18:16:46.618Z",
+  "businessWritesAllowed": 0,
+  "issuedDocumentAccessAllowed": 0,
+  "realDataScreenshots": false,
+  "screenshotScope": "synthetic preview canvas only",
+  "privateContentLogged": false,
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "FAIL",
+      "nativePdfViewerEnabled": false,
+      "effectiveCard": "PASS",
+      "syntheticPreviewRequest": "PASS",
+      "source": {
+        "blob": true,
+        "headerPdf": true,
+        "bytes": 301009,
+        "pageCount": 2,
+        "contentType": "application/pdf"
+      },
+      "firstPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 33734,
+        "chromaticPixels": 14516,
+        "quantizedColors": 48,
+        "opaqueRatio": 1,
+        "inkRatio": 0.03093205108455653,
+        "pixelFingerprint": "490166fc",
+        "rendered": true,
+        "cssWidth": 807.984375,
+        "cssHeight": 1045.640625
+      },
+      "screenshots": [
+        {
+          "file": "synthetic-live-1440-page-1.png",
+          "sha256": "bf1c787c144fb54a0e937b383a40f43d0070f631abb313a3de9551847fa97423",
+          "width": 803,
+          "height": 601,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        },
+        {
+          "file": "synthetic-live-1440-page-2.png",
+          "sha256": "7873bbcd16159118e1f3d2cc6da9c7c1da587a73f0ae3758697663823ee8fb95",
+          "width": 803,
+          "height": 601,
+          "syntheticOnly": true,
+          "canvasOnly": true
+        }
+      ],
+      "secondPage": {
+        "width": 918,
+        "height": 1188,
+        "pixels": 1090584,
+        "opaquePixels": 1090584,
+        "inkPixels": 21503,
+        "chromaticPixels": 6796,
+        "quantizedColors": 49,
+        "opaqueRatio": 1,
+        "inkRatio": 0.019716958987111493,
+        "pixelFingerprint": "b6c00db2",
+        "rendered": true,
+        "cssWidth": 807.984375,
+        "cssHeight": 1045.640625
+      }
+    }
+  ],
+  "blockedRequests": [
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_self_marketplace_quote_notifications"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "get_app_editorial"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_public_banners"
+    },
+    {
+      "width": 1440,
+      "kind": "other_edge",
+      "operation": "financial-legacy:loanSessionOpen"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "rpc",
+      "operation": "list_company_commercial_requests"
+    },
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    },
+    {
+      "width": 1440,
+      "kind": "non_read_http",
+      "operation": "UNKNOWN"
+    }
+  ],
+  "authenticatedReadCounts": {
+    "rpc:get_admin_access_context": 1,
+    "rpc:get_current_affiliate_access_state": 1,
+    "rpc:get_effective_affiliate_id": 1,
+    "rpc:get_impersonation_context": 1,
+    "rpc:list_self_request_event_notifications": 1,
+    "rpc:get_self_savings_if_changed": 1,
+    "rpc:get_self_request_push_config": 1,
+    "storage:sign_read": 1,
+    "rpc:list_paid_company_ids": 2,
+    "rpc:get_admin_refresh_context": 1,
+    "document:DASHBOARD": 1,
+    "document:LIST": 1,
+    "edge:ASSET_ACCESS": 12,
+    "edge:LAYOUT_CONFIGURE_PREVIEW": 1
+  },
+  "target": "https://sutiapp.com/",
+  "mode": "live",
+  "version": 2026100417,
+  "bundleSha256": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6",
+  "configuredProjectMatchesTarget": true,
+  "authentication": "controlled QA; exact configured Supabase origin; password never passed to webpage",
+  "failure": {
+    "stage": "pagination_1440",
+    "code": "PREVIOUS_PAGE_PIXELS_MISMATCH",
+    "kind": "AssertionError"
+  }
+}

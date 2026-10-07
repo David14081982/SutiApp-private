@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "baseline": "0625dbbc26162d3a2915a854fa7d0d8a430a1746",
+  "runtimeCommit": "2b5e3d03929ea53c4b5e621688f75392005bd742",
+  "changedFiles": [
+    "SutiApp.html",
+    "app/bundle.js",
+    "app/document-layout-designer.jsx",
+    "app/screens-admin-document-generation.jsx",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/architecture-overrides.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json",
+    "docs/audits/H-DOCUMENT-PREVIEW-RENDER-001.md",
+    "docs/qa/evidence/document-preview-render/assignment-browser.json",
+    "docs/qa/evidence/document-preview-render/browser.json",
+    "docs/qa/evidence/document-preview-render/build.json",
+    "docs/qa/evidence/document-preview-render/local-browser.json",
+    "docs/qa/evidence/document-preview-render/local-origin.json",
+    "docs/qa/evidence/document-preview-render/pages-build.json",
+    "docs/qa/evidence/document-preview-render/preview-1440-page1.png",
+    "docs/qa/evidence/document-preview-render/preview-390-page1.png",
+    "scripts/document-preview-release.js",
+    "scripts/test-document-assignment-fix-browser.js",
+    "scripts/test-document-preview-render.js",
+    "scripts/verify-document-preview-render-live.js",
+    "sw.js"
+  ],
+  "unexpectedFiles": [],
+  "protectedSourceOidsIdentical": [
+    "app/image-viewer.jsx",
+    "app/document-generation-repository.js",
+    "app/document-layout-repository.js"
+  ],
+  "backendChanged": false,
+  "htmlAndServiceWorkerCachebustersOnly": true,
+  "globalImageRegression": "NOT APPLICABLE: internal Documentos y Firmas preview; shared viewer, repositories, asset/security paths and SW logic unchanged",
+  "businessWrites": 0
+}

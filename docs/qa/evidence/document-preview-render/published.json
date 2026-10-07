@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "version": 2026100417,
+  "bundleSha": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6",
+  "checks": [
+    {
+      "file": "SutiApp.html",
+      "status": 200,
+      "sha": "a1c248395966c39c3844dc738ddebb5c8d001ffe041a9c687a4f10582cde99f6"
+    },
+    {
+      "file": "app/bundle.js",
+      "status": 200,
+      "sha": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "sha": "9807dcc22aaa0319ad0d0353f1e4ab06a4c784ead6beb4ad99da88676370f490"
+    },
+    {
+      "file": "app/vendor/pdfjs-5.4.149/pdf.min.mjs",
+      "status": 200,
+      "sha": "a935133d4b2166e8e3cf28e288b1b889d0743285e1c4e6ab3c77f04704eb56f3"
+    },
+    {
+      "file": "app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs",
+      "status": 200,
+      "sha": "c964e291707ad492e6e90ff7f4f352b75e05ea2734c3dd3a80b94983b1b7ce3d"
+    }
+  ],
+  "businessWrites": 0
+}

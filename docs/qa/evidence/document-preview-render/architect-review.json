@@ -1,0 +1,196 @@
+{
+  "task": "H-DOCUMENT-PREVIEW-RENDER-001",
+  "reviewedAt": "2026-10-07T18:29:58.156Z",
+  "reviewer": "assignment_review independent subagent",
+  "skill": "sutiapp-architect-reviewer",
+  "verdict": "APPROVED",
+  "status": "PASS",
+  "wholeTaskReadyToClose": true,
+  "request": "Render the actual generated preview PDF inside the existing Documentos y Firmas modal, without native browser PDF support and without changing assignments or issued documents.",
+  "reviewScope": "Published runtime commit 2b5e3d03929ea53c4b5e621688f75392005bd742 and final local/live evidence; reviewer read code/diffs, checked hashes and visually inspected synthetic captures.",
+  "criticalFindings": [],
+  "problemsDetected": [],
+  "sourceOfTruth": {
+    "verdict": "SAFE",
+    "authority": "Existing authorized document-generation Edge PDF bytes",
+    "display": "Local PDF.js canvas renders the authorized in-memory Blob",
+    "newProductiveMocks": false,
+    "newFallbacks": false,
+    "newPersistentBusinessCache": false,
+    "repositoriesUnchanged": true
+  },
+  "architecture": {
+    "verdict": "PASS",
+    "runtimeSourceFiles": [
+      "app/document-layout-designer.jsx",
+      "app/screens-admin-document-generation.jsx"
+    ],
+    "internalExport": "DocumentLayoutDesigner.PDFPreview",
+    "sourceUrlRetryAndPageBoundReadiness": true,
+    "fetchAndWorkerAndRenderCleanup": true,
+    "issuedDocumentViewersUnchanged": true,
+    "sharedViewerUnchanged": true,
+    "unrelatedBundleChunksPreserved": 154,
+    "protectedFilesUnchanged": [
+      "app/image-viewer.jsx",
+      "app/document-generation-repository.js",
+      "app/document-layout-repository.js",
+      "app/document-workflow-repository.js",
+      "app/private-resource-demand.js",
+      "app/affiliate-auth.js",
+      "app/app.jsx"
+    ],
+    "backendChanged": false,
+    "registry": "Confirmed FRESH at candidate commit; evidence-only incremental update follows this review",
+    "globalImageRegression": {
+      "status": "NOT APPLICABLE",
+      "reason": "Internal renderer and preview modal belong to Documentos y Firmas; shared viewers, repositories, assets, authentication, routing and worker logic are unchanged. Bundle/cachebusters are generated artifacts."
+    }
+  },
+  "uiPreservation": {
+    "verdict": "PASS",
+    "sectionsAndCardsAndControlsPreserved": true,
+    "configurationDraftReturnPreserved": true,
+    "designerRendererPreservedAndTested": true,
+    "headerAndFooterClosePreserved": true,
+    "loadingErrorRetryAndPagination": true,
+    "unauthorizedRedesign": false,
+    "visualInspection": {
+      "reviewerInspected": true,
+      "isolatedViewports": [
+        390,
+        1440
+      ],
+      "publishedViewports": [
+        390,
+        1440
+      ],
+      "actualPages": [
+        1,
+        2
+      ],
+      "observed": "Institutional letterhead, membership request and synthetic signer blocks render as visible page content; no native Open tile or blank canvas."
+    }
+  },
+  "security": {
+    "verdict": "PASS",
+    "existingBackendAuthorizationUnchanged": true,
+    "configuredOriginAuthentication": true,
+    "passwordNotPassedToPage": true,
+    "issuedDocumentAccessAllowed": 0,
+    "documentMutationAttempts": 0,
+    "businessWrites": 0,
+    "privateDataScreenshots": false,
+    "cdnAdded": false,
+    "localPdfJsAndWorkerBytesVerified": true
+  },
+  "data": {
+    "verdict": "PASS",
+    "configurationTemplateSignerLayoutChanges": 0,
+    "historicalPdfsReissued": 0,
+    "businessRecordsWrittenByThisH": 0,
+    "syntheticPreviewOnly": true
+  },
+  "legacy": {
+    "status": "NOT APPLICABLE",
+    "financialLogicChanged": false,
+    "googleWrites": false
+  },
+  "verification": {
+    "rendererChecks": 6,
+    "assignmentChecks": 20,
+    "sourceHashesMatchEvidence": true,
+    "buildVersion": 2026100417,
+    "bundleSha256": "d7777ed889f12c75e83a9b6bf7a64eac5e25c66552a66724544a28e5a07277b6",
+    "commit": "2b5e3d03929ea53c4b5e621688f75392005bd742",
+    "workflowUrl": "https://github.com/David14081982/SutiApp-private/actions/runs/37665165970",
+    "publishedArtifactHashes": 5,
+    "nativePdfDisabledInRealBrowser": true,
+    "livePagesPerViewport": 2,
+    "liveViewports": [
+      1440,
+      390
+    ],
+    "browserErrors": 0,
+    "closeAndRefresh": "PASS",
+    "runtimeUnchangedAfterPublication": true,
+    "screenshotHashesVerified": 8
+  },
+  "measuredRasterTolerance": {
+    "verdict": "APPROVED",
+    "reason": "Strict hash failure was traced to two of 1090584 pixels changing by one RGB level on rerender; dimensions, ink mask, alpha and color counts remain identical; visible captures are byte-identical.",
+    "limits": {
+      "maxDifferentPixels": 8,
+      "maxChannelDelta": 1,
+      "inkMaskDifference": 0,
+      "alphaDifferences": 0
+    },
+    "finalObserved": [
+      {
+        "width": 1440,
+        "differentPixels": 2,
+        "maxChannelDelta": 1
+      },
+      {
+        "width": 390,
+        "differentPixels": 2,
+        "maxChannelDelta": 1
+      }
+    ],
+    "failedAttemptsPreserved": [
+      "live-attempt1.json",
+      "live-attempt2.json"
+    ],
+    "runtimeChangeForTolerance": false
+  },
+  "localIntegration": {
+    "status": "NOT APPLICABLE",
+    "rawAttemptStatus": "FAIL",
+    "reason": "Unchanged backend deliberately rejects the loopback Origin; complete integration is verified on authorized https://sutiapp.com/.",
+    "proof": "local-origin.json",
+    "httpStatus": 403,
+    "error": "DOCUMENT_ORIGIN_DENIED",
+    "securityWeakened": false,
+    "rawFailurePreserved": true
+  },
+  "limitations": [
+    "Reviewer relied on generated authenticated production evidence and inspected its verifier rather than issuing additional production requests.",
+    "Published browser check blocks service workers; exact published worker bytes are verified and only cachebusters changed.",
+    "This fix covers preview modals; issued-document and shared asset viewers remain outside scope."
+  ],
+  "ownerDecisionRequired": false,
+  "workQueueContinuationAuthorized": false,
+  "nextAction": "Cerrar H-DOCUMENT-PREVIEW-RENDER-001: actualizar exclusivamente el Registry derivado y registrar el commit de evidencia; comunicar que la vista previa ya muestra las paginas dentro de la app, verificada en movil y escritorio. No efectuar nuevas mutaciones de runtime/datos ni avanzar a otra H.",
+  "responseGeneratedForCodex": true,
+  "evidenceHashes": {
+    "assignment-browser.json": "ae3c6bc8c0fc90008f1916da0b55a1ae7bf46e74f4b9523eef49e043e5a10023",
+    "browser.json": "4a0119d9338aaafebc1929f39a6de2334cd3b4080205055fae43ec3e84e304bb",
+    "build.json": "966bcae0fd9baffae1943f91423ef245b047ea2893b857c9f3011f12e3a3fae2",
+    "deployment.json": "e966cbda779154803e8010f3233158bbc61aa8a92b180e75802a8cd9c2b7f3e1",
+    "live-attempt1.json": "d7676808bf3339aaa820ebdb023b25e0041df0edd94102507bad68df77cbf96d",
+    "live-attempt2.json": "c1646ac027ca0b5dd50cef86a6080a4ab7a56930a8526cfc998acc46937fc0b8",
+    "live-browser.json": "e3704a948f5e64d376bbd864c5a14a7aaf0fa190cfe0081b5621ea0f1af1b9d3",
+    "local-browser.json": "f79397b4b602704a5a3ee4eec49bba6eef7b3d7e892ddeda26858712515f7a39",
+    "local-origin.json": "77ad368a3e0b6878f82b0a7f129b555de6572edc2bcfaf5fadb61905348fc388",
+    "pages-build.json": "5c67e2f43dfbd54c3742c6213c8debe64491e3135ff5d364c8d60c8e7f465c07",
+    "published.json": "c6bad14511bd59ad07c629f413cf5ef14c52da008b8b262d17e0bbb85c234b90",
+    "scope.json": "33b8968e78f229fd9ea4aefc7e34d910ac82b4060ddfb55cfdabcef461f507c4"
+  },
+  "screenshotHashes": {
+    "preview-390-page1.png": "76401806470a997187abe79265605902295c8843731c36f3bcf10bba16308d6a",
+    "preview-1440-page1.png": "098c32d8464dbdda46c7af133cb4bfe202828504f4e44723cb3b863190ef23cb",
+    "synthetic-live-1440-page-1.png": "09d7905e15489fe733a48818e51f01f9ae12d472ea11b6170e6d725e87a64992",
+    "synthetic-live-1440-page-2.png": "d875f1286b4d3ae3a053ba210e02954704995944ff9b0e0ea03ba5920452b0ca",
+    "synthetic-live-1440-page-1-returned.png": "09d7905e15489fe733a48818e51f01f9ae12d472ea11b6170e6d725e87a64992",
+    "synthetic-live-390-page-1.png": "b0024dc73965755008f2bb34fbcc518b3178fbd4675d172eb617976d9d0d8764",
+    "synthetic-live-390-page-2.png": "3d1333c37fe07153cbe6ff652a71e7e4bc9ac879c0d1f01a71e827a059a6b5ef",
+    "synthetic-live-390-page-1-returned.png": "b0024dc73965755008f2bb34fbcc518b3178fbd4675d172eb617976d9d0d8764"
+  },
+  "reviewedSourceHashes": {
+    "app/document-layout-designer.jsx": "5d4b3fc4dd94abf685aa6c3c61a88db0a53ccdffc4e06dfa8cd06a370caa37cf",
+    "app/screens-admin-document-generation.jsx": "8e6793ae9a4f4e5327c9a26b4191b036f97092f47faad9bf9a6b3b69c00bd1cb",
+    "scripts/verify-document-preview-render-live.js": "79e2b0d9bca20b3ed3709faf15a74d2b16c40de682dd81e5fe8117ac22f79165",
+    "scripts/test-document-preview-render.js": "cb5e70d630e8e8a8a08f663283be38ca2a473d6d46b447829a75641e2bc41737",
+    "scripts/test-document-assignment-fix-browser.js": "ae35e1b86730dd03174b0e11249bfa3d1f540f68704767bb822429a4a5dab5f8"
+  }
+}

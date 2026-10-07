@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "recordCount": 107,
+  "recordsSha": "36bc2a4e18e20274a409c275aefae6f1",
+  "otherAssignmentsSha": "48d0c1d6a24612136dc8fa3ad1a43254",
+  "otherConfigsSha": "7d1084e653641b0621d1953cfe883545",
+  "defaultTemplate": "b1de3f1a-368d-40a8-ac4f-05e296d2d99a",
+  "memberLayoutVersion": 1,
+  "edgeVersion": 18
+}

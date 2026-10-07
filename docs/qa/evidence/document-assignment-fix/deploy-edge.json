@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "edgeVersion": 19,
+  "files": [
+    "index.ts",
+    "renderer.mjs",
+    "layout.mjs",
+    "render-layout.mjs",
+    "layout-service.mjs"
+  ],
+  "fingerprint": "7f9ad396df53532d30e865320c4c73012922c7826e8d8b064213b2101bc204bc",
+  "sourceHashes": {
+    "index.ts": "ba1fa4eb85fca4850a1a92282fc0f7ec02869c718ea1c1755f3ccd44fcbd181c",
+    "renderer.mjs": "9cbc00c2c1f8600a503cda5412c260364e37e8329f1273fd67c9fbcb2d2ea34d",
+    "layout.mjs": "f22eb60979dc633a3875bf7b69f860f13ac77398e4e38898f9f07ef34dabe8d1",
+    "render-layout.mjs": "df899773774902af83acf1a5d0ceeadbbf3d9ba9ab95e0362b485bdebb548ddc",
+    "layout-service.mjs": "3ef0768825598b44eca920a0c8a8f55b2fb2923c6539c99c879603fcd80202e9"
+  },
+  "unchangedRendererModules": 3,
+  "readbackVerified": true,
+  "secretChanges": 0
+}

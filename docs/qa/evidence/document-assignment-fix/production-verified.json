@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "templateName": "Solicitudes de préstamo ",
+  "layoutVersion": 2,
+  "recordCount": 107,
+  "historicalRecordsPreserved": true,
+  "otherProgramsPreserved": true,
+  "rendererModulesPreserved": true,
+  "sourceReadback": true,
+  "anonymousStatus": 401,
+  "configurationWrites": 0,
+  "reissuedDocuments": 0
+}

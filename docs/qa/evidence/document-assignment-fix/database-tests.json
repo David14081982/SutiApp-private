@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "captured_at": "2026-10-07T16:59:55.942Z",
+  "checks": [
+    "migration preserves histories, assignments and existing function identities/ACL",
+    "unauthorized configuration and preview denied; private writer remains service-only",
+    "dashboard exposes effective layout template despite conflicting base configuration",
+    "preview renders selected template with original custom elements without writes",
+    "configure atomically clones only membership and snapshot matches preview",
+    "identical retry is idempotent and same id with changed intent fails",
+    "signer-only edit keeps layout version and uses draft signers for preview",
+    "stale configuration and stale assignment reject without partial writes",
+    "failure at activation rolls back configuration, clone and audit; retry can succeed",
+    "invalid geometry and duplicate signer reject before publishing a candidate",
+    "future-dated candidate and assignment from another scope fail closed without writes",
+    "an older transaction start cannot hide a successful new assignment",
+    "general changes preserve loan fund overrides and explicit unassignment semantics",
+    "history stays immutable and no new operation or emitted PDF is created by configuration",
+    "recovery restores exact function definitions/OID/ACL without deleting new versions or history"
+  ],
+  "productionTouched": false,
+  "networkUsed": false,
+  "syntheticDataOnly": true,
+  "renderedCandidates": 12,
+  "historicalRowsPreserved": 1,
+  "historicalHash": "d48de9901ea346c626bc1b438aa4e5c383d38fd03234a1a9dde1f42c89f70a9e",
+  "migration": "20261007000200_document_assignment_consistency.sql",
+  "sourceHashes": {
+    "supabase/migrations/20261007000200_document_assignment_consistency.sql": "f62ff3d7c6a903f9c940805ae26e989a3c25c0575efb02d82f817b78b44b0ff5",
+    "supabase/recovery/20261007000200_document_assignment_consistency.sql": "3e46ef493ede87b04890cb40be813d4b0b6ff9246e61dfa3d1f93e54ce3511ed",
+    "supabase/functions/document-generation/index.ts": "8a0eec4bf63f4afda6bd5d4a990b4aa8cef271d9ddec0f238807ad97b4d436a9",
+    "supabase/functions/document-generation/layout-service.mjs": "2ef9bb26be69733a708f0a8f798189350c851ed14571923d2fdeea963df706ef",
+    "supabase/functions/document-generation/renderer.mjs": "9cbc00c2c1f8600a503cda5412c260364e37e8329f1273fd67c9fbcb2d2ea34d",
+    "supabase/functions/document-generation/layout.mjs": "f22eb60979dc633a3875bf7b69f860f13ac77398e4e38898f9f07ef34dabe8d1",
+    "supabase/functions/document-generation/render-layout.mjs": "82b8eddd3767ba169fab4d688c60d12aada8f589f2571fd64ec3c265e66d7da7",
+    "scripts/test-document-assignment-fix.js": "87fac70f6323bb19e8bffa6a9719ee00c64bb2b24259940a58062fa6f7f2153e"
+  }
+}

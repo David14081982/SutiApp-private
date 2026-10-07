@@ -3373,6 +3373,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     day: '2-digit'
   }).format(new Date());
   const message = e => ({
+    DOCUMENT_CONFIGURATION_NOT_EFFECTIVE: 'La vigencia debe incluir la fecha actual para aplicar este diseño.',
+    DOCUMENT_CONFIGURATION_CHANGED: 'La configuración cambió mientras la editabas. Cierra y vuelve a configurar para revisar la versión vigente.',
+    DOCUMENT_LAYOUT_ASSIGNMENT_CHANGED: 'El diseño cambió mientras lo editabas. Cierra y vuelve a configurar para revisar la asignación vigente.',
+    DOCUMENT_ASSIGNMENT_STATE_UNAVAILABLE: 'No se pudo consultar el diseño realmente asignado. Reintenta la consulta.',
+    DOCUMENT_LAYOUT_INVALID: 'El diseño no cabe en el membrete seleccionado. Revisa su distribución en Diseñar documento.',
+    DOCUMENT_CONFIGURATION_DATES_REQUIRED: 'Revisa la vigencia de la configuración.',
     DOCUMENT_LAYOUT_ASSIGNMENT_MISSING: 'Abre Diseñar documento y activa un diseño para este programa o fondo.',
     DOCUMENT_CONFIGURATION_MISSING: 'Configura primero la plantilla y los firmantes de este documento.',
     DOCUMENT_SIGNER_NOT_EFFECTIVE: 'Revisa la vigencia y el estado de los firmantes.',
@@ -3466,7 +3472,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     onClose,
     side,
     children,
-    footer
+    footer,
+    wrapFooter = false
   }) {
     const ref = useRef(null);
     useEffect(() => {
@@ -3527,7 +3534,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }))), /*#__PURE__*/React.createElement("div", {
       className: "df-ov__b"
     }, children), /*#__PURE__*/React.createElement("div", {
-      className: "df-ov__f"
+      className: "df-ov__f",
+      style: wrapFooter ? {
+        flexWrap: 'wrap'
+      } : undefined
     }, footer || /*#__PURE__*/React.createElement(Button, {
       onClick: onClose
     }, "Cerrar"))));
@@ -3850,23 +3860,31 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       [uploadUrl, setUploadUrl] = useState(null);
     const urls = useRef([]),
       alive = useRef(true),
-      drag = useRef(null);
+      drag = useRef(null),
+      configurationSave = useRef(null),
+      previewReturn = useRef(null),
+      configurationStart = useRef(null);
     const templates = data?.templates || [],
       signers = data?.signers || [],
       configs = data?.configurations || [],
+      assignments = data?.layout_assignments || [],
       perms = data?.permissions || {},
       active = templates.find(t => t.active),
       allow = k => perms[k] === true;
+    const assignmentFor = (program, type) => assignments.find(a => a.program === program && a.document_type === type && !a.fund_key);
     const programs = [...new Set(['prestamo', 'caja', 'nomina', 'membership', ...(data?.programs || [])])],
       scopeTypes = program => program === 'caja' ? ['LOAN_APPROVAL', ...Object.keys(TYPES).filter(t => t.startsWith('SAVINGS_'))] : program === 'membership' ? ['MEMBERSHIP_APPROVAL'] : ['prestamo', 'nomina'].includes(program) ? ['LOAN_APPROVAL'] : ['PROGRAM_FINANCING_APPROVAL'];
     const scopes = programs.flatMap(program => scopeTypes(program).map(document_type => ({
         program,
         document_type,
-        config: configs.find(c => c.program === program && c.document_type === document_type)
+        config: configs.find(c => c.program === program && c.document_type === document_type),
+        assignment: assignmentFor(program, document_type),
+        variants: assignments.filter(a => a.program === program && a.document_type === document_type && a.fund_key).length
       }))),
-      configured = scopes.filter(s => s.config).length;
+      configured = scopes.filter(s => s.config && s.assignment?.layout_id).length;
     const refresh = async () => {
       const value = await R().dashboard();
+      if (!Array.isArray(value.layout_assignments)) throw Error('DOCUMENT_ASSIGNMENT_STATE_UNAVAILABLE');
       if (alive.current) {
         setData(value);
         const a = value.templates.find(t => t.active);
@@ -3876,6 +3894,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         admin: true
       });
       if (alive.current) setRecent(docs.slice(0, 3));
+      return value;
     };
     useEffect(() => {
       alive.current = true;
@@ -3899,9 +3918,10 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     };
     const close = () => {
       if (!busy) {
-        setModal(null);
+        setModal(modal === 'preview' && previewReturn.current === 'config' ? 'config' : null);
         setPreview(null);
         setUploadUrl(null);
+        previewReturn.current = null;
       }
     };
     const patch = (k, v) => setDraft(d => ({
@@ -3944,21 +3964,65 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       setModal('signer');
     }
     function configEditor(scope) {
-      setDraft({
+      const assigned = scope.assignment || assignmentFor(scope.program, scope.document_type);
+      configurationSave.current = null;
+      const initial = {
         ...scope.config,
         program: scope.program,
         document_type: scope.document_type,
-        template_id: scope.config?.follow_active ? active?.id : scope.config?.template_id || active?.id || '',
-        follow_active: scope.config?.follow_active ?? true,
+        layout_id: assigned?.layout_id || null,
+        expected_configuration_id: scope.config?.id,
+        expected_assignment_id: assigned?.id || null,
+        template_id: assigned?.layout_id ? assigned.template_id : scope.config?.follow_active ? active?.id : scope.config?.template_id || active?.id || '',
+        follow_active: assigned?.layout_id ? false : scope.config?.follow_active ?? true,
         valid_from: scope.config?.valid_from || today(),
         valid_until: scope.config?.valid_until || '',
         signers: (scope.config?.signers || []).map(x => ({
           ...x,
           version_id: signatureFor(x.version_id)?.id || x.version_id
         }))
-      });
+      };
+      configurationStart.current = JSON.stringify(initial);
+      setDraft(initial);
       setModal('config');
     }
+    const configurationPayload = config => ({
+      program: config.program,
+      document_type: config.document_type,
+      fund_key: '',
+      expected_configuration_id: config.expected_configuration_id || config.id,
+      expected_assignment_id: config.expected_assignment_id,
+      template_id: config.template_id,
+      signers: config.signers,
+      valid_from: config.valid_from,
+      valid_until: config.valid_until || null
+    });
+    const saveConfiguration = next => run(async () => {
+      if (draft.layout_id) {
+        const payload = configurationPayload(draft),
+          key = JSON.stringify(payload);
+        if (configurationSave.current?.key !== key) configurationSave.current = {
+          key,
+          id: crypto.randomUUID()
+        };
+        await window.DocumentLayoutRepository.request('LAYOUT_CONFIGURE', {
+          ...payload,
+          id: configurationSave.current.id
+        });
+      } else await R().command('SAVE_CONFIGURATION', draft);
+      const value = await refresh();
+      if (next === 'layout') {
+        const saved = value.configurations.find(c => c.program === draft.program && c.document_type === draft.document_type),
+          nextDraft = {
+            ...draft,
+            ...saved,
+            expected_configuration_id: saved.id
+          };
+        configurationStart.current = JSON.stringify(nextDraft);
+        setDraft(nextDraft);
+        setModal('layout');
+      } else setModal(null);
+    });
     const upload = (kind, file) => run(async () => {
       const result = await R().upload(kind, file);
       patch('asset_id', result.id);
@@ -3977,8 +4041,27 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         setModal('activate');
       } else setModal(null);
     });
-    const previewScope = (program, type, config) => run(async () => {
+    const previewTemplate = (program, type, config) => run(async () => {
+      previewReturn.current = null;
       const blob = await R().preview(program, type, config);
+      const u = URL.createObjectURL(blob);
+      urls.current.push(u);
+      setPreview(u);
+      setModal('preview');
+    });
+    const previewScope = (program, type, config) => run(async () => {
+      previewReturn.current = modal;
+      const assigned = assignmentFor(program, type),
+        saved = configs.find(c => c.program === program && c.document_type === type);
+      if (!assigned?.layout_id) throw Error('DOCUMENT_LAYOUT_ASSIGNMENT_MISSING');
+      const blob = await window.DocumentLayoutRepository.request('LAYOUT_CONFIGURE_PREVIEW', configurationPayload({
+        ...saved,
+        ...config,
+        program,
+        document_type: type,
+        expected_configuration_id: config?.expected_configuration_id || saved?.id,
+        expected_assignment_id: config?.expected_assignment_id || assigned.id
+      }));
       const u = URL.createObjectURL(blob);
       urls.current.push(u);
       setPreview(u);
@@ -4120,7 +4203,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       size: 20
     }), "Plantilla activa"), /*#__PURE__*/React.createElement("p", {
       className: "df-sec__s"
-    }, "El membrete que usar\xE1n los documentos nuevos. Los ya generados conservan el suyo.")), /*#__PURE__*/React.createElement(Button, {
+    }, "Membrete predeterminado para configurar nuevos dise\xF1os. Cada asignaci\xF3n conserva su plantilla.")), /*#__PURE__*/React.createElement(Button, {
       kind: "pri",
       icon: "upload",
       disabled: !allow('templates.write') || busy,
@@ -4158,7 +4241,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         marginTop: 12
       }
-    }, "Se aplica a ", configs.filter(c => c.follow_active || c.template_id === active.id).length, " documentos configurados."), /*#__PURE__*/React.createElement("div", {
+    }, "Asignada a ", assignments.filter(a => a.layout_id && a.template_id === active.id).length, " dise\xF1os activos por programa o destino."), /*#__PURE__*/React.createElement("div", {
       className: "df-actions"
     }, /*#__PURE__*/React.createElement(Button, {
       small: true,
@@ -4293,7 +4376,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       small: true,
       icon: "eye",
       disabled: busy || !configs.length,
-      onClick: () => previewScope(configs[0].program, configs[0].document_type, {
+      onClick: () => previewTemplate(configs[0].program, configs[0].document_type, {
         template_id: active?.id,
         margins,
         signers: configs[0].signers
@@ -4428,13 +4511,18 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, PROGRAMS[scope.program] || scope.program), /*#__PURE__*/React.createElement("p", {
       className: "df-pr__doc"
     }, TYPES[scope.document_type])), /*#__PURE__*/React.createElement(Badge, {
-      tone: scope.config ? 'ok' : 'off'
-    }, scope.config ? 'Configurado' : 'Sin configurar')), /*#__PURE__*/React.createElement("p", {
-      className: 'df-pr__tpl' + (!scope.config ? ' is-missing' : '')
+      tone: scope.config && scope.assignment?.layout_id ? 'ok' : 'off'
+    }, scope.config && scope.assignment?.layout_id ? 'Configurado' : 'Sin diseño activo')), /*#__PURE__*/React.createElement("p", {
+      className: 'df-pr__tpl' + (!scope.assignment?.layout_id ? ' is-missing' : '')
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "doc",
       size: 15
-    }), templates.find(t => t.id === (scope.config?.follow_active ? active?.id : scope.config?.template_id))?.name || 'Sin plantilla asignada'), /*#__PURE__*/React.createElement("div", {
+    }), scope.assignment?.layout_id ? scope.assignment.template_name + ' · v' + scope.assignment.template_version : 'Sin diseño asignado'), scope.assignment?.layout_id && /*#__PURE__*/React.createElement("p", {
+      className: "df-sec__s",
+      style: {
+        padding: '0 20px 10px'
+      }
+    }, "Dise\xF1o v", scope.assignment.layout_version, " \xB7 General del programa", scope.variants > 0 ? ' · ' + scope.variants + ' destinos específicos en el diseñador' : ''), /*#__PURE__*/React.createElement("div", {
       className: "df-pr__list"
     }, scope.config ? scope.config.signers.map((item, n) => {
       const s = signatureFor(item.version_id);
@@ -4616,7 +4704,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       width: 76
     })), /*#__PURE__*/React.createElement("p", {
       className: "df-grow"
-    }, "Los documentos anteriores no cambiar\xE1n. Las asignaciones que usan la plantilla activa tomar\xE1n esta versi\xF3n para documentos nuevos. Las asignaciones con versi\xF3n fija conservan la elegida.")), error && /*#__PURE__*/React.createElement("p", {
+    }, "Esta plantilla ser\xE1 el membrete predeterminado al configurar nuevos dise\xF1os. Los dise\xF1os ya asignados conservan su plantilla; puedes cambiarla en Configurar de cada programa. Los PDF anteriores se conservan.")), error && /*#__PURE__*/React.createElement("p", {
       role: "alert"
     }, error)), modal === 'template' && /*#__PURE__*/React.createElement(Dialog, {
       title: draft.name,
@@ -4631,23 +4719,33 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         program: draft.program,
         document_type: draft.document_type
       },
-      onClose: () => setModal('config'),
+      onClose: () => run(async () => {
+        const pending = JSON.stringify(draft) !== configurationStart.current;
+        const value = await refresh();
+        if (pending) {
+          setModal('config');
+          return;
+        }
+        configEditor({
+          program: draft.program,
+          document_type: draft.document_type,
+          config: value.configurations.find(c => c.program === draft.program && c.document_type === draft.document_type),
+          assignment: value.layout_assignments.find(a => a.program === draft.program && a.document_type === draft.document_type && !a.fund_key)
+        });
+      }),
       Dialog: Dialog,
       Button: Button,
       Field: Field
     }), modal === 'config' && /*#__PURE__*/React.createElement(Dialog, {
       side: true,
+      wrapFooter: true,
       title: 'Configurar · ' + (PROGRAMS[draft.program] || draft.program),
       description: "Plantilla, tipo de documento y orden de las firmas.",
       onClose: close,
       footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
         icon: "pencil",
         disabled: busy || !allow('config.write') || !draft.template_id || !draft.signers?.length,
-        onClick: () => run(async () => {
-          await R().command('SAVE_CONFIGURATION', draft);
-          await refresh();
-          setModal('layout');
-        })
+        onClick: () => draft.layout_id ? setModal('layout') : saveConfiguration('layout')
       }, "Dise\xF1ar documento"), /*#__PURE__*/React.createElement(Button, {
         icon: "eye",
         disabled: busy || !draft.template_id || !draft.signers?.length,
@@ -4659,16 +4757,13 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         kind: "pri",
         icon: "ok",
         disabled: busy || !draft.template_id || !draft.signers?.length,
-        onClick: () => run(async () => {
-          await R().command('SAVE_CONFIGURATION', draft);
-          await refresh();
-          setModal(null);
-        })
+        onClick: () => saveConfiguration('close')
       }, "Guardar configuraci\xF3n"))
     }, /*#__PURE__*/React.createElement("div", {
       className: "df-2col"
     }, /*#__PURE__*/React.createElement(Field, {
-      label: "Plantilla"
+      label: "Plantilla",
+      hint: draft.layout_id ? 'Se aplica al diseño general de este programa al guardar. Diseñar documento abre el diseño guardado; tu borrador se conserva al volver. Los destinos específicos conservan su diseño.' : 'Guarda la configuración y activa su diseño para emitir documentos.'
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       value: draft.follow_active ? 'ACTIVE' : draft.template_id,
@@ -4689,7 +4784,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       value: draft.document_type,
-      onChange: e => patch('document_type', e.target.value)
+      onChange: e => configEditor(scopes.find(s => s.program === draft.program && s.document_type === e.target.value))
     }, scopeTypes(draft.program).map(t => /*#__PURE__*/React.createElement("option", {
       key: t,
       value: t

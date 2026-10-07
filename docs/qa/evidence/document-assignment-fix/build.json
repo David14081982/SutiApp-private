@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "version": 2026100416,
+  "bundleSha": "be8961662eb3d077e0422e55a354b3cfc13443ca04b688f802b25dfef77e7ccb",
+  "changedChunks": [
+    "screens-admin-document-generation.jsx"
+  ],
+  "unrelatedChunksPreserved": 155,
+  "workerLogicChanged": false
+}

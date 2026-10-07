@@ -8,7 +8,7 @@ export function layoutFields(type,version=LAYOUT_VERSION){
  const fields=[f('identity.full_name','Beneficiario','TEXT',true),f('identity.numero_control','Número de control','TEXT',true),f('operation.folio','Folio','TEXT',true),f('operation.program','Programa','TEXT',true),f('operation.approved_at','Fecha de autorización','DATE',true),f('identity.union','Sindicato'),f('identity.category','Categoría'),f('identity.unit','Adscripción')];
  if(version!=='suti-layout-1')fields.push(f('document.title','Título del documento'));
  if(version==='suti-layout-1')fields.push(f('document.note','Alcance de la autorización','TEXT',true));
- else fields.push(...AFFILIATE_FIELDS.map(([key,label])=>f('identity.affiliate.'+key,label,'TEXT',false,'Base de afiliados')));
+ else fields.push(f('identity.category_code','Categoría laboral (código)','TEXT',false,'Base de afiliados'),...AFFILIATE_FIELDS.map(([key,label])=>f('identity.affiliate.'+key,label,'TEXT',false,'Base de afiliados')));
  const add=(key,label,format='TEXT',required=false)=>fields.push(f(key,label,format,required,'Datos del documento'));
  if(['LOAN_APPROVAL','PROGRAM_FINANCING_APPROVAL','MEMBERSHIP_APPROVAL'].includes(type))fields.push(...financial);
  switch(type){

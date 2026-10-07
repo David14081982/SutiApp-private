@@ -1,0 +1,85 @@
+{
+  "task": "H-DOCUMENT-ASSIGNMENT-FIX-001",
+  "reviewedAt": "2026-10-07T17:04:51.906Z",
+  "reviewer": "assignment_review independent subagent",
+  "verdict": "APPROVED",
+  "reviewScope": "Deployed backend and Membership assignment only; frontend candidate verified locally",
+  "backendStatus": "PASS",
+  "frontendCandidateStatus": "PASS",
+  "frontendProductionStatus": "NOT VERIFIED - publication pending",
+  "wholeTaskReadyToClose": false,
+  "criticalFindings": [],
+  "sourceOfTruth": {
+    "verdict": "SAFE",
+    "authority": "document_private layouts/layout_activations, configurations, immutable template versions and issued snapshots",
+    "newFallbacks": false,
+    "historicalSnapshotsRewritten": false
+  },
+  "architecture": {
+    "atomicConfigurationAndAssignment": true,
+    "configurationAndAssignmentCAS": true,
+    "immutableSourceLayoutValidated": true,
+    "clonesOnlyWhenTemplateChanges": true,
+    "otherProgramsAndFundOverridesPreserved": true
+  },
+  "security": {
+    "verdict": "PASS",
+    "actorAndContextDerivedByAuthenticatedRPC": true,
+    "persistenceServiceOnly": true,
+    "functionOidOwnerAclPreserved": true,
+    "anonymousHttpStatus": 401,
+    "frontendSecretsIntroduced": false
+  },
+  "data": {
+    "membershipLayoutVersion": 2,
+    "templateName": "Solicitudes de préstamo",
+    "historicalRecordsPreserved": 107,
+    "layoutElementsPreserved": true,
+    "signersPreserved": true,
+    "globalTemplatePreserved": true,
+    "reissuedDocuments": 0
+  },
+  "legacy": {
+    "verdict": "NOT APPLICABLE",
+    "financialCalculationsChanged": false,
+    "googleWrites": false,
+    "businessApprovalEventsWritten": false
+  },
+  "verification": {
+    "databaseChecks": 15,
+    "browserChecks": 20,
+    "browserViewports": [
+      "390",
+      "1440"
+    ],
+    "coreChecks": 23,
+    "buildVersion": 2026100416,
+    "bundleSha": "be8961662eb3d077e0422e55a354b3cfc13443ca04b688f802b25dfef77e7ccb",
+    "edgeVersion": 19,
+    "edgeSourceReadback": true,
+    "unchangedRendererModules": 3,
+    "currentEvidenceHashesMatch": true,
+    "recoveryRestoresExactFunctionsAndPreservesData": true
+  },
+  "limitations": [
+    "Reviewer inspected generated live readback evidence and the transport assertions; did not execute additional production queries.",
+    "Frontend publication and public URL readback remain pending.",
+    "No issued PDF was rewritten or generated as a production test."
+  ],
+  "ownerDecisionRequired": false,
+  "workQueueContinuationAuthorized": false,
+  "nextAction": "Complete the already-authorized frontend publication; verify public bytes/build identity and backend preservation again. Do not close the whole H before publication evidence passes. Do not advance to another H.",
+  "responseGeneratedForCodex": true,
+  "evidenceHashes": {
+    "baseline.json": "858c4c9b93d085df0c2d12d7dc384ec0e2ebfa49404b59901b860f9328667985",
+    "database-tests.json": "5bff3e8c7703facc56895dc6963edf039b87922cd9b3c007f4406f58e8c6337c",
+    "browser.json": "b9a3cc10b1765520c9edc58e67045fc8bc2c0f8f8e70683f60fd6098b2251323",
+    "build.json": "07be217c2dd53eafaa1597e4acbecefb2f2e490047e56332db52c85adcdd0e0d",
+    "pages-build.json": "77779d7e2bafa7a929a7c2bf39f5e9ffe40079fbc2a3bc9ea083c4087b0bfa88",
+    "schema-applied.json": "da50d2832c9858a60590576dfaf549ce312585af57d04c5bf896daf3ba4670ff",
+    "deploy-edge.json": "a397f1d7b59e16562a9f68ad6e99118ad33a922929a2043b923b61f6e5e28618",
+    "membership-corrected.json": "6c98e2e8a8bab55d0c9270bcb202e49413600519ea81a4603b97da44fc571e95",
+    "production-verified.json": "6568adcd5889ac1f6a908015d15849966f90c72079bb915e4f9269f6bb950b9b",
+    "regression-tests.json": "9dfe2f58462b1cf32519965618c89961fb302478687bcc9a66bdfa6e427b8ec5"
+  }
+}

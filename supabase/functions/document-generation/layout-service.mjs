@@ -2,8 +2,27 @@ import {syntheticSnapshot,documentContract} from './renderer.mjs';
 import {layoutFields,fieldValue,formatField,validateLayout,initialLayout,TABLE_COLUMNS,LAYOUT_VERSION} from './layout.mjs';
 export async function handleLayout(body,{contextCall,command,persist,render,loadAsset}){
  const reply=(status,data)=>({status,data});
-   const scope={program:body.program,document_type:body.document_type,fund_key:body.fund_key||''},writing=['LAYOUT_SAVE','LAYOUT_ACTIVATE','LAYOUT_UNASSIGN'].includes(body.action);
+   const scope={program:body.program,document_type:body.document_type,fund_key:body.fund_key||''},writing=['LAYOUT_SAVE','LAYOUT_ACTIVATE','LAYOUT_UNASSIGN','LAYOUT_CONFIGURE'].includes(body.action);
    const context=await contextCall(writing?'WRITE':'READ',scope);
+   if(['LAYOUT_CONFIGURE','LAYOUT_CONFIGURE_PREVIEW'].includes(body.action)){
+    if(scope.fund_key!=='')throw Error('DOCUMENT_LAYOUT_FUND_INVALID');
+    // Read the expected immutable assignment, including on a retry after a successful commit.
+    // Actor and context always come from the authenticated gate, never from the request body.
+    const source=await contextCall('ASSIGNMENT',{...scope,id:body.expected_assignment_id});
+    if(!writing){
+     if(context.latest_configuration_id!==body.expected_configuration_id)throw Error('DOCUMENT_CONFIGURATION_CHANGED');
+     if(context.assignment_id!==body.expected_assignment_id)throw Error('DOCUMENT_LAYOUT_ASSIGNMENT_CHANGED');
+    }
+    const candidate={...scope,template_id:body.template_id,signers:body.signers,valid_from:body.valid_from,valid_until:body.valid_until||null,configuration_candidate:true};
+    const config=await command('PREVIEW_CONFIG',candidate),definition=source.definition;
+    const errors=validateLayout(definition,scope.document_type,config.template);
+    if(errors.length)return reply(409,{error:'DOCUMENT_LAYOUT_INVALID',details:errors});
+    const snapshot=syntheticSnapshot(scope.document_type,scope.program,config);
+    snapshot.layout={definition,engine_version:source.engine_version,contract_version:source.contract_version};
+    let output;try{output=await render(snapshot,loadAsset,{preview:true});}catch(e){if(e.layoutIssue)return reply(409,{error:e.message,details:[e.layoutIssue]});throw e;}
+    if(!writing)return {status:200,pdf:output.bytes};
+    return reply(200,await persist('CONFIGURE',{...candidate,id:body.id,expected_configuration_id:body.expected_configuration_id,expected_assignment_id:body.expected_assignment_id,layout_id:source.id,definition,actor:context.actor,context_affiliate:context.context_affiliate}));
+   }
    if(body.action==='LAYOUT_SYSTEM')throw Error('DOCUMENT_LAYOUT_SYSTEM_RETIRED');
    if(body.action==='LAYOUT_UNASSIGN')return reply(200,await persist('UNASSIGN',{...scope,id:body.id,assignments:[{program:scope.program,fund_key:scope.fund_key,expected_id:body.expected_id??null}],actor:context.actor,context_affiliate:context.context_affiliate}));
    const version=body.version_id?await contextCall('VERSION',{...scope,id:body.version_id}):null;

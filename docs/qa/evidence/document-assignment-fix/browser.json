@@ -1,0 +1,174 @@
+{
+  "status": "PASS",
+  "fixture": "isolated synthetic records, all HTTP(S) blocked",
+  "baselineCommit": "a8f779fea0bec3ef4813c6bf17ac1314dcf6c0ec",
+  "sourceSha256": "bcdc5305c55eed92d88c8ac33a7ddb0c4475f8706c252d13f331ed2167788ba8",
+  "viewports": {
+    "390": {
+      "structure": {
+        "head": "Documentos y Firmas",
+        "sections": [
+          "Resumen",
+          "Avisos",
+          "Plantillas",
+          "Firmantes",
+          "Firmas por programa",
+          "Documentos recientes"
+        ],
+        "tabs": [
+          "Plantillas",
+          "Firmantes",
+          "Firmas por programa"
+        ],
+        "cards": {
+          "templates": 1,
+          "signers": 3,
+          "programs": 9
+        },
+        "ranges": [
+          "Margen superior",
+          "Margen inferior",
+          "Margen izquierdo",
+          "Margen derecho"
+        ],
+        "footers": 9
+      },
+      "tabs": {
+        "Plantillas": {
+          "visible": true,
+          "controls": 12,
+          "scrollWidth": 390
+        },
+        "Firmantes": {
+          "visible": true,
+          "controls": 6,
+          "scrollWidth": 390
+        },
+        "Firmas por programa": {
+          "visible": true,
+          "controls": 10,
+          "scrollWidth": 390
+        }
+      },
+      "baselineScrollWidths": {
+        "Plantillas": 390,
+        "Firmantes": 390,
+        "Firmas por programa": 390
+      },
+      "structuralParity": true,
+      "filters": true
+    },
+    "1440": {
+      "structure": {
+        "head": "Documentos y Firmas",
+        "sections": [
+          "Resumen",
+          "Avisos",
+          "Plantillas",
+          "Firmantes",
+          "Firmas por programa",
+          "Documentos recientes"
+        ],
+        "tabs": [
+          "Plantillas",
+          "Firmantes",
+          "Firmas por programa"
+        ],
+        "cards": {
+          "templates": 1,
+          "signers": 3,
+          "programs": 9
+        },
+        "ranges": [
+          "Margen superior",
+          "Margen inferior",
+          "Margen izquierdo",
+          "Margen derecho"
+        ],
+        "footers": 9
+      },
+      "tabs": {
+        "Plantillas": {
+          "visible": true,
+          "controls": 12,
+          "scrollWidth": 1440
+        },
+        "Firmantes": {
+          "visible": true,
+          "controls": 6,
+          "scrollWidth": 1440
+        },
+        "Firmas por programa": {
+          "visible": true,
+          "controls": 10,
+          "scrollWidth": 1440
+        }
+      },
+      "baselineScrollWidths": {
+        "Plantillas": 1440,
+        "Firmantes": 1440,
+        "Firmas por programa": 1440
+      },
+      "structuralParity": true,
+      "filters": true
+    }
+  },
+  "checks": {
+    "effectiveCardUsesActiveLayout": true,
+    "configUsesEffectiveTemplate": true,
+    "previewCandidateWithoutWrites": true,
+    "previewReturnsToUnsavedDraft": true,
+    "atomicSaveEffectiveRefresh": true,
+    "unrelatedScopesAndGlobalTemplateUnchanged": true,
+    "signerOrderPreserved": true,
+    "casErrorVisibleDraftPreserved": true,
+    "unchangedRetryKeepsIdempotencyKey": true,
+    "missingMetadataFailsExplicitly": true,
+    "templatePreviewPreservesMarginsWithoutActiveLayout": true,
+    "unassignedScopeRetainsSaveAndDesigner": true,
+    "newDesignerActivationRefreshesSavedBaselineAndAtomicPath": true,
+    "documentTypeTransitionReloadsExactScope": true,
+    "activeDesignerOpensWithoutMutation": true,
+    "designerExitRefreshesUnmodifiedAssignment": true,
+    "mobileConfigurationActionsReachable": true,
+    "designerExitPreservesUnsavedTemplateAndSigners": true,
+    "designerConcurrentChangeDoesNotRebasePendingDraft": true,
+    "designerConcurrentSaveFailsCASWithoutDiscardingEdits": true
+  },
+  "pageErrors": [],
+  "networkRequests": [],
+  "mobileConfigurationActions": [
+    {
+      "label": "Diseñar documento",
+      "x": 156.40625,
+      "y": 826,
+      "width": 209.59375,
+      "height": 46,
+      "insideViewport": true
+    },
+    {
+      "label": "Vista previa",
+      "x": 97.78125,
+      "y": 882,
+      "width": 154.484375,
+      "height": 46,
+      "insideViewport": true
+    },
+    {
+      "label": "Cancelar",
+      "x": 262.265625,
+      "y": 882,
+      "width": 103.734375,
+      "height": 46,
+      "insideViewport": true
+    },
+    {
+      "label": "Guardar configuración",
+      "x": 134.15625,
+      "y": 938,
+      "width": 231.84375,
+      "height": 46,
+      "insideViewport": true
+    }
+  ]
+}

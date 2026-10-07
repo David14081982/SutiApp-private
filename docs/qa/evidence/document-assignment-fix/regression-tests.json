@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": 23,
+  "productionTouched": false,
+  "syntheticDataOnly": true,
+  "permanentQaPdfs": 0,
+  "residualData": 0,
+  "command": "SUTIAPP_DOCUMENT_DEPS=<local PDF deps> node ../private/test-core-normalized.cjs",
+  "normalization": "In-memory LF normalization of migration text only for existing CRLF-sensitive hash assertions; original test source unchanged",
+  "coreTestSha": "6a5f4c1621a80a7afd7e5d5a6708988a17ace1021e9bcde9ee83e36509aee4af",
+  "capturedAt": "2026-10-07T17:02:42.459Z"
+}

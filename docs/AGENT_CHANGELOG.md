@@ -4165,3 +4165,9 @@ Owner authorizes removing authorization PDFs from affiliate History/Tracking and
 ## H-HISTORY-WHATSAPP-001 — 2026-10-05
 
 Tracking’s existing Contactar a un asesor button now opens the owner-supplied https://wa.me/526626727130 directly with noopener/noreferrer, without a message or request data. Only its click handler changes; summary, timeline, rejected-state CTA and private-PDF restriction remain. Focal bundle regeneration preserves 155 other chunks; cachebusters only, no service-worker logic/backend/financial/data changes. Audit and evidence: docs/audits/H-HISTORY-WHATSAPP-001.md and docs/qa/evidence/history-whatsapp/.
+
+## H-DOCUMENT-ASSIGNMENT-FIX-001 — 2026-10-07
+
+Document configuration now displays the template fixed to the effective layout and atomically saves the selected template with its assignment. Synthetic configuration preview uses the same layout and candidate signers. New versions preserve existing elements; other programs, fund overrides and old PDFs remain unchanged. Concurrent edits fail visibly and identical retries are idempotent. Template-margin preview, unsaved configuration drafts and mobile controls are preserved.
+
+Production migration 20261007000200 and Edge v19 verified; Membership alone moved to layout v2 using its already selected “Solicitudes de préstamo” template. All 23 elements, signers, 107 existing records, other programs and global default are unchanged. Three renderer modules match deployed v18 exactly, including the previously deployed employee-category field. Local verification: 15 focal PostgreSQL/PDF cases, 23 core cases, 20 browser checks at 390/1440, focal bundle v2026100416 preserving 155 unrelated chunks. Frontend publication/readback remains the final gate. Evidence: docs/audits/H-DOCUMENT-ASSIGNMENT-FIX-001.md and docs/qa/evidence/document-assignment-fix/.

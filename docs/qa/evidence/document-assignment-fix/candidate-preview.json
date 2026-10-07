@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "bytes": 301009,
+  "pdfSha": "2a550672adb224319b6df6e707732d24711081422751e8749e886d415c6245b4",
+  "sameDefinition": true,
+  "targetTemplate": "b1de3f1a-368d-40a8-ac4f-05e296d2d99a",
+  "sourceElements": 23
+}

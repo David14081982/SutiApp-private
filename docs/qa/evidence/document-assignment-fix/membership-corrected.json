@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "newLayoutVersion": 2,
+  "templateName": "Solicitudes de préstamo ",
+  "elementsUnchanged": true,
+  "signersUnchanged": true,
+  "otherProgramsUnchanged": true,
+  "historicalRecordsUnchanged": true,
+  "defaultTemplateUnchanged": true,
+  "retryIdempotent": true,
+  "recordCount": 107,
+  "reissuedDocuments": 0
+}

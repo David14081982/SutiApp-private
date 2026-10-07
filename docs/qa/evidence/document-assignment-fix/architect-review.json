@@ -1,13 +1,13 @@
 {
   "task": "H-DOCUMENT-ASSIGNMENT-FIX-001",
-  "reviewedAt": "2026-10-07T17:04:51.906Z",
+  "reviewedAt": "2026-10-07T17:28:46.720Z",
   "reviewer": "assignment_review independent subagent",
   "verdict": "APPROVED",
-  "reviewScope": "Deployed backend and Membership assignment only; frontend candidate verified locally",
+  "reviewScope": "Complete deployed backend, Membership assignment and published frontend for H-DOCUMENT-ASSIGNMENT-FIX-001",
   "backendStatus": "PASS",
   "frontendCandidateStatus": "PASS",
-  "frontendProductionStatus": "NOT VERIFIED - publication pending",
-  "wholeTaskReadyToClose": false,
+  "frontendProductionStatus": "PASS",
+  "wholeTaskReadyToClose": true,
   "criticalFindings": [],
   "sourceOfTruth": {
     "verdict": "SAFE",
@@ -37,7 +37,9 @@
     "layoutElementsPreserved": true,
     "signersPreserved": true,
     "globalTemplatePreserved": true,
-    "reissuedDocuments": 0
+    "reissuedDocuments": 0,
+    "totalRecordsAtFinalVerification": 110,
+    "concurrentRecordsAppendedByBusinessActivity": 3
   },
   "legacy": {
     "verdict": "NOT APPLICABLE",
@@ -59,16 +61,28 @@
     "edgeSourceReadback": true,
     "unchangedRendererModules": 3,
     "currentEvidenceHashesMatch": true,
-    "recoveryRestoresExactFunctionsAndPreservesData": true
+    "recoveryRestoresExactFunctionsAndPreservesData": true,
+    "liveBrowser": "PASS",
+    "liveBrowserViewports": [
+      1440,
+      390
+    ],
+    "publishedVersion": 2026100416,
+    "publishedBytesMatch": true,
+    "globalImageRegression": {
+      "status": "NOT APPLICABLE",
+      "reason": "Only focal document generation screen/runtime changed; shared repositories, viewer, routing, auth, storage policies and worker behavior were unchanged. Bundle/cachebuster are generated artifacts."
+    }
   },
   "limitations": [
-    "Reviewer inspected generated live readback evidence and the transport assertions; did not execute additional production queries.",
-    "Frontend publication and public URL readback remain pending.",
-    "No issued PDF was rewritten or generated as a production test."
+    "Reviewer inspected generated live readback evidence and transport assertions; did not execute additional production queries.",
+    "Chrome CDP exposed no PDF response body; the live verifier necessarily checked the real iframe Blob for PDF header, MIME and nonempty content at both viewports.",
+    "Live browser used serviceWorkers:block; published worker bytes match the verified build and worker behavior was not modified.",
+    "No issued PDF was rewritten or generated as a production test. Historical documents retain their original immutable snapshots."
   ],
   "ownerDecisionRequired": false,
   "workQueueContinuationAuthorized": false,
-  "nextAction": "Complete the already-authorized frontend publication; verify public bytes/build identity and backend preservation again. Do not close the whole H before publication evidence passes. Do not advance to another H.",
+  "nextAction": "Close H-DOCUMENT-ASSIGNMENT-FIX-001 with the verified result and evidence-only documentation/registry commit. No further runtime or business-data mutation is required. Do not advance to another H.",
   "responseGeneratedForCodex": true,
   "evidenceHashes": {
     "baseline.json": "858c4c9b93d085df0c2d12d7dc384ec0e2ebfa49404b59901b860f9328667985",
@@ -79,7 +93,42 @@
     "schema-applied.json": "da50d2832c9858a60590576dfaf549ce312585af57d04c5bf896daf3ba4670ff",
     "deploy-edge.json": "a397f1d7b59e16562a9f68ad6e99118ad33a922929a2043b923b61f6e5e28618",
     "membership-corrected.json": "6c98e2e8a8bab55d0c9270bcb202e49413600519ea81a4603b97da44fc571e95",
-    "production-verified.json": "6568adcd5889ac1f6a908015d15849966f90c72079bb915e4f9269f6bb950b9b",
-    "regression-tests.json": "9dfe2f58462b1cf32519965618c89961fb302478687bcc9a66bdfa6e427b8ec5"
+    "production-verified.json": "3068aac5a8627719aff45bb6b7d1fe756d23af3a22c5abf503adad9ebe2069e9",
+    "regression-tests.json": "9dfe2f58462b1cf32519965618c89961fb302478687bcc9a66bdfa6e427b8ec5",
+    "deployment.json": "d6b3e94618783f611a84a20619cb0edf8f6592cb6c6eb667029d66eb4968ed3a",
+    "published.json": "b8ae8949f7545b0a2b0b13ad570ee7319b45936eb2cd495c1ae7f59697a147d6",
+    "concurrent-records.json": "98b7109486119590e5e9a69ee332d843951f08249feb818ca51302238dafcfee",
+    "live-browser.json": "ec6a3c776f00889e940fa2cd821119f2844f5350b3f6f565ae87cc27563ae683"
+  },
+  "status": "PASS",
+  "publication": {
+    "commit": "252e0af57fac35e4e8ca335f69d19d8920a1d544",
+    "workflowRun": 37657278503,
+    "target": "https://sutiapp.com/",
+    "version": 2026100416,
+    "publishedArtifactsMatchSource": true,
+    "liveViewports": [
+      1440,
+      390
+    ],
+    "effectiveCardAndConfigurationMatch": true,
+    "actualIframePdfValidated": true,
+    "previewAndRefresh": "PASS",
+    "browserErrors": 0,
+    "documentMutationAttempts": 0
+  },
+  "historicalVerification": {
+    "verdict": "APPROVED",
+    "method": "Original cutoff subset count and full ordered row JSON hash, with legitimate concurrent appends recorded separately",
+    "originalRecords": 107,
+    "originalRecordsSha": "36bc2a4e18e20274a409c275aefae6f1",
+    "totalRecords": 110,
+    "concurrentNewRecords": 3,
+    "originalRowsUnchanged": true,
+    "otherAssignmentsAndConfigurationsAndDefaultRemainStrictlyChecked": true
+  },
+  "verifierSourceHashes": {
+    "scripts/document-assignment-fix.js": "1e856f4b53cb6af35e83de2e3de73ef2641114395f4a17afabcce12f666311e6",
+    "scripts/verify-document-assignment-fix-live.js": "aff0d6effcab3134104bf3e99e34ce7b5c6d35cd08f4a8eca760462652c93cf8"
   }
 }

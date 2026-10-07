@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-07T17:13:35.886Z",
+  "target": "https://sutiapp.com/",
+  "version": 2026100416,
+  "bundleSha": "be8961662eb3d077e0422e55a354b3cfc13443ca04b688f802b25dfef77e7ccb",
+  "checks": [
+    {
+      "file": "SutiApp.html",
+      "status": 200,
+      "sha": "0e867f48777f376480425c530ff225bec7f520547241ada8e0124897dd5d6919"
+    },
+    {
+      "file": "app/bundle.js",
+      "status": 200,
+      "sha": "be8961662eb3d077e0422e55a354b3cfc13443ca04b688f802b25dfef77e7ccb"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "sha": "0d7511913398f034f726f3df016d6fbd53e5aa58548f7305886ab598b2922e91"
+    }
+  ],
+  "businessWrites": 0
+}

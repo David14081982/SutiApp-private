@@ -22,6 +22,11 @@ const stateQuery=`select jsonb_build_object(
  'tracking',exists(select 1 from supabase_migrations.schema_migrations where version='${version}')
 ) state`;
 const state=async()=>(await query(stateQuery))[0].state;
+async function historicalState(before){
+ assert(/^\d{4}-\d\d-\d\dT[0-9:.+Z-]+$/.test(before.captured_at));
+ const [result]=await query(`select count(*) total_count,count(*) filter(where created_at<='${before.captured_at}'::timestamptz) baseline_count,md5(coalesce(jsonb_agg(to_jsonb(r) order by id) filter(where created_at<='${before.captured_at}'::timestamptz),'[]'::jsonb)::text) baseline_sha from document_private.records r`);
+ assert.equal(+result.baseline_count,before.record_count,'HISTORICAL_COUNT_CHANGED');assert.equal(result.baseline_sha,before.records_sha,'HISTORICAL_CONTENT_CHANGED');return result;
+}
 const edgeNames=['index.ts','renderer.mjs','layout.mjs','render-layout.mjs','layout-service.mjs'];
 const edgeSources=()=>Object.fromEntries(edgeNames.map(n=>[n,read(path.join(root,'supabase/functions/document-generation',n))]));
 function modules(body){
@@ -45,6 +50,11 @@ async function login(){const r=await fetch(env.SUPABASE_URL+'/auth/v1/token?gran
 async function edge(headers,body){const r=await fetch(env.SUPABASE_URL+'/functions/v1/document-generation',{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(60000)});if(!r.ok){const data=await r.json().catch(()=>({}));const code=/^DOCUMENT_[A-Z0-9_]+$/.test(data.error)?data.error:'EDGE_HTTP_'+r.status;throw Error(code);}return r;}
 async function command(headers,action,data={}){const r=await fetch(env.SUPABASE_URL+'/rest/v1/rpc/document_generation_command',{method:'POST',headers,body:JSON.stringify({p_action:action,p_data:data}),signal:AbortSignal.timeout(30000)});assert(r.ok,'COMMAND_HTTP_'+r.status);return r.json();}
 async function main(){
+ if(mode==='inspect-records'){
+  const before=JSON.parse(read(path.join(privateDir,'before.json'))),result=await historicalState(before);
+  const newDocuments=await query(`select document_type,status,document_snapshot#>>'{operation,program}' program,document_snapshot#>>'{template,id}' template_id,document_snapshot#>>'{layout,id}' layout_id,count(*) count from document_private.records where created_at>'${before.captured_at}'::timestamptz group by 1,2,3,4,5`);
+  proof('concurrent-records',{status:'PASS',baselineRows:+result.baseline_count,totalRows:+result.total_count,originalRowsUnchanged:true,newRows:+result.total_count-before.record_count,newDocuments});return;
+ }
  if(mode==='pages'){
   const built=JSON.parse(read(path.join(out,'build.json'))),site=path.resolve(root,'../site-'+built.version);
   cp.execFileSync(process.execPath,[path.join(root,'scripts/build-pages-site.js'),site],{cwd:root,env:{...process.env,SUTIAPP_SUPABASE_URL:env.SUPABASE_URL,SUTIAPP_SUPABASE_PUBLISHABLE_KEY:env.SUPABASE_PUBLISHABLE_KEY},stdio:'pipe',windowsHide:true});
@@ -106,10 +116,10 @@ async function main(){
   proof('membership-corrected',{status:'PASS',newLayoutVersion:after.assignment.version,templateName:a.template_name,elementsUnchanged:true,signersUnchanged:true,otherProgramsUnchanged:true,historicalRecordsUnchanged:true,defaultTemplateUnchanged:true,retryIdempotent:true,recordCount:after.record_count,reissuedDocuments:0});return;
  }
  if(mode==='verify'){
-  testGate();const live=await state(),before=JSON.parse(read(path.join(privateDir,'before.json')));assert(live.tracking);assert.equal(live.assignment.template_id,before.membership.template_id);assert.equal(live.assignment.definition_sha,before.assignment.definition_sha);assert.equal(live.other_assignments_sha,before.other_assignments_sha);assert.equal(live.other_configs_sha,before.other_configs_sha);assert.equal(live.records_sha,before.records_sha);assert.equal(live.default_template,before.default_template);assert.deepEqual(await deployedSources(),edgeSources());
+  testGate();const live=await state(),before=JSON.parse(read(path.join(privateDir,'before.json')));assert(live.tracking);assert.equal(live.assignment.template_id,before.membership.template_id);assert.equal(live.assignment.definition_sha,before.assignment.definition_sha);assert.equal(live.other_assignments_sha,before.other_assignments_sha);assert.equal(live.other_configs_sha,before.other_configs_sha);const history=await historicalState(before);assert.equal(live.default_template,before.default_template);assert.deepEqual(await deployedSources(),edgeSources());
   const anon=await fetch(env.SUPABASE_URL+'/functions/v1/document-generation',{method:'POST',headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json'},body:JSON.stringify({action:'LAYOUT_CONFIGURE_PREVIEW',program:'membership',document_type:'MEMBERSHIP_APPROVAL'}),signal:AbortSignal.timeout(30000)});assert.equal(anon.status,401);await anon.body?.cancel();
   const dash=await command(await login(),'DASHBOARD');const effective=dash.layout_assignments.find(a=>a.program==='membership'&&a.document_type==='MEMBERSHIP_APPROVAL'&&!a.fund_key);assert.equal(effective.template_id,before.membership.template_id);
-  proof('production-verified',{status:'PASS',templateName:effective.template_name,layoutVersion:effective.layout_version||live.assignment.version,recordCount:live.record_count,historicalRecordsPreserved:true,otherProgramsPreserved:true,rendererModulesPreserved:true,sourceReadback:true,anonymousStatus:anon.status,configurationWrites:0,reissuedDocuments:0});return;
+  proof('production-verified',{status:'PASS',templateName:effective.template_name,layoutVersion:effective.layout_version||live.assignment.version,recordCount:+history.total_count,historicalRecordCount:+history.baseline_count,historicalRecordsSha:history.baseline_sha,concurrentNewRecords:+history.total_count-before.record_count,historicalRecordsPreserved:true,otherProgramsPreserved:true,rendererModulesPreserved:true,sourceReadback:true,anonymousStatus:anon.status,configurationWrites:0,reissuedDocuments:0});return;
  }
  throw Error('MODE_INVALID');
 }

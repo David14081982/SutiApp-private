@@ -4171,3 +4171,8 @@ Tracking’s existing Contactar a un asesor button now opens the owner-supplied 
 Document configuration now displays the template fixed to the effective layout and atomically saves the selected template with its assignment. Synthetic configuration preview uses the same layout and candidate signers. New versions preserve existing elements; other programs, fund overrides and old PDFs remain unchanged. Concurrent edits fail visibly and identical retries are idempotent. Template-margin preview, unsaved configuration drafts and mobile controls are preserved.
 
 Production migration 20261007000200 and Edge v19 verified; Membership alone moved to layout v2 using its already selected “Solicitudes de préstamo” template. All 23 elements, signers, 107 existing records, other programs and global default are unchanged. Three renderer modules match deployed v18 exactly, including the previously deployed employee-category field. Local verification: 15 focal PostgreSQL/PDF cases, 23 core cases, 20 browser checks at 390/1440, focal bundle v2026100416 preserving 155 unrelated chunks. Frontend publication/readback remains the final gate. Evidence: docs/audits/H-DOCUMENT-ASSIGNMENT-FIX-001.md and docs/qa/evidence/document-assignment-fix/.
+
+
+### H-DOCUMENT-ASSIGNMENT-FIX-001 cierre publicado PASS
+
+Published 252e0af57fac35e4e8ca335f69d19d8920a1d544 / Pages 37657278503 SUCCESS; v2026100416. Public HTML/bundle/SW and authenticated document screen at 390/1440 verified. Membership card/configuration/synthetic PDF agree; 107 original records remain byte-equivalent by full-row hash, while 3 normal new loan documents were distinguished from historical changes. No QA document issued. Independent final review APPROVED.

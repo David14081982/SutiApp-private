@@ -1,5 +1,7 @@
 # H-DOCUMENT-ASSIGNMENT-FIX-001
 
+Publication: commit 252e0af57fac35e4e8ca335f69d19d8920a1d544, Pages run 37657278503 SUCCESS. Public HTML/bundle/service-worker match the local v2026100416 artifact exactly. The final read-only historical check observed three new real LOAN_APPROVAL records generated concurrently by normal system use; all 107 rows present at baseline retain their exact full-row hash. The verification now compares the captured baseline cohort by timestamp, count and full hash, allowing subsequent appends without ignoring any historical mutation. No QA document was issued or reissued.
+
 Verification scope extension before implementation: scripts/verify-document-assignment-fix-live.js may authenticate the controlled admin to read the published documentary screen and request synthetic preview at 390/1440. No SAVE, ISSUE, REISSUE or business write. Evidence is aggregated, excludes personal data, document contents and signatures. Publication verification covers actual HTML/bundle/service-worker hashes and refresh.
 
 Scope extension before edits: recover renderer.mjs and layout.mjs byte-for-byte from deployed Edge v18 (employee category support previously deployed but absent from origin/main). Classified RECOVERED_DEPLOYED_SOURCE; no runtime change versus production. ESZIP backup and module comparisons stay in private working files; public evidence contains hashes only. index.ts/layout-service.mjs deployed bases match origin/main; render-layout.mjs matches exactly. Preserve all five modules through deployment readback. Also repair preexisting mobile overflow only in Configurar footer via optional Dialog footer wrapping: all existing buttons remain, no shared CSS change. Separate template-margin preview from effective-layout configuration preview; reset saved draft baseline before opening designer.
@@ -83,21 +85,25 @@ UI PRESERVATION: PASS aislado para estructura/interacciones verificadas; no redi
 
 ARCHITECTURE: actualización necesaria por nuevos contratos de acciones, metadata y columna de recovery. El Registry sigue siendo índice derivado sin autoridad runtime. Navigator inicial encontró STALE; discovery dirigido confirmó las fuentes antes de incorporar únicamente relaciones demostradas. La generación también reconcilia hashes/evidencia de cambios previos del checkout; no autoriza cambios de esos sistemas.
 
-### Borrador de cierre H-DOCUMENT-ASSIGNMENT-FIX-001
+### Cierre verificado
 
-Este bloque no declara la H terminada. El agente principal debe completar publicación frontend, VERIFY/EVIDENCE de la versión publicada y revisión independiente antes de emitir el estado oficial final.
+Membresías usa la plantilla seleccionada “Solicitudes de préstamo” mediante su diseño v2, conservando sus 23 elementos y sus firmantes. Configurar, tarjeta y vista previa concuerdan con la asignación efectiva. El guardado se valida y aplica de forma atómica, con detección de ediciones simultáneas y reintentos idempotentes. No se alteraron asignaciones de otros programas, destinos específicos ni la plantilla global.
+
+La comprobación publicada autenticada verifica tarjeta, selector, PDF sintético, cierre y recarga a 390/1440. Chrome/CDP no entregó el cuerpo de la respuesta PDF al verificador; se validó el Blob real consumido por el iframe: MIME application/pdf, encabezado %PDF- y contenido no vacío. Esto no requirió cambios en el producto. No se capturaron imágenes ni contenidos privados.
+
+El checkout de implementación está en .tmp/document-assignment-fix/release y el cambio funcional publicado es 252e0af57fac35e4e8ca335f69d19d8920a1d544. Los cambios previos del workspace raíz permanecen intactos. Las evidencias finales y verificadores adicionales son documentación/QA sin cambios del artefacto publicado.
 
 ```text
-H-DOCUMENT-ASSIGNMENT-FIX-001 RESULT — DRAFT
-Status: [completar tras publicación/verificación frontend; no se emite PASS final todavía]
-Files changed: pantalla documental; Edge index/layout-service; fuentes renderer/layout recuperadas; migración/recovery focal; scripts/evidencia; Registry derivado; bundle/cachebusters generados; auditoría.
-Source-of-truth verdict: SAFE para candidato; mismas autoridades Supabase.
-Invariant verdict: PASS aislado/live; 107 registros, otros programas, firmantes/elementos y plantilla global preservados.
-Build: PASS focal v2026100416; comprobar hash de publicación final.
-Tests: 15 casos focales DB/PDF + navegador 390/1440 + 23 core/PWA; revalidar hashes de evidencia final.
-Security: PASS aislado/live; readback OID/owner/ACL y Edge v19 exactos; anónimo 401.
-Legacy impact: ninguno previsto; sólo presentación documental.
-Unexpected files changed: [verificar git diff final; excluir cambios preexistentes del workspace raíz]
-Known limitations: PDFs existentes se preservan y no se reemiten; vigencia futura no aplicable a activación inmediata; publicación frontend pendiente.
-Evidence: docs/qa/evidence/document-assignment-fix/; schema-applied, deploy-edge, membership-corrected, production-verified; recibo frontend pendiente.
+H-DOCUMENT-ASSIGNMENT-FIX-001 RESULT
+Status: PASS
+Files changed: pantalla documental focal; Edge index/layout-service; renderer/layout recuperados exactos de producción; migración/recovery; verificadores y evidencia; Registry derivado; bundle/cachebusters generados; auditoría/changelog.
+Source-of-truth verdict: PASS. Misma autoridad Supabase document_private; sin mocks, fallbacks ni cachés productivos nuevos.
+Invariant verdict: PASS. 107 registros históricos idénticos por huella completa; 3 registros nuevos legítimos de Préstamos distinguidos de cambios históricos. Firmantes, 23 elementos, otras asignaciones y plantilla global preservados.
+Build: PASS. v2026100416; 155 módulos ajenos preservados; HTML/bundle/SW publicados idénticos. Pages 37657278503 SUCCESS.
+Tests: PASS. 15 PostgreSQL/PDF, 23 core, 20 checks aislados UI, build Pages y navegador autenticado 390/1440.
+Security: PASS. OID/owner/ACL preservados; RLS y actor real backend; persistencia service-only; anónimo 401; Edge v19 readback exacto; cero secretos nuevos.
+Legacy impact: NOT APPLICABLE a cambios financieros. No Google, fórmulas, saldos, aprobaciones ni eventos de negocio modificados.
+Unexpected files changed: NONE en checkout aislado. Todos los cambios pertenecen al alcance auditado; workspace raíz previo preservado.
+Known limitations: los PDF ya emitidos conservan su versión y no se reemiten; no se creó una solicitud o documento productivo de prueba. Regresión global de imágenes NOT APPLICABLE: no cambios reales en assets, viewer, auth, repositories compartidos ni lógica del SW; renderizadores coinciden con producción previa.
+Evidence: docs/qa/evidence/document-assignment-fix/ y revisión independiente APPROVED. Registry actualizado con discovery dirigido; freshness final mediante generación incremental.
 ```

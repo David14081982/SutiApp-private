@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "baselineRows": 107,
+  "totalRows": 110,
+  "originalRowsUnchanged": true,
+  "newRows": 3,
+  "newDocuments": [
+    {
+      "document_type": "LOAN_APPROVAL",
+      "status": "READY",
+      "program": "prestamo",
+      "template_id": "b1de3f1a-368d-40a8-ac4f-05e296d2d99a",
+      "layout_id": "99c40057-ddc0-4b6f-96c9-ba89da11414f",
+      "count": 3
+    }
+  ]
+}

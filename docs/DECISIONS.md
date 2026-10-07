@@ -1404,3 +1404,8 @@ El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó com
 ## H-HISTORY-PRIVATE-DOCUMENTS-001 — 2026-10-05
 
 Owner authorizes removing authorization PDFs from affiliate History/Tracking and reserving program request documents for administrators. Tracking no longer mounts GeneratedDocuments. document_private.visible denies all program self-context LIST/ACCESS, retaining program_requests.read and admin_request_module_boundary for admin access. Savings document visibility, generation, immutable records and private Storage remain unchanged. Migration 20261005000200 is guarded and reversible; production readback preserves function OID/owner/ACL and all 84 existing document records. Edge denies self context (403) and serves a legitimate admin PDF (200). See [audit](audits/H-HISTORY-PRIVATE-DOCUMENTS-001.md) and focal evidence. Commit/push/Pages publication explicitly authorized; only this H is packaged.
+
+
+## H-MEMBERSHIP-DOCUMENT-REISSUE-001 -- owner decision, 2026-10-07
+
+After the explanation that REISSUE retains historical signers, the owner instructed "corrijelo". For new revisions with program membership and document_type MEMBERSHIP_APPROVAL, use the currently effective configured signer order, names, titles, roles and signature assets. Preserve the old PDF/record, request, original event, identity and approved financial values. Other programs retain historical signers. This is the specific exception to H-SUTIAPP-AUTHORIZATION-PDF-003; no automatic historical rewrite or financial approval replay is authorized.

@@ -409,3 +409,8 @@ La corrección propuesta `20261003000700_sicof_source_refresh_cadence.sql` reemp
 
 
 Estado verificado de esta adenda (SICOF latency activation receipt): migraciones 006 y 007 aplicadas, cada una conservando 23 tablas y 182 funciones financieras existentes. Edge SICOF v11 ACTIVE con JWT; copia inicial verificada y job privado único cada cuatro minutos activado. Lectura y XLSX reales usan la copia vigente, sin repetir la consulta a Google; 8.368 s y 7.774 s en las muestras medidas, sin promesa de carga instantánea. Evidencia: `qa/evidence/sicof-response-latency.json`; cierre y límites: `audits/H-SICOF-RESPONSE-LATENCY-001.md`. Este estado sustituye las menciones de activación pendiente anteriores en esta adenda.
+
+
+## 20261007000300 -- Membership current revision signers -- APPLIED / VERIFIED
+
+Owner-authorized exception H-MEMBERSHIP-DOCUMENT-REISSUE-001. Exact-definition guarded replacement of document_private.reissue only; same OID/owner/ACL and existing auth/module checks. No table, RLS, grants, triggers, financial writer or business-row migration. Forward chooses current signers only for membership / MEMBERSHIP_APPROVAL and records existing audit provenance. Inverse exact-definition recovery retains all revisions, including those issued after deployment. Baseline schema-only capture: scripts/fixtures/membership-document-reissue-schema.json. Apply after isolated forward/recovery/security tests and preserve transactional authority hashes.

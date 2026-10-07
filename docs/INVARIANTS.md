@@ -448,3 +448,8 @@ revision is rejected. The revision never invokes any financial writer or Google.
 ## H-FINANCE-BLOCKS-001 — activación autorizada del backend
 
 El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó commit, push y publicación. La migración 20261004000300 está aplicada con RLS/ACL verificadas: 8 tablas de autoridad y 484 funciones existentes conservadas; 0 bloqueos, 0 eventos y 0 escrituras de negocio. finance_blocks es la autoridad privada instalada; el frontend se prepara en checkout aislado sobre origin/main y su publicación se verifica por separado. Consultas/simulaciones existentes permanecen disponibles; únicamente la confirmación/envío financiero consulta el bloqueo. Evidencia: docs/qa/evidence/finance-blocks/release-apply.json y release-package.json.
+
+
+## H-MEMBERSHIP-DOCUMENT-REISSUE-001 -- specific signer exception
+
+By explicit owner instruction on 2026-10-07, new membership / MEMBERSHIP_APPROVAL revisions freeze currently effective configured signers (order, full name, title, role and signature asset). This is the sole exception to the historical-signer requirement in H-SUTIAPP-AUTHORIZATION-PDF-003. Original PDF/record, business event, identity, approved money/calendar and request remain immutable. No fallback to old signers on invalid current configuration. Other programs retain existing behavior. Idempotent revision UUID, latest-parent checks, permissions/module boundaries and audit remain required.

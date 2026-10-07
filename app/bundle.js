@@ -3827,7 +3827,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, "Ver documento"), row.can_reissue && /*#__PURE__*/React.createElement("button", {
       disabled: busy,
       onClick: async () => {
-        if (!window.confirm('Emitir una versión corregida con el diseño activo y los datos de depósito de esta solicitud. Se conservarán el PDF anterior, los importes autorizados y sus firmantes.')) return;
+        if (!window.confirm(row.program === 'membership' && row.document_type === 'MEMBERSHIP_APPROVAL' ? 'Emitir una nueva versión de Membresías con el diseño y los firmantes vigentes: orden, cargos, roles y firmas actuales. Se conservarán el PDF anterior y los datos autorizados de la solicitud.' : 'Emitir una versión corregida con el diseño activo y los datos de depósito de esta solicitud. Se conservarán el PDF anterior, los importes autorizados y sus firmantes.')) return;
         setBusy(true);
         try {
           if (!revision.current || revision.current.id !== row.id) revision.current = {

@@ -9,6 +9,7 @@
     {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
   ],
   "nodes": [
+    {"type": "rpc", "name": "document_private.reissue", "file": "supabase/migrations/20261007000300_membership_document_reissue.sql", "domain": "documents", "aliases": ["Actualizar PDF de Membresias", "Membership document reissue"], "source_of_truth": "SUPABASE", "properties": {"access": "private; only public.document_generation_command REISSUE after permission and module checks", "membership_exception": "membership + MEMBERSHIP_APPROVAL: current effective configured signer versions, order, titles, roles and assets; configuration provenance audited", "other_programs": "historical signers unchanged", "history": "new idempotent latest-parent revision; prior PDF and sealed business event/identity/financial values preserved"}},
     {"type":"admin_screen","name":"SutifinanzasAdminModule","file":"app/sutifinanzas-admin.jsx","domain":"finance","aliases":["SUTIFINANZAS","Gasto por Secretaría"],"source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"route":"Admin / sutifinanzas","status":"PUBLISHED_LIVE_REPORT_VERIFIED","evidence":"docs/audits/H-SUTIFINANZAS-ADMIN-001.md","permission":"program_requests.read AND admin_module_boundary(sutifinanzas,read)","cache":"component session memory only; explicit refresh reads Google","pivot":"configurable row dimensions; inline expansion/subtotals; month/year/total columns","expense_type_header":"TIPO DE GASTOS"}},
     {"type":"repository","name":"SutifinanzasRepository","file":"app/sutifinanzas-repository.js","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"edge":"sutifinanzas","persistent_cache":false}},
     {"type":"edge_function","name":"sutifinanzas","file":"supabase/functions/sutifinanzas/index.ts","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"source":"Google Gasto por secretaría","deployment":"v14 dedicated service account; expense-type header and live configurable pivot verified; legacy untouched","writes":0}},
@@ -68,6 +69,7 @@
     {"type": "external_legacy_source", "name": "Google Ahorro", "domain": "finance", "aliases": ["Ahorro legacy"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED_PRODUCTIVE"}}
   ],
   "relationships": [
+    {"from_type": "rpc", "from": "public.document_generation_command", "to_type": "rpc", "to": "document_private.reissue", "type": "CALLS"},
     {"from_type":"admin_screen","from":"SutifinanzasAdminModule","to_type":"repository","to":"SutifinanzasRepository","type":"USES"},
     {"from_type":"repository","from":"SutifinanzasRepository","to_type":"edge_function","to":"sutifinanzas","type":"CALLS"},
     {"from_type":"edge_function","from":"sutifinanzas","to_type":"external_legacy_source","to":"Google Gasto por secretaría","type":"READS"},

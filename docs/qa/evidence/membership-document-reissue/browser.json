@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "sourceHash": "95e3d1e4e1ac53b6f01a930da84bc978f54fe1f6ad9563336e146a21ddb30bd9",
+  "checks": [
+    "Membership confirmation/current-signers contract",
+    "Cancel/failed retry/idempotent UUID/new revision row",
+    "Four non-Membership boundaries unchanged",
+    "Actual isolated SQL revision PDF text, order and canvas"
+  ],
+  "pageErrors": [],
+  "externalRequests": [],
+  "viewports": {
+    "390": {
+      "status": "PASS",
+      "membershipCopy": true,
+      "cancelDoesNotWrite": true,
+      "retryUsesSameUuid": true,
+      "oldVersionStillVisible": true,
+      "otherProgramsUnchanged": 4,
+      "permissionControlPreserved": true,
+      "pdfPages": 2,
+      "pdfCurrentSignerOrderAndText": true,
+      "renderedInkPixels": 4524
+    },
+    "1440": {
+      "status": "PASS",
+      "membershipCopy": true,
+      "cancelDoesNotWrite": true,
+      "retryUsesSameUuid": true,
+      "oldVersionStillVisible": true,
+      "otherProgramsUnchanged": 4,
+      "permissionControlPreserved": true,
+      "pdfPages": 2,
+      "pdfCurrentSignerOrderAndText": true,
+      "renderedInkPixels": 4524
+    }
+  }
+}

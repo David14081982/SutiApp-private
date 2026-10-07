@@ -4185,3 +4185,8 @@ The generated-document preview iframe depended on native browser PDF support and
 ### H-DOCUMENT-PREVIEW-RENDER-001 published closure PASS
 
 Published 2b5e3d03929ea53c4b5e621688f75392005bd742 / Pages 37665165970 SUCCESS; v2026100417. Five public artifact hashes match. Authenticated native-PDF-disabled tests render both real synthetic pages at 390/1440, preserve navigation/configuration/refresh and make zero business writes. Measured two-pixel RGB rounding explains the preserved strict-hash attempts; the reviewed bounded visual-equivalence check passes. Local origin rejection remains documented, with no security weakening. No runtime change after publication.
+
+
+## H-MEMBERSHIP-DOCUMENT-REISSUE-001
+
+Owner requests current signer changes in a newly issued Membership PDF. Surgical correction targets only the Membership branch of private REISSUE and its confirmation copy. Original documents/business snapshots and non-Membership behavior remain unchanged. Audit and test/release evidence: audits/H-MEMBERSHIP-DOCUMENT-REISSUE-001.md and qa/evidence/membership-document-reissue/.

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "functionMd5": "747af0c6945a5e007bd009a2674f8a4c",
+  "oid": 94385,
+  "owner": 16388,
+  "acl": "{postgres=X/postgres}",
+  "businessWrites": 0
+}

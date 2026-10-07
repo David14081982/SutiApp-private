@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "checks": [
+    "forward changes only function and preserves OID owner ACL and all rows",
+    "anonymous missing-permission and cross-module reissues are denied",
+    "Membership revision takes ordered current names titles roles and signature assets",
+    "revision preserves sealed business values event identity and the original PDF row",
+    "retry reuses revision and stale parent or conflicting UUID is rejected",
+    "non-Membership program and document-type branches retain original signers",
+    "actual resulting PDF renders current signature assets and valid pages",
+    "invalid current signer fails closed without historical fallback or new rows",
+    "a later deliberate revision captures subsequent configuration while v1 and v2 stay sealed",
+    "recovery is exact and preserves every newly created revision; reapply passes",
+    "history immutability and original approval-event count remain unchanged"
+  ],
+  "appliedFunctionMd5": "dbfb7bb11deca7837ef4b5e0c184b6eb",
+  "sourceHashes": {
+    "supabase/migrations/20261007000300_membership_document_reissue.sql": "34f00e3271da6d4bb746694f573530b2507158f5659ddfd86a4488da4853b63f",
+    "supabase/recovery/20261007000300_membership_document_reissue.sql": "531c4db498a4c5c41d05bb4dfae8429cb5cd27d56cc1d3eb208094b75d9073db",
+    "scripts/fixtures/membership-document-reissue-schema.json": "1509e7c73c1939fd1debeaac9edc22c98bfbf528abc49144e4789c9ed1ba9ea9",
+    "scripts/test-membership-document-reissue.js": "cb7afa3eee38ed3f49c8155caf0ecf70d1320cdf32c72053f614c771449252a3",
+    "supabase/functions/document-generation/index.ts": "8a0eec4bf63f4afda6bd5d4a990b4aa8cef271d9ddec0f238807ad97b4d436a9",
+    "supabase/functions/document-generation/layout-service.mjs": "2ef9bb26be69733a708f0a8f798189350c851ed14571923d2fdeea963df706ef",
+    "supabase/functions/document-generation/renderer.mjs": "9cbc00c2c1f8600a503cda5412c260364e37e8329f1273fd67c9fbcb2d2ea34d",
+    "supabase/functions/document-generation/layout.mjs": "f22eb60979dc633a3875bf7b69f860f13ac77398e4e38898f9f07ef34dabe8d1",
+    "supabase/functions/document-generation/render-layout.mjs": "82b8eddd3767ba169fab4d688c60d12aada8f589f2571fd64ec3c265e66d7da7"
+  },
+  "syntheticOnly": true,
+  "productionTouched": false,
+  "networkUsed": false,
+  "originalRowsPreserved": 6,
+  "otherProgramBranches": 5
+}

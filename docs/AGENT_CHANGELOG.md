@@ -4190,3 +4190,7 @@ Published 2b5e3d03929ea53c4b5e621688f75392005bd742 / Pages 37665165970 SUCCESS; 
 ## H-MEMBERSHIP-DOCUMENT-REISSUE-001
 
 Owner requests current signer changes in a newly issued Membership PDF. Surgical correction targets only the Membership branch of private REISSUE and its confirmation copy. Original documents/business snapshots and non-Membership behavior remain unchanged. Audit and test/release evidence: audits/H-MEMBERSHIP-DOCUMENT-REISSUE-001.md and qa/evidence/membership-document-reissue/.
+
+### H-MEMBERSHIP-DOCUMENT-REISSUE-001 published PASS
+
+Backend20261007000300 and frontend5f7c12c / Pages37672841167SUCCESS (v2026100418). Current Membership signer order/cargos/roles/assets verified in actual synthetic revision PDF; eleven PostgreSQL cases and browser390/1440 pass. Published request component with real authorized metadata and cancel-only confirmation passes at390/1440. Original records, all business tables checked and security retained; no real revision issued by QA.

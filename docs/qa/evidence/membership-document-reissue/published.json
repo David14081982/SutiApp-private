@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "version": 2026100418,
+  "functionMd5": "dbfb7bb11deca7837ef4b5e0c184b6eb",
+  "backendSecurityPreserved": true,
+  "checks": [
+    {
+      "file": "SutiApp.html",
+      "sha": "362ded3d9175b192f5d4df744a3ce8ca37e167ae232a2ff6a2dda884b1913d3c"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha": "6fee5d9836c741e0c4e0fa0df5db238edb57d9a01d21b7244a177558923c8454"
+    },
+    {
+      "file": "sw.js",
+      "sha": "2092b2a3f66b06f4dc5699015e2914fb82af952c8ac3d13e0053c997b3e23212"
+    }
+  ],
+  "businessWrites": 0
+}

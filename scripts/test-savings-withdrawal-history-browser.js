@@ -88,4 +88,3 @@ async function main(){try{
  assert.deepEqual(report.browserErrors,[]);assert.deepEqual(report.networkAttempts,[]);report.status='PASS';report.checks=['Real UI/runtime/repository sources with isolated transport','Read-only history, exact identity and operation document routing','Existing tabs/dirty guards/responsive contract','Pagination/search/empty/error/null/context cases'];
  }catch(error){report.failure={stage,message:error.message.split('Call log:')[0]};process.exitCode=1;}finally{await browser?.close();fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'browser.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));}}
 main();
-

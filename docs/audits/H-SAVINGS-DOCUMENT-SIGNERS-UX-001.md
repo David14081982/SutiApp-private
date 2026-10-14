@@ -32,4 +32,32 @@ Status: isolated implementation, PostgreSQL/PDF/browser tests and production bac
 
 Production v3 is READY and downloaded through authenticated ACCESS. Its complete ordered signer snapshot equals the current assigned configuration, including name/title/role/signature asset; the first signer is Ana Estefania. All 162 prior records retain their full-row hashes; configs, signers, templates, layouts and assignments remain byte-equivalent by authority hashes. The full withdrawal request and its sealed financial source remain unchanged. Evidence: corrected-document.json and private before/after capture (not published).
 
-Local browser preservation PASS at 390/1440, 14 PostgreSQL/recovery/security cases PASS, 20 assignment checks PASS, existing canvas previews PASS. Build v2026100419 compiles only two focal chunks and preserves 154 unrelated chunks. Service-worker changes are generated cachebusters only. Global image regression: NOT APPLICABLE under the focal GENERATED_ARTIFACT exception; no shared viewer/repository/Auth/Storage/SW logic changes. Publication and final live browser verification remain pending.
+Local browser preservation PASS at 390/1440, 14 PostgreSQL/recovery/security cases PASS, 20 assignment checks PASS, existing canvas previews PASS. Build v2026100419 compiles only two focal chunks and preserves 154 unrelated chunks. Service-worker changes are generated cachebusters only. Global image regression: NOT APPLICABLE under the focal GENERATED_ARTIFACT exception; no shared viewer/repository/Auth/Storage/SW logic changes.
+
+Publication: f80308b24c9145b6e9dfe0be406a2db095f53d4a, Pages run 38506491495 SUCCESS. Public HTML/bundle/SW match the candidate byte hashes; installed private function and security match the verified migration. Auth and critical-request deployment gates PASS. Published authenticated GeneratedDocuments and AdminDocumentGeneration components pass at 390/1440 with real authorized metadata: v3 opens/closes, actual PDF SHA matches its READY record, all signer names/titles render, v1/v2 remain available and labeled previous, design/letterhead labels are distinct, configuration modal signers equal the issued PDF, and cancelling writes nothing. Verification mounts published components in an isolated host, not a claim of full application navigation or global SW regression.
+
+The initial live browser attempt timed out because its relative `has` selector mistakenly included the external host; correcting only that test locator preserved every assertion. Final live run has zero page errors or documentary mutation attempts. The legacy core runner initially needed its existing PDF dependency and Windows LF normalization; the unchanged 23 core assertions then PASS, including loan rendering, permissions, idempotency and history. Registry acceptance and Pages/PWA tests PASS.
+
+## H-SAVINGS-DOCUMENT-SIGNERS-UX-001 RESULT
+
+Status: PASS
+
+Files changed: two focal document UI sources; guarded private-function migration and exact recovery; focal regression/release/live-verification scripts, two existing test label selectors and schema-only fixture; generated bundle/HTML/SW cachebusters; governance audit/changelog/authority/invariants/migration notes and architecture semantic/derived index; sanitized evidence in docs/qa/evidence/savings-document-signers/.
+
+Source-of-truth verdict: PASS. Existing document_private configuration resolves current effective signers; immutable records preserve issued history. No new source, fallback or production mock.
+
+Invariant verdict: PASS. Name/title/role/asset come from the same assigned effective person version. 162 original record hashes, five documentary authority domains, complete savings request and sealed financial source remain unchanged. Loans and other excluded document branches retain historical signer semantics; Membership retains its prior exception.
+
+Build: PASS, v2026100419, bundle SHA256 292e4e0953197ffa8965d25e9463d2be4c2829a89d9177a9b757bdd843b17436, 154 unrelated chunks preserved; Pages publication verified.
+
+Tests: PASS, 14 focal PostgreSQL/PDF/recovery/security cases; desktop/mobile focal browser, assignment and preview suites; 23 existing documentary cases; Registry acceptance; Pages/PWA allowlist; published real PDF/configuration checks at 390/1440.
+
+Security: PASS, original OID/owner/ACL and backend permission/module boundaries; private assets and authenticated access preserved. Strict TLS for database validation. Browser verification blocks writes, records no real-data screenshots, tokens or signed URLs.
+
+Legacy impact: NOT APPLICABLE for modification; no Google, financial calculation, approval, ledger or delivery writer changed or replayed.
+
+Unexpected files changed: none in the isolated release. Existing dirty main-workspace changes remain untouched.
+
+Known limitations: old PDFs intentionally retain their original signers. The evidence proves this correction preserved the loan configuration existing at its baseline; it does not reconstruct manual edits predating that baseline. Global image/SW regression is NOT APPLICABLE to this focal change. Actual correction uses the already assigned signature asset; no signature is fabricated or reassigned.
+
+Evidence: applied.json, database.json, browser.json, assignment-browser.json, preview/browser.json, regression-tests.json, build.json, pages-build.json, corrected-document.json, pdf-inspection.json, published.json, deployment.json, production-browser.json and independent architect-review.json. Private source PDFs and full before/after authority captures remain ignored and unpublished.

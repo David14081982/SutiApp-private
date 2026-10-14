@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "businessWrites": 0,
+  "realDataScreenshots": false,
+  "privateContentLogged": false,
+  "serviceWorkers": "blocked",
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "currentVersion": 3,
+      "historicalVersionsVisible": [
+        1,
+        2
+      ],
+      "previousVersionsLabeled": true,
+      "viewerOpens": true,
+      "viewerCloses": true,
+      "pdf": {
+        "http": 200,
+        "bytes": 443761,
+        "sha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544",
+        "pages": 1,
+        "allSnapshotSignerNamesPresent": true,
+        "allSnapshotSignerTitlesPresent": true,
+        "renderedInkPixels": 18853
+      },
+      "assignedDesignAndLetterheadDistinguished": true,
+      "ownerSelectedSignerMatches": true,
+      "configurationSignersMatchIssuedPdf": true,
+      "configurationContextMatchesWithdrawal": true,
+      "cancelledWithoutMutation": true,
+      "metadataReads": 4,
+      "assetReads": 14,
+      "pageErrors": 0,
+      "mutationAttempts": 0,
+      "deniedBackgroundRequests": 6
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "currentVersion": 3,
+      "historicalVersionsVisible": [
+        1,
+        2
+      ],
+      "previousVersionsLabeled": true,
+      "viewerOpens": true,
+      "viewerCloses": true,
+      "pdf": {
+        "http": 200,
+        "bytes": 443761,
+        "sha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544",
+        "pages": 1,
+        "allSnapshotSignerNamesPresent": true,
+        "allSnapshotSignerTitlesPresent": true,
+        "renderedInkPixels": 18853
+      },
+      "assignedDesignAndLetterheadDistinguished": true,
+      "ownerSelectedSignerMatches": true,
+      "configurationSignersMatchIssuedPdf": true,
+      "configurationContextMatchesWithdrawal": true,
+      "cancelledWithoutMutation": true,
+      "metadataReads": 4,
+      "assetReads": 14,
+      "pageErrors": 0,
+      "mutationAttempts": 0,
+      "deniedBackgroundRequests": 6
+    }
+  ],
+  "surface": "Published GeneratedDocuments and AdminDocumentGeneration mounted with authorized real withdrawal metadata; repositories and backend unchanged",
+  "version": 2026100419,
+  "bundleSha": "292e4e0953197ffa8965d25e9463d2be4c2829a89d9177a9b757bdd843b17436",
+  "configuredProjectMatches": true
+}

@@ -1,0 +1,18 @@
+{
+  "status": "FAIL",
+  "target": "https://sutiapp.com/",
+  "businessWrites": 0,
+  "realDataScreenshots": false,
+  "privateContentLogged": false,
+  "serviceWorkers": "blocked",
+  "viewports": [],
+  "surface": "Published GeneratedDocuments and AdminDocumentGeneration mounted with authorized real withdrawal metadata; repositories and backend unchanged",
+  "version": 2026100419,
+  "bundleSha": "292e4e0953197ffa8965d25e9463d2be4c2829a89d9177a9b757bdd843b17436",
+  "configuredProjectMatches": true,
+  "failure": {
+    "stage": "current_configuration_1440",
+    "code": "LIVE_CHECK_FAILED",
+    "kind": "TimeoutError"
+  }
+}

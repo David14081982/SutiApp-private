@@ -1,0 +1,74 @@
+{
+  "task": "H-SAVINGS-DOCUMENT-SIGNERS-UX-001",
+  "verdict": "APPROVED",
+  "reviewer": "independent /root/review_signers",
+  "runtimeCommit": "f80308b",
+  "publishedVersion": 2026100419,
+  "scope": "Correct the identified withdrawal PDF using its currently assigned complete signer set; clarify design, letterhead and signer configuration; preserve loan behavior and documentary history.",
+  "findings": [
+    "The prior reissue function resolved current configuration but overwrote withdrawal signers with historical snapshot signers.",
+    "The exact-definition migration adds only caja/SAVINGS_WITHDRAWAL_APPROVAL to the existing Membership current-signers exception, with configuration provenance.",
+    "The requested real version 3 is READY. Its complete ordered signer set equals the current live scoped resolver; names, titles, roles and signature assets come from the same effective signer versions.",
+    "Independent direct PostgreSQL READ ONLY verification with strict official-CA TLS confirmed all 162 prior document row hashes, all five documentary configuration domains, the financial request and the sealed financial source remain unchanged.",
+    "Independent PDF visual inspection found the correct withdrawal title and Ana's legible name, title, role and signature block without overlap. Its local SHA-256 matches the live READY record and the published browser download.",
+    "Independent bundle comparison confirmed exactly two focal chunks changed and 154 unrelated chunks remained identical. Service worker differences are cachebusters only.",
+    "Published artifacts match the tested build. Authenticated published component verification passes at 1440 and 390 pixels, including exact configuration-to-PDF signer equality and historical version labels.",
+    "The initial live verifier timeout was a nested Playwright has-locator defect. The corrected inner locator preserves the exact document-type assertion; runtime code and all substantive assertions remained unchanged."
+  ],
+  "sourceOfTruth": {
+    "verdict": "SAFE",
+    "currentAuthority": "document_private effective configurations, signer versions, assets and scoped layouts",
+    "historyAuthority": "immutable records and sealed business source snapshots",
+    "alternativeAuthorityOrFallbackAdded": false
+  },
+  "architecture": {
+    "verdict": "PASS",
+    "migration": "20261014000100_savings_withdrawal_document_signers",
+    "functionMd5": "d6daed09f48ea4b9c89846cf75515c19",
+    "recovery": "Exact-definition inverse restores prior function and preserves all issued revisions.",
+    "globalImageRegression": "NOT APPLICABLE: no shared repository/viewer/Auth/Storage/service-worker logic changes; focal generated-artifact exception verified by independent diff."
+  },
+  "security": {
+    "verdict": "PASS",
+    "privateFunctionAcl": "{postgres=X/postgres}",
+    "permissionModuleAndRetryGuardsPreserved": true,
+    "isolatedDenialTestsPassed": true,
+    "frontendSecretsAdded": false,
+    "reviewBusinessWrites": 0,
+    "liveBrowserDocumentMutationAttempts": 0
+  },
+  "data": {
+    "verdict": "PASS",
+    "correctedBusinessVersion": 3,
+    "priorRecordsIndependentlyPreserved": 162,
+    "configurationDomainsIndependentlyPreserved": 5,
+    "financialRequestAndSnapshotIndependentlyPreserved": true,
+    "pdfSha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544"
+  },
+  "ui": {
+    "verdict": "PASS",
+    "preserved": "Sections, cards, configuration fields, signer ordering, designer controls, previews, version history, viewer opening/closing and navigation.",
+    "clarified": "Assigned design, background letterhead, document type/program, current signer assignment and previous issued versions.",
+    "unauthorizedRedesign": false
+  },
+  "legacy": "SAFE CHANGE: documentary correction only; no Google, financial writer, settlement, balance or calculation changes.",
+  "verification": {
+    "isolatedDatabaseAndPdfChecks": 14,
+    "assignmentChecks": 20,
+    "coreChecks": 23,
+    "localMobileAndDesktop": "PASS",
+    "previewWithNativePdfViewerDisabled": "PASS",
+    "pagesAndRegistryTests": "PASS",
+    "publishedArtifactHashes": "PASS",
+    "publishedMobileAndDesktop": "PASS"
+  },
+  "evidence": ["applied.json", "corrected-document.json", "pdf-inspection.json", "database.json", "browser.json", "assignment-browser.json", "preview/browser.json", "regression-tests.json", "build.json", "published.json", "production-browser.json"],
+  "limitations": [
+    "The preservation comparison begins at this H's captured baseline. It does not reconstruct or certify manual loan-format edits made before this H.",
+    "The production browser test mounts published documentary components with real authorized metadata; it is not a full application navigation test and blocks service workers.",
+    "WORK_QUEUE_HISTORY.md is absent. Review does not authorize a new queued H or replace task-orchestrator."
+  ],
+  "ownerDecisionRequired": false,
+  "nextAction": "Finish and commit the evidence/audit closure for this H, retain private backups outside Git, and tell the owner that withdrawal version 3 contains the assigned signer. No new business operation or separate H is authorized by this review.",
+  "responseGeneratedForCodex": true
+}

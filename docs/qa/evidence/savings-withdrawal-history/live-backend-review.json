@@ -1,0 +1,42 @@
+{
+  "task": "H-SAVINGS-WITHDRAWAL-HISTORY-001",
+  "reviewer": "independent /root/review_signers",
+  "status": "PASS",
+  "transport": "PostgreSQL with strict certificate validation against the official Supabase CA",
+  "transaction": "READ ONLY",
+  "function": "public.get_admin_savings_withdrawal_history(text,text,integer,integer)",
+  "functionMd5": "dca55accf3a419447dfa8a022b4558d0",
+  "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+  "authority": ["public.savings_requests", "public.savings_participants"],
+  "scope": "Canonical SAVINGS_RUNTIME_V1 operations of types WITHDRAW and EXTRAORDINARY_WITHDRAWAL, with canonical participants",
+  "liveSourceRows": 1,
+  "checks": {
+    "authenticatedProjectionMatchesSourceTotal": true,
+    "exactOrderedRequestIdsAndParticipantIdsMatch": true,
+    "rawSaverAndRequestFoliosMatch": true,
+    "statusesAndRequestTypesMatch": true,
+    "requestedAmountsMatch": true,
+    "deliveredTotalMatchesSettlementColumns": true,
+    "metadataOmittedFromDto": true,
+    "directRequestsTableReadDenied42501": true,
+    "directParticipantsTableReadDenied42501": true,
+    "authenticatedRoleWithoutIdentityDenied42501": true,
+    "anonymousExecuteDenied": true,
+    "serviceRoleExecuteDenied": true
+  },
+  "liveSettlementSemantics": {
+    "status": "PASS",
+    "publicEntry": "public.admin_save_savings_operation",
+    "existingWriter": "savings_period_private.operation_before",
+    "verifiedAssignment": "The public operation wrapper calls the existing private writer, whose SETTLED update records actual capital and yield in requested_capital_amount and requested_yield_amount and records settled_at.",
+    "scope": "Existing function definitions inspected read-only; no settlement invoked."
+  },
+  "limitations": [
+    "Production contained one qualifying operational withdrawal at review time; scale and pagination over 522 requests were verified by the separate isolated PostgreSQL test.",
+    "Security checks used the authenticated SQL role and the existing administrator identity inside a read-only transaction; browser HTTP verification is recorded separately."
+  ],
+  "privateIdsOrPersonalDataLogged": false,
+  "businessWrites": 0,
+  "documentWrites": 0,
+  "zeroWrites": true
+}

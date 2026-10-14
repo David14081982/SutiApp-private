@@ -58144,6 +58144,43 @@ Object.assign(window, {
  });
 })();
 })();
+/* @@file savings-withdrawal-history-repository.js */
+(function(){
+/* Read-only withdrawal history. Existing Savings and document authorities remain unchanged. */
+(function () {
+  'use strict';
+
+  async function list({
+    search = '',
+    status = 'all',
+    offset = 0,
+    limit = 20,
+    signal
+  } = {}) {
+    const savings = window.SavingsPanelRepository,
+      context = savings.contextKey(),
+      revision = savings.revision();
+    let request = window.SutiSupabase.getClient().rpc('get_admin_savings_withdrawal_history', {
+      p_search: search,
+      p_status: status,
+      p_offset: offset,
+      p_limit: limit
+    });
+    if (signal) request = request.abortSignal(signal);
+    const {
+      data,
+      error
+    } = await request;
+    if (context !== savings.contextKey() || revision !== savings.revision()) throw Error('SAVINGS_CONTEXT_CHANGED');
+    if (error) throw error;
+    if (!data || !Array.isArray(data.rows) || !Number.isInteger(data.total) || data.total < 0) throw Error('SAVINGS_HISTORY_RESPONSE_INVALID');
+    return data;
+  }
+  window.SavingsWithdrawalHistoryRepository = Object.freeze({
+    list
+  });
+})();
+})();
 /* @@file savings-individual-withdrawal-repository.js */
 (function(){
 /* Individual Admin Savings availability. No balances or local persistence. */
@@ -60553,261 +60590,1945 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
 /* @@file savings-panel-admin.jsx */
 (function(){
 /* Admin Savings: responsive reference layout, Supabase queries and private review. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React,V=window.SavingsPanelVisual;
- const {KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados}=V;
- const tabs=[['resumen','Resumen'],['personas','Personas'],['atencion','Atención'],['programa','Programa'],['rh','Reporte RH']];
- const programViews=[['conciliacion','Conciliar por fecha'],['reportes','Reportes'],['configuracion','Configuración']];
- const css=`.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    V = window.SavingsPanelVisual;
+  const {
+    KPIs,
+    Row,
+    Titulo,
+    Tarjeta,
+    Fila,
+    M,
+    fmt,
+    estados
+  } = V;
+  const tabs = [['resumen', 'Resumen'], ['personas', 'Personas'], ['atencion', 'Atención'], ['programa', 'Programa'], ['rh', 'Reporte RH'], ['historial', 'Historial']];
+  const programViews = [['conciliacion', 'Conciliar por fecha'], ['reportes', 'Reportes'], ['configuracion', 'Configuración']];
+  const css = `.svp{container:savings-panel / inline-size;min-width:0;width:100%;--font:'Nunito',system-ui,sans-serif;--guinda:#910022;--guinda-50:#fbeef1;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--grad-guinda-soft:linear-gradient(145deg,#d11f3a,#910022);--ink:#14213d;--ink-2:#5a6378;--ink-3:#738099;--surface:#fff;--surface-2:#eef1f6;--hairline:#e6eaf1;--hairline-strong:#d6dbe6;--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--glow-guinda:0 10px 26px -6px rgba(209,31,58,.55),0 4px 10px -2px rgba(145,0,34,.4);font-family:'Nunito',system-ui,sans-serif;color:var(--ink);background:#f2f3f5;min-height:100%;overflow-wrap:anywhere}.svp *{box-sizing:border-box}.svp-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.svp-kpis{min-width:0}.svp-body{min-width:0;padding:16px 16px calc(26px + env(safe-area-inset-bottom));max-width:1120px;margin:auto}.svp button,.svp input,.svp select,.svp textarea{font:inherit;max-width:100%}.svp button{cursor:pointer}.svp button:disabled{opacity:.48;cursor:default}.svp button:focus-visible,.svp [role=button]:focus-visible,.svp input:focus-visible,.svp textarea:focus-visible,.svp select:focus-visible{outline:3px solid #456bc0;outline-offset:3px}.svp-btn{border:0;border-radius:11px;padding:11px 13px;background:var(--surface-2);color:var(--ink-2);font-size:12.5px!important;font-weight:900!important;min-height:42px}.svp-btn.primary{background:var(--grad-guinda-soft);color:white}.svp-btn.green{background:#E4F5EC;color:#0E6B41}.svp-btn.outline{background:white;border:1px solid var(--hairline-strong);color:var(--guinda)}.svp-btn.full{width:100%}.svp .sava-button,.svp .svw button{border:1px solid var(--hairline-strong);border-radius:11px;padding:9px 11px;background:white;color:var(--guinda);font-size:12px;font-weight:800;min-height:40px}.svp .sava-error{background:#fce8ed;color:#99002d;padding:12px;border-radius:12px}.svp .sava-success{background:#E4F5EC;color:#0E6B41;padding:12px;border-radius:12px}.svp .svp-detail-grid .svw h2{display:none}.svp-settings .sava-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.svp-settings .sava-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;min-width:0}.svp-settings .sava-input,.svp-settings .sava-select{width:100%;padding:11px;border:1px solid var(--hairline-strong);border-radius:10px;background:white;color:var(--ink);min-width:0}.svp-settings .sava-form-actions{grid-column:1/-1}.svp-settings .sava-toolbar,.svp-settings .sava-actions{display:flex;flex-wrap:wrap;gap:8px}.svp-settings .sava-note{font-size:12px;line-height:1.5;color:var(--ink-2)}@media(max-width:600px){.svp-settings .sava-form{grid-template-columns:1fr}}.svp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.svp-actions>*{flex:1;min-width:100px}.svp-tabs{display:flex;gap:7px;overflow:auto;padding:4px 0 8px;margin-top:16px;scrollbar-width:none}.svp-tabs button{white-space:nowrap;border:0;border-radius:999px;padding:9px 13px;color:var(--ink-2);background:#e9edf3;font-size:12px;font-weight:900;min-height:40px}.svp-tabs button[aria-selected=true],.svp-tabs button[aria-pressed=true]{background:var(--grad-guinda-soft);color:white}.svp-stack{display:flex;flex-direction:column;gap:9px}.svp-search{display:flex;align-items:center;gap:8px;margin-top:16px;background:white;border-radius:14px;padding:0 13px;box-shadow:var(--neo-sm)}.svp-search input{width:100%;min-width:0;border:0;background:transparent;outline:0;padding:13px 0;font-size:14px}.svp-totals{display:flex;justify-content:space-between;gap:12px;margin:12px 0;font-size:12px;font-weight:800;color:var(--ink-3)}.svp-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin:12px 0}.svp-note.warn{background:#FDF2DC;color:#805600;padding:12px;border-radius:14px}.svp-notice{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:11px;color:var(--ink-2);margin-bottom:12px}.svp-error{padding:14px;background:#fce8ed;color:#99002d;border-radius:14px;margin:12px 0;font-size:13px}.svp-success{padding:12px;background:#E4F5EC;color:#0E6B41;border-radius:14px;font-size:13px;margin:12px 0}.svp-empty{text-align:center;padding:30px 16px;color:var(--ink-2);font-size:13px}.svp-empty b{display:block;color:var(--ink);font-size:16px;margin:8px}.svp-hero{background:var(--grad-guinda);color:white;border-radius:20px;padding:18px 18px 15px;box-shadow:var(--glow-guinda);position:relative;overflow:hidden}.svp-hero small{font-size:11.5px;font-weight:800;letter-spacing:.05em}.svp-hero strong{display:block;font-size:33px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}.svp-mini{display:flex;gap:10px;margin-top:14px}.svp-mini>div{flex:1;min-width:0;font-size:10.5px;font-weight:700}.svp-mini b{display:block;font-size:14px;margin-top:3px}.svp-period{width:100%;text-align:left;border:0;border-bottom:1px solid var(--hairline);background:transparent;display:flex;gap:10px;align-items:center;padding:11px 0;font-size:12.5px!important;font-weight:700!important}.svp-period>span:nth-child(2){flex:1}.svp-dot{width:7px;height:7px;flex:none;border-radius:50%;background:#13794A}.svp-dot.zero{background:#C68100}.svp-period small{display:block;font-size:10px;color:var(--guinda);margin-top:3px}.svp-record{background:white;border-radius:16px;padding:14px;box-shadow:var(--neo-sm);font-size:13px}.svp-record h3{margin:4px 0;font-size:14px}.svp-record .type{font-size:10px;color:var(--guinda);font-weight:900;letter-spacing:.06em}.svp-record dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.svp-record dt{color:var(--ink-3);font-size:11px}.svp-record dd{margin:3px 0 0;font-size:14px;font-weight:900}.svp-modal{border:0;border-radius:24px 24px 0 0;padding:0;width:min(100%,560px);width:min(100%,560px,100cqw);max-width:100%;max-height:90dvh;margin:auto auto 0;background:#f2f3f5;color:var(--ink);box-shadow:0 24px 56px -18px #14213d66}.svp-modal::backdrop{background:#14213d80}.svp-modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:white;position:sticky;top:0;z-index:2}.svp-modal h2{margin:0;font-size:18px}.svp-modal section{padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto}.svp-field{display:block;margin:13px 0;font-size:12.5px;font-weight:800}.svp-field input,.svp-field textarea,.svp-field select{display:block;width:100%;padding:11px 13px;margin-top:6px;border:none;border-radius:13px;background:var(--surface-2);box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);color:var(--ink);font-size:16px;text-transform:none}.svp-field textarea{min-height:78px;resize:vertical}.svp-skeleton{height:110px;border-radius:18px;background:linear-gradient(100deg,#e6eaf1 25%,#f8f9fb 40%,#e6eaf1 60%);background-size:200% 100%;animation:svp-shimmer 1.4s infinite}.svp-skeleton:first-child{height:150px}.svp-skeleton-line{height:64px}.svp-detail-grid{display:grid;gap:13px;margin-top:13px}.svp-audit{padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12.5px}.svp-audit small{display:block;color:var(--ink-3);margin-top:4px}.svp-header{padding:16px;background:white;display:flex;align-items:center;gap:12px}.svp-header h1{font-size:20px;margin:0}.svp-header p{font-size:12px;color:var(--ink-2);margin:3px 0}.svp-press:active{transform:scale(.99)}@keyframes svp-shimmer{to{background-position:-200% 0}}@container savings-panel (min-width:850px){.svp-detail-grid{grid-template-columns:1fr 1fr}.svp-detail-grid>.svp-wide{grid-column:1/-1}.svp-modal{margin:auto;border-radius:24px}.svp-body{padding:24px}.svp-tabs{margin-top:0}}@container savings-panel (max-width:350px){.svp-body{padding:12px}.svp-person{display:grid!important;grid-template-columns:minmax(0,1fr) auto}.svp-person>div:first-child{grid-column:1/-1}.svp-person>div:nth-child(2){text-align:left!important}.svp-mini{flex-wrap:wrap}.svp-mini>div{min-width:75px}.svp-hero strong{font-size:29px}}@media(prefers-reduced-motion:reduce){.svp *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .svp-work-heading{margin:24px 0 16px}.svp-work-heading h2{font-size:24px;line-height:1.2;margin:0 0 8px;letter-spacing:-.025em}.svp-context-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.svp-record-section{grid-column:1/-1;border:1px solid var(--hairline);border-radius:16px;background:#fff;min-width:0;overflow:hidden}.svp-record-section>summary{padding:18px 20px;font-size:16px;font-weight:850;cursor:pointer;min-height:52px;color:var(--ink)}.svp-record-section[open]>summary{border-bottom:1px solid var(--hairline);color:var(--guinda)}.svp-section-content{padding:16px;min-width:0}.svp-program-summary{margin:16px 0}.svp-program-summary>summary{padding:14px 0;font-weight:800;cursor:pointer}.svp-program-summary .svp-kpis{margin-top:14px}.svp-request-filters{display:grid;grid-template-columns:1fr 1fr;gap:16px}.svp .svp-note,.svp .svp-audit,.svp .svp-field{font-size:calc(14px * var(--text-scale,1))}.svp .svp-btn{font-size:calc(14px * var(--text-scale,1))!important;min-height:44px}.svp .svp-tabs button{font-size:calc(14px * var(--text-scale,1));min-height:46px}.svp .svp-tabs[role=tablist]{border-bottom:1px solid var(--hairline);padding-bottom:12px;gap:10px;margin-top:18px}.svp .svp-tabs[role=tablist] button{flex:1;border-radius:12px}.svp .svp-search{margin-bottom:20px;min-height:54px;border:1px solid var(--hairline-strong)}.svp-search .svp-btn{flex:none}.svp .svp-detail-grid{align-items:start}.svp .svp-notice{font-size:13px;flex-wrap:wrap}.svp .svp-record{padding:20px}.svp .svp-audit{padding:18px 0}.svp summary:focus-visible{outline:3px solid #456bc0;outline-offset:-3px}@container savings-panel (max-width:600px){.svp-request-filters{grid-template-columns:1fr;gap:0}.svp-section-content{padding:12px}.svp-context-nav>*{flex:1}.svp-work-heading h2{font-size:22px}.svp .svp-tabs[role=tablist]{gap:4px}.svp .svp-tabs[role=tablist] button{padding:10px 8px;white-space:normal}}
 `;
- function Btn({children,onClick,disabled,tone='',...rest}){return h('button',{type:'button',className:'svp-btn '+tone,onClick,disabled,...rest},children);}
- function Empty({title='Sin resultados',text}){return h('div',{className:'svp-empty'},h(window.Icon,{name:'search',size:28}),h('b',null,title),text);}
- function Loading(){return h('div',{role:'status','aria-label':'Cargando ahorro',className:'svp-stack'},[0,1,2,3].map(i=>h('div',{key:i,className:'svp-skeleton '+(i>1?'svp-skeleton-line':'')})));}
- function explain(e){const s=String(e&&e.message||'');if(/MULTIPLE_BASELINES/.test(s))return 'Hay varias copias de Ahorro cargadas. Hay que revisar cuál corresponde al corte antes de mostrar un total.';if(/AMOUNT_INVALID|MONEY_INVALID/.test(s))return 'Captura un importe válido, sin números negativos y con un máximo de dos decimales.';if(/42501|DENIED/.test(s))return 'Tu cuenta no tiene permiso para realizar esta acción.';if(/CHANGED/.test(s))return 'Otra persona actualizó este expediente. Cierra y vuelve a abrirlo para revisar los cambios.';if(/IDENTITY|DUPLICATE/.test(s))return 'Primero hay que revisar el Folio de este expediente; no se asignarán datos a otra persona.';if(/NO_CHANGES/.test(s))return 'No hay cambios por guardar.';return 'No se pudo confirmar la operación. Conservamos tu captura; vuelve a intentar.';}
- function useQuery(load,deps){const [s,set]=useState({}),[retry,refresh]=useState(0);useEffect(()=>{let active=true;set(previous=>({...previous,loading:true,error:null}));load().then(data=>{if(active)set({data});}).catch(error=>{if(active)set({error:explain(error)});});return()=>{active=false;};},[...deps,retry]);return [s,()=>refresh(v=>v+1)];}
- function Modal({title,children,onClose,busy=false,dirty=false}){const ref=useRef(),closeRef=useRef();closeRef.current=()=>{if(busy)return;if(dirty&&!window.confirm('Hay cambios sin guardar. ¿Quieres salir sin guardarlos?'))return;onClose();};useEffect(()=>{const el=ref.current,prior=document.activeElement;el.showModal();return()=>{el.close();if(prior&&prior.isConnected)prior.focus({preventScroll:true});};},[]);return h('dialog',{ref,className:'svp svp-modal',onCancel:e=>{e.preventDefault();closeRef.current();}},h('header',null,h('h2',null,title),h(Btn,{onClick:()=>closeRef.current(),disabled:busy,'aria-label':'Cerrar'},'×')),h('section',null,children));}
- function EditSheet({data,mode,period,onClose,onSaved}){
-  const r=data.record,a=data.person,base={...r.source_data,...r.proposed_data};
-  const initial=mode==='date'?{[period.key]:period.monto}:mode==='person'?{R:base.R,W:base.W,F:base.F,A:base.A}:{};
-  const [draft,setDraft]=useState(initial),[observation,setObservation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');const lock=useRef(false),command=useRef();
-  const changes={};Object.keys(draft).forEach(k=>{if(JSON.stringify(draft[k])!==JSON.stringify(initial[k]))changes[k]=draft[k];});
-  const nextStatus=mode==='review'?(r.status==='RESOLVED'?'IN_REVIEW':'RESOLVED'):(r.status==='RESOLVED'?'IN_REVIEW':r.status);
-  const count=Object.keys(changes).length,dirty=count>0||!!observation;
-  const reset=mode==='date'&&period.corregido&&JSON.stringify(draft[period.key])===JSON.stringify(period.original);
-  function update(k,v){setDraft(x=>({...x,[k]:v}));command.current=null;}
-  async function save(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{if(!command.current)command.current={id:r.id,version:r.version,changes,status:nextStatus,observation,field:reset?period.key:null,key:crypto.randomUUID()};await (command.current.field?window.SavingsPanelRepository.reset(command.current):window.SavingsPanelRepository.save(command.current));await onSaved();onClose();}catch(e){setError(explain(e));}finally{lock.current=false;setBusy(false);}}
-  const title=mode==='date'?'Corregir descuento':mode==='review'?(r.status==='RESOLVED'?'Reabrir revisión':'Marcar revisado'):'Corregir datos';
-  const field=(key,label,type='text')=>h('label',{className:'svp-field',key},label,type==='select'?h('select',{'aria-label':label,value:draft[key]||'',disabled:busy,onChange:e=>update(key,e.target.value)},[...new Set([draft[key],'Ahorrando','Dejó de ahorrar'].filter(Boolean))].map(v=>h('option',{key:v,value:v},v))):h('input',{type,value:draft[key]==null?'':draft[key],disabled:busy||(key==='A'&&!data.can_identity)||(key!=='A'&&a.identity_pending),min:type==='number'?0:undefined,step:type==='number'?'.01':undefined,onChange:e=>update(key,type==='number'?(e.target.value===''?null:Number(e.target.value)):(type==='date'&&e.target.value===''?null:e.target.value))}));
-  return h(Modal,{title,onClose,busy,dirty},h('b',null,a.nombre),h('p',{className:'svp-note'},'Folio '+(a.folio||'SIN REGISTRO')),
-   mode==='person'&&h(React.Fragment,null,field('R',a.proceso==='JUB'?'Aportación mensual':['1','3'].includes(a.proceso)?'Aportación quincenal':'Aportación (frecuencia por confirmar)','number'),field('W','Estado del ahorro','select'),field('F','Fecha del primer descuento','date'),field('A','Folio'),h('p',{className:'svp-note'},'Un cambio de Folio queda pendiente de revisión y conserva la relación original de sus movimientos. Esta revisión todavía no cambia el calendario de descuentos futuros.')),
-   mode==='date'&&h(React.Fragment,null,h('p',null,fmt(period.fecha)),field(period.key,'Importe realmente descontado','number'),period.key==='AR'&&h('p',{className:'svp-note warn'},'Este registro incluye el rendimiento del semestre. Captura el total combinado y evita sumarlo de nuevo.'),h('div',{className:'svp-actions'},h(Btn,{disabled:busy,onClick:()=>update(period.key,0)},'Sin descuento'),period.corregido&&h(Btn,{disabled:busy,onClick:()=>update(period.key,period.original)},'Quitar corrección')),h('p',{className:'svp-note'},'Importe original: '+M(typeof period.original==='number'?period.original:null))),
-   mode==='review'&&h('p',{className:'svp-note'},r.status==='RESOLVED'?'El expediente volverá a la lista de pendientes.':'Marca esta revisión después de comprobar los datos. Esto no autoriza un retiro ni publica saldos.'),
-   h('label',{className:'svp-field'},'Observaciones (opcional)',h('textarea',{value:observation,maxLength:4000,disabled:busy,onChange:e=>{setObservation(e.target.value);command.current=null;}})),
-   mode!=='review'&&h('p',{className:'svp-note'},count+' campo(s) modificado(s). Se conservarán los valores anteriores, tu nombre y la fecha.'),
-   error&&h('div',{role:'alert',className:'svp-error'},error),h('p',{className:'svp-note'},'Corrección privada para revisión. El saldo reconocido del archivo se conserva.'),h(Btn,{tone:'primary full',onClick:save,disabled:busy||(mode!=='review'&&!count)},busy?'Guardando…':'Guardar cambios'));
- }
- function RequestCard({r,onOpen}){
-  const withdrawal=r.source_sheet==='Solicitud de retiro',d=r.source_data||{},p=r.proposed_data||{},pending=r.status!=='RESOLVED';
-  const value=(k)=>typeof d[k]==='number'?M(d[k]):'Por revisar';
-  const facts=withdrawal?[['Importe del retiro',value('G')],['Fecha registrada',r.fecha?fmt(r.fecha):d.D?'Fecha por revisar':'Sin fecha registrada']]:[['Monto anterior',value('C')],['Nuevo monto',value('D')]];
-  return h('article',{className:'svp-record'},h('div',{style:{display:'flex',gap:9,alignItems:'center',marginBottom:9}},h('div',{style:{width:32,height:32,borderRadius:11,background:'var(--guinda-50)',color:'var(--guinda)',display:'grid',placeItems:'center',flexShrink:0}},h(window.Icon,{name:withdrawal?'download':'swap',size:17,stroke:2.2})),h('div',null,h('div',{className:'type'},withdrawal?'RETIRO '+(d.E==='Completo'?'TOTAL':d.E==='Parcial'?'PARCIAL':'POR CLASIFICAR'):'CAMBIO DE MONTO'),h('h3',null,r.identity.name))),h('small',null,'Folio '+(r.source_folio||'SIN REGISTRO')),h('dl',null,facts.map(([label,text])=>h('div',{key:label},h('dt',null,label),h('dd',null,text)))),
-   !withdrawal&&h('p',{className:'svp-note'},'Fecha registrada: '+(r.fecha?fmt(r.fecha):d.B?'Por revisar':'Sin fecha')),
-   h('p',{className:'svp-note'},withdrawal?(d.H||'Sin estado registrado')+' · Continúa ahorrando: '+(d.F||'por revisar'):d.E==='TRUE'?'Cambio registrado como realizado':'Aplicación por revisar'),
-   r.identity_pending&&h('p',{className:'svp-note warn'},'Folio pendiente de revisión.'),(!r.identity_pending?(withdrawal?['G']:['C','D']):[]).filter(k=>Object.prototype.hasOwnProperty.call(p,k)&&JSON.stringify(p[k])!==JSON.stringify(d[k])).map(k=>h('p',{className:'svp-note warn',key:k},'Corrección en revisión: '+M(p[k]))),
-   h(Btn,{tone:'outline full',onClick:onOpen},pending?'Ver y revisar solicitud':'Ver solicitud revisada'));
- }
- function RequestSheet({id,onClose,onSaved,canWrite}){
-  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.request(id),[id]);const [draft,setDraft]=useState({}),[reviewStatus,setReviewStatus]=useState(null),[obs,setObs]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('');const command=useRef(),lock=useRef(false);
-  const r=state.data,changes={};if(r)Object.keys(draft).forEach(k=>{if(JSON.stringify(draft[k])!==JSON.stringify(({...r.source_data,...r.proposed_data})[k]))changes[k]=draft[k];});
-  async function save(){if(lock.current)return;lock.current=true;setBusy(true);setErr('');try{if(!command.current)command.current={id,version:r.version,changes,status:reviewStatus||(r.status==='RESOLVED'?'IN_REVIEW':r.status),observation:obs,key:crypto.randomUUID()};await window.SavingsReviewRepository.save(command.current);await onSaved();onClose();}catch(e){setErr(explain(e));}finally{lock.current=false;setBusy(false);}}
-  return h(Modal,{title:'Revisar solicitud',onClose,busy,dirty:Object.keys(changes).length>0||!!obs||!!(r&&reviewStatus&&reviewStatus!==r.status)},state.loading?h(Loading):state.error?h('div',{role:'alert'},state.error,h(Btn,{onClick:reload},'Reintentar')):r&&h(React.Fragment,null,h('b',null,r.identity.name),h('p',{className:'svp-note'},'Folio '+(r.source_folio||'SIN REGISTRO')+' · '+r.source_sheet),h('p',{className:'svp-note warn'},'Solicitud del archivo original. Corregirla no vuelve a pagar un retiro ni autoriza una solicitud nueva.'),r.identity_pending&&h('p',{className:'svp-note warn'},'Folio pendiente de revisión. Se conserva la identidad original.'),(r.field_defs||[]).filter(f=>(r.source_sheet==='Solicitud de retiro'?['D','E','F','G','H','I']:['B','C','D','E']).includes(f.key)).map(f=>{
-   const value=Object.prototype.hasOwnProperty.call(draft,f.key)?draft[f.key]:({...r.source_data,...r.proposed_data})[f.key];
-   if(r.source_sheet==='Solicitud Cambio ahorro'&&f.key==='E')return canWrite&&!r.identity_pending?h('label',{className:'svp-field',key:f.key},f.label,h('select',{'aria-label':f.label,value:value||'',disabled:busy,onChange:e=>{if(r.status==='RESOLVED')setReviewStatus('IN_REVIEW');setDraft(x=>({...x,E:e.target.value||null}));command.current=null;}},!['TRUE','FALSE'].includes(value)&&h('option',{value:value||''},'Por confirmar'),h('option',{value:'TRUE'},'Sí'),h('option',{value:'FALSE'},'No'))):h(Fila,{key:f.key,label:f.label,valor:value==='TRUE'?'Sí':value==='FALSE'?'No':'Por confirmar'});
-   return canWrite&&!r.identity_pending&&f.editable!==false?h('label',{className:'svp-field',key:f.key},f.label,h('input',{value:value==null?'':value,type:f.kind==='money'?'number':f.kind==='date'?'date':'text',step:f.kind==='money'?'.01':undefined,disabled:busy,onChange:e=>{if(r.status==='RESOLVED')setReviewStatus('IN_REVIEW');setDraft(x=>({...x,[f.key]:f.kind==='money'?(e.target.value===''?null:Number(e.target.value)):e.target.value}));command.current=null;}})):h(Fila,{key:f.key,label:f.label,valor:f.kind==='money'?M(value):value||'Sin dato'});
-  }),canWrite&&h('label',{className:'svp-field'},'Observaciones (opcional)',h('textarea',{value:obs,disabled:busy,maxLength:4000,onChange:e=>{setObs(e.target.value);command.current=null;}})),canWrite&&h('label',{className:'svp-field'},'Resultado de la revisión',h('select',{'aria-label':'Resultado de la revisión',value:reviewStatus||r.status,disabled:busy||r.identity_pending,onChange:e=>{setReviewStatus(e.target.value);command.current=null;}},h('option',{value:'PENDING'},'Por revisar'),h('option',{value:'IN_REVIEW'},'En revisión'),h('option',{value:'RESOLVED'},'Revisada'))),err&&h('div',{role:'alert',className:'svp-error'},err),canWrite&&h(Btn,{tone:'primary full',onClick:save,disabled:busy||r.identity_pending||(!Object.keys(changes).length&&(!reviewStatus||reviewStatus===r.status)&&!obs.trim())},busy?'Guardando…':'Guardar revisión')));
- }
- function RecordSection({title,children,initialOpen=false,openRequest=0,unmountOnClose=false,beforeClose}){
-  const [opened,setOpened]=useState(initialOpen),[visited,setVisited]=useState(initialOpen);
-  useEffect(()=>{if(openRequest){setOpened(true);setVisited(true);}},[openRequest]);
-  return h('details',{className:'svp-record-section',open:opened,onToggle:e=>{if(e.target!==e.currentTarget)return;const next=e.currentTarget.open;if(!next&&opened&&beforeClose&&!beforeClose()){e.currentTarget.open=true;return;}setOpened(next);if(next)setVisited(true);}},h('summary',null,title),(unmountOnClose?opened:visited)&&h('div',{className:'svp-section-content'},children));
- }
- function Detail({id,onBack,onPrev,onNext,header,onChange,initialPeriod,initialSection,requestId,disabled=false,app}){
-  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.detail(id),[id]);const [extra,setExtra]=useState([]),[loadingMore,setLoadingMore]=useState(false),[extraError,setExtraError]=useState(''),[sheet,setSheet]=useState(null),[withdrawal,setWithdrawal]=useState(null),[note,setNote]=useState('');const generation=useRef(0);
-  useEffect(()=>{generation.current++;setExtra([]);setSheet(null);setWithdrawal(null);setNote('');setLoadingMore(false);setExtraError('');return()=>{generation.current++;};},[id]);
-  async function saved(){setExtra([]);reload();onChange();setNote('Cambio guardado. El expediente se actualizó.');}
-  async function more(){if(loadingMore)return;const seq=generation.current;setLoadingMore(true);setExtraError('');try{const d=await window.SavingsPanelRepository.detail(id,6+extra.length,24);if(generation.current===seq)setExtra(x=>x.concat(d.dates));}catch(e){if(generation.current===seq)setExtraError(explain(e));}finally{if(generation.current===seq)setLoadingMore(false);}}
-  const [requestRevision,setRequestRevision]=useState(0),[withdrawalIntent,setWithdrawalIntent]=useState(0);
-  async function requestSaved(){setRequestRevision(v=>v+1);await saved();}
-  const d=state.data,a=d&&d.person,r=d&&d.record;
-  const autoOpened=useRef(false);useEffect(()=>{if(d&&d.can_write&&!d.person.identity_pending&&initialPeriod&&!autoOpened.current){autoOpened.current=true;const key=initialPeriod.key,source=d.record.source_data[key],value=({...d.record.source_data,...d.record.proposed_data})[key];setSheet({mode:'date',period:{...initialPeriod,original:source,monto:value,corregido:JSON.stringify(source)!==JSON.stringify(value)}});}},[d,initialPeriod]);
-  return h('div',null,header({title:a?a.nombre:'Expediente de ahorro',sub:a?'Folio '+(a.folio||'SIN REGISTRO')+' · '+(estados[a.estado]||estados.revision).label:'Cargando expediente',onBack}),h('div',{className:'svp-body',inert:disabled||state.loading?'':undefined,'aria-busy':disabled||state.loading},h('div',{className:'svp-actions',style:{marginTop:0,marginBottom:13}},h(Btn,{onClick:onPrev,disabled:!onPrev},'‹ Anterior'),h(Btn,{onClick:onNext,disabled:!onNext},'Siguiente ›')),
-   !d&&state.loading?h(Loading):state.error?h('div',{role:'alert',className:'svp-error'},state.error,h(Btn,{onClick:reload},'Reintentar expediente')):a&&h(React.Fragment,null,
-    h('div',{className:'svp-hero'},h('div',{style:{position:'absolute',right:-24,top:-20,opacity:.12,pointerEvents:'none'}},h(window.Icon,{name:'piggy',size:120,stroke:1.4})),h('small',null,'TIENE AHORRADO'),h('strong',null,M(a.saldo)),h('div',{className:'svp-mini'},[[a.certified?'Capital actual':'Le han descontado',a.certified?a.capital_actual:a.aportado],['Rendimiento',a.certified?a.rendimiento_actual:a.rendimiento],['Retiros registrados',d.withdrawn_total]].map(([label,n])=>h('div',{key:label},label,h('b',null,M(n)))))),
-    h('p',{className:'svp-note'},a.certified?'Saldo actual confirmado al '+fmt(d.as_of)+'. Saldo original del archivo: '+M(a.source_saldo)+' al '+fmt(String(a.observed_at).slice(0,10))+'. Los retiros registrados conservan su historial y no se vuelven a restar.':'Saldo en revisión. El archivo original reconoce '+M(a.source_saldo??a.saldo)+' al '+fmt(String(a.observed_at).slice(0,10))+'. Descuentos y rendimiento corresponden al plan registrado; los retiros conservan su historial.'),!a.certified&&a.correccion!==0&&h('p',{className:'svp-note warn'},'Saldo al aplicar las correcciones de descuentos: '+M(a.saldo_revision)+'. Diferencia: '+M(a.correccion)+'.'),a.identity_pending&&h('p',{className:'svp-note warn'},'Cambio de Folio pendiente: '+a.proposed_folio+'. Los movimientos conservan su Folio original.'),
-    note&&h('div',{role:'status',className:'svp-success'},note),h(window.SavingsIndividualWithdrawal,{key:a.folio,folio:a.folio,onRequest:()=>setWithdrawalIntent(v=>v+1)}),h('div',{className:'svp-detail-grid'},
-     h(Tarjeta,{title:'Su ahorro',icon:'calendar'},h(Fila,{label:a.proceso==='JUB'?'Le descuentan cada mes':['1','3'].includes(a.proceso)?'Le descuentan cada quincena':'Aportación · frecuencia por confirmar',valor:M(a.aporte)}),h(Fila,{label:'Empezó a ahorrar',valor:fmt(a.inicio)}),h(Fila,{label:'Último descuento registrado',valor:fmt(a.ultimo)}),h(Fila,{label:a.estado==='baja'?'Dejó de ahorrar el':'Siguiente descuento previsto',valor:fmt(a.estado==='baja'?a.bajaAt:a.prox)}),h('p',{className:'svp-note'},'Inicio del plan: '+fmt(a.plan_inicio))),h(RecordSection,{title:'Saldo, descuentos y conciliación',initialOpen:!!initialPeriod},h(window.SavingsCertificationAdmin,{recordId:id,version:r.version+':'+requestRevision,onSaved:saved,app})),h(RecordSection,{title:'Solicitudes, retiros y cambios',initialOpen:initialSection==='requests',openRequest:withdrawalIntent},h(window.SavingsRequestsAdmin,{key:a.folio,folio:a.folio,requestId,expanded:true,onSaved:requestSaved,withdrawalIntent})),
-     h(RecordSection,{title:'Descuentos del archivo'},h(Tarjeta,{title:'Descuentos por fecha',icon:'receipt',right:h('span',{style:{fontSize:11,color:'var(--ink-3)'}},d.can_write?'Toca para corregir':d.date_count+' fechas')},[...d.dates,...extra].map(p=>h('button',{className:'svp-period',key:p.key,disabled:!d.can_write||a.identity_pending,onClick:()=>setSheet({mode:'date',period:p})},h('span',{className:'svp-dot '+(p.monto===0?'zero':'')}),h('span',null,fmt(p.fecha),p.corregido&&h('small',null,'CORREGIDO · EN REVISIÓN'),p.key==='AR'&&h('small',null,'Incluye rendimiento del semestre')),h('b',null,typeof p.monto!=='number'?'Por revisar':p.monto===0?'Registrado en cero':M(p.monto)))),!d.date_count&&h(Empty,{title:'Sin fechas registradas'}),d.date_count>6+extra.length&&h(Btn,{tone:'full',onClick:more,disabled:loadingMore},loadingMore?'Cargando…':'Ver más fechas ('+(d.date_count-6-extra.length)+')'),extra.length>0&&h(Btn,{tone:'full',onClick:()=>setExtra([])},'Ver solo las últimas 6'),extraError&&h('div',{role:'alert',className:'svp-error'},extraError),h('p',{className:'svp-note'},'Un importe en cero requiere revisión; no demuestra por sí solo que faltó el descuento.'))),
-     h(RecordSection,{title:'Retiros registrados'},h('div',{className:'svp-wide'},h(Tarjeta,{title:'Retiros',icon:'download'},h(window.SavingsWithdrawalList,{recordId:id,data:d.withdrawals,onRefresh:reload,disabled:state.loading,onOpen:setWithdrawal})))),
-     h(RecordSection,{title:'Historial de revisión'},h(Tarjeta,{title:'Movimientos del expediente',icon:'clock'},(r.history||[]).length?r.history.map(e=>h('div',{className:'svp-audit',key:e.id},h('b',null,e.actor_name),h('span',null,' · Revisión guardada'),h('small',null,new Date(e.at).toLocaleString('es-MX')),e.observation&&h('p',null,e.observation),h('details',null,h('summary',null,'Ver cambios'),h('p',null,'Estado: '+({PENDING:'Pendiente',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[e.before.status]||'Por revisar')+' → '+({PENDING:'Pendiente',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[e.after.status]||'Por revisar')),[...new Set([...Object.keys(e.after.proposed_data||{}),...Object.keys(e.before.proposed_data||{})])].filter(k=>JSON.stringify(e.after.proposed_data[k])!==JSON.stringify((e.before.proposed_data||{})[k])).map(k=>h('p',{key:k},((r.field_defs||[]).find(f=>f.key===k)||{label:k}).label+': '+String(Object.prototype.hasOwnProperty.call(e.before.proposed_data||{},k)?e.before.proposed_data[k]:r.source_data[k])+' → '+String(Object.prototype.hasOwnProperty.call(e.after.proposed_data||{},k)?e.after.proposed_data[k]:r.source_data[k])))))):h('p',{className:'svp-note'},'Todavía no se han realizado correcciones.'))),
-     h(Tarjeta,{title:'Revisión del expediente',icon:'checkCircle'},h('p',{className:'svp-note'},r.status==='RESOLVED'?'Este expediente está marcado como revisado.':'Comprueba el Folio, los descuentos, el saldo y los retiros.'),d.can_write&&h(Btn,{tone:'green full',onClick:()=>setSheet({mode:'review'})},r.status==='RESOLVED'?'Reabrir revisión':'Marcar revisado'))),
-    d.can_write&&h(Btn,{tone:'outline full',style:{marginTop:16},onClick:()=>setSheet({mode:'person'})},'Corregir datos de este ahorrador'),
-    h('details',{className:'svp-note'},h('summary',null,'Ver datos anteriores y rendimientos por periodo'),h(Tarjeta,{title:'Importes originales'},(r.field_defs||[]).filter(f=>['DP','DQ','DR','DS','DT','DU','DV','DW'].includes(f.key)).map(f=>h(Fila,{key:f.key,label:f.label,valor:M(r.source_data[f.key])})),h('p',{className:'svp-note'},'Estos totales históricos no son abonos nuevos. La copia disponible no incluye descuentos de 2025 por fecha.'))),
-    sheet&&h(EditSheet,{key:id+sheet.mode,data:d,...sheet,onClose:()=>setSheet(null),onSaved:saved}),withdrawal&&h(RequestSheet,{id:withdrawal,canWrite:d.can_write,onClose:()=>setWithdrawal(null),onSaved:saved}))));
- }
- function nativePerson(row){return {...row,id:row.participant_id,estado:({Ahorrando:'ahorrando','Dejo de ahorrar':'baja','Por iniciar':'revision','En revision':'revision'})[row.estado]||row.estado};}
- function NativeDetail({row,onBack,onPrev,onNext,header,onChange,initialSection,requestId,disabled=false,app}){
-  const [requestRevision,setRequestRevision]=useState(0),[withdrawalIntent,setWithdrawalIntent]=useState(0);
-  async function requestSaved(){setRequestRevision(v=>v+1);await onChange();}
-  return h('div',null,header({title:row.nombre||'Expediente de ahorro',sub:'Folio '+row.folio,onBack}),h('div',{className:'svp-body',inert:disabled?'':undefined,'aria-busy':disabled},h('div',{className:'svp-actions',style:{marginTop:0,marginBottom:13}},h(Btn,{onClick:onPrev,disabled:!onPrev},'\u2039 Anterior'),h(Btn,{onClick:onNext,disabled:!onNext},'Siguiente \u203a')),h(window.SavingsIndividualWithdrawal,{key:row.folio,folio:row.folio,onRequest:()=>setWithdrawalIntent(v=>v+1)}),h('div',{className:'svp-detail-grid'},h(RecordSection,{title:'Saldo, descuentos y conciliación',initialOpen:initialSection!=='requests'},h(window.SavingsCertificationAdmin,{key:row.id,participantId:row.id,version:requestRevision,app,onSaved:onChange})),h(RecordSection,{title:'Solicitudes, retiros y cambios',initialOpen:initialSection==='requests',openRequest:withdrawalIntent},h(window.SavingsRequestsAdmin,{key:row.folio,folio:row.folio,requestId,expanded:true,onSaved:requestSaved,withdrawalIntent})))));
- }
- function useWorkspaceQuery(loader,deps,enabled=true){
-  const [state,setState]=useState({loading:enabled}),[attempt,retry]=useState(0);
-  const context=window.SavingsPanelRepository.contextKey(),epoch=window.SavingsPanelRepository.revision();
-  useEffect(()=>{if(!enabled)return;const controller=new AbortController();let active=true;setState({loading:true});
-   Promise.resolve().then(()=>loader(controller.signal)).then(data=>{if(active&&context===window.SavingsPanelRepository.contextKey()&&epoch===window.SavingsPanelRepository.revision())setState({data,loading:false,context,epoch});}).catch(error=>{if(active&&error.name!=='AbortError')setState({error:explain(error),loading:false,context,epoch});});
-   return()=>{active=false;controller.abort();};
-  },[...deps,attempt,enabled,context,epoch]);
-  return [state.context!=null&&(state.context!==context||state.epoch!==epoch)?{loading:true}:state,()=>retry(value=>value+1)];
- }
- function QueryStatus({state,retry}){
-  return state.loading?h(Loading):state.error?h('div',{role:'alert',className:'svp-error'},state.error,h(Btn,{onClick:retry},'Reintentar consulta')):null;
- }
- function InlinePerson({row,cache,revision,onSaved,onDirty,dirty,app,requestId,initialSection}){
-  const id=row.participant_id||row.id;
-  const currentContext=window.SavingsPanelRepository.contextKey(),currentEpoch=window.SavingsPanelRepository.revision();
-  const [state,reload]=useWorkspaceQuery(async signal=>{
-   const context=window.SavingsPanelRepository.contextKey(),epoch=window.SavingsPanelRepository.revision(),key=context+':'+id,stored=cache.current.get(key);
-   if(stored&&stored.revision===revision&&stored.epoch===epoch&&Date.now()-stored.at<30000)return stored.data;
-   const data=await window.SavingsPanelRepository.person({participantId:id,historyOffset:0,historyLimit:10,signal});
-   if(!signal.aborted&&context===window.SavingsPanelRepository.contextKey()&&epoch===window.SavingsPanelRepository.revision()){cache.current.set(key,{data,revision,epoch,at:Date.now()});while(cache.current.size>8)cache.current.delete(cache.current.keys().next().value);}
-   return data;
-  },[id,revision]);
-  const [extra,setExtra]=useState([]),[moreBusy,setMoreBusy]=useState(false),[moreError,setMoreError]=useState(''),[withdrawalIntent,setWithdrawalIntent]=useState(0);
-  const sequence=useRef(0),moreAbort=useRef(null);
-  useEffect(()=>{sequence.current++;moreAbort.current?.abort();setExtra([]);setMoreError('');setMoreBusy(false);return()=>{sequence.current++;moreAbort.current?.abort();};},[id,revision,currentContext,currentEpoch]);
-  async function saved(){onDirty(false);cache.current.clear();setExtra([]);if(onSaved)await onSaved();}
-  async function more(){if(moreBusy)return;const seq=sequence.current,controller=new AbortController();moreAbort.current=controller;setMoreBusy(true);setMoreError('');
-   try{const data=await window.SavingsPanelRepository.person({participantId:id,historyOffset:(state.data.history||[]).length+extra.length,historyLimit:20,signal:controller.signal});if(seq===sequence.current&&currentContext===window.SavingsPanelRepository.contextKey()&&currentEpoch===window.SavingsPanelRepository.revision())setExtra(previous=>previous.concat(data.history||[]));}
-   catch(error){if(seq===sequence.current&&error.name!=='AbortError')setMoreError(explain(error));}
-   finally{if(seq===sequence.current)setMoreBusy(false);}
+  function Btn({
+    children,
+    onClick,
+    disabled,
+    tone = '',
+    ...rest
+  }) {
+    return h('button', {
+      type: 'button',
+      className: 'svp-btn ' + tone,
+      onClick,
+      disabled,
+      ...rest
+    }, children);
   }
-  const d=state.data,p=d?.person||row,b=d?.balance,history=[...(d?.history||[]),...extra],pending=d?.pending;
-  const financialProps=d?.record_id?{recordId:d.record_id}:{participantId:id};
-  const historyStates={RECEIVED:'Aplicada',CORRECTED:'Corregida',NO_DEDUCTION:'Sin aportación registrada',PENDING:'Pendiente de aplicación o revisión'};
-  return h('section',{id:'savings-person-'+id,'aria-label':'Detalle de '+row.nombre,className:'svp-inline-detail',onChangeCapture:()=>onDirty(true)},
-   h(QueryStatus,{state,retry:()=>{cache.current.clear();reload();}}),
-   d&&!state.loading&&!state.error&&h(React.Fragment,null,
-    h('div',{className:'svp-hero'},h('small',null,'SALDO ACTUAL'),h('strong',null,M(b?.total)),h('div',{className:'svp-mini'},h('div',null,'Capital',h('b',null,M(b?.capital))),h('div',null,'Rendimiento incluido',h('b',null,M(b?.yield_amount))))),
-    !b&&h('p',{role:'status',className:'svp-note warn'},'Esta cuenta aún no tiene un saldo confirmado. Consulta su ingreso o la incidencia antes de registrar movimientos.'),
-    b&&Number(b.held)>0&&h('p',{className:'svp-note'},'Disponible: '+M(b.available)+' · Retenido: '+M(b.held)),
-    h('div',{className:'svp-detail-grid'},
-     h(Tarjeta,{title:'Su ahorro',icon:'calendar'},
-      h(Fila,{label:p.proceso==='JUB'?'Aportación mensual':['1','3','PROCESS_1','PROCESS_3'].includes(p.proceso)?'Aportación quincenal':'Aportación · frecuencia por confirmar',valor:M(p.aporte)}),
-      h(Fila,{label:'Última aportación aplicada',valor:d.last_received?fmt(d.last_received):'Sin aportaciones aplicadas'}),
-      h(Fila,{label:'Próxima aportación programada',valor:d.next_expected?fmt(d.next_expected.date)+' · '+(d.next_expected.scheduled_status==='PLAN_CHANGED'||d.next_expected.amount==null?'Revisar programación':M(d.next_expected.amount)):'Sin próxima aportación programada'}),
-      h('p',{className:'svp-note'},'Información al '+fmt(d.today)+'. Las aportaciones programadas se aplican automáticamente al llegar su fecha. Las futuras aún no aumentan el saldo.')),
-     pending?.count>0&&h(Tarjeta,{title:'Pendiente de aplicación o revisión',icon:'info'},
-      h('p',{className:'svp-note warn'},pending.count+' fecha(s) vencida(s) aún sin aportación aplicada. Actualiza y revisa las excepciones si continúa el pendiente. Esto no demuestra que faltó el descuento.'),
-      h(Fila,{label:'Primera fecha pendiente',valor:fmt(pending.first_date)}),
-      h(Fila,{label:'Importe previsto pendiente',valor:M(pending.expected_amount)})),
-     pending?.conflict_count>0&&h(Tarjeta,{title:'Requiere revisión',icon:'info'},h('p',{role:'alert',className:'svp-note warn'},pending.conflict_count+' registro(s) con diferencia entre el recibo y el movimiento financiero. Consulta la conciliación antes de actuar.')),
-     h('div',{className:'svp-wide'},h(Tarjeta,{title:'Historial de aportaciones',icon:'receipt'},
-      history.length?history.map((movement,index)=>h('article',{className:'svp-audit',key:movement.id||movement.date+':'+index},
-       h('div',{className:'svp-totals'},h('b',null,fmt(movement.date)),h('b',null,movement.status==='PENDING'?'Previsto: '+M(movement.expected):M(movement.amount))),
-       h('span',{className:movement.status==='PENDING'||movement.data_conflict?'svp-history-state is-pending':'svp-history-state'},movement.data_conflict?'Excepción: recibo y movimiento no coinciden':historyStates[movement.status]||'Por revisar'),
-       movement.entry_source==='SYSTEM_SCHEDULE'&&h('p',{className:'svp-note'},movement.actor_label||'Aplicación automática'),
-       movement.entry_source==='MANUAL'&&h('p',{className:'svp-note'},movement.actor_label||'Encargado autorizado'),
-       movement.includes_yield&&h('p',{className:'svp-note'},'Aportación y rendimiento incluidos en este importe.'),
-       movement.status==='CORRECTED'&&h('p',{className:'svp-note'},'Se conserva el registro anterior en la auditoría.'))):h(Empty,{title:'Sin aportaciones registradas',text:'Las aportaciones programadas aparecerán al aplicarse en su fecha. Las futuras aún no forman parte del saldo.'}),
-      history.length<d.history_total&&h(Btn,{tone:'full',disabled:moreBusy,onClick:more},moreBusy?'Consultando…':'Ver más aportaciones'),
-      moreError&&h('p',{role:'alert',className:'svp-error'},moreError))),
-     h(RecordSection,{title:'Cambios y retiros',initialOpen:initialSection==='requests',openRequest:withdrawalIntent,unmountOnClose:true,beforeClose:()=>{if(dirty&&!window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla?'))return false;onDirty(false);return true;}},
-      h(window.SavingsRequestsAdmin,{key:p.folio,folio:p.folio,requestId,expanded:true,onSaved:saved,withdrawalIntent}),
-      h(RecordSection,{title:'Habilitación de retiro individual'},h(window.SavingsIndividualWithdrawal,{folio:p.folio,onRequest:()=>setWithdrawalIntent(value=>value+1)}))),
-     h(RecordSection,{title:'Aportaciones, correcciones y proyección'},
-      h(window.SavingsCertificationAdmin,{...financialProps,version:revision,app,onSaved:saved})),
-     d.record_id&&h(RecordSection,{title:'Auditoría y antecedentes'},h(LegacyPersonAudit,{recordId:d.record_id,onSaved:saved,app})))));
- }
- function LegacyPersonAudit({recordId,onSaved,app}){
-  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.detail(recordId),[recordId]),[sheet,setSheet]=useState(null),[request,setRequest]=useState(null);
-  const [dates,setDates]=useState([]),[dateBusy,setDateBusy]=useState(false),[dateError,setDateError]=useState('');
-  const dateSequence=useRef(0);
-  useEffect(()=>()=>{dateSequence.current++;},[recordId]);
-  const d=state.data,r=d?.record;
-  async function saved(){setSheet(null);setDates([]);reload();if(onSaved)await onSaved();}
-  async function moreDates(){if(dateBusy)return;const sequence=++dateSequence.current;setDateBusy(true);setDateError('');try{const page=await window.SavingsPanelRepository.detail(recordId,(d.dates||[]).length+dates.length,24);if(sequence===dateSequence.current)setDates(previous=>previous.concat(page.dates||[]));}catch(error){if(sequence===dateSequence.current)setDateError(explain(error));}finally{if(sequence===dateSequence.current)setDateBusy(false);}}
-  return h('div',null,h(QueryStatus,{state,retry:reload}),d&&!state.loading&&!state.error&&h(React.Fragment,null,
-   h('p',{className:'svp-note'},'Antecedentes conservados para auditoría. Revisar estos datos no registra dinero recibido ni cambia por sí solo el saldo actual.'),
-   h(Fila,{label:'Saldo de origen',valor:M(d.person?.source_saldo??d.person?.saldo)}),
-   h(Fila,{label:'Revisión histórica',valor:r.status==='RESOLVED'?'Revisada':r.status==='IN_REVIEW'?'En revisión':'Por revisar'}),
-   h(RecordSection,{title:'Corregir un antecedente por fecha'},h('p',{className:'svp-note'},'Una corrección de antecedentes queda en revisión. No confirma un recibo ni modifica por sí sola el saldo actual.'),[...(d.dates||[]),...dates].map(period=>h(Btn,{key:period.key,tone:'outline full',disabled:!d.can_write||d.person?.identity_pending,onClick:()=>setSheet({mode:'date',period})},fmt(period.fecha)+' · '+M(period.monto))),dates.length+(d.dates||[]).length<d.date_count&&h(Btn,{disabled:dateBusy,onClick:moreDates},dateBusy?'Consultando…':'Ver más fechas anteriores'),dateError&&h('p',{role:'alert',className:'svp-error'},dateError)),
-   h(RecordSection,{title:'Retiros anteriores'},h(window.SavingsWithdrawalList,{recordId,data:d.withdrawals,onRefresh:reload,onOpen:setRequest})),
-   h(RecordSection,{title:'Cambios registrados'},(r.history||[]).length?r.history.map(event=>h('article',{key:event.id,className:'svp-audit'},h('b',null,event.actor_name||'Cambio registrado'),h('p',null,new Date(event.at).toLocaleString('es-MX')),event.observation&&h('p',null,event.observation),h('details',null,h('summary',null,'Ver campos modificados'),h('p',null,'Estado: '+({PENDING:'Por revisar',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[event.before?.status]||'Sin estado')+' → '+({PENDING:'Por revisar',IN_REVIEW:'En revisión',RESOLVED:'Revisado'}[event.after?.status]||'Sin estado')),[...new Set([...Object.keys(event.before?.proposed_data||{}),...Object.keys(event.after?.proposed_data||{})])].filter(key=>JSON.stringify(event.after?.proposed_data?.[key])!==JSON.stringify(event.before?.proposed_data?.[key])).map(key=>h('p',{key},((r.field_defs||[]).find(field=>field.key===key)?.label||key)+': '+String(Object.prototype.hasOwnProperty.call(event.before?.proposed_data||{},key)?event.before.proposed_data[key]:r.source_data[key])+' → '+String(Object.prototype.hasOwnProperty.call(event.after?.proposed_data||{},key)?event.after.proposed_data[key]:r.source_data[key])))))):h('p',{className:'svp-note'},'Sin correcciones históricas.')),
-   h(RecordSection,{title:'Rendimientos e importes históricos'},(r.field_defs||[]).filter(field=>['DP','DQ','DR','DS','DT','DU','DV','DW'].includes(field.key)).map(field=>h(Fila,{key:field.key,label:field.label,valor:M(r.source_data[field.key])})),h('p',{className:'svp-note'},'Son antecedentes, no nuevos abonos de rendimiento.')),
-   d.can_write&&h('div',{className:'svp-actions'},h(Btn,{onClick:()=>setSheet({mode:'person'})},'Corregir antecedente'),h(Btn,{onClick:()=>setSheet({mode:'review'})},r.status==='RESOLVED'?'Reabrir revisión histórica':'Marcar antecedente revisado')),
-   sheet&&h(EditSheet,{data:d,...sheet,onClose:()=>setSheet(null),onSaved:saved}),request&&h(RequestSheet,{id:request,canWrite:d.can_write,onClose:()=>setRequest(null),onSaved:saved})));
- }
- function LegacyArchive({app,onSaved}){
-  const [tab,setTab]=useState('solicitudes'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[request,setRequest]=useState(null);
-  const [state,reload]=useQuery(()=>window.SavingsPanelRepository.list({tab,search:query,filter,offset}),[tab,query,filter,offset]);
-  async function saved(){reload();if(onSaved)await onSaved();}
-  const d=state.data;
-  return h('div',null,h('p',{className:'svp-note'},'Consulta histórica de solicitudes y revisiones. Su estado describe la revisión del antecedente, no una tarea financiera actual.'),
-   h('label',{className:'svp-field'},'Antecedentes',h('select',{value:tab,onChange:e=>{setTab(e.target.value);setOffset(0);}},h('option',{value:'solicitudes'},'Solicitudes anteriores'),h('option',{value:'revision'},'Revisiones anteriores'))),
-   h('form',{className:'svp-search',onSubmit:e=>{e.preventDefault();setQuery(search);setOffset(0);}},h('input',{value:search,onChange:e=>setSearch(e.target.value),'aria-label':'Buscar antecedentes por Folio o nombre',placeholder:'Nombre o Folio'}),h(Btn,{onClick:()=>{setQuery(search);setOffset(0);}},'Buscar')),
-   h('div',{className:'svp-tabs','aria-label':'Estado de revisión histórica'},[['todos','Todos'],['pendientes','Por revisar'],['resueltas','Revisados']].map(([value,label])=>h('button',{key:value,'aria-pressed':filter===value,onClick:()=>{setFilter(value);setOffset(0);}},label))),
-   h(QueryStatus,{state,retry:reload}),d&&!state.loading&&!state.error&&h(React.Fragment,null,h('p',{className:'svp-note'},d.total+' antecedentes'),!d.rows.length?h(Empty,{title:'Sin antecedentes para esta consulta'}):d.rows.map(row=>tab==='solicitudes'?h(RequestCard,{key:row.id,r:row,onOpen:()=>setRequest(row.id)}):h(RecordSection,{key:row.id,title:(row.nombre||'Folio '+row.folio)+' · '+row.folio},h(LegacyPersonAudit,{recordId:row.id,app,onSaved:saved}))),
-    h('div',{className:'svp-actions'},offset>0&&h(Btn,{onClick:()=>setOffset(value=>Math.max(0,value-20))},'Anteriores'),offset+20<d.total&&h(Btn,{onClick:()=>setOffset(value=>value+20)},'Ver más antecedentes'))),
-   request&&h(RequestSheet,{id:request,canWrite:d?.can_write,onClose:()=>setRequest(null),onSaved:saved}));
- }
- function SavingsPanelAdmin({app,onBack,header,initialAffiliateId}){
-  const [tab,setTab]=useState(initialAffiliateId?'personas':'resumen'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[expanded,setExpanded]=useState(null);
-  const [attention,setAttention]=useState('incidencias'),[program,setProgram]=useState('conciliacion'),[period,setPeriod]=useState(null),[revision,setRevision]=useState(0),[navigationError,setNavigationError]=useState(''),[requestNavigation,setRequestNavigation]=useState(null),[requestOnly,setRequestOnly]=useState(null);
-  const [focusRequest,setFocusRequest]=useState(null),[dirty,setDirty]=useState(false),[showAttentionPeople,setShowAttentionPeople]=useState(false);
-  const cache=useRef(new Map()),root=useRef(null),requestSequence=useRef(0);
-  const [summary,reloadSummary]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.summary({signal}),[revision]);
-  const listing=tab==='personas'||tab==='atencion'&&attention==='incidencias'&&showAttentionPeople,listFilter=tab==='atencion'?'incidencias':filter;
-  const [people,reloadPeople]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.people({search:query,filter:listFilter,offset,limit:20,signal}),[query,listFilter,offset,revision],listing);
-  useEffect(()=>{if(search===query)return;const timer=setTimeout(()=>{setQuery(search);setOffset(0);},250);return()=>clearTimeout(timer);},[search,query]);
-  useEffect(()=>()=>{requestSequence.current++;cache.current.clear();},[]);
-  function mayLeave(){return !dirty||window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla y continuar?');}
-  function changeTab(value){if(!mayLeave())return;setDirty(false);setExpanded(null);setFocusRequest(null);setTab(value);setOffset(0);setNavigationError('');}
-  function togglePerson(row){if(!mayLeave())return;setDirty(false);setFocusRequest(null);setExpanded(previous=>previous===(row.participant_id||row.id)?null:row.participant_id||row.id);}
-  function changeSearch(value){if(dirty&&!mayLeave())return;setDirty(false);setExpanded(null);setSearch(value);}
-  function refresh(){cache.current.clear();setDirty(false);setRevision(value=>value+1);}
-  function reconcile(date){if(!mayLeave())return;setDirty(false);setExpanded(null);setPeriod(date||summary.data?.today||null);setProgram('conciliacion');setTab('programa');}
-  async function revealFolio(folio,requestId){
-   const seq=++requestSequence.current;setNavigationError('');
-   try{const result=await window.SavingsPanelRepository.people({search:folio,filter:'todos',offset:0,limit:20});if(seq!==requestSequence.current)return;
-    const matches=(result.rows||[]).filter(row=>row.folio===folio);
-    if(matches.length!==1){setRequestOnly(requestId?{folio,requestId}:null);setNavigationError(matches.length?'Hay varias coincidencias. Revisa la identidad antes de continuar.':'No hay una cuenta de ahorro disponible para este Folio.');return;}
-    setRequestOnly(null);setTab('personas');setSearch(folio);setQuery(folio);setFilter('todos');setOffset(0);setExpanded(matches[0].participant_id||matches[0].id);setFocusRequest(requestId||null);
-   }catch(error){if(seq===requestSequence.current)setNavigationError(explain(error));}
+  function Empty({
+    title = 'Sin resultados',
+    text
+  }) {
+    return h('div', {
+      className: 'svp-empty'
+    }, h(window.Icon, {
+      name: 'search',
+      size: 28
+    }), h('b', null, title), text);
   }
-  useEffect(()=>{if(!initialAffiliateId)return;let active=true;window.SavingsPanelRepository.affiliate(initialAffiliateId).then(data=>{if(active&&data.folio)revealFolio(data.folio);}).catch(error=>{if(active)setNavigationError(explain(error));});return()=>{active=false;requestSequence.current++;};},[initialAffiliateId]);
-  const heading=header||(({title,sub,onBack:back})=>h('header',{className:'svp-header'},h(Btn,{onClick:back,'aria-label':'Volver al administrador'},'‹'),h('div',null,h('h1',null,title),h('p',null,sub))));
-  const d=summary.data,k=d?.kpis,rows=people.data?.rows||[],total=people.data?.total;
-  const extraCss='.svp-inline-detail{padding:16px 12px 20px;margin:0 3px 12px;border:1px solid var(--hairline-strong);border-top:0;border-radius:0 0 16px 16px;background:var(--surface-2)}.svp-person[aria-expanded=true]{border-radius:15px 15px 0 0!important;box-shadow:inset 0 0 0 1px var(--hairline-strong)!important}.svp-history-state{display:inline-block;padding:5px 9px;border-radius:999px;background:#E4F5EC;color:#0E6B41;font-size:12px;font-weight:800}.svp-history-state.is-pending{background:#FDF2DC;color:#805600}.svp-wide{grid-column:1/-1}.svp-inline-detail .svp-hero{box-shadow:none}.svp-compact-summary{margin-bottom:18px}@container savings-panel (max-width:600px){.svp-inline-detail{padding:12px 8px}.svp-tabs[role=tablist]{flex-wrap:wrap}.svp .svp-tabs[role=tablist] button{flex:1 1 40%}}';
-  return h('div',{key:window.SavingsPanelRepository.contextKey(),className:'svp',ref:root},h('style',null,css+extraCss),
-   heading({title:'Ahorro',sub:d?'Información al '+fmt(d.today):'Administración del programa',onBack:()=>{if(mayLeave())onBack();}}),
-   h('div',{className:'svp-body'},
-    h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([value,label])=>h('button',{key:value,role:'tab','aria-selected':tab===value,onClick:()=>changeTab(value)},label))),
-    navigationError&&h('p',{role:'alert',className:'svp-error'},navigationError),
-    tab==='rh'&&h(window.SavingsRhReport,{today:d?.today}),
-    tab==='resumen'&&h(React.Fragment,null,h(Titulo,{sub:'Saldo, próximas aportaciones y pendientes que necesitan seguimiento.'},'Panorama del ahorro'),h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
-     h(KPIs,{k,onGo:(destination,date)=>reconcile(date)}),
-     h(Tarjeta,{title:'Atención del programa',icon:'info'},h(Fila,{label:'Aportaciones pendientes de aplicación o revisión',valor:d.attention?.pending_receipts??'Por confirmar'}),h(Fila,{label:'Diferencias entre recibos y movimientos',valor:d.attention?.receipt_conflicts??'Por confirmar'}),h(Fila,{label:'Solicitudes que requieren atención',valor:d.attention?.request_count??'Por confirmar'}),
-      h('p',{className:'svp-note'},'Las aportaciones se aplican automáticamente al llegar su fecha. Aquí aparecen las fechas vencidas aún sin aplicar; actualiza y revisa las excepciones si persisten. La conciliación por fecha permite revisar o corregir casos que lo necesiten.'),
-      h('div',{className:'svp-actions'},h(Btn,{onClick:()=>{setAttention('incidencias');changeTab('atencion');}},'Ver pendientes'),h(Btn,{onClick:()=>{setAttention('cambios');changeTab('atencion');}},'Ver cambios y retiros'))),
-     h('p',{className:'svp-note'},'Ahorradores: cuentas del programa. Planes activos: quienes tienen descuentos programados. Padrón: todos los afiliados. Los importes futuros no se abonan anticipadamente.'))),
-    tab==='atencion'&&h(React.Fragment,null,h(Titulo,{sub:'Actúa sobre una operación o una fecha pendiente; conserva el resto del programa en su curso normal.'},'Qué necesita atención'),
-     h('div',{className:'svp-context-nav'},[['incidencias','Pendientes y excepciones'],['cambios','Cambios y retiros']].map(([value,label])=>h(Btn,{key:value,tone:attention===value?'primary':'',onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setAttention(value);setOffset(0);}},label))),
-     attention==='incidencias'&&h(React.Fragment,null,h(QueryStatus,{state:summary,retry:reloadSummary}),d&&!summary.loading&&!summary.error&&h(React.Fragment,null,
-      (d.attention?.periods||[]).map(item=>h(Tarjeta,{key:item.date,title:'Periodo del '+fmt(item.date),icon:'calendar'},h(Fila,{label:'Aportaciones pendientes de aplicación o revisión',valor:item.count}),h(Fila,{label:'Importe previsto de las pendientes',valor:M(item.expected_amount)}),h(Btn,{tone:'primary',onClick:()=>reconcile(item.date)},'Revisar '+fmt(item.date)))),
-      !d.attention?.periods?.length&&h('p',{className:'svp-note'},'No hay periodos con aportaciones pendientes de aplicación o revisión.'),
-      d.attention?.receipt_conflicts>0&&h('p',{role:'alert',className:'svp-note warn'},d.attention.receipt_conflicts+' diferencia(s) entre recibos y movimientos requieren revisión.'),
-      h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setShowAttentionPeople(value=>!value);}},showAttentionPeople?'Ocultar personas':'Consultar incidencias por persona'))),
-     attention==='cambios'&&h(window.SavingsRuntimeAdmin,{tab:'pendientes',app,onSaved:refresh,onOpenPerson:row=>revealFolio(row.folio,row.id),initialNavigation:requestNavigation,onNavigationChange:setRequestNavigation}),
-     requestOnly&&h(RecordSection,{title:'Solicitud del Folio '+requestOnly.folio,initialOpen:true},h(window.SavingsRequestsAdmin,{folio:requestOnly.folio,requestId:requestOnly.requestId,expanded:true,onSaved:refresh}))),
-    listing&&h(React.Fragment,null,tab==='personas'&&h(Titulo,{sub:'Busca y consulta a la persona sin salir de esta lista.'},'Encuentra a un ahorrador'),
-     h('label',{className:'svp-search'},h(window.Icon,{name:'search',size:18}),h('input',{'aria-label':'Buscar por nombre o folio',placeholder:'Buscar por nombre o folio',value:search,onChange:event=>changeSearch(event.target.value)})),
-     tab==='personas'&&h('div',{className:'svp-tabs','aria-label':'Filtros'},[['todos','Todos'],['ahorrando','Ahorrando'],['pausado','Sin aportación programada'],['baja','Dejó de ahorrar']].map(([value,label])=>h('button',{key:value,'aria-pressed':filter===value,onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setFilter(value);setOffset(0);}},label))),
-     tab==='atencion'&&h('p',{className:'svp-note'},'No se incluyen ceros de antecedentes históricos. Una fecha pendiente requiere revisar por qué no se aplicó; no equivale a una falta de pago.'),
-     h(QueryStatus,{state:people,retry:reloadPeople}),people.data&&!people.loading&&!people.error&&h(React.Fragment,null,
-      h('div',{className:'svp-totals'},h('span',null,total+' persona(s) en esta consulta'),rows.length>0&&h('span',null,(offset+1)+'–'+(offset+rows.length))),
-      !rows.length?h(Empty,{title:query?'Sin coincidencias':tab==='atencion'?'Sin incidencias para esta consulta':'Sin ahorradores para este filtro'}):h('div',{className:'svp-stack'},rows.map(row=>{const id=row.participant_id||row.id,isOpen=expanded===id;return h('div',{key:id},h(Row,{a:row,onOpen:()=>togglePerson(row),expanded:isOpen,controls:'savings-person-'+id}),row.identity_conflict&&h('p',{role:'alert',className:'svp-note warn'},'Identidad por resolver. El Folio no tiene una coincidencia única válida; sus movimientos no se asignan a otra persona.'),isOpen&&h(InlinePerson,{key:id,row,cache,revision,onSaved:refresh,onDirty:setDirty,dirty,app,requestId:focusRequest,initialSection:focusRequest?'requests':undefined}));})),
-      h('div',{className:'svp-actions'},offset>0&&h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setOffset(value=>Math.max(0,value-20));}},'Anteriores'),offset+rows.length<total&&h(Btn,{onClick:()=>{if(!mayLeave())return;setDirty(false);setExpanded(null);setOffset(value=>value+20);}},'Ver más personas')))),
-    tab==='programa'&&h(React.Fragment,null,h(Titulo,{sub:'Reglas, operaciones por periodo y consulta de antecedentes.'},'Programa'),
-     h('label',{className:'svp-field'},'Operación del programa',h('select',{value:program,onChange:event=>{if(mayLeave()){setDirty(false);setProgram(event.target.value);}}},programViews.map(([value,label])=>h('option',{key:value,value},label)))),
-     program==='conciliacion'?h(window.SavingsReconciliationAdmin,{key:period||d?.today||'periodo',asOf:period||d?.today,onSaved:refresh}):h('div',{className:'svp-settings'},h(window.SavingsRuntimeAdmin,{key:program,tab:program,app,onSaved:refresh})),
-     h('div',{className:'svp-detail-grid'},h(RecordSection,{title:'Auditoría y solicitudes anteriores'},h(LegacyArchive,{app,onSaved:refresh})),
-      h(RecordSection,{title:'Accesos al programa'},h(window.SavingsAccessAdmin)),
-      h(RecordSection,{title:'Certificación y publicación'},h('p',{className:'svp-note'},'Herramientas de regularización. No son confirmaciones rutinarias de aportaciones.'),h(window.SavingsRuntimeAdmin,{tab:'publicacion',app,onSaved:refresh}),h(window.SavingsBulkAdmin,{app,asOf:d?.today,onSaved:refresh})),
-      h(RecordSection,{title:'Consultar evidencia original'},h(window.SavingsReviewAdmin,{readOnly:true}))))));
- }
- window.SavingsPanelAdmin=SavingsPanelAdmin;
+  function Loading() {
+    return h('div', {
+      role: 'status',
+      'aria-label': 'Cargando ahorro',
+      className: 'svp-stack'
+    }, [0, 1, 2, 3].map(i => h('div', {
+      key: i,
+      className: 'svp-skeleton ' + (i > 1 ? 'svp-skeleton-line' : '')
+    })));
+  }
+  function explain(e) {
+    const s = String(e && e.message || '');
+    if (/MULTIPLE_BASELINES/.test(s)) return 'Hay varias copias de Ahorro cargadas. Hay que revisar cuál corresponde al corte antes de mostrar un total.';
+    if (/AMOUNT_INVALID|MONEY_INVALID/.test(s)) return 'Captura un importe válido, sin números negativos y con un máximo de dos decimales.';
+    if (/42501|DENIED/.test(s)) return 'Tu cuenta no tiene permiso para realizar esta acción.';
+    if (/CHANGED/.test(s)) return 'Otra persona actualizó este expediente. Cierra y vuelve a abrirlo para revisar los cambios.';
+    if (/IDENTITY|DUPLICATE/.test(s)) return 'Primero hay que revisar el Folio de este expediente; no se asignarán datos a otra persona.';
+    if (/NO_CHANGES/.test(s)) return 'No hay cambios por guardar.';
+    return 'No se pudo confirmar la operación. Conservamos tu captura; vuelve a intentar.';
+  }
+  function useQuery(load, deps) {
+    const [s, set] = useState({}),
+      [retry, refresh] = useState(0);
+    useEffect(() => {
+      let active = true;
+      set(previous => ({
+        ...previous,
+        loading: true,
+        error: null
+      }));
+      load().then(data => {
+        if (active) set({
+          data
+        });
+      }).catch(error => {
+        if (active) set({
+          error: explain(error)
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [...deps, retry]);
+    return [s, () => refresh(v => v + 1)];
+  }
+  function Modal({
+    title,
+    children,
+    onClose,
+    busy = false,
+    dirty = false
+  }) {
+    const ref = useRef(),
+      closeRef = useRef();
+    closeRef.current = () => {
+      if (busy) return;
+      if (dirty && !window.confirm('Hay cambios sin guardar. ¿Quieres salir sin guardarlos?')) return;
+      onClose();
+    };
+    useEffect(() => {
+      const el = ref.current,
+        prior = document.activeElement;
+      el.showModal();
+      return () => {
+        el.close();
+        if (prior && prior.isConnected) prior.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    return h('dialog', {
+      ref,
+      className: 'svp svp-modal',
+      onCancel: e => {
+        e.preventDefault();
+        closeRef.current();
+      }
+    }, h('header', null, h('h2', null, title), h(Btn, {
+      onClick: () => closeRef.current(),
+      disabled: busy,
+      'aria-label': 'Cerrar'
+    }, '×')), h('section', null, children));
+  }
+  function EditSheet({
+    data,
+    mode,
+    period,
+    onClose,
+    onSaved
+  }) {
+    const r = data.record,
+      a = data.person,
+      base = {
+        ...r.source_data,
+        ...r.proposed_data
+      };
+    const initial = mode === 'date' ? {
+      [period.key]: period.monto
+    } : mode === 'person' ? {
+      R: base.R,
+      W: base.W,
+      F: base.F,
+      A: base.A
+    } : {};
+    const [draft, setDraft] = useState(initial),
+      [observation, setObservation] = useState(''),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState('');
+    const lock = useRef(false),
+      command = useRef();
+    const changes = {};
+    Object.keys(draft).forEach(k => {
+      if (JSON.stringify(draft[k]) !== JSON.stringify(initial[k])) changes[k] = draft[k];
+    });
+    const nextStatus = mode === 'review' ? r.status === 'RESOLVED' ? 'IN_REVIEW' : 'RESOLVED' : r.status === 'RESOLVED' ? 'IN_REVIEW' : r.status;
+    const count = Object.keys(changes).length,
+      dirty = count > 0 || !!observation;
+    const reset = mode === 'date' && period.corregido && JSON.stringify(draft[period.key]) === JSON.stringify(period.original);
+    function update(k, v) {
+      setDraft(x => ({
+        ...x,
+        [k]: v
+      }));
+      command.current = null;
+    }
+    async function save() {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        if (!command.current) command.current = {
+          id: r.id,
+          version: r.version,
+          changes,
+          status: nextStatus,
+          observation,
+          field: reset ? period.key : null,
+          key: crypto.randomUUID()
+        };
+        await (command.current.field ? window.SavingsPanelRepository.reset(command.current) : window.SavingsPanelRepository.save(command.current));
+        await onSaved();
+        onClose();
+      } catch (e) {
+        setError(explain(e));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    const title = mode === 'date' ? 'Corregir descuento' : mode === 'review' ? r.status === 'RESOLVED' ? 'Reabrir revisión' : 'Marcar revisado' : 'Corregir datos';
+    const field = (key, label, type = 'text') => h('label', {
+      className: 'svp-field',
+      key
+    }, label, type === 'select' ? h('select', {
+      'aria-label': label,
+      value: draft[key] || '',
+      disabled: busy,
+      onChange: e => update(key, e.target.value)
+    }, [...new Set([draft[key], 'Ahorrando', 'Dejó de ahorrar'].filter(Boolean))].map(v => h('option', {
+      key: v,
+      value: v
+    }, v))) : h('input', {
+      type,
+      value: draft[key] == null ? '' : draft[key],
+      disabled: busy || key === 'A' && !data.can_identity || key !== 'A' && a.identity_pending,
+      min: type === 'number' ? 0 : undefined,
+      step: type === 'number' ? '.01' : undefined,
+      onChange: e => update(key, type === 'number' ? e.target.value === '' ? null : Number(e.target.value) : type === 'date' && e.target.value === '' ? null : e.target.value)
+    }));
+    return h(Modal, {
+      title,
+      onClose,
+      busy,
+      dirty
+    }, h('b', null, a.nombre), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO')), mode === 'person' && h(React.Fragment, null, field('R', a.proceso === 'JUB' ? 'Aportación mensual' : ['1', '3'].includes(a.proceso) ? 'Aportación quincenal' : 'Aportación (frecuencia por confirmar)', 'number'), field('W', 'Estado del ahorro', 'select'), field('F', 'Fecha del primer descuento', 'date'), field('A', 'Folio'), h('p', {
+      className: 'svp-note'
+    }, 'Un cambio de Folio queda pendiente de revisión y conserva la relación original de sus movimientos. Esta revisión todavía no cambia el calendario de descuentos futuros.')), mode === 'date' && h(React.Fragment, null, h('p', null, fmt(period.fecha)), field(period.key, 'Importe realmente descontado', 'number'), period.key === 'AR' && h('p', {
+      className: 'svp-note warn'
+    }, 'Este registro incluye el rendimiento del semestre. Captura el total combinado y evita sumarlo de nuevo.'), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      disabled: busy,
+      onClick: () => update(period.key, 0)
+    }, 'Sin descuento'), period.corregido && h(Btn, {
+      disabled: busy,
+      onClick: () => update(period.key, period.original)
+    }, 'Quitar corrección')), h('p', {
+      className: 'svp-note'
+    }, 'Importe original: ' + M(typeof period.original === 'number' ? period.original : null))), mode === 'review' && h('p', {
+      className: 'svp-note'
+    }, r.status === 'RESOLVED' ? 'El expediente volverá a la lista de pendientes.' : 'Marca esta revisión después de comprobar los datos. Esto no autoriza un retiro ni publica saldos.'), h('label', {
+      className: 'svp-field'
+    }, 'Observaciones (opcional)', h('textarea', {
+      value: observation,
+      maxLength: 4000,
+      disabled: busy,
+      onChange: e => {
+        setObservation(e.target.value);
+        command.current = null;
+      }
+    })), mode !== 'review' && h('p', {
+      className: 'svp-note'
+    }, count + ' campo(s) modificado(s). Se conservarán los valores anteriores, tu nombre y la fecha.'), error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), h('p', {
+      className: 'svp-note'
+    }, 'Corrección privada para revisión. El saldo reconocido del archivo se conserva.'), h(Btn, {
+      tone: 'primary full',
+      onClick: save,
+      disabled: busy || mode !== 'review' && !count
+    }, busy ? 'Guardando…' : 'Guardar cambios'));
+  }
+  function RequestCard({
+    r,
+    onOpen
+  }) {
+    const withdrawal = r.source_sheet === 'Solicitud de retiro',
+      d = r.source_data || {},
+      p = r.proposed_data || {},
+      pending = r.status !== 'RESOLVED';
+    const value = k => typeof d[k] === 'number' ? M(d[k]) : 'Por revisar';
+    const facts = withdrawal ? [['Importe del retiro', value('G')], ['Fecha registrada', r.fecha ? fmt(r.fecha) : d.D ? 'Fecha por revisar' : 'Sin fecha registrada']] : [['Monto anterior', value('C')], ['Nuevo monto', value('D')]];
+    return h('article', {
+      className: 'svp-record'
+    }, h('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        alignItems: 'center',
+        marginBottom: 9
+      }
+    }, h('div', {
+      style: {
+        width: 32,
+        height: 32,
+        borderRadius: 11,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, h(window.Icon, {
+      name: withdrawal ? 'download' : 'swap',
+      size: 17,
+      stroke: 2.2
+    })), h('div', null, h('div', {
+      className: 'type'
+    }, withdrawal ? 'RETIRO ' + (d.E === 'Completo' ? 'TOTAL' : d.E === 'Parcial' ? 'PARCIAL' : 'POR CLASIFICAR') : 'CAMBIO DE MONTO'), h('h3', null, r.identity.name))), h('small', null, 'Folio ' + (r.source_folio || 'SIN REGISTRO')), h('dl', null, facts.map(([label, text]) => h('div', {
+      key: label
+    }, h('dt', null, label), h('dd', null, text)))), !withdrawal && h('p', {
+      className: 'svp-note'
+    }, 'Fecha registrada: ' + (r.fecha ? fmt(r.fecha) : d.B ? 'Por revisar' : 'Sin fecha')), h('p', {
+      className: 'svp-note'
+    }, withdrawal ? (d.H || 'Sin estado registrado') + ' · Continúa ahorrando: ' + (d.F || 'por revisar') : d.E === 'TRUE' ? 'Cambio registrado como realizado' : 'Aplicación por revisar'), r.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Folio pendiente de revisión.'), (!r.identity_pending ? withdrawal ? ['G'] : ['C', 'D'] : []).filter(k => Object.prototype.hasOwnProperty.call(p, k) && JSON.stringify(p[k]) !== JSON.stringify(d[k])).map(k => h('p', {
+      className: 'svp-note warn',
+      key: k
+    }, 'Corrección en revisión: ' + M(p[k]))), h(Btn, {
+      tone: 'outline full',
+      onClick: onOpen
+    }, pending ? 'Ver y revisar solicitud' : 'Ver solicitud revisada'));
+  }
+  function RequestSheet({
+    id,
+    onClose,
+    onSaved,
+    canWrite
+  }) {
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.request(id), [id]);
+    const [draft, setDraft] = useState({}),
+      [reviewStatus, setReviewStatus] = useState(null),
+      [obs, setObs] = useState(''),
+      [busy, setBusy] = useState(false),
+      [err, setErr] = useState('');
+    const command = useRef(),
+      lock = useRef(false);
+    const r = state.data,
+      changes = {};
+    if (r) Object.keys(draft).forEach(k => {
+      if (JSON.stringify(draft[k]) !== JSON.stringify({
+        ...r.source_data,
+        ...r.proposed_data
+      }[k])) changes[k] = draft[k];
+    });
+    async function save() {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setErr('');
+      try {
+        if (!command.current) command.current = {
+          id,
+          version: r.version,
+          changes,
+          status: reviewStatus || (r.status === 'RESOLVED' ? 'IN_REVIEW' : r.status),
+          observation: obs,
+          key: crypto.randomUUID()
+        };
+        await window.SavingsReviewRepository.save(command.current);
+        await onSaved();
+        onClose();
+      } catch (e) {
+        setErr(explain(e));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    return h(Modal, {
+      title: 'Revisar solicitud',
+      onClose,
+      busy,
+      dirty: Object.keys(changes).length > 0 || !!obs || !!(r && reviewStatus && reviewStatus !== r.status)
+    }, state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert'
+    }, state.error, h(Btn, {
+      onClick: reload
+    }, 'Reintentar')) : r && h(React.Fragment, null, h('b', null, r.identity.name), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + (r.source_folio || 'SIN REGISTRO') + ' · ' + r.source_sheet), h('p', {
+      className: 'svp-note warn'
+    }, 'Solicitud del archivo original. Corregirla no vuelve a pagar un retiro ni autoriza una solicitud nueva.'), r.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Folio pendiente de revisión. Se conserva la identidad original.'), (r.field_defs || []).filter(f => (r.source_sheet === 'Solicitud de retiro' ? ['D', 'E', 'F', 'G', 'H', 'I'] : ['B', 'C', 'D', 'E']).includes(f.key)).map(f => {
+      const value = Object.prototype.hasOwnProperty.call(draft, f.key) ? draft[f.key] : {
+        ...r.source_data,
+        ...r.proposed_data
+      }[f.key];
+      if (r.source_sheet === 'Solicitud Cambio ahorro' && f.key === 'E') return canWrite && !r.identity_pending ? h('label', {
+        className: 'svp-field',
+        key: f.key
+      }, f.label, h('select', {
+        'aria-label': f.label,
+        value: value || '',
+        disabled: busy,
+        onChange: e => {
+          if (r.status === 'RESOLVED') setReviewStatus('IN_REVIEW');
+          setDraft(x => ({
+            ...x,
+            E: e.target.value || null
+          }));
+          command.current = null;
+        }
+      }, !['TRUE', 'FALSE'].includes(value) && h('option', {
+        value: value || ''
+      }, 'Por confirmar'), h('option', {
+        value: 'TRUE'
+      }, 'Sí'), h('option', {
+        value: 'FALSE'
+      }, 'No'))) : h(Fila, {
+        key: f.key,
+        label: f.label,
+        valor: value === 'TRUE' ? 'Sí' : value === 'FALSE' ? 'No' : 'Por confirmar'
+      });
+      return canWrite && !r.identity_pending && f.editable !== false ? h('label', {
+        className: 'svp-field',
+        key: f.key
+      }, f.label, h('input', {
+        value: value == null ? '' : value,
+        type: f.kind === 'money' ? 'number' : f.kind === 'date' ? 'date' : 'text',
+        step: f.kind === 'money' ? '.01' : undefined,
+        disabled: busy,
+        onChange: e => {
+          if (r.status === 'RESOLVED') setReviewStatus('IN_REVIEW');
+          setDraft(x => ({
+            ...x,
+            [f.key]: f.kind === 'money' ? e.target.value === '' ? null : Number(e.target.value) : e.target.value
+          }));
+          command.current = null;
+        }
+      })) : h(Fila, {
+        key: f.key,
+        label: f.label,
+        valor: f.kind === 'money' ? M(value) : value || 'Sin dato'
+      });
+    }), canWrite && h('label', {
+      className: 'svp-field'
+    }, 'Observaciones (opcional)', h('textarea', {
+      value: obs,
+      disabled: busy,
+      maxLength: 4000,
+      onChange: e => {
+        setObs(e.target.value);
+        command.current = null;
+      }
+    })), canWrite && h('label', {
+      className: 'svp-field'
+    }, 'Resultado de la revisión', h('select', {
+      'aria-label': 'Resultado de la revisión',
+      value: reviewStatus || r.status,
+      disabled: busy || r.identity_pending,
+      onChange: e => {
+        setReviewStatus(e.target.value);
+        command.current = null;
+      }
+    }, h('option', {
+      value: 'PENDING'
+    }, 'Por revisar'), h('option', {
+      value: 'IN_REVIEW'
+    }, 'En revisión'), h('option', {
+      value: 'RESOLVED'
+    }, 'Revisada'))), err && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, err), canWrite && h(Btn, {
+      tone: 'primary full',
+      onClick: save,
+      disabled: busy || r.identity_pending || !Object.keys(changes).length && (!reviewStatus || reviewStatus === r.status) && !obs.trim()
+    }, busy ? 'Guardando…' : 'Guardar revisión')));
+  }
+  function RecordSection({
+    title,
+    children,
+    initialOpen = false,
+    openRequest = 0,
+    unmountOnClose = false,
+    beforeClose
+  }) {
+    const [opened, setOpened] = useState(initialOpen),
+      [visited, setVisited] = useState(initialOpen);
+    useEffect(() => {
+      if (openRequest) {
+        setOpened(true);
+        setVisited(true);
+      }
+    }, [openRequest]);
+    return h('details', {
+      className: 'svp-record-section',
+      open: opened,
+      onToggle: e => {
+        if (e.target !== e.currentTarget) return;
+        const next = e.currentTarget.open;
+        if (!next && opened && beforeClose && !beforeClose()) {
+          e.currentTarget.open = true;
+          return;
+        }
+        setOpened(next);
+        if (next) setVisited(true);
+      }
+    }, h('summary', null, title), (unmountOnClose ? opened : visited) && h('div', {
+      className: 'svp-section-content'
+    }, children));
+  }
+  function Detail({
+    id,
+    onBack,
+    onPrev,
+    onNext,
+    header,
+    onChange,
+    initialPeriod,
+    initialSection,
+    requestId,
+    disabled = false,
+    app
+  }) {
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.detail(id), [id]);
+    const [extra, setExtra] = useState([]),
+      [loadingMore, setLoadingMore] = useState(false),
+      [extraError, setExtraError] = useState(''),
+      [sheet, setSheet] = useState(null),
+      [withdrawal, setWithdrawal] = useState(null),
+      [note, setNote] = useState('');
+    const generation = useRef(0);
+    useEffect(() => {
+      generation.current++;
+      setExtra([]);
+      setSheet(null);
+      setWithdrawal(null);
+      setNote('');
+      setLoadingMore(false);
+      setExtraError('');
+      return () => {
+        generation.current++;
+      };
+    }, [id]);
+    async function saved() {
+      setExtra([]);
+      reload();
+      onChange();
+      setNote('Cambio guardado. El expediente se actualizó.');
+    }
+    async function more() {
+      if (loadingMore) return;
+      const seq = generation.current;
+      setLoadingMore(true);
+      setExtraError('');
+      try {
+        const d = await window.SavingsPanelRepository.detail(id, 6 + extra.length, 24);
+        if (generation.current === seq) setExtra(x => x.concat(d.dates));
+      } catch (e) {
+        if (generation.current === seq) setExtraError(explain(e));
+      } finally {
+        if (generation.current === seq) setLoadingMore(false);
+      }
+    }
+    const [requestRevision, setRequestRevision] = useState(0),
+      [withdrawalIntent, setWithdrawalIntent] = useState(0);
+    async function requestSaved() {
+      setRequestRevision(v => v + 1);
+      await saved();
+    }
+    const d = state.data,
+      a = d && d.person,
+      r = d && d.record;
+    const autoOpened = useRef(false);
+    useEffect(() => {
+      if (d && d.can_write && !d.person.identity_pending && initialPeriod && !autoOpened.current) {
+        autoOpened.current = true;
+        const key = initialPeriod.key,
+          source = d.record.source_data[key],
+          value = {
+            ...d.record.source_data,
+            ...d.record.proposed_data
+          }[key];
+        setSheet({
+          mode: 'date',
+          period: {
+            ...initialPeriod,
+            original: source,
+            monto: value,
+            corregido: JSON.stringify(source) !== JSON.stringify(value)
+          }
+        });
+      }
+    }, [d, initialPeriod]);
+    return h('div', null, header({
+      title: a ? a.nombre : 'Expediente de ahorro',
+      sub: a ? 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + (estados[a.estado] || estados.revision).label : 'Cargando expediente',
+      onBack
+    }), h('div', {
+      className: 'svp-body',
+      inert: disabled || state.loading ? '' : undefined,
+      'aria-busy': disabled || state.loading
+    }, h('div', {
+      className: 'svp-actions',
+      style: {
+        marginTop: 0,
+        marginBottom: 13
+      }
+    }, h(Btn, {
+      onClick: onPrev,
+      disabled: !onPrev
+    }, '‹ Anterior'), h(Btn, {
+      onClick: onNext,
+      disabled: !onNext
+    }, 'Siguiente ›')), !d && state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error, h(Btn, {
+      onClick: reload
+    }, 'Reintentar expediente')) : a && h(React.Fragment, null, h('div', {
+      className: 'svp-hero'
+    }, h('div', {
+      style: {
+        position: 'absolute',
+        right: -24,
+        top: -20,
+        opacity: .12,
+        pointerEvents: 'none'
+      }
+    }, h(window.Icon, {
+      name: 'piggy',
+      size: 120,
+      stroke: 1.4
+    })), h('small', null, 'TIENE AHORRADO'), h('strong', null, M(a.saldo)), h('div', {
+      className: 'svp-mini'
+    }, [[a.certified ? 'Capital actual' : 'Le han descontado', a.certified ? a.capital_actual : a.aportado], ['Rendimiento', a.certified ? a.rendimiento_actual : a.rendimiento], ['Retiros registrados', d.withdrawn_total]].map(([label, n]) => h('div', {
+      key: label
+    }, label, h('b', null, M(n)))))), h('p', {
+      className: 'svp-note'
+    }, a.certified ? 'Saldo actual confirmado al ' + fmt(d.as_of) + '. Saldo original del archivo: ' + M(a.source_saldo) + ' al ' + fmt(String(a.observed_at).slice(0, 10)) + '. Los retiros registrados conservan su historial y no se vuelven a restar.' : 'Saldo en revisión. El archivo original reconoce ' + M(a.source_saldo ?? a.saldo) + ' al ' + fmt(String(a.observed_at).slice(0, 10)) + '. Descuentos y rendimiento corresponden al plan registrado; los retiros conservan su historial.'), !a.certified && a.correccion !== 0 && h('p', {
+      className: 'svp-note warn'
+    }, 'Saldo al aplicar las correcciones de descuentos: ' + M(a.saldo_revision) + '. Diferencia: ' + M(a.correccion) + '.'), a.identity_pending && h('p', {
+      className: 'svp-note warn'
+    }, 'Cambio de Folio pendiente: ' + a.proposed_folio + '. Los movimientos conservan su Folio original.'), note && h('div', {
+      role: 'status',
+      className: 'svp-success'
+    }, note), h(window.SavingsIndividualWithdrawal, {
+      key: a.folio,
+      folio: a.folio,
+      onRequest: () => setWithdrawalIntent(v => v + 1)
+    }), h('div', {
+      className: 'svp-detail-grid'
+    }, h(Tarjeta, {
+      title: 'Su ahorro',
+      icon: 'calendar'
+    }, h(Fila, {
+      label: a.proceso === 'JUB' ? 'Le descuentan cada mes' : ['1', '3'].includes(a.proceso) ? 'Le descuentan cada quincena' : 'Aportación · frecuencia por confirmar',
+      valor: M(a.aporte)
+    }), h(Fila, {
+      label: 'Empezó a ahorrar',
+      valor: fmt(a.inicio)
+    }), h(Fila, {
+      label: 'Último descuento registrado',
+      valor: fmt(a.ultimo)
+    }), h(Fila, {
+      label: a.estado === 'baja' ? 'Dejó de ahorrar el' : 'Siguiente descuento previsto',
+      valor: fmt(a.estado === 'baja' ? a.bajaAt : a.prox)
+    }), h('p', {
+      className: 'svp-note'
+    }, 'Inicio del plan: ' + fmt(a.plan_inicio))), h(RecordSection, {
+      title: 'Saldo, descuentos y conciliación',
+      initialOpen: !!initialPeriod
+    }, h(window.SavingsCertificationAdmin, {
+      recordId: id,
+      version: r.version + ':' + requestRevision,
+      onSaved: saved,
+      app
+    })), h(RecordSection, {
+      title: 'Solicitudes, retiros y cambios',
+      initialOpen: initialSection === 'requests',
+      openRequest: withdrawalIntent
+    }, h(window.SavingsRequestsAdmin, {
+      key: a.folio,
+      folio: a.folio,
+      requestId,
+      expanded: true,
+      onSaved: requestSaved,
+      withdrawalIntent
+    })), h(RecordSection, {
+      title: 'Descuentos del archivo'
+    }, h(Tarjeta, {
+      title: 'Descuentos por fecha',
+      icon: 'receipt',
+      right: h('span', {
+        style: {
+          fontSize: 11,
+          color: 'var(--ink-3)'
+        }
+      }, d.can_write ? 'Toca para corregir' : d.date_count + ' fechas')
+    }, [...d.dates, ...extra].map(p => h('button', {
+      className: 'svp-period',
+      key: p.key,
+      disabled: !d.can_write || a.identity_pending,
+      onClick: () => setSheet({
+        mode: 'date',
+        period: p
+      })
+    }, h('span', {
+      className: 'svp-dot ' + (p.monto === 0 ? 'zero' : '')
+    }), h('span', null, fmt(p.fecha), p.corregido && h('small', null, 'CORREGIDO · EN REVISIÓN'), p.key === 'AR' && h('small', null, 'Incluye rendimiento del semestre')), h('b', null, typeof p.monto !== 'number' ? 'Por revisar' : p.monto === 0 ? 'Registrado en cero' : M(p.monto)))), !d.date_count && h(Empty, {
+      title: 'Sin fechas registradas'
+    }), d.date_count > 6 + extra.length && h(Btn, {
+      tone: 'full',
+      onClick: more,
+      disabled: loadingMore
+    }, loadingMore ? 'Cargando…' : 'Ver más fechas (' + (d.date_count - 6 - extra.length) + ')'), extra.length > 0 && h(Btn, {
+      tone: 'full',
+      onClick: () => setExtra([])
+    }, 'Ver solo las últimas 6'), extraError && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, extraError), h('p', {
+      className: 'svp-note'
+    }, 'Un importe en cero requiere revisión; no demuestra por sí solo que faltó el descuento.'))), h(RecordSection, {
+      title: 'Retiros registrados'
+    }, h('div', {
+      className: 'svp-wide'
+    }, h(Tarjeta, {
+      title: 'Retiros',
+      icon: 'download'
+    }, h(window.SavingsWithdrawalList, {
+      recordId: id,
+      data: d.withdrawals,
+      onRefresh: reload,
+      disabled: state.loading,
+      onOpen: setWithdrawal
+    })))), h(RecordSection, {
+      title: 'Historial de revisión'
+    }, h(Tarjeta, {
+      title: 'Movimientos del expediente',
+      icon: 'clock'
+    }, (r.history || []).length ? r.history.map(e => h('div', {
+      className: 'svp-audit',
+      key: e.id
+    }, h('b', null, e.actor_name), h('span', null, ' · Revisión guardada'), h('small', null, new Date(e.at).toLocaleString('es-MX')), e.observation && h('p', null, e.observation), h('details', null, h('summary', null, 'Ver cambios'), h('p', null, 'Estado: ' + ({
+      PENDING: 'Pendiente',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[e.before.status] || 'Por revisar') + ' → ' + ({
+      PENDING: 'Pendiente',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[e.after.status] || 'Por revisar')), [...new Set([...Object.keys(e.after.proposed_data || {}), ...Object.keys(e.before.proposed_data || {})])].filter(k => JSON.stringify(e.after.proposed_data[k]) !== JSON.stringify((e.before.proposed_data || {})[k])).map(k => h('p', {
+      key: k
+    }, ((r.field_defs || []).find(f => f.key === k) || {
+      label: k
+    }).label + ': ' + String(Object.prototype.hasOwnProperty.call(e.before.proposed_data || {}, k) ? e.before.proposed_data[k] : r.source_data[k]) + ' → ' + String(Object.prototype.hasOwnProperty.call(e.after.proposed_data || {}, k) ? e.after.proposed_data[k] : r.source_data[k])))))) : h('p', {
+      className: 'svp-note'
+    }, 'Todavía no se han realizado correcciones.'))), h(Tarjeta, {
+      title: 'Revisión del expediente',
+      icon: 'checkCircle'
+    }, h('p', {
+      className: 'svp-note'
+    }, r.status === 'RESOLVED' ? 'Este expediente está marcado como revisado.' : 'Comprueba el Folio, los descuentos, el saldo y los retiros.'), d.can_write && h(Btn, {
+      tone: 'green full',
+      onClick: () => setSheet({
+        mode: 'review'
+      })
+    }, r.status === 'RESOLVED' ? 'Reabrir revisión' : 'Marcar revisado'))), d.can_write && h(Btn, {
+      tone: 'outline full',
+      style: {
+        marginTop: 16
+      },
+      onClick: () => setSheet({
+        mode: 'person'
+      })
+    }, 'Corregir datos de este ahorrador'), h('details', {
+      className: 'svp-note'
+    }, h('summary', null, 'Ver datos anteriores y rendimientos por periodo'), h(Tarjeta, {
+      title: 'Importes originales'
+    }, (r.field_defs || []).filter(f => ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW'].includes(f.key)).map(f => h(Fila, {
+      key: f.key,
+      label: f.label,
+      valor: M(r.source_data[f.key])
+    })), h('p', {
+      className: 'svp-note'
+    }, 'Estos totales históricos no son abonos nuevos. La copia disponible no incluye descuentos de 2025 por fecha.'))), sheet && h(EditSheet, {
+      key: id + sheet.mode,
+      data: d,
+      ...sheet,
+      onClose: () => setSheet(null),
+      onSaved: saved
+    }), withdrawal && h(RequestSheet, {
+      id: withdrawal,
+      canWrite: d.can_write,
+      onClose: () => setWithdrawal(null),
+      onSaved: saved
+    }))));
+  }
+  function nativePerson(row) {
+    return {
+      ...row,
+      id: row.participant_id,
+      estado: {
+        Ahorrando: 'ahorrando',
+        'Dejo de ahorrar': 'baja',
+        'Por iniciar': 'revision',
+        'En revision': 'revision'
+      }[row.estado] || row.estado
+    };
+  }
+  function NativeDetail({
+    row,
+    onBack,
+    onPrev,
+    onNext,
+    header,
+    onChange,
+    initialSection,
+    requestId,
+    disabled = false,
+    app
+  }) {
+    const [requestRevision, setRequestRevision] = useState(0),
+      [withdrawalIntent, setWithdrawalIntent] = useState(0);
+    async function requestSaved() {
+      setRequestRevision(v => v + 1);
+      await onChange();
+    }
+    return h('div', null, header({
+      title: row.nombre || 'Expediente de ahorro',
+      sub: 'Folio ' + row.folio,
+      onBack
+    }), h('div', {
+      className: 'svp-body',
+      inert: disabled ? '' : undefined,
+      'aria-busy': disabled
+    }, h('div', {
+      className: 'svp-actions',
+      style: {
+        marginTop: 0,
+        marginBottom: 13
+      }
+    }, h(Btn, {
+      onClick: onPrev,
+      disabled: !onPrev
+    }, '\u2039 Anterior'), h(Btn, {
+      onClick: onNext,
+      disabled: !onNext
+    }, 'Siguiente \u203a')), h(window.SavingsIndividualWithdrawal, {
+      key: row.folio,
+      folio: row.folio,
+      onRequest: () => setWithdrawalIntent(v => v + 1)
+    }), h('div', {
+      className: 'svp-detail-grid'
+    }, h(RecordSection, {
+      title: 'Saldo, descuentos y conciliación',
+      initialOpen: initialSection !== 'requests'
+    }, h(window.SavingsCertificationAdmin, {
+      key: row.id,
+      participantId: row.id,
+      version: requestRevision,
+      app,
+      onSaved: onChange
+    })), h(RecordSection, {
+      title: 'Solicitudes, retiros y cambios',
+      initialOpen: initialSection === 'requests',
+      openRequest: withdrawalIntent
+    }, h(window.SavingsRequestsAdmin, {
+      key: row.folio,
+      folio: row.folio,
+      requestId,
+      expanded: true,
+      onSaved: requestSaved,
+      withdrawalIntent
+    })))));
+  }
+  function useWorkspaceQuery(loader, deps, enabled = true) {
+    const [state, setState] = useState({
+        loading: enabled
+      }),
+      [attempt, retry] = useState(0);
+    const context = window.SavingsPanelRepository.contextKey(),
+      epoch = window.SavingsPanelRepository.revision();
+    useEffect(() => {
+      if (!enabled) return;
+      const controller = new AbortController();
+      let active = true;
+      setState({
+        loading: true
+      });
+      Promise.resolve().then(() => loader(controller.signal)).then(data => {
+        if (active && context === window.SavingsPanelRepository.contextKey() && epoch === window.SavingsPanelRepository.revision()) setState({
+          data,
+          loading: false,
+          context,
+          epoch
+        });
+      }).catch(error => {
+        if (active && error.name !== 'AbortError') setState({
+          error: explain(error),
+          loading: false,
+          context,
+          epoch
+        });
+      });
+      return () => {
+        active = false;
+        controller.abort();
+      };
+    }, [...deps, attempt, enabled, context, epoch]);
+    return [state.context != null && (state.context !== context || state.epoch !== epoch) ? {
+      loading: true
+    } : state, () => retry(value => value + 1)];
+  }
+  function QueryStatus({
+    state,
+    retry
+  }) {
+    return state.loading ? h(Loading) : state.error ? h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error, h(Btn, {
+      onClick: retry
+    }, 'Reintentar consulta')) : null;
+  }
+  function InlinePerson({
+    row,
+    cache,
+    revision,
+    onSaved,
+    onDirty,
+    dirty,
+    app,
+    requestId,
+    initialSection
+  }) {
+    const id = row.participant_id || row.id;
+    const currentContext = window.SavingsPanelRepository.contextKey(),
+      currentEpoch = window.SavingsPanelRepository.revision();
+    const [state, reload] = useWorkspaceQuery(async signal => {
+      const context = window.SavingsPanelRepository.contextKey(),
+        epoch = window.SavingsPanelRepository.revision(),
+        key = context + ':' + id,
+        stored = cache.current.get(key);
+      if (stored && stored.revision === revision && stored.epoch === epoch && Date.now() - stored.at < 30000) return stored.data;
+      const data = await window.SavingsPanelRepository.person({
+        participantId: id,
+        historyOffset: 0,
+        historyLimit: 10,
+        signal
+      });
+      if (!signal.aborted && context === window.SavingsPanelRepository.contextKey() && epoch === window.SavingsPanelRepository.revision()) {
+        cache.current.set(key, {
+          data,
+          revision,
+          epoch,
+          at: Date.now()
+        });
+        while (cache.current.size > 8) cache.current.delete(cache.current.keys().next().value);
+      }
+      return data;
+    }, [id, revision]);
+    const [extra, setExtra] = useState([]),
+      [moreBusy, setMoreBusy] = useState(false),
+      [moreError, setMoreError] = useState(''),
+      [withdrawalIntent, setWithdrawalIntent] = useState(0);
+    const sequence = useRef(0),
+      moreAbort = useRef(null);
+    useEffect(() => {
+      sequence.current++;
+      moreAbort.current?.abort();
+      setExtra([]);
+      setMoreError('');
+      setMoreBusy(false);
+      return () => {
+        sequence.current++;
+        moreAbort.current?.abort();
+      };
+    }, [id, revision, currentContext, currentEpoch]);
+    async function saved() {
+      onDirty(false);
+      cache.current.clear();
+      setExtra([]);
+      if (onSaved) await onSaved();
+    }
+    async function more() {
+      if (moreBusy) return;
+      const seq = sequence.current,
+        controller = new AbortController();
+      moreAbort.current = controller;
+      setMoreBusy(true);
+      setMoreError('');
+      try {
+        const data = await window.SavingsPanelRepository.person({
+          participantId: id,
+          historyOffset: (state.data.history || []).length + extra.length,
+          historyLimit: 20,
+          signal: controller.signal
+        });
+        if (seq === sequence.current && currentContext === window.SavingsPanelRepository.contextKey() && currentEpoch === window.SavingsPanelRepository.revision()) setExtra(previous => previous.concat(data.history || []));
+      } catch (error) {
+        if (seq === sequence.current && error.name !== 'AbortError') setMoreError(explain(error));
+      } finally {
+        if (seq === sequence.current) setMoreBusy(false);
+      }
+    }
+    const d = state.data,
+      p = d?.person || row,
+      b = d?.balance,
+      history = [...(d?.history || []), ...extra],
+      pending = d?.pending;
+    const financialProps = d?.record_id ? {
+      recordId: d.record_id
+    } : {
+      participantId: id
+    };
+    const historyStates = {
+      RECEIVED: 'Aplicada',
+      CORRECTED: 'Corregida',
+      NO_DEDUCTION: 'Sin aportación registrada',
+      PENDING: 'Pendiente de aplicación o revisión'
+    };
+    return h('section', {
+      id: 'savings-person-' + id,
+      'aria-label': 'Detalle de ' + row.nombre,
+      className: 'svp-inline-detail',
+      onChangeCapture: () => onDirty(true)
+    }, h(QueryStatus, {
+      state,
+      retry: () => {
+        cache.current.clear();
+        reload();
+      }
+    }), d && !state.loading && !state.error && h(React.Fragment, null, h('div', {
+      className: 'svp-hero'
+    }, h('small', null, 'SALDO ACTUAL'), h('strong', null, M(b?.total)), h('div', {
+      className: 'svp-mini'
+    }, h('div', null, 'Capital', h('b', null, M(b?.capital))), h('div', null, 'Rendimiento incluido', h('b', null, M(b?.yield_amount))))), !b && h('p', {
+      role: 'status',
+      className: 'svp-note warn'
+    }, 'Esta cuenta aún no tiene un saldo confirmado. Consulta su ingreso o la incidencia antes de registrar movimientos.'), b && Number(b.held) > 0 && h('p', {
+      className: 'svp-note'
+    }, 'Disponible: ' + M(b.available) + ' · Retenido: ' + M(b.held)), h('div', {
+      className: 'svp-detail-grid'
+    }, h(Tarjeta, {
+      title: 'Su ahorro',
+      icon: 'calendar'
+    }, h(Fila, {
+      label: p.proceso === 'JUB' ? 'Aportación mensual' : ['1', '3', 'PROCESS_1', 'PROCESS_3'].includes(p.proceso) ? 'Aportación quincenal' : 'Aportación · frecuencia por confirmar',
+      valor: M(p.aporte)
+    }), h(Fila, {
+      label: 'Última aportación aplicada',
+      valor: d.last_received ? fmt(d.last_received) : 'Sin aportaciones aplicadas'
+    }), h(Fila, {
+      label: 'Próxima aportación programada',
+      valor: d.next_expected ? fmt(d.next_expected.date) + ' · ' + (d.next_expected.scheduled_status === 'PLAN_CHANGED' || d.next_expected.amount == null ? 'Revisar programación' : M(d.next_expected.amount)) : 'Sin próxima aportación programada'
+    }), h('p', {
+      className: 'svp-note'
+    }, 'Información al ' + fmt(d.today) + '. Las aportaciones programadas se aplican automáticamente al llegar su fecha. Las futuras aún no aumentan el saldo.')), pending?.count > 0 && h(Tarjeta, {
+      title: 'Pendiente de aplicación o revisión',
+      icon: 'info'
+    }, h('p', {
+      className: 'svp-note warn'
+    }, pending.count + ' fecha(s) vencida(s) aún sin aportación aplicada. Actualiza y revisa las excepciones si continúa el pendiente. Esto no demuestra que faltó el descuento.'), h(Fila, {
+      label: 'Primera fecha pendiente',
+      valor: fmt(pending.first_date)
+    }), h(Fila, {
+      label: 'Importe previsto pendiente',
+      valor: M(pending.expected_amount)
+    })), pending?.conflict_count > 0 && h(Tarjeta, {
+      title: 'Requiere revisión',
+      icon: 'info'
+    }, h('p', {
+      role: 'alert',
+      className: 'svp-note warn'
+    }, pending.conflict_count + ' registro(s) con diferencia entre el recibo y el movimiento financiero. Consulta la conciliación antes de actuar.')), h('div', {
+      className: 'svp-wide'
+    }, h(Tarjeta, {
+      title: 'Historial de aportaciones',
+      icon: 'receipt'
+    }, history.length ? history.map((movement, index) => h('article', {
+      className: 'svp-audit',
+      key: movement.id || movement.date + ':' + index
+    }, h('div', {
+      className: 'svp-totals'
+    }, h('b', null, fmt(movement.date)), h('b', null, movement.status === 'PENDING' ? 'Previsto: ' + M(movement.expected) : M(movement.amount))), h('span', {
+      className: movement.status === 'PENDING' || movement.data_conflict ? 'svp-history-state is-pending' : 'svp-history-state'
+    }, movement.data_conflict ? 'Excepción: recibo y movimiento no coinciden' : historyStates[movement.status] || 'Por revisar'), movement.entry_source === 'SYSTEM_SCHEDULE' && h('p', {
+      className: 'svp-note'
+    }, movement.actor_label || 'Aplicación automática'), movement.entry_source === 'MANUAL' && h('p', {
+      className: 'svp-note'
+    }, movement.actor_label || 'Encargado autorizado'), movement.includes_yield && h('p', {
+      className: 'svp-note'
+    }, 'Aportación y rendimiento incluidos en este importe.'), movement.status === 'CORRECTED' && h('p', {
+      className: 'svp-note'
+    }, 'Se conserva el registro anterior en la auditoría.'))) : h(Empty, {
+      title: 'Sin aportaciones registradas',
+      text: 'Las aportaciones programadas aparecerán al aplicarse en su fecha. Las futuras aún no forman parte del saldo.'
+    }), history.length < d.history_total && h(Btn, {
+      tone: 'full',
+      disabled: moreBusy,
+      onClick: more
+    }, moreBusy ? 'Consultando…' : 'Ver más aportaciones'), moreError && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, moreError))), h(RecordSection, {
+      title: 'Cambios y retiros',
+      initialOpen: initialSection === 'requests',
+      openRequest: withdrawalIntent,
+      unmountOnClose: true,
+      beforeClose: () => {
+        if (dirty && !window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla?')) return false;
+        onDirty(false);
+        return true;
+      }
+    }, h(window.SavingsRequestsAdmin, {
+      key: p.folio,
+      folio: p.folio,
+      requestId,
+      expanded: true,
+      onSaved: saved,
+      withdrawalIntent
+    }), h(RecordSection, {
+      title: 'Habilitación de retiro individual'
+    }, h(window.SavingsIndividualWithdrawal, {
+      folio: p.folio,
+      onRequest: () => setWithdrawalIntent(value => value + 1)
+    }))), h(RecordSection, {
+      title: 'Aportaciones, correcciones y proyección'
+    }, h(window.SavingsCertificationAdmin, {
+      ...financialProps,
+      version: revision,
+      app,
+      onSaved: saved
+    })), d.record_id && h(RecordSection, {
+      title: 'Auditoría y antecedentes'
+    }, h(LegacyPersonAudit, {
+      recordId: d.record_id,
+      onSaved: saved,
+      app
+    })))));
+  }
+  function LegacyPersonAudit({
+    recordId,
+    onSaved,
+    app
+  }) {
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.detail(recordId), [recordId]),
+      [sheet, setSheet] = useState(null),
+      [request, setRequest] = useState(null);
+    const [dates, setDates] = useState([]),
+      [dateBusy, setDateBusy] = useState(false),
+      [dateError, setDateError] = useState('');
+    const dateSequence = useRef(0);
+    useEffect(() => () => {
+      dateSequence.current++;
+    }, [recordId]);
+    const d = state.data,
+      r = d?.record;
+    async function saved() {
+      setSheet(null);
+      setDates([]);
+      reload();
+      if (onSaved) await onSaved();
+    }
+    async function moreDates() {
+      if (dateBusy) return;
+      const sequence = ++dateSequence.current;
+      setDateBusy(true);
+      setDateError('');
+      try {
+        const page = await window.SavingsPanelRepository.detail(recordId, (d.dates || []).length + dates.length, 24);
+        if (sequence === dateSequence.current) setDates(previous => previous.concat(page.dates || []));
+      } catch (error) {
+        if (sequence === dateSequence.current) setDateError(explain(error));
+      } finally {
+        if (sequence === dateSequence.current) setDateBusy(false);
+      }
+    }
+    return h('div', null, h(QueryStatus, {
+      state,
+      retry: reload
+    }), d && !state.loading && !state.error && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, 'Antecedentes conservados para auditoría. Revisar estos datos no registra dinero recibido ni cambia por sí solo el saldo actual.'), h(Fila, {
+      label: 'Saldo de origen',
+      valor: M(d.person?.source_saldo ?? d.person?.saldo)
+    }), h(Fila, {
+      label: 'Revisión histórica',
+      valor: r.status === 'RESOLVED' ? 'Revisada' : r.status === 'IN_REVIEW' ? 'En revisión' : 'Por revisar'
+    }), h(RecordSection, {
+      title: 'Corregir un antecedente por fecha'
+    }, h('p', {
+      className: 'svp-note'
+    }, 'Una corrección de antecedentes queda en revisión. No confirma un recibo ni modifica por sí sola el saldo actual.'), [...(d.dates || []), ...dates].map(period => h(Btn, {
+      key: period.key,
+      tone: 'outline full',
+      disabled: !d.can_write || d.person?.identity_pending,
+      onClick: () => setSheet({
+        mode: 'date',
+        period
+      })
+    }, fmt(period.fecha) + ' · ' + M(period.monto))), dates.length + (d.dates || []).length < d.date_count && h(Btn, {
+      disabled: dateBusy,
+      onClick: moreDates
+    }, dateBusy ? 'Consultando…' : 'Ver más fechas anteriores'), dateError && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, dateError)), h(RecordSection, {
+      title: 'Retiros anteriores'
+    }, h(window.SavingsWithdrawalList, {
+      recordId,
+      data: d.withdrawals,
+      onRefresh: reload,
+      onOpen: setRequest
+    })), h(RecordSection, {
+      title: 'Cambios registrados'
+    }, (r.history || []).length ? r.history.map(event => h('article', {
+      key: event.id,
+      className: 'svp-audit'
+    }, h('b', null, event.actor_name || 'Cambio registrado'), h('p', null, new Date(event.at).toLocaleString('es-MX')), event.observation && h('p', null, event.observation), h('details', null, h('summary', null, 'Ver campos modificados'), h('p', null, 'Estado: ' + ({
+      PENDING: 'Por revisar',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[event.before?.status] || 'Sin estado') + ' → ' + ({
+      PENDING: 'Por revisar',
+      IN_REVIEW: 'En revisión',
+      RESOLVED: 'Revisado'
+    }[event.after?.status] || 'Sin estado')), [...new Set([...Object.keys(event.before?.proposed_data || {}), ...Object.keys(event.after?.proposed_data || {})])].filter(key => JSON.stringify(event.after?.proposed_data?.[key]) !== JSON.stringify(event.before?.proposed_data?.[key])).map(key => h('p', {
+      key
+    }, ((r.field_defs || []).find(field => field.key === key)?.label || key) + ': ' + String(Object.prototype.hasOwnProperty.call(event.before?.proposed_data || {}, key) ? event.before.proposed_data[key] : r.source_data[key]) + ' → ' + String(Object.prototype.hasOwnProperty.call(event.after?.proposed_data || {}, key) ? event.after.proposed_data[key] : r.source_data[key])))))) : h('p', {
+      className: 'svp-note'
+    }, 'Sin correcciones históricas.')), h(RecordSection, {
+      title: 'Rendimientos e importes históricos'
+    }, (r.field_defs || []).filter(field => ['DP', 'DQ', 'DR', 'DS', 'DT', 'DU', 'DV', 'DW'].includes(field.key)).map(field => h(Fila, {
+      key: field.key,
+      label: field.label,
+      valor: M(r.source_data[field.key])
+    })), h('p', {
+      className: 'svp-note'
+    }, 'Son antecedentes, no nuevos abonos de rendimiento.')), d.can_write && h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      onClick: () => setSheet({
+        mode: 'person'
+      })
+    }, 'Corregir antecedente'), h(Btn, {
+      onClick: () => setSheet({
+        mode: 'review'
+      })
+    }, r.status === 'RESOLVED' ? 'Reabrir revisión histórica' : 'Marcar antecedente revisado')), sheet && h(EditSheet, {
+      data: d,
+      ...sheet,
+      onClose: () => setSheet(null),
+      onSaved: saved
+    }), request && h(RequestSheet, {
+      id: request,
+      canWrite: d.can_write,
+      onClose: () => setRequest(null),
+      onSaved: saved
+    })));
+  }
+  function LegacyArchive({
+    app,
+    onSaved
+  }) {
+    const [tab, setTab] = useState('solicitudes'),
+      [search, setSearch] = useState(''),
+      [query, setQuery] = useState(''),
+      [filter, setFilter] = useState('todos'),
+      [offset, setOffset] = useState(0),
+      [request, setRequest] = useState(null);
+    const [state, reload] = useQuery(() => window.SavingsPanelRepository.list({
+      tab,
+      search: query,
+      filter,
+      offset
+    }), [tab, query, filter, offset]);
+    async function saved() {
+      reload();
+      if (onSaved) await onSaved();
+    }
+    const d = state.data;
+    return h('div', null, h('p', {
+      className: 'svp-note'
+    }, 'Consulta histórica de solicitudes y revisiones. Su estado describe la revisión del antecedente, no una tarea financiera actual.'), h('label', {
+      className: 'svp-field'
+    }, 'Antecedentes', h('select', {
+      value: tab,
+      onChange: e => {
+        setTab(e.target.value);
+        setOffset(0);
+      }
+    }, h('option', {
+      value: 'solicitudes'
+    }, 'Solicitudes anteriores'), h('option', {
+      value: 'revision'
+    }, 'Revisiones anteriores'))), h('form', {
+      className: 'svp-search',
+      onSubmit: e => {
+        e.preventDefault();
+        setQuery(search);
+        setOffset(0);
+      }
+    }, h('input', {
+      value: search,
+      onChange: e => setSearch(e.target.value),
+      'aria-label': 'Buscar antecedentes por Folio o nombre',
+      placeholder: 'Nombre o Folio'
+    }), h(Btn, {
+      onClick: () => {
+        setQuery(search);
+        setOffset(0);
+      }
+    }, 'Buscar')), h('div', {
+      className: 'svp-tabs',
+      'aria-label': 'Estado de revisión histórica'
+    }, [['todos', 'Todos'], ['pendientes', 'Por revisar'], ['resueltas', 'Revisados']].map(([value, label]) => h('button', {
+      key: value,
+      'aria-pressed': filter === value,
+      onClick: () => {
+        setFilter(value);
+        setOffset(0);
+      }
+    }, label))), h(QueryStatus, {
+      state,
+      retry: reload
+    }), d && !state.loading && !state.error && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, d.total + ' antecedentes'), !d.rows.length ? h(Empty, {
+      title: 'Sin antecedentes para esta consulta'
+    }) : d.rows.map(row => tab === 'solicitudes' ? h(RequestCard, {
+      key: row.id,
+      r: row,
+      onOpen: () => setRequest(row.id)
+    }) : h(RecordSection, {
+      key: row.id,
+      title: (row.nombre || 'Folio ' + row.folio) + ' · ' + row.folio
+    }, h(LegacyPersonAudit, {
+      recordId: row.id,
+      app,
+      onSaved: saved
+    }))), h('div', {
+      className: 'svp-actions'
+    }, offset > 0 && h(Btn, {
+      onClick: () => setOffset(value => Math.max(0, value - 20))
+    }, 'Anteriores'), offset + 20 < d.total && h(Btn, {
+      onClick: () => setOffset(value => value + 20)
+    }, 'Ver más antecedentes'))), request && h(RequestSheet, {
+      id: request,
+      canWrite: d?.can_write,
+      onClose: () => setRequest(null),
+      onSaved: saved
+    }));
+  }
+  function WithdrawalHistory({
+    app,
+    cache,
+    revision,
+    onSaved,
+    onDirty,
+    dirty,
+    mayLeave
+  }) {
+    const [search, setSearch] = useState(''),
+      [query, setQuery] = useState(''),
+      [status, setStatus] = useState('all'),
+      [offset, setOffset] = useState(0),
+      [selected, setSelected] = useState(null);
+    const [state, reload] = useWorkspaceQuery(signal => window.SavingsWithdrawalHistoryRepository.list({
+      search: query,
+      status,
+      offset,
+      limit: 20,
+      signal
+    }), [query, status, offset, revision]);
+    const labels = {
+      SUBMITTED: 'Solicitado',
+      UNDER_REVIEW: 'En revisión',
+      APPROVED: 'Autorizado · pendiente de entrega',
+      SETTLED: 'Entregado',
+      REJECTED: 'Rechazado',
+      CANCELLED: 'Cancelado'
+    };
+    const dateLabel = value => {
+      if (!value) return 'Sin fecha registrada';
+      const date = new Date(value);
+      return Number.isFinite(date.getTime()) ? date.toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }) : 'Fecha por revisar';
+    };
+    useEffect(() => {
+      if (search === query) return;
+      const timer = setTimeout(() => {
+        setQuery(search);
+        setOffset(0);
+      }, 250);
+      return () => clearTimeout(timer);
+    }, [search, query]);
+    function leave(change) {
+      if (!mayLeave()) return;
+      onDirty(false);
+      setSelected(null);
+      change();
+    }
+    function open(id) {
+      if (!mayLeave()) return;
+      onDirty(false);
+      setSelected(previous => previous === id ? null : id);
+    }
+    const data = state.data,
+      rows = data?.rows || [],
+      busy = state.loading;
+    return h('section', {
+      'aria-label': 'Historial de retiros',
+      'data-withdrawal-history': true
+    }, h('style', null, '.svp-withdrawal-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 18px;gap:16px;width:100%;text-align:left;border:1px solid transparent;color:var(--ink)}.svp-withdrawal-row[aria-expanded=true]{border-color:var(--guinda);border-radius:16px 16px 0 0}.svp-withdrawal-identity,.svp-withdrawal-status{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}.svp-withdrawal-identity>b{font-size:16px}.svp-withdrawal-row small,.svp-withdrawal-identity>span{font-size:12px;color:var(--ink-2)}.svp-history-state.is-neutral{background:var(--surface-2);color:var(--ink-2)}.svp-withdrawal-detail{border:1px solid var(--hairline-strong);border-top:0;border-radius:0 0 16px 16px;padding:14px;background:var(--surface-2)}.svp-withdrawal-detail .svp-inline-detail{margin:14px 0 0;padding:0;border:0}@container savings-panel (max-width:600px){.svp-withdrawal-row{grid-template-columns:minmax(0,1fr) 18px;gap:12px}.svp-withdrawal-status{grid-column:1}.svp-withdrawal-row>svg{grid-column:2;grid-row:1}.svp-withdrawal-detail{padding:10px}}'), h(Titulo, {
+      sub: 'Consulta las solicitudes de retiro y las entregas registradas. Abre una persona para ver su ahorro y el PDF de esa solicitud.'
+    }, 'Historial de retiros'), h('label', {
+      className: 'svp-search'
+    }, h(window.Icon, {
+      name: 'search',
+      size: 18
+    }), h('input', {
+      'aria-label': 'Buscar retiros por nombre, folio o solicitud',
+      placeholder: 'Nombre, folio o número de solicitud',
+      maxLength: 200,
+      value: search,
+      onChange: event => leave(() => setSearch(event.target.value))
+    })), h('div', {
+      className: 'svp-request-filters'
+    }, h('label', {
+      className: 'svp-field'
+    }, 'Estado del retiro', h('select', {
+      value: status,
+      onChange: event => leave(() => {
+        setStatus(event.target.value);
+        setOffset(0);
+      })
+    }, [['all', 'Todos los retiros'], ['pending', 'Solicitados y en revisión'], ['approved', 'Autorizados, pendientes de entrega'], ['settled', 'Entregados'], ['rejected', 'Rechazados'], ['cancelled', 'Cancelados']].map(([value, label]) => h('option', {
+      key: value,
+      value
+    }, label)))), h('div', {
+      className: 'svp-actions',
+      style: {
+        alignSelf: 'center'
+      }
+    }, h(Btn, {
+      disabled: busy,
+      onClick: () => leave(reload)
+    }, 'Actualizar historial'))), h(QueryStatus, {
+      state,
+      retry: () => leave(reload)
+    }), data && !state.loading && !state.error && h(React.Fragment, null, h('div', {
+      className: 'svp-totals'
+    }, h('span', null, data.total + ' retiro(s) en esta consulta'), rows.length > 0 && h('span', null, offset + 1 + '–' + (offset + rows.length))), !rows.length ? h(Empty, {
+      title: query || status !== 'all' ? 'Sin retiros para esta búsqueda' : 'Todavía no hay solicitudes de retiro',
+      text: query || status !== 'all' ? 'Prueba otro nombre, folio o estado.' : 'Las nuevas solicitudes y sus entregas aparecerán aquí.'
+    }) : h('div', {
+      className: 'svp-stack'
+    }, rows.map(row => {
+      const opened = selected === row.id,
+        person = {
+          id: row.participant_id,
+          participant_id: row.participant_id,
+          folio: row.saver_folio,
+          nombre: row.name || 'Identidad por revisar'
+        },
+        pending = ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(row.status);
+      return h('article', {
+        key: row.id,
+        'data-withdrawal-id': row.id,
+        className: 'svp-history-item'
+      }, h('button', {
+        type: 'button',
+        className: 'svp-record svp-withdrawal-row',
+        'aria-expanded': opened,
+        'aria-controls': 'withdrawal-' + row.id,
+        onClick: () => open(row.id)
+      }, h('div', {
+        className: 'svp-withdrawal-identity'
+      }, h('b', null, person.nombre), h('span', null, 'Folio ' + (row.saver_folio || 'por identificar')), h('small', null, row.folio || 'Solicitud sin folio')), h('div', {
+        className: 'svp-withdrawal-status'
+      }, h('span', {
+        className: 'svp-history-state' + (pending ? ' is-pending' : row.status === 'SETTLED' ? '' : ' is-neutral')
+      }, labels[row.status] || 'Estado por revisar'), h('span', null, 'Solicitado: ' + (row.requested_amount == null ? 'Sin importe registrado' : M(row.requested_amount))), h('small', null, 'Solicitud: ' + dateLabel(row.submitted_at)), row.status === 'SETTLED' && h('small', null, 'Entrega: ' + dateLabel(row.settled_at))), h(window.Icon, {
+        name: opened ? 'chevU' : 'chevD',
+        size: 18
+      })), opened && h('div', {
+        id: 'withdrawal-' + row.id,
+        className: 'svp-withdrawal-detail'
+      }, h(Tarjeta, {
+        title: 'Solicitud ' + (row.folio || 'de retiro'),
+        icon: 'receipt'
+      }, h(Fila, {
+        label: 'Estado',
+        valor: labels[row.status] || 'Estado por revisar'
+      }), h(Fila, {
+        label: 'Tipo de retiro',
+        valor: row.request_type === 'EXTRAORDINARY_WITHDRAWAL' ? 'Retiro extraordinario' : 'Retiro de ahorro'
+      }), h(Fila, {
+        label: 'Importe solicitado',
+        valor: row.requested_amount == null ? 'Sin importe registrado' : M(row.requested_amount)
+      }), row.status === 'SETTLED' && h(Fila, {
+        label: 'Importe entregado',
+        valor: row.delivered_amount == null ? 'Sin importe confirmado' : M(row.delivered_amount)
+      }), h(Fila, {
+        label: 'Fecha de solicitud',
+        valor: dateLabel(row.submitted_at)
+      }), row.reviewed_at && h(Fila, {
+        label: 'Fecha de decisión',
+        valor: dateLabel(row.reviewed_at)
+      }), row.status === 'SETTLED' && h(Fila, {
+        label: 'Fecha de entrega',
+        valor: dateLabel(row.settled_at)
+      }), h(Fila, {
+        label: 'Después del retiro',
+        valor: row.continue_saving === true ? 'Continuará ahorrando' : row.continue_saving === false ? 'Dejará de ahorrar' : 'Por confirmar'
+      }), h('p', {
+        className: 'svp-note'
+      }, 'Documentos de esta solicitud de retiro'), h(window.GeneratedDocuments, {
+        key: row.id + ':' + revision,
+        domain: 'savings',
+        operationId: row.id,
+        admin: true
+      })), h(InlinePerson, {
+        key: row.id,
+        row: person,
+        cache,
+        revision,
+        onSaved,
+        onDirty,
+        dirty,
+        app
+      })));
+    })), h('div', {
+      className: 'svp-actions'
+    }, offset > 0 && h(Btn, {
+      onClick: () => leave(() => setOffset(value => Math.max(0, value - 20)))
+    }, 'Retiros anteriores en la lista'), offset + rows.length < data.total && h(Btn, {
+      onClick: () => leave(() => setOffset(value => value + 20))
+    }, 'Ver más retiros'))));
+  }
+  function SavingsPanelAdmin({
+    app,
+    onBack,
+    header,
+    initialAffiliateId
+  }) {
+    const [tab, setTab] = useState(initialAffiliateId ? 'personas' : 'resumen'),
+      [search, setSearch] = useState(''),
+      [query, setQuery] = useState(''),
+      [filter, setFilter] = useState('todos'),
+      [offset, setOffset] = useState(0),
+      [expanded, setExpanded] = useState(null);
+    const [attention, setAttention] = useState('incidencias'),
+      [program, setProgram] = useState('conciliacion'),
+      [period, setPeriod] = useState(null),
+      [revision, setRevision] = useState(0),
+      [navigationError, setNavigationError] = useState(''),
+      [requestNavigation, setRequestNavigation] = useState(null),
+      [requestOnly, setRequestOnly] = useState(null);
+    const [focusRequest, setFocusRequest] = useState(null),
+      [dirty, setDirty] = useState(false),
+      [showAttentionPeople, setShowAttentionPeople] = useState(false);
+    const cache = useRef(new Map()),
+      root = useRef(null),
+      requestSequence = useRef(0);
+    const [summary, reloadSummary] = useWorkspaceQuery(signal => window.SavingsPanelRepository.summary({
+      signal
+    }), [revision]);
+    const listing = tab === 'personas' || tab === 'atencion' && attention === 'incidencias' && showAttentionPeople,
+      listFilter = tab === 'atencion' ? 'incidencias' : filter;
+    const [people, reloadPeople] = useWorkspaceQuery(signal => window.SavingsPanelRepository.people({
+      search: query,
+      filter: listFilter,
+      offset,
+      limit: 20,
+      signal
+    }), [query, listFilter, offset, revision], listing);
+    useEffect(() => {
+      if (search === query) return;
+      const timer = setTimeout(() => {
+        setQuery(search);
+        setOffset(0);
+      }, 250);
+      return () => clearTimeout(timer);
+    }, [search, query]);
+    useEffect(() => () => {
+      requestSequence.current++;
+      cache.current.clear();
+    }, []);
+    function mayLeave() {
+      return !dirty || window.confirm('Hay una captura sin guardar. ¿Quieres cerrarla y continuar?');
+    }
+    function changeTab(value) {
+      if (!mayLeave()) return;
+      setDirty(false);
+      setExpanded(null);
+      setFocusRequest(null);
+      setTab(value);
+      setOffset(0);
+      setNavigationError('');
+    }
+    function togglePerson(row) {
+      if (!mayLeave()) return;
+      setDirty(false);
+      setFocusRequest(null);
+      setExpanded(previous => previous === (row.participant_id || row.id) ? null : row.participant_id || row.id);
+    }
+    function changeSearch(value) {
+      if (dirty && !mayLeave()) return;
+      setDirty(false);
+      setExpanded(null);
+      setSearch(value);
+    }
+    function refresh() {
+      cache.current.clear();
+      setDirty(false);
+      setRevision(value => value + 1);
+    }
+    function reconcile(date) {
+      if (!mayLeave()) return;
+      setDirty(false);
+      setExpanded(null);
+      setPeriod(date || summary.data?.today || null);
+      setProgram('conciliacion');
+      setTab('programa');
+    }
+    async function revealFolio(folio, requestId) {
+      const seq = ++requestSequence.current;
+      setNavigationError('');
+      try {
+        const result = await window.SavingsPanelRepository.people({
+          search: folio,
+          filter: 'todos',
+          offset: 0,
+          limit: 20
+        });
+        if (seq !== requestSequence.current) return;
+        const matches = (result.rows || []).filter(row => row.folio === folio);
+        if (matches.length !== 1) {
+          setRequestOnly(requestId ? {
+            folio,
+            requestId
+          } : null);
+          setNavigationError(matches.length ? 'Hay varias coincidencias. Revisa la identidad antes de continuar.' : 'No hay una cuenta de ahorro disponible para este Folio.');
+          return;
+        }
+        setRequestOnly(null);
+        setTab('personas');
+        setSearch(folio);
+        setQuery(folio);
+        setFilter('todos');
+        setOffset(0);
+        setExpanded(matches[0].participant_id || matches[0].id);
+        setFocusRequest(requestId || null);
+      } catch (error) {
+        if (seq === requestSequence.current) setNavigationError(explain(error));
+      }
+    }
+    useEffect(() => {
+      if (!initialAffiliateId) return;
+      let active = true;
+      window.SavingsPanelRepository.affiliate(initialAffiliateId).then(data => {
+        if (active && data.folio) revealFolio(data.folio);
+      }).catch(error => {
+        if (active) setNavigationError(explain(error));
+      });
+      return () => {
+        active = false;
+        requestSequence.current++;
+      };
+    }, [initialAffiliateId]);
+    const heading = header || (({
+      title,
+      sub,
+      onBack: back
+    }) => h('header', {
+      className: 'svp-header'
+    }, h(Btn, {
+      onClick: back,
+      'aria-label': 'Volver al administrador'
+    }, '‹'), h('div', null, h('h1', null, title), h('p', null, sub))));
+    const d = summary.data,
+      k = d?.kpis,
+      rows = people.data?.rows || [],
+      total = people.data?.total;
+    const extraCss = '.svp-inline-detail{padding:16px 12px 20px;margin:0 3px 12px;border:1px solid var(--hairline-strong);border-top:0;border-radius:0 0 16px 16px;background:var(--surface-2)}.svp-person[aria-expanded=true]{border-radius:15px 15px 0 0!important;box-shadow:inset 0 0 0 1px var(--hairline-strong)!important}.svp-history-state{display:inline-block;padding:5px 9px;border-radius:999px;background:#E4F5EC;color:#0E6B41;font-size:12px;font-weight:800}.svp-history-state.is-pending{background:#FDF2DC;color:#805600}.svp-wide{grid-column:1/-1}.svp-inline-detail .svp-hero{box-shadow:none}.svp-compact-summary{margin-bottom:18px}@container savings-panel (max-width:600px){.svp-inline-detail{padding:12px 8px}.svp-tabs[role=tablist]{flex-wrap:wrap}.svp .svp-tabs[role=tablist] button{flex:1 1 40%}}';
+    return h('div', {
+      key: window.SavingsPanelRepository.contextKey(),
+      className: 'svp',
+      ref: root
+    }, h('style', null, css + extraCss), heading({
+      title: 'Ahorro',
+      sub: d ? 'Información al ' + fmt(d.today) : 'Administración del programa',
+      onBack: () => {
+        if (mayLeave()) onBack();
+      }
+    }), h('div', {
+      className: 'svp-body'
+    }, h('nav', {
+      className: 'svp-tabs',
+      role: 'tablist',
+      'aria-label': 'Secciones de Ahorro'
+    }, tabs.map(([value, label]) => h('button', {
+      key: value,
+      role: 'tab',
+      'aria-selected': tab === value,
+      onClick: () => changeTab(value)
+    }, label))), navigationError && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, navigationError), tab === 'rh' && h(window.SavingsRhReport, {
+      today: d?.today
+    }), tab === 'historial' && h(WithdrawalHistory, {
+      app,
+      cache,
+      revision,
+      onSaved: refresh,
+      onDirty: setDirty,
+      dirty,
+      mayLeave
+    }), tab === 'resumen' && h(React.Fragment, null, h(Titulo, {
+      sub: 'Saldo, próximas aportaciones y pendientes que necesitan seguimiento.'
+    }, 'Panorama del ahorro'), h(QueryStatus, {
+      state: summary,
+      retry: reloadSummary
+    }), d && !summary.loading && !summary.error && h(React.Fragment, null, h(KPIs, {
+      k,
+      onGo: (destination, date) => reconcile(date)
+    }), h(Tarjeta, {
+      title: 'Atención del programa',
+      icon: 'info'
+    }, h(Fila, {
+      label: 'Aportaciones pendientes de aplicación o revisión',
+      valor: d.attention?.pending_receipts ?? 'Por confirmar'
+    }), h(Fila, {
+      label: 'Diferencias entre recibos y movimientos',
+      valor: d.attention?.receipt_conflicts ?? 'Por confirmar'
+    }), h(Fila, {
+      label: 'Solicitudes que requieren atención',
+      valor: d.attention?.request_count ?? 'Por confirmar'
+    }), h('p', {
+      className: 'svp-note'
+    }, 'Las aportaciones se aplican automáticamente al llegar su fecha. Aquí aparecen las fechas vencidas aún sin aplicar; actualiza y revisa las excepciones si persisten. La conciliación por fecha permite revisar o corregir casos que lo necesiten.'), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      onClick: () => {
+        setAttention('incidencias');
+        changeTab('atencion');
+      }
+    }, 'Ver pendientes'), h(Btn, {
+      onClick: () => {
+        setAttention('cambios');
+        changeTab('atencion');
+      }
+    }, 'Ver cambios y retiros'))), h('p', {
+      className: 'svp-note'
+    }, 'Ahorradores: cuentas del programa. Planes activos: quienes tienen descuentos programados. Padrón: todos los afiliados. Los importes futuros no se abonan anticipadamente.'))), tab === 'atencion' && h(React.Fragment, null, h(Titulo, {
+      sub: 'Actúa sobre una operación o una fecha pendiente; conserva el resto del programa en su curso normal.'
+    }, 'Qué necesita atención'), h('div', {
+      className: 'svp-context-nav'
+    }, [['incidencias', 'Pendientes y excepciones'], ['cambios', 'Cambios y retiros']].map(([value, label]) => h(Btn, {
+      key: value,
+      tone: attention === value ? 'primary' : '',
+      onClick: () => {
+        if (!mayLeave()) return;
+        setDirty(false);
+        setExpanded(null);
+        setAttention(value);
+        setOffset(0);
+      }
+    }, label))), attention === 'incidencias' && h(React.Fragment, null, h(QueryStatus, {
+      state: summary,
+      retry: reloadSummary
+    }), d && !summary.loading && !summary.error && h(React.Fragment, null, (d.attention?.periods || []).map(item => h(Tarjeta, {
+      key: item.date,
+      title: 'Periodo del ' + fmt(item.date),
+      icon: 'calendar'
+    }, h(Fila, {
+      label: 'Aportaciones pendientes de aplicación o revisión',
+      valor: item.count
+    }), h(Fila, {
+      label: 'Importe previsto de las pendientes',
+      valor: M(item.expected_amount)
+    }), h(Btn, {
+      tone: 'primary',
+      onClick: () => reconcile(item.date)
+    }, 'Revisar ' + fmt(item.date)))), !d.attention?.periods?.length && h('p', {
+      className: 'svp-note'
+    }, 'No hay periodos con aportaciones pendientes de aplicación o revisión.'), d.attention?.receipt_conflicts > 0 && h('p', {
+      role: 'alert',
+      className: 'svp-note warn'
+    }, d.attention.receipt_conflicts + ' diferencia(s) entre recibos y movimientos requieren revisión.'), h(Btn, {
+      onClick: () => {
+        if (!mayLeave()) return;
+        setDirty(false);
+        setExpanded(null);
+        setShowAttentionPeople(value => !value);
+      }
+    }, showAttentionPeople ? 'Ocultar personas' : 'Consultar incidencias por persona'))), attention === 'cambios' && h(window.SavingsRuntimeAdmin, {
+      tab: 'pendientes',
+      app,
+      onSaved: refresh,
+      onOpenPerson: row => revealFolio(row.folio, row.id),
+      initialNavigation: requestNavigation,
+      onNavigationChange: setRequestNavigation
+    }), requestOnly && h(RecordSection, {
+      title: 'Solicitud del Folio ' + requestOnly.folio,
+      initialOpen: true
+    }, h(window.SavingsRequestsAdmin, {
+      folio: requestOnly.folio,
+      requestId: requestOnly.requestId,
+      expanded: true,
+      onSaved: refresh
+    }))), listing && h(React.Fragment, null, tab === 'personas' && h(Titulo, {
+      sub: 'Busca y consulta a la persona sin salir de esta lista.'
+    }, 'Encuentra a un ahorrador'), h('label', {
+      className: 'svp-search'
+    }, h(window.Icon, {
+      name: 'search',
+      size: 18
+    }), h('input', {
+      'aria-label': 'Buscar por nombre o folio',
+      placeholder: 'Buscar por nombre o folio',
+      value: search,
+      onChange: event => changeSearch(event.target.value)
+    })), tab === 'personas' && h('div', {
+      className: 'svp-tabs',
+      'aria-label': 'Filtros'
+    }, [['todos', 'Todos'], ['ahorrando', 'Ahorrando'], ['pausado', 'Sin aportación programada'], ['baja', 'Dejó de ahorrar']].map(([value, label]) => h('button', {
+      key: value,
+      'aria-pressed': filter === value,
+      onClick: () => {
+        if (!mayLeave()) return;
+        setDirty(false);
+        setExpanded(null);
+        setFilter(value);
+        setOffset(0);
+      }
+    }, label))), tab === 'atencion' && h('p', {
+      className: 'svp-note'
+    }, 'No se incluyen ceros de antecedentes históricos. Una fecha pendiente requiere revisar por qué no se aplicó; no equivale a una falta de pago.'), h(QueryStatus, {
+      state: people,
+      retry: reloadPeople
+    }), people.data && !people.loading && !people.error && h(React.Fragment, null, h('div', {
+      className: 'svp-totals'
+    }, h('span', null, total + ' persona(s) en esta consulta'), rows.length > 0 && h('span', null, offset + 1 + '–' + (offset + rows.length))), !rows.length ? h(Empty, {
+      title: query ? 'Sin coincidencias' : tab === 'atencion' ? 'Sin incidencias para esta consulta' : 'Sin ahorradores para este filtro'
+    }) : h('div', {
+      className: 'svp-stack'
+    }, rows.map(row => {
+      const id = row.participant_id || row.id,
+        isOpen = expanded === id;
+      return h('div', {
+        key: id
+      }, h(Row, {
+        a: row,
+        onOpen: () => togglePerson(row),
+        expanded: isOpen,
+        controls: 'savings-person-' + id
+      }), row.identity_conflict && h('p', {
+        role: 'alert',
+        className: 'svp-note warn'
+      }, 'Identidad por resolver. El Folio no tiene una coincidencia única válida; sus movimientos no se asignan a otra persona.'), isOpen && h(InlinePerson, {
+        key: id,
+        row,
+        cache,
+        revision,
+        onSaved: refresh,
+        onDirty: setDirty,
+        dirty,
+        app,
+        requestId: focusRequest,
+        initialSection: focusRequest ? 'requests' : undefined
+      }));
+    })), h('div', {
+      className: 'svp-actions'
+    }, offset > 0 && h(Btn, {
+      onClick: () => {
+        if (!mayLeave()) return;
+        setDirty(false);
+        setExpanded(null);
+        setOffset(value => Math.max(0, value - 20));
+      }
+    }, 'Anteriores'), offset + rows.length < total && h(Btn, {
+      onClick: () => {
+        if (!mayLeave()) return;
+        setDirty(false);
+        setExpanded(null);
+        setOffset(value => value + 20);
+      }
+    }, 'Ver más personas')))), tab === 'programa' && h(React.Fragment, null, h(Titulo, {
+      sub: 'Reglas, operaciones por periodo y consulta de antecedentes.'
+    }, 'Programa'), h('label', {
+      className: 'svp-field'
+    }, 'Operación del programa', h('select', {
+      value: program,
+      onChange: event => {
+        if (mayLeave()) {
+          setDirty(false);
+          setProgram(event.target.value);
+        }
+      }
+    }, programViews.map(([value, label]) => h('option', {
+      key: value,
+      value
+    }, label)))), program === 'conciliacion' ? h(window.SavingsReconciliationAdmin, {
+      key: period || d?.today || 'periodo',
+      asOf: period || d?.today,
+      onSaved: refresh
+    }) : h('div', {
+      className: 'svp-settings'
+    }, h(window.SavingsRuntimeAdmin, {
+      key: program,
+      tab: program,
+      app,
+      onSaved: refresh
+    })), h('div', {
+      className: 'svp-detail-grid'
+    }, h(RecordSection, {
+      title: 'Auditoría y solicitudes anteriores'
+    }, h(LegacyArchive, {
+      app,
+      onSaved: refresh
+    })), h(RecordSection, {
+      title: 'Accesos al programa'
+    }, h(window.SavingsAccessAdmin)), h(RecordSection, {
+      title: 'Certificación y publicación'
+    }, h('p', {
+      className: 'svp-note'
+    }, 'Herramientas de regularización. No son confirmaciones rutinarias de aportaciones.'), h(window.SavingsRuntimeAdmin, {
+      tab: 'publicacion',
+      app,
+      onSaved: refresh
+    }), h(window.SavingsBulkAdmin, {
+      app,
+      asOf: d?.today,
+      onSaved: refresh
+    })), h(RecordSection, {
+      title: 'Consultar evidencia original'
+    }, h(window.SavingsReviewAdmin, {
+      readOnly: true
+    }))))));
+  }
+  window.SavingsPanelAdmin = SavingsPanelAdmin;
 })();
 })();
 /* @@file screens-admin-branding.jsx */

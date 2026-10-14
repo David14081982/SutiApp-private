@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "environment": "isolated PostgreSQL/WASM; synthetic fixtures only",
+  "checks": [
+    "Existing settlement SQL records delivered capital/yield and settlement timestamp",
+    "Additive installation preserves every existing row, function and table security setting",
+    "RPC is stable, definer, fixed-search-path and authenticated-only; tables stay private",
+    "Anonymous, unauthenticated and accounts without savings.read cannot read history",
+    "More than 500 withdrawals paginate completely, including the oldest completed operation",
+    "Only canonical operational withdrawal types are included; repeated people retain every request",
+    "Current names, raw person folios and request folios support literal substring search",
+    "Real identity helper keeps ambiguous, duplicate and missing names explicit",
+    "Status totals are computed before pagination and approvals remain separate from pending",
+    "Requested and delivered amounts stay distinct; pending or missing payment values are never zero-filled",
+    "DTO excludes metadata, actor IDs, supporting documents and unrelated private fields",
+    "Invalid status, offset, limit and oversized search fail before reading a page",
+    "Repeated history reads succeed in read-only transactions and preserve all authority rows",
+    "Recovery refuses to remove a later changed definition",
+    "Exact-signature recovery removes only the new reader and preserves original sources/security"
+  ],
+  "requestCount": 522,
+  "migration": {
+    "path": "supabase/migrations/20261014000200_savings_withdrawal_history.sql",
+    "sha256": "b080028115365286e78237122337fa07f10fd38ba2a07da5bf2bad4012968a2a"
+  },
+  "recovery": {
+    "path": "supabase/recovery/20261014000200_savings_withdrawal_history.sql",
+    "sha256": "e1d4aa004b43162c8b646838b4b836ec47d462412606aa126518de90ce5f8641"
+  },
+  "test": {
+    "path": "scripts/test-savings-withdrawal-history.js",
+    "sha256": "7600cb658328dcb3fcb270ee6894a07cba9feb9ed53aa9a35321b74337d9aaf2"
+  },
+  "existingNameHelper": {
+    "path": "supabase/migrations/20261001000300_savings_affiliate_names.sql",
+    "sha256": "1bdb2d388d5754fe039b40376d4515ea43cda70511db77c262b9a18f35bc57f0"
+  },
+  "settlementColumnContract": {
+    "path": "supabase/migrations/20261003000400_savings_automatic_contributions.sql",
+    "sourceSha256": "898ae6b9ca04b0487f7ee19c047f901b21149ccafbc14498adf4761591b7a994",
+    "executedStatementSha256": "8827e090ba8dcfd1f67fe305ce850d53a1046ec0b1a6992fb222c45ee25b6774",
+    "scope": "Existing delivered-component assignment executed in synthetic table; no settlement command or financial calculation was changed."
+  },
+  "installedFunctionMd5": "dca55accf3a419447dfa8a022b4558d0",
+  "sourcesUnchangedSha256": "69afd18b250fef4a87a97ae7f116728d5a4e6521cec2e350272ccd7d24553071",
+  "recoveryReapply": "PASS",
+  "productionWrites": 0
+}

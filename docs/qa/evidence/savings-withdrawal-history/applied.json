@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "version": "20261014000200",
+  "functionMd5": "dca55accf3a419447dfa8a022b4558d0",
+  "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+  "protectedTables": 59,
+  "allPreviousFunctionsAndFinancialDocumentRowsUnchanged": true,
+  "businessWrites": 0
+}

@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "command": "node scripts/test-pages-deployment.js",
+  "pwa": true,
+  "forbiddenFiles": 0
+}

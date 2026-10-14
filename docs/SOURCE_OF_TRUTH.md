@@ -919,3 +919,7 @@ Owner exception (2026-10-07): new membership / MEMBERSHIP_APPROVAL revisions obt
 ## Withdrawal revision signers -- H-SAVINGS-DOCUMENT-SIGNERS-UX-001
 
 For caja / SAVINGS_WITHDRAWAL_APPROVAL, REISSUE uses the effective document_private configuration through the existing resolver and freezes the complete signer set and configuration_id in the new revision. Audit records CURRENT_CONFIGURATION provenance. The financial event and previous documents remain immutable. This adds to the Membership exception without changing loan authority or assignments. The template name identifies the background PDF; layout_name identifies the assigned design.
+
+## Withdrawal history -- H-SAVINGS-WITHDRAWAL-HISTORY-001
+
+The new readonly get_admin_savings_withdrawal_history projects canonical operational WITHDRAW/EXTRAORDINARY_WITHDRAWAL requests and their existing participants, through savings.read. Each request remains distinct and paginated; the established identity helper supplies the current display name. Submitted amount and dates are separate from SETTLED delivered components; the displayed delivered total is only their nullable sum, preserving recorded values. Exact participant_id opens the existing account detail; exact request ID opens the existing private document component, including versions older than the old 500-operation list. No new financial source, historical rewrite, approval or settlement behavior. Imported review-only antecedents remain under Programa, with their established meaning.

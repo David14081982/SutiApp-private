@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "version": 2026100420,
+  "bundleSha": "7e57b1854e95d5b07ebed63dd7834a4813b97719d0662f5a0a2b700c0cb208c1",
+  "changedChunks": [
+    "savings-panel-admin.jsx"
+  ],
+  "addedChunks": [
+    "savings-withdrawal-history-repository.js"
+  ],
+  "unrelatedChunksPreserved": 155,
+  "sourceHashes": {
+    "app/savings-panel-admin.jsx": "6c18d5c7909c4a553fc3280369362b3e017cd67f1957f3646c92dd8c400b033e",
+    "app/savings-withdrawal-history-repository.js": "951a8033717cd129bea8089f993c9917424769e94fe57308e65d8d808b214c65"
+  },
+  "serviceWorkerLogicChanged": false
+}

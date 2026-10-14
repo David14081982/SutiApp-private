@@ -420,6 +420,6 @@ Owner-authorized exception H-MEMBERSHIP-DOCUMENT-REISSUE-001. Exact-definition g
 
 Focal migration replaces only two scope conditions and one comment in document_private.reissue, guarded by exact before/after hashes and OID/owner/ACL preservation. It adds caja/SAVINGS_WITHDRAWAL_APPROVAL to the existing current-signers exception, without business-row changes during installation. Exact recovery restores the prior function and retains all issued revisions. Production application preserved transactional authority/security fingerprints; one owner-requested v3 was subsequently issued through the authenticated existing RPC. See docs/audits/H-SAVINGS-DOCUMENT-SIGNERS-UX-001.md and savings-document-signers/applied.json.
 
-## 20261014000200 -- savings_withdrawal_history
+## 20261014000200 -- savings_withdrawal_history -- APPLIED / VERIFIED
 
 One additive STABLE SECURITY DEFINER reader, authenticated-only behind savings.read and fixed empty search_path. It has bounded pages and an independent complete filtered count; no table, index, trigger, existing function, writer or business-row change. Recovery validates the exact installed definition before dropping only the new signature, without CASCADE. Roll the focal frontend back before removal. Isolated tests cover 522 withdrawals, permissions, search/status/identity/nulls and recovery drift/reapply. Application/readback status is recorded in audits/H-SAVINGS-WITHDRAWAL-HISTORY-001.md and qa/evidence/savings-withdrawal-history/applied.json.

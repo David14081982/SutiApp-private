@@ -1,0 +1,91 @@
+{
+  "task": "H-SAVINGS-WITHDRAWAL-HISTORY-001",
+  "verdict": "APPROVED",
+  "reviewer": "independent /root/review_signers",
+  "baselineCommit": "bc3ec240caa401f603c5858a14722aa549526b84",
+  "publishedCommit": "3a6662013576a2a46e1309cc06b0c0dd13446d26",
+  "publishedVersion": 2026100420,
+  "deploymentRun": 38510543481,
+  "requestedOutcome": "Add Historial to the main Savings tabs, list withdrawal requests and completed withdrawals, and open the existing person's Savings detail and the selected operation's authorization PDF.",
+  "findings": [
+    "Historial is additive; the five existing tabs, person detail, operation controls and document component remain intact.",
+    "The dedicated paginated reader avoids the preexisting 500-operation limit without modifying the shared reader or financial writers.",
+    "Each request remains a separate row. Exact participant_id selects InlinePerson and exact request ID selects GeneratedDocuments; repeated people and older requests cannot route through a partial Folio match.",
+    "Requested, approved and delivered states and dates remain distinct. Delivered totals derive only from recorded settlement components, with nulls preserved.",
+    "The live settlement wrapper and its existing private writer were independently inspected read-only and confirm the delivered-column semantics used by the new projection.",
+    "An independent live READ ONLY transaction confirmed the new function hash/ACL, exact ordered source identity and amounts, omitted metadata, and permission denials. No business or document write occurred.",
+    "Final test, migration, recovery, browser and build source hashes match the reviewed files. Independent bundle comparison against bc3ec24 found one changed chunk, one new focal repository chunk and 155 unchanged chunks.",
+    "Published bytes match the tested build. At 1440 and 390 pixels, authenticated production verification opens the exact existing withdrawal PDF from Historial and preserves tabs, detail, closing, collapse and return to Resumen without browser errors or mutations."
+  ],
+  "problemsDetected": [],
+  "sourceOfTruth": {
+    "verdict": "SAFE",
+    "requestAuthority": "public.savings_requests and public.savings_participants, canonical operational SAVINGS_RUNTIME_V1 withdrawals only",
+    "nameAuthority": "Existing savings_affiliate_display_name helper over canonical affiliate identity",
+    "detailAndDocumentAuthority": "Existing Savings workspace readers and authenticated private document API",
+    "newFinancialAuthority": false,
+    "fallbackOrBrowserPersistenceAdded": false
+  },
+  "architecture": {
+    "verdict": "PASS",
+    "newReader": "public.get_admin_savings_withdrawal_history(text,text,integer,integer)",
+    "functionMd5": "dca55accf3a419447dfa8a022b4558d0",
+    "newRepository": "SavingsWithdrawalHistoryRepository; used only by Historial",
+    "existingSharedReadersWritersAndViewerChanged": false,
+    "unrelatedBundleChunksPreserved": 155,
+    "globalImageRegression": "NOT APPLICABLE: focal runtime change plus generated bundle/cachebusters; shared viewer, AssetRepository, DocumentWorkflowRepository, Auth, Storage and service-worker logic are unchanged.",
+    "registry": "Full suite passed; final evidence-only incremental refresh remains part of repository closure."
+  },
+  "security": {
+    "verdict": "PASS",
+    "reader": "STABLE SECURITY DEFINER with empty fixed search_path; auth.uid and savings.read required",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "isolatedPermissionAndPrivateTableTests": "PASS",
+    "independentLiveNoIdentityAndDirectTableDenials": "PASS",
+    "independentLiveAnonAndServiceExecuteDenied": true,
+    "frontendSecretsOrNewDocumentPrivileges": false
+  },
+  "data": {
+    "verdict": "PASS",
+    "protectedTablesDuringApply": 59,
+    "existingPublicAndDocumentFunctionsPreserved": true,
+    "businessWrites": 0,
+    "documentWrites": 0,
+    "historicalRewrites": 0,
+    "recovery": "Exact-definition guard drops only the new reader without CASCADE after frontend rollback."
+  },
+  "ui": {
+    "verdict": "PASS",
+    "existingSectionsAndControlsPreserved": true,
+    "newSection": "Historial with search, status filters, pagination and request-specific detail/PDF",
+    "dirtyEditAndContextGuards": "PASS",
+    "loadingErrorRetryEmptyAndMissingDocumentStates": "PASS",
+    "responsiveWidths": [390, 1440],
+    "syntheticMobileScreenshotIndependentlyInspected": true,
+    "unauthorizedRedesign": false
+  },
+  "legacy": "SAFE CHANGE: read-only documentary history; no Google, loan format, formula, eligibility, settlement, balance or financial writer changes.",
+  "verification": {
+    "isolatedDatabaseChecks": 15,
+    "isolatedWithdrawalRows": 522,
+    "browserGroupsPerViewport": 11,
+    "browserViewports": [390, 1440],
+    "existingPanelRegressionGroups": 10,
+    "existingPanelRegressionViewports": [320, 430, 1440],
+    "pagesBuildAllowlistAndDeployment": "PASS",
+    "architectureSuite": "PASS",
+    "independentLiveBackend": "PASS",
+    "publishedMobileAndDesktop": "PASS",
+    "openedExistingPdfSha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544"
+  },
+  "evidence": ["database.json", "browser.json", "existing-panel-regression/browser.json", "build.json", "pages-build.json", "pages-deployment.json", "applied.json", "live-backend-review.json", "architecture-verification.json", "deployment.json", "published.json", "production-browser.json"],
+  "limitations": [
+    "Production contained one qualifying operational withdrawal; pagination and coverage beyond 500 were proved with 522 isolated synthetic requests.",
+    "The production test mounts the published Savings component in an inspection overlay with real authenticated repositories, service workers blocked and unrelated background writes denied. It does not claim complete app-shell or service-worker regression.",
+    "Imported review-only antecedents retain their existing Programa location and meaning; they are not converted into operational withdrawals.",
+    "An operation without an issued authorization document remains explicitly without a document; this feature does not generate or approve one."
+  ],
+  "ownerDecisionRequired": false,
+  "nextAction": "Complete only this H's evidence closure: refresh the derived Registry for final evidence, commit the review/audit artifacts, and tell the owner where Historial is and how to open a request's detail and PDF. Preserve private evidence outside Git. Do not start another H or execute any approval, settlement or document regeneration based on this review.",
+  "responseGeneratedForCodex": true
+}

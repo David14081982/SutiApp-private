@@ -45,3 +45,29 @@ Status: PASS for implementation, isolated regression, local build and backend ap
 - Shared AssetRepository, DocumentWorkflowRepository, viewer, Auth, Storage and SW logic unchanged. Mandatory global image regression is NOT APPLICABLE to this focal feature; shared generated bundle/cachebusters are GENERATED_ARTIFACT.
 
 Evidence: docs/qa/evidence/savings-withdrawal-history/{database,browser,build,pages-build,applied}.json and existing-panel-regression/browser.json. Only synthetic screenshots are committed. Production readback and PDF checks must log no private names, IDs, signed URLs, tokens or real screenshots.
+
+
+## Published acceptance
+
+Runtime commits: f5d10dd (feature) and 3a6662013576a2a46e1309cc06b0c0dd13446d26 (test EOF normalization and derived freshness). GitHub Pages 38510543481 SUCCESS; Auth/backend compatibility and critical request production checks PASS. Public HTML, bundle and service-worker bytes match local Pages build 2026100420 exactly. The required source/chunk changes preserve all 155 unrelated bundle chunks.
+
+Published SavingsPanelAdmin was mounted from the real bundle with the existing authenticated account and actual read-only repositories at 1440 and 390 px. All six tabs remain; lazy history, state/search, exact participant detail, timestamps, exact authorization PDF v3, open/close/collapse/Resumen navigation and overflow checks PASS. PDF SHA256 b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544 matches the previously corrected real document; no regeneration was used. Browser page errors and mutation attempts: zero. Independent live SQL readback matches the canonical source and verifies permissions. No real-data screenshots or private IDs/names/URLs/tokens enter evidence.
+
+Known verification limits: production currently contains one qualifying operational withdrawal; scale/paging beyond 500 is proven with 522 isolated synthetic rows. The published component is mounted in an inspection overlay with service workers blocked and unrelated background calls denied; this does not claim a full app-shell/SW/global-image regression. SW logic and shared surfaces were not changed. Original Google/import review-only antecedents keep their existing Programa location and are not invented as operational withdrawals. Requests without an issued document retain their actual empty document state.
+
+Architecture: full Registry suite PASS (generation, lookup, permissions, incremental, stale detection, secrets and determinism); Historial aliases resolve to its reader, existing detail and documents. Derived index refreshes after final evidence writes.
+
+H-SAVINGS-WITHDRAWAL-HISTORY-001 RESULT
+Status: PASS (implementation and published verification complete; independent final review recorded separately).
+Files changed: focal Savings panel and new withdrawal-history repository; additive SQL reader/recovery; build manifest; focal release/tests/live verification; generated bundle/cachebusters; scoped authority/migration/audit/changelog/evidence and derived architecture files.
+Source-of-truth verdict: PASS; existing canonical requests/participants, financial detail and private document authority retained.
+Invariant verdict: PASS; exact request/participant identity, nulls, dates and recorded monetary values preserved; no new business writer or fallback.
+Build: PASS; version 2026100420, local Pages and live bytes identical.
+Tests: PASS; database15; browser11 groups at two widths; existing panel10 groups at three widths; Pages allowlist; Registry suite; independent live backend; published browser at two widths.
+Security: PASS; authenticated savings.read-gated stable reader; scoped documents and existing backend controls reused; explicit deny tests; no leaked credentials/PII.
+Legacy impact: NOT APPLICABLE to Google, loan formats, formulas or financial writers; no changes to those sources.
+Unexpected files changed: NONE in isolated release; dirty primary workspace preserved.
+Known limitations: verification limits above; no-document operations stay explicit.
+Evidence: docs/qa/evidence/savings-withdrawal-history/ including applied.json, published.json, production-browser.json and live-backend-review.json; independent final architectural verdict recorded in architect-review.json.
+
+Independent final review: APPROVED; see architect-review.json. No outstanding defect or owner decision. Final evidence and derived index are committed separately without a new runtime deployment.

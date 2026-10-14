@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "suite": "python scripts/test-architecture-registry.py",
+  "checks": [
+    "generation",
+    "freshness",
+    "stale",
+    "lookup",
+    "permissions",
+    "incremental",
+    "secrets",
+    "determinism"
+  ],
+  "historyLookup": "Historial de retiros",
+  "newExplicitRelationships": 8,
+  "runtimeAuthority": false,
+  "finalEvidenceIndexRefresh": "Incremental update and FRESH check executed after all closure evidence"
+}

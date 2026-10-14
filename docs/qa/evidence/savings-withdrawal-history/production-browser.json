@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "businessWrites": 0,
+  "documentWrites": 0,
+  "privateContentLogged": false,
+  "realDataScreenshots": false,
+  "serviceWorkers": "blocked",
+  "viewports": [
+    {
+      "width": 1440,
+      "status": "PASS",
+      "tabsPreserved": true,
+      "lazyHistory": true,
+      "totalHistoryRows": 1,
+      "statusAndRequestSearch": true,
+      "exactParticipantDetail": true,
+      "timestampsDisplayed": true,
+      "exactRequestPdf": true,
+      "pdf": {
+        "http": 200,
+        "bytes": 443761,
+        "sha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544",
+        "pdf": true
+      },
+      "viewerOpensCloses": true,
+      "collapseAndSummaryNavigation": true,
+      "noHorizontalOverflow": true,
+      "historyReads": 5,
+      "documentReads": 3,
+      "blockedBackground": 7,
+      "pageErrors": 0,
+      "mutationAttempts": 0
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "tabsPreserved": true,
+      "lazyHistory": true,
+      "totalHistoryRows": 1,
+      "statusAndRequestSearch": true,
+      "exactParticipantDetail": true,
+      "timestampsDisplayed": true,
+      "exactRequestPdf": true,
+      "pdf": {
+        "http": 200,
+        "bytes": 443761,
+        "sha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544",
+        "pdf": true
+      },
+      "viewerOpensCloses": true,
+      "collapseAndSummaryNavigation": true,
+      "noHorizontalOverflow": true,
+      "historyReads": 5,
+      "documentReads": 3,
+      "blockedBackground": 7,
+      "pageErrors": 0,
+      "mutationAttempts": 0
+    }
+  ],
+  "surface": "Published SavingsPanelAdmin mounted with the current authenticated account and real read-only repositories",
+  "version": 2026100420,
+  "bundleSha": "7e57b1854e95d5b07ebed63dd7834a4813b97719d0662f5a0a2b700c0cb208c1"
+}

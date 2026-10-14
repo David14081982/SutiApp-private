@@ -453,3 +453,8 @@ El propietario confirmó conservar Ahorro y solicitudes previas, y autorizó com
 ## H-MEMBERSHIP-DOCUMENT-REISSUE-001 -- specific signer exception
 
 By explicit owner instruction on 2026-10-07, new membership / MEMBERSHIP_APPROVAL revisions freeze currently effective configured signers (order, full name, title, role and signature asset). This is the sole exception to the historical-signer requirement in H-SUTIAPP-AUTHORIZATION-PDF-003. Original PDF/record, business event, identity, approved money/calendar and request remain immutable. No fallback to old signers on invalid current configuration. Other programs retain existing behavior. Idempotent revision UUID, latest-parent checks, permissions/module boundaries and audit remain required.
+
+
+## Withdrawal document correction -- H-SAVINGS-DOCUMENT-SIGNERS-UX-001
+
+A new caja / SAVINGS_WITHDRAWAL_APPROVAL revision uses the name, title, role and signature asset from the same effective version of each assigned signer, in configured order. Never mix current names with historical signature images. Preserve previous PDFs and the financial source_snapshot; only its revision envelope changes. Reissue does not approve or deliver money. Loans and other excluded types retain historical signers; Membership retains its earlier exception. This explicitly adds withdrawals to the previously Membership-only exception above.

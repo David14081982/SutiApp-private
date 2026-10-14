@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "checks": [
+    "forward changes only function and preserves OID owner ACL and all rows",
+    "migration rejects an unexpected source without altering data or function",
+    "anonymous missing-permission and cross-module reissues are denied",
+    "withdrawal revision takes ordered current names titles roles and signature assets",
+    "revision preserves sealed business values event identity and the original PDF row",
+    "retry reuses revision and stale parent or conflicting UUID is rejected",
+    "loan and all unrelated program or document-type branches retain original signers",
+    "existing Membership corrections keep current configured signers and provenance",
+    "actual resulting PDF renders current signature assets and valid pages",
+    "a new withdrawal approval captures assigned signers without changing its business amounts",
+    "invalid current signer fails closed without historical fallback or new rows",
+    "a later deliberate revision captures subsequent configuration while v1 and v2 stay sealed",
+    "recovery is exact and preserves every newly created revision; reapply passes",
+    "history immutability and original approval-event count remain unchanged"
+  ],
+  "appliedFunctionMd5": "d6daed09f48ea4b9c89846cf75515c19",
+  "sourceHashes": {
+    "supabase/migrations/20261014000100_savings_withdrawal_document_signers.sql": "86c6d37ac80ead2ca8f70f4f842c510ca46bd722d790dcc503836b331d26a178",
+    "supabase/recovery/20261014000100_savings_withdrawal_document_signers.sql": "6cd868d5042f43e5f29bc3ddb3e4c168bbae99ec9f795e6ace9eb440396dd846",
+    "scripts/fixtures/membership-document-reissue-schema.json": "32633d1845f480c94995d06d6cb103f46fc9b157a276f56762f5dd41231466dd",
+    "scripts/test-savings-document-signers.js": "bcf16fa3e700861aa2a388907d89ab10ee0f39430ba7024543c307b904dd8f95",
+    "supabase/functions/document-generation/index.ts": "8a0eec4bf63f4afda6bd5d4a990b4aa8cef271d9ddec0f238807ad97b4d436a9",
+    "supabase/functions/document-generation/layout-service.mjs": "2ef9bb26be69733a708f0a8f798189350c851ed14571923d2fdeea963df706ef",
+    "supabase/functions/document-generation/renderer.mjs": "158caacbdf489cc76306acdc5cf841101c9c1d2a381920c9457580bb0d03f34d",
+    "supabase/functions/document-generation/layout.mjs": "ff1c05669b758905a5fc52439ae879a1f5730911563b3914c7c6679e84cb5350",
+    "supabase/functions/document-generation/render-layout.mjs": "82b8eddd3767ba169fab4d688c60d12aada8f589f2571fd64ec3c265e66d7da7"
+  },
+  "syntheticOnly": true,
+  "productionTouched": false,
+  "networkUsed": false,
+  "originalRowsPreserved": 12,
+  "unchangedBranches": 10,
+  "baselineFunctionMd5": "dbfb7bb11deca7837ef4b5e0c184b6eb"
+}

@@ -1409,3 +1409,8 @@ Owner authorizes removing authorization PDFs from affiliate History/Tracking and
 ## H-MEMBERSHIP-DOCUMENT-REISSUE-001 -- owner decision, 2026-10-07
 
 After the explanation that REISSUE retains historical signers, the owner instructed "corrijelo". For new revisions with program membership and document_type MEMBERSHIP_APPROVAL, use the currently effective configured signer order, names, titles, roles and signature assets. Preserve the old PDF/record, request, original event, identity and approved financial values. Other programs retain historical signers. This is the specific exception to H-SUTIAPP-AUTHORIZATION-PDF-003; no automatic historical rewrite or financial approval replay is authorized.
+
+
+## H-SAVINGS-DOCUMENT-SIGNERS-UX-001 -- owner decision, 2026-10-13
+
+The owner requires the corrected withdrawal PDF to use the assigned person and signature together. Extend the existing current-signers revision exception only to caja / SAVINGS_WITHDRAWAL_APPROVAL: a new version captures the complete ordered current signer set (name, title, role and signature asset from the same effective version), with configuration provenance audited. Preserve old PDFs and approved identity, event, date and amounts. Membership retains its existing exception; loans and all other types retain their contracts. Clarify letterhead, design, destination and signers in the UI while preserving all functionality.

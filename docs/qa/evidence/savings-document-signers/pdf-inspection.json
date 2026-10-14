@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "pages": 1,
+  "withdrawalTitle": true,
+  "currentSignerNameTitleRole": true,
+  "historicalFirstSignerAbsent": true,
+  "signatureImageVisuallyReviewed": true,
+  "pdfSha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544"
+}

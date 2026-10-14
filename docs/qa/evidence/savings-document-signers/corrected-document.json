@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "documentVersion": 3,
+  "documentReady": true,
+  "pdfHttp": 200,
+  "pdfBytes": 443761,
+  "pdfSha256": "b8ef32911e178a2f5010d234ec42c882bdf01b798723f872386b978810d94544",
+  "currentSignerSetExact": true,
+  "currentFirstSigner": "LIC ANA ESTEFANÍA VILLARREAL ENCINAS",
+  "signerCount": 3,
+  "configurationProvenanceAudited": true,
+  "originalRecordsPreserved": 162,
+  "configurationSignersTemplatesLayoutsAssignmentsUnchanged": true,
+  "financialRequestUnchanged": true,
+  "sourceFinancialSnapshotUnchanged": true,
+  "financialWritersInvoked": 0,
+  "checkedAt": "2026-10-14T03:18:06.287Z"
+}

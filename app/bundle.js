@@ -2595,7 +2595,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       className: "dl-host"
     }, /*#__PURE__*/React.createElement("style", null, CSS), /*#__PURE__*/React.createElement(Dialog, {
       title: "Dise\xF1ar documento",
-      description: "El PDF utiliza esta distribuci\xF3n. Arrastra los elementos y activa el dise\xF1o en los programas o fondos elegidos.",
+      description: (window.DocumentGenerationTypes?.[scope.document_type] || 'Documento') + ' · ' + programName(program) + '. El diseño distribuye el contenido; las personas que firman se eligen en Configurar.',
       onClose: () => {
         if (!busy && (!dirty || window.confirm('Hay cambios sin guardar. ¿Cerrar el diseñador?'))) onClose();
       },
@@ -2694,6 +2694,8 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       value: d.fund_key
     }, d.label))))), /*#__PURE__*/React.createElement("div", {
       className: "dl-toolbar"
+    }, /*#__PURE__*/React.createElement(Field, {
+      label: "Membrete (PDF de fondo)"
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
@@ -2706,10 +2708,13 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, data.templates.map(t => /*#__PURE__*/React.createElement("option", {
       key: t.id,
       value: t.id
-    }, t.name, " \xB7 v", t.version))), /*#__PURE__*/React.createElement("select", {
+    }, t.name, " \xB7 v", t.version)))), /*#__PURE__*/React.createElement(Field, {
+      label: "Dise\xF1o guardado"
+    }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
-        width: 300
+        width: 300,
+        maxWidth: '100%'
       },
       "aria-label": "Versi\xF3n del dise\xF1o",
       value: versionId,
@@ -2722,7 +2727,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
     }, "Nuevo dise\xF1o editable"), data.versions.map(v => /*#__PURE__*/React.createElement("option", {
       key: v.id,
       value: v.id
-    }, v.name, " \xB7 ", programName(v.program), " \xB7 v", v.version, v.id === data.active_id ? ' · activo aquí' : ''))), /*#__PURE__*/React.createElement("span", {
+    }, v.name, " \xB7 ", programName(v.program), " \xB7 v", v.version, v.id === data.active_id ? ' · activo aquí' : '')))), /*#__PURE__*/React.createElement("span", {
       className: "dl-help",
       role: "status"
     }, data.active_id ? 'Activo: ' + (data.versions.find(v => v.id === data.active_id)?.name || 'Diseño guardado') + (fundKey && data.assignment_fund_key === '' ? ' · general del programa' : '') : 'Diseño pendiente de configurar'), /*#__PURE__*/React.createElement(Button, {
@@ -2753,7 +2758,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       }
     }, "Activar en programas y fondos \xB7 ", targets.length, " seleccionados"), /*#__PURE__*/React.createElement("p", {
       className: "dl-help"
-    }, "La asignaci\xF3n espec\xEDfica del fondo tiene prioridad sobre la general de su programa. Activar sustituye la versi\xF3n de los destinos seleccionados; los dem\xE1s conservan la suya."), /*#__PURE__*/React.createElement("div", {
+    }, "Activar dise\xF1o guarda y aplica esta distribuci\xF3n a los destinos seleccionados para este tipo de documento. Los otros documentos y los PDF ya emitidos conservan su versi\xF3n. La asignaci\xF3n espec\xEDfica del fondo tiene prioridad sobre la general de su programa."), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))',
@@ -3244,7 +3249,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
       })
     }), /*#__PURE__*/React.createElement("p", {
       className: "dl-help"
-    }, "Imagen de cada firma \xB7 el tama\xF1o de los textos se controla por separado. Se conserva la proporci\xF3n de la imagen."), Array.from({
+    }, "Las personas, nombres, cargos y firmas son los asignados en Configurar para este documento. Aqu\xED ajustas su distribuci\xF3n y el tama\xF1o de las im\xE1genes; se conserva su proporci\xF3n."), Array.from({
       length: data.signer_count || 1
     }, (_, n) => {
       const count = element.orientation === 'vertical' ? 1 : element.columns,
@@ -3797,7 +3802,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       style: {
         fontSize: 15
       }
-    }, "Documento de autorizaci\xF3n"), state.loading && /*#__PURE__*/React.createElement("p", {
+    }, "Documento de autorizaci\xF3n"), state.rows.length > 0 && /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-2)'
+      }
+    }, "Cada PDF conserva los datos y firmantes de su emisi\xF3n.", admin && state.rows.some(row => row.can_reissue) && ' Usa Emitir versión corregida para generar una nueva versión sin eliminar la anterior.'), state.loading && /*#__PURE__*/React.createElement("p", {
       role: "status"
     }, "Consultando documento\u2026"), state.error && /*#__PURE__*/React.createElement("p", {
       role: "alert"
@@ -3816,7 +3826,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         alignItems: 'center',
         flexWrap: 'wrap'
       }
-    }, /*#__PURE__*/React.createElement("span", null, TYPES[row.document_type], " \xB7 v", row.business_version || 1, " \xB7 ", {
+    }, /*#__PURE__*/React.createElement("span", null, TYPES[row.document_type], " \xB7 v", row.business_version || 1, state.rows.some(other => other.document_type === row.document_type && (other.business_version || 1) > (row.business_version || 1)) ? ' · Versión anterior' : '', " \xB7 ", {
       PENDING: 'Pendiente',
       GENERATING: 'Preparando',
       READY: 'Disponible',
@@ -3827,7 +3837,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, "Ver documento"), row.can_reissue && /*#__PURE__*/React.createElement("button", {
       disabled: busy,
       onClick: async () => {
-        if (!window.confirm(row.program === 'membership' && row.document_type === 'MEMBERSHIP_APPROVAL' ? 'Emitir una nueva versión de Membresías con el diseño y los firmantes vigentes: orden, cargos, roles y firmas actuales. Se conservarán el PDF anterior y los datos autorizados de la solicitud.' : 'Emitir una versión corregida con el diseño activo y los datos de depósito de esta solicitud. Se conservarán el PDF anterior, los importes autorizados y sus firmantes.')) return;
+        if (!window.confirm(row.program === 'membership' && row.document_type === 'MEMBERSHIP_APPROVAL' || row.program === 'caja' && row.document_type === 'SAVINGS_WITHDRAWAL_APPROVAL' ? 'Emitir una nueva versión de ' + (row.program === 'caja' ? 'Retiro de ahorro' : 'Membresías') + ' con el diseño y los firmantes vigentes: orden, cargos, roles y firmas actuales. Se conservarán el PDF anterior y los datos autorizados de la solicitud.' : 'Emitir una versión corregida con el diseño activo y los datos de depósito de esta solicitud. Se conservarán el PDF anterior, los importes autorizados y sus firmantes.')) return;
         setBusy(true);
         try {
           if (!revision.current || revision.current.id !== row.id) revision.current = {
@@ -4536,7 +4546,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       size: 20
     }), "Firmas por programa"), /*#__PURE__*/React.createElement("p", {
       className: "df-sec__s"
-    }, "Define qui\xE9nes deben aparecer en los documentos de cada programa.")), /*#__PURE__*/React.createElement("label", {
+    }, "Elige el documento del programa para revisar su dise\xF1o, membrete y personas que firman.")), /*#__PURE__*/React.createElement("label", {
       className: "df-search"
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "search"
@@ -4571,12 +4581,12 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "doc",
       size: 15
-    }), scope.assignment?.layout_id ? scope.assignment.template_name + ' · v' + scope.assignment.template_version : 'Sin diseño asignado'), scope.assignment?.layout_id && /*#__PURE__*/React.createElement("p", {
+    }), scope.assignment?.layout_id ? 'Diseño asignado: ' + scope.assignment.layout_name + ' · v' + scope.assignment.layout_version : 'Sin diseño asignado'), scope.assignment?.layout_id && /*#__PURE__*/React.createElement("p", {
       className: "df-sec__s",
       style: {
         padding: '0 20px 10px'
       }
-    }, "Dise\xF1o v", scope.assignment.layout_version, " \xB7 General del programa", scope.variants > 0 ? ' · ' + scope.variants + ' destinos específicos en el diseñador' : ''), /*#__PURE__*/React.createElement("div", {
+    }, "Membrete: ", scope.assignment.template_name, " \xB7 v", scope.assignment.template_version, /*#__PURE__*/React.createElement("br", null), "General del programa", scope.variants > 0 ? ' · ' + scope.variants + ' destinos específicos en el diseñador' : ''), /*#__PURE__*/React.createElement("div", {
       className: "df-pr__list"
     }, scope.config ? scope.config.signers.map((item, n) => {
       const s = signatureFor(item.version_id);
@@ -4793,8 +4803,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }), modal === 'config' && /*#__PURE__*/React.createElement(Dialog, {
       side: true,
       wrapFooter: true,
-      title: 'Configurar · ' + (PROGRAMS[draft.program] || draft.program),
-      description: "Plantilla, tipo de documento y orden de las firmas.",
+      title: 'Configurar · ' + (PROGRAMS[draft.program] || draft.program) + ' · ' + TYPES[draft.document_type],
+      description: "Elige el membrete, asigna las personas que firman y revisa la vista previa antes de guardar.",
       onClose: close,
       footer: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Button, {
         icon: "pencil",
@@ -4816,8 +4826,8 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     }, /*#__PURE__*/React.createElement("div", {
       className: "df-2col"
     }, /*#__PURE__*/React.createElement(Field, {
-      label: "Plantilla",
-      hint: draft.layout_id ? 'Se aplica al diseño general de este programa al guardar. Diseñar documento abre el diseño guardado; tu borrador se conserva al volver. Los destinos específicos conservan su diseño.' : 'Guarda la configuración y activa su diseño para emitir documentos.'
+      label: "Membrete (PDF de fondo)",
+      hint: draft.layout_id ? 'Es la hoja de fondo. Al guardar se aplica a este tipo de documento y programa. Los destinos específicos conservan su diseño.' : 'Guarda la configuración y activa su diseño para emitir documentos.'
     }, /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       value: draft.follow_active ? 'ACTIVE' : draft.template_id,
@@ -4870,7 +4880,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
         fontSize: 12.5,
         color: 'var(--ink-2)'
       }
-    }, "Arrastra para cambiar el orden en que aparecen en la hoja.")), /*#__PURE__*/React.createElement("select", {
+    }, "Estas personas, con su nombre, cargo e imagen de firma, aparecer\xE1n en este documento. Arrastra para cambiar el orden.")), /*#__PURE__*/React.createElement("select", {
       className: "df-sel",
       style: {
         maxWidth: 230
@@ -4963,7 +4973,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "shield"
-    }), /*#__PURE__*/React.createElement("p", null, "La vista previa usa datos de ejemplo. Nunca se muestran datos ni cuentas de afiliados reales.")), error && /*#__PURE__*/React.createElement("p", {
+    }), /*#__PURE__*/React.createElement("p", null, "La vista previa comprueba la distribuci\xF3n con datos de ejemplo. Los PDF nuevos usan las personas y firmas asignadas; los ya emitidos conservan su versi\xF3n.")), error && /*#__PURE__*/React.createElement("p", {
       role: "alert"
     }, error)), (modal === 'preview' || modal === 'issued') && /*#__PURE__*/React.createElement(Dialog, {
       title: modal === 'preview' ? 'Vista previa del documento' : 'Documento de autorización',

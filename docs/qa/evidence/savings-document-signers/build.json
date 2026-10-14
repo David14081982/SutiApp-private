@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "version": 2026100419,
+  "bundleSha": "292e4e0953197ffa8965d25e9463d2be4c2829a89d9177a9b757bdd843b17436",
+  "changedChunks": [
+    "screens-admin-document-generation.jsx",
+    "document-layout-designer.jsx"
+  ],
+  "unrelatedChunksPreserved": 154,
+  "sourceHashes": {
+    "screens-admin-document-generation.jsx": "093ba9205dac36a1d7de30ca85567206ce83d01611594819b3865d90a84a5219",
+    "document-layout-designer.jsx": "2f4976cd1a1e5cf86f0858abfd5c6905ba9c0074368871cf016d213a69c8a204"
+  },
+  "serviceWorkerLogicChanged": false
+}

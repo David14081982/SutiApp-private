@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "sourceHash": "093ba9205dac36a1d7de30ca85567206ce83d01611594819b3865d90a84a5219",
+  "sourceHashes": {
+    "app/screens-admin-document-generation.jsx": "093ba9205dac36a1d7de30ca85567206ce83d01611594819b3865d90a84a5219",
+    "app/document-layout-designer.jsx": "2f4976cd1a1e5cf86f0858abfd5c6905ba9c0074368871cf016d213a69c8a204"
+  },
+  "checks": [
+    "Withdrawal confirmation/current-signers contract and existing Membership copy",
+    "Cancel/failed retry/idempotent UUID/new revision row",
+    "Seven other document scopes retain original signer confirmation",
+    "Actual isolated SQL revision PDF text, order and canvas"
+  ],
+  "pageErrors": [],
+  "externalRequests": [],
+  "viewports": {
+    "390": {
+      "status": "PASS",
+      "withdrawalCurrentSignersCopy": true,
+      "membershipCopyPreserved": true,
+      "cancelDoesNotWrite": true,
+      "retryUsesSameUuid": true,
+      "oldVersionStillVisible": true,
+      "otherScopesUnchanged": 7,
+      "permissionControlPreserved": true,
+      "assignedCardAndLetterheadLabels": true,
+      "currentConfiguredNamesAndOrder": true,
+      "withdrawalSaveScope": true,
+      "loanAssignmentUntouched": true,
+      "pdfPages": 1,
+      "pdfCurrentSignerOrderAndText": true,
+      "renderedInkPixels": 16429
+    },
+    "1440": {
+      "status": "PASS",
+      "withdrawalCurrentSignersCopy": true,
+      "membershipCopyPreserved": true,
+      "cancelDoesNotWrite": true,
+      "retryUsesSameUuid": true,
+      "oldVersionStillVisible": true,
+      "otherScopesUnchanged": 7,
+      "permissionControlPreserved": true,
+      "assignedCardAndLetterheadLabels": true,
+      "currentConfiguredNamesAndOrder": true,
+      "withdrawalSaveScope": true,
+      "loanAssignmentUntouched": true,
+      "pdfPages": 1,
+      "pdfCurrentSignerOrderAndText": true,
+      "renderedInkPixels": 16429
+    }
+  }
+}

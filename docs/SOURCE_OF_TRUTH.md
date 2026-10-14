@@ -914,3 +914,8 @@ Owner authorizes removing authorization PDFs from affiliate History/Tracking and
 ## Membership documentary revision -- H-MEMBERSHIP-DOCUMENT-REISSUE-001
 
 Owner exception (2026-10-07): new membership / MEMBERSHIP_APPROVAL revisions obtain their signers from the current effective document_private configuration through the existing scoped resolver. document_snapshot freezes that complete ordered signer set and configuration_id; REISSUE audit records CURRENT_CONFIGURATION provenance. The original authorization source, identity, financial values and old records remain sealed. All other reissues retain historical signers. This narrowly supersedes the historical-signer statement in Authorization deposit PDF correction above.
+
+
+## Withdrawal revision signers -- H-SAVINGS-DOCUMENT-SIGNERS-UX-001
+
+For caja / SAVINGS_WITHDRAWAL_APPROVAL, REISSUE uses the effective document_private configuration through the existing resolver and freezes the complete signer set and configuration_id in the new revision. Audit records CURRENT_CONFIGURATION provenance. The financial event and previous documents remain immutable. This adds to the Membership exception without changing loan authority or assignments. The template name identifies the background PDF; layout_name identifies the assigned design.

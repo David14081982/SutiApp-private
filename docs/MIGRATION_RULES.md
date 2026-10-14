@@ -414,3 +414,8 @@ Estado verificado de esta adenda (SICOF latency activation receipt): migraciones
 ## 20261007000300 -- Membership current revision signers -- APPLIED / VERIFIED
 
 Owner-authorized exception H-MEMBERSHIP-DOCUMENT-REISSUE-001. Exact-definition guarded replacement of document_private.reissue only; same OID/owner/ACL and existing auth/module checks. No table, RLS, grants, triggers, financial writer or business-row migration. Forward chooses current signers only for membership / MEMBERSHIP_APPROVAL and records existing audit provenance. Inverse exact-definition recovery retains all revisions, including those issued after deployment. Baseline schema-only capture: scripts/fixtures/membership-document-reissue-schema.json. Apply after isolated forward/recovery/security tests and preserve transactional authority hashes.
+
+
+## 20261014000100 -- savings_withdrawal_document_signers -- APPLIED / VERIFIED
+
+Focal migration replaces only two scope conditions and one comment in document_private.reissue, guarded by exact before/after hashes and OID/owner/ACL preservation. It adds caja/SAVINGS_WITHDRAWAL_APPROVAL to the existing current-signers exception, without business-row changes during installation. Exact recovery restores the prior function and retains all issued revisions. Production application preserved transactional authority/security fingerprints; one owner-requested v3 was subsequently issued through the authenticated existing RPC. See docs/audits/H-SAVINGS-DOCUMENT-SIGNERS-UX-001.md and savings-document-signers/applied.json.

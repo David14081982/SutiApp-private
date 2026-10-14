@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "coreChecks": 23,
+  "coreCommand": "node .tmp/savings-document-signers/private/test-core-normalized.cjs",
+  "coreNormalization": "Existing runner normalizes CRLF historical SQL in memory; original test assertions unchanged. Initial missing dependency and Windows CRLF baseline failures resolved by existing test dependencies/runner.",
+  "pagesCommand": "node scripts/test-pages-deployment.js",
+  "pages": "PASS",
+  "registryCommand": "python scripts/test-architecture-registry.py",
+  "registry": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism",
+  "syntheticOnly": true,
+  "productionTouched": false
+}

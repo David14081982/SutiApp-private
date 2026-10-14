@@ -4194,3 +4194,7 @@ Owner requests current signer changes in a newly issued Membership PDF. Surgical
 ### H-MEMBERSHIP-DOCUMENT-REISSUE-001 published PASS
 
 Backend20261007000300 and frontend5f7c12c / Pages37672841167SUCCESS (v2026100418). Current Membership signer order/cargos/roles/assets verified in actual synthetic revision PDF; eleven PostgreSQL cases and browser390/1440 pass. Published request component with real authorized metadata and cancel-only confirmation passes at390/1440. Original records, all business tables checked and security retained; no real revision issued by QA.
+
+## H-SAVINGS-DOCUMENT-SIGNERS-UX-001 -- 2026-10-13
+
+Withdrawal reissue retained obsolete signer snapshots despite current program assignment. The owner-authorized focal exception now freezes the current complete signer set only for caja/SAVINGS_WITHDRAWAL_APPROVAL, preserving Membership and all loan/other-document contracts. Administrative copy separates assigned design from background letterhead and labels previous document versions without removing controls. Fourteen isolated PostgreSQL/security/recovery cases, focal mobile/desktop and 20 assignment checks PASS. Live migration preserves OID/owner/ACL and transactional authority hashes. One requested v3 is READY with Ana's assigned name/title/role/signature; all 162 previous records, document configuration/assignments and the financial request remain unchanged. Build v2026100419 preserves 154 unrelated chunks. Final publication/browser evidence and closure: docs/audits/H-SAVINGS-DOCUMENT-SIGNERS-UX-001.md.

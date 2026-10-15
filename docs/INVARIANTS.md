@@ -1,6 +1,6 @@
 # Invariantes
 
-## H-AFFILIATE-CONTROL-CHANGE-001 — backend aplicado y verificado, 2026-10-15
+## H-AFFILIATE-CONTROL-CHANGE-001 — publicado y verificado, 2026-10-15
 
 - Una corrección explícita desde Admin conserva UUID/Auth/TEXT y el número anterior
   en evidencia; no es normalización automática ni asignación por email.

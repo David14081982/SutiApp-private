@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "businessWrites": 0,
+  "checks": [
+    "HTML and bundle match exact isolated release",
+    "Authenticated preview, confirmation gate, mobile, refresh and zero mutations; service worker block",
+    "Authenticated preview, confirmation gate, mobile, refresh and zero mutations; service worker allow"
+  ],
+  "realDataScreenshots": false,
+  "previewTables": 74,
+  "previewGroups": 19,
+  "bundleSha256": "805e30304088d70da9360f468089b4700b4e90c77bd89d093c95137c7f7fd5b8",
+  "version": 2026100421
+}

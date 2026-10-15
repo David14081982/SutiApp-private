@@ -12,8 +12,11 @@ Esta instrucción permite una corrección explícita auditada del valor vigente 
 ADR-017/INV-017: conserva TEXT, ceros, UUID, Auth e historia. No autoriza reemplazo
 global de números, correcciones automáticas financieras, reescritura de documentos
 emitidos ni cambios Google. El informe tiene alcance verificable y distingue las
-fuentes no inspeccionadas. Backend instalado y verificado el 2026-10-15; publicación de pantalla en curso.
+fuentes no inspeccionadas. Backend instalado y verificado el 2026-10-15; pantalla publicada y verificada.
 Evidencia: [auditoría](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
+
+Publicación autorizada explícitamente por el propietario el 2026-10-15, después
+del bloqueo automático inicial; commit 17d106e desplegado y verificado.
 
 ## H-LOAN-DATED-FUND-CUTOFF-001 — límite de nómina autorizado, 2026-10-05
 

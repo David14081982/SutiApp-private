@@ -10,5 +10,6 @@
   "version": 2026100421,
   "workerLogicIdentical": true,
   "previousPublishedContentPreserved": true,
-  "published": false
+  "published": true,
+  "publishedCommit": "17d106e6e2af52b8450f62de0497a21fbbf6b8f2"
 }

@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-15 — backend PASS; publicación en curso
+## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-15 — PASS, publicado y verificado
 
 Cambio de numero_control exclusivamente desde Admin con permisos
 Afiliados; informe previo, confirmación, historial privado y descarga. Conserva
@@ -12,7 +12,8 @@ de regresión Afiliados PASS. Build focal: 2 chunks, otros 152 intactos; sw sól
 Token renovado; catálogo vigente inspeccionado y reproducido sin filas productivas.
 Instalación/recovery y cuatro carreras PostgreSQL PASS. Migración 20261015000100
 aplicada sin modificar datos existentes de 225 tablas. Seguridad instalada PASS;
-vista previa real 461 ms. Frontend en publicación desde checkout aislado del main vigente.
+vista previa real 461 ms. Frontend publicado desde checkout aislado, commit 17d106e, v2026100421.
+Navegador real PASS (móvil, recarga, con/sin SW); cero cambios reales de números.
 Evidencia y revisión: [H-AFFILIATE-CONTROL-CHANGE-001](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
 
 ## H-MEMBERSHIP-CI-FINANCE-BLOCKS-001 — corrección focal de pruebas, 2026-10-05

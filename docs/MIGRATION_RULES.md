@@ -13,7 +13,7 @@ evidencia y guardas de reserva. No deshace decisiones de usuarios ni elimina his
 Instalación y recovery probados en PostgreSQL aislado con catálogo vigente.
 Instalada transaccionalmente: 225 tablas existentes con conteos/huellas idénticos,
 cero cambios de números reales. Concurrencia entre sesiones PASS; vista previa real
-461 ms, 74 tablas inspeccionadas y denegaciones backend PASS. Frontend en publicación. [Auditoría](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
+461 ms, 74 tablas inspeccionadas y denegaciones backend PASS. Frontend publicado y verificado, commit 17d106e / v2026100421. [Auditoría](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
 
 ## 20261001000400 — Reporte RH — APPLIED / VERIFIED
 

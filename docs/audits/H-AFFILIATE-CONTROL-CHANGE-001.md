@@ -2,7 +2,7 @@
 
 ## Estado vigente al 2026-10-15
 
-Backend aplicado y verificado; publicación frontend en curso. Los apartados
+Backend y pantalla publicados y verificados: PASS. Commit 17d106e / v2026100421. Los apartados
 BLOCKED de la etapa anterior se conservan como evidencia histórica y quedan
 superados por los resultados de esta reanudación.
 
@@ -170,7 +170,7 @@ Interactions/navigation/visual structure preserved: PASS en navegador aislado.
 Unauthorized redesign: NO.
 Verdict: PASS local.
 
-## H-AFFILIATE-CONTROL-CHANGE-001 RESULT
+## Resultado histórico de la etapa inicial
 
 Status: BLOCKED para producción; candidato y pruebas locales terminados.
 Files changed: dos fuentes focales, migración/recovery aditivos, cuatro scripts,
@@ -186,7 +186,7 @@ Known limitations: credencial inválida; schema/latencia/concurrencia live pendi
   alcance de reporte explícitamente parcial para sistemas externos y relaciones no declaradas.
 Evidence: docs/qa/evidence/affiliate-control-change/ y comandos anteriores.
 
-## SUTIAPP ARCHITECT REVIEW
+## Revisión histórica de la etapa inicial
 
 Task: H-AFFILIATE-CONTROL-CHANGE-001.
 Verdict: BLOCKED para release.
@@ -212,3 +212,82 @@ concurrencia. Corrige cualquier defecto dentro de esta H. No ejecutes pruebas co
 filas sintéticas en producción, no cambies números reales ni historia financiera.
 Antes de publicar, instala/verifica backend y conserva el frontend focal y todos
 los cambios ajenos; cierra con evidencia real. No avances a otra H.
+
+
+## H-AFFILIATE-CONTROL-CHANGE-001 RESULT — 2026-10-15
+
+Status: PASS; backend y pantalla publicados y verificados.
+Files changed: dos fuentes de Afiliados, bundle y cachebusters generados, migración
+  20261015000100/recovery, scripts focales/catálogo, gobierno/Registry/evidencia.
+Source-of-truth verdict: PASS; public.affiliates sigue siendo autoridad del número.
+Invariant verdict: PASS; TEXT/UUID/Auth conservados; historia y finanzas sin reescritura.
+Build: PASS Pages; v2026100421; 2 chunks cambiados y 155 publicados intactos.
+Tests: PASS 13 grupos DB, 7 UI y 10 regresión; catálogo real aislado,
+  cuatro carreras PostgreSQL 18, envelope/recovery y navegador candidato/publicado real.
+Security: PASS backend instalado; ordinario/anon denegados, sin UPDATE directo.
+Legacy impact: cero escrituras financieras/Google; inventario derivado de relaciones.
+Unexpected files changed: ninguno en checkout focal; cambios ajenos del workspace intactos.
+Known limitations: reporte cubre 74 tablas elegibles y marca sistemas externos,
+  JSON/texto libre y relaciones no inspeccionadas. Revisión manual pendiente por diseño.
+  Pruebas de guardado aisladas; no se cambió un número real como prueba productiva.
+Evidence: docs/qa/evidence/affiliate-control-change/*.json y capturas sintéticas.
+Commit publicado: 17d106e6e2af52b8450f62de0497a21fbbf6b8f2.
+Despliegue PASS: https://github.com/David14081982/SutiApp-private/actions/runs/38744016630
+Sitio verificado: https://sutiapp.com/
+Bundle SHA256: 805e30304088d70da9360f468089b4700b4e90c77bd89d093c95137c7f7fd5b8.
+
+Comandos adicionales de reanudación: inspect-affiliate-control-change.py;
+test-affiliate-control-change-catalog.js; test-affiliate-control-change-concurrency.py;
+release-affiliate-control-change.py --apply/--verify; package-affiliate-control-change.js;
+build-pages-site.js; verify-affiliate-control-change-live.js --candidate y sin argumento.
+Todos los grupos anteriores terminaron PASS. El envelope exacto apply.sql y recovery
+se probaron además en PostgreSQL 18 aislado antes de instalar (envelope-test.json).
+Diff focal verificado con core.whitespace=cr-at-eol para reconocer CRLF Windows.
+No se publican supabase.env ni tokens privados; sólo la configuración pública del build.
+
+La revisión automática rechazó inicialmente push a main por falta de autorización
+explícita del despliegue. El propietario respondió «Sí, publicar en producción».
+Se publicó entonces el commit autorizado; GitHub Pages y sus controles de Auth,
+solicitudes y build terminaron success. La comprobación posterior verificó HTML y
+hash exactos, vista previa autenticada, confirmación requerida, móvil, refresh y
+service worker permitido/bloqueado. Cero llamadas de mutación en esas pruebas.
+
+## CLAUDE UI PRESERVATION REVIEW — producción
+
+Screen: Admin / Afiliados.
+Original sections: lista, filtros, toolbar, perfil, seis tabs, editor, documentos,
+  acceso, archivo/restauración y export conservados.
+Added: acción/modal de número, informe previo e historial descargable.
+Missing sections: ninguna detectada en inspección y regresión focal.
+Interactions/navigation: PASS; sin rediseño no autorizado.
+Responsive: PASS fixtures 390/1024/1440 y navegador real móvil 390.
+Verdict: PASS.
+
+## SUTIAPP ARCHITECT REVIEW — resultado publicado
+
+Task: H-AFFILIATE-CONTROL-CHANGE-001.
+Verdict: APPROVED.
+Critical findings: solicitado y realizado coinciden: sólo Admin con permisos
+  cambia número; informe identificable antes de confirmar y evidencia durable.
+  El catálogo instalado y las denegaciones se comprobaron; 225 tablas conservaron
+  filas/huellas. La UI publicada coincide con el bundle probado. No hay bloqueo actual.
+Source of truth: affiliates maestro; bitácora privada inmutable como evidencia.
+Architecture: tres RPC aditivas; sólo pantalla/repositorio focal; 155 chunks ajenos
+  preservados; lógica sw idéntica. Regresión global de imágenes NOT APPLICABLE por
+  alcance focal y cachebusters generados; regresión Afiliados focal PASS.
+Security: autorización backend read/write + module boundary; no autoservicio.
+  UUID/Auth permanecen; acceso certificado que depende del número anterior bloquea
+  el cambio hasta corregir acceso. Colisiones y reservas comprobadas en concurrencia.
+Data: 225 tablas conservadas al instalar; simulaciones sólo locales; historial
+  y reservas sobreviven al recovery. Informe parcial explícito, sin falso inventario global.
+Legacy: sin reasignación automática de registros financieros, documentos o Google.
+Owner decision: NO; la publicación ya fue autorizada explícitamente.
+Next action: cerrar esta H con evidencia; no avanzar a otra H ni cambiar números reales.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX
+
+Aprobar H-AFFILIATE-CONTROL-CHANGE-001 y comunicar la acción publicada en Admin.
+Conservar los límites visibles del informe y la revisión manual de fuentes externas.
+No ejecutar correcciones de afiliados, historia ni finanzas y no iniciar otra H.
+No hay continuación automática autorizada por este review.

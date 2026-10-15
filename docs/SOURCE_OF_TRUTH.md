@@ -1,6 +1,6 @@
 # Fuentes de verdad
 
-## Cambio administrativo de número — backend aplicado, 2026-10-15
+## Cambio administrativo de número — publicado y verificado, 2026-10-15
 
 `public.affiliates` conserva la única autoridad del número vigente y su UUID
 identifica al afiliado. La nueva RPC `change_admin_affiliate_control` sólo modifica
@@ -13,7 +13,7 @@ Lectores/escritores: `AdminAffiliatesRepository` → tres RPCs con permisos de A
 y límite de módulo. Informe derivado de claves declaradas y coincidencias exactas;
 sin datos financieros ni documentos en su contenido. No hay mock/cache persistente.
 Migración 20261015000100 aplicada y verificada; 225 tablas existentes sin cambios.
-Publicación de la pantalla en curso; evidencia backend-applied.json/backend-verified.json.
+Pantalla publicada en sutiapp.com, v2026100421; evidencia backend-applied.json, backend-verified.json y published.json.
 Véase [H-AFFILIATE-CONTROL-CHANGE-001](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
 
 ## H-LOAN-DATED-FUND-CUTOFF-001 — publicado y verificado, 2026-10-05

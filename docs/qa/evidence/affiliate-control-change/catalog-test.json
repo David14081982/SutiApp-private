@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "catalogTables": 225,
+  "catalogConstraints": 1337,
+  "inspectedTables": 74,
+  "emptyCatalogPreviewMs": 3939,
+  "criticalAffiliateConstraintsAndTimestampTrigger": true,
+  "realCertifiedAccessFunction": true,
+  "productionRowsCopied": 0,
+  "productionWrites": 0
+}

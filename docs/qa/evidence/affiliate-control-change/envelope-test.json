@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "version": "20261015000100",
+  "schemaApplied": true,
+  "realControlChanges": 0,
+  "businessRowsChanged": 0,
+  "existingTablesUnchanged": 225,
+  "isolated": true,
+  "recoveryCompiled": true,
+  "productionWrites": 0
+}

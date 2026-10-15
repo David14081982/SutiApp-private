@@ -1,5 +1,18 @@
 # Invariantes
 
+## H-AFFILIATE-CONTROL-CHANGE-001 — backend aplicado y verificado, 2026-10-15
+
+- Una corrección explícita desde Admin conserva UUID/Auth/TEXT y el número anterior
+  en evidencia; no es normalización automática ni asignación por email.
+- Afiliados ordinarios no editan números propios ni ajenos. Backend exige permisos
+  de lectura/escritura de Afiliados y el límite de módulo, incluso ante llamada directa.
+- No se reescriben solicitudes, saldos, documentos ni Google. Un informe de relaciones
+  no acredita que todos los sistemas externos se hayan revisado ni corregido.
+- No se reasignan números reservados a otro afiliado. Duplicados históricos existentes
+  no se limpian y no se agrega UNIQUE(numero_control).
+- Guardar requiere revisión vigente; identidad, auditoría e informe son atómicos.
+  Reintentar una confirmación conserva la misma clave idempotente.
+
 ## H-LOAN-DATED-FUND-CUTOFF-001 — contrato publicado y verificado
 
 - Ningún fondo con fecha puede estar disponible desde `vencimiento - 1 mes

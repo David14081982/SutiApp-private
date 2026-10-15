@@ -1,5 +1,20 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-15 — backend PASS; publicación en curso
+
+Cambio de numero_control exclusivamente desde Admin con permisos
+Afiliados; informe previo, confirmación, historial privado y descarga. Conserva
+UUID/Auth/historia; evita reutilizar números reservados y detecta conflictos conocidos.
+No actualiza automáticamente Google ni registros financieros/documentales.
+
+13 grupos de pruebas PostgreSQL aisladas, 7 grupos de navegador focales y 10 grupos
+de regresión Afiliados PASS. Build focal: 2 chunks, otros 152 intactos; sw sólo versión.
+Token renovado; catálogo vigente inspeccionado y reproducido sin filas productivas.
+Instalación/recovery y cuatro carreras PostgreSQL PASS. Migración 20261015000100
+aplicada sin modificar datos existentes de 225 tablas. Seguridad instalada PASS;
+vista previa real 461 ms. Frontend en publicación desde checkout aislado del main vigente.
+Evidencia y revisión: [H-AFFILIATE-CONTROL-CHANGE-001](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
+
 ## H-MEMBERSHIP-CI-FINANCE-BLOCKS-001 — corrección focal de pruebas, 2026-10-05
 
 La comparación histórica de Membership Google contract reconoce únicamente las

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "engine": "PostgreSQL 18 / local loopback only",
+  "checks": [
+    "same affiliate: stale parallel writer rejected after row/table lock",
+    "different affiliates: one desired number cannot be assigned twice",
+    "ordinary concurrent creation respects reservation after waiting for change",
+    "simultaneous duplicate action returns same event, no duplicate audit"
+  ],
+  "counts": {
+    "events": 4,
+    "changes": 4,
+    "affiliates": 8
+  },
+  "productionWrites": 0
+}

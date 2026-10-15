@@ -15501,6 +15501,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function create(values,reason){requirePermission('affiliates.write');const result=await db().rpc('create_admin_affiliate',{p_values:values||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function update(id,expectedUpdatedAt,patch,reason){requirePermission('affiliates.write');const result=await db().rpc('update_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_patch:patch||{},p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function changeStatus(id,expectedUpdatedAt,status,reason){requirePermission('affiliates.write');const result=await db().rpc('change_admin_affiliate_status',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_new_status:status,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
+  async function controlRpc(name,args){requirePermission('affiliates.read');requirePermission('affiliates.write');const result=await db().rpc(name,args);if(result.error)throw result.error;if(!result.data)throw new Error('AFFILIATE_CONTROL_RESPONSE_MISSING');return Object.freeze(result.data);}
+  function previewControl(id,value){return controlRpc('preview_admin_affiliate_control',{p_affiliate_id:id,p_new_control:value});}
+  function changeControl(report,reason,actionId){return controlRpc('change_admin_affiliate_control',{p_affiliate_id:report.affiliate_id,p_new_control:report.new_control,p_expected_updated_at:report.expected_updated_at,p_expected_fingerprint:report.fingerprint,p_reason:reason||'',p_client_action_id:actionId});}
+  function controlHistory(id){return controlRpc('list_admin_affiliate_control_changes',{p_affiliate_id:id});}
   async function archive(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('archive_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function restore(id,expectedUpdatedAt,reason){requirePermission('affiliates.write');const result=await db().rpc('restore_admin_affiliate',{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});}
   async function accessDiagnosis(id){requirePermission('affiliates.read');const result=await db().rpc('get_admin_affiliate_access_diagnosis',{p_affiliate_id:id});if(result.error)throw result.error;return Object.freeze(result.data||{});}
@@ -15529,7 +15533,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -68034,6 +68038,231 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
       disabled: busy
     }, busy ? 'Guardando…' : 'Guardar cambios auditados'))));
   }
+  const controlBlockCopy = {
+    NUMBER_ALREADY_ASSIGNED: 'El número está asignado o reservado por otro afiliado.',
+    NUMBER_HAS_UNRELATED_RECORDS: 'El nuevo número aparece en registros que no están vinculados a este afiliado. Revisa esas coincidencias antes de continuar.',
+    ACCESS_REPAIR_REQUIRED: 'Primero revisa Acceso: este cambio invalidaría la evidencia que permite entrar a la cuenta.'
+  };
+  function ControlImpact({
+    report
+  }) {
+    const labels = {
+      'public.program_requests': 'Solicitudes',
+      'public.savings_participants': 'Participación en Ahorro',
+      'public.affiliate_documents': 'Expediente documental',
+      'public.affiliate_files': 'Archivos del afiliado',
+      'public.affiliate_bank_accounts': 'Cuentas bancarias',
+      'public.finance_blocks': 'Restricciones financieras',
+      'public.affiliate_admin_events': 'Bitácora administrativa'
+    };
+    const groups = report.groups || [];
+    return h('section', {
+      'data-control-impact': 'true',
+      className: 'aff-control-impact'
+    }, h('strong', null, 'Número anterior: ', text(report.old_control), ' → Nuevo: ', report.new_control), h('div', {
+      className: 'aff-access-warning'
+    }, 'Se cambia el número vigente y se invalidan las cotizaciones anteriores. Los registros listados conservan sus datos. Revisa manualmente las coincidencias: algunas solicitudes en proceso y operaciones de Ahorro/SICOF pueden quedar bloqueadas hasta corregir su relación. Los documentos emitidos y la historia no deben sobrescribirse.'), (report.blockers || []).map(code => h('div', {
+      key: code,
+      role: 'alert',
+      className: 'aff-alert'
+    }, controlBlockCopy[code] || 'El servidor impidió el cambio. Revisa la identidad del afiliado.')), h('p', null, 'Inventario de ', report.tables_checked, ' tablas con relaciones verificables. Se muestran claves de registro; no importes ni contenido de documentos.'), !groups.length && h('p', null, 'No se encontraron registros dentro del alcance consultado. Esto no descarta registros externos.'), groups.map(group => h('details', {
+      key: group.source
+    }, h('summary', null, labels[group.source] || group.source, ' · ', group.count, ' registro(s)', group.new_number_conflicts ? ' · ' + group.new_number_conflicts + ' coincidencia(s) ajena(s) con el número nuevo' : ''), h('small', null, group.source), h('ul', null, (group.records || []).map((row, index) => h('li', {
+      key: index
+    }, h('code', null, Object.keys(row.key || {}).length ? Object.entries(row.key).map(([key, value]) => key + ': ' + value).join(' · ') : 'Sin clave primaria; requiere localizarlo en la fuente'), h('span', null, row.number_match ? ' — contiene el número anterior; revisar' : ' — relación por ID conservada'), !row.related && h('strong', null, ' · pertenencia no confirmada; no reasignar automáticamente')))))), h('strong', null, 'No inspeccionado automáticamente'), h('ul', null, (report.excluded || []).map(value => h('li', {
+      key: value
+    }, value))), h('p', null, 'Las relaciones consultadas siguen claves UUID hasta cuatro pasos y coincidencias exactas en columnas de número de control o folio. El informe no certifica una revisión completa de sistemas externos.'));
+  }
+  function ControlChangeAction({
+    profile,
+    onReload
+  }) {
+    const [open, setOpen] = React.useState(false),
+      [value, setValue] = React.useState(profile.numero_control || ''),
+      [reason, setReason] = React.useState(''),
+      [report, setReport] = React.useState(null),
+      [history, setHistory] = React.useState(null),
+      [historyError, setHistoryError] = React.useState(''),
+      [error, setError] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [accepted, setAccepted] = React.useState(false),
+      [saved, setSaved] = React.useState(null);
+    const lock = React.useRef(false),
+      pending = React.useRef(null);
+    React.useEffect(() => {
+      if (!open) return;
+      let active = true;
+      setHistory(null);
+      setHistoryError('');
+      window.AdminAffiliatesRepository.controlHistory(profile.id).then(rows => {
+        if (active) setHistory(rows);
+      }).catch(() => {
+        if (active) setHistoryError('No se pudo cargar el historial de cambios. Cierra y vuelve a abrir para reintentar.');
+      });
+      return () => {
+        active = false;
+      };
+    }, [open, profile.id]);
+    const close = () => {
+      if (lock.current) return;
+      setOpen(false);
+      if (saved || pending.current) onReload();
+    };
+    const message = err => {
+      const code = String(err && err.message || '');
+      if (code.includes('IMPACT_CHANGED')) return 'Los registros relacionados cambiaron. Vuelve a consultar el impacto antes de confirmar.';
+      if (code.includes('VERSION')) return 'La ficha cambió en otra sesión. Cierra y recarga el perfil.';
+      if (code.includes('BLOCKED') || code.includes('RESERVED')) return 'El cambio fue bloqueado por una coincidencia o un problema de acceso. Vuelve a revisar el impacto.';
+      if (code.includes('DENIED')) return 'No tienes permiso para cambiar números desde Afiliados.';
+      if (code.includes('INVALID')) return 'Escribe de 1 a 80 caracteres, sin espacios al principio o al final ni saltos de línea.';
+      return 'No se pudo confirmar la operación. Conserva esta ventana y reintenta; el mismo intento no genera dos cambios.';
+    };
+    const preview = async () => {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      setReport(null);
+      setAccepted(false);
+      try {
+        setReport(await window.AdminAffiliatesRepository.previewControl(profile.id, value));
+        pending.current = null;
+      } catch (err) {
+        setError(message(err));
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    };
+    const save = async () => {
+      if (lock.current || !report || !accepted) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      if (!pending.current) pending.current = {
+        report,
+        reason,
+        id: crypto.randomUUID()
+      };
+      try {
+        const attempt = pending.current,
+          result = await window.AdminAffiliatesRepository.changeControl(attempt.report, attempt.reason, attempt.id);
+        if (!result.change || !result.change.impact) throw new Error('AFFILIATE_CONTROL_RESPONSE_MISSING');
+        setSaved(result.change);
+        setReport(result.change.impact);
+      } catch (err) {
+        setError(message(err));
+        if (/IMPACT_CHANGED|VERSION|BLOCKED|RESERVED/.test(String(err && err.message || ''))) {
+          pending.current = null;
+          setReport(null);
+          setAccepted(false);
+        }
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    };
+    const download = change => {
+      const content = ['Cambio de número de control', JSON.stringify(change, null, 2)].join('\n\n'),
+        url = URL.createObjectURL(new Blob([content], {
+          type: 'text/plain;charset=utf-8'
+        })),
+        a = document.createElement('a');
+      a.href = url;
+      a.download = 'cambio-numero-control-' + change.id + '.txt';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    return h(React.Fragment, null, h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      'data-control-change-open': true,
+      onClick: () => {
+        setValue(profile.numero_control || '');
+        setReason('');
+        setReport(null);
+        setSaved(null);
+        setAccepted(false);
+        setError('');
+        pending.current = null;
+        setOpen(true);
+      }
+    }, 'Cambiar número de control'), open && h(Overlay, {
+      title: 'Cambiar número de control',
+      description: text(profile.display_name || profile.full_name) + ' · Control ' + text(profile.numero_control),
+      onClose: close,
+      wide: true
+    }, h('div', {
+      className: 'aff-modal-body'
+    }, saved ? h('div', {
+      role: 'status',
+      className: 'aff-boundary'
+    }, h('strong', null, 'Cambio guardado y auditado.'), h('p', null, 'El informe queda disponible al volver a abrir esta ventana. Las revisiones manuales no se han realizado automáticamente.'), h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      onClick: () => download(saved)
+    }, 'Descargar informe')) : h(React.Fragment, null, h('label', null, h('span', null, 'Nuevo número de control'), h('input', {
+      className: inputClass,
+      type: 'text',
+      maxLength: 80,
+      value,
+      disabled: busy || Boolean(pending.current),
+      onChange: event => {
+        setValue(event.target.value);
+        setReport(null);
+        setAccepted(false);
+        setError('');
+      }
+    })), h('label', null, h('span', null, 'Motivo (opcional)'), h('textarea', {
+      className: inputClass,
+      rows: 2,
+      maxLength: 500,
+      value: reason,
+      disabled: busy || Boolean(pending.current),
+      onChange: event => setReason(event.target.value)
+    })), h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      disabled: busy || Boolean(pending.current) || !value || value === profile.numero_control,
+      onClick: preview
+    }, busy ? 'Consultando…' : 'Revisar registros afectados')), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error), report && h(ControlImpact, {
+      report
+    }), report && !saved && !(report.blockers || []).length && h('label', {
+      className: 'aff-control-ack'
+    }, h('input', {
+      type: 'checkbox',
+      checked: accepted,
+      disabled: busy,
+      onChange: event => setAccepted(event.target.checked)
+    }), ' Revisé el informe y entiendo que los registros históricos y externos requieren revisión manual.'), h('details', {
+      'data-control-history': true
+    }, h('summary', null, 'Cambios anteriores e informes'), historyError ? h('p', {
+      role: 'alert'
+    }, historyError) : history === null ? h('p', null, 'Cargando historial…') : !history.length ? h('p', null, 'Sin cambios registrados por esta herramienta.') : history.map(change => h('details', {
+      key: change.id
+    }, h('summary', null, text(change.old_control), ' → ', change.new_control, ' · ', date(change.created_at)), h('p', null, 'Responsable: ', change.actor_auth_user_id, ' · Motivo: ', text(change.reason)), h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      onClick: () => download(change)
+    }, 'Descargar informe'), h(ControlImpact, {
+      report: change.impact
+    }))))), h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-secondary',
+      disabled: busy,
+      onClick: close
+    }, saved ? 'Cerrar y recargar' : 'Cancelar'), !saved && h('button', {
+      type: 'button',
+      className: 'aff-primary',
+      disabled: busy || !report || !accepted || Boolean(report.blockers && report.blockers.length),
+      onClick: save
+    }, busy ? 'Procesando…' : pending.current ? 'Reintentar confirmación' : 'Confirmar cambio de número'))));
+  }
   function DetailContent({
     data,
     tab,
@@ -68258,7 +68487,11 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }, h(I, {
       name: 'edit',
       size: 16
-    }), ' Editar información'), !p.is_archived && app.admin.has('affiliates.write') && h('button', {
+    }), ' Editar información'), !p.is_archived && app.admin.has('affiliates.read') && app.admin.has('affiliates.write') && h(ControlChangeAction, {
+      key: p.id + ':' + p.updated_at,
+      profile: p,
+      onReload
+    }), !p.is_archived && app.admin.has('affiliates.write') && h('button', {
       className: 'aff-secondary',
       onClick: onStatus
     }, 'Cambiar estado / reactivar'), app.admin.has('affiliates.write') && h('button', {
@@ -69000,6 +69233,7 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
     @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-control,.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(5),.aff-table-body .aff-docs{display:none}.aff-table-body .aff-cell:nth-child(4){display:block}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-profile-actions{order:4;flex-basis:100%;justify-content:stretch}.aff-profile-actions button{flex:1 1 auto}.aff-detail-scroll{max-height:none}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts,.aff-document-grid{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}
+    .aff-control-impact{font-size:11px;line-height:1.5;overflow-wrap:anywhere}.aff-control-impact details{padding:8px 0;border-bottom:1px solid var(--hairline)}.aff-control-impact summary{cursor:pointer;font-weight:750}.aff-control-impact ul{padding-left:20px}.aff-control-impact li{margin:5px 0}.aff-control-impact code{font-size:10px}.aff-control-ack{font-size:11px;line-height:1.5}.aff-control-ack input{margin-right:7px}
     .aff-access-repair{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);font-size:11px;line-height:1.5}.aff-access-repair-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.aff-access-repair-head strong{font-size:12px}.aff-access-sees,.aff-access-meta,.aff-access-confirm{margin:0}.aff-access-sees span{font-weight:850}.aff-access-meta{color:var(--ink-3);font-size:10.5px;overflow-wrap:anywhere}.aff-access-confirm{font-size:11.5px;line-height:1.5}
     .aff-access-issues{display:grid;gap:6px;margin:0;padding:0;list-style:none}.aff-access-issues li{display:flex;align-items:flex-start;gap:7px;padding:8px 9px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:650;overflow-wrap:anywhere}.aff-access-issues li>svg{flex:0 0 auto;margin-top:1px}.aff-access-issues li>span{flex:1;min-width:0}.aff-access-links{display:grid;gap:5px}.aff-access-links small{color:var(--ink-3);font-size:9.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.aff-access-links button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;text-align:left}.aff-access-actions{display:flex;flex-wrap:wrap;gap:8px}
     .aff-access-warning{margin:10px 0;padding:10px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:750;line-height:1.45}.aff-access-list{display:grid;gap:6px}.aff-access-list>small{color:var(--ink-3);font-size:10.5px}.aff-access-list button{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--hairline);border-radius:11px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}.aff-access-list strong,.aff-access-list small{display:block}.aff-access-list strong{font-size:11.5px}.aff-access-list button small{color:var(--ink-3);font-size:10px;overflow-wrap:anywhere}.aff-access-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}

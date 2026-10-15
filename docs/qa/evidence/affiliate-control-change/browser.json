@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Original sections, tabs and existing administrative controls preserved",
+    "Review invalidates on input change; explicit acknowledgement; idempotent retry after committed/network failure; refresh, durable history and download",
+    "Collision, stale impact and source failure cannot be confirmed",
+    "Read-only account has no action and repository refuses mutation/preview",
+    "Responsive modal 390: scrolling body and visible confirmation, no overflow",
+    "Responsive modal 1024: scrolling body and visible confirmation, no overflow",
+    "Responsive modal 1440: scrolling body and visible confirmation, no overflow"
+  ],
+  "pageErrors": [],
+  "productionTraffic": false
+}

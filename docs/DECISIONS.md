@@ -1,5 +1,20 @@
 # Registro de decisiones arquitectónicas
 
+## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-14 — autorización de alcance
+
+El propietario solicita permitir corregir numero_control y mostrar los registros
+afectados para su revisión/corrección manual. Precisa: sólo administradores o
+encargados desde Admin; los afiliados no pueden cambiar números propios ni ajenos.
+La implementación reutiliza affiliates.read + affiliates.write y el límite backend
+del módulo Afiliados; no concede permisos nuevos por cargo ni por ser afiliado.
+
+Esta instrucción permite una corrección explícita auditada del valor vigente bajo
+ADR-017/INV-017: conserva TEXT, ceros, UUID, Auth e historia. No autoriza reemplazo
+global de números, correcciones automáticas financieras, reescritura de documentos
+emitidos ni cambios Google. El informe tiene alcance verificable y distingue las
+fuentes no inspeccionadas. Backend instalado y verificado el 2026-10-15; publicación de pantalla en curso.
+Evidencia: [auditoría](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
+
 ## H-LOAN-DATED-FUND-CUTOFF-001 — límite de nómina autorizado, 2026-10-05
 
 El propietario ordena ocultar los fondos con fecha desde un mes calendario antes

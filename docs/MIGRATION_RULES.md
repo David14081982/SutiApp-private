@@ -1,5 +1,20 @@
 # Reglas de migración
 
+## 20261015000100 — cambio administrativo de número — APPLIED
+
+Número disponible verificado; 20261014000100 ya estaba ocupado por otra H.
+Esquema aditivo, sin DML de negocio al instalar: evidencia privada con RLS forzada,
+tres RPCs autenticadas, helpers sin grants browser, guardas de reserva de números
+e inmutabilidad. Preflight exige numero_control TEXT, RLS forzada y ausencia de
+UPDATE directo browser. No modifica Auth global ni ningún writer financiero.
+
+Recovery retira las nuevas entradas y helpers de consulta/cambio, conservando
+evidencia y guardas de reserva. No deshace decisiones de usuarios ni elimina historia.
+Instalación y recovery probados en PostgreSQL aislado con catálogo vigente.
+Instalada transaccionalmente: 225 tablas existentes con conteos/huellas idénticos,
+cero cambios de números reales. Concurrencia entre sesiones PASS; vista previa real
+461 ms, 74 tablas inspeccionadas y denegaciones backend PASS. Frontend en publicación. [Auditoría](audits/H-AFFILIATE-CONTROL-CHANGE-001.md).
+
 ## 20261001000400 — Reporte RH — APPLIED / VERIFIED
 
 RPC aditiva de lectura, STABLE SECURITY DEFINER/search_path vacío, grant sólo

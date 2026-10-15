@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "engine": "PGlite / isolated PostgreSQL",
+  "checks": [
+    "migration compiles without changing business rows",
+    "anonymous, ordinary affiliates, read-only admins and wrong module cannot preview/change/history",
+    "raw text validation preserves leading zeroes and rejects blank/padded/control input",
+    "inventory follows direct/indirect FKs, raw matches, unkeyed rows; no private values leak",
+    "current/archived and unrelated/orphan historical numbers are blocked",
+    "access certification that depends on old number requires access repair first",
+    "stale profile, changed inventory and missing acknowledgement hash fail atomically",
+    "audit failure rolls back identity, version and change record together",
+    "confirmed change updates only current identity/version and stores full durable report + real actor",
+    "network retry is idempotent; key reuse with other target/reason is denied",
+    "direct reads/writes/helpers forbidden, history immutable, reserved number protected on ordinary creation",
+    "same affiliate can correct back without changing historical financial rows",
+    "recovery disables entry points while preserving all evidence and reservations"
+  ],
+  "productionWrites": 0,
+  "liveSchemaVerified": false,
+  "concurrentSessionsTested": false
+}

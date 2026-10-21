@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## H-LOAN-JANUARY-FUNDS-001 — 2026-10-20 — PASS
+
+Aplicados dos fondos Incentivos trimestrales del 15/01/2027 y 15/01/2028, con seis
+reglas Base para los tres sindicatos: máximo $10,000, 6% quincenal, un pago, AUTO.
+Las 42 condiciones Base existentes y Eventuales/SUTISSSTESON/30/11/2026 ya
+coincidían; quedaron intactas. Seis ofertas de abril excluidas, cero duplicados.
+Catálogo actual: 37 fondos/152 reglas runtime; 187 filas anteriores conservadas.
+Compatibilidad nativa: total dinámico, IDs UUID y visibilidad administrativa;
+migración 20261020000100 y Edge financial-criteria-admin v29, permisos preservados.
+PASS 166 checks SQL, 70 validador, motor/cutoff y navegador publicado con refresh.
+No solicitudes reales ni Google. [Auditoría y evidencia](audits/H-LOAN-JANUARY-FUNDS-001.md).
+
 ## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-15 — PASS, publicado y verificado
 
 Cambio de numero_control exclusivamente desde Admin con permisos

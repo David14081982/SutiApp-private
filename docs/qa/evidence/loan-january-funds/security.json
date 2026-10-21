@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "nativeIdentityAcceptedAndMissingRecordRejected": 409,
+  "anonymousDenied": 401,
+  "syntheticRecordsCreated": 0,
+  "configurationChanges": 0
+}

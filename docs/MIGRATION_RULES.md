@@ -1,5 +1,17 @@
 # Reglas de migración
 
+## 20261020000100 — reglas financieras nativas — APPLIED
+
+H-LOAN-JANUARY-FUNDS-001 modifica sólo los cuerpos de tres funciones existentes:
+catálogo runtime no vacío sin total fijo de importación, selector UUID para reglas
+nativas y visibilidad por identidad nativa/legacy. Preserva firmas/OIDs/owners/ACL,
+RLS, permisos, auditoría y fórmulas. Forward/recovery validan hashes de definiciones.
+Se aplicó junto con dos fondos/seis reglas autorizadas usando writers existentes
+en transacción única; el reintento produce cero altas. Datos anteriores intactos.
+Recovery conserva historia y exige retirar primero las nuevas ofertas antes de
+restaurar el guard histórico de 146 reglas. PostgreSQL aislado prueba ambos casos.
+Evidencia y alcance: [auditoría](audits/H-LOAN-JANUARY-FUNDS-001.md).
+
 ## 20261015000100 — cambio administrativo de número — APPLIED
 
 Número disponible verificado; 20261014000100 ya estaba ocupado por otra H.

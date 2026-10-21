@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "funds": 37,
+  "runtimeRules": 152,
+  "newFunds": [
+    "15/01/2027 — Incentivos trimestrales",
+    "15/01/2028 — Incentivos trimestrales"
+  ],
+  "newRules": 6,
+  "uniqueNativeIds": 6,
+  "priorRulesUnchanged": 187,
+  "priorFundsUnchanged": 35,
+  "priorRuntimeFinancialConditionsUnchanged": 146,
+  "priorLegacyRuntimeUnchanged": 141,
+  "priorNativeIdsCorrected": 5,
+  "auditEvents": 14,
+  "adminCatalogVerified": true,
+  "january2027": "AVAILABLE",
+  "january2028": "SCHEDULED",
+  "currentProfileJanuaryOptions": 1,
+  "quotes": [
+    {
+      "union": "SUEISSSTESON",
+      "amount": 10000,
+      "paymentCount": 1,
+      "interest": 3600,
+      "administrativeFeeTotal": 90,
+      "total": 13690,
+      "interestCalculationVersion": "ADVANCE_PAYROLL_INTEREST_V1"
+    },
+    {
+      "union": "SITISSSTESON",
+      "amount": 10000,
+      "paymentCount": 1,
+      "interest": 3600,
+      "administrativeFeeTotal": 90,
+      "total": 13690,
+      "interestCalculationVersion": "ADVANCE_PAYROLL_INTEREST_V1"
+    },
+    {
+      "union": "SUTISSSTESON",
+      "amount": 10000,
+      "paymentCount": 1,
+      "interest": 3600,
+      "administrativeFeeTotal": 90,
+      "total": 13690,
+      "interestCalculationVersion": "ADVANCE_PAYROLL_INTEREST_V1"
+    }
+  ],
+  "edgeVersion": 29,
+  "verifyJwt": true,
+  "edgeOnlyAuthorizedSourceChanged": true,
+  "unchangedBundledDependencies": 21,
+  "noNewRequests": true
+}

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "assertions": 166,
+  "runtimeBefore": 146,
+  "runtimeAfter": 152,
+  "newFunds": 2,
+  "newRules": 6,
+  "priorNativeIdsCorrected": 5,
+  "recovery": "EXACT",
+  "legacyRows": "UNCHANGED",
+  "priorNativeRows": "UNCHANGED",
+  "externalWrites": 0,
+  "limits": "Synthetic rows and auth/permission stubs in isolated PGlite; no live Auth/RLS-policy or UI coverage."
+}

@@ -1,5 +1,22 @@
 # Registro de decisiones arquitectónicas
 
+## H-LOAN-JANUARY-FUNDS-001 — ampliación autorizada de adelantos, 2026-10-20
+
+El propietario autorizó continuar con Incentivos trimestrales del 15/01/2027 y
+15/01/2028: Base, SUTISSSTESON/SUEISSSTESON/SITISSSTESON, máximo $10,000, tasa
+quincenal 6%, un pago, AUTO y motor/calendario/cierre vigentes. Son dos fondos
+y seis reglas nativas, sin duplicar ni modificar los 14 fondos ya existentes.
+La fila Eventuales/SUTISSSTESON/30/11/2026 ya coincide con la tabla del propietario.
+Los seis conceptos ausentes de abril quedan expresamente excluidos; el 15 de
+abril de ambos años sigue siendo Incentivos trimestrales, sin renombrarlo.
+
+Los conteos 146 reglas/35 fondos/3 programas de ADR-065 e INV-110 se conservan
+como certificación de la importación histórica. No constituyen un máximo del
+catálogo administrable: se permiten estas seis reglas nativas auditadas, sin
+fabricar fila/hash legacy ni alterar Google, solicitudes o fórmulas. Supabase
+conserva la autoridad única y el mismo batch activo. Estado de aplicación y
+evidencia en [la auditoría](audits/H-LOAN-JANUARY-FUNDS-001.md).
+
 ## H-AFFILIATE-CONTROL-CHANGE-001 — 2026-10-14 — autorización de alcance
 
 El propietario solicita permitir corregir numero_control y mostrar los registros

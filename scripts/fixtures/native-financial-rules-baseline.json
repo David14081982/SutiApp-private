@@ -1,0 +1,1092 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "financial_configuration_audit",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "extensions.gen_random_uuid()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "actor_auth_user_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "resource_type",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "resource_id",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "old_value",
+          "type": "jsonb",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "new_value",
+          "type": "jsonb",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_configuration_audit_pkey ON public.financial_configuration_audit USING btree (id)",
+        "CREATE INDEX financial_configuration_audit_resource_idx ON public.financial_configuration_audit USING btree (resource_type, resource_id, created_at DESC)",
+        "CREATE INDEX financial_configuration_audit_actor_idx ON public.financial_configuration_audit USING btree (actor_auth_user_id, created_at DESC)"
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "financial_configuration_audit_actor_auth_user_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (actor_auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "financial_configuration_audit_new_value_check",
+          "type": "c",
+          "definition": "CHECK (((new_value IS NULL) OR (jsonb_typeof(new_value) = 'object'::text)))"
+        },
+        {
+          "name": "financial_configuration_audit_old_value_check",
+          "type": "c",
+          "definition": "CHECK (((old_value IS NULL) OR (jsonb_typeof(old_value) = 'object'::text)))"
+        },
+        {
+          "name": "financial_configuration_audit_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_configuration_audit_reason_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(reason)) >= 8) AND (length(btrim(reason)) <= 500)))"
+        },
+        {
+          "name": "financial_configuration_audit_resource_type_check",
+          "type": "c",
+          "definition": "CHECK ((resource_type = ANY (ARRAY['AUTHORITY'::text, 'PROGRAM'::text, 'FUND'::text, 'RULE'::text, 'IMPORT'::text])))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "financial_criteria_authority",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "authority",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "active_import_batch_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "source_snapshot_hash",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "changed_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "changed_reason",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_criteria_authority_pkey ON public.financial_criteria_authority USING btree (id)"
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "financial_criteria_authority_active_import_batch_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (active_import_batch_id) REFERENCES financial_criteria_import_batches(id)"
+        },
+        {
+          "name": "financial_criteria_authority_authority_check",
+          "type": "c",
+          "definition": "CHECK ((authority = ANY (ARRAY['GOOGLE_SHADOW'::text, 'SUPABASE'::text])))"
+        },
+        {
+          "name": "financial_criteria_authority_batch_check",
+          "type": "c",
+          "definition": "CHECK ((((authority = 'GOOGLE_SHADOW'::text) AND (active_import_batch_id IS NULL)) OR ((authority = 'SUPABASE'::text) AND (active_import_batch_id IS NOT NULL) AND (source_snapshot_hash IS NOT NULL))))"
+        },
+        {
+          "name": "financial_criteria_authority_changed_reason_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(changed_reason)) >= 8) AND (length(btrim(changed_reason)) <= 500)))"
+        },
+        {
+          "name": "financial_criteria_authority_id_check",
+          "type": "c",
+          "definition": "CHECK ((id = 'primary'::text))"
+        },
+        {
+          "name": "financial_criteria_authority_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_criteria_authority_source_snapshot_hash_check",
+          "type": "c",
+          "definition": "CHECK (((source_snapshot_hash IS NULL) OR (source_snapshot_hash ~ '^[A-F0-9]{64}$'::text)))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "financial_criteria_import_batches",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "extensions.gen_random_uuid()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "source_snapshot_hash",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "rule_count",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "fund_count",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "duplicate_group_count",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "conflict_group_count",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "activated_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "notnull": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_criteria_import_batches_pkey ON public.financial_criteria_import_batches USING btree (id)",
+        "CREATE UNIQUE INDEX financial_criteria_import_batches_source_snapshot_hash_key ON public.financial_criteria_import_batches USING btree (source_snapshot_hash)"
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "financial_criteria_import_batches_conflict_group_count_check",
+          "type": "c",
+          "definition": "CHECK ((conflict_group_count = 1))"
+        },
+        {
+          "name": "financial_criteria_import_batches_duplicate_group_count_check",
+          "type": "c",
+          "definition": "CHECK ((duplicate_group_count = 2))"
+        },
+        {
+          "name": "financial_criteria_import_batches_fund_count_check",
+          "type": "c",
+          "definition": "CHECK ((fund_count > 0))"
+        },
+        {
+          "name": "financial_criteria_import_batches_metadata_check",
+          "type": "c",
+          "definition": "CHECK ((jsonb_typeof(metadata) = 'object'::text))"
+        },
+        {
+          "name": "financial_criteria_import_batches_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_criteria_import_batches_rule_count_check",
+          "type": "c",
+          "definition": "CHECK ((rule_count = 146))"
+        },
+        {
+          "name": "financial_criteria_import_batches_source_check",
+          "type": "c",
+          "definition": "CHECK ((source = 'GOOGLE_CRITERIA_DE_FONDOS'::text))"
+        },
+        {
+          "name": "financial_criteria_import_batches_source_snapshot_hash_check",
+          "type": "c",
+          "definition": "CHECK ((source_snapshot_hash ~ '^[A-F0-9]{64}$'::text))"
+        },
+        {
+          "name": "financial_criteria_import_batches_source_snapshot_hash_key",
+          "type": "u",
+          "definition": "UNIQUE (source_snapshot_hash)"
+        },
+        {
+          "name": "financial_criteria_import_batches_status_check",
+          "type": "c",
+          "definition": "CHECK ((status = ANY (ARRAY['STAGED'::text, 'ACTIVE'::text, 'ROLLED_BACK'::text])))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "financial_funds",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "extensions.gen_random_uuid()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "program_id",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "default": "true",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "publication_status",
+          "type": "text",
+          "default": "'PUBLISHED'::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "default": "0",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "default": "1",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "imported_batch_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_funds_pkey ON public.financial_funds USING btree (id)",
+        "CREATE UNIQUE INDEX financial_funds_program_id_code_key ON public.financial_funds USING btree (program_id, code)",
+        "CREATE UNIQUE INDEX financial_funds_program_id_name_key ON public.financial_funds USING btree (program_id, name)"
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "financial_funds_code_check",
+          "type": "c",
+          "definition": "CHECK ((code ~ '^[a-z0-9][a-z0-9_-]{1,99}$'::text))"
+        },
+        {
+          "name": "financial_funds_imported_batch_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (imported_batch_id) REFERENCES financial_criteria_import_batches(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_funds_name_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(name)) >= 2) AND (length(btrim(name)) <= 160)))"
+        },
+        {
+          "name": "financial_funds_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_funds_program_id_code_key",
+          "type": "u",
+          "definition": "UNIQUE (program_id, code)"
+        },
+        {
+          "name": "financial_funds_program_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (program_id) REFERENCES financial_programs(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_funds_program_id_name_key",
+          "type": "u",
+          "definition": "UNIQUE (program_id, name)"
+        },
+        {
+          "name": "financial_funds_publication_status_check",
+          "type": "c",
+          "definition": "CHECK ((publication_status = ANY (ARRAY['DRAFT'::text, 'PUBLISHED'::text, 'UNPUBLISHED'::text])))"
+        },
+        {
+          "name": "financial_funds_sort_order_check",
+          "type": "c",
+          "definition": "CHECK (((sort_order >= 0) AND (sort_order <= 10000)))"
+        },
+        {
+          "name": "financial_funds_updated_by_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "financial_funds_version_check",
+          "type": "c",
+          "definition": "CHECK ((version > 0))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "financial_programs",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "default": "''::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "default": "true",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "publication_status",
+          "type": "text",
+          "default": "'PUBLISHED'::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "default": "0",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "icon_asset_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "default": "1",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_programs_pkey ON public.financial_programs USING btree (id)"
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "financial_programs_description_check",
+          "type": "c",
+          "definition": "CHECK ((length(description) <= 1000))"
+        },
+        {
+          "name": "financial_programs_icon_asset_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (icon_asset_id) REFERENCES private_assets(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_programs_id_check",
+          "type": "c",
+          "definition": "CHECK ((id ~ '^[a-z][a-z0-9_-]{1,49}$'::text))"
+        },
+        {
+          "name": "financial_programs_name_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(name)) >= 2) AND (length(btrim(name)) <= 120)))"
+        },
+        {
+          "name": "financial_programs_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_programs_publication_status_check",
+          "type": "c",
+          "definition": "CHECK ((publication_status = ANY (ARRAY['DRAFT'::text, 'PUBLISHED'::text, 'UNPUBLISHED'::text])))"
+        },
+        {
+          "name": "financial_programs_sort_order_check",
+          "type": "c",
+          "definition": "CHECK (((sort_order >= 0) AND (sort_order <= 10000)))"
+        },
+        {
+          "name": "financial_programs_updated_by_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "financial_programs_version_check",
+          "type": "c",
+          "definition": "CHECK ((version > 0))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "financial_rules",
+      "force": true,
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "extensions.gen_random_uuid()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "lineage_id",
+          "type": "uuid",
+          "default": "extensions.gen_random_uuid()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "default": "1",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "supersedes_rule_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "program_id",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "fund_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "financial_union_code",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "financial_union_label",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "financial_employee_category_code",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "financial_employee_category_label",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "max_amount",
+          "type": "numeric(14,2)",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "raw_rate",
+          "type": "numeric(14,8)",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "rate_factor",
+          "type": "numeric(14,10)",
+          "default": "\nCASE\n    WHEN (raw_rate > (1)::numeric) THEN (raw_rate / (100)::numeric)\n    ELSE raw_rate\nEND",
+          "notnull": false,
+          "generated": "s"
+        },
+        {
+          "name": "rate_percent",
+          "type": "numeric(14,8)",
+          "default": "(\nCASE\n    WHEN (raw_rate > (1)::numeric) THEN (raw_rate / (100)::numeric)\n    ELSE raw_rate\nEND * (100)::numeric)",
+          "notnull": false,
+          "generated": "s"
+        },
+        {
+          "name": "term_label",
+          "type": "text",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "payment_count",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "max_term",
+          "type": "integer",
+          "default": null,
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "payment_period",
+          "type": "text",
+          "default": "'quincenal'::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "source_date_h",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "source_date_n",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "available_on",
+          "type": "date",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "visibility_mode",
+          "type": "text",
+          "default": "'AUTO'::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "lifecycle_status",
+          "type": "text",
+          "default": "'DRAFT'::text",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "default": "true",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "legacy_sheet_row",
+          "type": "integer",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "legacy_criterion_identity",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "source_snapshot_hash",
+          "type": "text",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "imported_batch_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "review_required",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "review_signals",
+          "type": "text[]",
+          "default": "'{}'::text[]",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        },
+        {
+          "name": "published_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX financial_rules_pkey ON public.financial_rules USING btree (id)",
+        "CREATE UNIQUE INDEX financial_rules_lineage_id_version_key ON public.financial_rules USING btree (lineage_id, version)",
+        "CREATE UNIQUE INDEX financial_rules_imported_batch_id_legacy_sheet_row_key ON public.financial_rules USING btree (imported_batch_id, legacy_sheet_row)",
+        "CREATE UNIQUE INDEX financial_rules_imported_batch_id_legacy_criterion_identity_key ON public.financial_rules USING btree (imported_batch_id, legacy_criterion_identity)",
+        "CREATE UNIQUE INDEX financial_rule_program_fund_guard ON public.financial_rules USING btree (id, program_id, fund_id)",
+        "CREATE INDEX financial_rules_runtime_idx ON public.financial_rules USING btree (program_id, financial_union_code, financial_employee_category_code, lifecycle_status, enabled)",
+        "CREATE INDEX financial_rules_fund_idx ON public.financial_rules USING btree (fund_id, lifecycle_status, version DESC)",
+        "CREATE INDEX financial_rules_legacy_idx ON public.financial_rules USING btree (legacy_sheet_row) WHERE (legacy_sheet_row IS NOT NULL)",
+        "CREATE UNIQUE INDEX financial_rules_one_live_version_idx ON public.financial_rules USING btree (lineage_id) WHERE (lifecycle_status = ANY (ARRAY['PUBLISHED'::text, 'SCHEDULED'::text]))"
+      ],
+      "triggers": [
+        {
+          "function": "CREATE OR REPLACE FUNCTION public.enforce_financial_rule_program_fund()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin\n  if not exists(select 1 from public.financial_funds f where f.id=new.fund_id and f.program_id=new.program_id) then\n    raise exception 'FINANCIAL_FUND_PROGRAM_MISMATCH' using errcode='23514';\n  end if;\n  return new;\nend $function$\n",
+          "definition": "CREATE TRIGGER financial_rules_01_program_fund BEFORE INSERT OR UPDATE OF program_id, fund_id ON public.financial_rules FOR EACH ROW EXECUTE FUNCTION enforce_financial_rule_program_fund()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "financial_rule_program_fund_guard",
+          "type": "u",
+          "definition": "UNIQUE (id, program_id, fund_id)"
+        },
+        {
+          "name": "financial_rules_created_by_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "financial_rules_financial_employee_category_label_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(financial_employee_category_label)) >= 2) AND (length(btrim(financial_employee_category_label)) <= 160)))"
+        },
+        {
+          "name": "financial_rules_financial_union_label_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(financial_union_label)) >= 2) AND (length(btrim(financial_union_label)) <= 160)))"
+        },
+        {
+          "name": "financial_rules_fund_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (fund_id) REFERENCES financial_funds(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_rules_imported_batch_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (imported_batch_id) REFERENCES financial_criteria_import_batches(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_rules_imported_batch_id_legacy_criterion_identity_key",
+          "type": "u",
+          "definition": "UNIQUE (imported_batch_id, legacy_criterion_identity)"
+        },
+        {
+          "name": "financial_rules_imported_batch_id_legacy_sheet_row_key",
+          "type": "u",
+          "definition": "UNIQUE (imported_batch_id, legacy_sheet_row)"
+        },
+        {
+          "name": "financial_rules_legacy_criterion_identity_check",
+          "type": "c",
+          "definition": "CHECK (((legacy_criterion_identity IS NULL) OR (legacy_criterion_identity ~ '^CRITERIA_V1:[0-9]+:[A-F0-9]{64}$'::text)))"
+        },
+        {
+          "name": "financial_rules_legacy_sheet_row_check",
+          "type": "c",
+          "definition": "CHECK (((legacy_sheet_row IS NULL) OR (legacy_sheet_row >= 2)))"
+        },
+        {
+          "name": "financial_rules_lifecycle_status_check",
+          "type": "c",
+          "definition": "CHECK ((lifecycle_status = ANY (ARRAY['DRAFT'::text, 'PUBLISHED'::text, 'SCHEDULED'::text, 'EXPIRED'::text])))"
+        },
+        {
+          "name": "financial_rules_lineage_id_version_key",
+          "type": "u",
+          "definition": "UNIQUE (lineage_id, version)"
+        },
+        {
+          "name": "financial_rules_max_amount_check",
+          "type": "c",
+          "definition": "CHECK ((max_amount > (0)::numeric))"
+        },
+        {
+          "name": "financial_rules_max_term_check",
+          "type": "c",
+          "definition": "CHECK ((max_term > 0))"
+        },
+        {
+          "name": "financial_rules_payment_count_check",
+          "type": "c",
+          "definition": "CHECK ((payment_count > 0))"
+        },
+        {
+          "name": "financial_rules_payment_period_check",
+          "type": "c",
+          "definition": "CHECK ((payment_period = 'quincenal'::text))"
+        },
+        {
+          "name": "financial_rules_pkey",
+          "type": "p",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "financial_rules_program_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (program_id) REFERENCES financial_programs(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_rules_published_by_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (published_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "financial_rules_raw_rate_check",
+          "type": "c",
+          "definition": "CHECK ((raw_rate >= (0)::numeric))"
+        },
+        {
+          "name": "financial_rules_review_signals_check",
+          "type": "c",
+          "definition": "CHECK ((review_signals <@ ARRAY['DUPLICATE'::text, 'CONFLICT'::text]))"
+        },
+        {
+          "name": "financial_rules_source_snapshot_hash_check",
+          "type": "c",
+          "definition": "CHECK (((source_snapshot_hash IS NULL) OR (source_snapshot_hash ~ '^[A-F0-9]{64}$'::text)))"
+        },
+        {
+          "name": "financial_rules_supersedes_rule_id_fkey",
+          "type": "f",
+          "definition": "FOREIGN KEY (supersedes_rule_id) REFERENCES financial_rules(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "financial_rules_term_label_check",
+          "type": "c",
+          "definition": "CHECK (((length(btrim(term_label)) >= 1) AND (length(btrim(term_label)) <= 100)))"
+        },
+        {
+          "name": "financial_rules_version_check",
+          "type": "c",
+          "definition": "CHECK ((version > 0))"
+        },
+        {
+          "name": "financial_rules_visibility_mode_check",
+          "type": "c",
+          "definition": "CHECK ((visibility_mode = ANY (ARRAY['AUTO'::text, 'MOSTRAR'::text, 'OCULTAR'::text])))"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "0cb608abbafe6430971749dce02a9b6f",
+      "oid": "23902",
+      "name": "financial_runtime_rules_for_batch",
+      "owner": "postgres",
+      "signature": "financial_runtime_rules_for_batch(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.financial_runtime_rules_for_batch(p_batch_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_result jsonb;\nbegin\n  if current_user<>'postgres' then raise exception 'FINANCIAL_RULE_PROJECTION_DENIED' using errcode='42501'; end if;\n  select coalesce(jsonb_agg(jsonb_build_object(\n    'id',r.program_id||'--'||f.code||'--r'||coalesce(r.legacy_sheet_row,r.version),\n    'rule_id',r.id,'program_id',r.program_id,'fund',f.name,'category',r.financial_employee_category_label,\n    'union',r.financial_union_label,'financial_union_code',r.financial_union_code,\n    'financial_employee_category_code',r.financial_employee_category_code,\n    'max_amount',r.max_amount,'rate_factor',r.rate_factor,'rate',r.rate_percent,\n    'payment_count',r.payment_count,'payment_period',r.payment_period,'max_term',r.max_term,'term_label',r.term_label,\n    'available_on',r.available_on,'criterion_identity',coalesce(r.legacy_criterion_identity,'SUPABASE_RULE:'||r.id::text),\n    'sheet_row',r.legacy_sheet_row,'visibility_mode',r.visibility_mode,'lifecycle_status',r.lifecycle_status,\n    'source_snapshot_hash',r.source_snapshot_hash,'review_required',r.review_required,'review_signals',r.review_signals\n  ) order by r.legacy_sheet_row nulls last,r.created_at,r.id),'[]'::jsonb) into v_result\n  from public.financial_rules r join public.financial_funds f on f.id=r.fund_id\n  join public.financial_programs p on p.id=r.program_id\n  where r.imported_batch_id=p_batch_id and r.lifecycle_status in('PUBLISHED','SCHEDULED')\n    and r.enabled and f.enabled and f.publication_status='PUBLISHED' and p.enabled and p.publication_status='PUBLISHED';\n  return v_result;\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "996f45c2de39a66e822b289403bd3cbb",
+      "oid": "23862",
+      "name": "get_financial_admin_catalog",
+      "owner": "postgres",
+      "signature": "get_financial_admin_catalog()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_financial_admin_catalog()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_result jsonb;\nbegin\n  if not(public.has_admin_permission('financial_programs.read') or public.has_admin_permission('financial_rules.read') or public.has_admin_permission('financial_criteria.visibility.read')) then\n    raise exception 'ADMIN_READ_REQUIRED' using errcode='42501';\n  end if;\n  select jsonb_build_object(\n    'authority',(select authority from public.financial_criteria_authority where id='primary'),\n    'programs',(select coalesce(jsonb_agg(to_jsonb(p) order by p.sort_order,p.name),'[]'::jsonb) from public.financial_programs p),\n    'funds',(select coalesce(jsonb_agg(to_jsonb(f) order by f.program_id,f.sort_order,f.name),'[]'::jsonb) from public.financial_funds f),\n    'rules',(select coalesce(jsonb_agg(to_jsonb(r) order by r.legacy_sheet_row nulls last,r.created_at),'[]'::jsonb) from public.financial_rules r\n      where r.lifecycle_status in('DRAFT','PUBLISHED','SCHEDULED') and (r.imported_batch_id is null or r.imported_batch_id=(select active_import_batch_id from public.financial_criteria_authority where id='primary')))\n  ) into v_result;\n  return v_result;\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "3a21d95c8c34291b449f9f28a4064f7a",
+      "oid": "23852",
+      "name": "get_financial_runtime_rules",
+      "owner": "postgres",
+      "signature": "get_financial_runtime_rules()",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_financial_runtime_rules()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_authority public.financial_criteria_authority%rowtype; v_result jsonb;\nbegin\n  if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'FINANCIAL_RUNTIME_RULES_DENIED' using errcode='42501'; end if;\n  select * into v_authority from public.financial_criteria_authority where id='primary';\n  if v_authority.authority<>'SUPABASE' or v_authority.active_import_batch_id is null then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  v_result:=public.financial_runtime_rules_for_batch(v_authority.active_import_batch_id);\n  if jsonb_array_length(v_result)<>146 then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  return v_result;\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "e417fa642d6daaabf38bf80ca9b9a593",
+      "oid": "23867",
+      "name": "publish_financial_rule",
+      "owner": "postgres",
+      "signature": "publish_financial_rule(uuid,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.publish_financial_rule(p_rule_id uuid, p_reason text, p_confirmation text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_draft public.financial_rules%rowtype; v_previous jsonb; v_published public.financial_rules%rowtype;\nbegin\n  if not public.has_admin_permission('financial_rules.publish') then raise exception 'FINANCIAL_RULES_PUBLISH_REQUIRED' using errcode='42501'; end if;\n  if p_confirmation<>'PUBLICAR' or length(btrim(coalesce(p_reason,'')))<8 then raise exception 'FINANCIAL_RULE_PUBLISH_INVALID' using errcode='22023'; end if;\n  select * into v_draft from public.financial_rules where id=p_rule_id and lifecycle_status='DRAFT' for update;\n  if v_draft.id is null then raise exception 'FINANCIAL_RULE_DRAFT_NOT_FOUND' using errcode='P0001'; end if;\n  select coalesce(jsonb_agg(to_jsonb(r)),'[]'::jsonb) into v_previous from public.financial_rules r\n    where r.lineage_id=v_draft.lineage_id and r.lifecycle_status in('PUBLISHED','SCHEDULED');\n  update public.financial_rules set lifecycle_status='EXPIRED' where lineage_id=v_draft.lineage_id and lifecycle_status in('PUBLISHED','SCHEDULED');\n  update public.financial_rules set lifecycle_status=case when available_on is not null and available_on>current_date then 'SCHEDULED' else 'PUBLISHED' end,\n    published_at=now(),published_by=auth.uid() where id=v_draft.id returning * into v_published;\n  update public.financial_session_snapshots set invalidated_at=now(),invalidation_reason='FINANCIAL_RULE_PUBLISHED' where invalidated_at is null;\n  insert into public.financial_configuration_audit(actor_auth_user_id,resource_type,resource_id,action,old_value,new_value,reason)\n  values(auth.uid(),'RULE',v_published.id::text,'PUBLISH',jsonb_build_object('previous_live_versions',v_previous),to_jsonb(v_published),btrim(p_reason));\n  return to_jsonb(v_published);\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "bdffc246c05d0b77688ecf60cb485c24",
+      "oid": "23865",
+      "name": "save_financial_fund",
+      "owner": "postgres",
+      "signature": "save_financial_fund(uuid,text,text,text,boolean,text,integer,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_financial_fund(p_id uuid, p_program_id text, p_code text, p_name text, p_enabled boolean, p_publication_status text, p_sort_order integer, p_reason text, p_confirmation text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_old public.financial_funds%rowtype; v_new public.financial_funds%rowtype; v_batch uuid;\nbegin\n  if not public.has_admin_permission('financial_programs.write') then raise exception 'FINANCIAL_PROGRAMS_WRITE_REQUIRED' using errcode='42501'; end if;\n  if p_confirmation<>'CONFIRMAR' or length(btrim(coalesce(p_reason,'')))<8 or coalesce(p_code,'')!~'^[a-z0-9][a-z0-9_-]{1,99}$'\n     or length(btrim(coalesce(p_name,'')))<2 or p_publication_status not in('DRAFT','PUBLISHED','UNPUBLISHED') or p_sort_order not between 0 and 10000\n     or not exists(select 1 from public.financial_programs where id=p_program_id) then\n    raise exception 'FINANCIAL_FUND_CHANGE_INVALID' using errcode='22023';\n  end if;\n  select active_import_batch_id into v_batch from public.financial_criteria_authority where id='primary' and authority='SUPABASE';\n  if v_batch is null then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  if p_id is not null then select * into v_old from public.financial_funds where id=p_id for update; end if;\n  if p_id is not null and v_old.id is null then raise exception 'FINANCIAL_FUND_NOT_FOUND' using errcode='P0001'; end if;\n  if v_old.id is not null and v_old.program_id<>p_program_id and exists(select 1 from public.financial_rules where fund_id=v_old.id) then\n    raise exception 'FINANCIAL_FUND_REASSOCIATION_BLOCKED' using errcode='P0001';\n  end if;\n  if p_id is null then\n    insert into public.financial_funds(program_id,code,name,enabled,publication_status,sort_order,imported_batch_id,updated_by)\n    values(p_program_id,p_code,btrim(p_name),p_enabled,p_publication_status,p_sort_order,v_batch,auth.uid()) returning * into v_new;\n  else\n    update public.financial_funds set program_id=p_program_id,code=p_code,name=btrim(p_name),enabled=p_enabled,\n      publication_status=p_publication_status,sort_order=p_sort_order,version=version+1,updated_at=now(),updated_by=auth.uid()\n    where id=p_id returning * into v_new;\n  end if;\n  insert into public.financial_configuration_audit(actor_auth_user_id,resource_type,resource_id,action,old_value,new_value,reason)\n  values(auth.uid(),'FUND',v_new.id::text,case when v_old.id is null then 'CREATE' else 'UPDATE' end,\n    case when v_old.id is null then null else to_jsonb(v_old) end,to_jsonb(v_new),btrim(p_reason));\n  update public.financial_session_snapshots set invalidated_at=now(),invalidation_reason='FINANCIAL_FUND_CHANGED' where invalidated_at is null;\n  return to_jsonb(v_new);\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "560c296cbb60ac2b54a2bfaea6e3a441",
+      "oid": "23866",
+      "name": "save_financial_rule_draft",
+      "owner": "postgres",
+      "signature": "save_financial_rule_draft(uuid,uuid,text,text,numeric,numeric,text,integer,integer,date,text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_financial_rule_draft(p_existing_rule_id uuid, p_fund_id uuid, p_union_code text, p_category_code text, p_max_amount numeric, p_raw_rate numeric, p_term_label text, p_payment_count integer, p_max_term integer, p_available_on date, p_visibility_mode text, p_reason text, p_confirmation text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_old public.financial_rules%rowtype; v_new public.financial_rules%rowtype; v_fund public.financial_funds%rowtype;\n  v_union_label text; v_category_label text; v_lineage uuid; v_version integer; v_batch uuid;\nbegin\n  if not public.has_admin_permission('financial_rules.write') then raise exception 'FINANCIAL_RULES_WRITE_REQUIRED' using errcode='42501'; end if;\n  if not public.has_admin_permission('financial_rates.write') then raise exception 'FINANCIAL_RATES_WRITE_REQUIRED' using errcode='42501'; end if;\n  if p_confirmation<>'CONFIRMAR' or length(btrim(coalesce(p_reason,'')))<8 or p_max_amount<=0 or p_raw_rate<0\n     or p_payment_count<=0 or p_max_term<=0 or length(btrim(coalesce(p_term_label,'')))<1\n     or p_visibility_mode not in('AUTO','MOSTRAR','OCULTAR') then raise exception 'FINANCIAL_RULE_CHANGE_INVALID' using errcode='22023'; end if;\n  select * into v_fund from public.financial_funds where id=p_fund_id and enabled;\n  if v_fund.id is null then raise exception 'FINANCIAL_FUND_NOT_FOUND' using errcode='P0001'; end if;\n  select label into v_union_label from public.segmentation_catalog_entries where catalog_type='union' and code=p_union_code and enabled;\n  select label into v_category_label from public.segmentation_catalog_entries where catalog_type='employment_category' and code=p_category_code and enabled;\n  if v_union_label is null or v_category_label is null then raise exception 'FINANCIAL_SEGMENTATION_INVALID' using errcode='22023'; end if;\n  select active_import_batch_id into v_batch from public.financial_criteria_authority where id='primary' and authority='SUPABASE';\n  if v_batch is null then raise exception 'FINANCIAL_CRITERIA_NOT_CONFIGURED' using errcode='P0001'; end if;\n  if p_existing_rule_id is not null then\n    select * into v_old from public.financial_rules where id=p_existing_rule_id;\n    if v_old.id is null then raise exception 'FINANCIAL_RULE_NOT_FOUND' using errcode='P0001'; end if;\n    v_lineage:=v_old.lineage_id; select coalesce(max(version),0)+1 into v_version from public.financial_rules where lineage_id=v_lineage;\n  else v_lineage:=extensions.gen_random_uuid();v_version:=1; end if;\n  insert into public.financial_rules(lineage_id,version,supersedes_rule_id,program_id,fund_id,financial_union_code,financial_union_label,\n    financial_employee_category_code,financial_employee_category_label,max_amount,raw_rate,term_label,payment_count,max_term,\n    available_on,visibility_mode,lifecycle_status,imported_batch_id,created_by)\n  values(v_lineage,v_version,v_old.id,v_fund.program_id,v_fund.id,p_union_code,v_union_label,p_category_code,v_category_label,\n    p_max_amount,p_raw_rate,btrim(p_term_label),p_payment_count,p_max_term,p_available_on,p_visibility_mode,'DRAFT',v_batch,auth.uid()) returning * into v_new;\n  insert into public.financial_configuration_audit(actor_auth_user_id,resource_type,resource_id,action,old_value,new_value,reason)\n  values(auth.uid(),'RULE',v_new.id::text,'DRAFT_CREATE',case when v_old.id is null then null else to_jsonb(v_old) end,to_jsonb(v_new),btrim(p_reason));\n  return to_jsonb(v_new);\nend $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "de2638da994c94218bf7e652a66634fc",
+      "oid": "23861",
+      "name": "set_financial_rule_visibility",
+      "owner": "postgres",
+      "signature": "set_financial_rule_visibility(text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_financial_rule_visibility(p_criterion_identity text, p_visibility_mode text, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_old public.financial_rules%rowtype; v_new public.financial_rules%rowtype;\nbegin\n  if not public.has_admin_permission('financial_criteria.visibility.write') then raise exception 'VISIBILITY_WRITE_REQUIRED' using errcode='42501'; end if;\n  if p_visibility_mode not in('AUTO','MOSTRAR','OCULTAR') or length(btrim(coalesce(p_reason,'')))<8 then raise exception 'VISIBILITY_CHANGE_INVALID' using errcode='22023'; end if;\n  select r.* into v_old from public.financial_rules r join public.financial_criteria_authority a on a.id='primary' and a.authority='SUPABASE' and a.active_import_batch_id=r.imported_batch_id\n  where r.legacy_criterion_identity=p_criterion_identity and r.lifecycle_status in('PUBLISHED','SCHEDULED') for update of r;\n  if v_old.id is null then raise exception 'CRITERION_FINGERPRINT_MISMATCH' using errcode='P0001'; end if;\n  update public.financial_rules set visibility_mode=p_visibility_mode where id=v_old.id returning * into v_new;\n  update public.financial_session_snapshots set invalidated_at=now(),invalidation_reason='FINANCIAL_VISIBILITY_CHANGED' where invalidated_at is null;\n  insert into public.financial_configuration_audit(actor_auth_user_id,resource_type,resource_id,action,old_value,new_value,reason)\n  values(auth.uid(),'RULE',v_old.id::text,'VISIBILITY_CHANGE',jsonb_build_object('visibility_mode',v_old.visibility_mode),jsonb_build_object('visibility_mode',v_new.visibility_mode),btrim(p_reason));\n  return jsonb_build_object('criterion_identity',v_new.legacy_criterion_identity,'sheet_row',v_new.legacy_sheet_row,\n    'previous_visibility',v_old.visibility_mode,'visibility_mode',v_new.visibility_mode,'changed_at',now(),'source','SUPABASE_FINANCIAL_CRITERIA');\nend $function$\n"
+    }
+  ],
+  "migration_available": true
+}

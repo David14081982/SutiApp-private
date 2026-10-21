@@ -19,7 +19,9 @@ function allowedOrigin(req: Request) {
 function validBody(body: Record<string, unknown>) {
   if (body.action === "initialize") return Object.keys(body).every((key) => key === "action");
   if (body.action !== "setVisibility" || Object.keys(body).some((key) => !["action", "criterion_identity", "visibility_mode", "reason"].includes(key))) return false;
-  return typeof body.criterion_identity === "string" && /^CRITERIA_V1:[0-9]+:[A-F0-9]{64}$/i.test(body.criterion_identity) &&
+  return typeof body.criterion_identity === "string" &&
+    (/^CRITERIA_V1:[0-9]+:[A-F0-9]{64}$/i.test(body.criterion_identity) ||
+      /^SUPABASE_RULE:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.criterion_identity)) &&
     typeof body.visibility_mode === "string" && MODES.has(body.visibility_mode) &&
     typeof body.reason === "string" && body.reason.trim().length >= 8 && body.reason.length <= 500;
 }

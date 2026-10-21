@@ -1,0 +1,37 @@
+{
+  "retry": {
+    "created_funds": 0,
+    "created_rules": 0,
+    "preserved_existing": true
+  },
+  "status": "PASS",
+  "created": {
+    "created_funds": 2,
+    "created_rules": 6,
+    "preserved_existing": true
+  },
+  "businessDate": "2026-10-20",
+  "runtimeRules": 152,
+  "protectedTables": {
+    "program_requests": {
+      "hash": "ef4386b0bb025ef0c57c7df42f0754a0",
+      "rows": 419
+    },
+    "financial_programs": {
+      "hash": "658008f22c0dbc157eb1c83cc6cad681",
+      "rows": 3
+    },
+    "financial_criteria_authority": {
+      "hash": "df2b7ba3ba1968b2819073dcb70f87df",
+      "rows": 1
+    },
+    "financial_criteria_import_batches": {
+      "hash": "82daa225394f70f72b4c13c7ae080cfa",
+      "rows": 1
+    }
+  },
+  "authenticatedActor": true,
+  "oidsOwnersAclsPreserved": true,
+  "migrationSha256": "de9005b9ab533eebdeebffd75e9b473f64a73c7d06dfce9e3a76ff039130e537",
+  "payloadSha256": "5f444425c2e24dc93c341b31d0e77c171990bac9d5df590556820e6d1a5898ef"
+}

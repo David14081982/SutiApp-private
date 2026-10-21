@@ -1,5 +1,15 @@
 # Fuentes de verdad
 
+## Adelantos de enero 2027/2028 — H-LOAN-JANUARY-FUNDS-001
+
+La ampliación autorizada conserva financial_programs, financial_funds y
+financial_rules como única autoridad. Las seis reglas nuevas se crean mediante
+los writers administrativos existentes, con actor/motivo y sin procedencia Google
+inventada. SUPABASE_RULE:UUID identifica la regla nativa; los identificadores
+legacy permanecen intactos. Los snapshots siguen siendo derivados invalidables.
+146 reglas/35 fondos/3 programas describe el corte importado, no un límite al
+crecimiento autorizado del catálogo. Véase la auditoría para aplicación/readback.
+
 ## Cambio administrativo de número — publicado y verificado, 2026-10-15
 
 `public.affiliates` conserva la única autoridad del número vigente y su UUID

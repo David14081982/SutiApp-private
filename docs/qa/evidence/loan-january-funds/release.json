@@ -1,0 +1,283 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-21T02:00:20.704Z",
+  "task": "H-LOAN-JANUARY-FUNDS-001",
+  "baseCommit": "46b714a4c8b544827c9be319b02940ba2eff8d5b",
+  "sourceCommit": "8d598dbd26e80e6f86c73f7904a513ebc448a601",
+  "branch": "main",
+  "push": "NORMAL_FAST_FORWARD",
+  "implementationFiles": [
+    "docs/AGENT_CHANGELOG.md",
+    "docs/DECISIONS.md",
+    "docs/INVARIANTS.md",
+    "docs/MIGRATION_RULES.md",
+    "docs/SOURCE_OF_TRUTH.md",
+    "docs/audits/H-LOAN-JANUARY-FUNDS-001.md",
+    "docs/qa/evidence/loan-january-funds/activation.json",
+    "docs/qa/evidence/loan-january-funds/browser.json",
+    "docs/qa/evidence/loan-january-funds/isolated.json",
+    "docs/qa/evidence/loan-january-funds/live.json",
+    "docs/qa/evidence/loan-january-funds/security.json",
+    "scripts/fixtures/native-financial-rules-baseline.json",
+    "scripts/operations/20261020-loan-january-funds.sql",
+    "scripts/test-financial-criteria-native-identity.js",
+    "scripts/test-native-financial-rules.js",
+    "supabase/functions/financial-criteria-admin/index.ts",
+    "supabase/migrations/20261020000100_native_financial_rules.sql",
+    "supabase/recovery/20261020000100_native_financial_rules.sql"
+  ],
+  "independentReview": "APPROVED",
+  "workflows": [
+    {
+      "name": "Deploy SutiApp to GitHub Pages",
+      "id": 39530393218,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/39530393218"
+    },
+    {
+      "name": "Membership Google contract",
+      "id": 39530393216,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/39530393216"
+    }
+  ],
+  "tests": {
+    "nativeSql": {
+      "status": "PASS",
+      "checks": 166
+    },
+    "edgeIdentity": {
+      "status": "PASS",
+      "checks": 70
+    },
+    "visibility": "PASS",
+    "cutover": "PASS",
+    "interest": {
+      "status": "PASS",
+      "checks": 129,
+      "note": "Original test passed using historical fee migration bytes from unchanged Git LF blob; Windows CRLF checkout caused the initial fixture hash mismatch. No tracked source change."
+    },
+    "datedCutoff": {
+      "status": "PASS",
+      "checks": 140,
+      "note": "Independent unchanged test; only four artifact writes suppressed."
+    },
+    "pagesPackage": {
+      "status": "PASS",
+      "pwa": true,
+      "forbiddenFiles": 0
+    }
+  },
+  "build": {
+    "status": "PASS",
+    "checkedAt": "2026-10-21T01:56:46.295Z",
+    "results": [
+      {
+        "command": "scripts/build-pages-site.js",
+        "status": "PASS",
+        "output": "{\"status\":\"PASS\",\"output\":\"C:\\\\Users\\\\david\\\\Downloads\\\\SutiApp\\\\.tmp\\\\loan-january-funds\\\\release\\\\_site\",\"files\":31}"
+      }
+    ]
+  },
+  "contracts": {
+    "status": "PASS",
+    "checkedAt": "2026-10-21T01:56:55.352Z",
+    "results": [
+      {
+        "command": "scripts/verify-auth-deployment-contract-live.js",
+        "status": "PASS",
+        "output": "{\"status\":\"PASS\",\"contract\":\"AUTH_BACKEND_COMPATIBLE_AND_ANON_DENIED\",\"rpcs\":[{\"rpc\":\"get_current_affiliate_access_state\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_effective_affiliate_id\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_impersonation_context\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_admin_access_context\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"},{\"rpc\":\"get_current_company_access\",\"status\":401,\"verdict\":\"PRESENT_DENIED\"}],\"activation\":{\"rpc\":\"get_affiliate_activation_status\",\"status\":200,\"verdict\":\"PRESENT_MINIMAL_PUBLIC\"}}"
+      },
+      {
+        "command": "scripts/verify-request-submission-deployment-contract-live.js",
+        "status": "PASS",
+        "output": "{\"status\":\"PASS\",\"contractVersion\":\"SUTI_REQUEST_SUBMISSION_V2\",\"backendReady\":true,\"writer\":\"create_validated_financial_program_request\",\"edgeAction\":\"loanSessionConfirm\",\"depositContract\":\"BANK_AND_CARD_OR_CLABE\",\"idempotency\":\"affiliate_id+idempotency_key\",\"secretsUsed\":false}"
+      }
+    ]
+  },
+  "production": {
+    "status": "PASS",
+    "checkedAt": "2026-10-21T01:59:38.293Z",
+    "results": [
+      {
+        "command": "scripts/verify-request-submission-production-live.js https://sutiapp.com/",
+        "status": "PASS",
+        "output": "{\"status\":\"PASS\",\"target\":\"https://sutiapp.com/\",\"publicArtifact\":true,\"repositoryContract\":true,\"successContract\":true,\"backendCompatibility\":true,\"privilegedCredentialsUsed\":false}"
+      }
+    ]
+  },
+  "assets": {
+    "status": "PASS",
+    "checkedAt": "2026-10-21T01:59:38.025Z",
+    "site": "https://sutiapp.com/",
+    "files": 30,
+    "textNormalization": "CRLF to LF for Windows checkout parity",
+    "checks": [
+      {
+        "file": "app/affiliate-repository.js",
+        "sha256": "cbf298108fe918481ba14734540c58b628903e1e10994ebef8e6a3184472fc99",
+        "status": "PASS"
+      },
+      {
+        "file": "app/bundle.js",
+        "sha256": "805e30304088d70da9360f468089b4700b4e90c77bd89d093c95137c7f7fd5b8",
+        "status": "PASS"
+      },
+      {
+        "file": "app/financial-legacy-repository.js",
+        "sha256": "065de271aef4f4cf075a8c4a06175b9b798daeecefd98415ebac5586b0382666",
+        "status": "PASS"
+      },
+      {
+        "file": "app/payroll-declaration-repository.js",
+        "sha256": "3e8434d7818e5488393a5bd7b8a92d14916c3847f7260440945bffbcd6ac1ccd",
+        "status": "PASS"
+      },
+      {
+        "file": "app/sicof-simulation-worker.js",
+        "sha256": "97b705f201b77263ae36c88f1d550b07a6f0e8a65c0c270b04ad54cdaa50fee9",
+        "status": "PASS"
+      },
+      {
+        "file": "app/supabase-client.js",
+        "sha256": "42a852138f9ed2cb4c6e9bef92d60b7a2840a491cd58db2610e42da76f8b3bf2",
+        "status": "PASS"
+      },
+      {
+        "file": "app/supabase-config.js",
+        "sha256": "dfde0e9a0862f4996b321a9a4a639e30e95674e91555771460b0354ce7f32cb1",
+        "status": "PASS"
+      },
+      {
+        "file": "app/text-size.css",
+        "sha256": "167a372c726db3236212514f3efefda317e1e5a6e85d7f2b152e6c66da321af2",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/exceljs-4.4.0/exceljs.min.js",
+        "sha256": "7e49da68588e250dbb8bba190d2caa8ab3787cc0284bda1d8b2f805c4df742c9",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/exceljs-4.4.0/LICENSE",
+        "sha256": "2ee88321435317a4dbf464f275b88fe2efe6968c381f5ce34b5de539200e5855",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/pdfjs-5.4.149/LICENSE",
+        "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/pdfjs-5.4.149/pdf.min.mjs",
+        "sha256": "a935133d4b2166e8e3cf28e288b1b889d0743285e1c4e6ab3c77f04704eb56f3",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs",
+        "sha256": "c964e291707ad492e6e90ff7f4f352b75e05ea2734c3dd3a80b94983b1b7ce3d",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/react-18.3.1/LICENSE",
+        "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/react-18.3.1/react.production.min.js",
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/react-dom-18.3.1/LICENSE",
+        "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/react-dom-18.3.1/react-dom.production.min.js",
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/supabase-js-2.112.3/LICENSE",
+        "sha256": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+        "status": "PASS"
+      },
+      {
+        "file": "app/vendor/supabase-js-2.112.3/supabase.min.js",
+        "sha256": "cf529fe8980cbe6f2dd3e3930ecf96352ed3d3d71233b6760e4f927f89b94b9f",
+        "status": "PASS"
+      },
+      {
+        "file": "assets/branding/credencial-puno.png",
+        "sha256": "5bd8d128c00a321efd10aeb55f32a8960a3b4b8cd4e960fa5ce3a65f4d17b0d3",
+        "status": "PASS"
+      },
+      {
+        "file": "assets/branding/home-header-collapsed.webp",
+        "sha256": "1dee759148b7d510d201c418fcc9918f14039f6248810a8ec5e21efb1ede4cc9",
+        "status": "PASS"
+      },
+      {
+        "file": "icon-180.png",
+        "sha256": "cefbf47013168085566668153e4031bedc2994ae5a5e00d17c7ce2ac599d050e",
+        "status": "PASS"
+      },
+      {
+        "file": "icon-192.png",
+        "sha256": "87c15dd6d55b7ce3a10c30ec282f67de25d1d976f54bd6a9a7ee2f449410efdc",
+        "status": "PASS"
+      },
+      {
+        "file": "icon-512.png",
+        "sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+        "status": "PASS"
+      },
+      {
+        "file": "icon-maskable-512.png",
+        "sha256": "b0ef0f7125a283ba9380153d2d39f01570b48db404cd12707645a5244923f99b",
+        "status": "PASS"
+      },
+      {
+        "file": "icon-notification-badge.png",
+        "sha256": "cbd41b39c7cef9ea64b8fa0a3b6c80d9a556aab003e8e7e41abb3a771754e70d",
+        "status": "PASS"
+      },
+      {
+        "file": "index.html",
+        "sha256": "96d8674bba8e1aecb322af21f68a37c83528427c5a546d5918f41378f09e515c",
+        "status": "PASS"
+      },
+      {
+        "file": "manifest.webmanifest",
+        "sha256": "6a5a6b907351115de1baa1e58ae9086bbef8a824b33b582a35e659c2e4d5cdbc",
+        "status": "PASS"
+      },
+      {
+        "file": "SutiApp.html",
+        "sha256": "96d8674bba8e1aecb322af21f68a37c83528427c5a546d5918f41378f09e515c",
+        "status": "PASS"
+      },
+      {
+        "file": "sw.js",
+        "sha256": "c30c77e552093538ea6973a8d469962e55de3a93c51d08adcfdfb55fabb3c8a4",
+        "status": "PASS"
+      }
+    ]
+  },
+  "browserEvidence": "release-browser.json",
+  "preserved": {
+    "originalWorkspace": true,
+    "priorPublicSource": true,
+    "businessOperationsReapplied": false,
+    "migrationReapplied": false,
+    "excludedAprilFunds": true,
+    "noDuplicates": true
+  },
+  "limitations": [
+    "Browser service workers blocked; Admin navigation uses existing DOM handlers as recorded in release-browser.json. No real loan submitted.",
+    "The imported historical cutover test reports historical counts; current catalog has 37 funds and 152 runtime rules."
+  ]
+}

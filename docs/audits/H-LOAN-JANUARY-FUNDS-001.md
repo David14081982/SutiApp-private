@@ -111,3 +111,21 @@ already active; publication must not rerun business writes or withdraw offerings
 Run focal tests and the public artifact build on the exact publication tree,
 review the diff, push normally (no force), and verify GitHub Pages/production.
 Publication evidence scope: `docs/qa/evidence/loan-january-funds/release*.json`.
+
+## Repository publication result
+
+PASS. Source commit `8d598dbd26e80e6f86c73f7904a513ebc448a601` was pushed normally to main from
+the isolated worktree based on `46b714a4c8b544827c9be319b02940ba2eff8d5b`. The
+18-file implementation package excludes all unrelated workspace changes.
+Both GitHub workflows passed: Pages 39530393218 and Membership 39530393216.
+The exact release tree passed the focal gates and 31-file public build; all 30
+servable public files match https://sutiapp.com/ after text line-ending normalization.
+The existing interest test passed after using the unchanged Git LF fixture bytes;
+no historical migration or test modification was committed.
+Post-deployment Auth/request compatibility and focused published browser checks
+passed, including both administrative funds, six rules and loan visibility/refresh.
+No business operations or migrations were reapplied and no real loan was submitted.
+The final evidence-only commit records these results and uses [skip ci] because
+it changes no deployed source. Prior frontend and main workspace remain intact.
+Evidence: [release.json](../qa/evidence/loan-january-funds/release.json) and
+[release-browser.json](../qa/evidence/loan-january-funds/release-browser.json).

@@ -1,0 +1,132 @@
+{
+  "status": "PASS",
+  "url": "https://sutiapp.com/",
+  "realPublishedBrowser": true,
+  "serviceWorkers": "blocked",
+  "navigation": "Existing DOM click handlers for Admin/tab navigation; Playwright clicks for loan opening and fund selection",
+  "scope": "Published rendering and existing controllers; not a general pointer-hitbox audit",
+  "screenshots": 0,
+  "businessWrites": 0,
+  "derivedLoanSessionCalls": 3,
+  "blockedActions": [],
+  "admin": {
+    "rules": {
+      "2027": {
+        "rows": 3,
+        "rendered": 3,
+        "baseOnly": true,
+        "threeUnions": true,
+        "maxAmount": 10000,
+        "ratePercent": 6,
+        "paymentCount": 1,
+        "visibilityMode": "AUTO",
+        "status": "AVAILABLE",
+        "nativeIdentities": true
+      },
+      "2028": {
+        "rows": 3,
+        "rendered": 3,
+        "baseOnly": true,
+        "threeUnions": true,
+        "maxAmount": 10000,
+        "ratePercent": 6,
+        "paymentCount": 1,
+        "visibilityMode": "AUTO",
+        "status": "SCHEDULED",
+        "nativeIdentities": true
+      }
+    },
+    "fundCards": 2,
+    "publishedActive": true
+  },
+  "loan": {
+    "january2027Visible": true,
+    "january2028Hidden": true,
+    "selectedQuote": {
+      "fund": "15/01/2027 — Incentivos trimestrales",
+      "paymentCount": 1,
+      "maxAmount": 10000,
+      "rate": 6,
+      "period": "quincenal",
+      "interestVersion": "ADVANCE_PAYROLL_INTEREST_V1",
+      "feeVersion": "ADVANCE_PAYROLL_PERIODS_V1",
+      "source": "SUPABASE_FINANCIAL_CRITERIA"
+    },
+    "requestSubmitted": false
+  },
+  "refresh": {
+    "admin": {
+      "rules": {
+        "2027": {
+          "rows": 3,
+          "rendered": 3,
+          "baseOnly": true,
+          "threeUnions": true,
+          "maxAmount": 10000,
+          "ratePercent": 6,
+          "paymentCount": 1,
+          "visibilityMode": "AUTO",
+          "status": "AVAILABLE",
+          "nativeIdentities": true
+        },
+        "2028": {
+          "rows": 3,
+          "rendered": 3,
+          "baseOnly": true,
+          "threeUnions": true,
+          "maxAmount": 10000,
+          "ratePercent": 6,
+          "paymentCount": 1,
+          "visibilityMode": "AUTO",
+          "status": "SCHEDULED",
+          "nativeIdentities": true
+        }
+      },
+      "fundCards": 2,
+      "publishedActive": true
+    },
+    "loan": {
+      "january2027Visible": true,
+      "january2028Hidden": true,
+      "selectedQuote": {
+        "fund": "15/01/2027 — Incentivos trimestrales",
+        "paymentCount": 1,
+        "maxAmount": 10000,
+        "rate": 6,
+        "period": "quincenal",
+        "interestVersion": "ADVANCE_PAYROLL_INTEREST_V1",
+        "feeVersion": "ADVANCE_PAYROLL_PERIODS_V1",
+        "source": "SUPABASE_FINANCIAL_CRITERIA"
+      },
+      "requestSubmitted": false
+    }
+  },
+  "readActions": {
+    "auth": 1,
+    "rpc:get_admin_access_context": 3,
+    "rpc:get_current_affiliate_access_state": 3,
+    "rpc:get_effective_affiliate_id": 5,
+    "rpc:get_impersonation_context": 3,
+    "rpc:list_self_marketplace_quote_notifications": 3,
+    "rpc:list_self_request_event_notifications": 5,
+    "rpc:get_app_editorial": 7,
+    "rpc:list_public_banners": 6,
+    "rpc:get_self_savings_if_changed": 3,
+    "edge:financial-legacy:loanSessionOpen": 3,
+    "rpc:get_self_request_push_config": 3,
+    "rpc:get_admin_refresh_context": 1,
+    "storage:signed-read": 3,
+    "rpc:list_voting_consultations": 2,
+    "rpc:list_paid_company_ids": 4,
+    "rpc:list_company_commercial_requests": 4,
+    "edge:financial-legacy:catalog": 2,
+    "rpc:get_financial_admin_catalog": 2,
+    "rpc:resolve_current_loan_snapshot_quote": 4,
+    "rpc:list_current_deposit_accounts": 2,
+    "rpc:get_current_notification_phone": 2,
+    "rpc:resolve_effective_document_requirements": 2,
+    "edge:financial-legacy:loanSessionValidate": 2,
+    "rpc:list_effective_affiliate_documents": 2
+  },
+  "completedAt": "2026-10-21T01:59:52.732Z"
+}
